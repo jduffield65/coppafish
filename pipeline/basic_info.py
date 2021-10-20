@@ -12,7 +12,7 @@ def set_basic_info(config_file, config_basic):
     To file_name, the following is added:
     tile
     To basic_info, the following is added:
-    n_rounds, n_extra_rounds, n_tiles, n_channels, nz, tile_sz, tilepos_yx, pixel_size
+    anchor_round, n_rounds, n_extra_rounds, n_tiles, n_channels, nz, tile_sz, tilepos_yx, pixel_size
     Also use_rounds, use_tiles, use_channels and use_z are changed if they were None.
 
     :param config_file: 'file_name' key of config dictionary
@@ -29,6 +29,7 @@ def set_basic_info(config_file, config_basic):
     log['basic_info']['use_rounds'] = config_basic['use_rounds']
     if log['basic_info']['use_rounds'] is None:
         log['basic_info']['use_rounds'] = list(np.arange(n_rounds))
+    log['basic_info']['use_rounds'].sort()  # ensure ascending
     utils.errors.out_of_bounds('config-basic_info-use_rounds', log['basic_info']['use_rounds'], 0, n_rounds-1)
 
     # load in metadata of nd2 file corresponding to first round
@@ -41,12 +42,14 @@ def set_basic_info(config_file, config_basic):
     log['basic_info']['use_tiles'] = config_basic['use_tiles']
     if log['basic_info']['use_tiles'] is None:
         log['basic_info']['use_tiles'] = list(np.arange(n_tiles))
+    log['basic_info']['use_tiles'].sort()
     utils.errors.out_of_bounds('config-basic_info-use_tiles', log['basic_info']['use_tiles'], 0, n_tiles - 1)
     # get channel info
     n_channels = images.sizes['c']
     log['basic_info']['use_channels'] = config_basic['use_channels']
     if log['basic_info']['use_channels'] is None:
         log['basic_info']['use_channels'] = list(np.arange(n_channels))
+    log['basic_info']['use_channels'].sort()
     utils.errors.out_of_bounds('config-basic_info-use_channels', log['basic_info']['use_channels'], 0, n_channels - 1)
     # get z info
     log['basic_info']['use_z'] = config_basic['use_z']
@@ -54,14 +57,20 @@ def set_basic_info(config_file, config_basic):
         log['basic_info']['use_z'] = list(np.arange(images.sizes['z']))
     if config_basic['ignore_first_z_plane'] and 0 in log['basic_info']['use_z']:
         log['basic_info']['use_z'].remove(0)
+    log['basic_info']['use_z'].sort()
     nz = len(log['basic_info']['use_z'])  # number of z planes in tiff file (not necessarily the same as in nd2)
     utils.errors.out_of_bounds('config-basic_info-use_z', log['basic_info']['use_z'], 0, images.sizes['z'] - 1)
 
     tilepos_yx = get_tilepos(images.metadata['xy_pos'], tile_sz)
     if config_file['anchor'] is not None:
         # always have anchor as first round after imaging rounds
+        log['basic_info']['anchor_round'] = n_rounds
+        if log['basic_info']['anchor_channel'] is not None:
+            log['basic_info']['reference_round'] = log['basic_info']['anchor_round']
+            log['basic_info']['reference_channel'] = log['basic_info']['anchor_round']
         round_files = config_file['round'] + [config_file['anchor']]
     else:
+        log['basic_info']['anchor_round'] = None
         round_files = config_file['round']
     if config_basic['3d']:
         tile_names = get_tile_file_names(config_file['tile_dir'], round_files, tilepos_yx['nd2'], n_channels)

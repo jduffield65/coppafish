@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 
 def out_of_bounds(var, var_values, min_allowed, max_allowed):
     """
@@ -15,6 +15,16 @@ def out_of_bounds(var, var_values, min_allowed, max_allowed):
     min_var = np.min(var_values)
     max_var = np.max(var_values)
     if min_var < min_allowed:
-        raise ValueError(f"min value of {var}, {min_var}, is below min allowed value: {min_allowed}")
+        raise ValueError(f"\nmin value of {var}, {min_var}, is below min allowed value: {min_allowed}")
     if max_var > max_allowed:
-        raise ValueError(f"max value of {var}, {max_var}, is above max allowed value: {max_allowed}")
+        raise ValueError(f"\nmax value of {var}, {max_var}, is above max allowed value: {max_allowed}")
+
+
+def no_file(file_path):
+    """
+    raises error if file does not exist
+
+    :param file_path: string, path to file of interest
+    """
+    if not os.path.isfile(file_path):
+        raise ValueError(f"\nNo file\n{file_path}\nexists")

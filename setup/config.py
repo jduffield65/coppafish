@@ -39,6 +39,7 @@ _options = {
             'use_rounds': 'maybe_list_int',
             'use_z': 'maybe_list_int',
             'use_tiles': 'maybe_list_int',
+            'tile_pixel_value_shift': 'int',
             'ignore_first_z_plane': 'bool'
         },
     'file_names':
@@ -52,6 +53,7 @@ _options = {
         },
     'extract':
         {
+            'wait_time': 'list_int',
             'r1': 'maybe_int',
             'r2': 'maybe_int',
             'scale': 'maybe_number'
