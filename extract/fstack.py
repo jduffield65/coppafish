@@ -3,15 +3,6 @@ from scipy import ndimage
 from scipy.signal import medfilt2d
 import cv2
 
-"""Loading in Data from nd2"""
-# from nd2reader import ND2Reader
-# images = ND2Reader(file_name)
-# images.iter_axes = 'vcz'
-# imlist = []
-# for i in range(images.sizes['z']):
-#     imlist.append(images[i])
-# imlist = imlist[1:] # remove faulty first plane
-
 
 def rgb2gray(im):
     """

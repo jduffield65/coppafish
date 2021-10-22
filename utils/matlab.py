@@ -2,9 +2,22 @@ import h5py
 import numpy as np
 
 
-def load_array(file_name, var_name):
+def load_array(file_name, var_names):
+    """
+
+    :param file_name:
+    :param var_names: string or list of strings
+    :return:
+    """
     f = h5py.File(file_name)
-    return np.array(f[var_name]).transpose()
+    if not isinstance(var_names, list):
+        output = np.array(f[var_names]).transpose()
+    else:
+        output = []
+        for var_name in var_names:
+            output.append(np.array(f[var_name]).transpose())
+        output = tuple(output)
+    return output
 
 
 def load_cell(file_name, var_name):

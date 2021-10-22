@@ -1,5 +1,6 @@
 from nd2reader import ND2Reader
 import numpy as np
+import utils.errors
 
 # bioformats ssl certificate error solution:
 # https://stackoverflow.com/questions/35569042/ssl-certificate-verify-failed-with-python3
@@ -12,6 +13,7 @@ def load(file_name):
              iterating fastest and then channel index
              and then field of view.
     """
+    utils.errors.no_file(file_name)
     images = ND2Reader(file_name)
     images.iter_axes = 'vcz'
     return images
