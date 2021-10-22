@@ -1,5 +1,7 @@
 import utils.nd2
 from extract.base import *
+from extract.filter import get_pixel_length, hanning_diff, disk_strel
+from extract.scale import get_scale
 import numpy as np
 
 
@@ -29,11 +31,17 @@ def extract_and_filter(config, log_file, log_basic):
 
     '''update config params in log object'''
     if config['r1'] is None:
-        log_extract['r1'] = round(0.5 / log_basic['pixel_size']['xy'])
+        log_extract['r1'] = get_pixel_length(log_extract['r1_auto_microns'], log_basic['pixel_size']['xy'])
     if config['r2'] is None:
         log_extract['r2'] = log_extract['r1'] * 2
+    if config['r_dapi'] is None:
+        log_extract['r_dapi'] = get_pixel_length(log_extract['r_dapi_auto_microns'], log_basic['pixel_size']['xy'])
+
+    filter = hanning_diff(log_extract['r1'], log_extract['r2'])
+    filter_dapi = disk_strel(config['r_dapi'])
+
     if config['scale'] is None:
-        get_extract_scale()
+        get_scale()
 
     '''get rounds to iterate over'''
     if log_basic['anchor_round'] is not None:
@@ -44,11 +52,8 @@ def extract_and_filter(config, log_file, log_basic):
         round_files = log_file['round']
         use_rounds = log_basic['use_rounds']
 
-
     for r in use_rounds:
         im_file = os.path.join(log_file['input_dir'], round_files[r] + log_file['raw_extension'])
-        # index below is 0 for first round and 1 otherwise as use_rounds is ascending
-        wait_time = config['wait_time'][np.clip(r, min(use_rounds), min(use_rounds) + 1) - min(use_rounds)]
-        wait_for_data(im_file, wait_time)
+        wait_for_data(im_file, config['wait_time'])
 
     return log_extract

@@ -53,9 +53,12 @@ _options = {
         },
     'extract':
         {
-            'wait_time': 'list_int',
+            'wait_time': 'int',
             'r1': 'maybe_int',
             'r2': 'maybe_int',
+            'r_dapi': 'maybe_int',
+            'r1_auto_microns': 'number',
+            'r_dapi_auto_microns': 'number',
             'scale': 'maybe_number'
         },
     'find_spots':

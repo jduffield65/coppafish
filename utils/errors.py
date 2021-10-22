@@ -29,3 +29,15 @@ def no_file(file_path):
     """
     if not os.path.isfile(file_path):
         raise ValueError(f"\nNo file\n{file_path}\nexists")
+
+
+def empty(var, var_values):
+    """
+    raises error if no data in var_values
+
+    :param var: string
+        name of variable testing
+    :param var_values: list or numpy array
+    """
+    if len(var_values) == 0:
+        raise ValueError(f"{var} contains no data")

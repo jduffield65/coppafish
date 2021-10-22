@@ -25,7 +25,7 @@ class TestTilePos(unittest.TestCase):
             test_file = self.folder + file_name
             xy_pos = load_array(test_file, 'xypos')
             output_matlab = load_array(test_file, 'TilePosYX') - 1
-            output_python = get_tilepos(xy_pos, load_array(test_file, 'tile_sz')[0])
+            output_python = get_tilepos(xy_pos, int(load_array(test_file, 'tile_sz')))
             diff = output_python['nd2'].astype(int) - output_matlab.astype(int)
             self.assertTrue(np.abs(diff).max() <= self.tol)
             # check first position of tiff_yx is [0,0]
