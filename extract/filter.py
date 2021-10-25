@@ -183,3 +183,25 @@ def disk_strel(r, n=4):
             nhood = cv2.dilate(nhood, np.ones((extra_strel_size,  1), dtype=np.uint8))
             nhood = nhood > 0
     return nhood.astype(np.uint8)
+
+
+def filter_imaging(image, kernel):
+    """
+    convolves image with kernel, padding by replicating border pixels
+    np.flip is to give same as convn with replicate padding in MATLAB
+
+    :param image: numpy array [image_sz1 x image_sz2]
+    :param kernel: numpy float array
+    :return: numpy float array [image_sz1 x image_sz2]
+    """
+    return cv2.filter2D(image.astype(float), -1, np.flip(kernel), borderType=cv2.BORDER_REPLICATE)
+
+def filter_dapi(image, kernel):
+    """
+    does tophat filtering of image with kernel
+
+    :param image: numpy float array [image_sz1 x image_sz2]
+    :param kernel: numpy uint8 array
+    :return: numpy float array [image_sz1 x image_sz2]
+    """
+    return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel.astype(np.uint8))

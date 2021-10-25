@@ -44,7 +44,9 @@ def get_nd2_tile_ind(tile_ind_tiff, tile_pos_yx):
         index of tiff file
     :param tile_pos_yx: dictionary
         ['nd2']: numpy array[nTiles x 2] [i,:] contains YX position of tile with nd2 index i.
+            index -1 refers to YX = [0,0]
         ['tiff']: numpy array[nTiles x 2] [i,:] contains YX position of tile with tiff index i.
+            index 0 refers to YX = [0,0]
     :return: integer, corresponding index in nd2 file.
     """
     return np.where(np.sum(tile_pos_yx['nd2'] == tile_pos_yx['tiff'][tile_ind_tiff], 1) == 2)[0][0]

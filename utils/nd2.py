@@ -19,19 +19,24 @@ def load(file_name):
     return images
 
 
-def get_image(images, fov, channel):
+def get_image(images, fov, channel, use_z=None):
     """
     get image as numpy array from nd2 file
 
     :param images: ND2Reader object with fov, channel, z as index order.
     :param fov: fov index of desired image
     :param channel: channel of desired image
+    :param use_z: integer list, optional
+        which z-planes of image to load
+        default: will load all z-planes
     :return: 3D numpy array (float)
     """
-    image = np.zeros((images.sizes['x'], images.sizes['y'], images.sizes['z']))
+    if use_z is None:
+        use_z = np.arange(images.sizes['z'])
+    image = np.zeros((images.sizes['x'], images.sizes['y'], len(use_z)))
     start_index = fov * images.sizes['c'] * images.sizes['z'] + channel * images.sizes['z']
-    for i in range(images.sizes['z']):
-        image[:, :, i] = images[start_index + i]
+    for i in range(len(use_z)):
+        image[:, :, i] = images[start_index + use_z[i]]
     return image
 
 
