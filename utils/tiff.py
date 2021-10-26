@@ -1,5 +1,5 @@
 import tifffile
-import zarr
+# import zarr
 import numpy as np
 
 
@@ -39,26 +39,18 @@ def load(im_file, planes=None, y_roi=None, x_roi=None):
         default: None meaning all y pixels
     :param x_roi: integer or integer list/numpy array
         x pixels to read in
-        default: None meaning all x dixels
+        default: None meaning all x pixels
     :return: numpy array [len(y_roi) x len(x_roi) (x len(planes))]
     """
+    image = tifffile.imread(im_file, key=planes)
+    if image.ndim == 3:
+        image = np.moveaxis(image, 0, 2)
     if y_roi is not None or x_roi is not None:
-        image = tifffile.imread(im_file, aszarr=True)
-        image = zarr.open(image, mode='r')
-        try:
-            image = zarr.open(image, mode='r')  # have to do twice otherwise get error for some reason?
-        except:
-            if y_roi is None:
-                y_roi = np.arange(image.shape[1])
-            if x_roi is None:
-                x_roi = np.arange(image.shape[2])
-            if planes is None:
-                planes = np.arange(image.shape[0])
-            image = image.oindex[planes, y_roi, x_roi]
-            if len(np.array([planes]).flatten()) > 1:
-                image = np.moveaxis(image, 0, -1)
-    else:
-        image = tifffile.imread(im_file, key=planes)
-        if image.ndim == 3:
-            image = np.moveaxis(image, 0, 2)
+        if y_roi is None:
+            y_roi = np.arange(image.shape[0])
+        if x_roi is None:
+            x_roi = np.arange(image.shape[1])
+        y_roi = np.array([y_roi]).flatten().reshape(-1, 1)
+        x_roi = np.array([x_roi]).flatten().reshape(1, -1).repeat(len(y_roi), 0)
+        image = image[y_roi.reshape(-1, 1), x_roi]
     return image
