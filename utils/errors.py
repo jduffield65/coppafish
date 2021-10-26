@@ -41,3 +41,21 @@ def empty(var, var_values):
     """
     if len(var_values) == 0:
         raise ValueError(f"{var} contains no data")
+
+
+def wrong_shape(var, var_values, expected_shape):
+    """
+    raises error if var_values shape is not expected_shape
+
+    :param var: string
+        name of variable testing
+    :param var_values: numpy array
+    :param expected_shape: list or numpy array
+        shape var_values should be
+    """
+    actual_shape = np.array(var_values.shape)
+    expected_shape = np.array(expected_shape)
+    if len(actual_shape) != len(expected_shape):
+        raise ValueError(f"Shape of {var} is {actual_shape} but should be {expected_shape}")
+    elif np.abs(actual_shape - expected_shape).max() > 0:
+        raise ValueError(f"Shape of {var} is {actual_shape} but should be {expected_shape}")

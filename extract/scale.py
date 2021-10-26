@@ -54,16 +54,13 @@ def get_z_plane(images, fov, use_channels, use_z):
     return max_channel, max_z, np.array(images[get_nd2_index(images, fov, max_channel, max_z)])
 
 
-def get_scale(im_file, t, c, z, tilepos_yx, use_tiles, use_channels, use_z, scale_norm, filter_kernel):
+def get_scale(im_file, tilepos_yx, use_tiles, use_channels, use_z, scale_norm, filter_kernel):
     """
     convolves the image for tile t, channel c, z-plane z with filter_kernel
     then gets the multiplier to apply to filtered nd2 images by dividing scale_norm by the max value of this
     filtered image
 
     :param im_file: string, file path of nd2 file
-    :param t: integer or None, tiff tile index (index 0 refers to tilepos_yx['tiff']=[0,0]) to find scale from
-    :param c: integer or None, channel to find scale from
-    :param z: integer or None, z-plane to find scale from.
     :param tile_pos_yx: dictionary
         ['nd2']: numpy array[n_tiles x 2] [i,:] contains YX position of tile with nd2 index i.
             index -1 refers to YX = [0,0]
@@ -81,16 +78,10 @@ def get_scale(im_file, t, c, z, tilepos_yx, use_tiles, use_channels, use_z, scal
         scale: float, multiplier to apply to filtered nd2 images before saving as tiff so full tiff uint16
                range occupied.
     """
-    if t is None:
-        # default tile to get scale from is central tile
-        t = select_tile(tilepos_yx['tiff'], use_tiles)
-    if c is not None:
-        use_channels = [c]
-    if z is not None:
-        use_z = [z]
-
+    # tile to get scale from is central tile
+    t = select_tile(tilepos_yx['tiff'], use_tiles)
     images = utils.nd2.load(im_file)
-    # if c,z not supplied find z-plane with max pixel across all channels of tile t
+    # find z-plane with max pixel across all channels of tile t
     c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx), use_channels, use_z)
     # filter image in same way we filter before saving tiff files
     im_filtered = filter_imaging(image, filter_kernel)

@@ -196,6 +196,7 @@ def filter_imaging(image, kernel):
     """
     return cv2.filter2D(image.astype(float), -1, np.flip(kernel), borderType=cv2.BORDER_REPLICATE)
 
+
 def filter_dapi(image, kernel):
     """
     does tophat filtering of image with kernel

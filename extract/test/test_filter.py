@@ -72,6 +72,16 @@ class TestFilter(unittest.TestCase):
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
 
     def test_filter_dapi(self):
+        """
+        Check whether filter_dapi gives same results as MATLAB:
+        I_mod = padarray(image,(size(kernel)-1)/2,'replicate','both');
+        image_filtered = imtophat(image, kernel);
+
+        test_file contains:
+        image: image to filter (no padding)
+        kernel: array to apply tophat filter to image with
+        image_filtered: result of MATLAB filtering
+        """
         folder = os.path.join(self.folder, 'dapi')
         test_files = [s for s in os.listdir(folder) if "test" in s]
         utils.errors.empty('test_files', test_files)
@@ -82,7 +92,6 @@ class TestFilter(unittest.TestCase):
             output_python = filter_dapi(image, kernel)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
-
 
 
 if __name__ == '__main__':

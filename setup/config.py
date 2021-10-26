@@ -61,12 +61,8 @@ _options = {
             'r_dapi_auto_microns': 'number',
             'scale': 'maybe_number',
             'scale_norm': 'maybe_int',
-            'scale_tile': 'maybe_int',
-            'scale_channel': 'maybe_int',
-            'scale_z': 'maybe_int',
             'scale_anchor': 'maybe_number',
-            'scale_anchor_tile': 'maybe_int',
-            'scale_anchor_z': 'maybe_int'
+            'auto_thresh_multiplier': 'maybe_number'
         },
     'find_spots':
         {
