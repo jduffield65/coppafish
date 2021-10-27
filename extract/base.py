@@ -78,65 +78,57 @@ def strip_hack(image):
     return image, change_columns
 
 
-def save_tiff(log_file, log_basic, log_extract, image, t, c, r):
+def update_log_extract(log_file, log_basic, log_extract, hist_bin_edges, t, c, r,
+                       image=None, bad_columns=None):
     """
-    wrapper function to save tiff files with correct shift and a short description in the metadata
+    Calculate values for auto_thresh, hist_counts,
+    n_clip_pixels and clip_extract_scale in log_extract.
 
     :param log_file: log object containing file names
     :param log_basic: log object containing basic info
     :param log_extract: log object containing extract info
-    :param image: numpy float array [ny x nx (x nz)]
+    :param hist_bin_edges: numpy array [len(log_extract['vars']['hist_values']) + 1]
+        hist_values shifted by 0.5 to give bin edges not centres.
     :param t: integer, tiff tile index considering
     :param c: integer, channel considering
     :param r: integer, round considering
+    :param image: numpy int32 array [tile_sz x tile_sz (x nz)], optional
+        default: None meaning image will be loaded in
+    :param bad_columns: numpy integer array, optional.
+        which columns of image have been changed after strip_hack
+        default: None meaning strip_hack will be called
+    :return: log_extract
     """
-    if r == log_basic['anchor_round']:
-        round = "anchor"
-        if c == log_basic['anchor_channel']:
-            scale = log_extract['scale_anchor']
-            shift = log_basic['tile_pixel_value_shift']
-            channel = "anchor"
-        elif c == log_basic['dapi_channel']:
-            scale = 1
-            shift = 0
-            channel = "dapi"
-        else:
-            scale = 1
-            shift = 0
-            channel = "not used"
+    if image is None:
+        print(f"Round {r}, tile {t}, channel {c} already done.")
+        file_exists = True
+        image = utils.tiff.load_tile(log_file, log_basic, t, c, r, log_extract=log_extract)
     else:
-        round = r
-        if c not in log_basic['use_channels']:
-            scale = 1
-            shift = 0
-            channel = "not used"
-        else:
-            scale = log_extract['scale']
-            shift = log_basic['tile_pixel_value_shift']
-            channel = c
-    description = f"Tile = {t}. Round = {round}. Channel = {channel}. Shift = {shift}. Scale = {scale}"
-    image = image + shift
-    if log_basic['3d']:
-        utils.errors.wrong_shape('tile image', image, [log_basic['tile_sz'], log_basic['tile_sz'], log_basic['nz']])
-        utils.tiff.save(image, log_file['tile'][t, r, c], append=False, description=description)
-    else:
-        utils.errors.wrong_shape('tile image', image, [log_basic['tile_sz'], log_basic['tile_sz']])
-        utils.tiff.save(image, log_file['tile'][t, r], append=True, description=description)
+        file_exists = False
+    if bad_columns is None:
+        _, bad_columns = strip_hack(image)
 
+    # only use image unaffected by strip_hack to get information from tile
+    good_columns = np.setdiff1d(np.arange(log_basic['tile_sz']), bad_columns)
+    log_extract['vars']['auto_thresh'][t, c, r] = (np.median(np.abs(image[:, good_columns])) *
+                                                   log_extract['auto_thresh_multiplier'])
+    if r != log_basic['anchor_round']:
+        log_extract['vars']['hist_counts'][:, c, r] += np.histogram(image[:, good_columns],
+                                                                    hist_bin_edges)[0]
+    if not file_exists:
+        # if saving tile for first time, record how many pixels will be clipped
+        # and a suitable scaling which would cause no clipping.
+        # this part is never called for dapi so don't need to deal with exceptions
+        max_tiff_pixel_value = np.iinfo(np.uint16).max - log_basic['tile_pixel_value_shift']
+        n_clip_pixels = np.sum(image > max_tiff_pixel_value)
+        log_extract['diagnostic']['n_clip_pixels'][t, c, r] = n_clip_pixels
+        if n_clip_pixels > 0:
+            if r == log_basic['anchor_round']:
+                scale = log_extract['scale_anchor']
+            else:
+                scale = log_extract['scale']
+            # image has already been multiplied by scale hence inclusion of scale here
+            # max_tiff_pixel_value / image.max() is less than 1 so recommended scaling becomes smaller than scale.
+            log_extract['diagnostic']['clip_extract_scale'][t, c, r] = scale * max_tiff_pixel_value / image.max()
 
-
-
-
-# def get_filter(r1, r2):
-#
-# def fstack():
-#
-# def get_extract_scale():
-#
-# def filter():
-#
-# def filter_dapi():
-#
-# def get_hist_counts():
-#
-# def get_auto_thresh():
+    return log_extract

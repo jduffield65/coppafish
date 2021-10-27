@@ -87,31 +87,36 @@ def extract_and_filter(config, log_file, log_basic):
 
         # filter each image
         for t in log_basic['use_tiles']:
+            if not log_basic['3d']:
+                # for 2d all channels in same file
+                file_exists = os.path.isfile(log_file['tile'][t, r])
             for c in range(log_basic['n_channels']):
                 if c in use_channels:
-                    im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, log_basic['tilepos_yx']),
-                                             c, log_basic['use_z'])
-                    if not log_basic['3d']:
-                        im = extract.focus_stack(im)
-                    im, bad_columns = extract.strip_hack(im)  # find faulty columns
-                    if r == log_basic['anchor_round'] and c == log_basic['dapi_channel']:
-                        im = extract.filter_dapi(im, filter_kernel_dapi)
-                        im[:, bad_columns] = 0
+                    if log_basic['3d']:
+                        file_exists = os.path.isfile(log_file['tile'][t, r, c])
+                    if file_exists:
+                        log_extract = extract.update_log_extract(log_file, log_basic, log_extract, hist_bin_edges,
+                                                                 t, c, r)
                     else:
-                        im = extract.filter_imaging(im, filter_kernel) * scale
-                        im[:, bad_columns] = 0
-                        im = np.round(im).astype(int)
-                        good_columns = np.setdiff1d(np.arange(log_basic['tile_sz']), bad_columns)
-                        log_extract['vars']['auto_thresh'][t, c, r] = (np.median(np.abs(im[:, good_columns])) *
-                                                                       log_extract['auto_thresh_multiplier'])
-                        if r != log_basic['anchor_round']:
-                            log_extract['vars']['hist_counts'][:, c, r] += np.histogram(im[:, good_columns],
-                                                                                        hist_bin_edges)[0]
-                    extract.save_tiff(log_file, log_basic, log_extract, im, t, c, r)
-                elif not log_basic['3d']:
+                        im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, log_basic['tilepos_yx']),
+                                                 c, log_basic['use_z'])
+                        if not log_basic['3d']:
+                            im = extract.focus_stack(im)
+                        im, bad_columns = extract.strip_hack(im)  # find faulty columns
+                        if r == log_basic['anchor_round'] and c == log_basic['dapi_channel']:
+                            im = extract.filter_dapi(im, filter_kernel_dapi)
+                            im[:, bad_columns] = 0
+                        else:
+                            im = extract.filter_imaging(im, filter_kernel) * scale
+                            im[:, bad_columns] = 0
+                            im = np.round(im).astype(np.int32)
+                            log_extract = extract.update_log_extract(log_file, log_basic, log_extract, hist_bin_edges,
+                                                                     t, c, r, im, bad_columns)
+                        utils.tiff.save_tile(log_file, log_basic, log_extract, im, t, c, r)
+                elif not log_basic['3d'] and not file_exists:
                     # if not including channel, just set to all zeros
                     # only in 2D as all channels in same file - helps when loading in tiffs
                     im = np.zeros((log_basic['tile_sz'], log_basic['tile_sz']), dtype=np.uint16)
-                    extract.save_tiff(log_file, log_basic, log_extract, im, t, c, r)
+                    utils.tiff.save_tile(log_file, log_basic, log_extract, im, t, c, r)
 
     return log_extract
