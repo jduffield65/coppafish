@@ -33,7 +33,7 @@ def get_image(images, fov, channel, use_z=None):
     """
     if use_z is None:
         use_z = np.arange(images.sizes['z'])
-    image = np.zeros((images.sizes['x'], images.sizes['y'], len(use_z)))
+    image = np.zeros((images.sizes['x'], images.sizes['y'], len(use_z)), dtype=np.uint16)
     start_index = fov * images.sizes['c'] * images.sizes['z'] + channel * images.sizes['z']
     for i in range(len(use_z)):
         image[:, :, i] = images[start_index + use_z[i]]

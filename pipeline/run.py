@@ -11,5 +11,6 @@ def run_pipeline(config_file):
 
 
 if __name__ == '__main__':
-    ini_file = '/Users/joshduffield/Documents/UCL/ISS/Python/play/anne_3d.ini'
+    # ini_file = '/Users/joshduffield/Documents/UCL/ISS/Python/play/3d/anne_3d.ini'
+    ini_file = '/Users/joshduffield/Documents/UCL/ISS/Python/play/2d/anne_2d.ini'
     log = run_pipeline(ini_file)
