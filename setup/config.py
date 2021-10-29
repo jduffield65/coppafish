@@ -146,8 +146,18 @@ def get_config(ini_file):
     ini_file_default = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'settings.default.ini')
     with open(ini_file_default, 'r') as f:
         _parser.read_string(f.read())
-    with open(ini_file, 'r') as f:
-        _parser.read_string(f.read())
+    # Try to autodetect whether the user has passed a config file or the full
+    # text of the config file.  The easy way would be to use os.path.isfile to
+    # check if it is a file, and if not, assume it is text.  However, this
+    # could lead to confusing error messages.  Instead, we will use the
+    # following procedure.  If the string contains only whitespace, assume it
+    # is full text.  If it doesn't have a newline or an equal sign, assume it
+    # is a path.
+    if ini_file.strip() != "" and "=" not in ini_file and "\n" not in ini_file:
+        with open(ini_file, 'r') as f:
+            _parser.read_string(f.read())
+    else:
+        _parser.read_string(ini_file)
 
     # Validate configuration.
     # First step: ensure two things...
