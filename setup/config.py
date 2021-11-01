@@ -49,7 +49,8 @@ _options = {
             'tile_dir': 'dir',
             'round': 'list',
             'anchor': 'maybe_str',
-            'raw_extension': 'str'
+            'raw_extension': 'str',
+            'matlab_tile_names': 'bool'
         },
     'extract':
         {

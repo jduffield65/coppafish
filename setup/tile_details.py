@@ -75,7 +75,7 @@ def get_tile_name(tile_directory, file_base, r, t, c=None):
     return tile_name
 
 
-def get_tile_file_names(tile_directory, file_base, tilepos_yx, n_channels=0):
+def get_tile_file_names(tile_directory, file_base, tilepos_yx, matlab_tile_names, n_channels=0):
     """
 
     :param tile_directory: path to folder where tiles tiff files saved.
@@ -84,6 +84,8 @@ def get_tile_file_names(tile_directory, file_base, tilepos_yx, n_channels=0):
     :param tilepos_yx: integer numpy array [nTiles x 2]
         tilepos_yx[i, 0] is y index of tile with fov index i in nd2 file.
         tilepos_yx[i, 1] is x index of tile with fov index i in nd2 file.
+    :param matlab_tile_names: boolean
+        if true tile files will have t and c index starting at 1 else will start at 0
     :param n_channels: total number of imaging channels if using 3D, optional.
         0 if using 2D pipeline as all channels saved in same file.
         default: 0.
@@ -94,13 +96,14 @@ def get_tile_file_names(tile_directory, file_base, tilepos_yx, n_channels=0):
     t_tiff = get_tile_file_indices(tilepos_yx)
     n_tiles = np.shape(tilepos_yx)[0]
     n_rounds = len(file_base)
+    index_shift = int(matlab_tile_names)
     if n_channels == 0:
         # 2D
         tile_files = np.zeros((n_tiles, n_rounds), dtype=object)
         for r in range(n_rounds):
             for t_nd2 in range(n_tiles):
                 tile_files[t_tiff[t_nd2], r] = \
-                    get_tile_name(tile_directory, file_base, r, t_tiff[t_nd2])
+                    get_tile_name(tile_directory, file_base, r, t_tiff[t_nd2] + index_shift)
     else:
         # 3D
         tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
@@ -108,5 +111,6 @@ def get_tile_file_names(tile_directory, file_base, tilepos_yx, n_channels=0):
             for t_nd2 in range(n_tiles):
                 for c in range(n_channels):
                     tile_files[t_tiff[t_nd2], r, c] = \
-                        get_tile_name(tile_directory, file_base, r, t_tiff[t_nd2], c)
+                        get_tile_name(tile_directory, file_base, r, t_tiff[t_nd2] + index_shift,
+                                      c + index_shift)
     return tile_files

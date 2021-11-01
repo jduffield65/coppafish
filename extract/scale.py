@@ -15,7 +15,7 @@ def select_tile(tilepos_yx, use_tiles):
     :return: integer
     """
     mean_yx = np.round(np.mean(tilepos_yx, 0))
-    nearest_t = np.linalg.norm(tilepos_yx[use_tiles] - mean_yx,axis=1).argmin()
+    nearest_t = np.linalg.norm(tilepos_yx[use_tiles] - mean_yx, axis=1).argmin()
     return use_tiles[nearest_t]
 
 
@@ -46,12 +46,12 @@ def get_z_plane(images, fov, use_channels, use_z):
         image: integer numpy array [tile_sz x tile_sz]: corresponding image.
     """
     image_max = np.zeros((len(use_channels), len(use_z)))
-    for j in range(len(use_channels)):
-        for i in range(len(use_z)):
-            image_max[j, i] = images[get_nd2_index(images, fov, use_channels[j], use_z[i])].max()
+    for i in range(len(use_channels)):
+        image_max[i, :] = np.max(np.max(utils.nd2.get_image(images, fov, i, use_z), axis=0), axis=0)
+        # images[get_nd2_index(images, fov, use_channels[j], use_z[i])].max()
     max_channel = use_channels[np.max(image_max, axis=1).argmax()]
     max_z = use_z[np.max(image_max, axis=0).argmax()]
-    return max_channel, max_z, np.array(images[get_nd2_index(images, fov, max_channel, max_z)])
+    return max_channel, max_z, utils.nd2.get_image(images, fov, max_channel, max_z)
 
 
 def get_scale(im_file, tilepos_yx, use_tiles, use_channels, use_z, scale_norm, filter_kernel):
@@ -87,4 +87,3 @@ def get_scale(im_file, tilepos_yx, use_tiles, use_channels, use_z, scale_norm, f
     im_filtered = filter_imaging(image, filter_kernel)
     scale = scale_norm / im_filtered.max()
     return t, c, z, scale
-    

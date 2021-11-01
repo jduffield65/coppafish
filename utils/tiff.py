@@ -152,8 +152,8 @@ def load_tile(log_file, log_basic, t, c, r, y=None, x=None, z=None, log_extract=
     if r == log_basic['anchor_round'] and c == log_basic['anchor_channel']:
         pass
     else:
-        # change from uint16 to int32 to ensure no info loss when subtract shift
-        image = image.astype(np.int32) - log_basic['tile_pixel_value_shift']
+        # change from uint16 to int to ensure no info loss when subtract shift
+        image = image.astype(int) - log_basic['tile_pixel_value_shift']
     return image
 
 
