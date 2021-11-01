@@ -82,9 +82,9 @@ def _decode_type(key, val, typ):
     for n,_,f in TYPES:
         if n == typ:
             return f(val)
-    raise TypeError(f"Key {key!r} has type {typ!r}, "\
-                    "but we don't know how to decode that.  "\
-                    "Please use one of the following: {[t[0] for t in TYPES]}")
+    raise TypeError(f"Key {key!r} has type {typ!r}, "
+                    "but we don't know how to decode that.  "
+                    f"Please use one of the following: {[t[0] for t in TYPES]}")
 
 def _get_type(key, val):
     """Find the type of a given value.
@@ -105,9 +105,9 @@ def _get_type(key, val):
     for n,f,_ in TYPES:
         if f(val):
             return n
-    raise TypeError(f"Key {key!r} has value {val!r} which "\
-                    "is of type {type(val)}, which is invalid.  "\
-                    "Please use one of the following: {[t[0] for t in TYPES]}")
+    raise TypeError(f"Key {key!r} has value {val!r} which "
+                    "is of type {type(val)}, which is invalid.  "
+                    f"Please use one of the following: {[t[0] for t in TYPES]}")
 
 
 class Notebook:
@@ -141,12 +141,12 @@ class Notebook:
         nb2 = Notebook("nbfile.npz")
         assert nb2["pagename"]["var"] == 1
     """
-    _SEP = "_-_" # Separator between notbook page name and item name when saving to file
+    _SEP = "_-_" # Separator between notebook page name and item name when saving to file
     _ADDEDMETA = "TIME_CREATED" # Key for notebook created time
     _CONFIGMETA = "CONFIGFILE" # Key for notebook created time
     _NBMETA = "NOTEBOOKMETA" # Key for metadata about the entire notebook
     def __init__(self, notebook_file, config_file):
-        # numpy isn't compatible with npz files which do not end in the suffiz
+        # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.
         # We do the same thing here.
         if not notebook_file.endswith(".npz"):
@@ -205,7 +205,7 @@ class Notebook:
         This function automatically triggers a save.
         """
         if self._SEP in page.name:
-            raise NameError("The separator {self._SEP} may not be in the page's name")
+            raise NameError(f"The separator {self._SEP} may not be in the page's name")
         if page.finalized:
             raise ValueError("Page already added to a Notebook, cannot add twice")
         if any(page.name == p.name for p in self._pages):
@@ -243,7 +243,7 @@ class Notebook:
         versions and appropriately increment some centralized counter, we
         generate a short string which is a hash of the page names and the names
         of the entries in that page.  This way, it is possible to see if two
-        logs were generated using the same version of the software.  (Of
+        notebooks were generated using the same version of the software.  (Of
         course, it assumes that no fields are ever set conditionally.)
         """
         s = ""
@@ -287,7 +287,7 @@ class Notebook:
         # is that we must keep the file handle open.  We would rather not do
         # this, because if we write to the file, it will get screwed up, and if
         # there is a network issue, it will also mess things up.  I can't
-        # imagine that loading the notebook will be a perferomance bottleneck,
+        # imagine that loading the notebook will be a performance bottleneck,
         # but if it is, we can rethink this decision.  It should be pretty easy
         # to lazy load the pages, but eager load everything in the page.
         f = np.load(fn)
@@ -389,7 +389,7 @@ class NotebookPage:
     def __getitem__(self, key):
         """Return an item from the NotebookPage.
 
-        For a NotebookPage object, lp, this handles the syntax lp[key] for
+        For a NotebookPage object, nbp, this handles the syntax nbp[key] for
         reading, not writing, values.
         """
         if key not in self._results.keys():
