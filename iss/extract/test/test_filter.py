@@ -1,9 +1,9 @@
 import unittest
 import os
 import numpy as np
-from extract.filter import hanning_diff, disk_strel, filter_imaging, filter_dapi
-from utils.matlab import load_array
-import utils.errors
+from iss.extract.filter import hanning_diff, disk_strel, filter_imaging, filter_dapi
+from iss.utils.matlab import load_array
+import iss.utils.errors
 
 
 class TestFilter(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestFilter(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'hanning')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        utils.errors.empty('test_files', test_files)
+        iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             r1, r2, output_matlab = load_array(test_file, ['r1', 'r2', 'h'])
@@ -42,7 +42,7 @@ class TestFilter(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'disk')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        utils.errors.empty('test_files', test_files)
+        iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             r, n, output_matlab = load_array(test_file, ['r', 'n', 'nhood'])
@@ -63,7 +63,7 @@ class TestFilter(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'filter')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        utils.errors.empty('test_files', test_files)
+        iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
@@ -84,7 +84,7 @@ class TestFilter(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'dapi')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        utils.errors.empty('test_files', test_files)
+        iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             # MATLAB and python differ if kernel has any odd dimensions and is not symmetric
             test_file = os.path.join(folder, file_name)

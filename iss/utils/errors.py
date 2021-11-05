@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import re
-import utils.tiff
+from .tiff import load_tile_description
 
 
 def out_of_bounds(var, var_values, min_allowed, max_allowed):
@@ -63,29 +63,29 @@ def wrong_shape(var, var_values, expected_shape):
         raise ValueError(f"Shape of {var} is {actual_shape} but should be {expected_shape}")
 
 
-def check_tiff_description(log_file, log_basic, log_extract, t, c, r):
+def check_tiff_description(nbp_file, nbp_basic, nbp_extract_params, t, c, r):
     """
-    Check that scale in log_extract and tile_pixel_value_shift in log_basic
+    Check that scale in nbp_extract_params and tile_pixel_value_shift in nbp_basic
     match those used to make tiff files
 
-    :param log_file: log object containing file names
-    :param log_basic: log object containing basic info
-    :param log_extract: log object containing extract info
+    :param nbp_file: NotebookPage object containing file names
+    :param nbp_basic: NotebookPage object containing basic info
+    :param nbp_extract_params: NotebookPage object containing extract parameters
     :param t: integer, tiff tile index considering
     :param c: integer, channel considering
     :param r: integer, round considering
     """
-    description = utils.tiff.load_tile_description(log_file, log_basic, t, c, r)
+    description = load_tile_description(nbp_file, nbp_basic, t, c, r)
     if "Scale = " in description and "Shift = " in description:
         # scale value is after 'Scale = ' in description
         scale_from_tiff = np.float64(description.split("Scale = ", 1)[1])
         # shift value is between 'Shift = ' and '. Scale = ' in description
         shift_from_tiff = int(re.findall(r'Shift = (.+?). Scale = ', description)[0])
-        shift_from_log = log_basic['tile_pixel_value_shift']
-        if r == log_basic['anchor_round'] and c == log_basic['anchor_channel']:
-            scale_from_log = log_extract['scale_anchor']
-        elif r != log_basic['anchor_round'] and c in log_basic['use_channels']:
-            scale_from_log = log_extract['scale']
+        shift_from_log = nbp_basic['tile_pixel_value_shift']
+        if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
+            scale_from_log = nbp_extract_params['scale_anchor']
+        elif r != nbp_basic['anchor_round'] and c in nbp_basic['use_channels']:
+            scale_from_log = nbp_extract_params['scale']
         else:
             scale_from_log = 1  # dapi image and un-used channels have no scaling
             shift_from_log = 0  # dapi image and un-used channels have no shift

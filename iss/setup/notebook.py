@@ -52,23 +52,36 @@ import time
 #
 # Finally, if you create a new type, please add a unit test for it.
 TYPES = [
+    ("boolean",  # needs to be first as isinstance(True, int) is True
+     lambda x: isinstance(x, bool),
+     lambda x: bool(x[()]),
+     ),
     ("string",
-     lambda x : isinstance(x, (str, np.str_)),
-     lambda x : str(x[()]),
-    ),
+     lambda x: isinstance(x, (str, np.str_)),
+     lambda x: str(x[()]),
+     ),
     ("ndarray",
-     lambda x : isinstance(x, np.ndarray),
-     lambda x : x,
-    ),
+     lambda x: isinstance(x, np.ndarray),
+     lambda x: x,
+     ),
     ("int",
-     lambda x : isinstance(x, (int, np.int_)),
-     lambda x : int(x[()]),
-    ),
+     lambda x: isinstance(x, (int, np.int_)),
+     lambda x: int(x[()]),
+     ),
     ("number",
-     lambda x : np.isreal(x) is True, # is True guards against isreal returning an array
-     lambda x : float(x[()]),
-    ),
+     lambda x: np.isreal(x) is True,  # is True guards against isreal returning an array
+     lambda x: float(x[()]),
+     ),
+    ("list",
+     lambda x: isinstance(x, list),
+     lambda x: list(x),
+     ),
+    ("none",  # saved in ndz file as 'None'
+     lambda x: x is None,
+     lambda x: None,
+     ),
 ]
+
 
 def _decode_type(key, val, typ):
     """Convert a value from an npz file to a Python value.
@@ -79,12 +92,13 @@ def _decode_type(key, val, typ):
     `key`.  (We don't actually need `key`, but it helps us provide useful error
     messages.)
     """
-    for n,_,f in TYPES:
+    for n, _, f in TYPES:
         if n == typ:
             return f(val)
     raise TypeError(f"Key {key!r} has type {typ!r}, "
                     "but we don't know how to decode that.  "
                     f"Please use one of the following: {[t[0] for t in TYPES]}")
+
 
 def _get_type(key, val):
     """Find the type of a given value.
@@ -102,11 +116,11 @@ def _get_type(key, val):
     above).  Note that order matters here: if two functions return True, the
     first one in TYPES will be used as the type.
     """
-    for n,f,_ in TYPES:
+    for n, f, _ in TYPES:
         if f(val):
             return n
     raise TypeError(f"Key {key!r} has value {val!r} which "
-                    "is of type {type(val)}, which is invalid.  "
+                    f"is of type {type(val)}, which is invalid.  "
                     f"Please use one of the following: {[t[0] for t in TYPES]}")
 
 
@@ -141,10 +155,11 @@ class Notebook:
         nb2 = Notebook("nbfile.npz")
         assert nb2["pagename"]["var"] == 1
     """
-    _SEP = "_-_" # Separator between notebook page name and item name when saving to file
-    _ADDEDMETA = "TIME_CREATED" # Key for notebook created time
-    _CONFIGMETA = "CONFIGFILE" # Key for notebook created time
-    _NBMETA = "NOTEBOOKMETA" # Key for metadata about the entire notebook
+    _SEP = "_-_"  # Separator between notebook page name and item name when saving to file
+    _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
+    _CONFIGMETA = "CONFIGFILE"  # Key for notebook created time
+    _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
+
     def __init__(self, notebook_file, config_file):
         # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.
@@ -170,6 +185,7 @@ class Notebook:
             self._pages_times = []
             self._created_time = time.time()
             self._config = read_config
+
     def __eq__(self, other):
         """Test if two Notebooks are identical
 
@@ -185,7 +201,7 @@ class Notebook:
             return False
         # There is no cleaner way to write argsort in pure python, and we don't
         # want to use numpy for this
-        argsort = lambda x : list(zip(*sorted(zip(x, range(0, 10000)))))[1]
+        argsort = lambda x: list(zip(*sorted(zip(x, range(0, 10000)))))[1]
         # We need to make sure the way self._pages (and, by extension,
         # self._pages_times) is sorted does not matter.
         order_self = argsort(p.name for p in self._pages)
@@ -196,30 +212,62 @@ class Notebook:
             if self._pages_times[i_self] != other._pages_times[i_other]:
                 return False
         return True
+
     def __len__(self):
         """Return the number of pages in the Notebook"""
         return len(self._pages)
-    def add_page(self, page):
+
+    def add_page(self, page, do_nothing_if_exists=False):
         """Insert the page `page` into the Notebook.
 
         This function automatically triggers a save.
+        :param do_nothing_if_exists: boolean, optional.
+            If page exists and this is True, nothing will be done.
+            Basically included to avoid error when page exists.
+            default: False
         """
-        if self._SEP in page.name:
-            raise NameError(f"The separator {self._SEP} may not be in the page's name")
-        if page.finalized:
-            raise ValueError("Page already added to a Notebook, cannot add twice")
-        if any(page.name == p.name for p in self._pages):
-            raise ValueError("Cannot add two pages with the same name")
-        page.finalized = True
-        self._pages.append(page)
-        self._pages_times.append(time.time())
-        self.save()
+        if do_nothing_if_exists and self.has_page(page.name):
+            pass
+        else:
+            if self._SEP in page.name:
+                raise NameError(f"The separator {self._SEP} may not be in the page's name")
+            if page.finalized:
+                raise ValueError("Page already added to a Notebook, cannot add twice")
+            if self.has_page(page.name):
+                raise ValueError("Cannot add two pages with the same name")
+            page.finalized = True
+            self._pages.append(page)
+            self._pages_times.append(time.time())
+            self.save()
+
+    def has_page(self, page_name, contains_all=False, contains_any=False):
+        """A check to see if notebook includes a page called page_name.
+        If page_name is a list and contains_any is False,
+        will return dictionary where each key is a page name and each value is True or False.
+        If contains_all is True, and page_name is a list, will return True if all of the pages
+        are in the notebook.
+        If contains_any is True, and page_name is a list, will return True if any of the pages
+        are in the notebook."""
+        if isinstance(page_name, str):
+            output = any(page_name == p.name for p in self._pages)
+        elif isinstance(page_name, list):
+            output = {}
+            for i in range(len(page_name)):
+                output[page_name[i]] = any(page_name[i] == p.name for p in self._pages)
+            if contains_all:
+                output = min(list(output.values()))
+            elif contains_any:
+                output = any(list(output.values()))
+        return output
+
+
     def __iadd__(self, other):
         """Syntactic sugar for the add_page method"""
         if not isinstance(other, NotebookPage):
             raise ValueError("Only NotebookPage objects may be added to a notebook.")
         self.add_page(other)
         return self
+
     def __getitem__(self, name):
         """Access the contents of the page using the square bracket notation
 
@@ -234,6 +282,7 @@ class Notebook:
             if p.name == name:
                 return p
         raise KeyError(f"No Notebook page with the name {name!r}.")
+
     def version_hash(self):
         """A short string representing the file version.
 
@@ -251,6 +300,7 @@ class Notebook:
             s += p.name + "\n\n"
             s += "\n".join(sorted(p._results.keys()))
         return hashlib.md5(bytes(s, "utf8")).hexdigest()
+
     def save(self):
         """Save the Notebook to a file"""
         d = {}
@@ -258,17 +308,20 @@ class Notebook:
         # take this out, or else set it at a higher debug level via warnings
         # module.
         save_start_time = time.time()
-        for i,p in enumerate(self._pages):
+        for i, p in enumerate(self._pages):
             pd = p.to_serial_dict()
             name = p.name
-            for k,v in pd.items():
-                d[name+self._SEP+k] = v
-            d[name+self._SEP+self._ADDEDMETA] = self._pages_times[i]
-        d[self._NBMETA+self._SEP+self._ADDEDMETA] = self._created_time
-        d[self._NBMETA+self._SEP+self._CONFIGMETA] = self._config
+            for k, v in pd.items():
+                if v is None:
+                    # save None objects as string then convert back to None on loading
+                    v = str(v)
+                d[name + self._SEP + k] = v
+            d[name + self._SEP + self._ADDEDMETA] = self._pages_times[i]
+        d[self._NBMETA + self._SEP + self._ADDEDMETA] = self._created_time
+        d[self._NBMETA + self._SEP + self._CONFIGMETA] = self._config
         np.savez_compressed(self._file, **d)
         # Finishing the diagnostics described above
-        print(f"Notebook saved: took {time.time()-save_start_time} seconds")
+        print(f"Notebook saved: took {time.time() - save_start_time} seconds")
 
     @classmethod
     def from_file(cls, fn):
@@ -296,7 +349,7 @@ class Notebook:
         page_times = {}
         created_time = None
         for pk in keys:
-            p,k = pk.split(cls._SEP, 1)
+            p, k = pk.split(cls._SEP, 1)
             if p == cls._NBMETA:
                 if k == cls._ADDEDMETA:
                     created_time = f[pk]
@@ -314,8 +367,7 @@ class Notebook:
         pages_times = [page_times[d] for d in sorted(page_items.keys())]
         assert len(pages) == len(page_times), "Invalid file, lengths don't match"
         assert created_time is not None, "Invalid file, invalid created date"
-        return (pages, pages_times, created_time, config_file)
-
+        return pages, pages_times, created_time, config_file
 
 
 class NotebookPage:
@@ -337,15 +389,19 @@ class NotebookPage:
         ...
         return nbp
     """
-    _PAGEMETA = "PAGEINFO" # Filename for metadata about the page
-    _TIMEMETA = "___TIME" # Filename suffix for timestamp information
-    _TYPEMETA = "___TYPE" # Filename suffix for type information
-    def __init__(self, name):
+    _PAGEMETA = "PAGEINFO"  # Filename for metadata about the page
+    _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
+    _TYPEMETA = "___TYPE"  # Filename suffix for type information
+
+    def __init__(self, name, input_dict=None):
         self.name = name
         self._time_created = time.time()
         self._results = {}
         self._times = {}
-        self.finalized = False # Set to true when added to a Notebook
+        self.finalized = False  # Set to true when added to a Notebook
+        if isinstance(input_dict, dict):
+            self.from_dict(input_dict)
+
     def __eq__(self, other):
         """Test for equality using the == syntax.
 
@@ -358,19 +414,21 @@ class NotebookPage:
             return False
         if self._time_created != other._time_created:
             return False
-        for k,v in self._results.items():
+        for k, v in self._results.items():
             if k not in other._results or not np.array_equal(v, other._results[k]):
                 return False
-        for k,v in other._results.items():
+        for k, v in other._results.items():
             if k not in self._results or not np.array_equal(v, self._results[k]):
                 return False
-        for k,v in self._times.items():
+        for k, v in self._times.items():
             if k not in other._times or v != other._times[k]:
                 return False
         return True
+
     def __len__(self):
         """Return the number of results in the NotebookPage"""
         return len(self._results)
+
     def __setitem__(self, key, value):
         """Add an item to the notebook page.
 
@@ -386,6 +444,7 @@ class NotebookPage:
             raise ValueError(f"Cannot assign {key} = {value!r} to the notebook page, key already exists")
         self._results[key] = value
         self._times[key] = time.time()
+
     def __getitem__(self, key):
         """Return an item from the NotebookPage.
 
@@ -395,6 +454,20 @@ class NotebookPage:
         if key not in self._results.keys():
             raise ValueError(f"Cannot access {key!r} in the notebook, key doesn't exist")
         return self._results[key]
+
+    def from_dict(self, d, ignore_none=True):
+        """
+        Adds all string keys of dictionary d to page.
+
+        If ignore_none, keys whose value is None will be igonored.
+        """
+        for key, value in d.items():
+            if isinstance(key, (str, np.str_)):
+                if value is not None:
+                    self[key] = value
+                if value is None and not ignore_none:
+                    self[key] = None
+
     def to_serial_dict(self):
         """Convert to a dictionary which can be written to a file.
 
@@ -403,12 +476,13 @@ class NotebookPage:
         """
         keys = {}
         keys[self._PAGEMETA] = self.name
-        keys[self._PAGEMETA+self._TIMEMETA] = self._time_created
-        for rn,r in self._results.items():
+        keys[self._PAGEMETA + self._TIMEMETA] = self._time_created
+        for rn, r in self._results.items():
             keys[rn] = r
-            keys[rn+self._TIMEMETA] = self._times[rn]
-            keys[rn+self._TYPEMETA] = _get_type(rn, r)
+            keys[rn + self._TIMEMETA] = self._times[rn]
+            keys[rn + self._TYPEMETA] = _get_type(rn, r)
         return keys
+
     @classmethod
     def from_serial_dict(cls, d):
         """Convert from a dictionary to a NotebookPage object
@@ -420,7 +494,7 @@ class NotebookPage:
         # constructor.
         name = str(d[cls._PAGEMETA][()])
         n = cls(name)
-        n._time_created = d[cls._PAGEMETA+cls._TIMEMETA]
+        n._time_created = d[cls._PAGEMETA + cls._TIMEMETA]
         for k in d.keys():
             # If we've already dealt with the key, skip it.
             if k.startswith(cls._PAGEMETA): continue
@@ -429,8 +503,6 @@ class NotebookPage:
             if k.endswith(cls._TIMEMETA): continue
             if k.endswith(cls._TYPEMETA): continue
             # Now that we have a real key, add it to the page.
-            n._results[k] = _decode_type(k, d[k], str(d[k+cls._TYPEMETA][()]))
-            n._times[k] = d[k+cls._TIMEMETA]
+            n._results[k] = _decode_type(k, d[k], str(d[k + cls._TYPEMETA][()]))
+            n._times[k] = d[k + cls._TIMEMETA]
         return n
-
-

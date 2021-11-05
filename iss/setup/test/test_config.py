@@ -1,4 +1,4 @@
-from setup import config
+from iss.setup import config
 import tempfile
 import unittest
 import os
@@ -69,7 +69,7 @@ class ConfigTests(unittest.TestCase):
                 for k2 in fake_config_string[k]:
                     self.assertEqual(fake_config_file[k][k2], fake_config_string[k][k2])
     def test_all_valid_types_have_unit_tests(self):
-        self.assertTrue(list(sorted(self.examples.keys()))==list(sorted(config._option_type_checkers.keys())),
+        self.assertTrue(list(sorted(self.examples.keys())) == list(sorted(config._option_type_checkers.keys())),
                         "Make sure to create unit tests for all new types")
     def test_types_equal_expected_values(self):
         for k in self.examples.keys():

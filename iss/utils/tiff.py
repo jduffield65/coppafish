@@ -1,7 +1,7 @@
 import tifffile
 # import zarr
 import numpy as np
-import utils.errors
+import iss.utils.errors
 
 
 def save(image, im_file, description=None, append=False):
@@ -27,25 +27,25 @@ def save(image, im_file, description=None, append=False):
     tifffile.imwrite(im_file, image, append=append, description=description)
 
 
-def save_tile(log_file, log_basic, log_extract, image, t, c, r):
+def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
     """
     wrapper function to save tiles as tiff files with correct shift and a short description in the metadata
 
-    :param log_file: log object containing file names
-    :param log_basic: log object containing basic info
-    :param log_extract: log object containing extract info
+    :param nbp_file: NotebookPage object containing file names
+    :param nbp_basic: NotebookPage object containing basic info
+    :param nbp_extract_params: NotebookPage object containing extract parameters
     :param image: numpy float array [ny x nx (x nz)]
     :param t: integer, tiff tile index considering
     :param c: integer, channel considering
     :param r: integer, round considering
     """
-    if r == log_basic['anchor_round']:
+    if r == nbp_basic['anchor_round']:
         round = "anchor"
-        if c == log_basic['anchor_channel']:
-            scale = log_extract['scale_anchor']
-            shift = log_basic['tile_pixel_value_shift']
+        if c == nbp_basic['anchor_channel']:
+            scale = nbp_extract_params['scale_anchor']
+            shift = nbp_basic['tile_pixel_value_shift']
             channel = "anchor"
-        elif c == log_basic['dapi_channel']:
+        elif c == nbp_basic['dapi_channel']:
             scale = 1
             shift = 0
             channel = "dapi"
@@ -55,22 +55,22 @@ def save_tile(log_file, log_basic, log_extract, image, t, c, r):
             channel = "not used"
     else:
         round = r
-        if c not in log_basic['use_channels']:
+        if c not in nbp_basic['use_channels']:
             scale = 1
             shift = 0
             channel = "not used"
         else:
-            scale = log_extract['scale']
-            shift = log_basic['tile_pixel_value_shift']
+            scale = nbp_extract_params['scale']
+            shift = nbp_basic['tile_pixel_value_shift']
             channel = c
     description = f"Tile = {t}. Round = {round}. Channel = {channel}. Shift = {shift}. Scale = {scale}"
     image = image + shift
-    if log_basic['3d']:
-        utils.errors.wrong_shape('tile image', image, [log_basic['tile_sz'], log_basic['tile_sz'], log_basic['nz']])
-        save(image, log_file['tile'][t, r, c], append=False, description=description)
+    if nbp_basic['3d']:
+        iss.utils.errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz']])
+        save(image, nbp_file['tile'][t][r][c], append=False, description=description)
     else:
-        utils.errors.wrong_shape('tile image', image, [log_basic['tile_sz'], log_basic['tile_sz']])
-        save(image, log_file['tile'][t, r], append=True, description=description)
+        iss.utils.errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+        save(image, nbp_file['tile'][t][r], append=True, description=description)
 
 
 def load(im_file, planes=None, y_roi=None, x_roi=None):
@@ -103,12 +103,12 @@ def load(im_file, planes=None, y_roi=None, x_roi=None):
     return image
 
 
-def load_tile(log_file, log_basic, t, c, r, y=None, x=None, z=None, log_extract=None):
+def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_params=None):
     """
     load tile t, channel c, round r with pixel value shift subtracted if not DAPI.
 
-    :param log_file: log object containing file names
-    :param log_basic: log object containing basic info
+    :param nbp_file: NotebookPage object containing file names
+    :param nbp_basic: NotebookPage object containing basic info
     :param t: integer, tiff tile index considering
     :param c: integer, channel considering
     :param r: integer, round considering
@@ -121,39 +121,40 @@ def load_tile(log_file, log_basic, t, c, r, y=None, x=None, z=None, log_extract=
     :param z: integer or integer list/numpy array, optional.
         which z-planes in tiff file to load
         default: None meaning all z-planes
-    :param log_extract: log object containing extract info, optional.
-        provide log_extract if want to check scale and shift in it match those used to make tiffs
+    :param nbp_extract_params: NotebookPage object containing extract parameters, optional.
+        provide nbp_extract_params if want to check scale and shift in it match those used to make tiffs
         default: None
     :return:
         numpy (uint16 if dapi otherwise int32) array [ny x nx (x nz)]
     """
-    if log_extract is not None:
-        utils.errors.check_tiff_description(log_file, log_basic, log_extract, t, c, r)
-    if log_basic['3d']:
-        image = load(log_file['tile'][t, r, c], z, y, x)
+    if nbp_extract_params is not None:
+        iss.utils.errors.check_tiff_description(nbp_file, nbp_basic, nbp_extract_params, t, c, r)
+    if nbp_basic['3d']:
+        image = load(nbp_file['tile'][t][r][c], z, y, x)
         # throw error if tile not expected shape
         # only for case where y and x not specified as we know that if they are then load gives correct result
         if y is None and x is None:
             if z is None:
-                exp_z_shape = log_basic['nz']
+                exp_z_shape = nbp_basic['nz']
             elif len(np.array([z]).flatten()) == 1:
                 exp_z_shape = 1
             else:
                 exp_z_shape = len(z)
             if exp_z_shape == 1:
-                utils.errors.wrong_shape('loaded tile', image, [log_basic['tile_sz'], log_basic['tile_sz']])
+                iss.utils.errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
             else:
-                utils.errors.wrong_shape('loaded tile', image, [log_basic['tile_sz'], log_basic['tile_sz'], log_basic['nz']])
+                iss.utils.errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'],
+                                                                    nbp_basic['nz']])
     else:
-        image = load(log_file['tile'][t, r], c, y, x)
+        image = load(nbp_file['tile'][t][r], c, y, x)
         # throw error if not expected shape
         if y is None and x is None:
-            utils.errors.wrong_shape('loaded tile', image, [log_basic['tile_sz'], log_basic['tile_sz']])
-    if r == log_basic['anchor_round'] and c == log_basic['anchor_channel']:
+            iss.utils.errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+    if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
         pass
     else:
         # change from uint16 to int to ensure no info loss when subtract shift
-        image = image.astype(int) - log_basic['tile_pixel_value_shift']
+        image = image.astype(int) - nbp_basic['tile_pixel_value_shift']
     return image
 
 
@@ -176,19 +177,19 @@ def load_description(im_file, plane=0):
     return description
 
 
-def load_tile_description(log_file, log_basic, t, c, r):
+def load_tile_description(nbp_file, nbp_basic, t, c, r):
     """
     load in description saved in tiff for tile t, channel c, round r.
 
-    :param log_file: log object containing file names
-    :param log_basic: log object containing basic info
+    :param nbp_file: NotebookPage object containing file names
+    :param nbp_basic: NotebookPage object containing basic info
     :param t: integer, tiff tile index considering
     :param c: integer, channel considering
     :param r: integer, round considering
     :return: string
     """
-    if log_basic['3d']:
-        description = load_description(log_file['tile'][t, r, c])
+    if nbp_basic['3d']:
+        description = load_description(nbp_file['tile'][t][r][c])
     else:
-        description = load_description(log_file['tile'][t, r], c)
+        description = load_description(nbp_file['tile'][t][r], c)
     return description

@@ -1,6 +1,6 @@
 import unittest
-from utils.matlab import load_array
-from setup.tile_details import get_tilepos
+from iss.utils.matlab import load_array
+from iss.setup.tile_details import get_tilepos
 import os
 import numpy as np
 
@@ -25,13 +25,13 @@ class TestTilePos(unittest.TestCase):
             test_file = self.folder + file_name
             xy_pos = load_array(test_file, 'xypos')
             output_matlab = load_array(test_file, 'TilePosYX') - 1
-            output_python = get_tilepos(xy_pos, int(load_array(test_file, 'tile_sz')))
-            diff = output_python['nd2'].astype(int) - output_matlab.astype(int)
+            output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(load_array(test_file, 'tile_sz')))
+            diff = output_python_nd2.astype(int) - output_matlab.astype(int)
             self.assertTrue(np.abs(diff).max() <= self.tol)
             # check first position of tiff_yx is [0,0]
-            self.assertTrue(sum(output_python['tiff'][0]) <= self.tol)
+            self.assertTrue(sum(output_python_tiff[0]) <= self.tol)
             # check last position of tiff_yx is [max_y, max_x]
-            self.assertTrue(sum(output_python['tiff'][-1] - np.max(output_python['tiff'], 0)) <= self.tol)
+            self.assertTrue(sum(output_python_tiff[-1] - np.max(output_python_tiff, 0)) <= self.tol)
 
 
 if __name__ == '__main__':

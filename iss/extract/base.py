@@ -3,8 +3,7 @@ import os
 import warnings
 import time
 from tqdm import tqdm
-import utils.errors
-import utils.tiff
+import iss.utils.errors
 
 
 def wait_for_data(file_path, wait_time):
@@ -27,7 +26,7 @@ def wait_for_data(file_path, wait_time):
             time.sleep(1)
             if os.path.isfile(file_path):
                 break
-        utils.errors.no_file(file_path)
+        iss.utils.errors.no_file(file_path)
         print("file found!\nWaiting for file to fully load...")
         # wait for file to stop loading
         old_bytes = 0
@@ -39,18 +38,19 @@ def wait_for_data(file_path, wait_time):
         print("file loaded!")
 
 
-def get_nd2_tile_ind(tile_ind_tiff, tile_pos_yx):
+def get_nd2_tile_ind(tile_ind_tiff, tile_pos_yx_nd2, tile_pos_yx_tiff):
     """
     :param tile_ind_tiff: integer
         index of tiff file
-    :param tile_pos_yx: dictionary
-        ['nd2']: numpy array[nTiles x 2] [i,:] contains YX position of tile with nd2 index i.
-            index -1 refers to YX = [0,0]
-        ['tiff']: numpy array[nTiles x 2] [i,:] contains YX position of tile with tiff index i.
-            index 0 refers to YX = [0,0]
+    :param tile_pos_yx_nd2: numpy array[nTiles x 2]
+        [i,:] contains YX position of tile with nd2 index i.
+        index 0 refers to YX = [MaxY,MaxX]
+    :param tile_pos_yx_tiff: numpy array[nTiles x 2]
+        [i,:] contains YX position of tile with tiff index i.
+        index 0 refers to YX = [0,0]
     :return: integer, corresponding index in nd2 file.
     """
-    return np.where(np.sum(tile_pos_yx['nd2'] == tile_pos_yx['tiff'][tile_ind_tiff], 1) == 2)[0][0]
+    return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_tiff[tile_ind_tiff], 1) == 2)[0][0]
 
 
 def strip_hack(image):
@@ -78,15 +78,17 @@ def strip_hack(image):
     return image, change_columns
 
 
-def update_log_extract(log_file, log_basic, log_extract, hist_bin_edges, t, c, r,
-                       image=None, bad_columns=None):
+def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
+                       hist_bin_edges, t, c, r, image=None, bad_columns=None):
     """
-    Calculate values for auto_thresh, hist_counts,
-    n_clip_pixels and clip_extract_scale in log_extract.
+    Calculate values for auto_thresh, hist_counts in nbp_vars and
+    n_clip_pixels and clip_extract_scale in nbp_debug.
 
-    :param log_file: log object containing file names
-    :param log_basic: log object containing basic info
-    :param log_extract: log object containing extract info
+    :param nbp_file: NotebookPage object containing file names
+    :param nbp_basic: NotebookPage object containing basic info
+    :param nbp_vars: NotebookPage object containing variables found during extract.
+    :param nbp_params: NotebookPage object containing extract parameters.
+    :param nbp_debug: NotebookPage object containing debugging info found during extract.
     :param hist_bin_edges: numpy array [len(log_extract['vars']['hist_values']) + 1]
         hist_values shifted by 0.5 to give bin edges not centres.
     :param t: integer, tiff tile index considering
@@ -97,38 +99,36 @@ def update_log_extract(log_file, log_basic, log_extract, hist_bin_edges, t, c, r
     :param bad_columns: numpy integer array, optional.
         which columns of image have been changed after strip_hack
         default: None meaning strip_hack will be called
-    :return: log_extract
+    :return: nbp_extract, nbp_extract_debug
     """
     if image is None:
-        print(f"Round {r}, tile {t}, channel {c} already done.")
         file_exists = True
-        image = utils.tiff.load_tile(log_file, log_basic, t, c, r, log_extract=log_extract)
+        image = iss.utils.tiff.load_tile(nbp_file, nbp_basic, t, c, r, nbp_extract_params=nbp_params)
     else:
         file_exists = False
     if bad_columns is None:
         _, bad_columns = strip_hack(image)
 
     # only use image unaffected by strip_hack to get information from tile
-    good_columns = np.setdiff1d(np.arange(log_basic['tile_sz']), bad_columns)
-    log_extract['vars']['auto_thresh'][t, c, r] = (np.median(np.abs(image[:, good_columns])) *
-                                                   log_extract['auto_thresh_multiplier'])
-    if r != log_basic['anchor_round']:
-        log_extract['vars']['hist_counts'][:, c, r] += np.histogram(image[:, good_columns],
-                                                                    hist_bin_edges)[0]
+    good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
+    nbp_vars['auto_thresh'][t, c, r] = (np.median(np.abs(image[:, good_columns])) *
+                                        nbp_params['auto_thresh_multiplier'])
+    if r != nbp_basic['anchor_round']:
+        nbp_vars['hist_counts'][:, c, r] += np.histogram(image[:, good_columns], hist_bin_edges)[0]
     if not file_exists:
         # if saving tile for first time, record how many pixels will be clipped
         # and a suitable scaling which would cause no clipping.
         # this part is never called for dapi so don't need to deal with exceptions
-        max_tiff_pixel_value = np.iinfo(np.uint16).max - log_basic['tile_pixel_value_shift']
+        max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic['tile_pixel_value_shift']
         n_clip_pixels = np.sum(image > max_tiff_pixel_value)
-        log_extract['diagnostic']['n_clip_pixels'][t, c, r] = n_clip_pixels
+        nbp_debug['n_clip_pixels'][t, c, r] = n_clip_pixels
         if n_clip_pixels > 0:
-            if r == log_basic['anchor_round']:
-                scale = log_extract['scale_anchor']
+            if r == nbp_basic['anchor_round']:
+                scale = nbp_params['scale_anchor']
             else:
-                scale = log_extract['scale']
+                scale = nbp_params['scale']
             # image has already been multiplied by scale hence inclusion of scale here
             # max_tiff_pixel_value / image.max() is less than 1 so recommended scaling becomes smaller than scale.
-            log_extract['diagnostic']['clip_extract_scale'][t, c, r] = scale * max_tiff_pixel_value / image.max()
+            nbp_debug['clip_extract_scale'][t, c, r] = scale * max_tiff_pixel_value / image.max()
 
-    return log_extract
+    return nbp_vars, nbp_debug

@@ -1,4 +1,4 @@
-from setup import notebook
+from iss.setup import notebook
 import tempfile
 import unittest
 import os
@@ -121,7 +121,17 @@ class NotebookTests(unittest.TestCase):
             nbp["int_type"] = 3
             nbp["float_type"] = 4.1
             nbp["array_type"] = np.asarray([[1, 2], [3, 4]])
-            nb += nbp # Triggers save
+            nbp["list_string"] = ["hi", "hi2", "hi3"]
+            nbp["list_int"] = [1, 5, 2]
+            nbp["list_number"] = [0.32553, 0.9003, 65.1]
+            nbp["list_mixed"] = ["hi", 0.34, 5, 100, 12.3456]
+            nbp["list_2d"] = [[5, 2], [3, 4], [1, 2]]
+            nbp["list_3d"] = np.random.random((5, 5, 4)).tolist()
+            nbp["bool1"] = True
+            nbp["bool2"] = False
+            nbp["none"] = None
+            nbp["none_string"] = "None"
+            nb += nbp  # Triggers save
             nb_reloaded = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
             self.assertEqual(nb_reloaded, nb)
 

@@ -1,5 +1,4 @@
 import numpy as np
-import utils.errors
 import nd2
 
 # bioformats ssl certificate error solution:

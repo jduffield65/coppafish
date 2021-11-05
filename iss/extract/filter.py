@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.signal
-import utils.errors
+import iss.utils.errors
 import cv2
 
 
@@ -73,8 +73,8 @@ def hanning_diff(r1, r2):
         radius in pixels of outer negative hanning filter
     :return: float numpy array [2*r2 + 1, 2*r2 + 1]
     """
-    utils.errors.out_of_bounds('r1', r1, 0, r2)
-    utils.errors.out_of_bounds('r2', r2, r1, np.inf)
+    iss.utils.errors.out_of_bounds('r1', r1, 0, r2)
+    iss.utils.errors.out_of_bounds('r2', r2, r1, np.inf)
     h_outer = np.hanning(2 * r2 + 3)[1:-1]  # ignore zero values at first and last index
     h_outer = -h_outer / h_outer.sum()
     h_inner = np.hanning(2 * r1 + 3)[1:-1]

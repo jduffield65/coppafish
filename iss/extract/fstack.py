@@ -97,7 +97,7 @@ def focus_stack(im_stack, nhsize=9, focus=None, alpha=0.2, sth=13):
         im[:, :, 2] = np.sum(imagesB * fm, 2) / fmn
         im = np.round(im).astype(np.uint8)
     else:
-        im = np.round((np.sum(im_stack.astype(float) * fm, 2) / fmn)).astype(np.uint16)
+        im = np.round((np.sum(im_stack.astype(float) * fm, 2) / fmn)).astype(int)
     return im
 
 

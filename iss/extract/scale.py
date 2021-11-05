@@ -1,8 +1,7 @@
 import numpy as np
-import cv2
-import utils.nd2
-from extract.base import get_nd2_tile_ind
-from extract.filter import filter_imaging
+from iss.extract.base import get_nd2_tile_ind
+from iss.extract.filter import filter_imaging
+from iss import utils
 
 
 def select_tile(tilepos_yx, use_tiles):
@@ -37,7 +36,7 @@ def get_z_plane(images, fov, use_channels, use_z):
     Finds z plane and channel that has maximum pixel value for given tile
 
     :param images: ND2Reader object with fov, channel, z as index order.
-    :param fov: integer. nd2 tile index, index -1 refers to tile at yx = [0,0]
+    :param fov: integer. nd2 tile index, index 0 refers to tile at yx = [MaxY,MaxX]
     :param use_channels: integer list. channels to consider
     :param use_z: integer list. z-planes to consider
     :return:
@@ -54,18 +53,19 @@ def get_z_plane(images, fov, use_channels, use_z):
     return max_channel, max_z, utils.nd2.get_image(images, fov, max_channel, max_z)
 
 
-def get_scale(im_file, tilepos_yx, use_tiles, use_channels, use_z, scale_norm, filter_kernel):
+def get_scale(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, use_channels, use_z, scale_norm, filter_kernel):
     """
     convolves the image for tile t, channel c, z-plane z with filter_kernel
     then gets the multiplier to apply to filtered nd2 images by dividing scale_norm by the max value of this
     filtered image
 
     :param im_file: string, file path of nd2 file
-    :param tile_pos_yx: dictionary
-        ['nd2']: numpy array[n_tiles x 2] [i,:] contains YX position of tile with nd2 index i.
-            index -1 refers to YX = [0,0]
-        ['tiff']: numpy array[n_tiles x 2] [i,:] contains YX position of tile with tiff index i.
-            index 0 refers to YX = [0,0]
+    :param tilepos_yx_tiff: numpy array[n_tiles x 2]
+        [i,:] contains YX position of tile with tiff index i.
+        index 0 refers to YX = [0,0]
+    :param tilepos_yx_nd2: numpy array[n_tiles x 2]
+        [i,:] contains YX position of tile with nd2 fov index i.
+        index 0 refers to YX = [MaxY,MaxX]
     :param use_tiles: integer list. tiff tile indices to consider when finding tile if t is None
     :param use_channels: integer list. channels to consider when finding channel if c is None
     :param use_z: integer list. z-planes to consider when finding z_plane if z is None
@@ -79,11 +79,11 @@ def get_scale(im_file, tilepos_yx, use_tiles, use_channels, use_z, scale_norm, f
                range occupied.
     """
     # tile to get scale from is central tile
-    t = select_tile(tilepos_yx['tiff'], use_tiles)
+    t = select_tile(tilepos_yx_tiff, use_tiles)
     images = utils.nd2.load(im_file)
     # find z-plane with max pixel across all channels of tile t
-    c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx), use_channels, use_z)
+    c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_tiff), use_channels, use_z)
     # filter image in same way we filter before saving tiff files
     im_filtered = filter_imaging(image, filter_kernel)
     scale = scale_norm / im_filtered.max()
-    return t, c, z, scale
+    return t, c, z, float(scale)

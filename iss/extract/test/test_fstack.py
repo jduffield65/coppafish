@@ -1,6 +1,6 @@
 import unittest
-from extract.fstack import focus_stack
-from utils.matlab import load_cell, load_array
+from iss.extract.fstack import focus_stack
+from iss.utils.matlab import load_cell, load_array
 import os
 import numpy as np
 
