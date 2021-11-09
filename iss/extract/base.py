@@ -38,6 +38,18 @@ def wait_for_data(file_path, wait_time):
         print("file loaded!")
 
 
+def get_pixel_length(length_microns, pixel_size):
+    """
+    Converts a length in units of microns into a length in units of pixels
+    :param length_microns: float
+        length in units of microns (microns)
+    :param pixel_size: float
+        size of a pixel in microns (microns/pixels)
+    :return: integer, desired length in units of pixels (pixels)
+    """
+    return int(round(length_microns / pixel_size))
+
+
 def get_nd2_tile_ind(tile_ind_tiff, tile_pos_yx_nd2, tile_pos_yx_tiff):
     """
     :param tile_ind_tiff: integer

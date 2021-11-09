@@ -1,4 +1,5 @@
 from iss import utils, extract
+import iss.utils.morphology as morphology
 # import iss.utils.errors
 # from extract.base import *
 # from extract.filter import get_pixel_length, hanning_diff, disk_strel
@@ -43,8 +44,8 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     if config['r_dapi'] is None:
         nbp_params['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'],
                                                         nbp_basic['pixel_size_xy'])
-    filter_kernel = extract.hanning_diff(nbp_params['r1'], nbp_params['r2'])
-    filter_kernel_dapi = extract.disk_strel(nbp_params['r_dapi'])
+    filter_kernel = morphology.hanning_diff(nbp_params['r1'], nbp_params['r2'])
+    filter_kernel_dapi = morphology.Strel.disk(nbp_params['r_dapi'])
 
     if config['scale'] is None:
         # ensure scale_norm value is reasonable
@@ -112,10 +113,10 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im = im.astype(int)
                             im, bad_columns = extract.strip_hack(im)  # find faulty columns
                             if r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']:
-                                im = extract.filter_dapi(im, filter_kernel_dapi)
+                                im = morphology.top_hat(im, filter_kernel_dapi)
                                 im[:, bad_columns] = 0
                             else:
-                                im = extract.filter_imaging(im, filter_kernel) * scale
+                                im = morphology.imfilter(im, filter_kernel) * scale
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params,
