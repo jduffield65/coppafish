@@ -2,7 +2,7 @@ from iss import utils, extract
 import iss.utils.morphology as morphology
 # import iss.utils.errors
 # from extract.base import *
-# from extract.filter import get_pixel_length, hanning_diff, disk_strel
+# from extract.convolve_2d import get_pixel_length, hanning_diff, disk_strel
 # from extract.scale import get_scale, select_tile
 import numpy as np
 import os
@@ -90,7 +90,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                 scale = nbp_params['scale']
                 use_channels = nbp_basic['use_channels']
 
-            # filter each image
+            # convolve_2d each image
             for t in nbp_basic['use_tiles']:
                 if not nbp_basic['3d']:
                     # for 2d all channels in same file
@@ -116,7 +116,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im = morphology.top_hat(im, filter_kernel_dapi)
                                 im[:, bad_columns] = 0
                             else:
-                                im = morphology.imfilter(im, filter_kernel) * scale
+                                im = morphology.convolve_2d(im, filter_kernel) * scale
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params,

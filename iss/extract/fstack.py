@@ -164,7 +164,7 @@ def get_smeasure(fm, nhsize, focus):
 def get_weights(S, fm, alpha, sth):
     """
     Computes sharpening parameter phi and then
-    returns cut off frequency for high pass filter, omega.
+    returns cut off frequency for high pass convolve_2d, omega.
 
     :param S: numpy array [M x N]
         selectivity measure
@@ -192,7 +192,7 @@ def gfocus(im, w_size):
     :param im: numpy array [M x N]
         gray scale image
     :param w_size: integer.
-        Size of filter window
+        Size of convolve_2d window
         typical: M/200
     :return:
         fm: numpy array [M x N]

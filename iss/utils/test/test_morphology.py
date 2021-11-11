@@ -1,7 +1,7 @@
 import unittest
 import os
 import numpy as np
-from iss.utils.morphology import hanning_diff, Strel, imfilter, top_hat, dilate
+from iss.utils.morphology import hanning_diff, Strel, convolve_2d, top_hat, dilate, imfilter
 from iss.utils.matlab import load_array
 import iss.utils.errors
 
@@ -13,12 +13,12 @@ class TestMorphology(unittest.TestCase):
     def test_hanning_diff(self):
         """
         Check whether hanning filters are same as with MATLAB
-        and that sum of filter is 0.
+        and that sum of convolve_2d is 0.
 
         test files contain:
-        r1: inner radius of hanning filter
-        r2: outer radius of hanning filter
-        h: hanning filter produced by MATLAB
+        r1: inner radius of hanning convolve_2d
+        r2: outer radius of hanning convolve_2d
+        h: hanning convolve_2d produced by MATLAB
         """
         folder = os.path.join(self.folder, 'hanning')
         test_files = [s for s in os.listdir(folder) if "test" in s]
@@ -36,9 +36,9 @@ class TestMorphology(unittest.TestCase):
         Check whether disk_strel gives the same results as MATLAB strel('disk)
 
         test_files contain:
-        r: radius of filter kernel
+        r: radius of convolve_2d kernel
         n: 0, 4, 6 or 8
-        nhood: filter kernel found by MATLAB
+        nhood: convolve_2d kernel found by MATLAB
         """
         folder = os.path.join(self.folder, 'disk')
         test_files = [s for s in os.listdir(folder) if "test" in s]
@@ -91,7 +91,7 @@ class TestMorphology(unittest.TestCase):
         iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            r_xy, r_z, r0, output_matlab = load_array(test_file, ['rXY', 'rZ','r0', 'Annulus'])
+            r_xy, r_z, r0, output_matlab = load_array(test_file, ['rXY', 'rZ', 'r0', 'Annulus'])
             if r_z == 0:
                 output_python = Strel.annulus(float(r0), float(r_xy))
             else:
@@ -99,48 +99,64 @@ class TestMorphology(unittest.TestCase):
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
 
-    def test_imfilter(self):
+    def test_convolve_2d(self):
         """
         Check whether filter_imaging gives same results as MATLAB:
         I_mod = padarray(image,(size(kernel)-1)/2,'replicate','both');
         image_filtered = convn(I_mod, kernel,'valid');
 
         test_file contains:
-        image: image to filter (no padding)
+        image: image to convolve_2d (no padding)
         kernel: array to convolve image with
         image_filtered: result of MATLAB filtering
         """
-        folder = os.path.join(self.folder, 'filter')
+        folder = os.path.join(self.folder, 'convolve_2d')
         test_files = [s for s in os.listdir(folder) if "test" in s]
         iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
-            output_python = imfilter(image, kernel)
+            output_python = convolve_2d(image, kernel)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
 
     def test_filter_dapi(self):
         """
         Check whether filter_dapi gives same results as MATLAB:
-        I_mod = padarray(image,(size(kernel)-1)/2,'replicate','both');
         image_filtered = imtophat(image, kernel);
 
         test_file contains:
-        image: image to filter (no padding)
-        kernel: array to apply tophat filter to image with
+        image: image to convolve_2d (no padding)
+        kernel: array to apply tophat convolve_2d to image with
         image_filtered: result of MATLAB filtering
         """
         folder = os.path.join(self.folder, 'dapi')
-        test_files = [s for s in os.listdir(folder) if "test" in s]
+        test_files = [s for s in os.listdir(folder) if "test" in s and "even" not in s]
         iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
-            # MATLAB and python differ if kernel has any odd dimensions and is not symmetric
+            # MATLAB and python differ if kernel has any even dimensions and is not symmetric
             test_file = os.path.join(folder, file_name)
             image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
             output_python = top_hat(image, kernel)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
+
+    @unittest.expectedFailure
+    def test_filter_dapi_even(self):
+        """
+        as above but with even kernels, should fail.
+        test_file contains:
+        image: image to convolve_2d (no padding)
+        kernel: array to apply tophat convolve_2d to image with
+        image_filtered: result of MATLAB filtering
+        """
+        folder = os.path.join(self.folder, 'dapi')
+        test_files = [s for s in os.listdir(folder) if "test" in s and "even" in s]
+        iss.utils.errors.empty('test_files', test_files)
+        for file_name in test_files:
+            test_file = os.path.join(folder, file_name)
+            image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
+            output_python = top_hat(image, kernel)
 
     def test_dilate(self):
         """
@@ -152,7 +168,7 @@ class TestMorphology(unittest.TestCase):
         image_dilated: result of dilation.
         """
         folder = os.path.join(self.folder, 'dilate')
-        test_files = [s for s in os.listdir(folder) if "test" in s and "even" not in s]
+        test_files = [s for s in os.listdir(folder) if "test" in s]
         iss.utils.errors.empty('test_files', test_files)
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
@@ -161,23 +177,25 @@ class TestMorphology(unittest.TestCase):
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
 
-    @unittest.expectedFailure
-    def test_dilate_even(self):
-        """
-        as above but with even kernels, should fail.
-
-        test_file contains:
-        image: image to dilate (no padding)
-        kernel: structuring element to dilate with
-        image_dilated: result of dilation.
-        """
-        folder = os.path.join(self.folder, 'dilate')
-        test_files = [s for s in os.listdir(folder) if "test" in s and "even" in s]
+    def test_imfilter(self):
+        tol = 1e-5
+        folder = os.path.join(self.folder, 'imfilter')
+        test_files = [s for s in os.listdir(folder) if "test" in s and "conv" in s]
         iss.utils.errors.empty('test_files', test_files)
+        matlab_to_python_pad = {'symmetric': 'reflect', 'replicate': 'nearest', 'circular': 'wrap'}
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_dilated'])
-            output_python = dilate(image, kernel.astype(int))
+            image, pad, corr_or_conv, kernel, output_matlab = \
+                load_array(test_file, ['image', 'pad', 'conv_or_corr', 'kernel', 'image_filtered'])
+            if len(pad.flatten()) > 1:
+                pad = ''.join([chr(val) for val in pad.flatten()])
+                pad = matlab_to_python_pad[pad]
+            else:
+                pad = pad.flatten()[0]
+            corr_or_conv = ''.join([chr(val) for val in corr_or_conv.flatten()])
+            output_python = imfilter(image, kernel, pad, corr_or_conv)
+            diff = output_python - output_matlab
+            self.assertTrue(np.abs(diff).max() <= tol)  # check match MATLAB
 
 
 if __name__ == '__main__':
