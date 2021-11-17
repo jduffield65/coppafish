@@ -4,7 +4,7 @@ import numpy as np
 import iss.utils.errors
 
 
-def save(image, im_file, description=None, append=False):
+def save(image, im_file, description=None, append=False, move_z_axis=True):
     """
     save image as tiff at path given by im_file
 
@@ -13,14 +13,15 @@ def save(image, im_file, description=None, append=False):
     :param description: string, short description to save to metadata to describe image
         found after saving through tifffile.TiffFile(im_file).pages[0].tags["ImageDescription"].value
         default: None
-    :param append: boolean. whether to add to file if it exists or replace, optional.
+    :param append: boolean. Whether to add to file if it exists or replace, optional.
         default: False
+    :param move_z_axis: boolean. Whether to move axes in position 2 to position 0.
     """
     # truncate image so don't get aliased values
     image[image > np.iinfo(np.uint16).max] = np.iinfo(np.uint16).max
     image[image < 0] = 0
     image = np.round(image).astype(np.uint16)
-    if image.ndim == 3:
+    if image.ndim == 3 and move_z_axis:
         # put dimension that is not y or x as first dimension so easier to load in a single plane later
         # and match MATLAB method of saving
         image = np.moveaxis(image, 2, 0)
@@ -67,10 +68,10 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
     image = image + shift
     if nbp_basic['3d']:
         iss.utils.errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz']])
-        save(image, nbp_file['tile'][t][r][c], append=False, description=description)
+        save(image, nbp_file['tile'][t][r][c], append=False, description=description, move_z_axis=True)
     else:
         iss.utils.errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
-        save(image, nbp_file['tile'][t][r], append=True, description=description)
+        save(image, nbp_file['tile'][t][r], append=True, description=description, move_z_axis=True)
 
 
 def load(im_file, planes=None, y_roi=None, x_roi=None):

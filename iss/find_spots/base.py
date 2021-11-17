@@ -6,7 +6,7 @@ def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_dupli
     """
     finds local maxima in image exceeding intensity_thresh.
 
-    :param image: numpy array
+    :param image: numpy array [nY x nX x nZ]
     :param intensity_thresh: float
         spots are local maxima in image with pixel value > intensity_thresh
     :param radius_xy: integer
@@ -48,7 +48,7 @@ def get_isolated(image, spot_yx, thresh, radius_inner, radius_xy, radius_z=None)
     determines whether each spot in spot_yx is isolated by getting the value of image after annular filtering
     at each location in spot_yx.
 
-    :param image: numpy array
+    :param image: numpy array [nY x nX x nZ]
         image spots were found on.
     :param spot_yx: numpy integer array [n_peaks x image.ndim]
         yx or yxz location of spots found.
@@ -74,7 +74,7 @@ def check_neighbour_intensity(image, spot_yx, thresh=0):
     checks whether a neighbouring pixel to those indicated in spot_yx has intensity less than thresh.
     idea is that if pixel has very low intensity right next to it, it is probably a spurious spot.
 
-    :param image: numpy array
+    :param image: numpy array [nY x nX x nZ]
         image spots were found on.
     :param spot_yx: numpy integer array [n_peaks x image.ndim]
         yx or yxz location of spots found.
