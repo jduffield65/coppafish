@@ -455,6 +455,9 @@ class NotebookPage:
             raise ValueError(f"Cannot access {key!r} in the notebook, key doesn't exist")
         return self._results[key]
 
+    def has_item(self, key):
+        return key in self._results.keys()
+
     def from_dict(self, d, ignore_none=True):
         """
         Adds all string keys of dictionary d to page.

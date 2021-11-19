@@ -3,6 +3,7 @@ from iss.setup.config import get_config
 from iss.setup.notebook import Notebook, NotebookPage
 from basic_info import set_basic_info
 from extract_run import extract_and_filter
+from find_spots import find_spots
 
 
 def run_pipeline(config_file):
@@ -19,6 +20,11 @@ def run_pipeline(config_file):
         nb.add_page(nbp_extract, True)
         nb.add_page(nbp_params, True)
         nb.add_page(nbp_debug, True)
+    if not nb.has_page(["find_spots", "find_spots_params"], True):
+        nbp_find_spots, nbp_params = find_spots(config['find_spots'], nb['file_names'],
+                                                nb['basic_info'], nb['extract']['auto_thresh'])
+        nb.add_page(nbp_find_spots, True)
+        nb.add_page(nbp_params, True)
     return nb
 
 

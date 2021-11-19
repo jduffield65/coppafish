@@ -67,8 +67,14 @@ _options = {
         },
     'find_spots':
         {
-            'min_score': 'maybe_number',
-            'step': 'list'
+            'radius_xy': 'int',
+            'radius_z': 'int',
+            'max_spots': 'int',
+            'isolation_radius_inner': 'number',
+            'isolation_radius_xy': 'number',
+            'isolation_radius_z': 'number',
+            'isolation_thresh': 'maybe_number',
+            'auto_isolation_thresh_multiplier': 'number'
         }
 }
 

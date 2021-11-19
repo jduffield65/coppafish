@@ -218,7 +218,7 @@ if __name__ == '__main__':
     # psf from GibsonLanni has min as 0 and 1 as max so normalise to match this.
     psf = psf - psf.min()
     psf = psf / psf.max()
-    matplotlib.use('TkAgg')  # so plot opens in pop out window
+    # matplotlib.use('TkAgg')  # so plot opens in pop out window
     plot_psf(psf, 3, True)
 
     # run deconvolution
