@@ -5,6 +5,7 @@ from iss.find_spots.base import check_neighbour_intensity
 import iss.utils.errors
 from math import ceil
 from sklearn.neighbors import NearestNeighbors
+from .random_spot import random_spot_yx, find_isolated_spots
 
 
 class TestNeighbour(unittest.TestCase):
@@ -44,13 +45,11 @@ class TestNeighbour(unittest.TestCase):
         :param edges:
         :return:
         """
-        spot_y = np.random.choice(range(1, array.shape[0] - 2), n_spots, replace=False)
-        spot_x = np.random.choice(range(1, array.shape[1] - 2), n_spots, replace=False)
         if array.ndim == 3:
-            spot_z = np.random.choice(range(1, array.shape[2] - 2), n_spots, replace=True)
-            spot_yx = np.concatenate((spot_y.reshape(-1, 1), spot_x.reshape(-1, 1), spot_z.reshape(-1, 1)), axis=1)
+            max_z = None
         else:
-            spot_yx = np.concatenate((spot_y.reshape(-1, 1), spot_x.reshape(-1, 1)), axis=1)
+            max_z = array.shape[2] - 3
+        spot_yx = random_spot_yx(n_spots, array.shape[0] - 3, array.shape[1] - 3, max_z, min_y=1, min_x=1, min_z=1)
         if edges:
             # make all spots be at one edge
             dim_to_make_edge = np.random.randint(0, array.ndim, n_spots)
@@ -82,7 +81,7 @@ class TestNeighbour(unittest.TestCase):
         fail_mod_yx = spot_yx[fail_spot_index, :] + transforms[fail_transform_index, :]
 
         # only keep shifted spots which don't interfere with other spots.
-        keep_isolated = self.find_isolated_spots(spot_yx, fail_mod_yx)
+        keep_isolated = find_isolated_spots(spot_yx, fail_mod_yx)
         # only keep shifts within dimensions of array
         keep_dims_below = np.min(fail_mod_yx >= [0*i for i in range(array.ndim)], axis=1)
         keep_dims_above = np.min(fail_mod_yx < [array.shape[i] for i in range(array.ndim)], axis=1)
@@ -95,21 +94,6 @@ class TestNeighbour(unittest.TestCase):
         expected_answer = np.ones((n_spots,), dtype=bool)
         expected_answer[fail_spot_index[keep_final]] = False
         return array, expected_answer, fail_mod_yx
-
-    @staticmethod
-    def find_isolated_spots(spot_yx, transformed_spot_yx):
-        """
-        this ensures changing the neighbouring pixels of one spot does not affect any other spot.
-
-        :param spot_yx: all spot locations [n_all_spots, 2 or 3]
-        :param transformed_spot_yx: subset of spot_yx shifted by one of the transforms. [n_subset_spots, 2 or 3]
-        :return: boolean numpy array [n_subset_spots,]. True if transformed_spot_yx further than 3 pixels from second
-                nearest spot in spot_yx.
-        """
-        nbrs = NearestNeighbors(n_neighbors=2).fit(spot_yx)
-        distances, _ = nbrs.kneighbors(transformed_spot_yx)
-        keep = distances[:, 1] > 3
-        return keep
 
     def all_test(self, dimensions=2, edges=False):
         """

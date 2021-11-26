@@ -1,6 +1,7 @@
 import iss.find_spots.test as find_spots
 import iss.extract.test as extract
 import iss.utils.test as utils
+import iss.stitch.test as stitch
 import unittest
 
 
@@ -24,6 +25,12 @@ def suite_find_spots():
     return suite
 
 
+def suite_stitch():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(stitch.TestShift, 'test'))
+    return suite
+
+
 def suite_all():
     suite = suite_utils()
     suite.addTest(suite_extract())
@@ -32,5 +39,5 @@ def suite_all():
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_find_spots', exit=False)
+    unittest.main(defaultTest='suite_stitch', exit=False)
     hi = 5

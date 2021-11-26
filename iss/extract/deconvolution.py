@@ -9,6 +9,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import configparser
 from iss.setup.config import _option_formatters as config_format
+import tensorflow as tf
 import matplotlib
 
 
@@ -225,6 +226,17 @@ if __name__ == '__main__':
     acq = fd_data.Acquisition(data=np.moveaxis(image, -1, 0), kernel=np.moveaxis(psf, -1, 0))
     algo = fd_restoration.RichardsonLucyDeconvolver(n_dims=acq.data.ndim, pad_min=[1, 1, 1]).initialize()
     res = algo.run(acq, niter=config_format['int'](params['n_iter']))
+
+    # # for running on GPU
+    # acq = fd_data.Acquisition(data=np.moveaxis(image, -1, 0), kernel=np.moveaxis(psf, -1, 0))
+    # algo = fd_restoration.RichardsonLucyDeconvolver(n_dims=acq.data.ndim, pad_min=[1, 1, 1]).initialize()
+    # # below uses less memory than above but sometimes get negative pad error
+    # # algo = fd_restoration.RichardsonLucyDeconvolver(n_dims=acq.data.ndim, pad_mode='none').initialize()
+    # session_config = tf.compat.v1.ConfigProto()
+    # session_config.gpu_options.allow_growth = True
+    # session_config.gpu_options.per_process_gpu_memory_fraction = 1.0
+    # res = algo.run(acq, niter=config_format['int'](params['n_iter']), session_config=session_config)
+
     im_out = np.round(res.data).astype(np.uint16)
     im_out_file = config_format['str'](params['output_dir']) + config_format['str'](params['output_image_name'])
     iss.utils.tiff.save(im_out, im_out_file, move_z_axis=False)
