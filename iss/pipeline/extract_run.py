@@ -49,10 +49,11 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     filter_kernel_dapi = iss.utils.strel.disk(nbp_params['r_dapi'])
 
     if config['scale'] is None:
-        # ensure scale_norm value is reasonable
-        utils.errors.out_of_bounds('scale_norm + tile_pixel_value_shift',
-                                   nbp_params['scale_norm'] + nbp_basic['tile_pixel_value_shift'],
-                                   nbp_basic['tile_pixel_value_shift'], np.iinfo('uint16').max)
+        # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
+        scale_norm_min = (np.iinfo('uint16').max - nbp_basic['tile_pixel_value_shift']) / 5
+        scale_norm_max = np.iinfo('uint16').max - nbp_basic['tile_pixel_value_shift']
+        if not scale_norm_min <= nbp_params['scale_norm'] <= scale_norm_max:
+            raise utils.errors.OutOfBoundsError("scale_norm", nbp_params['scale_norm'], scale_norm_min, scale_norm_max)
         im_file = os.path.join(nbp_file['input_dir'], nbp_file['round'][0] + nbp_file['raw_extension'])
         nbp_debug['scale_tile'], nbp_debug['scale_channel'], nbp_debug['scale_z'], nbp_params['scale'] = \
             extract.get_scale(im_file, nbp_basic['tilepos_yx'], nbp_basic['tilepos_yx_nd2'],

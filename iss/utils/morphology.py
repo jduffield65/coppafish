@@ -63,8 +63,10 @@ def hanning_diff(r1, r2):
         radius in pixels of outer negative hanning convolve_2d
     :return: float numpy array [2*r2 + 1, 2*r2 + 1]
     """
-    errors.out_of_bounds('r1', r1, 0, r2)
-    errors.out_of_bounds('r2', r2, r1, np.inf)
+    if not 0 <= r1 <= r2-1:
+        raise errors.OutOfBoundsError("r1", r1, 0, r2-1)
+    if not r1+1 <= r2 <= np.inf:
+        raise errors.OutOfBoundsError("r2", r1+1, np.inf)
     h_outer = np.hanning(2 * r2 + 3)[1:-1]  # ignore zero values at first and last index
     h_outer = -h_outer / h_outer.sum()
     h_inner = np.hanning(2 * r1 + 3)[1:-1]

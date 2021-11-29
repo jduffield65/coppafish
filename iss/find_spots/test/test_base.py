@@ -1,9 +1,8 @@
 import unittest
 import os
 import numpy as np
-from iss.find_spots.base import detect_spots, get_isolated
-from iss.utils.matlab import load_array
-import iss.utils.errors
+from ..base import detect_spots, get_isolated
+from ...utils import matlab, errors
 
 
 class TestBase(unittest.TestCase):
@@ -27,12 +26,13 @@ class TestBase(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'detect_spots')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             image, thresh, r_xy, r_z, remove_duplicates, peak_yx_matlab, peak_intensity_matlab = \
-                load_array(test_file, ['image', 'intensity_thresh', 'r', 'r_z',
-                                       'remove_duplicates', 'PeakYX','PeakIntensity'])
+                matlab.load_array(test_file, ['image', 'intensity_thresh', 'r', 'r_z',
+                                              'remove_duplicates', 'PeakYX','PeakIntensity'])
             peak_intensity_matlab = peak_intensity_matlab.flatten()
             if int(r_z) == 0:
                 r_z = None
@@ -79,11 +79,12 @@ class TestBase(unittest.TestCase):
         # files have matching names to those in detect_spots examples as same images and spots where used
         # except for files with 'random' in where different PeakYX were used.
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             image, thresh, r0, r_xy, r_z, peak_yx, output_matlab = \
-                load_array(test_file, ['image', 'thresh', 'r0', 'rXY', 'rZ', 'PeakYX', 'Isolated'])
+                matlab.load_array(test_file, ['image', 'thresh', 'r0', 'rXY', 'rZ', 'PeakYX', 'Isolated'])
             if int(r_z) == 0:
                 r_z = None
             else:

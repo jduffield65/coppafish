@@ -1,97 +1,90 @@
 import numpy as np
-import os
-import re
-from .tiff import load_tile_description
 
 
-def out_of_bounds(var, var_values, min_allowed, max_allowed):
+class OutOfBoundsError(Exception):
+    def __init__(self, var_name, oob_val, min_allowed, max_allowed):
+        """
+        Error raised because oob_val is outside expected range between
+        min_allowed and max_allowed inclusive.
+
+        :param var_name: string, name of variable testing
+        :param oob_val: float, value in array that is not in expected range
+        :param min_allowed: float, smallest allowed value i.e. >= min_allowed
+        :param max_allowed: float, largest allowed value i.e. <= max_allowed
+        """
+        self.message = f"\n{var_name} contains the value {oob_val}." \
+                       f"\nThis is outside the expected range between {min_allowed} and {max_allowed}"
+        super().__init__(self.message)
+
+
+class NoFileError(Exception):
+    def __init__(self, file_path):
+        """
+        Error raised because file_path does not exist
+
+        :param file_path: string, path to file of interest
+        """
+        self.message = f"\nNo file\n{file_path}\nexists"
+        super().__init__(self.message)
+
+
+class EmptyListError(Exception):
+    def __init__(self, var_name):
+        """
+        Error raised because the variable indicated by var_name contains no data
+
+        :param var_name: string, name of list or numpy array
+        """
+        self.message = f"\n{var_name} contains no data"
+        super().__init__(self.message)
+
+
+def check_shape(array, expected_shape):
     """
-    checks if all values i are within bounds
+    Checks to see if array has the shape indicated by expected_shape.
 
-    :param var: string
-        name of variable testing
-    :param var_values: list or numpy array
-    :param min_allowed: float or integer
-    :param max_allowed: float or integer
-    :return:
+    :param array: numpy array
+    :param expected_shape: list, tuple or 1D numpy array [n_array_dims]
+    :return: boolean, True if shape of array is correct
     """
-    min_var = np.min(var_values)
-    max_var = np.max(var_values)
-    if min_var < min_allowed:
-        raise ValueError(f"\nmin value of {var}, {min_var}, is below min allowed value: {min_allowed}")
-    if max_var > max_allowed:
-        raise ValueError(f"\nmax value of {var}, {max_var}, is above max allowed value: {max_allowed}")
+    correct_shape = array.ndim == len(expected_shape)  # first check if number of dimensions are correct
+    if correct_shape:
+        correct_shape = np.abs(np.array(array.shape) - np.array(expected_shape)).max() == 0
+    return correct_shape
 
 
-def no_file(file_path):
-    """
-    raises error if file does not exist
+class ShapeError(Exception):
+    def __init__(self, var_name, var_shape, expected_shape):
+        """
+        Error raised because variable indicated by var_name has wrong shape
 
-    :param file_path: string, path to file of interest
-    """
-    if not os.path.isfile(file_path):
-        raise ValueError(f"\nNo file\n{file_path}\nexists")
-
-
-def empty(var, var_values):
-    """
-    raises error if no data in var_values
-
-    :param var: string
-        name of variable testing
-    :param var_values: list or numpy array
-    """
-    if len(var_values) == 0:
-        raise ValueError(f"{var} contains no data")
+        :param var_name: string, name of numpy array
+        :param var_shape: tuple, shape of numpy array
+        :param expected_shape: tuple, expected shape of numpy array
+        """
+        self.message = f"\nShape of {var_name} is {var_shape} but should be {expected_shape}"
+        super().__init__(self.message)
 
 
-def wrong_shape(var, var_values, expected_shape):
-    """
-    raises error if var_values shape is not expected_shape
+class TiffError(Exception):
+    def __init__(self, scale_tiff, scale_nbp, shift_tiff, shift_nbp):
+        """
+        Error raised because parameters used to produce tiff files are different to those in the current notebook.
 
-    :param var: string
-        name of variable testing
-    :param var_values: numpy array
-    :param expected_shape: list or numpy array
-        shape var_values should be
-    """
-    actual_shape = np.array(var_values.shape)
-    expected_shape = np.array(expected_shape)
-    if len(actual_shape) != len(expected_shape):
-        raise ValueError(f"Shape of {var} is {actual_shape} but should be {expected_shape}")
-    elif np.abs(actual_shape - expected_shape).max() > 0:
-        raise ValueError(f"Shape of {var} is {actual_shape} but should be {expected_shape}")
-
-
-def check_tiff_description(nbp_file, nbp_basic, nbp_extract_params, t, c, r):
-    """
-    Check that scale in nbp_extract_params and tile_pixel_value_shift in nbp_basic
-    match those used to make tiff files
-
-    :param nbp_file: NotebookPage object containing file names
-    :param nbp_basic: NotebookPage object containing basic info
-    :param nbp_extract_params: NotebookPage object containing extract parameters
-    :param t: integer, tiff tile index considering
-    :param c: integer, channel considering
-    :param r: integer, round considering
-    """
-    description = load_tile_description(nbp_file, nbp_basic, t, c, r)
-    if "Scale = " in description and "Shift = " in description:
-        # scale value is after 'Scale = ' in description
-        scale_from_tiff = np.float64(description.split("Scale = ", 1)[1])
-        # shift value is between 'Shift = ' and '. Scale = ' in description
-        shift_from_tiff = int(re.findall(r'Shift = (.+?). Scale = ', description)[0])
-        shift_from_log = nbp_basic['tile_pixel_value_shift']
-        if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
-            scale_from_log = nbp_extract_params['scale_anchor']
-        elif r != nbp_basic['anchor_round'] and c in nbp_basic['use_channels']:
-            scale_from_log = nbp_extract_params['scale']
-        else:
-            scale_from_log = 1  # dapi image and un-used channels have no scaling
-            shift_from_log = 0  # dapi image and un-used channels have no shift
-        if scale_from_tiff != scale_from_log:
-            raise ValueError(f"\nScale used to make tiff was {scale_from_tiff}."
-                             f"\nBut current scale in log is {scale_from_log}.")
-        if shift_from_tiff != shift_from_log:
-            raise ValueError(f"\nShift used to make tiff was {shift_from_tiff}."
-                             f"\nBut current tile_pixel_value_shift in log is {shift_from_log}.")
+        :param scale_tiff: float, scale factor applied to tiff, found from tiff description
+        :param scale_nbp: float, scale factor applied to tiff, found from nb['extract_params']['scale']
+        :param shift_tiff: integer, shift applied to tiff to ensure pixel values positive.
+            Found from tiff description
+        :param shift_nbp: integer, shift applied to tiff to ensure pixel values positive.
+            Found from nb['basic_info']['tile_pixel_value_shift']
+        """
+        self.message = f"\nThere are differences between the parameters used to make the tiffs and the parameters " \
+                       f"in the Notebook:"
+        if scale_tiff != scale_nbp:
+            self.message = self.message + f"\nScale used to make tiff was {scale_tiff}." \
+                                          f"\nCurrent scale in extract_params notebook page is {scale_nbp}."
+        if shift_tiff != shift_nbp:
+            self.message = self.message + f"\nShift used to make tiff was {shift_tiff}." \
+                                          f"\nCurrent tile_pixel_value_shift in basic_info notebook page is " \
+                                          f"{shift_nbp}."
+        super().__init__(self.message)

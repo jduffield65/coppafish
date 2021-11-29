@@ -3,12 +3,12 @@ import iss.utils
 from flowdec import restoration as fd_restoration
 from flowdec import data as fd_data
 from flowdec import psf as fd_psf
-from iss.find_spots.base import detect_spots
+from ..find_spots.base import detect_spots
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import configparser
-from iss.setup.config import _option_formatters as config_format
+from ..setup.config import _option_formatters as config_format
 import tensorflow as tf
 import matplotlib
 

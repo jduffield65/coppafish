@@ -3,7 +3,7 @@ import os
 import warnings
 import time
 from tqdm import tqdm
-import iss.utils.errors
+from ..utils import errors
 
 
 def wait_for_data(file_path, wait_time):
@@ -26,7 +26,8 @@ def wait_for_data(file_path, wait_time):
             time.sleep(1)
             if os.path.isfile(file_path):
                 break
-        iss.utils.errors.no_file(file_path)
+        if not os.path.isfile(file_path):
+            raise errors.NoFileError(file_path)
         print("file found!\nWaiting for file to fully load...")
         # wait for file to stop loading
         old_bytes = 0

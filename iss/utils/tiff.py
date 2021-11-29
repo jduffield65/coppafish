@@ -1,7 +1,9 @@
 import tifffile
 # import zarr
 import numpy as np
+import re
 from . import errors
+import warnings
 
 
 def save(image, im_file, description=None, append=False, move_z_axis=True):
@@ -67,10 +69,14 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
     description = f"Tile = {t}. Round = {round}. Channel = {channel}. Shift = {shift}. Scale = {scale}"
     image = image + shift
     if nbp_basic['3d']:
-        errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz']])
+        expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz'])
+        if not errors.check_shape(image, expected_shape):
+            raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
         save(image, nbp_file['tile'][t][r][c], append=False, description=description, move_z_axis=True)
     else:
-        errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+        expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
+        if not errors.check_shape(image, expected_shape):
+            raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
         save(image, nbp_file['tile'][t][r], append=True, description=description, move_z_axis=True)
 
 
@@ -129,28 +135,39 @@ def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_
         numpy (uint16 if dapi otherwise int32) array [ny x nx (x nz)]
     """
     if nbp_extract_params is not None:
-        errors.check_tiff_description(nbp_file, nbp_basic, nbp_extract_params, t, c, r)
+        description = load_tile_description(nbp_file, nbp_basic, t, c, r)
+        if "Scale = " in description and "Shift = " in description:
+            scale_tiff, shift_tiff = get_scale_shift_from_tiff(description)
+            scale_nbp, shift_nbp = get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, c, r)
+            if scale_tiff != scale_nbp or shift_tiff != shift_nbp:
+                raise errors.TiffError(scale_tiff, scale_nbp, shift_tiff, shift_nbp)
+        else:
+            warnings.warn(f"Tiff description is: \n{description}"
+                          f"\nIt contains no information on Scale or Shift used to make it.")
     if nbp_basic['3d']:
         image = load(nbp_file['tile'][t][r][c], z, y, x)
         # throw error if tile not expected shape
         # only for case where y and x not specified as we know that if they are then load gives correct result
         if y is None and x is None:
             if z is None:
-                exp_z_shape = nbp_basic['nz']
+                expected_z_shape = nbp_basic['nz']
             elif len(np.array([z]).flatten()) == 1:
-                exp_z_shape = 1
+                expected_z_shape = 1
             else:
-                exp_z_shape = len(z)
-            if exp_z_shape == 1:
-                errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+                expected_z_shape = len(z)
+            if expected_z_shape == 1:
+                expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
             else:
-                errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'],
-                                                                    nbp_basic['nz']])
+                expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz'])
+            if not errors.check_shape(image, expected_shape):
+                raise errors.ShapeError("loaded tile", image.shape, expected_shape)
     else:
         image = load(nbp_file['tile'][t][r], c, y, x)
         # throw error if not expected shape
         if y is None and x is None:
-            errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+            expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
+            if not errors.check_shape(image, expected_shape):
+                raise errors.ShapeError("loaded tile", image.shape, expected_shape)
     if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
         pass
     else:
@@ -194,3 +211,43 @@ def load_tile_description(nbp_file, nbp_basic, t, c, r):
     else:
         description = load_description(nbp_file['tile'][t][r], c)
     return description
+
+
+def get_scale_shift_from_tiff(description):
+    """
+    Returns scale and shift values detailed in the tiff description
+
+    :param description: string, description saved in tiff file.
+    :return:
+        scale: float, scale factor applied to tiff
+        shift: integer, shift applied to tiff to ensure pixel values positive.
+    """
+    # scale value is after 'Scale = ' in description
+    scale = np.float64(description.split("Scale = ", 1)[1])
+    # shift value is between 'Shift = ' and '. Scale = ' in description
+    shift = int(re.findall(r'Shift = (.+?). Scale = ', description)[0])
+    return scale, shift
+
+
+def get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, c, r):
+    """
+    Returns scale and shift values detailed in notebook.
+
+    :param nbp_basic: NotebookPage object containing basic info
+    :param nbp_extract_params: NotebookPage object containing extract parameters
+    :param c: integer, channel considering
+    :param r: integer, round considering
+    :return:
+        scale: float, scale factor applied to tiff, found from nb['extract_params']['scale']
+        shift: integer, shift applied to tiff to ensure pixel values positive.
+            Found from nb['basic_info']['tile_pixel_value_shift']
+    """
+    shift = nbp_basic['tile_pixel_value_shift']
+    if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
+        scale = nbp_extract_params['scale_anchor']
+    elif r != nbp_basic['anchor_round'] and c in nbp_basic['use_channels']:
+        scale = nbp_extract_params['scale']
+    else:
+        scale = 1  # dapi image and un-used channels have no scaling
+        shift = 0  # dapi image and un-used channels have no shift
+    return scale, shift

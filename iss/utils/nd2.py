@@ -1,25 +1,29 @@
 import numpy as np
 import nd2
+import os
+from . import errors
 
 # bioformats ssl certificate error solution:
 # https://stackoverflow.com/questions/35569042/ssl-certificate-verify-failed-with-python3
 
 
-def load(file_name):
+def load(file_path):
     """
     returns dask array with indices in order fov, channel, y, x, z
 
-    :param file_name: string, path to desired nd2 file
+    :param file_path: string, path to desired nd2 file
     :return:
     """
-    images = nd2.ND2File(file_name)
+    if not os.path.isfile(file_path):
+        raise errors.NoFileError(file_path)
+    images = nd2.ND2File(file_path)
     images = images.to_dask()
     # images = nd2.imread(file_name, dask=True)  # get python crashing with this in get_image for some reason
     images = np.moveaxis(images, 1, -1)  # put z index to end
     return images
 
 
-def get_metadata(file_name):
+def get_metadata(file_path):
     """
     returns dictionary containing the keys
         xy_pos: xy position of tiles in pixels. ([nTiles x 2] numpy array)
@@ -27,9 +31,11 @@ def get_metadata(file_name):
         pixel_microns_z: z pixel size in microns (float)
         sizes: dictionary with fov (t), channels (c), y, x, z-planes (z) dimensions
 
-    :param file_name: string, path to desired nd2 file
+    :param file_path: string, path to desired nd2 file
     """
-    images = nd2.ND2File(file_name)
+    if not os.path.isfile(file_path):
+        raise errors.NoFileError(file_path)
+    images = nd2.ND2File(file_path)
     metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
                           'x': images.sizes['X'], 'z': images.sizes['Z']},
                 'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],

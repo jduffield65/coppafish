@@ -3,8 +3,7 @@ import os
 import numpy as np
 from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter
 from ..strel import disk, disk_3d, annulus
-from ..matlab import load_array
-import iss.utils.errors
+from ...utils import matlab, errors
 
 
 class TestMorphology(unittest.TestCase):
@@ -23,10 +22,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'hanning')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            r1, r2, output_matlab = load_array(test_file, ['r1', 'r2', 'h'])
+            r1, r2, output_matlab = matlab.load_array(test_file, ['r1', 'r2', 'h'])
             output_python = hanning_diff(int(r1), int(r2))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
@@ -43,10 +43,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'disk')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            r, n, output_matlab = load_array(test_file, ['r', 'n', 'nhood'])
+            r, n, output_matlab = matlab.load_array(test_file, ['r', 'n', 'nhood'])
             output_python = disk(int(r), int(n))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
@@ -63,10 +64,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'disk_3d')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            r_xy, r_z, output_matlab = load_array(test_file, ['rXY', 'rZ', 'kernel'])
+            r_xy, r_z, output_matlab = matlab.load_array(test_file, ['rXY', 'rZ', 'kernel'])
             output_python = disk_3d(int(r_xy), int(r_z))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
@@ -89,10 +91,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'annulus')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            r_xy, r_z, r0, output_matlab = load_array(test_file, ['rXY', 'rZ', 'r0', 'Annulus'])
+            r_xy, r_z, r0, output_matlab = matlab.load_array(test_file, ['rXY', 'rZ', 'r0', 'Annulus'])
             if r_z == 0:
                 output_python = annulus(float(r0), float(r_xy))
             else:
@@ -113,10 +116,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'convolve_2d')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
+            image, kernel, output_matlab = matlab.load_array(test_file, ['image', 'kernel', 'image_filtered'])
             output_python = convolve_2d(image, kernel)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
@@ -133,11 +137,12 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'dapi')
         test_files = [s for s in os.listdir(folder) if "test" in s and "even" not in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             # MATLAB and python differ if kernel has any even dimensions and is not symmetric
             test_file = os.path.join(folder, file_name)
-            image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
+            image, kernel, output_matlab = matlab.load_array(test_file, ['image', 'kernel', 'image_filtered'])
             output_python = top_hat(image, kernel)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
@@ -153,10 +158,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'dapi')
         test_files = [s for s in os.listdir(folder) if "test" in s and "even" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_filtered'])
+            image, kernel, output_matlab = matlab.load_array(test_file, ['image', 'kernel', 'image_filtered'])
             output_python = top_hat(image, kernel)
 
     def test_dilate(self):
@@ -170,10 +176,11 @@ class TestMorphology(unittest.TestCase):
         """
         folder = os.path.join(self.folder, 'dilate')
         test_files = [s for s in os.listdir(folder) if "test" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
-            image, kernel, output_matlab = load_array(test_file, ['image', 'kernel', 'image_dilated'])
+            image, kernel, output_matlab = matlab.load_array(test_file, ['image', 'kernel', 'image_dilated'])
             output_python = dilate(image, kernel.astype(int))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
@@ -182,12 +189,13 @@ class TestMorphology(unittest.TestCase):
         tol = 1e-5
         folder = os.path.join(self.folder, 'imfilter')
         test_files = [s for s in os.listdir(folder) if "test" in s and "conv" in s]
-        iss.utils.errors.empty('test_files', test_files)
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
         matlab_to_python_pad = {'symmetric': 'reflect', 'replicate': 'nearest', 'circular': 'wrap'}
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             image, pad, corr_or_conv, kernel, output_matlab = \
-                load_array(test_file, ['image', 'pad', 'conv_or_corr', 'kernel', 'image_filtered'])
+                matlab.load_array(test_file, ['image', 'pad', 'conv_or_corr', 'kernel', 'image_filtered'])
             if len(pad.flatten()) > 1:
                 pad = ''.join([chr(val) for val in pad.flatten()])
                 pad = matlab_to_python_pad[pad]
