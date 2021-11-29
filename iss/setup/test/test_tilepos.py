@@ -1,6 +1,6 @@
 import unittest
-from iss.utils.matlab import load_array
-from iss.setup.tile_details import get_tilepos
+from ...utils import matlab
+from ..tile_details import get_tilepos
 import os
 import numpy as np
 
@@ -23,9 +23,9 @@ class TestTilePos(unittest.TestCase):
     def test_get_tilepos(self):
         for file_name in [s for s in os.listdir(self.folder) if "test" in s]:
             test_file = self.folder + file_name
-            xy_pos = load_array(test_file, 'xypos')
-            output_matlab = load_array(test_file, 'TilePosYX') - 1
-            output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(load_array(test_file, 'tile_sz')))
+            xy_pos = matlab.load_array(test_file, 'xypos')
+            output_matlab = matlab.load_array(test_file, 'TilePosYX') - 1
+            output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(matlab.load_array(test_file, 'tile_sz')))
             diff = output_python_nd2.astype(int) - output_matlab.astype(int)
             self.assertTrue(np.abs(diff).max() <= self.tol)
             # check first position of tiff_yx is [0,0]

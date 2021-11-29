@@ -1,12 +1,13 @@
-from iss.setup import notebook
+from .. import notebook
 import tempfile
 import unittest
 import os
 import numpy as np
 
 
-class NotebookTests(unittest.TestCase):
+class TestNotebook(unittest.TestCase):
     CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'settings.default.ini')
+
     def test_create_Notebook(self):
         with tempfile.TemporaryDirectory() as d:
             # Test filenames with no extension, a "bad" extension, and the correct
@@ -41,7 +42,7 @@ class NotebookTests(unittest.TestCase):
             nb = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
             nbp = notebook.NotebookPage("pagename")
             nbp["item"] = 3
-            nb += nbp # This triggers the save
+            nb += nbp  # This triggers the save
             nb_reload = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
             self.assertEqual(nb, nb_reload)
 
@@ -134,6 +135,7 @@ class NotebookTests(unittest.TestCase):
             nb += nbp  # Triggers save
             nb_reloaded = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
             self.assertEqual(nb_reloaded, nb)
+
 
 if __name__ == '__main__':
     unittest.main()

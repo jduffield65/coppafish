@@ -1,5 +1,5 @@
 import numpy as np
-import iss.utils
+from .. import utils
 from flowdec import restoration as fd_restoration
 from flowdec import data as fd_data
 from flowdec import psf as fd_psf
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
     # load in image
     im_file = config_format['str'](params['input_dir']) + config_format['str'](params['input_image_name'])
-    image = iss.utils.tiff.load(im_file).astype(int)
+    image = utils.tiff.load(im_file).astype(int)
 
     # get psf
     spot_yx, _ = detect_spots(image, intensity_thresh=config_format['number']((params['spot_intensity_thresh'])),
@@ -239,5 +239,5 @@ if __name__ == '__main__':
 
     im_out = np.round(res.data).astype(np.uint16)
     im_out_file = config_format['str'](params['output_dir']) + config_format['str'](params['output_image_name'])
-    iss.utils.tiff.save(im_out, im_out_file, move_z_axis=False)
+    utils.tiff.save(im_out, im_out_file, move_z_axis=False)
     hi = 5

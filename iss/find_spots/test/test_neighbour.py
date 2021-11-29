@@ -1,10 +1,8 @@
 import unittest
 import os
 import numpy as np
-from iss.find_spots.base import check_neighbour_intensity
-import iss.utils.errors
+from ..base import check_neighbour_intensity
 from math import ceil
-from sklearn.neighbors import NearestNeighbors
 from .random_spot import random_spot_yx, find_isolated_spots
 
 

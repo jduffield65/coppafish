@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
-from iss.find_spots.test.random_spot import random_spot_yx, remove_spots, add_noise
-from iss.stitch.shift import get_best_shift
-from iss.utils.base import round_any
+from ...find_spots.test.random_spot import random_spot_yx, remove_spots, add_noise
+from ..shift import compute_shift
+from ...utils.base import round_any
 
 
 class TestShift(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestShift(unittest.TestCase):
     def test_2d(self):
         spot_yx, transform_yx, actual_transform = self.get_spots(2)
         y_search, x_search = self.get_random_shift_searches(actual_transform)
-        found_transform, score, score_median, score_iqr = get_best_shift(spot_yx, transform_yx, self.shift_score_thresh,
+        found_transform, score, score_median, score_iqr = compute_shift(spot_yx, transform_yx, self.shift_score_thresh,
                                                                          y_search, x_search)
         diff = actual_transform.astype(int) - found_transform.astype(int)
         self.assertTrue(np.abs(diff).max() <= 0)

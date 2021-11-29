@@ -1,7 +1,5 @@
-import iss.utils.morphology as morphology
+from .. import utils
 import numpy as np
-
-import iss.utils.strel
 
 
 def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_duplicates=True):
@@ -25,9 +23,9 @@ def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_dupli
     peak_intensity: numpy float array [n_peaks] pixel value of spots found.
     """
     if radius_z is not None:
-        se = iss.utils.strel.disk_3d(radius_xy, radius_z)
+        se = utils.strel.disk_3d(radius_xy, radius_z)
     else:
-        se = iss.utils.strel.disk(radius_xy)
+        se = utils.strel.disk(radius_xy)
     small = 1e-6  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
     if remove_duplicates:
         # perturb image by small amount so two neighbouring pixels that did have the same value now differ slightly.
@@ -37,7 +35,7 @@ def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_dupli
         rand_im_shift = np.random.uniform(low=small*2, high=0.2, size=image.shape)
         image = image + rand_im_shift
 
-    dilate = morphology.dilate(image, se)
+    dilate = utils.morphology.dilate(image, se)
     spots = np.logical_and(image + small > dilate, image > intensity_thresh)
     peak_pos = np.where(spots)
     peak_yx = np.concatenate([coord.reshape(-1, 1) for coord in peak_pos], axis=1)
@@ -65,8 +63,8 @@ def get_isolated(image, spot_yx, thresh, radius_inner, radius_xy, radius_z=None)
         default: None meaning 2d filter used.
     :return: numpy boolean array [n_peaks] indicated whether each spot is isolated or not.
     """
-    se = iss.utils.strel.annulus(radius_inner, radius_xy, radius_z)
-    annular_filtered = morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
+    se = utils.strel.annulus(radius_inner, radius_xy, radius_z)
+    annular_filtered = utils.morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
     isolated = annular_filtered[tuple([spot_yx[:, j] for j in range(image.ndim)])] < thresh
     return isolated
 

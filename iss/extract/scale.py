@@ -1,7 +1,6 @@
 import numpy as np
-from iss.extract.base import get_nd2_tile_ind
-from iss.utils.morphology import convolve_2d
-from iss import utils
+from .base import get_nd2_tile_ind
+from .. import utils
 
 
 def select_tile(tilepos_yx, use_tiles):
@@ -84,6 +83,6 @@ def get_scale(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, use_channels,
     # find z-plane with max pixel across all channels of tile t
     c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_tiff), use_channels, use_z)
     # convolve_2d image in same way we convolve_2d before saving tiff files
-    im_filtered = convolve_2d(image, filter_kernel)
+    im_filtered = utils.morphology.convolve_2d(image, filter_kernel)
     scale = scale_norm / im_filtered.max()
     return t, c, z, float(scale)

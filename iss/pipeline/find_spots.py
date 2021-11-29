@@ -1,17 +1,16 @@
-from iss.setup.notebook import NotebookPage
-import iss.find_spots as fs
-import iss.utils
+from .. import utils, setup
+from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
 
 
 def find_spots(config, nbp_file, nbp_basic, auto_thresh):
-    nbp = NotebookPage("find_spots")
+    nbp = setup.NotebookPage("find_spots")
     if nbp_basic['3d'] is False:
         # set z details to None if using 2d pipeline
         config['radius_z'] = None
         config['isolation_radius_z'] = None
-    nbp_params = NotebookPage("find_spots_params", config)  # params page inherits info from config
+    nbp_params = setup.NotebookPage("find_spots_params", config)  # params page inherits info from config
     if nbp_basic['3d'] is False:
         # add None params to nbp so can run detect spots using same line for 2d and 3d
         nbp_params['radius_z'] = None
@@ -35,7 +34,7 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
             for t in nbp_basic['use_tiles']:
                 for c in use_channels:
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c})
-                    image = iss.utils.tiff.load_tile(nbp_file, nbp_basic, t, c, r)
+                    image = utils.tiff.load_tile(nbp_file, nbp_basic, t, c, r)
                     spot_yx[t, c, r], spot_intensity = fs.detect_spots(image, auto_thresh[t, c, r],
                                                                        nbp_params['radius_xy'], nbp_params['radius_z'])
                     no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yx[t, c, r], thresh=0)

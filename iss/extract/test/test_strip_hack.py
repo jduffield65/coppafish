@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from iss.extract.base import strip_hack
+from ..base import strip_hack
 
 
 class TestStripHack(unittest.TestCase):

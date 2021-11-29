@@ -1,15 +1,12 @@
 import os
-from iss.setup.config import get_config
-from iss.setup.notebook import Notebook, NotebookPage
-from basic_info import set_basic_info
-from extract_run import extract_and_filter
-from find_spots import find_spots
+from .. import setup
+from . import set_basic_info, extract_and_filter, find_spots
 
 
 def run_pipeline(config_file):
-    config = get_config(config_file)
+    config = setup.get_config(config_file)
     nb_path = os.path.join(config['file_names']['output_dir'], 'notebook.npz')
-    nb = Notebook(nb_path, config_file)
+    nb = setup.Notebook(nb_path, config_file)
     if not nb.has_page(["file_names", "basic_info"], contains_all=True):
         nbp_file, nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
         nb.add_page(nbp_file, do_nothing_if_exists=True)

@@ -1,14 +1,7 @@
-import iss.utils.strel
-from iss import utils, extract
-import iss.utils.morphology as morphology
-# import iss.utils.errors
-# from extract.base import *
-# from extract.convolve_2d import get_pixel_length, hanning_diff, disk_strel
-# from extract.scale import get_scale, select_tile
+from .. import utils, extract, setup
 import numpy as np
 import os
 from tqdm import tqdm
-from iss.setup.notebook import NotebookPage
 
 
 def extract_and_filter(config, nbp_file, nbp_basic):
@@ -21,9 +14,9 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     """
     '''initialise log object'''
     # initialise notebook pages
-    nbp = NotebookPage("extract")
-    nbp_params = NotebookPage("extract_params", config)  # params page inherits info from config
-    nbp_debug = NotebookPage("extract_debug")
+    nbp = setup.NotebookPage("extract")
+    nbp_params = setup.NotebookPage("extract_params", config)  # params page inherits info from config
+    nbp_debug = setup.NotebookPage("extract_debug")
     # initialise output of this part of pipeline as 'vars' key
     nbp['auto_thresh'] = np.zeros((nbp_basic['n_tiles'], nbp_basic['n_channels'],
                                    nbp_basic['n_rounds'] + nbp_basic['n_extra_rounds']))
@@ -45,8 +38,8 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     if config['r_dapi'] is None:
         nbp_params['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'],
                                                         nbp_basic['pixel_size_xy'])
-    filter_kernel = morphology.hanning_diff(nbp_params['r1'], nbp_params['r2'])
-    filter_kernel_dapi = iss.utils.strel.disk(nbp_params['r_dapi'])
+    filter_kernel = utils.morphology.hanning_diff(nbp_params['r1'], nbp_params['r2'])
+    filter_kernel_dapi = utils.strel.disk(nbp_params['r_dapi'])
 
     if config['scale'] is None:
         # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
@@ -115,10 +108,10 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im = im.astype(int)
                             im, bad_columns = extract.strip_hack(im)  # find faulty columns
                             if r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']:
-                                im = morphology.top_hat(im, filter_kernel_dapi)
+                                im = utils.morphology.top_hat(im, filter_kernel_dapi)
                                 im[:, bad_columns] = 0
                             else:
-                                im = morphology.convolve_2d(im, filter_kernel) * scale
+                                im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params,
