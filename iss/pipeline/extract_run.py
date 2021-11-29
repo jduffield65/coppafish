@@ -1,3 +1,4 @@
+import iss.utils.strel
 from iss import utils, extract
 import iss.utils.morphology as morphology
 # import iss.utils.errors
@@ -45,7 +46,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
         nbp_params['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'],
                                                         nbp_basic['pixel_size_xy'])
     filter_kernel = morphology.hanning_diff(nbp_params['r1'], nbp_params['r2'])
-    filter_kernel_dapi = morphology.Strel.disk(nbp_params['r_dapi'])
+    filter_kernel_dapi = iss.utils.strel.disk(nbp_params['r_dapi'])
 
     if config['scale'] is None:
         # ensure scale_norm value is reasonable

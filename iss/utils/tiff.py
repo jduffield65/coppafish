@@ -1,7 +1,7 @@
 import tifffile
 # import zarr
 import numpy as np
-import iss.utils.errors
+from . import errors
 
 
 def save(image, im_file, description=None, append=False, move_z_axis=True):
@@ -67,10 +67,10 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
     description = f"Tile = {t}. Round = {round}. Channel = {channel}. Shift = {shift}. Scale = {scale}"
     image = image + shift
     if nbp_basic['3d']:
-        iss.utils.errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz']])
+        errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz']])
         save(image, nbp_file['tile'][t][r][c], append=False, description=description, move_z_axis=True)
     else:
-        iss.utils.errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+        errors.wrong_shape('tile image', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
         save(image, nbp_file['tile'][t][r], append=True, description=description, move_z_axis=True)
 
 
@@ -129,7 +129,7 @@ def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_
         numpy (uint16 if dapi otherwise int32) array [ny x nx (x nz)]
     """
     if nbp_extract_params is not None:
-        iss.utils.errors.check_tiff_description(nbp_file, nbp_basic, nbp_extract_params, t, c, r)
+        errors.check_tiff_description(nbp_file, nbp_basic, nbp_extract_params, t, c, r)
     if nbp_basic['3d']:
         image = load(nbp_file['tile'][t][r][c], z, y, x)
         # throw error if tile not expected shape
@@ -142,15 +142,15 @@ def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_
             else:
                 exp_z_shape = len(z)
             if exp_z_shape == 1:
-                iss.utils.errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+                errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
             else:
-                iss.utils.errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'],
+                errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz'],
                                                                     nbp_basic['nz']])
     else:
         image = load(nbp_file['tile'][t][r], c, y, x)
         # throw error if not expected shape
         if y is None and x is None:
-            iss.utils.errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
+            errors.wrong_shape('loaded tile', image, [nbp_basic['tile_sz'], nbp_basic['tile_sz']])
     if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
         pass
     else:

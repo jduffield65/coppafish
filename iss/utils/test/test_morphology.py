@@ -1,8 +1,9 @@
 import unittest
 import os
 import numpy as np
-from iss.utils.morphology import hanning_diff, Strel, convolve_2d, top_hat, dilate, imfilter
-from iss.utils.matlab import load_array
+from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter
+from ..strel import disk, disk_3d, annulus
+from ..matlab import load_array
 import iss.utils.errors
 
 
@@ -46,7 +47,7 @@ class TestMorphology(unittest.TestCase):
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             r, n, output_matlab = load_array(test_file, ['r', 'n', 'nhood'])
-            output_python = Strel.disk(int(r), int(n))
+            output_python = disk(int(r), int(n))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
 
@@ -66,7 +67,7 @@ class TestMorphology(unittest.TestCase):
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             r_xy, r_z, output_matlab = load_array(test_file, ['rXY', 'rZ', 'kernel'])
-            output_python = Strel.disk_3d(int(r_xy), int(r_z))
+            output_python = disk_3d(int(r_xy), int(r_z))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
 
@@ -93,9 +94,9 @@ class TestMorphology(unittest.TestCase):
             test_file = os.path.join(folder, file_name)
             r_xy, r_z, r0, output_matlab = load_array(test_file, ['rXY', 'rZ', 'r0', 'Annulus'])
             if r_z == 0:
-                output_python = Strel.annulus(float(r0), float(r_xy))
+                output_python = annulus(float(r0), float(r_xy))
             else:
-                output_python = Strel.annulus(float(r0), float(r_xy), float(r_z))
+                output_python = annulus(float(r0), float(r_xy), float(r_z))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
 

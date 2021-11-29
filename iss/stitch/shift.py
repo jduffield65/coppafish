@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import iqr
+from ..utils.base import setdiff2d
 
 
 def shift_score(distances, thresh):
@@ -57,44 +58,46 @@ def refined_shifts(shifts, best_shift, refined_scale=0.5, extend_scale=2):
     """
     step = np.mean(np.ediff1d(shifts))
     refined_step = np.ceil(refined_scale * step).astype(int)
-    # the plus and minus 1 is so that new shifts offset from old.
-    refined_shifts = np.arange(best_shift - extend_scale * step - 1,
-                               best_shift + extend_scale * step + refined_step/2 + 1, refined_step)
+    refined_shifts = np.arange(best_shift - extend_scale * step,
+                               best_shift + extend_scale * step + refined_step/2, refined_step)
     return refined_shifts
 
 
-def get_best_shift(yx_base, yx_transform, score_thresh, y_shifts, x_shifts, z_shifts=None, ignore_shifts=None):
+def get_best_shift(yxz_base, yxz_transform, score_thresh, y_shifts, x_shifts, z_shifts, ignore_shifts=None):
     """
     Finds the shift from those given that is best applied to yx_base to match yx_transform.
 
-    :param yx_base: numpy integer array [n_spots_base, 2 or 3], coordinates of spots on base image
-    :param yx_transform: numpy integer array [n_spots_transform, 2 or 3], coordinates of spots on transformed image
+    :param yxz_base: numpy integer array [n_spots_base x 3], coordinates of spots on base image
+    :param yxz_transform: numpy integer array [n_spots_transform x 3], coordinates of spots on transformed image
     :param score_thresh: float, basically the distance in pixels below which neighbours are a good match.
         expected to be about 2
-    :param y_shifts: numpy integer array (probably made with np.arange).
+    :param y_shifts: numpy float array (probably made with np.arange).
         all possible shifts to test in y direction.
-    :param x_shifts: numpy integer array (probably made with np.arange).
+    :param x_shifts: numpy float array (probably made with np.arange).
         all possible shifts to test in x direction.
-    :param z_shifts: numpy integer array (probably made with np.arange), optional.
-        all possible shifts to test in y direction.
-        default: None, meaning only 2d shifts considered.
+    :param z_shifts: numpy float array (probably made with np.arange), optional.
+        all possible shifts to test in z direction.
+    :param ignore_shifts: numpy float array [n_ignore x 3]
+        contains yxz shifts to not search over.
+        default: None, meaning use all permutations of y_shifts, x_shifts, z_shifts.
     :return:
-        best_shift: numpy integer array, [shift_y, shift_x (, shift_z)]. Best shift found.
+        best_shift: numpy float array, [shift_y, shift_x, shift_z]. Best shift found.
         best_score: float, score of best shift.
         median_score: float, median of scores of all shifts.
         iqr_score: float, interquartile range of scores of all shifts.
     """
-    if np.shape(yx_base)[1] == 3:
+    if np.shape(yxz_base)[1] == 3:
         if z_shifts is None:
             raise ValueError("3d coordinates provided but no z_shifts given")
         all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
     else:
         all_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
-    # TODO: setdiff when widening
-    nbrs = NearestNeighbors(n_neighbors=1).fit(yx_transform)
+    if ignore_shifts is not None:
+        all_shifts = setdiff2d(all_shifts, ignore_shifts)
+    nbrs = NearestNeighbors(n_neighbors=1).fit(yxz_transform)
     score = np.zeros(all_shifts.shape[0])
     for i in range(all_shifts.shape[0]):
-        yx_shifted = yx_base + all_shifts[i]
+        yx_shifted = yxz_base + all_shifts[i]
         distances, _ = nbrs.kneighbors(yx_shifted)
         score[i] = shift_score(distances, score_thresh)
     best_shift_ind = score.argmax()
@@ -102,29 +105,28 @@ def get_best_shift(yx_base, yx_transform, score_thresh, y_shifts, x_shifts, z_sh
     return all_shifts[best_shift_ind], score[best_shift_ind], np.median(score), iqr(score)
 
 
-def compute_shift(yx_base, yx_transform, min_score, min_score_auto_param, shift_score_thresh,
-                  y_shifts, x_shifts, z_shifts=None, y_widen=0, x_widen=0, z_widen=0):
+def compute_shift(yxz_base, yxz_transform, min_score, min_score_auto_param, shift_score_thresh,
+                  y_shifts, x_shifts, z_shifts, y_widen=0, x_widen=0, z_widen=0):
     """
-    This finds the shift from those given that is best applied to yx_base to match yx_transform.
+    This finds the shift from those given that is best applied to yxz_base to match yxz_transform.
     If the score of this is below min_score, a widened search is performed.
     If the score is above min_score, a refined search is done about the best shift so as to find the absolute
     best shift, not the best shift among those given.
 
-    :param yx_base: numpy integer array [n_spots_base, 2 or 3], coordinates of spots on base image
-    :param yx_transform: numpy integer array [n_spots_transform, 2 or 3], coordinates of spots on transformed image
+    :param yxz_base: numpy integer array [n_spots_base x 3], coordinates of spots on base image
+    :param yxz_transform: numpy integer array [n_spots_transform x 3], coordinates of spots on transformed image
     :param min_score: float or None. If score of best shift is below this, will search among the widened shifts.
         if None, min_score will be set to median(scores) + min_score_auto_param * iqr(scores)
     :param min_score_auto_param: float, the parameter used to find min_score if min_score not given.
         expected to be about 5 (definitely more than 1).
     :param shift_score_thresh: float, basically the distance in pixels below which neighbours are a good match.
         expected to be about 2
-    :param y_shifts: numpy integer array (probably made with np.arange).
+    :param y_shifts: numpy float array (probably made with np.arange).
         all possible shifts to test in y direction.
-    :param x_shifts: numpy integer array (probably made with np.arange).
+    :param x_shifts: numpy float array (probably made with np.arange).
         all possible shifts to test in x direction.
-    :param z_shifts: numpy integer array (probably made with np.arange), optional.
-        all possible shifts to test in y direction.
-        default: None, meaning only 2d shifts considered.
+    :param z_shifts: numpy float array (probably made with np.arange), optional.
+        all possible shifts to test in z direction.
     :param y_widen: integer, by how many shifts to extend search in y direction if score below min_score.
         (this many are added above and below current range).
         default: 0, if all _widen parameters are 0, widened search is never performed.
@@ -136,8 +138,10 @@ def compute_shift(yx_base, yx_transform, min_score, min_score_auto_param, shift_
         default: 0, if all _widen parameters are 0, widened search is never performed.
     :return:
     """
-    shift, score, score_median, score_iqr = get_best_shift(yx_base, yx_transform, shift_score_thresh,
+    shift, score, score_median, score_iqr = get_best_shift(yxz_base, yxz_transform, shift_score_thresh,
                                                            y_shifts, x_shifts, z_shifts)
+    # save initial_shifts so don't look over same shifts twice
+    initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
     if min_score is None:
         min_score = score_median + min_score_auto_param * score_iqr
     if score < min_score and np.max([y_widen, x_widen, z_widen]) > 0:
@@ -146,15 +150,16 @@ def compute_shift(yx_base, yx_transform, min_score, min_score_auto_param, shift_
         x_shifts = extend_array(x_shifts, x_widen)
         if z_shifts is not None:
             z_shifts = extend_array(z_shifts, z_widen)
-        shift, score, score_median2, score_iqr2 = get_best_shift(yx_base, yx_transform, shift_score_thresh,
-                                                                 y_shifts, x_shifts, z_shifts)
+        shift, score, score_median2, score_iqr2 = get_best_shift(yxz_base, yxz_transform, shift_score_thresh,
+                                                                 y_shifts, x_shifts, z_shifts, initial_shifts)
     if score > min_score:
         # refined search near maxima with half the step
         y_shifts = refined_shifts(y_shifts, shift[0])
         x_shifts = refined_shifts(x_shifts, shift[1])
         if z_shifts is not None:
             z_shifts = refined_shifts(z_shifts, shift[2])
-        shift2, score2, _, _ = get_best_shift(yx_base, yx_transform, shift_score_thresh, y_shifts, x_shifts, z_shifts)
+        shift2, score2, _, _ = get_best_shift(yxz_base, yxz_transform, shift_score_thresh, y_shifts, x_shifts, z_shifts,
+                                              initial_shifts)
         if score2 > score:
             shift = shift2
         # final search with a step of 1
@@ -162,5 +167,6 @@ def compute_shift(yx_base, yx_transform, min_score, min_score_auto_param, shift_
         x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
         if z_shifts is not None:
             z_shifts = refined_shifts(z_shifts, shift[2], refined_scale=1e-50, extend_scale=1)
-        shift, score, _, _ = get_best_shift(yx_base, yx_transform, shift_score_thresh, y_shifts, x_shifts, z_shifts)
+        shift, score, _, _ = get_best_shift(yxz_base, yxz_transform, shift_score_thresh, y_shifts, x_shifts, z_shifts,
+                                            initial_shifts)
     return shift, score, min_score

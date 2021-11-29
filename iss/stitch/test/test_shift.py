@@ -9,9 +9,12 @@ class TestShift(unittest.TestCase):
     shift_spacing_yx = 5
     shift_spacing_z = 2
     shift_score_thresh = 2
+    # TODO: test with remove from each spot_yx and both.
+    # TODO: test with scaling dimension in z direction.
 
     @staticmethod
     def get_spots(dimensions=2):
+        # TODO: comment test functions better
         n_spots = np.random.randint(600, 2000)
         if dimensions == 2:
             spot_yx = random_spot_yx(n_spots, 2047, 2047)
