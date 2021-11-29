@@ -24,7 +24,7 @@ class NoFileError(Exception):
 
         :param file_path: string, path to file of interest
         """
-        self.message = f"\nNo file\n{file_path}\nexists"
+        self.message = f"\nNo file with the following path:\n{file_path}\nexists"
         super().__init__(self.message)
 
 

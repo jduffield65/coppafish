@@ -3,7 +3,7 @@ import os
 import warnings
 import time
 from tqdm import tqdm
-from ..utils import errors
+from .. import utils
 
 
 def wait_for_data(file_path, wait_time):
@@ -27,7 +27,7 @@ def wait_for_data(file_path, wait_time):
             if os.path.isfile(file_path):
                 break
         if not os.path.isfile(file_path):
-            raise errors.NoFileError(file_path)
+            raise utils.errors.NoFileError(file_path)
         print("file found!\nWaiting for file to fully load...")
         # wait for file to stop loading
         old_bytes = 0
@@ -116,7 +116,7 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
     """
     if image is None:
         file_exists = True
-        image = iss.utils.tiff.load_tile(nbp_file, nbp_basic, t, c, r, nbp_extract_params=nbp_params)
+        image = utils.tiff.load_tile(nbp_file, nbp_basic, t, c, r, nbp_extract_params=nbp_params)
     else:
         file_exists = False
     if bad_columns is None:

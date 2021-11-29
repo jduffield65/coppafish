@@ -23,6 +23,9 @@ def set_basic_info(config_file, config_basic):
     config_file['round'] = [r.replace(config_file['raw_extension'], '') for r in config_file['round']]
     if config_file['anchor'] is not None:
         config_file['anchor'] = config_file['anchor'].replace(config_file['raw_extension'], '')
+        config_basic['ref_round'] = None  # so can set to anchor round later
+        if config_basic['anchor_channel'] is not None:
+            config_basic['ref_channel'] = None  # so can set to anchor channel later
 
     # initialise log object with info from config
     nbp_file = setup.NotebookPage("file_names", config_file)
@@ -33,9 +36,8 @@ def set_basic_info(config_file, config_basic):
     if config_basic['use_rounds'] is None:
         nbp_basic['use_rounds'] = list(np.arange(n_rounds))
     nbp_basic['use_rounds'].sort()  # ensure ascending
-    use_rounds_oob = nbp_basic['use_rounds'][np.where((nbp_basic['use_rounds'] < 0) |
-                                                      (nbp_basic['use_rounds'] >= n_rounds))[0]]
-    if use_rounds_oob.size > 0:
+    use_rounds_oob = [val for val in nbp_basic['use_rounds'] if val < 0 or val >= n_rounds]
+    if len(use_rounds_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_rounds", use_rounds_oob[0], 0, n_rounds-1)
     # load in metadata of nd2 file corresponding to first round
     first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0]+config_file['raw_extension'])
@@ -46,18 +48,16 @@ def set_basic_info(config_file, config_basic):
     if config_basic['use_tiles'] is None:
         nbp_basic['use_tiles'] = list(np.arange(n_tiles))
     nbp_basic['use_tiles'].sort()
-    use_tiles_oob = nbp_basic['use_tiles'][np.where((nbp_basic['use_tiles'] < 0) |
-                                                      (nbp_basic['use_tiles'] >= n_tiles))[0]]
-    if use_tiles_oob.size > 0:
+    use_tiles_oob = [val for val in nbp_basic['use_tiles'] if val < 0 or val >= n_tiles]
+    if len(use_tiles_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_tiles", use_tiles_oob[0], 0, n_tiles-1)
     # get channel info
     n_channels = metadata['sizes']['c']
     if config_basic['use_channels'] is None:
         nbp_basic['use_channels'] = list(np.arange(n_channels))
     nbp_basic['use_channels'].sort()
-    use_channels_oob = nbp_basic['use_channels'][np.where((nbp_basic['use_channels'] < 0) |
-                                                          (nbp_basic['use_channels'] >= n_channels))[0]]
-    if use_channels_oob.size > 0:
+    use_channels_oob = [val for val in nbp_basic['use_channels'] if val < 0 or val >= n_channels]
+    if len(use_channels_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
     # get z info
     if config_basic['use_z'] is None:
@@ -66,13 +66,12 @@ def set_basic_info(config_file, config_basic):
         nbp_basic['use_z'].remove(0)
     nbp_basic['use_z'].sort()
     nz = len(nbp_basic['use_z'])  # number of z planes in tiff file (not necessarily the same as in nd2)
-    use_z_oob = nbp_basic['use_z'][np.where((nbp_basic['use_z'] < 0) |
-                                                          (nbp_basic['use_z'] >= metadata['sizes']['z']))[0]]
-    if use_z_oob.size > 0:
+    use_z_oob = [val for val in nbp_basic['use_z'] if val < 0 or val >= metadata['sizes']['z']]
+    if len(use_z_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, metadata['sizes']['z'] - 1)
 
     tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(metadata['xy_pos'], tile_sz)
-    nbp_basic['use_anchor'] = False
+    use_anchor = False
     if config_file['anchor'] is not None:
         # always have anchor as first round after imaging rounds
         nbp_basic['anchor_round'] = n_rounds
@@ -81,7 +80,7 @@ def set_basic_info(config_file, config_basic):
                 raise utils.errors.OutOfBoundsError("anchor_channel", config_basic['anchor_channel'], 0, n_channels-1)
             nbp_basic['ref_round'] = nbp_basic['anchor_round']
             nbp_basic['ref_channel'] = config_basic['anchor_channel']
-            nbp_basic['use_anchor'] = True
+            use_anchor = True
             warnings.warn("Anchor file given and anchor channel specified - will use anchor round")
         else:
             warnings.warn("Anchor file given but anchor channel not specified - will not use anchor round")
@@ -115,4 +114,5 @@ def set_basic_info(config_file, config_basic):
     nbp_basic['tilepos_yx'] = tilepos_yx  # and with tiff index
     nbp_basic['pixel_size_xy'] = metadata['pixel_microns']  # pixel size in microns in xy
     nbp_basic['pixel_size_z'] = metadata['pixel_microns_z']  # and z directions.
+    nbp_basic['use_anchor'] = use_anchor
     return nbp_file, nbp_basic

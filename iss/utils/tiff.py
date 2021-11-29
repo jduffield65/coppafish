@@ -142,7 +142,7 @@ def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_
             if scale_tiff != scale_nbp or shift_tiff != shift_nbp:
                 raise errors.TiffError(scale_tiff, scale_nbp, shift_tiff, shift_nbp)
         else:
-            warnings.warn(f"Tiff description is: \n{description}"
+            warnings.warn(f"\nTiff description is: \n{description}"
                           f"\nIt contains no information on Scale or Shift used to make it.")
     if nbp_basic['3d']:
         image = load(nbp_file['tile'][t][r][c], z, y, x)
