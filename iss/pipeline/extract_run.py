@@ -76,7 +76,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
             if r == nbp_basic['anchor_round']:
                 if config['scale_anchor'] is None:
                     nbp_debug['scale_anchor_tile'], _, nbp_debug['scale_anchor_z'], nbp_params['scale_anchor'] = \
-                        extract.get_scale(im_file, nbp_basic['tilepos_yx'], nbp['tilepos_yx_nd2'],
+                        extract.get_scale(im_file, nbp_basic['tilepos_yx'], nbp_basic['tilepos_yx_nd2'],
                                           nbp_basic['use_tiles'], [nbp_basic['anchor_channel']], nbp_basic['use_z'],
                                           nbp_params['scale_norm'], filter_kernel)
                 scale = nbp_params['scale_anchor']

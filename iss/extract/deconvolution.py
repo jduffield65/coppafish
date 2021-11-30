@@ -9,6 +9,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import configparser
 from ..setup.config import _option_formatters as config_format
+import tifffile
 import tensorflow as tf
 import matplotlib
 
@@ -239,5 +240,5 @@ if __name__ == '__main__':
 
     im_out = np.round(res.data).astype(np.uint16)
     im_out_file = config_format['str'](params['output_dir']) + config_format['str'](params['output_image_name'])
-    utils.tiff.save(im_out, im_out_file, move_z_axis=False)
+    tifffile.imwrite(im_out_file, im_out)
     hi = 5

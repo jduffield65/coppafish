@@ -2,6 +2,7 @@ import iss.find_spots.test as find_spots
 import iss.extract.test as extract
 import iss.utils.test as utils
 import iss.stitch.test as stitch
+import iss.setup.test as setup
 import unittest
 
 
@@ -10,6 +11,11 @@ def suite_utils():
     suite.addTest(unittest.makeSuite(utils.TestMorphology, 'test'))
     return suite
 
+def suite_setup():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(setup.TestConfig, 'test'))
+    suite.addTest(unittest.makeSuite(setup.TestNotebook, 'test'))
+    suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
 
 def suite_extract():
     suite = unittest.TestSuite()

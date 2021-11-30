@@ -6,9 +6,10 @@ from . import errors
 import warnings
 
 
-def save(image, im_file, description=None, append=False, move_z_axis=True):
+def save(image, im_file, description=None, append=False):
     """
     save image as tiff at path given by im_file
+    If image has 3 dimensions, axis at position 2 is moved to position 0.
 
     :param image: 2d (or 3d) numpy array [ny x nx (x nz or n_channels)]
     :param im_file: string. path to save file
@@ -17,13 +18,12 @@ def save(image, im_file, description=None, append=False, move_z_axis=True):
         default: None
     :param append: boolean. Whether to add to file if it exists or replace, optional.
         default: False
-    :param move_z_axis: boolean. Whether to move axes in position 2 to position 0.
     """
     # truncate image so don't get aliased values
     image[image > np.iinfo(np.uint16).max] = np.iinfo(np.uint16).max
     image[image < 0] = 0
     image = np.round(image).astype(np.uint16)
-    if image.ndim == 3 and move_z_axis:
+    if image.ndim == 3:
         # put dimension that is not y or x as first dimension so easier to load in a single plane later
         # and match MATLAB method of saving
         image = np.moveaxis(image, 2, 0)
@@ -72,12 +72,12 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
         expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz'])
         if not errors.check_shape(image, expected_shape):
             raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        save(image, nbp_file['tile'][t][r][c], append=False, description=description, move_z_axis=True)
+        save(image, nbp_file['tile'][t][r][c], append=False, description=description)
     else:
         expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
         if not errors.check_shape(image, expected_shape):
             raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        save(image, nbp_file['tile'][t][r], append=True, description=description, move_z_axis=True)
+        save(image, nbp_file['tile'][t][r], append=True, description=description)
 
 
 def load(im_file, planes=None, y_roi=None, x_roi=None):

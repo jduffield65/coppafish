@@ -240,26 +240,17 @@ class Notebook:
             self._pages_times.append(time.time())
             self.save()
 
-    def has_page(self, page_name, contains_all=False, contains_any=False):
+    def has_page(self, page_name):
         """A check to see if notebook includes a page called page_name.
-        If page_name is a list and contains_any is False,
-        will return dictionary where each key is a page name and each value is True or False.
-        If contains_all is True, and page_name is a list, will return True if all of the pages
-        are in the notebook.
-        If contains_any is True, and page_name is a list, will return True if any of the pages
-        are in the notebook."""
+        If page_name is a list, a boolean list of equal size will be
+        returned indicating whether each page is present."""
         if isinstance(page_name, str):
             output = any(page_name == p.name for p in self._pages)
         elif isinstance(page_name, list):
-            output = {}
-            for i in range(len(page_name)):
-                output[page_name[i]] = any(page_name[i] == p.name for p in self._pages)
-            if contains_all:
-                output = min(list(output.values()))
-            elif contains_any:
-                output = any(list(output.values()))
+            output = [any(page_name[i] == p.name for p in self._pages) for i in range(len(page_name))]
+        else:
+            raise ValueError(f"page_name given was {page_name}. This is not a list or a string.")
         return output
-
 
     def __iadd__(self, other):
         """Syntactic sugar for the add_page method"""
@@ -458,18 +449,15 @@ class NotebookPage:
     def has_item(self, key):
         return key in self._results.keys()
 
-    def from_dict(self, d, ignore_none=True):
+    def from_dict(self, d):
         """
         Adds all string keys of dictionary d to page.
-
-        If ignore_none, keys whose value is None will be igonored.
+        Keys whose value is None will be ignored.
         """
         for key, value in d.items():
             if isinstance(key, (str, np.str_)):
                 if value is not None:
                     self[key] = value
-                if value is None and not ignore_none:
-                    self[key] = None
 
     def to_serial_dict(self):
         """Convert to a dictionary which can be written to a file.
