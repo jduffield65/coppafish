@@ -30,17 +30,20 @@ def extend_array(array, extend_sz, direction='both'):
         'both': array extended in both directions (by extend_sz in each direction).
     :return: numpy array
     """
-    array_spacing = np.mean(np.ediff1d(array))
-    ext_below = np.arange(array.min()-extend_sz, array.min(), array_spacing)
-    ext_above = np.arange(array.max()+array_spacing, array.max()+extend_sz+array_spacing/2, array_spacing)
-    if direction == 'below':
-        ext_array = np.concatenate((ext_below, array))
-    elif direction == 'above':
-        ext_array = np.concatenate((array, ext_above))
-    elif direction == 'both':
-        ext_array = np.concatenate((ext_below, array, ext_above))
+    if extend_sz == 0:
+        ext_array = array
     else:
-        raise ValueError(f"direction specified was {direction}, whereas it should be 'below', 'above' or 'both'")
+        array_spacing = np.mean(np.ediff1d(array))
+        ext_below = np.arange(array.min()-extend_sz, array.min(), array_spacing)
+        ext_above = np.arange(array.max()+array_spacing, array.max()+extend_sz+array_spacing/2, array_spacing)
+        if direction == 'below':
+            ext_array = np.concatenate((ext_below, array))
+        elif direction == 'above':
+            ext_array = np.concatenate((array, ext_above))
+        elif direction == 'both':
+            ext_array = np.concatenate((ext_below, array, ext_above))
+        else:
+            raise ValueError(f"direction specified was {direction}, whereas it should be 'below', 'above' or 'both'")
     return ext_array
 
 
@@ -48,7 +51,8 @@ def refined_shifts(shifts, best_shift, refined_scale=0.5, extend_scale=2):
     """
     If shifts is an array with mean spacing step then this builds array
     that covers from best_shift - extend_scale * step to best_shift + extend_scale * step with a spacing of
-    step*refined_scale
+    step*refined_scale.
+    If only one shift provided, doesn't do anything.
 
     :param shifts: numpy array
     :param best_shift: value in shifts to build new shifts around
@@ -56,10 +60,13 @@ def refined_shifts(shifts, best_shift, refined_scale=0.5, extend_scale=2):
     :param extend_scale: integer, optional. by how many steps to build new shifts. default: 2.
     :return:
     """
-    step = np.mean(np.ediff1d(shifts))
-    refined_step = np.ceil(refined_scale * step).astype(int)
-    refined_shifts = np.arange(best_shift - extend_scale * step,
-                               best_shift + extend_scale * step + refined_step/2, refined_step)
+    if np.size(shifts) == 1:
+        refined_shifts = shifts
+    else:
+        step = np.mean(np.ediff1d(shifts))
+        refined_step = np.ceil(refined_scale * step).astype(int)
+        refined_shifts = np.arange(best_shift - extend_scale * step,
+                                   best_shift + extend_scale * step + refined_step/2, refined_step)
     return refined_shifts
 
 
@@ -86,12 +93,7 @@ def get_best_shift(yxz_base, yxz_transform, score_thresh, y_shifts, x_shifts, z_
         median_score: float, median of scores of all shifts.
         iqr_score: float, interquartile range of scores of all shifts.
     """
-    if np.shape(yxz_base)[1] == 3:
-        if z_shifts is None:
-            raise ValueError("3d coordinates provided but no z_shifts given")
-        all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
-    else:
-        all_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
+    all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
     if ignore_shifts is not None:
         all_shifts = setdiff2d(all_shifts, ignore_shifts)
     nbrs = NearestNeighbors(n_neighbors=1).fit(yxz_transform)
@@ -148,16 +150,14 @@ def compute_shift(yxz_base, yxz_transform, min_score, min_score_auto_param, shif
         # look over extended range of shifts if score below threshold
         y_shifts = extend_array(y_shifts, y_widen)
         x_shifts = extend_array(x_shifts, x_widen)
-        if z_shifts is not None:
-            z_shifts = extend_array(z_shifts, z_widen)
+        z_shifts = extend_array(z_shifts, z_widen)
         shift, score, score_median2, score_iqr2 = get_best_shift(yxz_base, yxz_transform, shift_score_thresh,
                                                                  y_shifts, x_shifts, z_shifts, initial_shifts)
     if score > min_score:
         # refined search near maxima with half the step
         y_shifts = refined_shifts(y_shifts, shift[0])
         x_shifts = refined_shifts(x_shifts, shift[1])
-        if z_shifts is not None:
-            z_shifts = refined_shifts(z_shifts, shift[2])
+        z_shifts = refined_shifts(z_shifts, shift[2])
         shift2, score2, _, _ = get_best_shift(yxz_base, yxz_transform, shift_score_thresh, y_shifts, x_shifts, z_shifts,
                                               initial_shifts)
         if score2 > score:
@@ -165,8 +165,7 @@ def compute_shift(yxz_base, yxz_transform, min_score, min_score_auto_param, shif
         # final search with a step of 1
         y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
         x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
-        if z_shifts is not None:
-            z_shifts = refined_shifts(z_shifts, shift[2], refined_scale=1e-50, extend_scale=1)
+        z_shifts = refined_shifts(z_shifts, shift[2], refined_scale=1e-50, extend_scale=1)
         shift, score, _, _ = get_best_shift(yxz_base, yxz_transform, shift_score_thresh, y_shifts, x_shifts, z_shifts,
                                             initial_shifts)
     return shift, score, min_score

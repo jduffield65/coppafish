@@ -18,7 +18,7 @@ def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_dupli
         Whether to only keep one pixel if two or more pixels are local maxima and have same intensity.
         default: True.
     :return:
-    peak_yx: numpy integer array [n_peaks x image.ndim]
+    peak_yxz: numpy integer array [n_peaks x image.ndim]
         yx or yxz location of spots found.
     peak_intensity: numpy float array [n_peaks] pixel value of spots found.
     """
@@ -38,20 +38,22 @@ def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_dupli
     dilate = utils.morphology.dilate(image, se)
     spots = np.logical_and(image + small > dilate, image > intensity_thresh)
     peak_pos = np.where(spots)
-    peak_yx = np.concatenate([coord.reshape(-1, 1) for coord in peak_pos], axis=1)
+    peak_yxz = np.concatenate([coord.reshape(-1, 1) for coord in peak_pos], axis=1)
     peak_intensity = image[spots]
-    return peak_yx, peak_intensity
+    return peak_yxz, peak_intensity
 
 
-def get_isolated(image, spot_yx, thresh, radius_inner, radius_xy, radius_z=None):
+def get_isolated(image, spot_yxz, thresh, radius_inner, radius_xy, radius_z=None):
     """
     determines whether each spot in spot_yx is isolated by getting the value of image after annular filtering
     at each location in spot_yx.
 
     :param image: numpy array [nY x nX x nZ]
         image spots were found on.
-    :param spot_yx: numpy integer array [n_peaks x image.ndim]
+    :param spot_yxz: numpy integer array [n_peaks x image.ndim]
         yx or yxz location of spots found.
+        If axis 1 dimension is more than image.ndim, only first image.ndim dimensions used
+        i.e. if supply yxz, with 2d image, only yx position used.
     :param thresh: float
         spots are isolated if annulus filtered image at spot location less than this.
     :param radius_inner: float
@@ -65,19 +67,21 @@ def get_isolated(image, spot_yx, thresh, radius_inner, radius_xy, radius_z=None)
     """
     se = utils.strel.annulus(radius_inner, radius_xy, radius_z)
     annular_filtered = utils.morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
-    isolated = annular_filtered[tuple([spot_yx[:, j] for j in range(image.ndim)])] < thresh
+    isolated = annular_filtered[tuple([spot_yxz[:, j] for j in range(image.ndim)])] < thresh
     return isolated
 
 
-def check_neighbour_intensity(image, spot_yx, thresh=0):
+def check_neighbour_intensity(image, spot_yxz, thresh=0):
     """
     checks whether a neighbouring pixel to those indicated in spot_yx has intensity less than thresh.
     idea is that if pixel has very low intensity right next to it, it is probably a spurious spot.
 
     :param image: numpy array [nY x nX x nZ]
         image spots were found on.
-    :param spot_yx: numpy integer array [n_peaks x image.ndim]
+    :param spot_yxz: numpy integer array [n_peaks x image.ndim]
         yx or yxz location of spots found.
+        If axis 1 dimension is more than image.ndim, only first image.ndim dimensions used
+        i.e. if supply yxz, with 2d image, only yx position used.
     :param thresh: float, optional.
         spots are indicated as false if intensity at neighbour to spot location is less than this.
         default: 0.
@@ -89,9 +93,9 @@ def check_neighbour_intensity(image, spot_yx, thresh=0):
         transforms = [[1, 0], [0, 1], [-1, 0], [0, -1]]
     else:
         raise ValueError(f"image has to have two or three dimensions but given image has {image.ndim} dimensions.")
-    keep = np.zeros((spot_yx.shape[0], len(transforms)), dtype=bool)
+    keep = np.zeros((spot_yxz.shape[0], len(transforms)), dtype=bool)
     for i, t in enumerate(transforms):
-        mod_spot_yx = spot_yx + t
+        mod_spot_yx = spot_yxz + t
         for j in range(image.ndim):
             mod_spot_yx[:, j] = np.clip(mod_spot_yx[:, j], 0, image.shape[j]-1)
         keep[:, i] = image[tuple([mod_spot_yx[:, j] for j in range(image.ndim)])] > thresh

@@ -66,7 +66,7 @@ def add_noise(spot_yx, noise_amplitude=1, integer=False):
     :return: numpy (float or integer) array [n_spots, 2 or 3]
     """
     if integer:
-        noise = np.random.randint(-np.round(noise_amplitude), 1+np.round(noise_amplitude), spot_yx.shape)
+        noise = np.random.randint(-np.round(noise_amplitude), np.round(noise_amplitude)+1, spot_yx.shape)
     else:
         noise = ((np.random.random(spot_yx.shape))-0.5) * 2 * noise_amplitude
     return spot_yx + noise
