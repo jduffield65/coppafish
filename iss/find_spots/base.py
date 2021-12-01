@@ -30,9 +30,9 @@ def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_dupli
     if remove_duplicates:
         # perturb image by small amount so two neighbouring pixels that did have the same value now differ slightly.
         # hence when find maxima, will only get one of the pixels not both.
-        np.random.seed(0)   # So shift is always the same.
+        rng = np.random.default_rng(0)   # So shift is always the same.
         # rand_shift must be larger than small to detect a single spot.
-        rand_im_shift = np.random.uniform(low=small*2, high=0.2, size=image.shape)
+        rand_im_shift = rng.uniform(low=small*2, high=0.2, size=image.shape)
         image = image + rand_im_shift
 
     dilate = utils.morphology.dilate(image, se)
