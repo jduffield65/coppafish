@@ -10,8 +10,9 @@ class TestShift(unittest.TestCase):
     shift_spacing_z = 2
     shift_score_thresh = 2
     min_score = None
-    min_score_auto_param = 5
+    min_score_auto_param = 9  # this probably should be less for actual pipeline, about 5.
     max_noise = 3
+    tol = 1
     # TODO: test with remove from each spot_yx and both.
     # TODO: test with scaling dimension in z direction.
 
@@ -76,14 +77,74 @@ class TestShift(unittest.TestCase):
             return y_search, x_search, z_search
         else:
             return y_search, x_search, np.arange(1)
+    
+    def all_test(self, dimensions, remove=None, widen=0, z_scale=1):
+        """
+
+        :param dimensions: 2 or 3 whether to have yx or yxz spot coordinates.
+        :param remove:
+            'base': a random number of spots will be removed from the base set.
+            'transform': a random number of spots will be removed from the transformed set.
+            'both': a random number of spots will be removed from the base and transformed set.
+            default is None meaning will have 1:1 correspondence between base and transformed spots
+                (equal number of both).
+        :param widen: if shift not found in initial shift search, will extend shift range by this many values in each
+            direction.
+        :param z_scale: how much to scale z pixel values to make them same units as xy.
+        """
+        spot_yxz, transform_yxz, actual_transform = self.get_spots(self.max_noise, dimensions)
+        y_search, x_search, z_search = self.get_random_shift_searches(actual_transform)
+        z_widen = 0
+        if widen > 0:
+            y_search = y_search[y_search > actual_transform[0] + widen/2 * self.shift_spacing_yx]
+            x_search = x_search[x_search < actual_transform[1] - widen/2 * self.shift_spacing_yx]
+            if dimensions == 3:
+                z_search = z_search[z_search < actual_transform[2] - widen/2 * self.shift_spacing_z]
+                z_widen = widen
+        if remove == 'base' or 'both':
+            spot_yxz = remove_spots(spot_yxz, np.random.randint(spot_yxz.shape[0] / 8, spot_yxz.shape[0] / 2))
+        if remove == 'transform' or 'both':
+            transform_yxz = remove_spots(transform_yxz, np.random.randint(transform_yxz.shape[0] / 8,
+                                                                          transform_yxz.shape[0] / 2))
+
+        if dimensions == 2:
+            actual_transform = np.pad(actual_transform, (0, 1))
+        found_transform, score, score_thresh = compute_shift(spot_yxz, transform_yxz, self.min_score,
+                                                             self.min_score_auto_param, self.shift_score_thresh,
+                                                             y_search, x_search, z_search, widen, widen, z_widen,
+                                                             z_scale)
+        diff = actual_transform.astype(int) - found_transform.astype(int)
+        self.assertTrue(np.abs(diff).max() <= self.tol)
 
     def test_2d(self):
-        spot_yx, transform_yx, actual_transform = self.get_spots(self.max_noise, 2)
-        y_search, x_search, z_search = self.get_random_shift_searches(actual_transform)
-        actual_transform = np.pad(actual_transform, (0, 1))
-        found_transform, score, score_thresh = compute_shift(spot_yx, transform_yx, self.min_score,
-                                                             self.min_score_auto_param, self.shift_score_thresh,
-                                                             y_search, x_search, z_search)
-        diff = actual_transform.astype(int) - found_transform.astype(int)
-        self.assertTrue(np.abs(diff).max() <= 0)
+        self.all_test(2)
 
+    def test_2d_remove1(self):
+        self.all_test(2, 'base')
+
+    def test_2d_remove2(self):
+        self.all_test(2, 'transform')
+
+    def test_2d_remove3(self):
+        self.all_test(2, 'both')
+
+    def test_2d_widen(self):
+        self.all_test(2, 'both', 5)
+
+    def test_3d(self):
+        self.all_test(3)
+
+    def test_3d_remove1(self):
+        self.all_test(3, 'base')
+
+    def test_3d_remove2(self):
+        # I am using small scales as to not affect score much but to
+        # ensure function can deal with scale function.
+        # For actual data, z_scale is around 6.
+        self.all_test(3, 'transform', z_scale=1.000036899402)
+
+    def test_3d_remove3(self):
+        self.all_test(3, 'both')
+
+    def test_3d_widen(self):
+        self.all_test(3, 'both', 5, 1.005567259)
