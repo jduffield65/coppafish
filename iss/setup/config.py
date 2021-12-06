@@ -75,6 +75,20 @@ _options = {
             'isolation_radius_z': 'number',
             'isolation_thresh': 'maybe_number',
             'auto_isolation_thresh_multiplier': 'number'
+        },
+    'stitch':
+        {
+            'expected_overlap': 'number',
+            'auto_n_shifts': 'list_int',
+            'shift_south_min': 'maybe_list_int',
+            'shift_south_max': 'maybe_list_int',
+            'shift_west_min': 'maybe_list_int',
+            'shift_west_max': 'maybe_list_int',
+            'shift_step': 'list_int',
+            'shift_widen': 'list_int',
+            'neighb_dist_thresh': 'number',
+            'shift_score_thresh': 'maybe_number',
+            'shift_score_auto_param': 'maybe_number'
         }
 }
 

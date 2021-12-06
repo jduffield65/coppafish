@@ -2,6 +2,25 @@ from .. import utils
 import numpy as np
 
 
+def spot_yxz(spot_details, tile, channel, round, return_isolated=False):
+    """
+    function which gets yxz positions (and whether isolated) of spots on a particular tile, channel, round
+    from spot_details in find_spots notebook page.
+
+    :param spot_details: numpy integer array [n_spots x 7] containing [tile, channel, round, isolated, y, x, z]
+        info of each spot found on imaging round
+    :param tile: tile of desired spots
+    :param channel: channel of desired spots
+    :param round: round of desired spots
+    :param return_isolated: whether to return the isolated status of each spot
+    """
+    use = np.all((spot_details[:, 0] == tile, spot_details[:, 1] == channel, spot_details[:, 2] == round), axis=0)
+    if return_isolated:
+        return spot_details[use, 4:], spot_details[use, 3]
+    else:
+        return spot_details[use, 4:]
+
+
 def detect_spots(image, intensity_thresh, radius_xy, radius_z=None, remove_duplicates=True):
     """
     finds local maxima in image exceeding intensity_thresh.

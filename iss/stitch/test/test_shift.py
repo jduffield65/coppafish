@@ -111,7 +111,7 @@ class TestShift(unittest.TestCase):
             actual_transform = np.pad(actual_transform, (0, 1))
         found_transform, score, score_thresh = compute_shift(spot_yxz, transform_yxz, self.min_score,
                                                              self.min_score_auto_param, self.shift_score_thresh,
-                                                             y_search, x_search, z_search, widen, widen, z_widen,
+                                                             y_search, x_search, z_search, [widen, widen, z_widen],
                                                              z_scale)
         diff = actual_transform.astype(int) - found_transform.astype(int)
         self.assertTrue(np.abs(diff).max() <= self.tol)
@@ -139,7 +139,7 @@ class TestShift(unittest.TestCase):
 
     def test_3d_remove2(self):
         # I am using small scales as to not affect score much but to
-        # ensure function can deal with scale function.
+        # ensure function can deal with scale parameter.
         # For actual data, z_scale is around 6.
         self.all_test(3, 'transform', z_scale=1.000036899402)
 

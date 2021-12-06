@@ -1,6 +1,6 @@
 import os
 from .. import setup
-from . import set_basic_info, extract_and_filter, find_spots
+from . import set_basic_info, extract_and_filter, find_spots, run_stitch
 
 
 def run_pipeline(config_file):
@@ -22,6 +22,9 @@ def run_pipeline(config_file):
                                                 nb['basic_info'], nb['extract']['auto_thresh'])
         nb.add_page(nbp_find_spots, True)
         nb.add_page(nbp_params, True)
+    if not min(nb.has_page(["stitch", "stitch_params", "stitch_debug"])):
+        nbp_stitch, nbp_params, nbp_debug = run_stitch(config['stitch'], nb['file_names'], nb['basic_info'],
+                                                       nb['find_spots']['spot_details'])
     return nb
 
 
