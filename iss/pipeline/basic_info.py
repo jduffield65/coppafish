@@ -9,7 +9,7 @@ def set_basic_info(config_file, config_basic):
     Adds info from 'file_name' and 'basic_info' sections of config file
     to log object.
     To file_name, the following is added:
-    tile
+    tile, big_dapi_image, big_anchor_image
     To basic_info, the following is added:
     anchor_round, n_rounds, n_extra_rounds, n_tiles, n_channels, nz, tile_sz, tilepos_yx, pixel_size
     Also use_rounds, use_tiles, use_channels and use_z are changed if they were None.
@@ -23,13 +23,26 @@ def set_basic_info(config_file, config_basic):
     config_file['round'] = [r.replace(config_file['raw_extension'], '') for r in config_file['round']]
     if config_file['anchor'] is not None:
         config_file['anchor'] = config_file['anchor'].replace(config_file['raw_extension'], '')
-        config_basic['ref_round'] = None  # so can set to anchor round later
         if config_basic['anchor_channel'] is not None:
+            config_basic['ref_round'] = None  # so can set to anchor round later
             config_basic['ref_channel'] = None  # so can set to anchor channel later
+    else:
+        config_basic['anchor_channel'] = None  # set anchor channel to None if no anchor round
+        config_basic['dapi_channel'] = None  # set dapi channel to None if no anchor round
 
     # initialise log object with info from config
     nbp_file = setup.NotebookPage("file_names", config_file)
     nbp_basic = setup.NotebookPage("basic_info", config_basic)
+
+    # add dapi channel and anchor channel to notebook even if set to None.
+    if config_basic['dapi_channel'] is None:
+        nbp_basic['dapi_channel'] = None
+        nbp_file['big_dapi_image'] = None
+    else:
+        nbp_file['big_dapi_image'] = os.path.join(config_file['output_dir'], 'dapi_image.tif')
+    if config_basic['anchor_channel'] is None:
+        nbp_basic['anchor_channel'] = None
+    nbp_file['big_anchor_image'] = os.path.join(config_file['output_dir'], 'anchor_image.tif')
 
     # get round info from config file
     n_rounds = len(config_file['round'])
@@ -81,9 +94,15 @@ def set_basic_info(config_file, config_basic):
             nbp_basic['ref_round'] = nbp_basic['anchor_round']
             nbp_basic['ref_channel'] = config_basic['anchor_channel']
             use_anchor = True
-            warnings.warn("Anchor file given and anchor channel specified - will use anchor round")
+            warnings.warn(f"Anchor file given and anchor channel specified."
+                          f"\nWill use anchor round, channel {nbp_basic['ref_channel']} as reference")
+        elif nbp_basic['ref_round'] == nbp_basic['anchor_round']:
+            warnings.warn(f"Anchor file given but anchor channel not specified."
+                          f"\nWill use anchor round, channel {nbp_basic['ref_channel']} as reference")
         else:
-            warnings.warn("Anchor file given but anchor channel not specified - will not use anchor round")
+            warnings.warn(f"Anchor file given but anchor channel not specified."
+                          f"\nWill use round {nbp_basic['ref_round']} (not anchor),"
+                          f" channel {nbp_basic['ref_channel']} as reference")
         round_files = config_file['round'] + [config_file['anchor']]
         nbp_basic['n_extra_rounds'] = 1
     else:
@@ -93,7 +112,8 @@ def set_basic_info(config_file, config_basic):
         nbp_basic['n_extra_rounds'] = 0
         if not 0 <= nbp_basic['ref_round'] <= n_rounds - 1:
             raise utils.errors.OutOfBoundsError("ref_round", nbp_basic['ref_round'], 0, n_rounds-1)
-        warnings.warn("Anchor file not given - will not use anchor round")
+        warnings.warn(f"Anchor file not given."
+                      f"\nWill use round {nbp_basic['ref_round']}, channel {nbp_basic['ref_channel']} as reference")
 
     if not 0 <= nbp_basic['ref_channel'] <= n_channels - 1:
         raise utils.errors.OutOfBoundsError("ref_channel", nbp_basic['ref_channel'], 0, n_channels-1)

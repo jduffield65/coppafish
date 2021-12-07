@@ -13,8 +13,6 @@ class TestShift(unittest.TestCase):
     min_score_auto_param = 9  # this probably should be less for actual pipeline, about 5.
     max_noise = 3
     tol = 1
-    # TODO: test with remove from each spot_yx and both.
-    # TODO: test with scaling dimension in z direction.
 
     @staticmethod
     def get_spots(max_noise, dimensions=2):

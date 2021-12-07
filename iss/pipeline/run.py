@@ -1,7 +1,7 @@
 import os
 from .. import setup
 from . import set_basic_info, extract_and_filter, find_spots, run_stitch
-
+from ..utils.tiff import save_stitched
 
 def run_pipeline(config_file):
     config = setup.get_config(config_file)
@@ -26,6 +26,17 @@ def run_pipeline(config_file):
         nbp_params, nbp_debug = run_stitch(config['stitch'], nb['basic_info'], nb['find_spots']['spot_details'])
         nb.add_page(nbp_params, True)
         nb.add_page(nbp_debug, True)
+    if nb['file_names']['big_dapi_image'] is not None and not os.path.isfile(nb['file_names']['big_dapi_image']):
+        # save stitched dapi
+        save_stitched(nb['file_names']['big_dapi_image'], nb['file_names'], nb['basic_info'],
+                      nb['stitch_debug']['tile_origin'], nb['basic_info']['anchor_round'],
+                      nb['basic_info']['dapi_channel'])
+    if nb['file_names']['big_anchor_image'] is not None and not os.path.isfile(nb['file_names']['big_anchor_image']):
+        # save stitched reference round/channel
+        save_stitched(nb['file_names']['big_anchor_image'], nb['file_names'], nb['basic_info'],
+                      nb['stitch_debug']['tile_origin'], nb['basic_info']['ref_round'],
+                      nb['basic_info']['ref_channel'])
+
     return nb
 
 

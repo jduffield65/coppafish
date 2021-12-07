@@ -33,7 +33,8 @@ def suite_find_spots():
 
 def suite_stitch():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(stitch.TestShift, 'test'))
+    # suite.addTest(unittest.makeSuite(stitch.TestShift, 'test'))
+    suite.addTest(unittest.makeSuite(stitch.TestTileOrigin, 'test'))
     return suite
 
 

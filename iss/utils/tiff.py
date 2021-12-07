@@ -4,6 +4,7 @@ import numpy as np
 import re
 from . import errors
 import warnings
+from tqdm import tqdm
 
 
 def save(image, im_file, description=None, append=False):
@@ -251,3 +252,43 @@ def get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, c, r):
         scale = 1  # dapi image and un-used channels have no scaling
         shift = 0  # dapi image and un-used channels have no shift
     return scale, shift
+
+
+def save_stitched(im_file, nbp_file, nbp_basic, tile_origin, r, c):
+    """
+    stitches together all tiles from round r, channel c and saves the resultant tiff at im_file.
+
+    :param im_file: string. path to save file
+    :param nbp_file: NotebookPage object containing file names
+    :param nbp_basic: NotebookPage object containing basic info
+    :param tile_origin: numpy float array [n_tiles x 3]. yxz origin of each tile on round r.
+    :param r: integer, this will save stitched image of all tiles of round r, channel c.
+    :param c: integer, this will save stitched image of all tiles of round r, channel c.
+    """
+    yx_origin = np.round(tile_origin[:, :2]).astype(int)
+    z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
+    yx_size = np.max(yx_origin, axis=0) + 1 + nbp_basic['tile_sz']
+    if nbp_basic['3d']:
+        z_size = z_origin.max() + 1 + nbp_basic['nz']
+    else:
+        z_size = 1
+    with tqdm(total=z_size * len(nbp_basic['use_tiles'])) as pbar:
+        for z in range(z_size):
+            stitched_image = np.zeros(yx_size, dtype=np.uint16) # any tiles not used will be kept as 0.
+            for t in nbp_basic['use_tiles']:
+                pbar.set_postfix({'tile': t, 'z': z})
+                if nbp_basic['3d']:
+                    file_z = z - z_origin[t]
+                    if file_z < 0 or file_z >= nbp_basic['nz']:
+                        # TODO: check this works with 3d stitched image
+                        # Set tile to 0 if currently outside its area
+                        local_image = np.zeros((nbp_basic['tile_sz'], nbp_basic['tile_sz']))
+                    else:
+                        local_image = load(nbp_file['tile'][t][r][c], file_z)
+                else:
+                    local_image = load(nbp_file['tile'][t][r], c)
+                stitched_image[yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic['tile_sz'],
+                               yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic['tile_sz']] = local_image
+                pbar.update(1)
+            save(stitched_image, im_file, append=True)
+    pbar.close()

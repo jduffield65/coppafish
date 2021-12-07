@@ -83,6 +83,7 @@ def run_stitch(config, nbp_basic, spot_details):
                             shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]],
                                                                  shift_info[j]['shifts'][good_shifts, i])
                 pbar.update(1)
+    pbar.close()
 
     # amend shifts for which score fell below score_thresh
     for j in directions:
@@ -125,6 +126,7 @@ def run_stitch(config, nbp_basic, spot_details):
     if nbp_basic['3d'] is False:
         tile_origin[:, 2] = 0   # set z coordinate to 0 for all tiles if 2d
 
+    # TODO: check this works for data set which has horizontal shifts as well as vertical
     # add tile origin to debugging notebook so don't have whole page for one variable,
     # and need to add other rounds to it in registration stage anyway.
     nbp_debug['tile_origin'] = tile_origin
