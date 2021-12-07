@@ -1,13 +1,12 @@
 from .. import utils, setup
-from ..stitch import compute_shift, update_shifts
+from ..stitch import compute_shift, update_shifts, get_tile_origin
 from tqdm import tqdm
 from ..find_spots import spot_yxz
 import numpy as np
 import warnings
 
 
-def run_stitch(config, nbp_file, nbp_basic, spot_details):
-    nbp = setup.NotebookPage("stitch")
+def run_stitch(config, nbp_basic, spot_details):
     if nbp_basic['3d'] is False:
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
     nbp_params = setup.NotebookPage("stitch_params", config)  # params page inherits info from config
@@ -114,4 +113,23 @@ def run_stitch(config, nbp_file, nbp_basic, spot_details):
                                                              shifts[j]['x'], shifts[j]['z'], None, z_scale)
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
-    return nbp, nbp_params, nbp_debug
+
+    # get tile origins in global coordinates
+    # global coordinates are built about central tile so found this first
+    tile_dist_to_centre = np.linalg.norm(nbp_basic['tilepos_yx'][nbp_basic['use_tiles']] -
+                                         np.mean(nbp_basic['tilepos_yx'], axis=0), axis=1)
+    centre_tile = nbp_basic['use_tiles'][tile_dist_to_centre.argmin()]
+    tile_origin = get_tile_origin(shift_info['south']['pairs'], shift_info['south']['shifts'],
+                                  shift_info['west']['pairs'], shift_info['west']['shifts'],
+                                  nbp_basic['n_tiles'], centre_tile)
+    if nbp_basic['3d'] is False:
+        tile_origin[:, 2] = 0   # set z coordinate to 0 for all tiles if 2d
+
+    # add tile origin to debugging notebook so don't have whole page for one variable,
+    # and need to add other rounds to it in registration stage anyway.
+    nbp_debug['tile_origin'] = tile_origin
+    # save all shift info to debugging page
+    for j in directions:
+        for var in shift_info[j].keys():
+            nbp_debug[j+'_'+var] = shift_info[j][var]
+    return nbp_params, nbp_debug

@@ -1,5 +1,5 @@
 import unittest
-from ...utils import matlab
+from ...utils import matlab, errors
 from ..tile_details import get_tilepos
 import os
 import numpy as np
@@ -21,8 +21,11 @@ class TestTilePos(unittest.TestCase):
     tol = 0
 
     def test_get_tilepos(self):
-        for file_name in [s for s in os.listdir(self.folder) if "test" in s]:
-            test_file = self.folder + file_name
+        test_files = [s for s in os.listdir(self.folder) if "test" in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(self.folder, file_name)
             xy_pos = matlab.load_array(test_file, 'xypos')
             output_matlab = matlab.load_array(test_file, 'TilePosYX') - 1
             output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(matlab.load_array(test_file, 'tile_sz')))

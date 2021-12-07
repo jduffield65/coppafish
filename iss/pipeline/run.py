@@ -9,7 +9,7 @@ def run_pipeline(config_file):
     nb = setup.Notebook(nb_path, config_file)
     if not min(nb.has_page(["file_names", "basic_info"])):
         nbp_file, nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
-        nb.add_page(nbp_file, do_nothing_if_exists=True)
+        nb.add_page(nbp_file, do_nothing_if_exists=True)  # TODO: get rid of this flag
         nb.add_page(nbp_basic, True)
     if not min(nb.has_page(["extract", "extract_params", "extract_debug"])):
         nbp_extract, nbp_params, nbp_debug = extract_and_filter(
@@ -22,9 +22,10 @@ def run_pipeline(config_file):
                                                 nb['basic_info'], nb['extract']['auto_thresh'])
         nb.add_page(nbp_find_spots, True)
         nb.add_page(nbp_params, True)
-    if not min(nb.has_page(["stitch", "stitch_params", "stitch_debug"])):
-        nbp_stitch, nbp_params, nbp_debug = run_stitch(config['stitch'], nb['file_names'], nb['basic_info'],
-                                                       nb['find_spots']['spot_details'])
+    if not min(nb.has_page(["stitch_params", "stitch_debug"])):
+        nbp_params, nbp_debug = run_stitch(config['stitch'], nb['basic_info'], nb['find_spots']['spot_details'])
+        nb.add_page(nbp_params, True)
+        nb.add_page(nbp_debug, True)
     return nb
 
 
