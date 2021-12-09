@@ -3,6 +3,7 @@ from .. import setup
 from . import set_basic_info, extract_and_filter, find_spots, run_stitch
 from ..utils.tiff import save_stitched
 
+
 def run_pipeline(config_file):
     config = setup.get_config(config_file)
     nb_path = os.path.join(config['file_names']['output_dir'], 'notebook.npz')

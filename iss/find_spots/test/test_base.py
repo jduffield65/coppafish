@@ -57,7 +57,7 @@ class TestBase(unittest.TestCase):
                 # hence expect a different position but same intensity.
                 tol_yx = 2
             else:
-                tol_yx = 0
+                tol_yx = 1
             self.assertTrue(np.abs(diff_yx).max() <= tol_yx)  # check match MATLAB
             self.assertTrue(np.abs(diff_intensity).max() <= 0.5)  # check match MATLAB
             self.assertTrue(peak_intensity_python.min() > float(thresh))

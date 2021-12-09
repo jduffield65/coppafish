@@ -114,6 +114,7 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
         default: None meaning strip_hack will be called
     :return: nbp_extract, nbp_extract_debug
     """
+    # TODO: I think this is very slow in 3d (30s per image when 50 z-plane image already in tile directory)
     if image is None:
         file_exists = True
         image = utils.tiff.load_tile(nbp_file, nbp_basic, t, c, r, nbp_extract_params=nbp_params)
@@ -124,8 +125,9 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
 
     # only use image unaffected by strip_hack to get information from tile
     good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
-    nbp_vars['auto_thresh'][t, c, r] = (np.median(np.abs(image[:, good_columns])) *
-                                        nbp_params['auto_thresh_multiplier'])
+    if not (r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']):
+        nbp_vars['auto_thresh'][t, c, r] = (np.median(np.abs(image[:, good_columns])) *
+                                            nbp_params['auto_thresh_multiplier'])
     if r != nbp_basic['anchor_round']:
         nbp_vars['hist_counts'][:, c, r] += np.histogram(image[:, good_columns], hist_bin_edges)[0]
     if not file_exists:

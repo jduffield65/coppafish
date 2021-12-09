@@ -118,15 +118,26 @@ def top_hat(image, kernel):
     """
     does tophat filtering of image with kernel
 
-    :param image: numpy float array [image_sz1 x image_sz2]
-    :param kernel: numpy integer array containing only zeros or ones.
+    :param image: numpy float or uint16 array [image_sz1 x image_sz2]
+    :param kernel: numpy np.uint8 array containing only zeros or ones.
     :return: numpy float array [image_sz1 x image_sz2]
     """
+    if kernel.dtype != np.uint8:
+        if sum(np.unique(kernel) == [0, 1]) == len(np.unique(kernel)):
+            kernel = kernel.astype(np.uint8)  # kernel must be uint8
+        else:
+            raise ValueError(f'kernel is of type {kernel.dtype} but must be of data type np.uint8.')
+    image_dtype = image.dtype   # so returned image is of same dtype as input
+    if image.dtype == int:
+        if image.min() >= 0 and image.max() <= np.iinfo(np.uint16).max:
+            image = image.astype(np.uint16)
+    if not (image.dtype == float or image.dtype == np.uint16):
+        raise ValueError(f'image is of type {image.dtype} but must be of data type np.uint16 or float.')
     if np.max(np.mod(kernel.shape, 2) == 0):
         # With even kernel, gives different results to MATLAB
         raise ValueError(f'kernel dimensions are {kernel.shape}. Require all dimensions to be odd.')
     # kernel = ensure_odd_kernel(kernel)  # doesn't work for tophat at start or end.
-    return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel)
+    return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel).astype(image_dtype)
 
 
 def dilate(image, kernel):

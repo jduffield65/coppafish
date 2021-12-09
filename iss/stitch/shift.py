@@ -172,6 +172,8 @@ def compute_shift(yxz_base, yxz_transform, min_score, min_score_auto_param, neig
     # save initial_shifts so don't look over same shifts twice
     initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts*z_scale)).T.reshape(-1, 3)
     if min_score is None:
+        # TODO: maybe make min_score equal to min_score_auto_param times 10th highest score.
+        #  That way, it is independent of number of shifts searched
         min_score = score_median + min_score_auto_param * score_iqr
     if score < min_score and np.max(widen) > 0:
         # look over extended range of shifts if score below threshold

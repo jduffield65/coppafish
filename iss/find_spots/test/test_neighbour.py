@@ -43,7 +43,7 @@ class TestNeighbour(unittest.TestCase):
         :param edges:
         :return:
         """
-        if array.ndim == 3:
+        if array.ndim == 2:
             max_z = None
         else:
             max_z = array.shape[2] - 3

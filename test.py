@@ -11,11 +11,13 @@ def suite_utils():
     suite.addTest(unittest.makeSuite(utils.TestMorphology, 'test'))
     return suite
 
+
 def suite_setup():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(setup.TestConfig, 'test'))
     suite.addTest(unittest.makeSuite(setup.TestNotebook, 'test'))
     suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
+    return suite
 
 def suite_extract():
     suite = unittest.TestSuite()
@@ -33,18 +35,20 @@ def suite_find_spots():
 
 def suite_stitch():
     suite = unittest.TestSuite()
-    # suite.addTest(unittest.makeSuite(stitch.TestShift, 'test'))
+    suite.addTest(unittest.makeSuite(stitch.TestShift, 'test'))
     suite.addTest(unittest.makeSuite(stitch.TestTileOrigin, 'test'))
     return suite
 
 
 def suite_all():
     suite = suite_utils()
+    suite.addTest(suite_setup())
     suite.addTest(suite_extract())
     suite.addTest(suite_find_spots())
+    suite.addTest(suite_stitch())
     return suite
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_stitch', exit=False)
+    unittest.main(defaultTest='suite_all', exit=True)
     hi = 5

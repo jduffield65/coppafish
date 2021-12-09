@@ -169,7 +169,7 @@ def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_
             expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
             if not errors.check_shape(image, expected_shape):
                 raise errors.ShapeError("loaded tile", image.shape, expected_shape)
-    if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
+    if r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']:
         pass
     else:
         # change from uint16 to int to ensure no info loss when subtract shift
@@ -267,14 +267,14 @@ def save_stitched(im_file, nbp_file, nbp_basic, tile_origin, r, c):
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
-    yx_size = np.max(yx_origin, axis=0) + 1 + nbp_basic['tile_sz']
+    yx_size = np.max(yx_origin, axis=0) + nbp_basic['tile_sz']
     if nbp_basic['3d']:
-        z_size = z_origin.max() + 1 + nbp_basic['nz']
+        z_size = z_origin.max() + nbp_basic['nz']
     else:
         z_size = 1
     with tqdm(total=z_size * len(nbp_basic['use_tiles'])) as pbar:
         for z in range(z_size):
-            stitched_image = np.zeros(yx_size, dtype=np.uint16) # any tiles not used will be kept as 0.
+            stitched_image = np.zeros(yx_size, dtype=np.uint16)  # any tiles not used will be kept as 0.
             for t in nbp_basic['use_tiles']:
                 pbar.set_postfix({'tile': t, 'z': z})
                 if nbp_basic['3d']:

@@ -35,6 +35,7 @@ def run_stitch(config, nbp_basic, spot_details):
             shifts[j][coords[i]] = np.arange(nbp_params['shift_' + j + '_min'][i],
                                              nbp_params['shift_' + j + '_max'][i] +
                                              nbp_params['shift_step'][i] / 2, nbp_params['shift_step'][i]).astype(int)
+            nbp_debug[j + '_' + coords[i] + '_initial_shift_search'] = shifts[j][coords[i]]
     if nbp_basic['3d'] is False:
         shifts['south']['z'] = np.array([0], dtype=int)
         shifts['west']['z'] = np.array([0], dtype=int)
@@ -88,7 +89,7 @@ def run_stitch(config, nbp_basic, spot_details):
     # amend shifts for which score fell below score_thresh
     for j in directions:
         good_shifts = (shift_info[j]['score'] > shift_info[j]['score_thresh']).flatten()
-        if len(good_shifts) > 0:
+        if sum(good_shifts) > 0:
             for i in range(len(coords)):
                 # change shift search to be near good shifts found
                 # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
@@ -132,6 +133,8 @@ def run_stitch(config, nbp_basic, spot_details):
     nbp_debug['tile_origin'] = tile_origin
     # save all shift info to debugging page
     for j in directions:
+        for i in range(len(coords)):
+            nbp_debug[j + '_' + coords[i] + '_final_shift_search'] = shifts[j][coords[i]]
         for var in shift_info[j].keys():
             nbp_debug[j+'_'+var] = shift_info[j][var]
     return nbp_params, nbp_debug

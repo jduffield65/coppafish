@@ -8,7 +8,7 @@ from ...utils import matlab, errors
 
 class TestMorphology(unittest.TestCase):
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    tol = 1e-10
+    tol = 1e-9
 
     def test_hanning_diff(self):
         """

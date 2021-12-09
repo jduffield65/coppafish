@@ -118,11 +118,11 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                                                             nbp_debug, hist_bin_edges, t, c, r,
                                                                             im, bad_columns)
                             utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, c, r)
+                        pbar.update(1)
                     elif not nbp_basic['3d'] and not file_exists:
                         # if not including channel, just set to all zeros
                         # only in 2D as all channels in same file - helps when loading in tiffs
                         im = np.zeros((nbp_basic['tile_sz'], nbp_basic['tile_sz']), dtype=np.uint16)
                         utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, c, r)
-                    pbar.update(1)
     pbar.close()
     return nbp, nbp_params, nbp_debug
