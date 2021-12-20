@@ -65,9 +65,9 @@ def get_scale(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, use_channels,
     :param tilepos_yx_nd2: numpy array[n_tiles x 2]
         [i,:] contains YX position of tile with nd2 fov index i.
         index 0 refers to YX = [MaxY,MaxX]
-    :param use_tiles: integer list. tiff tile indices to consider when finding tile if t is None
-    :param use_channels: integer list. channels to consider when finding channel if c is None
-    :param use_z: integer list. z-planes to consider when finding z_plane if z is None
+    :param use_tiles: integer list. tiff tile indices to consider when finding tile
+    :param use_channels: integer list. channels to consider when finding channel
+    :param use_z: integer list. z-planes to consider when finding z_plane
     :param scale_norm: integer
     :param filter_kernel: numpy float array. Kernel to convolve nd2 data with to produce tiff tiles
     :return:

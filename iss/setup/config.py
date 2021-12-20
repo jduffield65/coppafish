@@ -50,7 +50,8 @@ _options = {
             'round': 'list',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
-            'matlab_tile_names': 'bool'
+            'matlab_tile_names': 'bool',
+            'psf': 'maybe_file'
         },
     'extract':
         {
@@ -63,7 +64,17 @@ _options = {
             'scale': 'maybe_number',
             'scale_norm': 'maybe_int',
             'scale_anchor': 'maybe_number',
-            'auto_thresh_multiplier': 'maybe_number'
+            'auto_thresh_multiplier': 'maybe_number',
+            'deconvolve': 'bool',
+            'psf_detect_radius_xy': 'int',
+            'psf_detect_radius_z': 'int',
+            'psf_intensity_thresh': 'maybe_number',
+            'psf_isolation_dist': 'number',
+            'psf_min_spots': 'int',
+            'psf_shape': 'list_int',
+            'psf_annulus_width': 'number',
+            'wiener_constant': 'number',
+            'wiener_pad_shape': 'list_int'
         },
     'find_spots':
         {
@@ -117,7 +128,8 @@ _option_type_checkers = {
     'maybe_int': lambda x: x.strip() == "" or _option_type_checkers['int'](x),
     'maybe_number': lambda x: x.strip() == "" or _option_type_checkers['number'](x),
     'maybe_list_int': lambda x: x.strip() == "" or _option_type_checkers['list_int'](x),
-    'maybe_str': lambda x: x.strip() == "" or _option_type_checkers['str'](x)
+    'maybe_str': lambda x: x.strip() == "" or _option_type_checkers['str'](x),
+    'maybe_file': lambda x: x.strip() == "" or _option_type_checkers['file'](x)
 }
 _option_formatters = {
     'int': lambda x: int(x),
@@ -132,7 +144,8 @@ _option_formatters = {
     'maybe_int': lambda x: None if x == "" else _option_formatters['int'](x),
     'maybe_number': lambda x: None if x == "" else _option_formatters['number'](x),
     'maybe_list_int': lambda x: None if x == "" else _option_formatters['list_int'](x),
-    'maybe_str': lambda x: None if x == "" else _option_formatters['str'](x)
+    'maybe_str': lambda x: None if x == "" else _option_formatters['str'](x),
+    'maybe_file': lambda x: None if x == "" else _option_formatters['file'](x)
 }
 
 

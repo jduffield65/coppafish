@@ -1,3 +1,5 @@
+import tifffile
+
 from .. import utils, extract, setup
 import numpy as np
 import os
@@ -12,8 +14,9 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     :param nbp_basic:
     :return:
     """
-    '''initialise log object'''
     # initialise notebook pages
+    if not nbp_basic['3d']:
+        config['deconvolve'] = False # only deconvolve if 3d pipeline
     nbp = setup.NotebookPage("extract")
     nbp_params = setup.NotebookPage("extract_params", config)  # params page inherits info from config
     nbp_debug = setup.NotebookPage("extract_debug")
@@ -30,7 +33,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     nbp_debug['n_clip_pixels'] = np.zeros_like(nbp['auto_thresh'], dtype=int)
     nbp_debug['clip_extract_scale'] = np.zeros_like(nbp['auto_thresh'])
 
-    '''update config params in log object'''
+    # update config params in notebook
     if config['r1'] is None:
         nbp_params['r1'] = extract.get_pixel_length(config['r1_auto_microns'], nbp_basic['pixel_size_xy'])
     if config['r2'] is None:
@@ -40,6 +43,32 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                                         nbp_basic['pixel_size_xy'])
     filter_kernel = utils.morphology.hanning_diff(nbp_params['r1'], nbp_params['r2'])
     filter_kernel_dapi = utils.strel.disk(nbp_params['r_dapi'])
+
+    if config['deconvolve']:
+        if not os.path.isfile(nbp_file['psf']):
+            im_file = os.path.join(nbp_file['input_dir'],
+                                   nbp_file['round'][nbp_basic['ref_round']] + nbp_file['raw_extension'])
+            spot_images, config['psf_intensity_thresh'], psf_tiles_used = \
+                extract.get_psf_spots(im_file, nbp_basic['tilepos_yx'], nbp_basic['tilepos_yx_nd2'],
+                                      nbp_basic['use_tiles'], nbp_basic['ref_channel'], nbp_basic['use_z'],
+                                      config['psf_detect_radius_xy'], config['psf_detect_radius_z'],
+                                      config['psf_min_spots'], config['psf_intensity_thresh'],
+                                      config['auto_thresh_multiplier'], config['psf_isolation_dist'],
+                                      config['psf_shape'])
+            psf = extract.get_psf(spot_images, config['psf_annulus_width'])
+            utils.tiff.save(psf*np.iinfo(np.uint16).max)  # scale psf to fill uint16 range
+        else:
+            psf = utils.tiff.load(nbp_file['psf']).astype(float)
+            psf_tiles_used = None
+        # normalise psf so min is 0 and max is 1.
+        psf = psf - psf.min()
+        psf = psf / psf.max()
+        pad_im_shape = np.array([nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz']]) + \
+                       np.array(config['wiener_pad_shape']) * 2
+        wiener_filter = extract.get_wiener_filter(psf, pad_im_shape, config['wiener_constant'])
+        nbp_debug['psf'] = psf
+        nbp_debug['psf_intensity_thresh'] = config['psf_intensity_thresh']
+        nbp_debug['psf_tiles_used'] = psf_tiles_used
 
     if config['scale'] is None:
         # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
@@ -61,7 +90,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
         round_files = nbp_file['round'] + [nbp_file['anchor']]
         use_rounds = nbp_basic['use_rounds'] + [nbp_basic['n_rounds']]
         n_images = (len(use_rounds) - 1) * len(nbp_basic['use_tiles']) * len(nbp_basic['use_channels']) + \
-                   len(nbp_basic['use_tiles']) * len(use_channels_anchor)
+                        len(nbp_basic['use_tiles']) * len(use_channels_anchor)
     else:
         round_files = nbp_file['round']
         use_rounds = nbp_basic['use_rounds']
@@ -107,6 +136,8 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                             else:
                                 im = im.astype(int)
                             im, bad_columns = extract.strip_hack(im)  # find faulty columns
+                            if config['deconvolve']:
+                                im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
                             if r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']:
                                 im = utils.morphology.top_hat(im, filter_kernel_dapi)
                                 im[:, bad_columns] = 0
@@ -116,7 +147,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im = np.round(im).astype(int)
                                 nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params,
                                                                             nbp_debug, hist_bin_edges, t, c, r,
-                                                                            im, bad_columns)
+                                                                            im, bad_columns) # TODO: make this quicker by getting from one z-plane
                             utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, c, r)
                         pbar.update(1)
                     elif not nbp_basic['3d'] and not file_exists:

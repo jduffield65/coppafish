@@ -280,7 +280,6 @@ def save_stitched(im_file, nbp_file, nbp_basic, tile_origin, r, c):
                 if nbp_basic['3d']:
                     file_z = z - z_origin[t]
                     if file_z < 0 or file_z >= nbp_basic['nz']:
-                        # TODO: check this works with 3d stitched image
                         # Set tile to 0 if currently outside its area
                         local_image = np.zeros((nbp_basic['tile_sz'], nbp_basic['tile_sz']))
                     else:

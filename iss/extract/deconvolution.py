@@ -1,17 +1,11 @@
 import numpy as np
 from .. import utils
-from flowdec import restoration as fd_restoration
-from flowdec import data as fd_data
-from flowdec import psf as fd_psf
-from ..find_spots.base import detect_spots
+from ..find_spots.base import detect_spots, check_neighbour_intensity
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import configparser
-from ..setup.config import _option_formatters as config_format
-import tifffile
-import tensorflow as tf
-import matplotlib
+from . import scale
+from .base import get_nd2_tile_ind
 
 
 def get_isolated_points(spot_yx, isolation_dist):
@@ -124,27 +118,6 @@ def get_average_spot_image(spot_images, av_type='mean', symmetry=None, annulus_w
     return av_image
 
 
-def psf_norm(x):
-    """
-    takes each image indicated by first axis and subtracts by image min and then divides by central pixel.
-    So each image will now have a min value of 0 and a central value of 1.
-    
-    :param x: numpy array [n_images x im_sz_0 x im_sz_1 x ...]
-    :return: numpy array [n_images x im_sz_0 x im_sz_1 x ...]
-    """
-    image_dims = tuple(np.arange(1, x.ndim))
-    x_min = np.expand_dims(np.nanmin(x, image_dims), image_dims)
-    x = x - x_min
-    mid_index = np.ceil(np.array(x.shape[1:]) / 2).astype(int) - 1
-    if x.ndim == 4:
-        x_mid = np.expand_dims(x[:, mid_index[0], mid_index[1], mid_index[2]], image_dims)
-    elif x.ndim == 3:
-        x_mid = np.expand_dims(x[:, mid_index[0], mid_index[1]], image_dims)
-    else:
-        raise ValueError(f"Require x to be 3 or 4 dimensional but it has {x.ndim} dimensions.")
-    return x / x_mid
-
-
 def plot_psf(psf, n_columns=2, log=False):
     """
     plot psf as a series of panels for each z-plane.
@@ -159,7 +132,8 @@ def plot_psf(psf, n_columns=2, log=False):
     fig.set_figwidth((n_columns+1)*3)
     z = 0
     if log:
-        psf = np.log10(psf)
+        small = min(psf[psf>0])/10000
+        psf = np.log10(psf+small)
     caxis_min = np.percentile(psf, 1)
     caxis_max = psf.max()
     for i in range(n_columns):
@@ -176,69 +150,140 @@ def plot_psf(psf, n_columns=2, log=False):
     fig.colorbar(im, ax=axs.ravel().tolist())
     plt.show()
 
-# GibsonLanni Point Spread Function - symmetric, doesn't work.
-# get psf info, need to do this for each channel
-# c = 4  # anchor is channel 5 in MATLAB
-# nd2_info = nd2.ND2File(nd2_file)
-# channel_info = nd2_info.metadata.channels[c]
-# psf_data = {"na": channel_info.microscope.objectiveNumericalAperture,
-#             "wavelength": channel_info.channel.emissionLambdaNm/1000,
-#             "size_z": nd2_info.sizes['Z'], "size_x": nd2_info.sizes['X'], "size_y": nd2_info.sizes['Y'],
-#             "res_lateral": channel_info.volume.axesCalibration[0], "res_axial": channel_info.volume.axesCalibration[2],
-#             "ni0": channel_info.microscope.immersionRefractiveIndex, "m": channel_info.microscope.objectiveMagnification}
-# psf_file = output_dir + 'psf.json'
-# with open(psf_file, 'w') as outfile:
-#     json.dump(psf_data, outfile)
-# psf = fd_psf.GibsonLanni.load(psf_file).generate()
+
+def psf_pad(psf, image_shape):
+    """
+    pads psf with zeros so has same dimensions as image
+
+    :param psf: numpy float array [y_diameter x x_diameter x z_diameter]
+    :param image_shape: numpy integer array [y, x, z] number of pixels of padded image
+    :return: numpy float array same size as image with psf centered on middle pixel.
+    """
+    # must pad with ceil first so that ifftshift puts central pixel to (0,0,0).
+    pre_pad = np.ceil((np.array(image_shape)-np.array(psf.shape))/2).astype(int)
+    post_pad = np.floor((np.array(image_shape)-np.array(psf.shape))/2).astype(int)
+    return np.pad(psf, [(pre_pad[i], post_pad[i]) for i in range(len(pre_pad))])
 
 
-if __name__ == '__main__':
-    # get paramaters from config file
-    config_file = "/Users/joshduffield/Documents/UCL/ISS/spin_disk/210805 seq w new disk 2/anchor_t10c5_python2.ini"
-    config_file = "/Volumes/Volume/UCL/wf on thick section anchor +sst640/cf_deconvolve_params0.ini"
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    params = config['params']
+def get_psf_spots(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, channel, use_z, radius_xy, radius_z,
+                  min_spots, intensity_thresh, intensity_auto_param, isolation_dist, shape):
+    """
+    finds spot_shapes about spots found in raw data, average of these then used for psf.
+
+    :param im_file: string, file path of reference round nd2 file
+    :param tilepos_yx_tiff: numpy array[n_tiles x 2]
+        [i,:] contains YX position of tile with tiff index i.
+        index 0 refers to YX = [0,0]
+    :param tilepos_yx_nd2: numpy array[n_tiles x 2]
+        [i,:] contains YX position of tile with nd2 fov index i.
+        index 0 refers to YX = [MaxY,MaxX]
+    :param use_tiles: integer list. tiff tile indices used in experiment.
+    :param channel: integer, reference channel.
+    :param use_z: integer list. z-planes used in experiment.
+    :param radius_xy: integer
+        radius of dilation structuring element in xy plane (approximately spot radius)
+    :param radius_z: integer
+        radius of dilation structuring element in z direction (approximately spot radius)
+    :param min_spots: integer, minimum number of spots required to determine average shape from. Typical: 300
+    :param intensity_thresh: maybe_float, spots are local maxima in image with pixel value > intensity_thresh.
+        if intensity_thresh is None, will automatically compute it from mid z-plane of first tile.
+    :param intensity_auto_param: float, if intensity_thresh is automatically computed, it is done using this.
+    :param isolation_dist: float, spots are isolated if nearest neighbour is further away than this.
+    :param shape: list, desired size of image about each spot [y_diameter, x_diameter, z_diameter].
+    :return:
+        spot_images: numpy integer array [n_spots x y_diameter x x_diameter x z_diameter]
+        intensity_thresh: float, only different to input if input was None.
+        tiles_used: list, tiles used to get spots.
+    """
+    n_spots = 0
+    images = utils.nd2.load(im_file)
+    spot_images = np.zeros((0, shape[0], shape[1], shape[2]), dtype=int)
+    tiles_used = []
+    while n_spots < min_spots:
+        t = scale.select_tile(tilepos_yx_tiff, use_tiles)  # choose tile closet to centre
+        im = utils.nd2.get_image(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_tiff), channel, use_z)
+        mid_z = np.ceil(im.shape[2] / 2).astype(int)
+        median_im = np.median(im[:, :, mid_z])
+        if intensity_thresh is None:
+            intensity_thresh = median_im + np.median(np.abs(im[:, :, mid_z] - median_im)) * intensity_auto_param
+        elif intensity_thresh <= median_im or intensity_thresh >= np.iinfo(np.uint16).max:
+            raise utils.errors.OutOfBoundsError("intensity_thresh", intensity_thresh, median_im,
+                                                np.iinfo(np.uint16).max)
+        spot_yxz, _ = detect_spots(im, intensity_thresh, radius_xy, radius_z)
+        # check fall off in intensity not too large
+        not_single_pixel = check_neighbour_intensity(im, spot_yxz, median_im)
+        isolated = get_isolated_points(spot_yxz, isolation_dist)
+        spot_yxz = spot_yxz[np.logical_and(isolated, not_single_pixel), :]
+        if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots/4:
+            # raise error on first tile if looks like we are going to use more than 4 tiles
+            raise ValueError(f"\nFirst tile, {t}, only found {np.shape(spot_yxz)[0]} spots."
+                             f"\nMaybe consider lowering intensity_thresh from current value of {intensity_thresh}.")
+        spot_images = np.append(spot_images, get_spot_images(im, spot_yxz, shape), axis=0)
+        n_spots = np.shape(spot_images)[0]
+        use_tiles = np.setdiff1d(use_tiles, t)
+        tiles_used.append(t)
+        if len(use_tiles) == 0 and n_spots < min_spots:
+            raise ValueError(f"\nRequired min_spots = {min_spots}, but only found {n_spots}.\n"
+                             f"Maybe consider lowering intensity_thresh from current value of {intensity_thresh}.")
+    return spot_images, intensity_thresh.astype(float), tiles_used
 
 
-    # nd2_file = '/Volumes/Subjects/ISS/Izzie/210805 seq w new disk 2/anchor.nd2'
+def get_psf(spot_images, annulus_width):
+    """
+    this gets psf, which is average image of spot from individual images of spots.
 
-    # load in image
-    im_file = config_format['str'](params['input_dir']) + config_format['str'](params['input_image_name'])
-    image = utils.tiff.load(im_file).astype(int)
-
-    # get psf
-    spot_yx, _ = detect_spots(image, intensity_thresh=config_format['number']((params['spot_intensity_thresh'])),
-                              radius_xy=config_format['int'](params['spot_radius_xy']),
-                              radius_z=config_format['int'](params['spot_radius_z']))
-    isolated = get_isolated_points(spot_yx, isolation_dist=config_format['number'](params['isolation_dist']))
-    spot_yx = spot_yx[isolated, :]
-    spot_images = get_spot_images(image, spot_yx, shape=config_format['list_int'](params['spot_shape']))
-    psf = get_average_spot_image(spot_images, config_format['str'](params['av_method']),
-                                 config_format['str'](params['spot_symmetry']),
-                                 annulus_width=config_format['number'](params['annulus_width']))
-    # psf from GibsonLanni has min as 0 and 1 as max so normalise to match this.
+    :param spot_images: numpy integer array [n_spots x y_diameter x x_diameter x z_diameter]
+    :param annulus_width: float, in each z_plane, this specifies how big an annulus to use,
+        within which we expect all pixel values to be the same.
+    :return: numpy float array [y_diameter x x_diameter x z_diameter]
+    """
+    # normalise each z plane of each spot image first so each has median of 0 and max of 1.
+    # Found that this works well as taper psf anyway, which gives reduced intensity as move away from centre.
+    spot_images = spot_images - np.expand_dims(np.nanmedian(spot_images, axis=[1, 2]), [1, 2])
+    spot_images = spot_images / np.expand_dims(np.nanmax(spot_images, axis=(1, 2)), [1, 2])
+    psf = get_average_spot_image(spot_images, 'median', 'annulus_2d', annulus_width)
+    # normalise psf so min is 0 and max is 1.
     psf = psf - psf.min()
     psf = psf / psf.max()
-    # matplotlib.use('TkAgg')  # so plot opens in pop out window
-    plot_psf(psf, 3, True)
+    return psf
 
-    # run deconvolution
-    acq = fd_data.Acquisition(data=np.moveaxis(image, -1, 0), kernel=np.moveaxis(psf, -1, 0))
-    algo = fd_restoration.RichardsonLucyDeconvolver(n_dims=acq.data.ndim, pad_min=[1, 1, 1]).initialize()
-    res = algo.run(acq, niter=config_format['int'](params['n_iter']))
 
-    # # for running on GPU
-    # acq = fd_data.Acquisition(data=np.moveaxis(image, -1, 0), kernel=np.moveaxis(psf, -1, 0))
-    # algo = fd_restoration.RichardsonLucyDeconvolver(n_dims=acq.data.ndim, pad_min=[1, 1, 1]).initialize()
-    # # below uses less memory than above but sometimes get negative pad error
-    # # algo = fd_restoration.RichardsonLucyDeconvolver(n_dims=acq.data.ndim, pad_mode='none').initialize()
-    # session_config = tf.compat.v1.ConfigProto()
-    # session_config.gpu_options.allow_growth = True
-    # session_config.gpu_options.per_process_gpu_memory_fraction = 1.0
-    # res = algo.run(acq, niter=config_format['int'](params['n_iter']), session_config=session_config)
+def get_wiener_filter(psf, image_shape, constant):
+    """
+    this tapers the psf so goes to 0 at edges and then computes wiener filter from it
 
-    im_out = np.round(res.data).astype(np.uint16)
-    im_out_file = config_format['str'](params['output_dir']) + config_format['str'](params['output_image_name'])
-    tifffile.imwrite(im_out_file, im_out)
-    hi = 5
+    :param psf: numpy float array [y_diameter x x_diameter x z_diameter]
+    :param image_shape: numpy integer array, indicates the shape of the tiles to be convolved after padding.
+        [n_im_y, n_im_x, n_im_z]
+    :param constant: float, constant used in wiener filter
+    :return: numpy complex128 array [n_im_y x n_im_x x n_im_z]
+    """
+    # taper psf so smoothly goes to 0 at each edge.
+    psf = psf * np.hanning(psf.shape[0]).reshape(-1, 1, 1) * np.hanning(psf.shape[1]).reshape(1, -1, 1) * \
+          np.hanning(psf.shape[2]).reshape(1, 1, -1)
+    psf = psf_pad(psf, image_shape)
+    psf_ft = np.fft.fftn(np.fft.ifftshift(psf))
+    return np.conj(psf_ft) / np.real((psf_ft * np.conj(psf_ft) + constant))
+
+
+def wiener_deconvolve(image, im_pad_shape, filter):
+    """
+    this pads image so goes to median value of image at each edge. Then deconvolves using wiener filter.
+
+    :param image: numpy integer array [n_im_y, n_im_x, n_im_z]. image to be deconvolved
+    :param im_pad_shape: list [n_pad_y, n_pad_x, n_pad_z]. how much to pad image in y, x, z directions.
+    :param filter: numpy complex128 array [n_im_y+2*n_pad_y, n_im_x+2*n_pad_x, n_im_z+2*n_pad_z].
+        wiener filter to use.
+    :return: numpy integer array [n_im_y, n_im_x, n_im_z]
+    """
+    im_max = image.max()
+    im_min = image.min()
+    im_av = np.median(image[:, :, 0])
+    image = np.pad(image, [(im_pad_shape[i], im_pad_shape[i]) for i in range(len(im_pad_shape))], 'linear_ramp',
+                   end_values=[(im_av, im_av)] * 3)
+    im_deconvolved = np.real(np.fft.ifftn(np.fft.fftn(image) * filter))
+    im_deconvolved = im_deconvolved[im_pad_shape[0]:-im_pad_shape[0], im_pad_shape[1]:-im_pad_shape[1],
+                                    im_pad_shape[2]:-im_pad_shape[2]]
+    # set min and max so it covers same range as input image
+    im_deconvolved = im_deconvolved - im_deconvolved.min()
+    return np.round(im_deconvolved * (im_max-im_min) / im_deconvolved.max() + im_min).astype(int)

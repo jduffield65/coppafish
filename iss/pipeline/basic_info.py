@@ -2,6 +2,7 @@ import numpy as np
 import os
 from .. import utils, setup
 import warnings
+from datetime import datetime
 
 
 def set_basic_info(config_file, config_basic):
@@ -43,6 +44,19 @@ def set_basic_info(config_file, config_basic):
     if config_basic['anchor_channel'] is None:
         nbp_basic['anchor_channel'] = None
     nbp_file['big_anchor_image'] = os.path.join(config_file['output_dir'], 'anchor_image.tif')
+
+    if config_file['psf'] is None:
+        # where to save psf, indicating average spot shape in raw image
+        if nbp_basic['3d']:
+            psf_file = os.path.join(config_file['output_dir'], 'psf.tif')
+            if not os.path.isfile(psf_file):
+                nbp_file['psf'] = psf_file
+            else:
+                # if file already exists, specify file with different name based on current time
+                dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
+                nbp_file['psf'] = os.path.join(config_file['output_dir'], 'psf_' + dt_string + '.tif')
+        else:
+            nbp_file['psf'] = None
 
     # get round info from config file
     n_rounds = len(config_file['round'])
