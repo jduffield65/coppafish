@@ -46,8 +46,12 @@ def extract_and_filter(config, nbp_file, nbp_basic):
 
     if config['deconvolve']:
         if not os.path.isfile(nbp_file['psf']):
-            im_file = os.path.join(nbp_file['input_dir'],
-                                   nbp_file['round'][nbp_basic['ref_round']] + nbp_file['raw_extension'])
+            if nbp_basic['ref_round'] == nbp_basic['anchor_round']:
+                im_file = os.path.join(nbp_file['input_dir'], nbp_file['anchor'] + nbp_file['raw_extension'])
+            else:
+                im_file = os.path.join(nbp_file['input_dir'],
+                                       nbp_file['round'][nbp_basic['ref_round']] + nbp_file['raw_extension'])
+
             spot_images, config['psf_intensity_thresh'], psf_tiles_used = \
                 extract.get_psf_spots(im_file, nbp_basic['tilepos_yx'], nbp_basic['tilepos_yx_nd2'],
                                       nbp_basic['use_tiles'], nbp_basic['ref_channel'], nbp_basic['use_z'],
@@ -56,7 +60,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                       config['auto_thresh_multiplier'], config['psf_isolation_dist'],
                                       config['psf_shape'])
             psf = extract.get_psf(spot_images, config['psf_annulus_width'])
-            utils.tiff.save(psf*np.iinfo(np.uint16).max)  # scale psf to fill uint16 range
+            utils.tiff.save(psf*np.iinfo(np.uint16).max, nbp_file['psf'])  # scale psf to fill uint16 range
         else:
             psf = utils.tiff.load(nbp_file['psf']).astype(float)
             psf_tiles_used = None

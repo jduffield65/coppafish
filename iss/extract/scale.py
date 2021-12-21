@@ -45,7 +45,7 @@ def get_z_plane(images, fov, use_channels, use_z):
     """
     image_max = np.zeros((len(use_channels), len(use_z)))
     for i in range(len(use_channels)):
-        image_max[i, :] = np.max(np.max(utils.nd2.get_image(images, fov, i, use_z), axis=0), axis=0)
+        image_max[i, :] = np.max(np.max(utils.nd2.get_image(images, fov, use_channels[i], use_z), axis=0), axis=0)
         # images[get_nd2_index(images, fov, use_channels[j], use_z[i])].max()
     max_channel = use_channels[np.max(image_max, axis=1).argmax()]
     max_z = use_z[np.max(image_max, axis=0).argmax()]
