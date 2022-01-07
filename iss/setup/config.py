@@ -100,6 +100,17 @@ _options = {
             'neighb_dist_thresh': 'number',
             'shift_score_thresh': 'maybe_number',
             'shift_score_auto_param': 'maybe_number'
+        },
+    'register':
+        {
+            'initial_shift_channel': 'maybe_int',
+            'shift_min': 'list_int',
+            'shift_max': 'list_int',
+            'shift_step': 'list_int',
+            'shift_widen': 'list_int',
+            'neighb_dist_thresh': 'number',
+            'shift_score_thresh': 'maybe_number',
+            'shift_score_auto_param': 'maybe_number'
         }
 }
 
