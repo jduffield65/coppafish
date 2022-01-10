@@ -3,6 +3,7 @@ import iss.extract.test as extract
 import iss.utils.test as utils
 import iss.stitch.test as stitch
 import iss.setup.test as setup
+import iss.pcr.test as pcr
 import unittest
 
 
@@ -40,15 +41,22 @@ def suite_stitch():
     return suite
 
 
+def suite_pcr():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(pcr.TestGetTransform, 'test'))
+    return suite
+
+
 def suite_all():
     suite = suite_utils()
     suite.addTest(suite_setup())
     suite.addTest(suite_extract())
     suite.addTest(suite_find_spots())
     suite.addTest(suite_stitch())
+    suite.addTest(suite_pcr())
     return suite
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_all', exit=True)
+    unittest.main(defaultTest='suite_pcr', exit=True)
     hi = 5

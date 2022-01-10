@@ -144,6 +144,10 @@ def set_basic_info(config_file, config_basic):
     nbp_basic['n_tiles'] = n_tiles  # int, number of tiles
     nbp_basic['n_channels'] = n_channels  # int, number of imaging channels
     nbp_basic['nz'] = nz  # number of z-planes used to make tiff images
+    # subtract tile_centre from local pixel coordinates to get centered local tile coordinates
+    if not nbp_basic['3d']:
+        nz = 1
+    nbp_basic['tile_centre'] = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
     nbp_basic['tilepos_yx_nd2'] = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
     nbp_basic['tilepos_yx'] = tilepos_yx  # and with tiff index
     nbp_basic['pixel_size_xy'] = metadata['pixel_microns']  # pixel size in microns in xy
