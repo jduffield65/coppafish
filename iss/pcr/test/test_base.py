@@ -1,5 +1,5 @@
 import unittest
-from ..base import get_transform
+from ..base import get_transform, get_average_transform
 from ...utils import matlab, errors
 import os
 import numpy as np
@@ -57,6 +57,69 @@ class TestGetTransform(unittest.TestCase):
             self.assertTrue(sum(diff_2 != 0) <= self.tol_neighb)
             self.assertTrue(np.abs(diff_3) <= self.tol_transform)
             self.assertTrue(np.abs(diff_4) <= self.tol_neighb)
+
+
+class TestGetAverageTransform(unittest.TestCase):
+    """
+    Check whether getting average transform from all good transforms is the same as MATLAB.
+    test files created using python_testing/PCR/get_average_transform.m script.
+
+    test files contain:
+    file: iss object used to create test
+    D:  [4 x 3 x n_tiles x n_rounds x n_channels]
+        D[:, :, t, r, c] is the affine transform for tile t from the reference image to round r, channel c.
+    nMatches:  [n_tiles x n_channels x n_rounds] number of matches found by point cloud registration
+    matches_thresh:  [n_tiles x n_channels x n_rounds], nMatches much exceed this to be a good transform.
+    scale_thresh: [3,] if scaling to color channel differs from median by over this then it is a bad transform.
+    shift_thresh: [3,] if shift to tile/round differs from median by over this then it is a bad transform.
+    D_average:  [4 x 3 x n_tiles x n_rounds x n_channels]
+        D_average[:, :, t, r, c] is the median affine transform found by MATLAB
+    A: [n_channels x 3], median scaling found by MATLAB
+    PcFailed: [n_tiles x n_channels x n_rounds], tiles/channels/rounds for which transform was bad.
+
+    """
+    folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples/get_average_transform/')
+    tol = 0
+
+    def test_get_transform(self):
+        test_files = [s for s in os.listdir(self.folder) if "test" in s and "fail" not in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(self.folder, file_name)
+            transforms, n_matches, matches_thresh, scale_thresh, shift_thresh, av_transforms_matlab, av_scaling_matlab,\
+                failed_matlab = \
+                matlab.load_array(test_file, ['D', 'nMatches', 'matches_thresh', 'scale_thresh', 'shift_thresh',
+                                              'D_average', 'A', 'PcFailed'])
+            n_matches = np.moveaxis(n_matches, 1, 2)  # change to t,r,c from MATLAB t,c,r
+            matches_thresh = np.moveaxis(matches_thresh, 1, 2)  # change to t,r,c from MATLAB t,c,r
+            failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
+            av_transforms_python, av_scaling_python, av_shifts, failed_python, failed_non_matches = \
+                get_average_transform(transforms, n_matches, matches_thresh, scale_thresh, shift_thresh)
+            diff_1 = av_transforms_python - av_transforms_matlab
+            diff_2 = av_scaling_python - av_scaling_matlab
+            diff_3 = failed_python.astype(int) - failed_matlab
+            self.assertTrue(np.abs(diff_1).max() <= self.tol)
+            self.assertTrue(np.abs(diff_2).max() <= self.tol)
+            self.assertTrue(np.abs(diff_3).max() <= self.tol)
+
+    @unittest.expectedFailure
+    def test_get_transform_fail(self):
+        # should hit error because not enough good shifts to compute median
+        test_files = [s for s in os.listdir(self.folder) if "test" in s and "fail" in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(self.folder, file_name)
+            transforms, n_matches, matches_thresh, scale_thresh, shift_thresh, av_transforms_matlab, av_scaling_matlab,\
+                failed_matlab = \
+                matlab.load_array(test_file, ['D', 'nMatches', 'matches_thresh', 'scale_thresh', 'shift_thresh',
+                                              'D_average', 'A', 'PcFailed'])
+            n_matches = np.moveaxis(n_matches, 1, 2)  # change to t,r,c from MATLAB t,c,r
+            matches_thresh = np.moveaxis(matches_thresh, 1, 2)  # change to t,r,c from MATLAB t,c,r
+            failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
+            av_transforms_python, av_scaling_python, av_shifts, failed_python, failed_non_matches = \
+                get_average_transform(transforms, n_matches, matches_thresh, scale_thresh, shift_thresh)
 
 
 if __name__ == '__main__':

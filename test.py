@@ -43,7 +43,8 @@ def suite_stitch():
 
 def suite_pcr():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(pcr.TestGetTransform, 'test'))
+    #suite.addTest(unittest.makeSuite(pcr.TestGetTransform, 'test'))
+    suite.addTest(unittest.makeSuite(pcr.TestGetAverageTransform, 'test'))
     return suite
 
 

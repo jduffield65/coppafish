@@ -1,1 +1,1 @@
-from .test_base import TestGetTransform
+from .test_base import TestGetTransform, TestGetAverageTransform
