@@ -1,9 +1,31 @@
 import h5py
 import numpy as np
+from scipy import io
+
+
+def load_v_less_7_3(file_name, var_names):
+    """
+    this is used to load info from earlier than v7.3  matlab files.
+    it is also good at dealing with complicated matlab cell arrays which are loaded as numpy object arrays.
+
+    :param file_name:
+    :param var_names: string or list of strings
+    :return:
+    """
+    f = io.loadmat(file_name)
+    if not isinstance(var_names, list):
+        output = f[var_names]
+    else:
+        output = []
+        for var_name in var_names:
+            output.append(f[var_name])
+        output = tuple(output)
+    return output
 
 
 def load_array(file_name, var_names):
     """
+    this is used to load info from v7.3 or later matlab
 
     :param file_name:
     :param var_names: string or list of strings
