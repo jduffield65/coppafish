@@ -185,6 +185,9 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
             shift_dev_thresh, reg_constant_rot=None, reg_constant_shift=None):
     """
     This gets the transforms using iterative closest point until all iterations used or convergence.
+    For transforms that have matches below matches_thresh or are anomalous compared to average transform, the transforms
+    are recomputed using regularized least squares to ensure they are close to the average transform.
+    If either reg_constant_rot=None or reg_constant_shift=None then this is not done.
 
     :param yxz_base: numpy object array [n_tiles]
         yxz_base[t] is a numpy float array [n_base_spots x dim].
@@ -202,8 +205,8 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
         if neighbours closer than this, they are used to compute the new transform.
         typical = 3
     :param matches_thresh: integer or numpy integer array [n_tiles x n_rounds x n_channels]
-        matches for a particular transform must exceed this to be used when computing average transform
-        can specify a single threshold for all transforms or a different threshold for each
+        matches for a particular transform must exceed this to be used when computing average transform.
+        Can specify a single threshold for all transforms or a different threshold for each
         e.g. you may give a lower threshold if that tile/round/channel had less spots.
         typical = 200.
     :param scale_dev_thresh: numpy float array [dim]
@@ -217,10 +220,10 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
         typical = 10 xy pixels in xy direction, 2 z pixels in z direction (normalised to have same units as xy pixels).
     :param reg_constant_rot: float, optional
         constant used for scaling and rotation when doing regularised least squares.
-        default: 30000
-    :param reg_constant_shift: float
+        default: None meaning no regularized least squares performed. Typical = 3000
+    :param reg_constant_shift: float, optional
         constant used for shift when doing regularised least squares.
-        default: 9
+        default: None meaning no regularized least squares performed. Typical = 9
     :return:
     transforms: numpy float array [dim+1 x dim x n_tiles x n_rounds x n_channels]
         transforms[:, :, t, r, c] is the final affine transform found for tile t, round r, channel c.
@@ -271,18 +274,20 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
                             is_converged[t, r, c] = np.abs(neighbour[t, r, c] - neighbour_last[t, r, c]).max() == 0
                             if is_converged[t, r, c]:
                                 pbar.update(1)
-            if is_converged.min() and finished_good_images == False:
+            if (is_converged.min() and finished_good_images == False) or i == n_iter-1:
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
                 # TODO: included failed_non_matches with idea that if failed on matches but not on anomalous transform,
                 #  then find transform again with regularization and keep transform for which matches higher.
                 #  Unit testing would then not work because this is not done in MATLAB.
-                # reset transforms of those that failed to average transform as starting point for regularised fitting
-                transforms[:, :, failed] = av_transforms[:, :, failed]
-                is_converged[failed] = False
-                i_finished_good = i+1  # so don't end iteration on next one
-                finished_good_images = True
-                pbar.update(-sum(failed.flatten()))
+                if reg_constant_rot is not None and reg_constant_shift is not None and i < n_iter-1:
+                    # reset transforms of those that failed to average transform as starting point for
+                    # regularised fitting
+                    transforms[:, :, failed] = av_transforms[:, :, failed]
+                    is_converged[failed] = False
+                    i_finished_good = i+1  # so don't end iteration on next one
+                    finished_good_images = True
+                    pbar.update(-sum(failed.flatten()))
 
             if is_converged.min():
                 break
