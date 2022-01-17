@@ -44,9 +44,9 @@ _options = {
         },
     'file_names':
         {
-            'input_dir': 'dir',
-            'output_dir': 'dir',
-            'tile_dir': 'dir',
+            'input_dir': 'str',  # all these directories used to be of type 'dir' but you may want to load the notebook
+            'output_dir': 'str',  # while not being connected to server where data is
+            'tile_dir': 'str',
             'round': 'list',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
@@ -101,7 +101,7 @@ _options = {
             'shift_score_thresh': 'maybe_number',
             'shift_score_auto_param': 'maybe_number'
         },
-    'register':
+    'register_initial':
         {
             'initial_shift_channel': 'maybe_int',
             'shift_min': 'list_int',

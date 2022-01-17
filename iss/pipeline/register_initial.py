@@ -6,7 +6,7 @@ from ..find_spots import spot_yxz
 import warnings
 
 
-def run_register(config, nbp_basic, spot_details):
+def run_register_initial(config, nbp_basic, spot_details):
     if nbp_basic['3d'] is False:
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
     nbp = setup.NotebookPage("register")
@@ -47,14 +47,14 @@ def run_register(config, nbp_basic, spot_details):
             for t in nbp_basic['use_tiles']:
                 pbar.set_postfix({'round': r, 'tile': t})
                 initial_shift[t, r], initial_shift_score[t, r],\
-                    initial_shift_score_thresh[t, r] = compute_shift(spot_yxz(spot_details, t, c_ref, r_ref),
-                                                                     spot_yxz(spot_details, t, c_imaging, r),
+                    initial_shift_score_thresh[t, r] = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
+                                                                     spot_yxz(spot_details, t, r, c_imaging),
                                                                      nbp_params['shift_score_thresh'],
                                                                      nbp_params['shift_score_auto_param'],
                                                                      nbp_params['neighb_dist_thresh'], shifts[r]['y'],
                                                                      shifts[r]['x'], shifts[r]['z'],
                                                                      nbp_params['shift_widen'], z_scale)
-                good_shifts = initial_shift_score[r] > initial_shift_score_thresh[r]
+                good_shifts = initial_shift_score[:, r] > initial_shift_score_thresh[:, r]
                 if sum(good_shifts) >= 3:
                     # once found shifts, refine shifts to be searched around these
                     for i in range(len(coords)):
@@ -88,8 +88,8 @@ def run_register(config, nbp_basic, spot_details):
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
             initial_shift[t, r], \
-                initial_shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, c_ref, r_ref),
-                                                             spot_yxz(spot_details, t, c_imaging, r), 0, None,
+                initial_shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
+                                                             spot_yxz(spot_details, t, r, c_imaging), 0, None,
                                                              nbp_params['neighb_dist_thresh'], shifts[r]['y'],
                                                              shifts[r]['x'], shifts[r]['z'], None, z_scale)
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"

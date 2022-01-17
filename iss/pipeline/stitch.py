@@ -15,18 +15,18 @@ def run_stitch(config, nbp_basic, spot_details):
         nbp_params['shift_score_thresh'] = None
         nbp_debug['shift_score_thresh'] = 'auto'
     # determine shifts to search over
-    exp_shift_south = np.array([-(1 - config['expected_overlap']) * nbp_basic['tile_sz'], 0, 0]).astype(int)
+    expected_shift_south = np.array([-(1 - config['expected_overlap']) * nbp_basic['tile_sz'], 0, 0]).astype(int)
     auto_shift_south_extent = np.array(config['auto_n_shifts']) * np.array(config['shift_step'])
-    exp_shift_west = exp_shift_south[[1, 0, 2]]
+    expected_shift_west = expected_shift_south[[1, 0, 2]]
     auto_shift_west_extent = auto_shift_south_extent[[1, 0, 2]]
     if config['shift_south_min'] is None:
-        nbp_params['shift_south_min'] = list(exp_shift_south - auto_shift_south_extent)
+        nbp_params['shift_south_min'] = list(expected_shift_south - auto_shift_south_extent)
     if config['shift_south_max'] is None:
-        nbp_params['shift_south_max'] = list(exp_shift_south + auto_shift_south_extent)
+        nbp_params['shift_south_max'] = list(expected_shift_south + auto_shift_south_extent)
     if config['shift_west_min'] is None:
-        nbp_params['shift_west_min'] = list(exp_shift_west - auto_shift_west_extent)
+        nbp_params['shift_west_min'] = list(expected_shift_west - auto_shift_west_extent)
     if config['shift_west_max'] is None:
-        nbp_params['shift_west_max'] = list(exp_shift_west + auto_shift_west_extent)
+        nbp_params['shift_west_max'] = list(expected_shift_west + auto_shift_west_extent)
     directions = ['south', 'west']
     coords = ['y', 'x', 'z']
     shifts = {'south': {}, 'west': {}}
@@ -64,8 +64,8 @@ def run_stitch(config, nbp_basic, spot_details):
             for j in directions:
                 pbar.set_postfix({'tile': t, 'direction': j})
                 if t_neighb[j] in nbp_basic['use_tiles']:
-                    shift, score, score_thresh = compute_shift(spot_yxz(spot_details, t, c, r),
-                                                               spot_yxz(spot_details, t_neighb[j][0], c, r),
+                    shift, score, score_thresh = compute_shift(spot_yxz(spot_details, t, r, c),
+                                                               spot_yxz(spot_details, t_neighb[j][0], r, c),
                                                                nbp_params['shift_score_thresh'],
                                                                nbp_params['shift_score_auto_param'],
                                                                nbp_params['neighb_dist_thresh'], shifts[j]['y'],
@@ -109,8 +109,8 @@ def run_stitch(config, nbp_basic, spot_details):
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
             shift_info[j]['shifts'][i], \
-                shift_info[j]['score'][i], _ = compute_shift(spot_yxz(spot_details, t, c, r),
-                                                             spot_yxz(spot_details, t_neighb, c, r), 0, None,
+                shift_info[j]['score'][i], _ = compute_shift(spot_yxz(spot_details, t, r, c),
+                                                             spot_yxz(spot_details, t_neighb, r, c), 0, None,
                                                              nbp_params['neighb_dist_thresh'], shifts[j]['y'],
                                                              shifts[j]['x'], shifts[j]['z'], None, z_scale)
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"

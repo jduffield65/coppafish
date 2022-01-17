@@ -31,7 +31,7 @@ def save(image, im_file, description=None, append=False):
     tifffile.imwrite(im_file, image, append=append, description=description)
 
 
-def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
+def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, r, c):
     """
     wrapper function to save tiles as tiff files with correct shift and a short description in the metadata
 
@@ -40,8 +40,8 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, c, r):
     :param nbp_extract_params: NotebookPage object containing extract parameters
     :param image: numpy float array [ny x nx (x nz)]
     :param t: integer, tiff tile index considering
-    :param c: integer, channel considering
     :param r: integer, round considering
+    :param c: integer, channel considering
     """
     if r == nbp_basic['anchor_round']:
         round = "anchor"
@@ -111,15 +111,15 @@ def load(im_file, planes=None, y_roi=None, x_roi=None):
     return image
 
 
-def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_params=None):
+def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_params=None):
     """
     load tile t, channel c, round r with pixel value shift subtracted if not DAPI.
 
     :param nbp_file: NotebookPage object containing file names
     :param nbp_basic: NotebookPage object containing basic info
     :param t: integer, tiff tile index considering
-    :param c: integer, channel considering
     :param r: integer, round considering
+    :param c: integer, channel considering
     :param y: integer or integer list/numpy array, optional.
         y pixels to read in
         default: None meaning all y pixels
@@ -136,10 +136,10 @@ def load_tile(nbp_file, nbp_basic, t, c, r, y=None, x=None, z=None, nbp_extract_
         numpy (uint16 if dapi otherwise int32) array [ny x nx (x nz)]
     """
     if nbp_extract_params is not None:
-        description = load_tile_description(nbp_file, nbp_basic, t, c, r)
+        description = load_tile_description(nbp_file, nbp_basic, t, r, c)
         if "Scale = " in description and "Shift = " in description:
             scale_tiff, shift_tiff = get_scale_shift_from_tiff(description)
-            scale_nbp, shift_nbp = get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, c, r)
+            scale_nbp, shift_nbp = get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, r, c)
             if scale_tiff != scale_nbp or shift_tiff != shift_nbp:
                 raise errors.TiffError(scale_tiff, scale_nbp, shift_tiff, shift_nbp)
         else:
@@ -196,15 +196,15 @@ def load_description(im_file, plane=0):
     return description
 
 
-def load_tile_description(nbp_file, nbp_basic, t, c, r):
+def load_tile_description(nbp_file, nbp_basic, t, r, c):
     """
     load in description saved in tiff for tile t, channel c, round r.
 
     :param nbp_file: NotebookPage object containing file names
     :param nbp_basic: NotebookPage object containing basic info
     :param t: integer, tiff tile index considering
-    :param c: integer, channel considering
     :param r: integer, round considering
+    :param c: integer, channel considering
     :return: string
     """
     if nbp_basic['3d']:
@@ -230,14 +230,14 @@ def get_scale_shift_from_tiff(description):
     return scale, shift
 
 
-def get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, c, r):
+def get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, r, c):
     """
     Returns scale and shift values detailed in notebook.
 
     :param nbp_basic: NotebookPage object containing basic info
     :param nbp_extract_params: NotebookPage object containing extract parameters
-    :param c: integer, channel considering
     :param r: integer, round considering
+    :param c: integer, channel considering
     :return:
         scale: float, scale factor applied to tiff, found from nb['extract_params']['scale']
         shift: integer, shift applied to tiff to ensure pixel values positive.

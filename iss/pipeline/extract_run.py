@@ -21,12 +21,12 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     nbp_params = setup.NotebookPage("extract_params", config)  # params page inherits info from config
     nbp_debug = setup.NotebookPage("extract_debug")
     # initialise output of this part of pipeline as 'vars' key
-    nbp['auto_thresh'] = np.zeros((nbp_basic['n_tiles'], nbp_basic['n_channels'],
-                                   nbp_basic['n_rounds'] + nbp_basic['n_extra_rounds']))
+    nbp['auto_thresh'] = np.zeros((nbp_basic['n_tiles'], nbp_basic['n_rounds'] + nbp_basic['n_extra_rounds'],
+                                   nbp_basic['n_channels']))
     nbp['hist_values'] = np.arange(-nbp_basic['tile_pixel_value_shift'], np.iinfo(np.uint16).max -
                                    nbp_basic['tile_pixel_value_shift'] + 2, 1)
-    nbp['hist_counts'] = np.zeros((len(nbp['hist_values']), nbp_basic['n_channels'],
-                                   nbp_basic['n_rounds'] + nbp_basic['n_extra_rounds']), dtype=int)
+    nbp['hist_counts'] = np.zeros((len(nbp['hist_values']), nbp_basic['n_rounds'] + nbp_basic['n_extra_rounds'],
+                                   nbp_basic['n_channels']), dtype=int)
     hist_bin_edges = np.concatenate(
         (nbp['hist_values'] - 0.5, nbp['hist_values'][-1:] + 0.5))
     # initialise debugging info as 'debug' page
@@ -130,7 +130,7 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                         pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                         if file_exists:
                             nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params, nbp_debug,
-                                                                        hist_bin_edges, t, c, r)
+                                                                        hist_bin_edges, t, r, c)
                         else:
                             im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic['tilepos_yx_nd2'],
                                                                                       nbp_basic['tilepos_yx']),
@@ -150,14 +150,14 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params,
-                                                                            nbp_debug, hist_bin_edges, t, c, r,
+                                                                            nbp_debug, hist_bin_edges, t, r, c,
                                                                             im, bad_columns) # TODO: make this quicker by getting from one z-plane
-                            utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, c, r)
+                            utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, r, c)
                         pbar.update(1)
                     elif not nbp_basic['3d'] and not file_exists:
                         # if not including channel, just set to all zeros
                         # only in 2D as all channels in same file - helps when loading in tiffs
                         im = np.zeros((nbp_basic['tile_sz'], nbp_basic['tile_sz']), dtype=np.uint16)
-                        utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, c, r)
+                        utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, r, c)
     pbar.close()
     return nbp, nbp_params, nbp_debug

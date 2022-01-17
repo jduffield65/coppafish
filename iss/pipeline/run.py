@@ -1,6 +1,6 @@
 import os
 from .. import setup
-from . import set_basic_info, extract_and_filter, find_spots, run_stitch, run_register
+from . import set_basic_info, extract_and_filter, find_spots, run_stitch, run_register_initial
 from ..utils.tiff import save_stitched
 
 
@@ -38,8 +38,8 @@ def run_pipeline(config_file):
                       nb['stitch_debug']['tile_origin'], nb['basic_info']['ref_round'],
                       nb['basic_info']['ref_channel'])
     if not min(nb.has_page(["register", "register_params", "register_debug"])):
-        nbp, nbp_params, nbp_debug = run_register(config['register'], nb['basic_info'],
-                                                  nb['find_spots']['spot_details'])
+        nbp, nbp_params, nbp_debug = run_register_initial(config['register_initial'], nb['basic_info'],
+                                                          nb['find_spots']['spot_details'])
         nb.add_page(nbp, True)
         nb.add_page(nbp_params, True)
         nb.add_page(nbp_debug, True)
