@@ -1,5 +1,3 @@
-import tifffile
-
 from .. import utils, extract, setup
 import numpy as np
 import os
@@ -16,9 +14,8 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     """
     # initialise notebook pages
     if not nbp_basic['3d']:
-        config['deconvolve'] = False # only deconvolve if 3d pipeline
+        config['deconvolve'] = False  # only deconvolve if 3d pipeline
     nbp = setup.NotebookPage("extract")
-    nbp_params = setup.NotebookPage("extract_params", config)  # params page inherits info from config
     nbp_debug = setup.NotebookPage("extract_debug")
     # initialise output of this part of pipeline as 'vars' key
     nbp['auto_thresh'] = np.zeros((nbp_basic['n_tiles'], nbp_basic['n_rounds'] + nbp_basic['n_extra_rounds'],
@@ -33,18 +30,22 @@ def extract_and_filter(config, nbp_file, nbp_basic):
     nbp_debug['n_clip_pixels'] = np.zeros_like(nbp['auto_thresh'], dtype=int)
     nbp_debug['clip_extract_scale'] = np.zeros_like(nbp['auto_thresh'])
 
-    # update config params in notebook
+    # update config params in notebook. All optional parameters in config are added to debug page
     if config['r1'] is None:
-        nbp_params['r1'] = extract.get_pixel_length(config['r1_auto_microns'], nbp_basic['pixel_size_xy'])
+        config['r1'] = extract.get_pixel_length(config['r1_auto_microns'], nbp_basic['pixel_size_xy'])
     if config['r2'] is None:
-        nbp_params['r2'] = nbp_params['r1'] * 2
+        config['r2'] = config['r1'] * 2
     if config['r_dapi'] is None:
-        nbp_params['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'],
-                                                        nbp_basic['pixel_size_xy'])
-    filter_kernel = utils.morphology.hanning_diff(nbp_params['r1'], nbp_params['r2'])
-    filter_kernel_dapi = utils.strel.disk(nbp_params['r_dapi'])
+        config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic['pixel_size_xy'])
+    nbp_debug['r1'] = config['r1']
+    nbp_debug['r2'] = config['r1']
+    nbp_debug['r_dapi'] = config['r1']
+
+    filter_kernel = utils.morphology.hanning_diff(nbp_debug['r1'], nbp_debug['r2'])
+    filter_kernel_dapi = utils.strel.disk(nbp_debug['r_dapi'])
 
     if config['deconvolve']:
+        # TODO: add smooth as well as this seems to work well with quadcam
         if not os.path.isfile(nbp_file['psf']):
             if nbp_basic['ref_round'] == nbp_basic['anchor_round']:
                 im_file = os.path.join(nbp_file['input_dir'], nbp_file['anchor'] + nbp_file['raw_extension'])
@@ -78,13 +79,14 @@ def extract_and_filter(config, nbp_file, nbp_basic):
         # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
         scale_norm_min = (np.iinfo('uint16').max - nbp_basic['tile_pixel_value_shift']) / 5
         scale_norm_max = np.iinfo('uint16').max - nbp_basic['tile_pixel_value_shift']
-        if not scale_norm_min <= nbp_params['scale_norm'] <= scale_norm_max:
-            raise utils.errors.OutOfBoundsError("scale_norm", nbp_params['scale_norm'], scale_norm_min, scale_norm_max)
+        if not scale_norm_min <= config['scale_norm'] <= scale_norm_max:
+            raise utils.errors.OutOfBoundsError("scale_norm", config['scale_norm'], scale_norm_min, scale_norm_max)
         im_file = os.path.join(nbp_file['input_dir'], nbp_file['round'][0] + nbp_file['raw_extension'])
-        nbp_debug['scale_tile'], nbp_debug['scale_channel'], nbp_debug['scale_z'], nbp_params['scale'] = \
+        nbp_debug['scale_tile'], nbp_debug['scale_channel'], nbp_debug['scale_z'], config['scale'] = \
             extract.get_scale(im_file, nbp_basic['tilepos_yx'], nbp_basic['tilepos_yx_nd2'],
                               nbp_basic['use_tiles'], nbp_basic['use_channels'], nbp_basic['use_z'],
-                              nbp_params['scale_norm'], filter_kernel)
+                              config['scale_norm'], filter_kernel)
+    nbp_debug['scale'] = config['scale']
 
     '''get rounds to iterate over'''
     use_channels_anchor = [c for c in [nbp_basic['dapi_channel'], nbp_basic['anchor_channel']] if c is not None]
@@ -108,14 +110,15 @@ def extract_and_filter(config, nbp_file, nbp_basic):
             images = utils.nd2.load(im_file)
             if r == nbp_basic['anchor_round']:
                 if config['scale_anchor'] is None:
-                    nbp_debug['scale_anchor_tile'], _, nbp_debug['scale_anchor_z'], nbp_params['scale_anchor'] = \
+                    nbp_debug['scale_anchor_tile'], _, nbp_debug['scale_anchor_z'], config['scale_anchor'] = \
                         extract.get_scale(im_file, nbp_basic['tilepos_yx'], nbp_basic['tilepos_yx_nd2'],
                                           nbp_basic['use_tiles'], [nbp_basic['anchor_channel']], nbp_basic['use_z'],
-                                          nbp_params['scale_norm'], filter_kernel)
-                scale = nbp_params['scale_anchor']
+                                          config['scale_norm'], filter_kernel)
+                nbp_debug['scale_anchor'] = config['scale_anchor']
+                scale = nbp_debug['scale_anchor']
                 use_channels = use_channels_anchor
             else:
-                scale = nbp_params['scale']
+                scale = nbp_debug['scale']
                 use_channels = nbp_basic['use_channels']
 
             # convolve_2d each image
@@ -129,7 +132,8 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                             file_exists = os.path.isfile(nbp_file['tile'][t][r][c])
                         pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                         if file_exists:
-                            nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params, nbp_debug,
+                            nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_debug,
+                                                                        config['auto_thresh_multiplier'],
                                                                         hist_bin_edges, t, r, c)
                         else:
                             im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic['tilepos_yx_nd2'],
@@ -149,15 +153,16 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
-                                nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_params,
-                                                                            nbp_debug, hist_bin_edges, t, r, c,
-                                                                            im, bad_columns) # TODO: make this quicker by getting from one z-plane
-                            utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, r, c)
+                                # TODO: make below quicker by getting from one z-plane
+                                nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_debug,
+                                                                            config['auto_thresh_multiplier'],
+                                                                            hist_bin_edges, t, r, c, im, bad_columns)
+                            utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)
                         pbar.update(1)
                     elif not nbp_basic['3d'] and not file_exists:
                         # if not including channel, just set to all zeros
                         # only in 2D as all channels in same file - helps when loading in tiffs
                         im = np.zeros((nbp_basic['tile_sz'], nbp_basic['tile_sz']), dtype=np.uint16)
-                        utils.tiff.save_tile(nbp_file, nbp_basic, nbp_params, im, t, r, c)
+                        utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)
     pbar.close()
-    return nbp, nbp_params, nbp_debug
+    return nbp, nbp_debug

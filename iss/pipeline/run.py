@@ -12,11 +12,10 @@ def run_pipeline(config_file):
         nbp_file, nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
         nb.add_page(nbp_file, do_nothing_if_exists=True)  # TODO: get rid of this flag
         nb.add_page(nbp_basic, True)
-    if not min(nb.has_page(["extract", "extract_params", "extract_debug"])):
-        nbp_extract, nbp_params, nbp_debug = extract_and_filter(
+    if not min(nb.has_page(["extract", "extract_debug"])):
+        nbp_extract, nbp_debug = extract_and_filter(
             config['extract'], nb['file_names'], nb['basic_info'])
         nb.add_page(nbp_extract, True)  # TODO get rid of params notebook page, just add all params that can be set by auto to debug.
-        nb.add_page(nbp_params, True)
         nb.add_page(nbp_debug, True)
     if not min(nb.has_page(["find_spots", "find_spots_params"])):
         nbp_find_spots, nbp_params = find_spots(config['find_spots'], nb['file_names'],

@@ -91,7 +91,7 @@ def strip_hack(image):
     return image, change_columns
 
 
-def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
+def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_debug, auto_thresh_multiplier,
                        hist_bin_edges, t, r, c, image=None, bad_columns=None):
     """
     Calculate values for auto_thresh, hist_counts in nbp_vars and
@@ -100,8 +100,11 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
     :param nbp_file: NotebookPage object containing file names
     :param nbp_basic: NotebookPage object containing basic info
     :param nbp_vars: NotebookPage object containing variables found during extract.
-    :param nbp_params: NotebookPage object containing extract parameters.
     :param nbp_debug: NotebookPage object containing debugging info found during extract.
+    :param auto_thresh_multiplier: float
+        auto_thresh is set to auto_thresh_multiplier * median(abs(image))
+        so that pixel values above this are likely spots
+        typical = 10
     :param hist_bin_edges: numpy array [len(log_extract['vars']['hist_values']) + 1]
         hist_values shifted by 0.5 to give bin edges not centres.
     :param t: integer, tiff tile index considering
@@ -117,7 +120,7 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
     # TODO: I think this is very slow in 3d (30s per image when 50 z-plane image already in tile directory)
     if image is None:
         file_exists = True
-        image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, nbp_extract_params=nbp_params)
+        image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, nbp_extract_debug=nbp_debug)
     else:
         file_exists = False
     if bad_columns is None:
@@ -127,7 +130,7 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
     good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
     if not (r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']):
         nbp_vars['auto_thresh'][t, r, c] = (np.median(np.abs(image[:, good_columns])) *
-                                            nbp_params['auto_thresh_multiplier'])
+                                            auto_thresh_multiplier)
     if r != nbp_basic['anchor_round']:
         nbp_vars['hist_counts'][:, r, c] += np.histogram(image[:, good_columns], hist_bin_edges)[0]
     if not file_exists:
@@ -139,9 +142,9 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_params, nbp_debug,
         nbp_debug['n_clip_pixels'][t, r, c] = n_clip_pixels
         if n_clip_pixels > 0:
             if r == nbp_basic['anchor_round']:
-                scale = nbp_params['scale_anchor']
+                scale = nbp_debug['scale_anchor']
             else:
-                scale = nbp_params['scale']
+                scale = nbp_debug['scale']
             # image has already been multiplied by scale hence inclusion of scale here
             # max_tiff_pixel_value / image.max() is less than 1 so recommended scaling becomes smaller than scale.
             nbp_debug['clip_extract_scale'][t, r, c] = scale * max_tiff_pixel_value / image.max()

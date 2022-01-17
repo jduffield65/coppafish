@@ -64,7 +64,7 @@ _options = {
             'scale': 'maybe_number',
             'scale_norm': 'maybe_int',
             'scale_anchor': 'maybe_number',
-            'auto_thresh_multiplier': 'maybe_number',
+            'auto_thresh_multiplier': 'number',
             'deconvolve': 'bool',
             'psf_detect_radius_xy': 'int',
             'psf_detect_radius_z': 'int',

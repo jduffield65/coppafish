@@ -31,13 +31,13 @@ def save(image, im_file, description=None, append=False):
     tifffile.imwrite(im_file, image, append=append, description=description)
 
 
-def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, r, c):
+def save_tile(nbp_file, nbp_basic, nbp_extract_debug, image, t, r, c):
     """
     wrapper function to save tiles as tiff files with correct shift and a short description in the metadata
 
     :param nbp_file: NotebookPage object containing file names
     :param nbp_basic: NotebookPage object containing basic info
-    :param nbp_extract_params: NotebookPage object containing extract parameters
+    :param nbp_extract_debug: NotebookPage object containing scale and scale_anchor
     :param image: numpy float array [ny x nx (x nz)]
     :param t: integer, tiff tile index considering
     :param r: integer, round considering
@@ -46,7 +46,7 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, r, c):
     if r == nbp_basic['anchor_round']:
         round = "anchor"
         if c == nbp_basic['anchor_channel']:
-            scale = nbp_extract_params['scale_anchor']
+            scale = nbp_extract_debug['scale_anchor']
             shift = nbp_basic['tile_pixel_value_shift']
             channel = "anchor"
         elif c == nbp_basic['dapi_channel']:
@@ -64,7 +64,7 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_params, image, t, r, c):
             shift = 0
             channel = "not used"
         else:
-            scale = nbp_extract_params['scale']
+            scale = nbp_extract_debug['scale']
             shift = nbp_basic['tile_pixel_value_shift']
             channel = c
     description = f"Tile = {t}. Round = {round}. Channel = {channel}. Shift = {shift}. Scale = {scale}"
@@ -111,7 +111,7 @@ def load(im_file, planes=None, y_roi=None, x_roi=None):
     return image
 
 
-def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_params=None):
+def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_debug=None):
     """
     load tile t, channel c, round r with pixel value shift subtracted if not DAPI.
 
@@ -129,17 +129,17 @@ def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_
     :param z: integer or integer list/numpy array, optional.
         which z-planes in tiff file to load
         default: None meaning all z-planes
-    :param nbp_extract_params: NotebookPage object containing extract parameters, optional.
+    :param nbp_extract_params: NotebookPage object containing scale and scale_anchor, optional.
         provide nbp_extract_params if want to check scale and shift in it match those used to make tiffs
         default: None
     :return:
         numpy (uint16 if dapi otherwise int32) array [ny x nx (x nz)]
     """
-    if nbp_extract_params is not None:
+    if nbp_extract_debug is not None:
         description = load_tile_description(nbp_file, nbp_basic, t, r, c)
         if "Scale = " in description and "Shift = " in description:
             scale_tiff, shift_tiff = get_scale_shift_from_tiff(description)
-            scale_nbp, shift_nbp = get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, r, c)
+            scale_nbp, shift_nbp = get_scale_shift_from_nbp(nbp_basic, nbp_extract_debug, r, c)
             if scale_tiff != scale_nbp or shift_tiff != shift_nbp:
                 raise errors.TiffError(scale_tiff, scale_nbp, shift_tiff, shift_nbp)
         else:
@@ -230,12 +230,12 @@ def get_scale_shift_from_tiff(description):
     return scale, shift
 
 
-def get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, r, c):
+def get_scale_shift_from_nbp(nbp_basic, nbp_extract_debug, r, c):
     """
     Returns scale and shift values detailed in notebook.
 
     :param nbp_basic: NotebookPage object containing basic info
-    :param nbp_extract_params: NotebookPage object containing extract parameters
+    :param nbp_extract_debug: NotebookPage object containing scale and scale_anchor
     :param r: integer, round considering
     :param c: integer, channel considering
     :return:
@@ -245,9 +245,9 @@ def get_scale_shift_from_nbp(nbp_basic, nbp_extract_params, r, c):
     """
     shift = nbp_basic['tile_pixel_value_shift']
     if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
-        scale = nbp_extract_params['scale_anchor']
+        scale = nbp_extract_debug['scale_anchor']
     elif r != nbp_basic['anchor_round'] and c in nbp_basic['use_channels']:
-        scale = nbp_extract_params['scale']
+        scale = nbp_extract_debug['scale']
     else:
         scale = 1  # dapi image and un-used channels have no scaling
         shift = 0  # dapi image and un-used channels have no shift
