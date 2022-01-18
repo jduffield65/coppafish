@@ -10,11 +10,15 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
         # set z details to None if using 2d pipeline
         config['radius_z'] = None
         config['isolation_radius_z'] = None
-    nbp_params = setup.NotebookPage("find_spots_params", config)  # params page inherits info from config
-    if nbp_basic['3d'] is False:
-        # add None params to nbp so can run detect spots using same line for 2d and 3d
-        nbp_params['radius_z'] = None
-        nbp_params['isolation_radius_z'] = None
+
+    # record threshold for isolated spots in each tile of reference round/channel
+    if config['isolation_thresh'] is None:
+        nbp['isolation_thresh'] = auto_thresh[:, nbp_basic['ref_round'], nbp_basic['anchor_channel']] * \
+                                  config['auto_isolation_thresh_multiplier']
+    else:
+        nbp['isolation_thresh'] = np.ones_like(auto_thresh[:, nbp_basic['ref_round'], nbp_basic['anchor_channel']]) * \
+                                  config['isolation_thresh']
+
     # have to save spot_yxz and spot_isolated as table to stop pickle issues associated with numpy object arrays.
     # columns of spot_details are: tile, channel, round, isolated, y, x, z
     spot_details = np.empty((0, 7), dtype=int)
@@ -36,25 +40,20 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c})
                     image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c)
                     spot_yxz, spot_intensity = fs.detect_spots(image, auto_thresh[t, r, c],
-                                                               nbp_params['radius_xy'], nbp_params['radius_z'])
+                                                               config['radius_xy'], config['radius_z'])
                     no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yxz, thresh=0)
                     spot_yxz = spot_yxz[no_negative_neighbour]
                     spot_intensity = spot_intensity[no_negative_neighbour]
                     if r == nbp_basic['ref_round']:
-                        # if reference round, keep all spots, and record if isolated
-                        if nbp_params.has_item('isolation_thresh'):
-                            isolation_thresh = nbp_params['isolation_thresh']
-                        else:
-                            isolation_thresh = nbp_params['auto_isolation_thresh_multiplier'] * auto_thresh[t, r, c]
-                        spot_isolated = fs.get_isolated(image, spot_yxz, isolation_thresh,
-                                                        nbp_params['isolation_radius_inner'],
-                                                        nbp_params['isolation_radius_xy'],
-                                                        nbp_params['isolation_radius_z'])
+                        spot_isolated = fs.get_isolated(image, spot_yxz, nbp['isolation_thresh'][t],
+                                                        config['isolation_radius_inner'],
+                                                        config['isolation_radius_xy'],
+                                                        config['isolation_radius_z'])
 
                     else:
                         # if imaging round, only keep highest intensity spots as only used for registration
                         descend_intensity_arg = np.argsort(spot_intensity)[::-1]
-                        spot_yxz = spot_yxz[descend_intensity_arg[:nbp_params['max_spots']]]
+                        spot_yxz = spot_yxz[descend_intensity_arg[:config['max_spots']]]
                         # don't care if these spots isolated so say they are not
                         spot_isolated = np.zeros(spot_yxz.shape[0], dtype=bool)
                     spot_details_trc = np.zeros((spot_yxz.shape[0], spot_details.shape[1]), dtype=int)
@@ -65,4 +64,4 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
                     nbp['spot_no'][t, r, c] = spot_yxz.shape[0]
                     pbar.update(1)
     nbp['spot_details'] = spot_details
-    return nbp, nbp_params
+    return nbp

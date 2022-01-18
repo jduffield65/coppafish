@@ -17,14 +17,12 @@ def run_pipeline(config_file):
             config['extract'], nb['file_names'], nb['basic_info'])
         nb.add_page(nbp_extract, True)  # TODO get rid of params notebook page, just add all params that can be set by auto to debug.
         nb.add_page(nbp_debug, True)
-    if not min(nb.has_page(["find_spots", "find_spots_params"])):
-        nbp_find_spots, nbp_params = find_spots(config['find_spots'], nb['file_names'],
-                                                nb['basic_info'], nb['extract']['auto_thresh'])
+    if not nb.has_page("find_spots"):
+        nbp_find_spots = find_spots(config['find_spots'], nb['file_names'],
+                                    nb['basic_info'], nb['extract']['auto_thresh'])
         nb.add_page(nbp_find_spots, True)
-        nb.add_page(nbp_params, True)
-    if not min(nb.has_page(["stitch_params", "stitch_debug"])):
-        nbp_params, nbp_debug = run_stitch(config['stitch'], nb['basic_info'], nb['find_spots']['spot_details'])
-        nb.add_page(nbp_params, True)
+    if not nb.has_page("stitch_debug"):
+        nbp_debug = run_stitch(config['stitch'], nb['basic_info'], nb['find_spots']['spot_details'])
         nb.add_page(nbp_debug, True)
     if nb['file_names']['big_dapi_image'] is not None and not os.path.isfile(nb['file_names']['big_dapi_image']):
         # save stitched dapi
@@ -36,11 +34,8 @@ def run_pipeline(config_file):
         save_stitched(nb['file_names']['big_anchor_image'], nb['file_names'], nb['basic_info'],
                       nb['stitch_debug']['tile_origin'], nb['basic_info']['ref_round'],
                       nb['basic_info']['ref_channel'])
-    if not min(nb.has_page(["register", "register_params", "register_debug"])):
-        nbp, nbp_params, nbp_debug = run_register_initial(config['register_initial'], nb['basic_info'],
-                                                          nb['find_spots']['spot_details'])
-        nb.add_page(nbp, True)
-        nb.add_page(nbp_params, True)
+    if not nb.has_page("register_initial_debug"):
+        nbp_debug = run_register_initial(config['register_initial'], nb['basic_info'], nb['find_spots']['spot_details'])
         nb.add_page(nbp_debug, True)
     return nb
 

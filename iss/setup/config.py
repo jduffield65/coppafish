@@ -103,7 +103,7 @@ _options = {
         },
     'register_initial':
         {
-            'initial_shift_channel': 'maybe_int',
+            'shift_channel': 'maybe_int',
             'shift_min': 'list_int',
             'shift_max': 'list_int',
             'shift_step': 'list_int',

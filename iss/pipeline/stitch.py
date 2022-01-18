@@ -7,38 +7,39 @@ import warnings
 
 
 def run_stitch(config, nbp_basic, spot_details):
-    if nbp_basic['3d'] is False:
-        config['shift_widen'][2] = 0  # so don't look for shifts in z direction
-    nbp_params = setup.NotebookPage("stitch_params", config)  # params page inherits info from config
     nbp_debug = setup.NotebookPage("stitch_debug")
-    if config['shift_score_thresh'] is None:
-        nbp_params['shift_score_thresh'] = None
-        nbp_debug['shift_score_thresh'] = 'auto'
+
     # determine shifts to search over
     expected_shift_south = np.array([-(1 - config['expected_overlap']) * nbp_basic['tile_sz'], 0, 0]).astype(int)
     auto_shift_south_extent = np.array(config['auto_n_shifts']) * np.array(config['shift_step'])
     expected_shift_west = expected_shift_south[[1, 0, 2]]
     auto_shift_west_extent = auto_shift_south_extent[[1, 0, 2]]
     if config['shift_south_min'] is None:
-        nbp_params['shift_south_min'] = list(expected_shift_south - auto_shift_south_extent)
+        config['shift_south_min'] = list(expected_shift_south - auto_shift_south_extent)
     if config['shift_south_max'] is None:
-        nbp_params['shift_south_max'] = list(expected_shift_south + auto_shift_south_extent)
+        config['shift_south_max'] = list(expected_shift_south + auto_shift_south_extent)
     if config['shift_west_min'] is None:
-        nbp_params['shift_west_min'] = list(expected_shift_west - auto_shift_west_extent)
+        config['shift_west_min'] = list(expected_shift_west - auto_shift_west_extent)
     if config['shift_west_max'] is None:
-        nbp_params['shift_west_max'] = list(expected_shift_west + auto_shift_west_extent)
+        config['shift_west_max'] = list(expected_shift_west + auto_shift_west_extent)
     directions = ['south', 'west']
     coords = ['y', 'x', 'z']
     shifts = {'south': {}, 'west': {}}
     for j in directions:
+        nbp_debug[j + '_' + 'start_shift_search'] = np.zeros((3, 3), dtype=int)
         for i in range(len(coords)):
-            shifts[j][coords[i]] = np.arange(nbp_params['shift_' + j + '_min'][i],
-                                             nbp_params['shift_' + j + '_max'][i] +
-                                             nbp_params['shift_step'][i] / 2, nbp_params['shift_step'][i]).astype(int)
-            nbp_debug[j + '_' + coords[i] + '_initial_shift_search'] = shifts[j][coords[i]]
+            shifts[j][coords[i]] = np.arange(config['shift_' + j + '_min'][i],
+                                             config['shift_' + j + '_max'][i] +
+                                             config['shift_step'][i] / 2, config['shift_step'][i]).astype(int)
+            nbp_debug[j + '_' + 'start_shift_search'][i, :] = [config['shift_' + j + '_min'][i],
+                                                               config['shift_' + j + '_max'][i],
+                                                               config['shift_step'][i]]
     if nbp_basic['3d'] is False:
+        config['shift_widen'][2] = 0  # so don't look for shifts in z direction
         shifts['south']['z'] = np.array([0], dtype=int)
         shifts['west']['z'] = np.array([0], dtype=int)
+        for j in directions:
+            nbp_debug[j + '_' + 'start_shift_search'][2, :2] = 0
 
     # initialise variables to store shift info
     shift_info = {'south': {}, 'west': {}}
@@ -66,11 +67,11 @@ def run_stitch(config, nbp_basic, spot_details):
                 if t_neighb[j] in nbp_basic['use_tiles']:
                     shift, score, score_thresh = compute_shift(spot_yxz(spot_details, t, r, c),
                                                                spot_yxz(spot_details, t_neighb[j][0], r, c),
-                                                               nbp_params['shift_score_thresh'],
-                                                               nbp_params['shift_score_auto_param'],
-                                                               nbp_params['neighb_dist_thresh'], shifts[j]['y'],
+                                                               config['shift_score_thresh'],
+                                                               config['shift_score_auto_param'],
+                                                               config['neighb_dist_thresh'], shifts[j]['y'],
                                                                shifts[j]['x'], shifts[j]['z'],
-                                                               nbp_params['shift_widen'], z_scale)
+                                                               config['shift_widen'], z_scale)
                     shift_info[j]['pairs'] = np.append(shift_info[j]['pairs'],
                                                        np.array([t, t_neighb[j][0]]).reshape(1, 2), axis=0)
                     shift_info[j]['shifts'] = np.append(shift_info[j]['shifts'], np.array(shift).reshape(1, 3), axis=0)
@@ -111,7 +112,7 @@ def run_stitch(config, nbp_basic, spot_details):
             shift_info[j]['shifts'][i], \
                 shift_info[j]['score'][i], _ = compute_shift(spot_yxz(spot_details, t, r, c),
                                                              spot_yxz(spot_details, t_neighb, r, c), 0, None,
-                                                             nbp_params['neighb_dist_thresh'], shifts[j]['y'],
+                                                             config['neighb_dist_thresh'], shifts[j]['y'],
                                                              shifts[j]['x'], shifts[j]['z'], None, z_scale)
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
@@ -132,8 +133,10 @@ def run_stitch(config, nbp_basic, spot_details):
     nbp_debug['tile_origin'] = tile_origin
     # save all shift info to debugging page
     for j in directions:
-        for i in range(len(coords)):
-            nbp_debug[j + '_' + coords[i] + '_final_shift_search'] = shifts[j][coords[i]]
+        nbp_debug[j + '_' + 'final_shift_search'] = np.zeros((3, 3), dtype=int)
+        nbp_debug[j + '_' + 'final_shift_search'][:, 0] = [np.min(shifts[j][key]) for key in shifts[j].keys()]
+        nbp_debug[j + '_' + 'final_shift_search'][:, 1] = [np.max(shifts[j][key]) for key in shifts[j].keys()]
+        nbp_debug[j + '_' + 'final_shift_search'][:, 2] = nbp_debug[j + '_' + 'start_shift_search'][:, 2]
         for var in shift_info[j].keys():
             nbp_debug[j+'_'+var] = shift_info[j][var]
-    return nbp_params, nbp_debug
+    return nbp_debug

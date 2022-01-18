@@ -4,7 +4,7 @@ import numpy as np
 
 def spot_yxz(spot_details, tile, round, channel, return_isolated=False):
     """
-    function which gets yxz positions (and whether isolated) of spots on a particular tile, channel, round
+    function which gets yxz positions (and whether isolated) of spots on a particular tile, round, channel
     from spot_details in find_spots notebook page.
 
     :param spot_details: numpy integer array [n_spots x 7] containing [tile, round, channel, isolated, y, x, z]
@@ -14,7 +14,7 @@ def spot_yxz(spot_details, tile, round, channel, return_isolated=False):
     :param channel: channel of desired spots
     :param return_isolated: whether to return the isolated status of each spot
     """
-    use = np.all((spot_details[:, 0] == tile, spot_details[:, 1] == channel, spot_details[:, 2] == round), axis=0)
+    use = np.all((spot_details[:, 0] == tile, spot_details[:, 1] == round, spot_details[:, 2] == channel), axis=0)
     if return_isolated:
         return spot_details[use, 4:], spot_details[use, 3]
     else:
