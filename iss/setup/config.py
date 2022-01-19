@@ -111,6 +111,18 @@ _options = {
             'neighb_dist_thresh': 'number',
             'shift_score_thresh': 'maybe_number',
             'shift_score_auto_param': 'maybe_number'
+        },
+    'register':
+        {
+            'n_iter': 'int',
+            'neighb_dist_thresh': 'number',
+            'matches_thresh_fract': 'number',
+            'matches_thresh_min': 'int',
+            'matches_thresh_max': 'int',
+            'scale_dev_thresh': 'list_number',
+            'shift_dev_thresh': 'list_number',
+            'regularize_constant_scale': 'number',
+            'regularize_constant_shift': 'number'
         }
 }
 

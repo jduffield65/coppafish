@@ -29,3 +29,28 @@ def setdiff2d(array1, array2):
     set1 = set([tuple(x) for x in array1])
     set2 = set([tuple(x) for x in array2])
     return np.array(list(set1-set2))
+
+
+def multi_array_ind(*args):
+    """
+    returns the indices to get a sub array from a multi dimensional numpy array
+
+    For example, if you have a numpy array of size [10, 3, 8] called big_array and you want to get the sub array
+    from [4,8] of the first axis, [0,1,2] of the second axis and [0,4,6,7] of the third axis then you can run:
+    ind1, ind2, ind3 = multi_array_ind([4,8], [0,1,2], [0,4,6,7]) and the sub array can be obtained from
+    sub_array = big_array[ind1, ind2, ind3]
+
+    :param args: provide n lists each containing the desired indices along an axis
+    :return: returns a tuple containing n numpy arrays, each of shape [len(arg_1) x len(arg_2) x ... x len(arg_n)]
+    """
+    n_arrays = len(args)
+    array_sizes = [len(array) for array in args]
+    ind_order = np.ones(n_arrays, dtype=int)
+    output = [[]] * n_arrays
+    for i in range(n_arrays):
+        ind_order_i = ind_order.copy()
+        ind_order_i[i] = -1
+        n_repeats = array_sizes.copy()
+        n_repeats[i] = 1
+        output[i] = np.tile(np.array(args[i]).reshape(ind_order_i), n_repeats)
+    return tuple(output)

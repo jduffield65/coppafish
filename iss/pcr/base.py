@@ -23,14 +23,14 @@ def get_transform(yxz_base, transform_old, yxz_target, dist_thresh, yxz_target_t
         KDTree produced from yxz_target. If None, it will be computed.
         default: None.
     :param reg_constant_rot: float, optional
-        constant used for scaling and rotation when doing regularised least squares.
+        constant used for scaling and rotation when doing regularized least squares.
         default: 30000
     :param reg_constant_shift: float
-        constant used for shift when doing regularised least squares.
+        constant used for shift when doing regularized least squares.
         default: 9
     :param reg_transform: numpy float array [4 x 3], optional
-        affine transform which we want final transform to be near when doing regularised least squares.
-        If None, then no regularisation is performed.
+        affine transform which we want final transform to be near when doing regularized least squares.
+        If None, then no regularization is performed.
         default: None
     :return:
         transform: numpy float array [4 x 3]. Updated affine transform
@@ -146,13 +146,13 @@ def get_average_transform(transforms, n_matches, matches_thresh, scale_thresh, s
     scaling = transforms[np.arange(dim), np.arange(dim), :, :, :]
     av_scaling = mod_median(scaling, np.expand_dims(failed, 0).repeat(dim, 0), axis=[1, 2])
     diff_to_av_scaling = np.abs(scaling - np.expand_dims(av_scaling, [1, 2]))
-    failed_scale = np.max(diff_to_av_scaling - scale_thresh.reshape(dim, 1, 1, 1) > 0, axis=0)
+    failed_scale = np.max(diff_to_av_scaling - np.array(scale_thresh).reshape(dim, 1, 1, 1) > 0, axis=0)
     failed = np.logical_or(failed, failed_scale)
 
     shifts = transforms[3]
     av_shifts = mod_median(shifts, np.expand_dims(failed, 0).repeat(dim, 0), axis=3)
     diff_to_av_shift = np.abs(shifts - np.expand_dims(av_shifts, 3))
-    failed_shift = np.max(diff_to_av_shift - shift_thresh.reshape(dim, 1, 1, 1), axis=0) > 0
+    failed_shift = np.max(diff_to_av_shift - np.array(shift_thresh).reshape(dim, 1, 1, 1), axis=0) > 0
     failed = np.logical_or(failed, failed_shift)
 
     # find average shifts and scaling again using final failed array
@@ -219,10 +219,10 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
         typically this threshold will be the same in y and x but different in z.
         typical = 10 xy pixels in xy direction, 2 z pixels in z direction (normalised to have same units as xy pixels).
     :param reg_constant_rot: float, optional
-        constant used for scaling and rotation when doing regularised least squares.
-        default: None meaning no regularized least squares performed. Typical = 3000
+        constant used for scaling and rotation when doing regularized least squares.
+        default: None meaning no regularized least squares performed. Typical = 30000
     :param reg_constant_shift: float, optional
-        constant used for shift when doing regularised least squares.
+        constant used for shift when doing regularized least squares.
         default: None meaning no regularized least squares performed. Typical = 9
     :return:
     transforms: numpy float array [dim+1 x dim x n_tiles x n_rounds x n_channels]
@@ -236,6 +236,9 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
         chromatic aberration scaling factor to each channel from reference channel. Made using all rounds and tiles.
     av_shifts: numpy float array [n_tiles x n_rounds x dim]
         av_shifts[t,r,:] is the average shift from reference round to round r for tile t across all colour channels.
+    transforms_outlier: numpy float array [dim+1 x dim x n_tiles x n_rounds x n_channels]
+        transforms[:, :, t, r, c] is the final affine transform found for tile t, round r, channel c
+        without regularization for t,r,c indicated by failed otherwise it is 0.
     """
     n_tiles, n_rounds, n_channels = yxz_target.shape
     if not utils.errors.check_shape(yxz_base, [n_tiles]):
@@ -251,6 +254,7 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
     neighbour = np.zeros_like(yxz_target)
     is_converged = np.zeros_like(yxz_target, dtype=bool)
     transforms = transforms_initial.copy().astype(float)
+    transforms_outlier = np.zeros_like(transforms)
     finished_good_images = False
     av_transforms = None
     i_finished_good = 0
@@ -283,6 +287,7 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
                 if reg_constant_rot is not None and reg_constant_shift is not None and i < n_iter-1:
                     # reset transforms of those that failed to average transform as starting point for
                     # regularised fitting
+                    transforms_outlier[:, :, failed] = transforms[:, :, failed].copy()
                     transforms[:, :, failed] = av_transforms[:, :, failed]
                     is_converged[failed] = False
                     i_finished_good = i+1  # so don't end iteration on next one
@@ -293,4 +298,4 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
                 break
     pbar.close()
 
-    return transforms, n_matches, error, failed, is_converged, av_scaling, av_shifts
+    return transforms, n_matches, error, failed, is_converged, av_scaling, av_shifts, transforms_outlier

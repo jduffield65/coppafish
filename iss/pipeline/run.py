@@ -1,6 +1,6 @@
 import os
 from .. import setup
-from . import set_basic_info, extract_and_filter, find_spots, run_stitch, run_register_initial
+from . import set_basic_info, extract_and_filter, find_spots, run_stitch, run_register_initial, run_register
 from ..utils.tiff import save_stitched
 
 
@@ -13,9 +13,9 @@ def run_pipeline(config_file):
         nb.add_page(nbp_file, do_nothing_if_exists=True)  # TODO: get rid of this flag
         nb.add_page(nbp_basic, True)
     if not min(nb.has_page(["extract", "extract_debug"])):
-        nbp_extract, nbp_debug = extract_and_filter(
+        nbp, nbp_debug = extract_and_filter(
             config['extract'], nb['file_names'], nb['basic_info'])
-        nb.add_page(nbp_extract, True)  # TODO get rid of params notebook page, just add all params that can be set by auto to debug.
+        nb.add_page(nbp, True)
         nb.add_page(nbp_debug, True)
     if not nb.has_page("find_spots"):
         nbp_find_spots = find_spots(config['find_spots'], nb['file_names'],
@@ -36,6 +36,11 @@ def run_pipeline(config_file):
                       nb['basic_info']['ref_channel'])
     if not nb.has_page("register_initial_debug"):
         nbp_debug = run_register_initial(config['register_initial'], nb['basic_info'], nb['find_spots']['spot_details'])
+        nb.add_page(nbp_debug, True)
+    if not min(nb.has_page(["register", "register_debug"])):
+        nbp, nbp_debug = run_register(config['register'], nb['basic_info'], nb['find_spots']['spot_details'],
+                                      nb['register_initial_debug']['shift'])
+        nb.add_page(nbp, True)
         nb.add_page(nbp_debug, True)
     return nb
 

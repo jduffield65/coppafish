@@ -3,3 +3,4 @@ from .extract_run import extract_and_filter
 from .find_spots import find_spots
 from .stitch import run_stitch
 from .register_initial import run_register_initial
+from .register import run_register
