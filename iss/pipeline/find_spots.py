@@ -10,6 +10,9 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
         # set z details to None if using 2d pipeline
         config['radius_z'] = None
         config['isolation_radius_z'] = None
+        max_spots = config['max_spots_2d']
+    else:
+        max_spots = config['max_spots_3d']
 
     # record threshold for isolated spots in each tile of reference round/channel
     if config['isolation_thresh'] is None:
@@ -29,6 +32,7 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
     if nbp_basic['use_anchor']:
         use_rounds = use_rounds + [nbp_basic['anchor_round']]
         n_images = n_images + len(nbp_basic['use_tiles'])
+    n_z = np.max([1, nbp_basic['3d'] * nbp_basic['nz']])
     with tqdm(total=n_images) as pbar:
         for r in use_rounds:
             if r == nbp_basic['anchor_round']:
@@ -51,9 +55,15 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
                                                         config['isolation_radius_z'])
 
                     else:
-                        # if imaging round, only keep highest intensity spots as only used for registration
-                        descend_intensity_arg = np.argsort(spot_intensity)[::-1]
-                        spot_yxz = spot_yxz[descend_intensity_arg[:config['max_spots']]]
+                        # if imaging round, only keep highest intensity spots on each z plane
+                        # as only used for registration
+                        keep = np.ones(spot_yxz.shape[0], dtype=bool)
+                        for z in range(n_z):
+                            in_z = spot_yxz[:, 2] == z
+                            if sum(in_z) > max_spots:
+                                intensity_thresh = np.sort(spot_intensity[in_z])[-max_spots]
+                                keep[np.logical_and(in_z, spot_intensity < intensity_thresh)] = False
+                        spot_yxz = spot_yxz[keep]
                         # don't care if these spots isolated so say they are not
                         spot_isolated = np.zeros(spot_yxz.shape[0], dtype=bool)
                     spot_details_trc = np.zeros((spot_yxz.shape[0], spot_details.shape[1]), dtype=int)

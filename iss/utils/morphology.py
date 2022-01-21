@@ -187,6 +187,7 @@ def imfilter(image, kernel, padding=0, corr_or_conv='corr'):
         return correlate(image, kernel, mode=padding, cval=pad_value)
     elif corr_or_conv == 'conv':
         kernel = ensure_odd_kernel(kernel, 'end')
+        # TODO: see if scipy.signal.oaconvolve is quicker. Do same for convolve2D function
         return convolve(image, kernel, mode=padding, cval=pad_value)
     else:
         raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")

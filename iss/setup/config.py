@@ -80,7 +80,8 @@ _options = {
         {
             'radius_xy': 'int',
             'radius_z': 'int',
-            'max_spots': 'int',
+            'max_spots_2d': 'int',
+            'max_spots_3d': 'int',
             'isolation_radius_inner': 'number',
             'isolation_radius_xy': 'number',
             'isolation_radius_z': 'number',
@@ -115,7 +116,8 @@ _options = {
     'register':
         {
             'n_iter': 'int',
-            'neighb_dist_thresh': 'number',
+            'neighb_dist_thresh_2d': 'number',
+            'neighb_dist_thresh_3d': 'number',
             'matches_thresh_fract': 'number',
             'matches_thresh_min': 'int',
             'matches_thresh_max': 'int',

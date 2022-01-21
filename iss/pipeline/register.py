@@ -10,6 +10,11 @@ def run_register(config, nbp_basic, spot_details, initial_shift):
     nbp_debug = setup.NotebookPage("register_debug")
     nbp['initial_shift'] = initial_shift.copy()
 
+    if nbp_basic['3d']:
+        neighb_dist_thresh = config['neighb_dist_thresh_3d']
+    else:
+        neighb_dist_thresh = config['neighb_dist_thresh_2d']
+
     # centre and scale spot yxz coordinates
     z_scale = [1, 1, nbp_basic['pixel_size_z'] / nbp_basic['pixel_size_xy']]
     spot_yxz_ref = np.zeros(nbp_basic['n_tiles'], dtype=object)
@@ -24,11 +29,11 @@ def run_register(config, nbp_basic, spot_details, initial_shift):
             for c in nbp_basic['use_channels']:
                 spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c)
                 spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - nbp_basic['tile_centre']) * z_scale
-                if config['neighb_dist_thresh'] < 50:
+                if neighb_dist_thresh < 50:
                     # only keep isolated spots, those whose second neighbour is far away
                     tree = NearestNeighbors(n_neighbors=2).fit(spot_yxz_imaging[t, r, c])
                     distances, _ = tree.kneighbors(spot_yxz_imaging[t, r, c])
-                    isolated = distances[:, 1] > 2 * config['neighb_dist_thresh']
+                    isolated = distances[:, 1] > 2 * neighb_dist_thresh
                     spot_yxz_imaging[t, r, c] = spot_yxz_imaging[t, r, c][isolated, :]
                 n_matches_thresh[t, r, c] = (config['matches_thresh_fract'] *
                                              np.min([spot_yxz_ref[t].shape[0], spot_yxz_imaging[t, r, c].shape[0]]))
@@ -56,7 +61,7 @@ def run_register(config, nbp_basic, spot_details, initial_shift):
     failed[t_ind, r_ind, c_ind], converged[t_ind, r_ind, c_ind], av_scaling[nbp_basic['use_channels']], \
     av_shifts[t_ind[:, :, 0], r_ind[:, :, 0]], transform_outliers[:, :, t_ind, r_ind, c_ind] = \
         pcr.iterate(spot_yxz_ref[nbp_basic['use_tiles']], spot_yxz_imaging[t_ind, r_ind, c_ind],
-                    start_transform[:, :, t_ind, r_ind, c_ind], config['n_iter'], config['neighb_dist_thresh'],
+                    start_transform[:, :, t_ind, r_ind, c_ind], config['n_iter'], neighb_dist_thresh,
                     n_matches_thresh[t_ind, r_ind, c_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
                     config['regularize_constant_scale'], config['regularize_constant_shift'])
 
