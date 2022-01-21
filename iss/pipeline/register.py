@@ -57,11 +57,11 @@ def run_register(config, nbp_basic, spot_details, initial_shift):
     transform_outliers = np.zeros_like(start_transform)
 
     # get PCR output only for tiles/rounds/channels that we are using
-    final_transform[:, :, t_ind, r_ind, c_ind], n_matches[t_ind, r_ind, c_ind], error[t_ind, r_ind, c_ind], \
+    final_transform[t_ind, r_ind, c_ind], n_matches[t_ind, r_ind, c_ind], error[t_ind, r_ind, c_ind], \
     failed[t_ind, r_ind, c_ind], converged[t_ind, r_ind, c_ind], av_scaling[nbp_basic['use_channels']], \
-    av_shifts[t_ind[:, :, 0], r_ind[:, :, 0]], transform_outliers[:, :, t_ind, r_ind, c_ind] = \
+    av_shifts[t_ind[:, :, 0], r_ind[:, :, 0]], transform_outliers[t_ind, r_ind, c_ind] = \
         pcr.iterate(spot_yxz_ref[nbp_basic['use_tiles']], spot_yxz_imaging[t_ind, r_ind, c_ind],
-                    start_transform[:, :, t_ind, r_ind, c_ind], config['n_iter'], neighb_dist_thresh,
+                    start_transform[t_ind, r_ind, c_ind], config['n_iter'], neighb_dist_thresh,
                     n_matches_thresh[t_ind, r_ind, c_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
                     config['regularize_constant_scale'], config['regularize_constant_shift'])
 

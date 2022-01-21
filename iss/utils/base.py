@@ -4,15 +4,23 @@ import numpy as np
 
 def round_any(x, base, round_type='round'):
     """
-    rounds the number x to the nearest multiple of base with the rounding done according to round_type.
+    rounds the x to the nearest multiple of base with the rounding done according to round_type.
     e.g. round_any(3, 5) = 5. round_any(3, 5, 'floor') = 0.
+
+    :param x: float or numpy array
+    :param base: float
+    :param round_type: string, either 'round', 'ceil' or 'floor
+        default: 'round'
     """
     if round_type == 'round':
-        return base * round(x / base)
+        return base * np.round(x / base)
     elif round_type == 'ceil':
-        return base * ceil(x / base)
+        return base * np.ceil(x / base)
     elif round_type == 'floor':
-        return base * floor(x / base)
+        return base * np.floor(x / base)
+    else:
+        raise ValueError(f"round_type specified was {round_type} but it should be one of the following:\n"
+                         f"round, ceil, floor")
 
 
 def setdiff2d(array1, array2):

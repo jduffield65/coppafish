@@ -91,6 +91,8 @@ class TestGetAverageTransform(unittest.TestCase):
                 failed_matlab = \
                 matlab.load_array(test_file, ['D', 'nMatches', 'matches_thresh', 'scale_thresh', 'shift_thresh',
                                               'D_average', 'A', 'PcFailed'])
+            transforms = np.moveaxis(transforms, [0, 1], [-2, -1])  # put t,r,c indices before dim for Python
+            av_transforms_matlab = np.moveaxis(av_transforms_matlab, [0, 1], [-2, -1])
             n_matches = np.moveaxis(n_matches, 1, 2)  # change to t,r,c from MATLAB t,c,r
             matches_thresh = np.moveaxis(matches_thresh, 1, 2)  # change to t,r,c from MATLAB t,c,r
             failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
@@ -117,6 +119,8 @@ class TestGetAverageTransform(unittest.TestCase):
                 failed_matlab = \
                 matlab.load_array(test_file, ['D', 'nMatches', 'matches_thresh', 'scale_thresh', 'shift_thresh',
                                               'D_average', 'A', 'PcFailed'])
+            transforms = np.moveaxis(transforms, [0, 1], [-2, -1])  # put t,r,c indices before dim for Python
+            av_transforms_matlab = np.moveaxis(av_transforms_matlab, [0, 1], [-2, -1])
             n_matches = np.moveaxis(n_matches, 1, 2)  # change to t,r,c from MATLAB t,c,r
             matches_thresh = np.moveaxis(matches_thresh, 1, 2)  # change to t,r,c from MATLAB t,c,r
             failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
@@ -177,14 +181,18 @@ class TestIterate(unittest.TestCase):
             scale_dev_thresh = scale_dev_thresh[0]
             shift_dev_thresh = shift_dev_thresh[0]
             yxz_base = yxz_base.squeeze()
+            # put t,r,c indices before dim for Python transforms
+            transforms_start = np.moveaxis(transforms_start, [0, 1], [-2, -1])
+            transforms_matlab = np.moveaxis(transforms_matlab, [0, 1], [-2, -1])
             n_matches_matlab = np.moveaxis(n_matches_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             matches_thresh = np.moveaxis(matches_thresh, 1, 2)  # change to t,r,c from MATLAB t,c,r
             error_matlab = np.moveaxis(error_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             yxz_target = np.moveaxis(yxz_target, 1, 2)  # change to t,r,c from MATLAB t,c,r
             transforms_python, n_matches_python, error_python, failed_python, pcr_converged, av_scaling_python, \
-                av_shifts = iterate(yxz_base, yxz_target, transforms_start, n_iter, dist_thresh, matches_thresh,
-                          scale_dev_thresh, shift_dev_thresh, reg_constant_rot, reg_constant_shift)
+                av_shifts, transforms_outlier = iterate(yxz_base, yxz_target, transforms_start, n_iter, dist_thresh,
+                                                        matches_thresh, scale_dev_thresh, shift_dev_thresh,
+                                                        reg_constant_rot, reg_constant_shift)
             diff_1 = transforms_python - transforms_matlab
             diff_2 = n_matches_python - n_matches_matlab
             diff_3 = error_python - error_matlab
