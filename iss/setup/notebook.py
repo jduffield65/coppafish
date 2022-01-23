@@ -217,7 +217,7 @@ class Notebook:
         """Return the number of pages in the Notebook"""
         return len(self._pages)
 
-    def add_page(self, page, do_nothing_if_exists=False):
+    def add_page(self, page):
         """Insert the page `page` into the Notebook.
 
         This function automatically triggers a save.
@@ -226,19 +226,16 @@ class Notebook:
             Basically included to avoid error when page exists.
             default: False
         """
-        if do_nothing_if_exists and self.has_page(page.name):
-            pass
-        else:
-            if self._SEP in page.name:
-                raise NameError(f"The separator {self._SEP} may not be in the page's name")
-            if page.finalized:
-                raise ValueError("Page already added to a Notebook, cannot add twice")
-            if self.has_page(page.name):
-                raise ValueError("Cannot add two pages with the same name")
-            page.finalized = True
-            self._pages.append(page)
-            self._pages_times.append(time.time())
-            self.save()
+        if self._SEP in page.name:
+            raise NameError(f"The separator {self._SEP} may not be in the page's name")
+        if page.finalized:
+            raise ValueError("Page already added to a Notebook, cannot add twice")
+        if self.has_page(page.name):
+            raise ValueError("Cannot add two pages with the same name")
+        page.finalized = True
+        self._pages.append(page)
+        self._pages_times.append(time.time())
+        self.save()
 
     def has_page(self, page_name):
         """A check to see if notebook includes a page called page_name.

@@ -6,7 +6,7 @@ import numpy as np
 import warnings
 
 
-def run_stitch(config, nbp_basic, spot_details):
+def stitch(config, nbp_basic, spot_details):
     nbp_debug = setup.NotebookPage("stitch_debug")
 
     # determine shifts to search over

@@ -6,7 +6,7 @@ from ..find_spots import spot_yxz
 import warnings
 
 
-def run_register_initial(config, nbp_basic, spot_details):
+def register_initial(config, nbp_basic, spot_details):
 
     nbp_debug = setup.NotebookPage("register_initial_debug")
     if config['shift_channel'] is None:

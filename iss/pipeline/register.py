@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 
-def run_register(config, nbp_basic, spot_details, initial_shift):
+def register(config, nbp_basic, spot_details, initial_shift):
     nbp = setup.NotebookPage("register")
     nbp_debug = setup.NotebookPage("register_debug")
     nbp['initial_shift'] = initial_shift.copy()
@@ -39,9 +39,10 @@ def run_register(config, nbp_basic, spot_details, initial_shift):
                                              np.min([spot_yxz_ref[t].shape[0], spot_yxz_imaging[t, r, c].shape[0]]))
 
     # get indices of tiles/rounds/channels used
-    t_ind, r_ind, c_ind = utils.multi_array_ind(nbp_basic['use_tiles'], nbp_basic['use_rounds'],
-                                                nbp_basic['use_channels'])
-    n_matches_thresh[t_ind, r_ind, c_ind] = np.clip(n_matches_thresh[t_ind, r_ind, c_ind], config['matches_thresh_min'],
+    trc_ind = np.ix_(nbp_basic['use_tiles'], nbp_basic['use_rounds'], nbp_basic['use_channels'])
+    tr_ind = np.ix_(nbp_basic['use_tiles'], nbp_basic['use_rounds'])  # needed for av_shifts as no channel index
+
+    n_matches_thresh[trc_ind] = np.clip(n_matches_thresh[trc_ind], config['matches_thresh_min'],
                                                     config['matches_thresh_max'])
     n_matches_thresh = n_matches_thresh.astype(int)
 
@@ -57,13 +58,20 @@ def run_register(config, nbp_basic, spot_details, initial_shift):
     transform_outliers = np.zeros_like(start_transform)
 
     # get PCR output only for tiles/rounds/channels that we are using
-    final_transform[t_ind, r_ind, c_ind], n_matches[t_ind, r_ind, c_ind], error[t_ind, r_ind, c_ind], \
-    failed[t_ind, r_ind, c_ind], converged[t_ind, r_ind, c_ind], av_scaling[nbp_basic['use_channels']], \
-    av_shifts[t_ind[:, :, 0], r_ind[:, :, 0]], transform_outliers[t_ind, r_ind, c_ind] = \
-        pcr.iterate(spot_yxz_ref[nbp_basic['use_tiles']], spot_yxz_imaging[t_ind, r_ind, c_ind],
-                    start_transform[t_ind, r_ind, c_ind], config['n_iter'], neighb_dist_thresh,
-                    n_matches_thresh[t_ind, r_ind, c_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
+    final_transform[trc_ind], pcr_debug = \
+        pcr.iterate(spot_yxz_ref[nbp_basic['use_tiles']], spot_yxz_imaging[trc_ind],
+                    start_transform[trc_ind], config['n_iter'], neighb_dist_thresh,
+                    n_matches_thresh[trc_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
                     config['regularize_constant_scale'], config['regularize_constant_shift'])
+
+    # save debug info at correct tile, round, channel index
+    n_matches[trc_ind] = pcr_debug['n_matches']
+    error[trc_ind] = pcr_debug['error']
+    failed[trc_ind] = pcr_debug['failed']
+    converged[trc_ind] = pcr_debug['is_converged']
+    av_scaling[nbp_basic['use_channels']] = pcr_debug['av_scaling']
+    av_shifts[tr_ind] = pcr_debug['av_shifts']
+    transform_outliers[trc_ind] = pcr_debug['transforms_outlier']
 
     # add to notebook
     nbp['transform'] = final_transform

@@ -189,15 +189,14 @@ class TestIterate(unittest.TestCase):
             error_matlab = np.moveaxis(error_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             yxz_target = np.moveaxis(yxz_target, 1, 2)  # change to t,r,c from MATLAB t,c,r
-            transforms_python, n_matches_python, error_python, failed_python, pcr_converged, av_scaling_python, \
-                av_shifts, transforms_outlier = iterate(yxz_base, yxz_target, transforms_start, n_iter, dist_thresh,
-                                                        matches_thresh, scale_dev_thresh, shift_dev_thresh,
-                                                        reg_constant_rot, reg_constant_shift)
+            transforms_python, debug_python = iterate(yxz_base, yxz_target, transforms_start, n_iter, dist_thresh,
+                                                      matches_thresh, scale_dev_thresh, shift_dev_thresh,
+                                                      reg_constant_rot, reg_constant_shift)
             diff_1 = transforms_python - transforms_matlab
-            diff_2 = n_matches_python - n_matches_matlab
-            diff_3 = error_python - error_matlab
-            diff_4 = failed_python.astype(int) - failed_matlab
-            diff_5 = av_scaling_python - av_scaling_matlab
+            diff_2 = debug_python['n_matches'] - n_matches_matlab
+            diff_3 = debug_python['error'] - error_matlab
+            diff_4 = debug_python['failed'].astype(int) - failed_matlab
+            diff_5 = debug_python['av_scaling'] - av_scaling_matlab
             self.assertTrue(np.abs(diff_1).max() <= self.tol)
             self.assertTrue(np.abs(diff_2).max() <= self.tol)
             self.assertTrue(np.abs(diff_3).max() <= self.tol)

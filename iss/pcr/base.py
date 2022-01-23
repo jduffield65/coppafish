@@ -264,18 +264,21 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
     :return:
     transforms: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
         transforms[t, r, c] is the final affine transform found for tile t, round r, channel c.
-    n_matches: numpy integer array [n_tiles x n_rounds x n_channels] giving number of matches found for each transform.
-    error: numpy float array [n_tiles x n_rounds x n_channels], average distance between neighbours below dist_thresh.
-    failed: numpy boolean array [n_tiles x n_rounds x n_channels]
-        indicates tiles/rounds/channels to which transform had too few matches or transform was anomalous compared
-        to median. These were not included when calculating av_scalings / av_shifts.
-    av_scaling: numpy float array [n_channels x dim].
-        chromatic aberration scaling factor to each channel from reference channel. Made using all rounds and tiles.
-    av_shifts: numpy float array [n_tiles x n_rounds x dim]
-        av_shifts[t,r,:] is the average shift from reference round to round r for tile t across all colour channels.
-    transforms_outlier: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-        transforms[t, r, c] is the final affine transform found for tile t, round r, channel c
-        without regularization for t,r,c indicated by failed otherwise it is 0.
+    debug_info: dictionary containing the following -
+        n_matches: numpy integer array [n_tiles x n_rounds x n_channels] giving number of matches found
+            for each transform.
+        error: numpy float array [n_tiles x n_rounds x n_channels], average distance between neighbours
+            below dist_thresh.
+        failed: numpy boolean array [n_tiles x n_rounds x n_channels]
+            indicates tiles/rounds/channels to which transform had too few matches or transform was anomalous compared
+            to median. These were not included when calculating av_scalings / av_shifts.
+        av_scaling: numpy float array [n_channels x dim].
+            chromatic aberration scaling factor to each channel from reference channel. Made using all rounds and tiles.
+        av_shifts: numpy float array [n_tiles x n_rounds x dim]
+            av_shifts[t,r,:] is the average shift from reference round to round r for tile t across all colour channels.
+        transforms_outlier: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
+            transforms[t, r, c] is the final affine transform found for tile t, round r, channel c
+            without regularization for t,r,c indicated by failed otherwise it is 0.
     """
     n_tiles, n_rounds, n_channels = yxz_target.shape
     if not utils.errors.check_shape(yxz_base, [n_tiles]):
@@ -335,4 +338,6 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
                 break
     pbar.close()
 
-    return transforms, n_matches, error, failed, is_converged, av_scaling, av_shifts, transforms_outlier
+    debug_info = {'n_matches': n_matches, 'error': error, 'failed': failed, 'is_converged': is_converged,
+                  'av_scaling': av_scaling, 'av_shifts': av_shifts, 'transforms_outlier': transforms_outlier}
+    return transforms, debug_info
