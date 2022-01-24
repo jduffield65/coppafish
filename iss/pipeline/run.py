@@ -1,6 +1,6 @@
 import os
 from .. import setup, utils
-from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register
+from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots
 import warnings
 
 
@@ -11,6 +11,7 @@ def run_pipeline(config_file):
     nb = run_find_spots(nb, config)
     nb = run_stitch(nb, config)
     nb = run_register(nb, config)
+    nb = run_reference_spots(nb)
     return nb
 
 
@@ -91,6 +92,16 @@ def run_register(nb, config):
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
+    return nb
+
+
+def run_reference_spots(nb):
+    if not nb.has_page("ref_spots"):
+        nbp = reference_spots(nb['file_names'], nb['basic_info'], nb['find_spots']['spot_details'],
+                              nb['stitch_debug']['tile_origin'], nb['register']['transform'])
+        nb += nbp
+    else:
+        warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
     return nb
 
 
