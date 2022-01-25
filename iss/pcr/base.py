@@ -318,7 +318,7 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
                             is_converged[t, r, c] = np.abs(neighbour[t, r, c] - neighbour_last[t, r, c]).max() == 0
                             if is_converged[t, r, c]:
                                 pbar.update(1)
-            if (is_converged.min() and finished_good_images == False) or i == n_iter-1:
+            if (is_converged.all() and finished_good_images == False) or i == n_iter-1:
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
                 # TODO: included failed_non_matches with idea that if failed on matches but not on anomalous transform,
@@ -334,7 +334,7 @@ def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, match
                     finished_good_images = True
                     pbar.update(-sum(failed.flatten()))
 
-            if is_converged.min():
+            if is_converged.all():
                 break
     pbar.close()
 

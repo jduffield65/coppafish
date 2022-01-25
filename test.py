@@ -4,6 +4,7 @@ import iss.utils.test as utils
 import iss.stitch.test as stitch
 import iss.setup.test as setup
 import iss.pcr.test as pcr
+import iss.call_spots.test as call_spots
 import unittest
 
 
@@ -43,9 +44,15 @@ def suite_stitch():
 
 def suite_pcr():
     suite = unittest.TestSuite()
-    #suite.addTest(unittest.makeSuite(pcr.TestGetTransform, 'test'))
-    #suite.addTest(unittest.makeSuite(pcr.TestGetAverageTransform, 'test'))
+    suite.addTest(unittest.makeSuite(pcr.TestGetTransform, 'test'))
+    suite.addTest(unittest.makeSuite(pcr.TestGetAverageTransform, 'test'))
     suite.addTest(unittest.makeSuite(pcr.TestIterate, 'test'))
+    return suite
+
+
+def suite_call_spots():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
     return suite
 
 
@@ -56,9 +63,10 @@ def suite_all():
     suite.addTest(suite_find_spots())
     suite.addTest(suite_stitch())
     suite.addTest(suite_pcr())
+    suite.addTest(suite_call_spots())
     return suite
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_pcr', exit=True)
+    unittest.main(defaultTest='suite_call_spots', exit=True)
     hi = 5
