@@ -1,1 +1,1 @@
-from .test_bleed_matrix import TestScaledKMeans
+from .test_bleed_matrix import TestScaledKMeans, TestGetBleedMatrix

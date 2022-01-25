@@ -21,6 +21,7 @@ def suite_setup():
     suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
     return suite
 
+
 def suite_extract():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(extract.TestFstack, 'test'))
@@ -52,7 +53,8 @@ def suite_pcr():
 
 def suite_call_spots():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
+    #suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestGetBleedMatrix, 'test'))
     return suite
 
 
