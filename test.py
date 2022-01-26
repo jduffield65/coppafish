@@ -54,7 +54,8 @@ def suite_pcr():
 def suite_call_spots():
     suite = unittest.TestSuite()
     #suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
-    suite.addTest(unittest.makeSuite(call_spots.TestGetBleedMatrix, 'test'))
+    #suite.addTest(unittest.makeSuite(call_spots.TestGetBleedMatrix, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestColorNormalisation, 'test'))
     return suite
 
 

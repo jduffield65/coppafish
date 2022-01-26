@@ -105,7 +105,7 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_debug, auto_thresh_mul
         auto_thresh is set to auto_thresh_multiplier * median(abs(image))
         so that pixel values above this are likely spots
         typical = 10
-    :param hist_bin_edges: numpy array [len(log_extract['vars']['hist_values']) + 1]
+    :param hist_bin_edges: numpy array [len(nbp_vars['hist_values']) + 1]
         hist_values shifted by 0.5 to give bin edges not centres.
     :param t: integer, tiff tile index considering
     :param r: integer, round considering

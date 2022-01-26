@@ -52,6 +52,7 @@ class TestScaledKMeans(unittest.TestCase):
 class TestGetBleedMatrix(unittest.TestCase):
     """
     Check whether bleed matrix is obtained is the same as MATLAB.
+    test files were made with python_testing/call_spots/get_bleed_matrix.m script.
 
     test files contain:
     InputDirectory: directory of data used to create unit test data

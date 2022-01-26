@@ -70,6 +70,7 @@ def get_bleed_matrix(spot_colors, dye_channel_intensity, method, score_thresh=0,
 
     :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]
         intensity found for each spot in each round and channel, normalized in some way to equalize channel intensities
+        typically, the normalisation will be such that spot_colors vary between around -5 to 10 with most near 0.
     :param dye_channel_intensity: numpy float array [n_dyes x n_channels]
         initial guess for intensity we expect each dye to produce in each channel. Should be normalized in same way as
         spot_colors.
