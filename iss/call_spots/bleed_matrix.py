@@ -63,7 +63,7 @@ def scaled_k_means(x, initial_cluster_mean, score_thresh=0, min_cluster_size=10,
     return norm_cluster_mean, cluster_ind, cluster_eig_val
 
 
-def get_bleed_matrix(spot_colors, dye_channel_intensity, method, score_thresh=0, min_cluster_size=10, n_iter=100):
+def get_bleed_matrix(spot_colors, initial_bleed_matrix, method, score_thresh=0, min_cluster_size=10, n_iter=100):
     """
     this returns a bleed matrix such that bleed_matrix[r, c, d] is the expected intensity for
     dye d in round r, channel c.
@@ -71,9 +71,9 @@ def get_bleed_matrix(spot_colors, dye_channel_intensity, method, score_thresh=0,
     :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]
         intensity found for each spot in each round and channel, normalized in some way to equalize channel intensities
         typically, the normalisation will be such that spot_colors vary between around -5 to 10 with most near 0.
-    :param dye_channel_intensity: numpy float array [n_dyes x n_channels]
-        initial guess for intensity we expect each dye to produce in each channel. Should be normalized in same way as
-        spot_colors.
+    :param initial_bleed_matrix: numpy float array [n_rounds x n_channels x n_dyes]
+        initial guess for intensity we expect each dye to produce in each channel and round.
+        Should be normalized in same way as spot_colors.
     :param method: string, 'single' or 'separate'
         'single': a single bleed matrix is produced for all rounds
         'separate': a different bleed matrix is made for each round
@@ -89,9 +89,10 @@ def get_bleed_matrix(spot_colors, dye_channel_intensity, method, score_thresh=0,
     :return: numpy float array [n_rounds x n_channels x n_dyes]
     """
     n_rounds, n_channels = spot_colors.shape[1:]
-    n_dyes = dye_channel_intensity.shape[0]
-    if not utils.errors.check_shape(dye_channel_intensity, [n_dyes, n_channels]):
-        raise utils.errors.ShapeError('initial_cluster_mean', dye_channel_intensity.shape, (n_dyes, n_channels))
+    n_dyes = initial_bleed_matrix.shape[2]
+    if not utils.errors.check_shape(initial_bleed_matrix, [n_rounds, n_channels, n_dyes]):
+        raise utils.errors.ShapeError('initial_bleed_matrix', initial_bleed_matrix.shape, (n_rounds, n_channels,
+                                                                                           n_dyes))
 
     bleed_matrix = np.zeros((n_rounds, n_channels, n_dyes))  # Round, Measured, Real
     if method.lower() == 'separate':
@@ -99,19 +100,69 @@ def get_bleed_matrix(spot_colors, dye_channel_intensity, method, score_thresh=0,
             spot_channel_intensity = spot_colors[:, r, :]
             # get rid of any nan codes
             spot_channel_intensity = spot_channel_intensity[~np.isnan(spot_channel_intensity).any(axis=1)]
-            dye_codes, _, dye_eig_vals = scaled_k_means(spot_channel_intensity, dye_channel_intensity, score_thresh,
-                                                        min_cluster_size, n_iter)
+            dye_codes, _, dye_eig_vals = scaled_k_means(spot_channel_intensity, initial_bleed_matrix[r].transpose(),
+                                                        score_thresh, min_cluster_size, n_iter)
             for d in range(n_dyes):
                 bleed_matrix[r, :, d] = dye_codes[d] * np.sqrt(dye_eig_vals[d])
     elif method.lower() == 'single':
+        initial_bleed_matrix_round_diff = initial_bleed_matrix.max(axis=0) - initial_bleed_matrix.min(axis=0)
+        if np.max(np.abs(initial_bleed_matrix_round_diff)) > 1e-10:
+            raise ValueError(f"method is {method}, but initial_bleed_matrix is different for different rounds.")
+
         spot_channel_intensity = spot_colors.reshape(-1, n_channels)
         # get rid of any nan codes
         spot_channel_intensity = spot_channel_intensity[~np.isnan(spot_channel_intensity).any(axis=1)]
-        dye_codes, _, dye_eig_vals = scaled_k_means(spot_channel_intensity, dye_channel_intensity, score_thresh,
-                                                    min_cluster_size, n_iter)
+        dye_codes, _, dye_eig_vals = scaled_k_means(spot_channel_intensity, initial_bleed_matrix[0].transpose(),
+                                                    score_thresh, min_cluster_size, n_iter)
         for r in range(n_rounds):
             for d in range(n_dyes):
                 bleed_matrix[r, :, d] = dye_codes[d] * np.sqrt(dye_eig_vals[d])
     else:
         raise ValueError(f"method given was {method} but should be either 'single' or 'separate'")
     return bleed_matrix
+
+
+def get_dye_channel_intensity_guess(csv_file_name, dyes, cameras, lasers):
+    """
+    this gets an estimate for the intensity of each dye in each channel (before any channel normalisation)
+    which is then used as the starting point for the bleed matrix computation
+
+    :param csv_file_name: string, path to csv file which has 4 columns with headers Dye, Camera, Laser, Intensity
+        Dye is a column of names of different dyes
+        Camera is a column of integers indicating the wavelength in nm of the camera.
+        Laser is a column of integers indicating the wavelength in nm of the laser.
+        Intensity[i] is the approximate intensity of Dye[i] in a channel with Camera[i] and Laser [i].
+    :param dyes: list of strings [n_dyes]
+        names of dyes used in particular experiment.
+    :param cameras: numpy integer array [n_channels]
+        wavelength of camera in nm used in each channel.
+    :param lasers: numpy integer array [n_channels]
+        wavelength of laser in nm used in each channel.
+    :return:
+        numpy float array [n_dyes x n_channels]
+    """
+    n_dyes = len(dyes)
+    n_channels = cameras.shape[0]
+    if not utils.errors.check_shape(cameras, lasers.shape):
+        raise utils.errors.ShapeError('cameras', cameras.shape, lasers.shape)
+
+    # load in csv info
+    csv_dyes = np.genfromtxt(csv_file_name, delimiter=',', usecols=0, dtype=str, skip_header=1)
+    csv_cameras = np.genfromtxt(csv_file_name, delimiter=',', usecols=1, dtype=int, skip_header=1)
+    csv_lasers = np.genfromtxt(csv_file_name, delimiter=',', usecols=2, dtype=int, skip_header=1)
+    csv_intensities = np.genfromtxt(csv_file_name, delimiter=',', usecols=3, dtype=float, skip_header=1)
+
+    # read in intensity from csv info for desired dyes in each channel
+    dye_channel_intensity = np.zeros((n_dyes, n_channels))
+    for d in range(n_dyes):
+        correct_dye = csv_dyes == dyes[d].upper()
+        for c in range(n_channels):
+            correct_camera = csv_cameras == cameras[c]
+            correct_laser = csv_lasers == lasers[c]
+            correct_all = np.all((correct_dye, correct_camera, correct_laser), axis=0)
+            if sum(correct_all) != 1:
+                raise ValueError(f"Expected intensity for dye {dyes[d]}, camera {cameras[c]} and laser {lasers[c]} "
+                                 f"to be found once in csv_file. Instead, it was found {sum(correct_all)} times.")
+            dye_channel_intensity[d, c] = csv_intensities[np.where(correct_all)[0][0]]
+
+    return dye_channel_intensity

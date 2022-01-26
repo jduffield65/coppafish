@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..bleed_matrix import scaled_k_means, get_bleed_matrix
+from ..bleed_matrix import scaled_k_means, get_bleed_matrix, get_dye_channel_intensity_guess
 
 
 class TestScaledKMeans(unittest.TestCase):
@@ -89,7 +89,42 @@ class TestGetBleedMatrix(unittest.TestCase):
                 method = 'single'
             else:
                 method = 'blah'
-            bleed_matrix_python = get_bleed_matrix(spot_colors, dye_channel_matrix, method, score_thresh,
+            initial_bleed_matrix = np.expand_dims(dye_channel_matrix.transpose(), 0)
+            n_rounds = bleed_matrix_matlab.shape[0]
+            initial_bleed_matrix = np.tile(initial_bleed_matrix, (n_rounds, 1, 1))
+            bleed_matrix_python = get_bleed_matrix(spot_colors, initial_bleed_matrix, method, score_thresh,
                                                    min_cluster_size, n_iter)
             diff = bleed_matrix_python - bleed_matrix_matlab
+            self.assertTrue(np.abs(diff).max() <= self.tol)
+
+
+class TestGetDyeChannelIntensityGuess(unittest.TestCase):
+    """
+    Check whether bleed matrix is obtained is the same as MATLAB.
+    test files were made with python_testing/call_spots/get_bleed_matrix.m script.
+
+    test files contain:
+    file_name: path of csv file containing raw dye, camera, laser intensity data
+    dye_names: cell array [n_dyes] giving name of dyes used
+    cameras: integer array [n_channels] giving waelength in nm of camera used in each channel
+    lasers: integer array [n_channels] giving wavelength in nm of laser used in each channel
+    output: float array [n_dyes x n_channels] giving approximate intensity of each dye in each channel
+    """
+    folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
+    tol = 1e-10
+
+    def test_get_dye_channel_intensity_guess(self):
+        folder = os.path.join(self.folder, 'get_dye_channel_intensity_guess')
+        test_files = [s for s in os.listdir(folder) if "test" in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(folder, file_name)
+            csv_file_name, dye_names, cameras, lasers, output_matlab = \
+                matlab.load_v_less_7_3(test_file, ['file_name', 'dye_names', 'cameras', 'lasers', 'output'])
+            dye_names = [dye_names[i][0][0] for i in range(dye_names.shape[0])]
+            cameras = cameras.astype(int).flatten()
+            lasers = lasers.astype(int).flatten()
+            output_python = get_dye_channel_intensity_guess(csv_file_name[0], dye_names, cameras, lasers)
+            diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)
