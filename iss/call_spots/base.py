@@ -73,3 +73,38 @@ def color_normalisation(hist_values, hist_counts, thresh_intensities, thresh_pro
             break
 
     return norm_factor
+
+
+def get_bled_codes(gene_codes, bleed_matrix):
+    """
+    this gets bled_codes such that the spot_color of a gene g in round r is expected to be a constant
+    multiple of bled_codes[g, r, :].
+
+    :param gene_codes: numpy integer array [n_genes x n_rounds]
+        gene_codes[g, r] indicates the dye that should be present for gene g in round r.
+    :param bleed_matrix: numpy float array [n_rounds x n_channels x n_dyes]
+        expected intensity of dye d in round r is a constant multiple of bleed_matrix[r, :, d].
+    :return: numpy float array [n_genes x n_rounds x n_channels]
+    """
+    n_genes = gene_codes.shape[0]
+    n_rounds, n_channels, n_dyes = bleed_matrix.shape
+    if not utils.errors.check_shape(gene_codes, [n_genes, n_rounds]):
+        raise utils.errors.ShapeError('gene_codes', gene_codes.shape, (n_genes, n_rounds))
+    if gene_codes.max() >= n_dyes:
+        ind_1, ind_2 = np.where(gene_codes == gene_codes.max())
+        raise ValueError(f"gene_code for gene {ind_1[0]}, round {ind_2[0]} has a dye with index {gene_codes.max()}"
+                         f" but there are only {n_dyes} dyes.")
+    if gene_codes.min() < 0:
+        ind_1, ind_2 = np.where(gene_codes == gene_codes.min())
+        raise ValueError(f"gene_code for gene {ind_1[0]}, round {ind_2[0]} has a dye with a negative index:"
+                         f" {gene_codes.min()}")
+
+    bled_codes = np.zeros((n_genes, n_rounds, n_channels))
+    for g in range(n_genes):
+        for r in range(n_rounds):
+            for c in range(n_channels):
+                bled_codes[g, r, c] = bleed_matrix[r, c, gene_codes[r]]
+
+    return bled_codes
+
+# TODO: when doing dot product scores, have absolute dot product and then difference to second best but no standard dev.

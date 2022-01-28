@@ -65,8 +65,8 @@ def scaled_k_means(x, initial_cluster_mean, score_thresh=0, min_cluster_size=10,
 
 def get_bleed_matrix(spot_colors, initial_bleed_matrix, method, score_thresh=0, min_cluster_size=10, n_iter=100):
     """
-    this returns a bleed matrix such that bleed_matrix[r, c, d] is the expected intensity for
-    dye d in round r, channel c.
+    this returns a bleed matrix such that the expected intensity of dye d in round r
+    is a constant multiple of bleed_matrix[r, :, d].
 
     :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]
         intensity found for each spot in each round and channel, normalized in some way to equalize channel intensities
@@ -132,7 +132,7 @@ def get_dye_channel_intensity_guess(csv_file_name, dyes, cameras, lasers):
         Camera is a column of integers indicating the wavelength in nm of the camera.
         Laser is a column of integers indicating the wavelength in nm of the laser.
         Intensity[i] is the approximate intensity of Dye[i] in a channel with Camera[i] and Laser [i].
-    :param dyes: list of strings [n_dyes]
+    :param dyes: list of strings or numpy string array [n_dyes]
         names of dyes used in particular experiment.
     :param cameras: numpy integer array [n_channels]
         wavelength of camera in nm used in each channel.
