@@ -39,6 +39,10 @@ _options = {
             'use_rounds': 'maybe_list_int',
             'use_z': 'maybe_list_int',
             'use_tiles': 'maybe_list_int',
+            'use_dyes': 'maybe_list_int',
+            'dye_names': 'maybe_list_str',
+            'channel_camera': 'maybe_list_int',
+            'channel_laser': 'maybe_list_int',
             'tile_pixel_value_shift': 'int',
             'ignore_first_z_plane': 'bool'
         },
@@ -50,6 +54,8 @@ _options = {
             'round': 'list',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
+            'dye_camera_laser': 'maybe_str',
+            'code_book': 'str',
             'matlab_tile_names': 'bool',
             'psf': 'maybe_file'
         },
@@ -125,6 +131,14 @@ _options = {
             'shift_dev_thresh': 'list_number',
             'regularize_constant_scale': 'number',
             'regularize_constant_shift': 'number'
+        },
+    'call_spots':
+        {
+           'bleed_matrix_method': 'str',
+           'color_norm_intensities': 'list_number',
+           'color_norm_probs': 'list_number',
+           'bleed_matrix_score_thresh': 'number',
+           'dot_product_method': 'str'
         }
 }
 
@@ -150,10 +164,12 @@ _option_type_checkers = {
     'list': lambda x: True,
     'list_int': lambda x: all([_option_type_checkers['int'](s.strip()) for s in x.split(",")]),
     'list_number': lambda x: all([_option_type_checkers['number'](s.strip()) for s in x.split(",")]),
+    'list_str': lambda x: all([_option_type_checkers['str'](s.strip()) for s in x.split(",")]),
     'maybe_int': lambda x: x.strip() == "" or _option_type_checkers['int'](x),
     'maybe_number': lambda x: x.strip() == "" or _option_type_checkers['number'](x),
     'maybe_list_int': lambda x: x.strip() == "" or _option_type_checkers['list_int'](x),
     'maybe_str': lambda x: x.strip() == "" or _option_type_checkers['str'](x),
+    'maybe_list_str': lambda x: x.strip() == "" or _option_type_checkers['list_str'](x),
     'maybe_file': lambda x: x.strip() == "" or _option_type_checkers['file'](x)
 }
 _option_formatters = {
@@ -166,10 +182,12 @@ _option_formatters = {
     'list': lambda x: [s.strip() for s in x.split(",")],
     'list_int': lambda x: [_option_formatters['int'](s.strip()) for s in x.split(",")],
     'list_number': lambda x: [_option_formatters['number'](s.strip()) for s in x.split(",")],
+    'list_str': lambda x: [_option_formatters['str'](s.strip()) for s in x.split(",")],
     'maybe_int': lambda x: None if x == "" else _option_formatters['int'](x),
     'maybe_number': lambda x: None if x == "" else _option_formatters['number'](x),
     'maybe_list_int': lambda x: None if x == "" else _option_formatters['list_int'](x),
     'maybe_str': lambda x: None if x == "" else _option_formatters['str'](x),
+    'maybe_list_str': lambda x: None if x == "" else _option_formatters['list_str'](x),
     'maybe_file': lambda x: None if x == "" else _option_formatters['file'](x)
 }
 

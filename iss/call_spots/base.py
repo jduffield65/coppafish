@@ -103,8 +103,61 @@ def get_bled_codes(gene_codes, bleed_matrix):
     for g in range(n_genes):
         for r in range(n_rounds):
             for c in range(n_channels):
-                bled_codes[g, r, c] = bleed_matrix[r, c, gene_codes[r]]
+                bled_codes[g, r, c] = bleed_matrix[r, c, gene_codes[g, r]]
 
     return bled_codes
 
-# TODO: when doing dot product scores, have absolute dot product and then difference to second best but no standard dev.
+
+def dot_product(data_vectors, cluster_vectors, norm_axis=None):
+    """
+    Will normalise both data_vectors and cluster_vectors and then find the dot product between each vector in
+    data_vectors with each vector in cluster_vectors.
+
+    :param data_vectors: numpy float array [n_data x ax1_dim x ax2_dim x ... x axN_dim]
+    :param cluster_vectors: numpy float array [n_clusters x ax1_dim x ax2_dim x ... x axN_dim]
+    :param norm_axis: integer or tuple of integers, optional
+        which axis to sum over for normalisation
+        e.g. consider example where data_vectors shape is [800 x 5 x 10]
+            norm_axis = (1,2): normalisation will sum over both axis so maximum possible dot product is 1.
+            norm_axis = 1: normalisation will sum over axis 1 so maximum possible dot product is 10.
+            norm_axis = 2: normalisation will sum over axis 2 so maximum possible dot product is 5.
+        default is summing over all axis i.e. (1,...,N).
+    :return:
+        numpy float array [n_data x n_clusters] giving dot product for each data vector with each cluster vector
+    """
+    if not utils.errors.check_shape(data_vectors[0], cluster_vectors[0].shape):
+        raise utils.errors.ShapeError('data_vectors', data_vectors.shape,
+                                      data_vectors.shape[:1] + cluster_vectors[0].shape)
+    if norm_axis is None:
+        norm_axis = tuple(np.arange(data_vectors.ndim))[1:]
+    data_vectors_intensity = np.sqrt(np.nansum(data_vectors ** 2, axis=norm_axis))
+    norm_data_vectors = data_vectors / np.expand_dims(data_vectors_intensity, norm_axis)
+    cluster_vectors_intensity = np.sqrt(np.nansum(cluster_vectors ** 2, axis=norm_axis))
+    norm_cluster_vectors = cluster_vectors / np.expand_dims(cluster_vectors_intensity, norm_axis)
+
+    # set nan values to 0.
+    norm_data_vectors[np.isnan(norm_data_vectors)] = 0
+    norm_cluster_vectors[np.isnan(norm_cluster_vectors)] = 0
+
+    n_data = np.shape(data_vectors)[0]
+    n_clusters = np.shape(cluster_vectors)[0]
+    return np.matmul(np.reshape(norm_data_vectors, (n_data, -1)),
+                     np.reshape(norm_cluster_vectors, (n_clusters, -1)).transpose())
+
+
+def get_spot_intensity(spot_colors):
+    """
+    finds the max intensity for each imaging round across all imaging channels for each spot.
+    Then median of these max round intensities is returned.
+    Logic is that we expect spots that are gene to have at least one large intensity value on each round
+    so high spot intensity is more indicative of a gene.
+
+    :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]
+    :return: numpy float array [n_spots]
+    """
+    diff_to_int = np.round(spot_colors[~np.isnan(spot_colors)]).astype(int)-spot_colors[~np.isnan(spot_colors)]
+    if np.abs(diff_to_int).max() == 0:
+        raise ValueError("spot_intensities should be found using normalised spot_colors. "
+                         "\nBut all values in spot_colors given are integers indicating they are the raw intensities.")
+    round_max_color = np.nanmax(spot_colors, axis=2)
+    return np.nanmedian(round_max_color, axis=1)

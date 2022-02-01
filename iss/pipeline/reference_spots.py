@@ -1,4 +1,4 @@
-from .. import pcr, setup
+from .. import setup
 from ..spot_colors import get_spot_colors
 from ..find_spots import spot_yxz
 from sklearn.neighbors import NearestNeighbors

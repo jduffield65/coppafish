@@ -134,14 +134,16 @@ def get_dye_channel_intensity_guess(csv_file_name, dyes, cameras, lasers):
         Intensity[i] is the approximate intensity of Dye[i] in a channel with Camera[i] and Laser [i].
     :param dyes: list of strings or numpy string array [n_dyes]
         names of dyes used in particular experiment.
-    :param cameras: numpy integer array [n_channels]
+    :param cameras: list of integers or numpy integer array [n_channels]
         wavelength of camera in nm used in each channel.
-    :param lasers: numpy integer array [n_channels]
+    :param lasers: list of integers or numpy integer array [n_channels]
         wavelength of laser in nm used in each channel.
     :return:
         numpy float array [n_dyes x n_channels]
     """
     n_dyes = len(dyes)
+    cameras = np.array(cameras)
+    lasers = np.array(lasers)
     n_channels = cameras.shape[0]
     if not utils.errors.check_shape(cameras, lasers.shape):
         raise utils.errors.ShapeError('cameras', cameras.shape, lasers.shape)

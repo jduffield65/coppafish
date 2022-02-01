@@ -1,6 +1,7 @@
 import os
 from .. import setup, utils
-from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots
+from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
+    call_reference_spots
 import warnings
 
 
@@ -11,7 +12,7 @@ def run_pipeline(config_file):
     nb = run_find_spots(nb, config)
     nb = run_stitch(nb, config)
     nb = run_register(nb, config)
-    nb = run_reference_spots(nb)
+    nb = run_reference_spots(nb, config)
     return nb
 
 
@@ -95,13 +96,20 @@ def run_register(nb, config):
     return nb
 
 
-def run_reference_spots(nb):
+def run_reference_spots(nb, config):
     if not nb.has_page("ref_spots"):
         nbp = reference_spots(nb['file_names'], nb['basic_info'], nb['find_spots']['spot_details'],
                               nb['stitch_debug']['tile_origin'], nb['register']['transform'])
         nb += nbp
     else:
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
+    if not nb.has_page("call_spots"):
+        nb['ref_spots'].finalized = False  # so can add gene_no to ref_spots and scores
+        # TODO: I am abusing the system by setting finalised to False and then True again. Not sure best way to do this
+        nbp, _ = call_reference_spots(config['call_spots'], nb['file_names'], nb['basic_info'], nb['ref_spots'],
+                                      nb['extract']['hist_values'], nb['extract']['hist_counts'])
+        nb['ref_spots'].finalized = True  # new variables will have been added to this page
+        nb += nbp
     return nb
 
 

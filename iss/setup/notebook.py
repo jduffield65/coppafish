@@ -221,10 +221,6 @@ class Notebook:
         """Insert the page `page` into the Notebook.
 
         This function automatically triggers a save.
-        :param do_nothing_if_exists: boolean, optional.
-            If page exists and this is True, nothing will be done.
-            Basically included to avoid error when page exists.
-            default: False
         """
         if self._SEP in page.name:
             raise NameError(f"The separator {self._SEP} may not be in the page's name")
@@ -352,6 +348,8 @@ class Notebook:
                 page_items[p] = {}
             page_items[p][k] = f[pk]
         pages = [NotebookPage.from_serial_dict(page_items[d]) for d in sorted(page_items.keys())]
+        for page in pages:
+            page.finalized = True  # if loading from file, then all pages are final
         pages_times = [page_times[d] for d in sorted(page_items.keys())]
         assert len(pages) == len(page_times), "Invalid file, lengths don't match"
         assert created_time is not None, "Invalid file, invalid created date"

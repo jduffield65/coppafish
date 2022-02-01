@@ -45,6 +45,10 @@ def set_basic_info(config_file, config_basic):
         nbp_basic['anchor_channel'] = None
     nbp_file['big_anchor_image'] = os.path.join(config_file['output_dir'], 'anchor_image.tif')
 
+    if config_file['dye_camera_laser'] is None:
+        nbp_file['dye_camera_laser'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                                                    'dye_camera_laser_raw_intensity.csv')
+
     if config_file['psf'] is None:
         # where to save psf, indicating average spot shape in raw image
         if nbp_basic['3d']:
@@ -97,6 +101,20 @@ def set_basic_info(config_file, config_basic):
     if len(use_z_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, metadata['sizes']['z'] - 1)
 
+    # get dye info
+    if config_basic['dye_names'] is None:
+        nbp_basic['dye_names'] = None
+        warnings.warn(f"dye_names not specified so assuming separate dye for each channel.")
+        n_dyes = n_channels
+    else:
+        n_dyes = len(config_basic['dye_names'])
+    if config_basic['use_dyes'] is None:
+        nbp_basic['use_dyes'] = list(np.arange(n_dyes))
+    if config_basic['channel_camera'] is None:
+        nbp_basic['channel_camera'] = None
+    if config_basic['channel_laser'] is None:
+        nbp_basic['channel_laser'] = None
+
     tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(metadata['xy_pos'], tile_sz)
     use_anchor = False
     if config_file['anchor'] is not None:
@@ -144,6 +162,7 @@ def set_basic_info(config_file, config_basic):
     nbp_basic['n_tiles'] = n_tiles  # int, number of tiles
     nbp_basic['n_channels'] = n_channels  # int, number of imaging channels
     nbp_basic['nz'] = nz  # number of z-planes used to make tiff images
+    nbp_basic['n_dyes'] = n_dyes  # int, number of dyes
     # subtract tile_centre from local pixel coordinates to get centered local tile coordinates
     if not nbp_basic['3d']:
         nz = 1
