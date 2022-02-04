@@ -187,6 +187,21 @@ class Notebook:
             self._created_time = time.time()
             self._config = read_config
 
+    def __repr__(self):
+        """
+        This means that print(nb) gives file location of notebook and
+        pages in the notebook sorted by time added to the notebook.
+        """
+        sort_page_names = sorted(self._page_times.items(), key=lambda x: x[1])  # sort by time added to notebook
+        page_names = [name[0] for name in sort_page_names]
+        n_names_per_line = 4
+        i = n_names_per_line - 1
+        while i < len(page_names)-n_names_per_line/2:
+            page_names[i+1] = "\n" + page_names[i+1]
+            i = i + n_names_per_line
+        page_names = ", ".join(page_names)
+        return f"File: {self._file}\nPages: {page_names}"
+
     def __eq__(self, other):
         """Test if two Notebooks are identical
 
