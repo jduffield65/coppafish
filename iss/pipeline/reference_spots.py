@@ -25,9 +25,10 @@ def reference_spots(nbp_file, nbp_basic, spot_details, tile_origin, transform):
             all_local_tile = np.append(all_local_tile, np.ones_like(t_isolated, dtype=int) * t)
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
+    # Do this in 2d as overlap is only 2d
     tile_centres = tile_origin + nbp_basic['tile_centre']
-    tree_tiles = NearestNeighbors(n_neighbors=1).fit(tile_centres)
-    _, all_nearest_tile = tree_tiles.kneighbors(all_global_yxz)
+    tree_tiles = NearestNeighbors(n_neighbors=1).fit(tile_centres[:, :2])
+    _, all_nearest_tile = tree_tiles.kneighbors(all_global_yxz[:, :2])
     not_duplicate = all_nearest_tile.flatten() == all_local_tile
 
     # nd means all spots that are not duplicate
