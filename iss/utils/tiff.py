@@ -43,13 +43,13 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_debug, image, t, r, c):
     :param r: integer, round considering
     :param c: integer, channel considering
     """
-    if r == nbp_basic['anchor_round']:
+    if r == nbp_basic.anchor_round:
         round = "anchor"
-        if c == nbp_basic['anchor_channel']:
-            scale = nbp_extract_debug['scale_anchor']
-            shift = nbp_basic['tile_pixel_value_shift']
+        if c == nbp_basic.anchor_channel:
+            scale = nbp_extract_debug.scale_anchor
+            shift = nbp_basic.tile_pixel_value_shift
             channel = "anchor"
-        elif c == nbp_basic['dapi_channel']:
+        elif c == nbp_basic.dapi_channel:
             scale = 1
             shift = 0
             channel = "dapi"
@@ -59,26 +59,26 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_debug, image, t, r, c):
             channel = "not used"
     else:
         round = r
-        if c not in nbp_basic['use_channels']:
+        if c not in nbp_basic.use_channels:
             scale = 1
             shift = 0
             channel = "not used"
         else:
-            scale = nbp_extract_debug['scale']
-            shift = nbp_basic['tile_pixel_value_shift']
+            scale = nbp_extract_debug.scale
+            shift = nbp_basic.tile_pixel_value_shift
             channel = c
     description = f"Tile = {t}. Round = {round}. Channel = {channel}. Shift = {shift}. Scale = {scale}"
     image = image + shift
-    if nbp_basic['3d']:
-        expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz'])
+    if nbp_basic.is_3d:
+        expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
         if not errors.check_shape(image, expected_shape):
             raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        save(image, nbp_file['tile'][t][r][c], append=False, description=description)
+        save(image, nbp_file.tile[t][r][c], append=False, description=description)
     else:
-        expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
+        expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz)
         if not errors.check_shape(image, expected_shape):
             raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        save(image, nbp_file['tile'][t][r], append=True, description=description)
+        save(image, nbp_file.tile[t][r], append=True, description=description)
 
 
 def load(im_file, planes=None, y_roi=None, x_roi=None):
@@ -145,35 +145,35 @@ def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_
         else:
             warnings.warn(f"\nTiff description is: \n{description}"
                           f"\nIt contains no information on Scale or Shift used to make it.")
-    if nbp_basic['3d']:
-        image = load(nbp_file['tile'][t][r][c], z, y, x)
+    if nbp_basic.is_3d:
+        image = load(nbp_file.tile[t][r][c], z, y, x)
         # throw error if tile not expected shape
         # only for case where y and x not specified as we know that if they are then load gives correct result
         if y is None and x is None:
             if z is None:
-                expected_z_shape = nbp_basic['nz']
+                expected_z_shape = nbp_basic.nz
             elif len(np.array([z]).flatten()) == 1:
                 expected_z_shape = 1
             else:
                 expected_z_shape = len(z)
             if expected_z_shape == 1:
-                expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
+                expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz)
             else:
-                expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'], nbp_basic['nz'])
+                expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
             if not errors.check_shape(image, expected_shape):
                 raise errors.ShapeError("loaded tile", image.shape, expected_shape)
     else:
-        image = load(nbp_file['tile'][t][r], c, y, x)
+        image = load(nbp_file.tile[t][r], c, y, x)
         # throw error if not expected shape
         if y is None and x is None:
-            expected_shape = (nbp_basic['tile_sz'], nbp_basic['tile_sz'])
+            expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz)
             if not errors.check_shape(image, expected_shape):
                 raise errors.ShapeError("loaded tile", image.shape, expected_shape)
-    if r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']:
+    if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
         pass
     else:
         # change from uint16 to int to ensure no info loss when subtract shift
-        image = image.astype(int) - nbp_basic['tile_pixel_value_shift']
+        image = image.astype(int) - nbp_basic.tile_pixel_value_shift
     return image
 
 
@@ -207,10 +207,10 @@ def load_tile_description(nbp_file, nbp_basic, t, r, c):
     :param c: integer, channel considering
     :return: string
     """
-    if nbp_basic['3d']:
-        description = load_description(nbp_file['tile'][t][r][c])
+    if nbp_basic.is_3d:
+        description = load_description(nbp_file.tile[t][r][c])
     else:
-        description = load_description(nbp_file['tile'][t][r], c)
+        description = load_description(nbp_file.tile[t][r], c)
     return description
 
 
@@ -243,11 +243,11 @@ def get_scale_shift_from_nbp(nbp_basic, nbp_extract_debug, r, c):
         shift: integer, shift applied to tiff to ensure pixel values positive.
             Found from nb['basic_info']['tile_pixel_value_shift']
     """
-    shift = nbp_basic['tile_pixel_value_shift']
-    if r == nbp_basic['anchor_round'] and c == nbp_basic['anchor_channel']:
-        scale = nbp_extract_debug['scale_anchor']
-    elif r != nbp_basic['anchor_round'] and c in nbp_basic['use_channels']:
-        scale = nbp_extract_debug['scale']
+    shift = nbp_basic.tile_pixel_value_shift
+    if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
+        scale = nbp_extract_debug.scale_anchor
+    elif r != nbp_basic.anchor_round and c in nbp_basic.use_channels:
+        scale = nbp_extract_debug.scale
     else:
         scale = 1  # dapi image and un-used channels have no scaling
         shift = 0  # dapi image and un-used channels have no shift
@@ -268,26 +268,26 @@ def save_stitched(im_file, nbp_file, nbp_basic, tile_origin, r, c):
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
     yx_size = np.max(yx_origin, axis=0) + nbp_basic['tile_sz']
-    if nbp_basic['3d']:
-        z_size = z_origin.max() + nbp_basic['nz']
+    if nbp_basic.is_3d:
+        z_size = z_origin.max() + nbp_basic.nz
     else:
         z_size = 1
-    with tqdm(total=z_size * len(nbp_basic['use_tiles'])) as pbar:
+    with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for z in range(z_size):
             stitched_image = np.zeros(yx_size, dtype=np.uint16)  # any tiles not used will be kept as 0.
-            for t in nbp_basic['use_tiles']:
+            for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'tile': t, 'z': z})
-                if nbp_basic['3d']:
+                if nbp_basic.is_3d:
                     file_z = z - z_origin[t]
-                    if file_z < 0 or file_z >= nbp_basic['nz']:
+                    if file_z < 0 or file_z >= nbp_basic.nz:
                         # Set tile to 0 if currently outside its area
-                        local_image = np.zeros((nbp_basic['tile_sz'], nbp_basic['tile_sz']))
+                        local_image = np.zeros((nbp_basic.tile_sz, nbp_basic.tile_sz))
                     else:
-                        local_image = load(nbp_file['tile'][t][r][c], file_z)
+                        local_image = load(nbp_file.tile[t][r][c], file_z)
                 else:
-                    local_image = load(nbp_file['tile'][t][r], c)
-                stitched_image[yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic['tile_sz'],
-                               yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic['tile_sz']] = local_image
+                    local_image = load(nbp_file.tile[t][r], c)
+                stitched_image[yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic.tile_sz,
+                               yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = local_image
                 pbar.update(1)
             save(stitched_image, im_file, append=True)
     pbar.close()

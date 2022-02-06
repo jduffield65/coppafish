@@ -6,7 +6,7 @@ import numpy as np
 
 def find_spots(config, nbp_file, nbp_basic, auto_thresh):
     nbp = setup.NotebookPage("find_spots")
-    if nbp_basic['3d'] is False:
+    if nbp_basic.is_3d is False:
         # set z details to None if using 2d pipeline
         config['radius_z'] = None
         config['isolation_radius_z'] = None
@@ -16,30 +16,30 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
 
     # record threshold for isolated spots in each tile of reference round/channel
     if config['isolation_thresh'] is None:
-        nbp['isolation_thresh'] = auto_thresh[:, nbp_basic['ref_round'], nbp_basic['anchor_channel']] * \
+        nbp.isolation_thresh = auto_thresh[:, nbp_basic.ref_round, nbp_basic.anchor_channel] * \
                                   config['auto_isolation_thresh_multiplier']
     else:
-        nbp['isolation_thresh'] = np.ones_like(auto_thresh[:, nbp_basic['ref_round'], nbp_basic['anchor_channel']]) * \
+        nbp.isolation_thresh = np.ones_like(auto_thresh[:, nbp_basic.ref_round, nbp_basic.anchor_channel]) * \
                                   config['isolation_thresh']
 
     # have to save spot_yxz and spot_isolated as table to stop pickle issues associated with numpy object arrays.
     # columns of spot_details are: tile, channel, round, isolated, y, x, z
     spot_details = np.empty((0, 7), dtype=int)
-    nbp['spot_no'] = np.zeros((nbp_basic['n_tiles'], nbp_basic['n_rounds']+nbp_basic['n_extra_rounds'],
-                               nbp_basic['n_channels']), dtype=int)
-    use_rounds = nbp_basic['use_rounds']
-    n_images = len(use_rounds) * len(nbp_basic['use_tiles']) * len(nbp_basic['use_channels'])
-    if nbp_basic['use_anchor']:
-        use_rounds = use_rounds + [nbp_basic['anchor_round']]
-        n_images = n_images + len(nbp_basic['use_tiles'])
-    n_z = np.max([1, nbp_basic['3d'] * nbp_basic['nz']])
+    nbp.spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds+nbp_basic.n_extra_rounds,
+                               nbp_basic.n_channels), dtype=int)
+    use_rounds = nbp_basic.use_rounds
+    n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
+    if nbp_basic.use_anchor:
+        use_rounds = use_rounds + [nbp_basic.anchor_round]
+        n_images = n_images + len(nbp_basic.use_tiles)
+    n_z = np.max([1, nbp_basic.is_3d * nbp_basic.nz])
     with tqdm(total=n_images) as pbar:
         for r in use_rounds:
-            if r == nbp_basic['anchor_round']:
-                use_channels = [nbp_basic['anchor_channel']]
+            if r == nbp_basic.anchor_round:
+                use_channels = [nbp_basic.anchor_channel]
             else:
-                use_channels = nbp_basic['use_channels']  # TODO: this will fail if use_channels is an integer not array
-            for t in nbp_basic['use_tiles']:
+                use_channels = nbp_basic.use_channels  # TODO: this will fail if use_channels is an integer not array
+            for t in nbp_basic.use_tiles:
                 for c in use_channels:
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c})
                     image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c)
@@ -48,8 +48,8 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
                     no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yxz, thresh=0)
                     spot_yxz = spot_yxz[no_negative_neighbour]
                     spot_intensity = spot_intensity[no_negative_neighbour]
-                    if r == nbp_basic['ref_round']:
-                        spot_isolated = fs.get_isolated(image, spot_yxz, nbp['isolation_thresh'][t],
+                    if r == nbp_basic.ref_round:
+                        spot_isolated = fs.get_isolated(image, spot_yxz, nbp.isolation_thresh[t],
                                                         config['isolation_radius_inner'],
                                                         config['isolation_radius_xy'],
                                                         config['isolation_radius_z'])
@@ -71,7 +71,7 @@ def find_spots(config, nbp_file, nbp_basic, auto_thresh):
                     spot_details_trc[:, 3] = spot_isolated
                     spot_details_trc[:, 4:4+spot_yxz.shape[1]] = spot_yxz  # if 2d pipeline, z coordinate set to 0.
                     spot_details = np.append(spot_details, spot_details_trc, axis=0)
-                    nbp['spot_no'][t, r, c] = spot_yxz.shape[0]
+                    nbp.spot_no[t, r, c] = spot_yxz.shape[0]
                     pbar.update(1)
-    nbp['spot_details'] = spot_details
+    nbp.spot_details = spot_details
     return nbp

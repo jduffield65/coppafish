@@ -30,7 +30,7 @@ import re
 _options = {
     'basic_info':
         {
-            '3d': 'bool',
+            'is_3d': 'bool',
             'anchor_channel': 'maybe_int',
             'dapi_channel': 'maybe_int',
             'ref_round': 'int',

@@ -128,25 +128,25 @@ def update_log_extract(nbp_file, nbp_basic, nbp_vars, nbp_debug, auto_thresh_mul
 
     # only use image unaffected by strip_hack to get information from tile
     good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
-    if not (r == nbp_basic['anchor_round'] and c == nbp_basic['dapi_channel']):
-        nbp_vars['auto_thresh'][t, r, c] = (np.median(np.abs(image[:, good_columns])) *
+    if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+        nbp_vars.auto_thresh[t, r, c] = (np.median(np.abs(image[:, good_columns])) *
                                             auto_thresh_multiplier)
-    if r != nbp_basic['anchor_round']:
-        nbp_vars['hist_counts'][:, r, c] += np.histogram(image[:, good_columns], hist_bin_edges)[0]
+    if r != nbp_basic.anchor_round:
+        nbp_vars.hist_counts[:, r, c] += np.histogram(image[:, good_columns], hist_bin_edges)[0]
     if not file_exists:
         # if saving tile for first time, record how many pixels will be clipped
         # and a suitable scaling which would cause no clipping.
         # this part is never called for dapi so don't need to deal with exceptions
-        max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic['tile_pixel_value_shift']
+        max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
         n_clip_pixels = np.sum(image > max_tiff_pixel_value)
-        nbp_debug['n_clip_pixels'][t, r, c] = n_clip_pixels
+        nbp_debug.n_clip_pixels[t, r, c] = n_clip_pixels
         if n_clip_pixels > 0:
-            if r == nbp_basic['anchor_round']:
-                scale = nbp_debug['scale_anchor']
+            if r == nbp_basic.anchor_round:
+                scale = nbp_debug.scale_anchor
             else:
-                scale = nbp_debug['scale']
+                scale = nbp_debug.scale
             # image has already been multiplied by scale hence inclusion of scale here
             # max_tiff_pixel_value / image.max() is less than 1 so recommended scaling becomes smaller than scale.
-            nbp_debug['clip_extract_scale'][t, r, c] = scale * max_tiff_pixel_value / image.max()
+            nbp_debug.clip_extract_scale[t, r, c] = scale * max_tiff_pixel_value / image.max()
 
     return nbp_vars, nbp_debug

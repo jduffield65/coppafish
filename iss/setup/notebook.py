@@ -350,13 +350,13 @@ class Notebook:
             p, k = pk.split(cls._SEP, 1)
             if p == cls._NBMETA:
                 if k == cls._ADDEDMETA:
-                    created_time = f[pk].item()  #.item() to convert from array to float
+                    created_time = float(f[pk])
                     continue
                 if k == cls._CONFIGMETA:
-                    config_file = f[pk]
+                    config_file = str(f[pk])
                     continue
             if k == cls._ADDEDMETA:
-                page_times[p] = f[pk].item()  #.item() to convert from array to float
+                page_times[p] = float(f[pk])
                 continue
             if p not in page_items.keys():
                 page_items[p] = {}
@@ -497,7 +497,7 @@ class NotebookPage:
         # constructor.
         name = str(d[cls._PAGEMETA][()])
         n = cls(name)
-        n._time_created = d[cls._PAGEMETA + cls._TIMEMETA]
+        n._time_created = float(d[cls._PAGEMETA + cls._TIMEMETA])
         # n.finalized = d[cls._FINALIZEDMETA]
         for k in d.keys():
             # If we've already dealt with the key, skip it.
@@ -508,5 +508,5 @@ class NotebookPage:
             if k.endswith(cls._TYPEMETA): continue
             # Now that we have a real key, add it to the page.
             object.__setattr__(n, k, _decode_type(k, d[k], str(d[k + cls._TYPEMETA][()])))
-            n._times[k] = d[k + cls._TIMEMETA]
+            n._times[k] = float(d[k + cls._TIMEMETA])
         return n

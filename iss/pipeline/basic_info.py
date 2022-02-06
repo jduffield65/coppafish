@@ -37,37 +37,37 @@ def set_basic_info(config_file, config_basic):
 
     # add dapi channel and anchor channel to notebook even if set to None.
     if config_basic['dapi_channel'] is None:
-        nbp_basic['dapi_channel'] = None
-        nbp_file['big_dapi_image'] = None
+        nbp_basic.dapi_channel = None
+        nbp_file.big_dapi_image = None
     else:
-        nbp_file['big_dapi_image'] = os.path.join(config_file['output_dir'], 'dapi_image.tif')
+        nbp_file.big_dapi_image = os.path.join(config_file['output_dir'], 'dapi_image.tif')
     if config_basic['anchor_channel'] is None:
-        nbp_basic['anchor_channel'] = None
-    nbp_file['big_anchor_image'] = os.path.join(config_file['output_dir'], 'anchor_image.tif')
+        nbp_basic.anchor_channel = None
+    nbp_file.big_anchor_image = os.path.join(config_file['output_dir'], 'anchor_image.tif')
 
     if config_file['dye_camera_laser'] is None:
-        nbp_file['dye_camera_laser'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                                                    'dye_camera_laser_raw_intensity.csv')
+        nbp_file.dye_camera_laser = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                                                 'dye_camera_laser_raw_intensity.csv')
 
     if config_file['psf'] is None:
         # where to save psf, indicating average spot shape in raw image
-        if nbp_basic['3d']:
+        if nbp_basic.is_3d:
             psf_file = os.path.join(config_file['output_dir'], 'psf.tif')
             if not os.path.isfile(psf_file):
-                nbp_file['psf'] = psf_file
+                nbp_file.psf = psf_file
             else:
                 # if file already exists, specify file with different name based on current time
                 dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
-                nbp_file['psf'] = os.path.join(config_file['output_dir'], 'psf_' + dt_string + '.tif')
+                nbp_file.psf = os.path.join(config_file['output_dir'], 'psf_' + dt_string + '.tif')
         else:
-            nbp_file['psf'] = None
+            nbp_file.psf = None
 
     # get round info from config file
     n_rounds = len(config_file['round'])
     if config_basic['use_rounds'] is None:
-        nbp_basic['use_rounds'] = list(np.arange(n_rounds))
-    nbp_basic['use_rounds'].sort()  # ensure ascending
-    use_rounds_oob = [val for val in nbp_basic['use_rounds'] if val < 0 or val >= n_rounds]
+        nbp_basic.use_rounds = list(np.arange(n_rounds))
+    nbp_basic.use_rounds.sort()  # ensure ascending
+    use_rounds_oob = [val for val in nbp_basic.use_rounds if val < 0 or val >= n_rounds]
     if len(use_rounds_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_rounds", use_rounds_oob[0], 0, n_rounds-1)
     # load in metadata of nd2 file corresponding to first round
@@ -77,78 +77,78 @@ def set_basic_info(config_file, config_basic):
     tile_sz = metadata['sizes']['x']
     n_tiles = metadata['sizes']['t']
     if config_basic['use_tiles'] is None:
-        nbp_basic['use_tiles'] = list(np.arange(n_tiles))
-    nbp_basic['use_tiles'].sort()
-    use_tiles_oob = [val for val in nbp_basic['use_tiles'] if val < 0 or val >= n_tiles]
+        nbp_basic.use_tiles = list(np.arange(n_tiles))
+    nbp_basic.use_tiles.sort()
+    use_tiles_oob = [val for val in nbp_basic.use_tiles if val < 0 or val >= n_tiles]
     if len(use_tiles_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_tiles", use_tiles_oob[0], 0, n_tiles-1)
     # get channel info
     n_channels = metadata['sizes']['c']
     if config_basic['use_channels'] is None:
-        nbp_basic['use_channels'] = list(np.arange(n_channels))
-    nbp_basic['use_channels'].sort()
-    use_channels_oob = [val for val in nbp_basic['use_channels'] if val < 0 or val >= n_channels]
+        nbp_basic.use_channels = list(np.arange(n_channels))
+    nbp_basic.use_channels.sort()
+    use_channels_oob = [val for val in nbp_basic.use_channels if val < 0 or val >= n_channels]
     if len(use_channels_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
     # get z info
     if config_basic['use_z'] is None:
-        nbp_basic['use_z'] = list(np.arange(metadata['sizes']['z']))
-    if config_basic['ignore_first_z_plane'] and 0 in nbp_basic['use_z']:
-        nbp_basic['use_z'].remove(0)
-    nbp_basic['use_z'].sort()
-    nz = len(nbp_basic['use_z'])  # number of z planes in tiff file (not necessarily the same as in nd2)
-    use_z_oob = [val for val in nbp_basic['use_z'] if val < 0 or val >= metadata['sizes']['z']]
+        nbp_basic.use_z = list(np.arange(metadata['sizes']['z']))
+    if config_basic['ignore_first_z_plane'] and 0 in nbp_basic.use_z:
+        nbp_basic.use_z.remove(0)
+    nbp_basic.use_z.sort()
+    nz = len(nbp_basic.use_z)  # number of z planes in tiff file (not necessarily the same as in nd2)
+    use_z_oob = [val for val in nbp_basic.use_z if val < 0 or val >= metadata['sizes']['z']]
     if len(use_z_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, metadata['sizes']['z'] - 1)
 
     # get dye info
     if config_basic['dye_names'] is None:
-        nbp_basic['dye_names'] = None
+        nbp_basic.dye_names = None
         warnings.warn(f"dye_names not specified so assuming separate dye for each channel.")
         n_dyes = n_channels
     else:
         n_dyes = len(config_basic['dye_names'])
     if config_basic['use_dyes'] is None:
-        nbp_basic['use_dyes'] = list(np.arange(n_dyes))
+        nbp_basic.use_dyes = list(np.arange(n_dyes))
     if config_basic['channel_camera'] is None:
-        nbp_basic['channel_camera'] = None
+        nbp_basic.channel_camera = None
     if config_basic['channel_laser'] is None:
-        nbp_basic['channel_laser'] = None
+        nbp_basic.channel_laser = None
 
     tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(metadata['xy_pos'], tile_sz)
     use_anchor = False
     if config_file['anchor'] is not None:
         # always have anchor as first round after imaging rounds
-        nbp_basic['anchor_round'] = n_rounds
+        nbp_basic.anchor_round = n_rounds
         if config_basic['anchor_channel'] is not None:
             if not 0 <= config_basic['anchor_channel'] <= n_channels-1:
                 raise utils.errors.OutOfBoundsError("anchor_channel", config_basic['anchor_channel'], 0, n_channels-1)
-            nbp_basic['ref_round'] = nbp_basic['anchor_round']
-            nbp_basic['ref_channel'] = config_basic['anchor_channel']
+            nbp_basic.ref_round = nbp_basic.anchor_round
+            nbp_basic.ref_channel = config_basic['anchor_channel']
             use_anchor = True
             warnings.warn(f"Anchor file given and anchor channel specified."
-                          f"\nWill use anchor round, channel {nbp_basic['ref_channel']} as reference")
-        elif nbp_basic['ref_round'] == nbp_basic['anchor_round']:
+                          f"\nWill use anchor round, channel {nbp_basic.ref_channel} as reference")
+        elif nbp_basic.ref_round == nbp_basic.anchor_round:
             warnings.warn(f"Anchor file given but anchor channel not specified."
-                          f"\nWill use anchor round, channel {nbp_basic['ref_channel']} as reference")
+                          f"\nWill use anchor round, channel {nbp_basic.ref_channel} as reference")
         else:
             warnings.warn(f"Anchor file given but anchor channel not specified."
-                          f"\nWill use round {nbp_basic['ref_round']} (not anchor),"
-                          f" channel {nbp_basic['ref_channel']} as reference")
+                          f"\nWill use round {nbp_basic.ref_round} (not anchor),"
+                          f" channel {nbp_basic.ref_channel} as reference")
         round_files = config_file['round'] + [config_file['anchor']]
-        nbp_basic['n_extra_rounds'] = 1
+        nbp_basic.n_extra_rounds = 1
     else:
-        nbp_basic['anchor_round'] = None
+        nbp_basic.anchor_round = None
         round_files = config_file['round']
-        nbp_file['anchor'] = None
-        nbp_basic['n_extra_rounds'] = 0
-        if not 0 <= nbp_basic['ref_round'] <= n_rounds - 1:
-            raise utils.errors.OutOfBoundsError("ref_round", nbp_basic['ref_round'], 0, n_rounds-1)
+        nbp_file.anchor = None
+        nbp_basic.n_extra_rounds = 0
+        if not 0 <= nbp_basic.ref_round <= n_rounds - 1:
+            raise utils.errors.OutOfBoundsError("ref_round", nbp_basic.ref_round, 0, n_rounds-1)
         warnings.warn(f"Anchor file not given."
-                      f"\nWill use round {nbp_basic['ref_round']}, channel {nbp_basic['ref_channel']} as reference")
+                      f"\nWill use round {nbp_basic.ref_round}, channel {nbp_basic.ref_channel} as reference")
 
-    if not 0 <= nbp_basic['ref_channel'] <= n_channels - 1:
-        raise utils.errors.OutOfBoundsError("ref_channel", nbp_basic['ref_channel'], 0, n_channels-1)
+    if not 0 <= nbp_basic.ref_channel <= n_channels - 1:
+        raise utils.errors.OutOfBoundsError("ref_channel", nbp_basic.ref_channel, 0, n_channels-1)
     if config_basic['3d']:
         tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, tilepos_yx_nd2,
                                                config_file['matlab_tile_names'], n_channels)
@@ -156,20 +156,20 @@ def set_basic_info(config_file, config_basic):
         tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, tilepos_yx_nd2,
                                                config_file['matlab_tile_names'])
 
-    nbp_file['tile'] = tile_names.tolist()  # tiff tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
-    nbp_basic['n_rounds'] = n_rounds  # int, number of imaging rounds
-    nbp_basic['tile_sz'] = tile_sz  # xy dimension of tiles in pixels.
-    nbp_basic['n_tiles'] = n_tiles  # int, number of tiles
-    nbp_basic['n_channels'] = n_channels  # int, number of imaging channels
-    nbp_basic['nz'] = nz  # number of z-planes used to make tiff images
-    nbp_basic['n_dyes'] = n_dyes  # int, number of dyes
+    nbp_file.tile = tile_names.tolist()  # tiff tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
+    nbp_basic.n_rounds = n_rounds  # int, number of imaging rounds
+    nbp_basic.tile_sz = tile_sz  # xy dimension of tiles in pixels.
+    nbp_basic.n_tiles = n_tiles  # int, number of tiles
+    nbp_basic.n_channels = n_channels  # int, number of imaging channels
+    nbp_basic.nz = nz  # number of z-planes used to make tiff images
+    nbp_basic.n_dyes = n_dyes  # int, number of dyes
     # subtract tile_centre from local pixel coordinates to get centered local tile coordinates
-    if not nbp_basic['3d']:
+    if not nbp_basic.is_3d:
         nz = 1
-    nbp_basic['tile_centre'] = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
-    nbp_basic['tilepos_yx_nd2'] = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
-    nbp_basic['tilepos_yx'] = tilepos_yx  # and with tiff index
-    nbp_basic['pixel_size_xy'] = metadata['pixel_microns']  # pixel size in microns in xy
-    nbp_basic['pixel_size_z'] = metadata['pixel_microns_z']  # and z directions.
-    nbp_basic['use_anchor'] = use_anchor
+    nbp_basic.tile_centre = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
+    nbp_basic.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
+    nbp_basic.tilepos_yx = tilepos_yx  # and with tiff index
+    nbp_basic.pixel_size_xy = metadata['pixel_microns']  # pixel size in microns in xy
+    nbp_basic.pixel_size_z = metadata['pixel_microns_z']  # and z directions.
+    nbp_basic.use_anchor = use_anchor
     return nbp_file, nbp_basic
