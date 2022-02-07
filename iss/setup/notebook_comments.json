@@ -1,0 +1,123 @@
+{
+  "file_names":
+  {
+    "DESCRIPTION": ["file_names page contains all files that are used throughout the pipeline.",
+      "'tile' is the only variable not included in the config file and is worked out automatically.",
+      "Page added to notebook in pipeline/basic_info.py"],
+
+    "input_dir": [
+      "Directory",
+      "Where raw nd2 files are"],
+    "output_dir": [
+      "Directory",
+      "Where notebook is saved"],
+    "tile_dir": [
+      "Directory",
+      "Where tile tiff files saved"],
+    "round": [
+      "List [n_rounds]",
+      "Names of nd2 files for the imaging rounds"],
+    "anchor": [
+      "String or None",
+      "Name of nd2 file for the anchor round. None if anchor not used"],
+    "raw_extension": [
+      "String",
+      "Extension of files containing raw data. Code assumes this is '.nd2'"],
+    "dye_camera_laser": [
+      "File",
+      "csv file giving the approximate raw intensity for each dye with each camera/laser combination"],
+    "code_book": [
+      "File",
+      "text file which contains the codes indicating which dye to expect on each round for each gene"],
+    "matlab_tile_names": [
+      "Boolean",
+      "If True, tile and channel index in tile tiff file names will start at 1 else start at 0."],
+    "psf": [
+      "File or None",
+      "tiff file indicating average spot shape (before padding and scaled to fill uint16 range).",
+      "Will be None if 2d pipeline used. File won't exist/used if config['extract']['deconvolve'] is False."],
+    "big_dapi_image": [
+      "File or None",
+      "tiff file of stitched DAPI image. None if nb.basic_info.dapi_channel is None"],
+    "big_anchor_image": [
+      "File",
+      "tiff file of stitched image of ref_round/ref_channel. Will be stitched anchor if anchor used."],
+    "tile": [
+      "List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
+      "2d: tile[t][r] is the tiff file containing all channels of tile t, round r.",
+      "3d: tile[t][r][c] is the tiff file containing all z planes for tile t, round r, channel c"]
+  },
+
+  "basic_info":
+  {
+    "DESCRIPTION": ["basic_info page contains information that is used at all stages of the pipeline.",
+      "Page added to notebook in pipeline/basic_info.py"],
+
+    "is_3d": ["Boolean",
+      "True if 3d pipeline used, False if 2d"],
+    "anchor_channel": ["Integer or None",
+      "Channel in anchor round used as reference and to build coordinate system on. Usually channel with most spots.",
+      "None if anchor not used."],
+    "dapi_channel": ["Integer or None",
+      "Channel in anchor round that contains DAPI images. None if no DAPI."],
+    "ref_round": ["Integer",
+      "Round to align all imaging rounds to. Will be anchor if using."],
+    "ref_channel": ["Integer",
+      "Channel in reference round used as reference and to build coordinate system on. Usually channel with most spots.",
+      "Will be anchor_channel if using anchor round"],
+    "use_channels": ["Integer List [n_use_channels]",
+      "Channels in imaging rounds to use throughout pipeline."],
+    "use_rounds": ["Integer List [n_use_rounds]",
+      "Imaging rounds to use throughout pipeline."],
+    "use_z": ["Integer List [nz]",
+      "z planes used to make tile tiff files"],
+    "use_tiles": ["Integer List [n_use_tiles]",
+      "Tiles to use throughout pipeline."],
+    "use_dyes": ["Integer List [n_use_dyes]",
+      "Dyes to use when when assigning spots to genes."],
+    "dye_names": ["String List [n_dyes] or None",
+      "Names of all dyes so for gene with code 360...,",
+      "gene appears with dye_names[3] in round 0, dye_names[6] in round 1, dye_names[0] in round 2 etc.",
+      "None if each channel corresponds to a different dye."],
+    "channel_camera": ["Integer List [n_channels] or None",
+      "channel_camera[i] is the wavelength in nm of the camera on channel i.",
+      "None if dye_names is None."],
+    "channel_laser": ["Integer List [n_channels] or None",
+      "channel_laser[i] is the wavelength in nm of the laser on channel i.",
+      "None if dye_names is None."],
+    "tile_pixel_value_shift": ["Integer",
+      "This is added onto every tile (except DAPI) when it is saved and removed from every tile when loaded.",
+      "Required so we can have negative pixel values when save to tiff as uint16. Typical=15000"],
+    "ignore_first_z_plane": ["Boolean", "Previously had cases where first z plane in nd2 file was in wrong place and",
+      "caused focus stacking to be weird or identify lots of spots on first plane",
+      "hence safest to not load first plane which is done if this is True and 0 will be absent from use_z."],
+    "n_extra_rounds": ["Integer",
+      "Number of non-imaging rounds, typically 1 if using anchor and 0 if not."],
+    "n_rounds": ["Integer",
+      "Number of imaging rounds in the raw data"],
+    "tile_sz": ["Integer",
+      "yx dimension of tiles in pixels"],
+    "n_tiles": ["Integer",
+      "Number of tiles in the raw data"],
+    "n_channels": ["Integer",
+      "Number of channels in the raw data"],
+    "nz": ["Integer",
+      "Number of z-planes used to make the tiff tile images (Can be different from number in raw data)."],
+    "n_dyes": ["Integer",
+      "Number of dyes used"],
+    "tile_centre": ["Numpy float array [3]",
+      "[y, x, z] location of tile centre in units of [yx_pixels, yx_pixels, z_pixels].",
+      "For 2d pipeline, tile_centre[2] = 0"],
+    "tilepos_yx_nd2": ["Numpy integer array [n_tiles x 2]",
+      "tilepos_yx_nd2[i, :] is the yx position of tile with fov index i in the nd2 file."],
+    "tilepos_yx": ["Numpy integer array [n_tiles x 2]",
+      "tilepos_yx[i, :] is the yx position of tile with tile directory (tiff files) index i.",
+      "Equally, tilepos_yx[use_tiles[i], :] is yx position of tile use_tiles[i]."],
+    "pixel_size_xy": ["Float",
+      "yx pixel size in microns"],
+    "pixel_size_z": ["Float",
+      "z pixel size in microns"],
+    "use_anchor": ["Boolean",
+      "True if anchor round is used, False if not."]
+  }
+}

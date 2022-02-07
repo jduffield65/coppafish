@@ -3,6 +3,7 @@ import tempfile
 import unittest
 import os
 import numpy as np
+import json
 
 
 class TestNotebook(unittest.TestCase):
@@ -128,6 +129,29 @@ class TestNotebook(unittest.TestCase):
             nb = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
             nbp = notebook.NotebookPage("pagename")
             nb.newpage = nbp  # "newpage" is not equal to nbp.name ("pagename") hence it fails
+
+    @unittest.expectedFailure
+    def test_NotebookPage_add_var_not_in_comments(self):
+        json_comments = json.load(open(notebook.NotebookPage._comments_file))
+        page_name = list(json_comments.keys())[0]
+        nbp = notebook.NotebookPage(page_name)
+        nbp.RFhzdfuW3532 = 22
+
+    @unittest.expectedFailure
+    def test_NotebookPage_add_var_called_DESCRIPTION(self):
+        json_comments = json.load(open(notebook.NotebookPage._comments_file))
+        page_name = list(json_comments.keys())[0]
+        nbp = notebook.NotebookPage(page_name)
+        nbp.DESCRIPTION = 22
+
+    @unittest.expectedFailure
+    def test_Notebook_add_page_not_all_comment_values(self):
+        with tempfile.TemporaryDirectory() as d:
+            nb = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
+            json_comments = json.load(open(notebook.NotebookPage._comments_file))
+            page_name = list(json_comments.keys())[0]
+            nbp = notebook.NotebookPage(page_name)
+            nb += nbp
 
     def test_types(self):
         # Update this test when new types are added

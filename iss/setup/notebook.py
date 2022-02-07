@@ -36,6 +36,7 @@ import numpy as np
 import hashlib
 import os
 import time
+import json
 
 # The variable TYPES defines strategies for saving and loading different kinds
 # of variables.  Each type is defined by a length-three tuple: first is the
@@ -122,6 +123,26 @@ def _get_type(key, val):
     raise TypeError(f"Key {key!r} has value {val!r} which "
                     f"is of type {type(val)}, which is invalid.  "
                     f"Please use one of the following: {[t[0] for t in TYPES]}")
+
+
+# Standard formatting for errors in the config file
+class InvalidNotebookPageError(Exception):
+    """Exception for an invalid notebook page item"""
+
+    def __init__(self, page_var_name, comments_var_name, page_name):
+        if comments_var_name is None:
+            if page_var_name == "DESCRIPTION":
+                error = f"Cannot assign {page_var_name} because in comments file, " \
+                        f"this key is used to describe whole page."
+            else:
+                error = f"Cannot assign {page_var_name} because it is not in comments file for the {page_name} page."
+        else:
+            if page_var_name is None:
+                error = f"Cannot add {page_name} page to notebook because the key {comments_var_name} in the " \
+                        f"comments page does not have a value in the page."
+            else:
+                error = f"No variables provided to give error comment"
+        super().__init__(error)
 
 
 class Notebook:
@@ -245,6 +266,14 @@ class Notebook:
                 raise ValueError("Cannot add two pages with the same name")
             if value.name != key:
                 raise ValueError(f"Page name is {value.name} but key given is {key}")
+
+            # ensure all the variables in the comments file are included
+            json_comments = json.load(open(value._comments_file))
+            if value.name in json_comments:
+                for var in json_comments[value.name]:
+                    if var not in value._times and var != "DESCRIPTION":
+                        raise InvalidNotebookPageError(None, var, value.name)
+
             value.finalized = True
             object.__setattr__(self, key, value)
             self._page_times[key] = time.time()
@@ -391,7 +420,8 @@ class NotebookPage:
     _PAGEMETA = "PAGEINFO"  # Filename for metadata about the page
     _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
     _TYPEMETA = "___TYPE"  # Filename suffix for type information
-    _NON_RESULT_KEYS = ['name', 'finalized']
+    _NON_RESULT_KEYS = ['name', 'finalized', 'describe']
+    _comments_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'notebook_comments.json')
 
     def __init__(self, name, input_dict=None):
         self.finalized = False  # Set to true when added to a Notebook
@@ -440,6 +470,35 @@ class NotebookPage:
         else:
             return True
 
+    def __repr__(self):
+        """
+        This means that print(nbp) gives description of page if available or name and time created if not.
+        """
+        json_comments = json.load(open(self._comments_file))
+        if self.name in json_comments:
+            return "\n".join(json_comments[self.name]['DESCRIPTION'])
+        else:
+            time_created = time.strftime('%d-%m-%Y- %H:%M:%S', time.localtime(self._time_created))
+            return f"{self.name} page created at {time_created}"
+
+    def describe(self, key=None):
+        """
+        prints a description of the variable indicated.
+
+        :param key: string, key name of variable to describe that must be in self._times.keys(), optional.
+            If not specified, will describe the whole page.
+        """
+        if key is None:
+            print(self.__repr__())  # describe whole page if no key given
+        else:
+            if key not in self._times.keys():
+                raise ValueError(f"No variable named {key} in this page.")
+            json_comments = json.load(open(self._comments_file))
+            if self.name in json_comments:
+                print("\n".join(json_comments[self.name][key]))
+            else:
+                print(f"No comments available for page called {self.name}.")
+
     def __setattr__(self, key, value):
         """Add an item to the notebook page.
 
@@ -454,6 +513,12 @@ class NotebookPage:
             _get_type(key, value)
             if key in self.__dict__.keys():
                 raise ValueError(f"Cannot assign {key} = {value!r} to the notebook page, key already exists")
+            json_comments = json.load(open(self._comments_file))
+            if self.name in json_comments:
+                if key not in json_comments[self.name]:
+                    raise InvalidNotebookPageError(key, None, self.name)
+                if key == 'DESCRIPTION':
+                    raise InvalidNotebookPageError(key, None, self.name)
             self._times[key] = time.time()
         object.__setattr__(self, key, value)
 
