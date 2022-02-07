@@ -132,14 +132,16 @@ class TestNotebook(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_NotebookPage_add_var_not_in_comments(self):
-        json_comments = json.load(open(notebook.NotebookPage._comments_file))
+        with open(notebook.NotebookPage._comments_file) as f:
+            json_comments = json.load(f)
         page_name = list(json_comments.keys())[0]
         nbp = notebook.NotebookPage(page_name)
         nbp.RFhzdfuW3532 = 22
 
     @unittest.expectedFailure
     def test_NotebookPage_add_var_called_DESCRIPTION(self):
-        json_comments = json.load(open(notebook.NotebookPage._comments_file))
+        with open(notebook.NotebookPage._comments_file) as f:
+            json_comments = json.load(f)
         page_name = list(json_comments.keys())[0]
         nbp = notebook.NotebookPage(page_name)
         nbp.DESCRIPTION = 22
@@ -148,10 +150,26 @@ class TestNotebook(unittest.TestCase):
     def test_Notebook_add_page_not_all_comment_values(self):
         with tempfile.TemporaryDirectory() as d:
             nb = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
-            json_comments = json.load(open(notebook.NotebookPage._comments_file))
+            with open(notebook.NotebookPage._comments_file) as f:
+                json_comments = json.load(f)
             page_name = list(json_comments.keys())[0]
             nbp = notebook.NotebookPage(page_name)
             nb += nbp
+
+    @unittest.expectedFailure
+    def test_Notebook_add_page_extra_value(self):
+        with tempfile.TemporaryDirectory() as d:
+            nb = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
+            with open(notebook.NotebookPage._comments_file) as f:
+                json_comments = json.load(f)
+            page_name = list(json_comments.keys())[0]
+            nbp = notebook.NotebookPage('blah')
+            nbp.dnc67e2 = 5  # extra value not in comments file
+            for key in json_comments[page_name]:
+                if key != "DESCRIPTION":
+                    nbp.__setattr__(key, 5)  # add all values in comments file
+            nbp.name = page_name  # change name to that of section in comments file
+            nb += nbp  # should fail due to extra value not in comments file
 
     def test_types(self):
         # Update this test when new types are added

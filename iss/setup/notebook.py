@@ -268,11 +268,16 @@ class Notebook:
                 raise ValueError(f"Page name is {value.name} but key given is {key}")
 
             # ensure all the variables in the comments file are included
-            json_comments = json.load(open(value._comments_file))
+            with open(value._comments_file) as f:
+                json_comments = json.load(f)
             if value.name in json_comments:
                 for var in json_comments[value.name]:
                     if var not in value._times and var != "DESCRIPTION":
                         raise InvalidNotebookPageError(None, var, value.name)
+                # ensure all variables in page are in comments file
+                for var in value._times:
+                    if var not in json_comments[value.name]:
+                        raise InvalidNotebookPageError(var, None, value.name)
 
             value.finalized = True
             object.__setattr__(self, key, value)
@@ -513,7 +518,8 @@ class NotebookPage:
             _get_type(key, value)
             if key in self.__dict__.keys():
                 raise ValueError(f"Cannot assign {key} = {value!r} to the notebook page, key already exists")
-            json_comments = json.load(open(self._comments_file))
+            with open(self._comments_file) as f:
+                json_comments = json.load(f)
             if self.name in json_comments:
                 if key not in json_comments[self.name]:
                     raise InvalidNotebookPageError(key, None, self.name)
