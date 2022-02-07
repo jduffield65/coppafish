@@ -74,6 +74,10 @@ def extract_and_filter(config, nbp_file, nbp_basic):
         nbp_debug.psf = psf
         nbp_debug.psf_intensity_thresh = config['psf_intensity_thresh']
         nbp_debug.psf_tiles_used = psf_tiles_used
+    else:
+        nbp_debug.psf = None
+        nbp_debug.psf_intensity_thresh = None
+        nbp_debug.psf_tiles_used = None
 
     if config['scale'] is None:
         # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
@@ -86,12 +90,16 @@ def extract_and_filter(config, nbp_file, nbp_basic):
             extract.get_scale(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
                               nbp_basic.use_tiles, nbp_basic.use_channels, nbp_basic.use_z,
                               config['scale_norm'], filter_kernel)
+    else:
+        nbp_debug.scale_tile = None
+        nbp_debug.scale_channel = None
+        nbp_debug.scale_z = None
     nbp_debug.scale = config['scale']
 
     '''get rounds to iterate over'''
     use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
     use_channels_anchor.sort()
-    if nbp_basic.anchor_round is not None:
+    if nbp_basic.use_anchor:
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]
         use_rounds = nbp_basic.use_rounds + [nbp_basic.n_rounds]
@@ -114,6 +122,9 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                         extract.get_scale(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
                                           nbp_basic.use_tiles, [nbp_basic.anchor_channel], nbp_basic.use_z,
                                           config['scale_norm'], filter_kernel)
+                else:
+                    nbp_debug.scale_anchor_tile = None
+                    nbp_debug.scale_anchor_z = None
                 nbp_debug.scale_anchor = config['scale_anchor']
                 scale = nbp_debug.scale_anchor
                 use_channels = use_channels_anchor
@@ -165,4 +176,8 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                         im = np.zeros((nbp_basic.tile_sz, nbp_basic.tile_sz), dtype=np.uint16)
                         utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)
     pbar.close()
+    if not nbp_basic.use_anchor:
+        nbp_debug.scale_anchor_tile = None
+        nbp_debug.scale_anchor_z = None
+        nbp_debug.scale_anchor = None
     return nbp, nbp_debug

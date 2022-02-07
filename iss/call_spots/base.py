@@ -9,10 +9,10 @@ def color_normalisation(hist_values, hist_counts, thresh_intensities, thresh_pro
     thresh_intensities[i] is less than thresh_probs[i] for every i.
     Where the probability is based on all pixels from all tiles in that round and channel.
 
-    :param hist_values: numpy integer array [n_pixels]
-        all possible pixel values in saved tiff images i.e. n_pixels is approximately np.iinfo(np.uint16).max
+    :param hist_values: numpy integer array [n_pixel_values]
+        all possible pixel values in saved tiff images i.e. n_pixel_values is approximately np.iinfo(np.uint16).max
         because tiffs saved as uint16 images.
-    :param hist_counts: numpy integer array [n_pixels x n_rounds x n_channels]
+    :param hist_counts: numpy integer array [n_pixel_values x n_rounds x n_channels]
         hist_counts[i, r, c] is the number of pixels across all tiles in round r, channel c
         which had the value hist_values[i].
     :param thresh_intensities: float, list or numpy array [n_thresholds]
