@@ -4,7 +4,7 @@ from .. import utils
 
 def color_normalisation(hist_values, hist_counts, thresh_intensities, thresh_probs, method):
     """
-    This finds the normalisations for each round, r,  and channel, c, such that if
+    This finds the normalisations for each round, r, and channel, c, such that if
     norm_spot_color[r,c] = spot_color[r,c] / norm_factor[r,c], the probability of norm_spot_color being larger than
     thresh_intensities[i] is less than thresh_probs[i] for every i.
     Where the probability is based on all pixels from all tiles in that round and channel.
@@ -149,7 +149,7 @@ def get_spot_intensity(spot_colors):
     """
     finds the max intensity for each imaging round across all imaging channels for each spot.
     Then median of these max round intensities is returned.
-    Logic is that we expect spots that are gene to have at least one large intensity value on each round
+    Logic is that we expect spots that are genes to have at least one large intensity value in each round
     so high spot intensity is more indicative of a gene.
 
     :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]

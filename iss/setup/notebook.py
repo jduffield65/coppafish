@@ -223,6 +223,30 @@ class Notebook:
         page_names = ", ".join(page_names)
         return f"File: {self._file}\nPages: {page_names}"
 
+    def describe(self, key=None):
+        """
+        describe(var) will print comments for variables called var in each page.
+        """
+        if key is None:
+            print(self.__repr__())
+        elif len(self._page_times) == 0:
+            print(f"No pages so cannot search for variable {key}")
+        else:
+            sort_page_names = sorted(self._page_times.items(), key=lambda x: x[1])  # sort by time added to notebook
+            page_names = [name[0] for name in sort_page_names]
+            first_page = self.__getattribute__(page_names[0])
+            with open(first_page._comments_file) as f:
+                json_comments = json.load(f)
+            n_times_appeared = 0
+            for page_name in page_names:
+                if key in json_comments[page_name]:
+                    print(f"{key} in {page_name}:")
+                    self.__getattribute__(page_name).describe(key)
+                    print("")
+                    n_times_appeared += 1
+            if n_times_appeared == 0:
+                print(f"{key} is not in any of the pages in this notebook.")
+
     def __eq__(self, other):
         """Test if two Notebooks are identical
 

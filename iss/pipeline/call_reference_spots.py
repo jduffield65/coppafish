@@ -51,12 +51,12 @@ def call_reference_spots(config, nbp_file, nbp_basic, nbp_ref_spots, hist_values
     bled_codes = get_bled_codes(gene_codes, bleed_matrix)
     bled_codes_use = np.moveaxis(np.moveaxis(bled_codes, 0, -1)[rc_ind], -1, 0)
 
+    nbp.gene_names = gene_names
+    nbp.gene_codes = gene_codes
     nbp.color_norm_factor = color_norm_factor
     nbp.initial_raw_bleed_matrix = initial_raw_bleed_matrix
     nbp.initial_bleed_matrix = initial_bleed_matrix
     nbp.bleed_matrix = bleed_matrix
-    nbp.gene_names = gene_names
-    nbp.gene_codes = gene_codes
     nbp.bled_codes = bled_codes
 
     # get gene assignment and score

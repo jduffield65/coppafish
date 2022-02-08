@@ -92,7 +92,6 @@ def register_initial(config, nbp_basic, spot_details):
     nbp_debug.shift = shift
     nbp_debug.start_shift_search = start_shift_search
     nbp_debug.final_shift_search = final_shift_search
-    nbp_debug.initial_shift = shift
     nbp_debug.shift_score = shift_score
     nbp_debug.shift_score_thresh = shift_score_thresh
     nbp_debug.shift_outlier = shift_outlier

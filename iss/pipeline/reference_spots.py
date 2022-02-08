@@ -42,12 +42,16 @@ def reference_spots(nbp_file, nbp_basic, spot_details, tile_origin, transform):
         if sum(in_tile) > 0:
             nd_spot_colors[in_tile] = get_spot_colors(nd_local_yxz[in_tile], t, transform, nbp_file, nbp_basic)
 
-    # good means all spots that were in bounds of tile on every imaging round and channel
-    good = ~np.any(np.isnan(nd_spot_colors), axis=(1, 2))
+    # good means all spots that were in bounds of tile on every imaging round and channel that was used.
+    nd_spot_colors_use = np.moveaxis(nd_spot_colors, 0, -1)
+    use_rc_index = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    nd_spot_colors_use = np.moveaxis(nd_spot_colors_use[use_rc_index], -1, 0)
+    good = ~np.any(np.isnan(nd_spot_colors_use), axis=(1, 2))
+
     good_global_yxz = nd_global_yxz[good]
     good_isolated = nd_isolated[good]
     good_local_tile = nd_local_tile[good]
-    good_spot_colors = nd_spot_colors[good].astype(int)  # nans where only non integer values before
+    good_spot_colors = nd_spot_colors[good]
 
     # save spot info to notebook
     nbp.global_yxz = good_global_yxz

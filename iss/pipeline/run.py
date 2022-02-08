@@ -97,19 +97,16 @@ def run_register(nb, config):
 
 
 def run_reference_spots(nb, config):
-    if not nb.has_page("ref_spots"):
-        nbp = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
-                              nb.stitch_debug.tile_origin, nb.register.transform)
+    if not all(nb.has_page(["ref_spots", "call_spots"])):
+        nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
+                                        nb.stitch_debug.tile_origin, nb.register.transform)
+        nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nbp_ref_spots,
+                                                  nb.extract.hist_values, nb.extract.hist_counts)
+        nb += nbp_ref_spots
         nb += nbp
     else:
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
-    if not nb.has_page("call_spots"):
-        nb.ref_spots.finalized = False  # so can add gene_no to ref_spots and scores
-        # TODO: I am abusing the system by setting finalised to False and then True again. Not sure best way to do this
-        nbp, _ = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
-                                      nb.extract.hist_values, nb.extract.hist_counts)
-        nb.ref_spots.finalized = True  # new variables will have been added to this page
-        nb += nbp
+        warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
     return nb
 
 
