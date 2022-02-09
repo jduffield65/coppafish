@@ -37,6 +37,8 @@ import hashlib
 import os
 import time
 import json
+import warnings
+from .config import get_config
 
 # The variable TYPES defines strategies for saving and loading different kinds
 # of variables.  Each type is defined by a length-three tuple: first is the
@@ -178,7 +180,7 @@ class Notebook:
     """
     _SEP = "_-_"  # Separator between notebook page name and item name when saving to file
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
-    _CONFIGMETA = "CONFIGFILE"  # Key for notebook created time
+    _CONFIGMETA = "CONFIGFILE"  # Key for config string
     _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
 
     def __init__(self, notebook_file, config_file):
@@ -191,6 +193,7 @@ class Notebook:
         # Note that the ordering of _pages may change across saves and loads,
         # but the order will always correspond to the order of _pages_times
         self._file = notebook_file
+        self._config_file = config_file
         # Read the config file, but don't assign anything yet.  Here, we just
         # save a copy of the config file.  This isn't the main place the config
         # file should be read from.
@@ -237,13 +240,25 @@ class Notebook:
             first_page = self.__getattribute__(page_names[0])
             with open(first_page._comments_file) as f:
                 json_comments = json.load(f)
+            config = get_config(self._config_file)
             n_times_appeared = 0
             for page_name in page_names:
+                # if in comments file, then print the comment
                 if key in json_comments[page_name]:
                     print(f"{key} in {page_name}:")
                     self.__getattribute__(page_name).describe(key)
                     print("")
                     n_times_appeared += 1
+                # if in config file, then print the comment
+                # find sections in config file with matching name to current page
+                config_sections_with_name = [page_name.find(list(config.keys())[i]) for i in
+                                             range(len(config.keys()))]
+                config_sections = np.array(list(config.keys()))[np.array(config_sections_with_name) != -1]
+                for section in config_sections:
+                    if key in config[section]:
+                        print(f"{key} in {page_name}:")
+                        self.__getattribute__(page_name).describe(key)
+                        print("")
             if n_times_appeared == 0:
                 print(f"{key} is not in any of the pages in this notebook.")
 
@@ -304,6 +319,7 @@ class Notebook:
                         raise InvalidNotebookPageError(var, None, value.name)
 
             value.finalized = True
+            value._config_file = self._config_file
             object.__setattr__(self, key, value)
             self._page_times[key] = time.time()
             self.save()
@@ -379,8 +395,7 @@ class Notebook:
         # Finishing the diagnostics described above
         print(f"Notebook saved: took {time.time() - save_start_time} seconds")
 
-    @classmethod
-    def from_file(cls, fn):
+    def from_file(self, fn):
         """Read a Notebook from a file
 
         The only argument is `fn`, the filename of the saved Notebook to load.
@@ -405,15 +420,15 @@ class Notebook:
         page_times = {}
         created_time = None
         for pk in keys:
-            p, k = pk.split(cls._SEP, 1)
-            if p == cls._NBMETA:
-                if k == cls._ADDEDMETA:
+            p, k = pk.split(self._SEP, 1)
+            if p == self._NBMETA:
+                if k == self._ADDEDMETA:
                     created_time = float(f[pk])
                     continue
-                if k == cls._CONFIGMETA:
-                    config_file = str(f[pk])
+                if k == self._CONFIGMETA:
+                    config_str = str(f[pk])
                     continue
-            if k == cls._ADDEDMETA:
+            if k == self._ADDEDMETA:
                 page_times[p] = float(f[pk])
                 continue
             if p not in page_items.keys():
@@ -422,9 +437,10 @@ class Notebook:
         pages = [NotebookPage.from_serial_dict(page_items[d]) for d in sorted(page_items.keys())]
         for page in pages:
             page.finalized = True  # if loading from file, then all pages are final
+            page._config_file = self._config_file  # add config file location to each path so can read in from it.
         assert len(pages) == len(page_times), "Invalid file, lengths don't match"
         assert created_time is not None, "Invalid file, invalid created date"
-        return pages, page_times, created_time, config_file
+        return pages, page_times, created_time, config_str
 
 
 class NotebookPage:
@@ -449,7 +465,7 @@ class NotebookPage:
     _PAGEMETA = "PAGEINFO"  # Filename for metadata about the page
     _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
     _TYPEMETA = "___TYPE"  # Filename suffix for type information
-    _NON_RESULT_KEYS = ['name', 'finalized', 'describe']
+    _NON_RESULT_KEYS = ['name', 'finalized']
     _comments_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'notebook_comments.json')
 
     def __init__(self, name, input_dict=None):
@@ -457,6 +473,7 @@ class NotebookPage:
         self._times = {}
         self.name = name
         self._time_created = time.time()
+        self._config_file = None
         if isinstance(input_dict, dict):
             self.from_dict(input_dict)
 
@@ -521,12 +538,29 @@ class NotebookPage:
             print(self.__repr__())  # describe whole page if no key given
         else:
             if key not in self._times.keys():
-                raise ValueError(f"No variable named {key} in this page.")
-            json_comments = json.load(open(self._comments_file))
-            if self.name in json_comments:
-                print("\n".join(json_comments[self.name][key]))
+                n_times_appeared = 0
+                # check if key is in relevant section of config file
+                if os.path.isfile(str(self._config_file)):
+                    config = get_config(self._config_file)
+                    # find sections in config file with matching name to current page
+                    config_sections_with_name = [self.name.find(list(config.keys())[i]) for i in
+                                                 range(len(config.keys()))]
+                    config_sections = np.array(list(config.keys()))[np.array(config_sections_with_name) != -1]
+                    for section in config_sections:
+                        for param in config[section].keys():
+                            if param.lower() == key.lower():
+                                print(f"No variable named {key} in the {self.name} page.\n"
+                                      f"But it is in the {section} section of the config file and has value:\n"
+                                      f"{config[section][param]}")
+                                n_times_appeared += 1
+                if n_times_appeared == 0:
+                    print(f"No variable named {key} in the {self.name} page.")
             else:
-                print(f"No comments available for page called {self.name}.")
+                json_comments = json.load(open(self._comments_file))
+                if self.name in json_comments:
+                    print("\n".join(json_comments[self.name][key]))
+                else:
+                    print(f"No comments available for page called {self.name}.")
 
     def __setattr__(self, key, value):
         """Add an item to the notebook page.
@@ -551,6 +585,25 @@ class NotebookPage:
                     raise InvalidNotebookPageError(key, None, self.name)
             self._times[key] = time.time()
         object.__setattr__(self, key, value)
+
+    def __getattr__(self, name):
+        """
+        Handles syntax nb.name
+        This is so that if parameter found in config file, that can be returned otherwise it is default method.
+        """
+        if name not in self.__dict__.keys() and os.path.isfile(str(self._config_file)):
+            config = get_config(self._config_file)
+            # find sections in config file with matching name to current page
+            config_sections_with_name = [self.name.find(list(config.keys())[i]) for i in range(len(config.keys()))]
+            config_sections = np.array(list(config.keys()))[np.array(config_sections_with_name) != -1]
+            for section in config_sections:
+                for param in config[section].keys():
+                    if param.lower() == name.lower():
+                        warnings.warn(f"{name} was not found in the {self.name} page\n"
+                                      f"But was found in the {section} section of the config file and "
+                                      f"its value was returned.")
+                        return config[section][param]
+        object.__getattribute__(self, name)  # this is default if name is in page or nothing found in config file.
 
     def has_item(self, key):
         return key in self._times.keys()
