@@ -5,6 +5,9 @@ nav:
     - Code:
         - Extract:
           - Base: code/extract/base.md
+          - Deconvolution: code/extract/deconvolution.md
+          - Fstack: code/extract/fstack.md
+          - Scale: code/extract/scale.md
 
 theme:
   name: "material"

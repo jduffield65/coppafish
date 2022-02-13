@@ -64,10 +64,10 @@ def get_nd2_tile_ind(tile_ind_tiff: int, tile_pos_yx_nd2: np.ndarray,
 
     Args:
         tile_ind_tiff: Index of tiff file
-        tile_pos_yx_nd2: ```int [nTiles x 2]```.
-            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [MaxY,MaxX]```
-        tile_pos_yx_tiff: ```int [nTiles x 2]```.
-            ```[i,:]``` contains YX position of tile with tiff index ```i```. index 0 refers to ```YX = [0,0]```
+        tile_pos_yx_nd2: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [MaxY,MaxX]```.
+        tile_pos_yx_tiff: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with tiff index ```i```. index 0 refers to ```YX = [0,0]```.
 
     Returns:
         Corresponding index in nd2 file

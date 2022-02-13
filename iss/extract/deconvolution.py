@@ -6,38 +6,46 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from . import scale
 from .base import get_nd2_tile_ind
+from typing import List, Union, Optional, Tuple
 
 
-def get_isolated_points(spot_yx, isolation_dist):
+def get_isolated_points(spot_yx: np.ndarray, isolation_dist: float) -> np.ndarray:
     """
-    get the isolated points in a point cloud as those whose neighbour is far.
+    Get the isolated points in a point cloud as those whose neighbour is far.
 
-    :param spot_yx: numpy integer array [n_peaks x image.ndim]
-        yx or yxz location of spots found in image.
-    :param isolation_dist: float
-        spots are isolated if nearest neighbour is further away than this.
-    :return: numpy boolean array [n_peaks]
+    Args:
+        spot_yx: ```int [n_peaks x image.ndim]```.
+            yx or yxz location of spots found in image.
+        isolation_dist: Spots are isolated if nearest neighbour is further away than this.
+
+    Returns:
+        ```bool [n_peaks]```. ```True``` for points far from any other point in ```spot_yx```.
+
     """
     nbrs = NearestNeighbors(n_neighbors=2).fit(spot_yx)
     distances, _ = nbrs.kneighbors(spot_yx)
     return distances[:, 1] > isolation_dist
 
 
-def get_spot_images(image, spot_yx, shape):
+def get_spot_images(image: np.ndarray, spot_yx: np.ndarray, shape: Union[np.ndarray, List[int]]) -> np.ndarray:
     """
-    builds an image around each spot of size given by shape and returns array containing all of these.
+    Builds an image around each spot of size given by shape and returns array containing all of these.
 
-    :param image: numpy array [nY x nX (x nZ)]
-        image spots were found on.
-    :param spot_yx: numpy integer array [n_peaks x image.ndim]
-        yx or yxz location of spots found.
-    :param shape: list or numpy integer array giving size in y, x (and z) directions.
-        desired size of image for each spot.
-    :return: numpy array [n_peaks x y_shape x x_shape (x z_shape)]
+    Args:
+        image: ```float [nY x nX (x nZ)]```.
+            Image that spots were found on.
+        spot_yx: ```int [n_peaks x image.ndim]```.
+            yx or yxz location of spots found.
+        shape: ```int [image.ndim]```
+            ```[y_shape, x_shape, (z_shape)]```: Desired size of image for each spot in each direction.
+
+    Returns:
+        ```float [n_peaks x y_shape x x_shape (x z_shape)]```. ```[s]``` is the small image surrounding spot ```s```.
     """
     if min(np.array(shape) % 2) == 0:
         raise ValueError(f"Require shape to be odd in each dimension but given shape was {shape}.")
-    mid_index = np.ceil(np.array(shape)/2).astype(int) - 1  # index in spot_images where max intensity is for each spot.
+    mid_index = np.ceil(np.array(shape) / 2).astype(
+        int) - 1  # index in spot_images where max intensity is for each spot.
     spot_images = np.empty((spot_yx.shape[0], *shape))
     spot_images[:] = np.nan  # set to nan if spot image goes out of bounds of image.
     max_image_index = np.array(image.shape)
@@ -49,32 +57,37 @@ def get_spot_images(image, spot_yx, shape):
         if len(shape) == 2:
             small_im = image[min_pos[0]:max_pos[0], min_pos[1]:max_pos[1]]
             spot_images[s, spot_images_min_index[0]:spot_images_max_index[0],
-                        spot_images_min_index[1]:spot_images_max_index[1]] = small_im
+            spot_images_min_index[1]:spot_images_max_index[1]] = small_im
         elif len(shape) == 3:
             small_im = image[min_pos[0]:max_pos[0], min_pos[1]:max_pos[1], min_pos[2]:max_pos[2]]
             spot_images[s, spot_images_min_index[0]:spot_images_max_index[0],
-                        spot_images_min_index[1]:spot_images_max_index[1],
-                        spot_images_min_index[2]:spot_images_max_index[2]] = small_im
+            spot_images_min_index[1]:spot_images_max_index[1],
+            spot_images_min_index[2]:spot_images_max_index[2]] = small_im
     return spot_images
 
 
-def get_average_spot_image(spot_images, av_type='mean', symmetry=None, annulus_width=1.0):
+def get_average_spot_image(spot_images: np.ndarray, av_type: str = 'mean', symmetry: Optional[str] = None,
+                           annulus_width: float = 1.0) -> np.ndarray:
     """
-    given an array of spot images, this returns the average spot image.
+    Given an array of spot images, this returns the average spot image.
 
-    :param spot_images: numpy array [n_peaks x y_shape x x_shape (x z_shape)]
-        array containing small images surrounding the n_peaks spots.
-    :param av_type: 'mean' or 'median' indicating which average to use. optional.
-        default: 'mean'
-    :param symmetry: optional, default: None.
-        None - just finds mean at every pixel.
-        'quadrant_2d' - assumes each quadrant of each z-plane expected to look the same so concatenates these.
-        'annulus' - assumes each z-plane is circularly symmetric about central pixel.
-                    I.e. only finds only pixel value from all pixels a certain distance from centre.
-    :param annulus_width: float, optional. default: 1.0
-        if symmetry is 'annulus', this specifies how big an annulus to use, within which we expect all
-        pixel values to be the same.
-    :return: numpy array [y_shape x x_shape (x z_shape)]
+    Args:
+        spot_images: ```float [n_peaks x y_shape x x_shape (x z_shape)]```.
+            ```spot_images[s]``` is the small image surrounding spot ```s```.
+        av_type: Optional, one of the following indicating which average to use:
+                - ```'mean'```
+                - ```'mean'```
+        symmetry: Optional, one of the following:
+            - ```None``` - Just finds mean at every pixel.
+            - ```'quadrant_2d'``` - Assumes each quadrant of each z-plane expected to look the same so concatenates
+                these.
+            - ```'annulus'``` - assumes each z-plane is circularly symmetric about central pixel.
+                I.e. only finds only pixel value from all pixels a certain distance from centre.
+        annulus_width: If ```symmetry = 'annulus'```, this specifies how big an annulus to use,
+            within which we expect all pixel values to be the same.
+
+    Returns:
+        ```float [y_shape x x_shape (x z_shape)]```. Average small image about a spot.
     """
     if av_type == 'mean':
         av_func = lambda x, axis: np.nanmean(x, axis)
@@ -89,16 +102,16 @@ def get_average_spot_image(spot_images, av_type='mean', symmetry=None, annulus_w
         av_image = av_func(spot_images, 0)
     elif symmetry == "quadrant_2d":
         # rotate all quadrants so spot is at bottom right corner
-        quad1 = spot_images[:, 0:mid_index[0]+1, 0:mid_index[1]+1]
-        quad2 = np.rot90(spot_images[:, 0:mid_index[0]+1, mid_index[1]:], 1, axes=(1, 2))
+        quad1 = spot_images[:, 0:mid_index[0] + 1, 0:mid_index[1] + 1]
+        quad2 = np.rot90(spot_images[:, 0:mid_index[0] + 1, mid_index[1]:], 1, axes=(1, 2))
         quad3 = np.rot90(spot_images[:, mid_index[0]:, mid_index[1]:], 2, axes=(1, 2))
-        quad4 = np.rot90(spot_images[:, mid_index[0]:, 0:mid_index[1]+1], 3, axes=(1, 2))
+        quad4 = np.rot90(spot_images[:, mid_index[0]:, 0:mid_index[1] + 1], 3, axes=(1, 2))
         all_quads = np.concatenate((quad1, quad2, quad3, quad4))
         av_quad = av_func(all_quads, 0)
         if spot_images.ndim == 4:
-            av_image = np.pad(av_quad, [[0, mid_index[0]+1], [0, mid_index[1]+1], [0, 0]], 'symmetric')
+            av_image = np.pad(av_quad, [[0, mid_index[0] + 1], [0, mid_index[1] + 1], [0, 0]], 'symmetric')
         else:
-            av_image = np.pad(av_quad, [[0, mid_index[0]+1], [0, mid_index[1]+1]], 'symmetric')
+            av_image = np.pad(av_quad, [[0, mid_index[0] + 1], [0, mid_index[1] + 1]], 'symmetric')
         # remove repeated central column and row
         av_image = np.delete(av_image, mid_index[0] + 1, axis=0)
         av_image = np.delete(av_image, mid_index[1] + 1, axis=1)
@@ -118,22 +131,23 @@ def get_average_spot_image(spot_images, av_type='mean', symmetry=None, annulus_w
     return av_image
 
 
-def plot_psf(psf, n_columns=2, log=False):
+def plot_psf(psf: np.ndarray, n_columns: int = 2, log: bool = False):
     """
-    plot psf as a series of panels for each z-plane.
+    Plot psf as a series of panels for each z-plane.
 
-    :param psf: numpy array [y_shape x x_shape (x z_shape)]
-    :param n_columns: number of columns to have in subplots.
-    :param log: whether to take log10 of psf before plotting
+    Args:
+        psf: ```float [y_shape x x_shape (x z_shape)]```. Point Spread Function to plot.
+        n_columns: Number of columns to have in subplots.
+        log: Whether to take log10 of psf before plotting
     """
-    n_rows = np.ceil(psf.shape[2]/n_columns).astype(int)
+    n_rows = np.ceil(psf.shape[2] / n_columns).astype(int)
     fig, axs = plt.subplots(n_rows, n_columns, sharex='all', sharey='all')
-    fig.set_figheight(n_rows*3)
-    fig.set_figwidth((n_columns+1)*3)
+    fig.set_figheight(n_rows * 3)
+    fig.set_figwidth((n_columns + 1) * 3)
     z = 0
     if log:
-        small = min(psf[psf>0])/10000
-        psf = np.log10(psf+small)
+        small = min(psf[psf > 0]) / 10000
+        psf = np.log10(psf + small)
     caxis_min = np.percentile(psf, 1)
     caxis_max = psf.max()
     for i in range(n_columns):
@@ -145,55 +159,63 @@ def plot_psf(psf, n_columns=2, log=False):
                 axs[j, i].yaxis.set_visible(False)
                 z += 1
             else:
-               fig.delaxes(axs[j, i])
+                fig.delaxes(axs[j, i])
     plt.tight_layout()
     fig.colorbar(im, ax=axs.ravel().tolist())
     plt.show()
 
 
-def psf_pad(psf, image_shape):
+def psf_pad(psf: np.ndarray, image_shape: Union[np.ndarray, List[int]]) -> np.ndarray:
     """
-    pads psf with zeros so has same dimensions as image
+    Pads psf with zeros so has same dimensions as image
 
-    :param psf: numpy float array [y_diameter x x_diameter x z_diameter]
-    :param image_shape: numpy integer array [y, x, z] number of pixels of padded image
-    :return: numpy float array same size as image with psf centered on middle pixel.
+    Args:
+        psf: ```float [y_shape x x_shape (x z_shape)]```.
+            Point Spread Function with same shape as small image about each spot.
+        image_shape: ```int [psf.ndim]```.
+            Number of pixels in ```[y, x, (z)]``` direction of padded image.
+
+    Returns:
+        ```float [image_shape[0] x image_shape[1] (x image_shape[2])]```.
+        Array same size as image with psf centered on middle pixel.
     """
     # must pad with ceil first so that ifftshift puts central pixel to (0,0,0).
-    pre_pad = np.ceil((np.array(image_shape)-np.array(psf.shape))/2).astype(int)
-    post_pad = np.floor((np.array(image_shape)-np.array(psf.shape))/2).astype(int)
+    pre_pad = np.ceil((np.array(image_shape) - np.array(psf.shape)) / 2).astype(int)
+    post_pad = np.floor((np.array(image_shape) - np.array(psf.shape)) / 2).astype(int)
     return np.pad(psf, [(pre_pad[i], post_pad[i]) for i in range(len(pre_pad))])
 
 
-def get_psf_spots(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, channel, use_z, radius_xy, radius_z,
-                  min_spots, intensity_thresh, intensity_auto_param, isolation_dist, shape):
+def get_psf_spots(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndarray, use_tiles: List[int],
+                  channel: int, use_z: List[int], radius_xy: int, radius_z: int, min_spots: int,
+                  intensity_thresh: Optional[float], intensity_auto_param: float, isolation_dist: float,
+                  shape: List[int]) -> Tuple[np.ndarray, float, List[int]]:
     """
-    finds spot_shapes about spots found in raw data, average of these then used for psf.
+    Finds spot_shapes about spots found in raw data, average of these then used for psf.
 
-    :param im_file: string, file path of reference round nd2 file
-    :param tilepos_yx_tiff: numpy array[n_tiles x 2]
-        [i,:] contains YX position of tile with tiff index i.
-        index 0 refers to YX = [0,0]
-    :param tilepos_yx_nd2: numpy array[n_tiles x 2]
-        [i,:] contains YX position of tile with nd2 fov index i.
-        index 0 refers to YX = [MaxY,MaxX]
-    :param use_tiles: integer list. tiff tile indices used in experiment.
-    :param channel: integer, reference channel.
-    :param use_z: integer list. z-planes used in experiment.
-    :param radius_xy: integer
-        radius of dilation structuring element in xy plane (approximately spot radius)
-    :param radius_z: integer
-        radius of dilation structuring element in z direction (approximately spot radius)
-    :param min_spots: integer, minimum number of spots required to determine average shape from. Typical: 300
-    :param intensity_thresh: maybe_float, spots are local maxima in image with pixel value > intensity_thresh.
-        if intensity_thresh is None, will automatically compute it from mid z-plane of first tile.
-    :param intensity_auto_param: float, if intensity_thresh is automatically computed, it is done using this.
-    :param isolation_dist: float, spots are isolated if nearest neighbour is further away than this.
-    :param shape: list, desired size of image about each spot [y_diameter, x_diameter, z_diameter].
-    :return:
-        spot_images: numpy integer array [n_spots x y_diameter x x_diameter x z_diameter]
-        intensity_thresh: float, only different to input if input was None.
-        tiles_used: list, tiles used to get spots.
+    Args:
+        im_file: File path of reference round nd2 file
+        tilepos_yx_tiff: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with tiff index ```i```. index 0 refers to ```YX = [0,0]```.
+        tilepos_yx_nd2: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [MaxY, MaxX]```.
+        use_tiles: ```int [n_use_tiles]```.
+            tiff tile indices used in experiment.
+        channel: Reference channel to get spots from to determine psf.
+        use_z: ```int [n_z]```. Z-planes used in the experiment.
+        radius_xy: Radius of dilation structuring element in xy plane (approximately spot radius).
+        radius_z: Radius of dilation structuring element in z direction (approximately spot radius)
+        min_spots: Minimum number of spots required to determine average shape from. Typical: 300
+        intensity_thresh: Spots are local maxima in image with ```pixel value > intensity_thresh```.
+            if ```intensity_thresh = None```, will automatically compute it from mid z-plane of first tile.
+        intensity_auto_param: If ```intensity_thresh = None``` so is automatically computed, it is done using this.
+        isolation_dist: Spots are isolated if nearest neighbour is further away than this.
+        shape: ```int [y_diameter, x_diameter, z_diameter]```. Desired size of image about each spot.
+
+    Returns:
+        - ```spot_images``` - ```int [n_spots x y_diameter x x_diameter x z_diameter]```.
+            ```spot_images[s]``` is the small image surrounding spot ```s```.
+        - ```intensity_thresh``` - ```float```. Only different from input if input was ```None```.
+        - ```tiles_used``` - ```int [n_tiles_used]```. Tiles the spots were found on.
     """
     n_spots = 0
     images = utils.nd2.load(im_file)
@@ -214,7 +236,7 @@ def get_psf_spots(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, channel, 
         not_single_pixel = check_neighbour_intensity(im, spot_yxz, median_im)
         isolated = get_isolated_points(spot_yxz, isolation_dist)
         spot_yxz = spot_yxz[np.logical_and(isolated, not_single_pixel), :]
-        if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots/4:
+        if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots / 4:
             # raise error on first tile if looks like we are going to use more than 4 tiles
             raise ValueError(f"\nFirst tile, {t}, only found {np.shape(spot_yxz)[0]} spots."
                              f"\nMaybe consider lowering intensity_thresh from current value of {intensity_thresh}.")
@@ -228,14 +250,20 @@ def get_psf_spots(im_file, tilepos_yx_tiff, tilepos_yx_nd2, use_tiles, channel, 
     return spot_images, intensity_thresh.astype(float), tiles_used
 
 
-def get_psf(spot_images, annulus_width):
+def get_psf(spot_images: np.ndarray, annulus_width: float) -> np.ndarray:
     """
-    this gets psf, which is average image of spot from individual images of spots.
+    This gets psf, which is average image of spot from individual images of spots.
+    It is normalised so min value is 0 and max value is 1.
 
-    :param spot_images: numpy integer array [n_spots x y_diameter x x_diameter x z_diameter]
-    :param annulus_width: float, in each z_plane, this specifies how big an annulus to use,
-        within which we expect all pixel values to be the same.
-    :return: numpy float array [y_diameter x x_diameter x z_diameter]
+    Args:
+        spot_images: ```int [n_spots x y_diameter x x_diameter x z_diameter]```.
+            ```spot_images[s]``` is the small image surrounding spot ```s```.
+        annulus_width: Within each z-plane, this specifies how big an annulus to use,
+            within which we expect all pixel values to be the same.
+
+    Returns:
+        ```float [y_diameter x x_diameter x z_diameter]```.
+            Average small image about a spot. Normalised so min is 0 and max is 1.
     """
     # normalise each z plane of each spot image first so each has median of 0 and max of 1.
     # Found that this works well as taper psf anyway, which gives reduced intensity as move away from centre.
@@ -248,15 +276,19 @@ def get_psf(spot_images, annulus_width):
     return psf
 
 
-def get_wiener_filter(psf, image_shape, constant):
+def get_wiener_filter(psf: np.ndarray, image_shape: Union[np.ndarray, List[int]], constant: float) -> np.ndarray:
     """
-    this tapers the psf so goes to 0 at edges and then computes wiener filter from it
+    This tapers the psf so goes to 0 at edges and then computes wiener filter from it.
 
-    :param psf: numpy float array [y_diameter x x_diameter x z_diameter]
-    :param image_shape: numpy integer array, indicates the shape of the tiles to be convolved after padding.
-        [n_im_y, n_im_x, n_im_z]
-    :param constant: float, constant used in wiener filter
-    :return: numpy complex128 array [n_im_y x n_im_x x n_im_z]
+    Args:
+        psf: ```float [y_diameter x x_diameter x z_diameter]```.
+            Average small image about a spot. Normalised so min is 0 and max is 1.
+        image_shape: ```int [n_im_y, n_im_x, n_im_z]```.
+            Indicates the shape of the image to be convolved after padding.
+        constant: Constant used in wiener filter.
+
+    Returns:
+        ```complex128 [n_im_y x n_im_x x n_im_z]```. Wiener filter of same size as image.
     """
     # taper psf so smoothly goes to 0 at each edge.
     psf = psf * np.hanning(psf.shape[0]).reshape(-1, 1, 1) * np.hanning(psf.shape[1]).reshape(1, -1, 1) * \
@@ -266,15 +298,20 @@ def get_wiener_filter(psf, image_shape, constant):
     return np.conj(psf_ft) / np.real((psf_ft * np.conj(psf_ft) + constant))
 
 
-def wiener_deconvolve(image, im_pad_shape, filter):
+def wiener_deconvolve(image: np.ndarray, im_pad_shape: List[int], filter: np.ndarray) -> np.ndarray:
     """
-    this pads image so goes to median value of image at each edge. Then deconvolves using wiener filter.
+    This pads ```image``` so goes to median value of ```image``` at each edge. Then deconvolves using wiener filter.
 
-    :param image: numpy integer array [n_im_y, n_im_x, n_im_z]. image to be deconvolved
-    :param im_pad_shape: list [n_pad_y, n_pad_x, n_pad_z]. how much to pad image in y, x, z directions.
-    :param filter: numpy complex128 array [n_im_y+2*n_pad_y, n_im_x+2*n_pad_x, n_im_z+2*n_pad_z].
-        wiener filter to use.
-    :return: numpy integer array [n_im_y, n_im_x, n_im_z]
+    Args:
+        image: ```int [n_im_y x n_im_x x n_im_z]```.
+            Image to be deconvolved.
+        im_pad_shape: ```int [n_pad_y, n_pad_x, n_pad_z]```.
+            How much to pad image in ```[y, x, z]``` directions.
+        filter: ```complex128 [n_im_y+2*n_pad_y, n_im_x+2*n_pad_x, n_im_z+2*n_pad_z]```.
+            Wiener filter to use.
+
+    Returns:
+        ```int [n_im_y x n_im_x x n_im_z]```. Deconvolved image.
     """
     im_max = image.max()
     im_min = image.min()
@@ -283,7 +320,7 @@ def wiener_deconvolve(image, im_pad_shape, filter):
                    end_values=[(im_av, im_av)] * 3)
     im_deconvolved = np.real(np.fft.ifftn(np.fft.fftn(image) * filter))
     im_deconvolved = im_deconvolved[im_pad_shape[0]:-im_pad_shape[0], im_pad_shape[1]:-im_pad_shape[1],
-                                    im_pad_shape[2]:-im_pad_shape[2]]
+                     im_pad_shape[2]:-im_pad_shape[2]]
     # set min and max so it covers same range as input image
     im_deconvolved = im_deconvolved - im_deconvolved.min()
-    return np.round(im_deconvolved * (im_max-im_min) / im_deconvolved.max() + im_min).astype(int)
+    return np.round(im_deconvolved * (im_max - im_min) / im_deconvolved.max() + im_min).astype(int)
