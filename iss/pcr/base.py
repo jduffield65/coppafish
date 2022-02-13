@@ -2,34 +2,39 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from .. import utils
 from tqdm import tqdm
+from typing import Optional, Tuple, Union, List
 
 
-def apply_transform(yxz, transform, tile_centre, z_scale):
+def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndarray, z_scale: float) -> np.ndarray:
     """
     This transforms the coordinates yxz based on an affine transform.
     E.g. to find coordinates of spots on the same tile but on a different round and channel.
 
-    :param yxz: numpy integer array [n_spots x 3]
-        yxz[i, :2] are the non-centered yx coordinates in yx pixels for spot i
-        yxz[i, 2] is the non-centered z coordinate in z_pixels for spot i
-        e.g. these are the coordinates stored in nb['find_spots']['spot_details']
-    :param transform: numpy float array [4 x 3]
-        affine transform to apply to yxz, once centered and z units changed to yx_pixels.
-        transform[3, 2] is approximately the z shift in units of yx_pixels.
-        e.g. this is one of the transforms stored in nb['register']['transform']
-    :param tile_centre: numpy float array [3]
-        tile_centre[:2] are yx coordinates in yx pixels of the centre of the tile that spots in yxz were found on
-        tile_centre[2] is the z coordinate in z pixels of the centre of the tile
-        e.g. for tile of yxz dimensions [2048, 2048, 51], tile_centre = [1023.5, 1023.5, 25]
-        each entry in tile_centre must be an integer multiple of 0.5.
-    :param z_scale: float
-        scale factor to multiply z coordinates to put them in units of yx pixels.
-        i.e. z_scale = pixel_size_z / pixel_size_yx where both are measured in microns.
-        typically, z_scale > 1 because z pixels are larger than the yx pixels.
-    :return:
-        yxz_transform: numpy integer array [n_spots x 3]
-        yxz_transform[i, :2] are the transformed non-centered yx coordinates in yx pixels for spot i
-        yxz_transform[i, 2] is the transformed non-centered z coordinate in z_pixels for spot i
+    Args:
+        yxz: ```int [n_spots x 3]```.
+            ```yxz[i, :2]``` are the non-centered yx coordinates in ```yx_pixels``` for spot ```i```.
+            ```yxz[i, 2]``` is the non-centered z coordinate in ```z_pixels``` for spot ```i```.
+            E.g. these are the coordinates stored in ```nb['find_spots']['spot_details']```.
+        transform: ```float [4 x 3]```.
+            Affine transform to apply to ```yxz```, once centered and z units changed to ```yx_pixels```.
+            ```transform[3, 2]``` is approximately the z shift in units of ```yx_pixels```.
+            E.g. this is one of the transforms stored in ```nb['register']['transform']```.
+        tile_centre: ```float [3]```.
+            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
+            ```yxz``` were found on.
+            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
+            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
+            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
+        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.
+            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.
+            typically, ```z_scale > 1``` because ```z_pixels``` are larger than the ```yx_pixels```.
+
+    Returns:
+        ```int [n_spots x 3]```.
+            ```yxz_transform``` such that
+            ```yxz_transform[i, [1,2]]``` are the transformed non-centered yx coordinates in ```yx_pixels```
+            for spot ```i```.
+            ```yxz_transform[i, 2]``` is the transformed non-centered z coordinate in ```z_pixels``` for spot ```i```.
     """
     if (utils.round_any(tile_centre, 0.5) == tile_centre).min() == False:
         raise ValueError(f"tile_centre given, {tile_centre}, is not a multiple of 0.5 in each dimension.")
@@ -39,40 +44,41 @@ def apply_transform(yxz, transform, tile_centre, z_scale):
     return yxz_transform
 
 
-def get_transform(yxz_base, transform_old, yxz_target, dist_thresh, yxz_target_tree=None,
-                  reg_constant_rot=30000, reg_constant_shift=9, reg_transform=None):
+def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,
+                  yxz_target_tree: Optional[NearestNeighbors] = None, reg_constant_rot: float = 30000,
+                  reg_constant_shift: float = 9,
+                  reg_transform: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray, int, float]:
     """
-    This finds the affine transform that transforms yxz_base such that the distances between the neighbours
-    with yxz_target are minimised.
+    This finds the affine transform that transforms ```yxz_base``` such that the distances between the neighbours
+    with ```yxz_target``` are minimised.
 
-    :param yxz_base: numpy float array [n_base_spots x 3]
-        coordinates of spots you want to transform.
-    :param transform_old: numpy float array [4 x 3]
-        affine transform found for previous iteration of PCR algorithm.
-    :param yxz_target: numpy float array [n_target_spots x 3]
-        coordinates of spots in image that you want to transform yxz_base to.
-    :param dist_thresh: float
-         if neighbours closer than this, they are used to compute the new transform.
-         typical = 3
-    :param yxz_target_tree: sklearn NearestNeighbours object, optional.
-        KDTree produced from yxz_target. If None, it will be computed.
-        default: None.
-    :param reg_constant_rot: float, optional
-        constant used for scaling and rotation when doing regularized least squares.
-        default: 30000
-    :param reg_constant_shift: float
-        constant used for shift when doing regularized least squares.
-        default: 9
-    :param reg_transform: numpy float array [4 x 3], optional
-        affine transform which we want final transform to be near when doing regularized least squares.
-        If None, then no regularization is performed.
-        default: None
-    :return:
-        transform: numpy float array [4 x 3]. Updated affine transform
-        neighbour: numpy integer array [n_base_spots,]
-            neighbour[i] is index of coordinate in yxz_target to which transformation of yxz_base[i] is closest.
-        n_matches: integer, number of neighbours which have distance less than dist_thresh.
-        error: float, average distance between neighbours below dist_thresh.
+    Args:
+        yxz_base: ```float [n_base_spots x 3]```.
+            Coordinates of spots you want to transform.
+        transform_old: ```float [4 x 3]```.
+            Affine transform found for previous iteration of PCR algorithm.
+        yxz_target: ```float [n_target_spots x 3]```.
+            Coordinates of spots in image that you want to transform ```yxz_base``` to.
+        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
+            Typical: ```3```.
+        yxz_target_tree: KDTree produced from ```yxz_target```.
+            If ```None```, it will be computed.
+        reg_constant_rot: Constant used for scaling and rotation when doing regularized least squares.
+        reg_constant_shift: Constant used for shift when doing regularized least squares.
+        reg_transform: ```float [4 x 3]```.
+            Affine transform which we want final transform to be near when doing regularized least squares.
+            If ```None```, then no regularization is performed.
+
+    Returns:
+        - ```transform``` - ```float [4 x 3]```.
+            Updated affine transform.
+        - ```neighbour``` - ```int [n_base_spots]```.
+            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of
+            ```yxz_base[i]``` is closest.
+        - ```n_matches``` - ```int```.
+            Number of neighbours which have distance less than ```dist_thresh```.
+        - ```error``` - ```float```.
+            Average distance between ```neighbours``` below ```dist_thresh```.
     """
     if yxz_target_tree is None:
         yxz_target_tree = NearestNeighbors(n_neighbors=1).fit(yxz_target)
@@ -96,23 +102,26 @@ def get_transform(yxz_base, transform_old, yxz_target, dist_thresh, yxz_target_t
     return transform, neighbour, n_matches, error
 
 
-def transform_from_scale_shift(scale, shift):
+def transform_from_scale_shift(scale: np.ndarray, shift: np.ndarray) -> np.ndarray:
     """
+    Gets ```[dim+1 x dim]``` affine transform from scale for each channel and shift for each tile/round.
 
-    :param scale: numpy float array [n_channels x n_dims]
-        scale[c, d] is the scaling to account for chromatic aberration from reference channel
-        to channel c for dimension d.
-        typically as an initial guess all values in scale will be 1.
-    :param shift: numpy float array [n_tiles x n_rounds x n_dims]
-        shift[t, r, d] is the shift to account for the shift between the reference round for tile t and
-        round r for tile t in dimension d.
-    :return:
-        numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-        gives affine transform from given scales and shifts
+    Args:
+        scale: ```float [n_channels x n_dims]```.
+            ```scale[c, d]``` is the scaling to account for chromatic aberration from reference channel
+            to channel ```c``` for dimension ```d```.
+            Typically as an initial guess all values in scale will be ```1```.
+        shift: ```float [n_tiles x n_rounds x n_dims]```.
+            ```shift[t, r, d]``` is the shift to account for the shift between the reference round for tile ```t``` and
+            round ```r``` for tile ```t``` in dimension ```d```.
+
+    Returns:
+        ```float [n_tiles x n_rounds x n_channels x dim+1 x dim]```.
+            ```[t, r, c]``` is the affine transform for tile ```t```, round ```r```, channel ```c``` computed from
+            ```scale[c]``` and ```shift[t, r]```.
     """
     n_channels = scale.shape[0]
     n_tiles, n_rounds, dim = shift.shape
-    # TODO change transform index to [t,r,c,4x3]
     transforms = np.zeros((n_tiles, n_rounds, n_channels, dim + 1, dim))
     for t in range(n_tiles):
         for r in range(n_rounds):
@@ -122,57 +131,76 @@ def transform_from_scale_shift(scale, shift):
     return transforms
 
 
-def mod_median(array, ignore, axis=0):
+def mod_median(array: np.ndarray, ignore: np.ndarray, axis: Union[int, List[int]] = 0) -> Union[float, np.ndarray]:
     """
-    this computes the median ignoring values indicated by ignore.
+    This computes the median ignoring values indicated by ```ignore```.
 
-    :param array: numpy array
-    :param ignore: numpy array of same size as array.
-    :param axis: integer or integer list of what axis to average over
-    :return: float or numpy array.
+    Args:
+        array: ```float [n_dim_1 x n_dim_2 x ... x n_dim_N]```.
+            array to compute median from.
+        ignore: ```bool [n_dim_1 x n_dim_2 x ... x n_dim_N]```.
+            True for values in array that should not be used to compute median.
+        axis: ```int [n_axis_av]```.
+            Which axis to average over.
+
+    Returns:
+        Median value without using those values indicated by ```ignore```.
     """
     mod_array = array.copy()
     mod_array[ignore] = np.nan
     return np.nanmedian(mod_array, axis=axis)
 
 
-def get_average_transform(transforms, n_matches, matches_thresh, scale_thresh, shift_thresh):
+def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches_thresh: Union[int, np.ndarray],
+                          scale_thresh: np.ndarray,
+                          shift_thresh: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                                                             np.ndarray]:
     """
     This finds all transforms which pass some thresholds and computes the average transform using them.
-    average transform for tile t, round r, channel c, av_transforms[:, :, t, r, c] has:
-        zero rotation
-        scaling given by median for channel c over all tiles and rounds
-            i.e. median(av_transforms[:, :, c, 0, 0]) for y scaling.
-        shift given by median for tile t, round r over all channels.
-            i.e. median(av_transforms[t, r, :, 4, 0]) for y shift if dim=3.
+    `av_transforms[t, r, c]` is the average transform for tile `t`, round `r`, channel `c` and has:
 
-    :param transforms: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-        transforms[t, r, c] is the affine transform for tile t from the reference image to round r, channel c.
-    :param n_matches: numpy integer array [n_tiles x n_rounds x n_channels]
-        number of matches found by point cloud registration
-    :param matches_thresh: integer or numpy integer array [n_tiles x n_rounds x n_channels]
-        matches for a particular transform must exceed this to be used when computing average transform
-        can specify a single threshold for all transforms or a different threshold for each
-        e.g. you may give a lower threshold if that tile/round/channel had less spots.
-        typical = 200.
-    :param scale_thresh: numpy float array [dim]
-        specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.
-        typically this threshold will be the same in all dimensions as expect chromatic aberration to be same in each.
-        threshold should be fairly large, it is just to get rid of crazy scalings which sometimes get a lot of matches.
-        typical = 0.01
-    :param shift_thresh: numpy float array [dim]
-        specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.
-        typically this threshold will be the same in y and x but different in z.
-        typical = 10 xy pixels in xy direction, 2 z pixels in z direction (normalised to have same units as xy pixels).
-    :return:
-        av_transforms: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-        av_scaling: numpy float array [n_channels x dim]
-        av_shifts: numpy float array [n_tiles x n_rounds x dim]
-        failed: numpy boolean array [n_tiles x n_rounds x n_channels]
-            indicates tiles/rounds/channels to which transform had too few matches or transform was anomalous compared
-            to median. These were not included when calculating av_transforms.
-        failed_non_matches: numpy boolean array [n_tiles x n_rounds x n_channels]
-            indicates tiles/rounds/channels to which transform was anomalous compared to median either due to shift or
+    - Zero rotation.
+    - Scaling given by median for channel `c` over all tiles and rounds.
+        I.e. `median(av_transforms[:, :, c, 0, 0])` for y scaling.
+    - shift given by median for tile `t`, round `r` over all channels.
+        I.e. `median(av_transforms[t, r, _, 4, 0])` for y shift if `dim=3`.
+
+    Args:
+        transforms: ```float [n_tiles x n_rounds x n_channels x dim+1 x dim]```.
+            ```transforms[t, r, c]``` is the affine transform for tile ```t``` from the reference image to
+             round ```r```, channel ```c```.
+        n_matches: ```int [n_tiles x n_rounds x n_channels]```.
+            Number of matches found by point cloud registration.
+        matches_thresh: ```int [n_tiles x n_rounds x n_channels]``` or single ```int```.
+            ```n_matches``` for a particular transform must exceed this to be used when computing ```av_transforms```.
+            Can specify a single threshold for all transforms or a different threshold for each.
+            E.g. you may give a lower threshold if that tile/round/channel has fewer spots.
+            Typical: ```200```.
+        scale_thresh: ```float [n_dim]```.
+            Specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.
+            Typically, this threshold will be the same in all dimensions as expect
+            chromatic aberration to be same in each.
+            Threshold should be fairly large, it is just to get rid of crazy scalings which sometimes
+            get a lot of matches.
+            Typical: `0.01`.
+        shift_thresh: `float [n_dim]`.
+            Specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.
+            Typically, this threshold will be the same in y and x but different in z.
+            Typical: `10` xy pixels in xy direction, `2` z pixels in z direction
+            (normalised to have same units as `yx_pixels`).
+
+    Returns:
+        - `av_transforms` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.
+            `av_transforms[t, r, c]` is the average transform for tile `t`, round `r`, channel `c`.
+        - `av_scaling` - `float [n_channels x dim]`.
+            `av_scaling[c, d]` is the median scaling for channel `c`, dimension `d`, over all tiles and rounds.
+        - `av_shifts` - `float [n_tiles x n_rounds x dim]`.
+            `av_shifts[t, r, d]` is the median scaling for tile `t`, round `r`, dimension `d`, over all channels.
+        - `failed` - `bool [n_tiles x n_rounds x n_channels]`.
+            Indicates tiles/rounds/channels to which transform had too few matches or transform was anomalous compared
+            to median. These were not included when calculating `av_transforms`.
+        - `failed_non_matches` - `bool [n_tiles x n_rounds x n_channels]`.
+            Indicates tiles/rounds/channels to which transform was anomalous compared to median either due to shift or
             scaling in one or more directions.
     """
     dim = transforms.shape[-1]
@@ -218,69 +246,79 @@ def get_average_transform(transforms, n_matches, matches_thresh, scale_thresh, s
     return av_transforms, av_scaling, av_shifts, failed, failed_non_matches
 
 
-def iterate(yxz_base, yxz_target, transforms_initial, n_iter, dist_thresh, matches_thresh, scale_dev_thresh,
-            shift_dev_thresh, reg_constant_rot=None, reg_constant_shift=None):
+def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.ndarray, n_iter: int,
+            dist_thresh: float, matches_thresh: Union[int, np.ndarray], scale_dev_thresh: np.ndarray,
+            shift_dev_thresh: np.ndarray, reg_constant_rot: Optional[float] = None,
+            reg_constant_shift: Optional[float] = None) -> Tuple[np.ndarray, dict]:
     """
     This gets the transforms using iterative closest point until all iterations used or convergence.
-    For transforms that have matches below matches_thresh or are anomalous compared to average transform, the transforms
-    are recomputed using regularized least squares to ensure they are close to the average transform.
-    If either reg_constant_rot=None or reg_constant_shift=None then this is not done.
+    For `transforms` that have matches below `matches_thresh` or are anomalous compared to `av_transform`,
+    the `transforms` are recomputed using regularized least squares to ensure they are close to the `av_transform`.
+    If either `reg_constant_rot = None` or `reg_constant_shift = None` then this is not done.
 
-    :param yxz_base: numpy object array [n_tiles]
-        yxz_base[t] is a numpy float array [n_base_spots x dim].
-        coordinates of spots on reference round of tile t.
-    :param yxz_target: numpy object array [n_tiles x n_rounds x n_channels]
-        yxz_target[t, r, c] is a numpy float array [n_target_spots x 3].
-        coordinates of spots in tile t, round r, channel c.
-    :param transforms_initial: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-        transforms_initial[t, r, c] is the starting affine transform for tile t
-        from the reference image to round r, channel c.
-        transforms_initial[t, r, c, :dim, :dim] is probably going to be the identity matrix.
-        transforms_initial[t, r, c, dim, :] is the shift which needs to be pre-computed somehow to get a good result.
-    :param n_iter: integer, max number of iterations to perform of PCR.
-    :param dist_thresh: float,
-        if neighbours closer than this, they are used to compute the new transform.
-        typical = 3
-    :param matches_thresh: integer or numpy integer array [n_tiles x n_rounds x n_channels]
-        matches for a particular transform must exceed this to be used when computing average transform.
-        Can specify a single threshold for all transforms or a different threshold for each
-        e.g. you may give a lower threshold if that tile/round/channel had less spots.
-        typical = 200.
-    :param scale_dev_thresh: numpy float array [dim]
-        specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.
-        typically this threshold will be the same in all dimensions as expect chromatic aberration to be same in each.
-        threshold should be fairly large, it is just to get rid of crazy scalings which sometimes get a lot of matches.
-        typical = 0.01
-    :param shift_dev_thresh: numpy float array [dim]
-        specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.
-        typically this threshold will be the same in y and x but different in z.
-        typical = 10 xy pixels in xy direction, 2 z pixels in z direction (normalised to have same units as xy pixels).
-    :param reg_constant_rot: float, optional
-        constant used for scaling and rotation when doing regularized least squares.
-        default: None meaning no regularized least squares performed. Typical = 30000
-    :param reg_constant_shift: float, optional
-        constant used for shift when doing regularized least squares.
-        default: None meaning no regularized least squares performed. Typical = 9
-    :return:
-    transforms: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-        transforms[t, r, c] is the final affine transform found for tile t, round r, channel c.
-    debug_info: dictionary containing the following -
-        n_matches: numpy integer array [n_tiles x n_rounds x n_channels] giving number of matches found
-            for each transform.
-        error: numpy float array [n_tiles x n_rounds x n_channels], average distance between neighbours
-            below dist_thresh.
-        failed: numpy boolean array [n_tiles x n_rounds x n_channels]
-            indicates tiles/rounds/channels to which transform had too few matches or transform was anomalous compared
-            to median. These were not included when calculating av_scalings / av_shifts.
-        is_converged: numpy boolean array [n_tiles x n_rounds x n_channels]
-            False if max iterations reached before transform converged.
-        av_scaling: numpy float array [n_channels x dim].
-            chromatic aberration scaling factor to each channel from reference channel. Made using all rounds and tiles.
-        av_shifts: numpy float array [n_tiles x n_rounds x dim]
-            av_shifts[t,r,:] is the average shift from reference round to round r for tile t across all colour channels.
-        transforms_outlier: numpy float array [n_tiles x n_rounds x n_channels x dim+1 x dim]
-            transforms_outlier[t, r, c] is the final affine transform found for tile t, round r, channel c
-            without regularization for t,r,c indicated by failed otherwise it is 0.
+    Args:
+        yxz_base: `object [n_tiles]`.
+            `yxz_base[t]` is a numpy `float` array `[n_base_spots x dim]`.
+            coordinates of spots on reference round of tile `t`.
+        yxz_target: `object [n_tiles x n_rounds x n_channels]`.
+            `yxz_target[t, r, c]` is a numpy `float` array `[n_target_spots x 3]`.
+            coordinates of spots in tile `t`, round `r`, channel `c`.
+        transforms_initial: `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.
+            `transforms_initial[t, r, c]` is the starting affine transform for tile `t`
+            from the reference image to round `r`, channel `c`.
+            `transforms_initial[t, r, c, :dim, :dim]` is probably going to be the identity matrix.
+            `transforms_initial[t, r, c, dim, :]` is the shift which needs to be pre-computed somehow to get a
+            good result.
+        n_iter: Max number of iterations to perform of PCR.
+        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
+            Typical: `3`.
+        matches_thresh: `int [n_tiles x n_rounds x n_channels]` or single `int`.
+            `n_matches` for a particular transform must exceed this to be used when computing `av_transform`.
+            Can specify a single threshold for all transforms or a different threshold for each.
+            E.g. you may give a lower threshold if that tile/round/channel has fewer spots.
+            Typical: `200`.
+        scale_dev_thresh: `float [n_dim]`.
+            Specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.
+            Typically, this threshold will be the same in all dimensions as expect chromatic aberration to be
+            same in each.
+            Threshold should be fairly large, it is just to get rid of crazy scalings which sometimes get
+            a lot of matches.
+            Typical: `0.01`.
+        shift_dev_thresh: `float [n_dim]`.
+            Specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.
+            Typically, this threshold will be the same in y and x but different in z.
+            Typical: `10` xy pixels in xy direction, `2` z pixels in z direction
+            (normalised to have same units as `yx_pixels`).
+        reg_constant_rot: Constant used for scaling and rotation when doing regularized least squares.
+            `None` means no regularized least squares performed.
+            Typical = `30000`.
+        reg_constant_shift: Constant used for shift when doing regularized least squares.
+            `None` means no regularized least squares performed.
+            Typical = `9`
+
+    Returns:
+        - `transforms` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.
+            `transforms[t, r, c]` is the final affine transform found for tile `t`, round `r`, channel `c`.
+        - `debug_info` - `dict` containing 7 `np.ndarray` -
+
+            - `n_matches` - `int [n_tiles x n_rounds x n_channels]`.
+                Number of matches found for each transform.
+            - `error` - `float [n_tiles x n_rounds x n_channels]`.
+                Average distance between neighbours below `dist_thresh`.
+            - `failed` - `bool [n_tiles x n_rounds x n_channels]`.
+                Indicates tiles/rounds/channels to which transform had too few matches or transform was
+                anomalous compared to median. These were not included when calculating a`v_scalings` or `av_shifts`.
+            - `is_converged` - `bool [n_tiles x n_rounds x n_channels]`.
+                `False` if max iterations reached before transform converged.
+            - `av_scaling` - `float [n_channels x n_dim]`.
+                Chromatic aberration scaling factor to each channel from reference channel.
+                Made using all rounds and tiles.
+            - `av_shift` - `float [n_tiles x n_rounds x dim]`.
+                `av_shift[t, r]` is the average shift from reference round to round `r` for tile `t` across all
+                colour channels.
+            - `transforms_outlier` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.
+                `transforms_outlier[t, r, c]` is the final affine transform found for tile `t`, round `r`, channel `c`
+                without regularization for `t`, `r`, `c` indicated by failed otherwise it is `0`.
     """
     n_tiles, n_rounds, n_channels = yxz_target.shape
     if not utils.errors.check_shape(yxz_base, [n_tiles]):

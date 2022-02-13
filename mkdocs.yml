@@ -10,6 +10,8 @@ nav:
           - Scale: code/extract/scale.md
         - Find Spots:
           - Base: code/find_spots/base.md
+        - Point Cloud Registration:
+          - Base: code/pcr/base.md
         - Call Spots:
           - Base: code/call_spots/base.md
           - Bleed Matrix: code/call_spots/bleed_matrix.md
