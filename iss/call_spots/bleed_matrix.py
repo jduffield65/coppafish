@@ -1,29 +1,33 @@
 import numpy as np
 from .. import utils
+from typing import Tuple, List, Union
 
 
-def scaled_k_means(x, initial_cluster_mean, score_thresh=0, min_cluster_size=10, n_iter=100):
+def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh: float = 0, min_cluster_size: int = 10,
+                   n_iter: int = 100) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    does a clustering that minimizes the norm of x[i] - g[i] * cluster_mean{[cluster_ind[i]]}
-    for each data point i in x, where g is the gain which is not explicitly computed
+    Does a clustering that minimizes the norm of ```x[i] - g[i] * cluster_mean[cluster_ind[i]]```
+    for each data point ```i``` in ```x```, where ```g``` is the gain which is not explicitly computed.
 
-    :param x: data set of vectors to build cluster means from [n_points x n_dims]
-    :param initial_cluster_mean: numpy float array [n_clusters x n_dims], starting point of mean cluster vectors
-    :param score_thresh: float between 0 and 1, optional
-        points in x with dot product to a cluster mean vector greater than this
-        contribute to new estimate of mean vector.
-        default: 0
-    :param min_cluster_size: integer, optional
-        if less than this many points assigned to a cluster, that cluster mean vector will be set to 0.
-        default: 10
-    :param n_iter: integer, optional
-        maximum number of iterations performed.
-        default: 100
-    :return:
-        norm_cluster_mean: numpy float array [n_clusters x n_dims], final normalised mean cluster vectors
-        cluster_ind: numpy integer array [n_points]
-            index of cluster each point was assigned to. -1 means fell below score_thresh and not assigned.
-        cluster_eig_value: numpy float array [n_clusters], first eigenvalue of outer product matrix for each cluster.
+    Args:
+        x: ```float [n_points x n_dims]```.
+            Data set of vectors to build cluster means from.
+        initial_cluster_mean: ```float [n_clusters x n_dims]```.
+            Starting point of mean cluster vectors.
+        score_thresh: Scalar between ```0``` and ```1```.
+            Points in ```x``` with dot product to a cluster mean vector greater than this
+            contribute to new estimate of mean vector.
+        min_cluster_size: If less than this many points assigned to a cluster,
+            that cluster mean vector will be set to ```0```.
+        n_iter: Maximum number of iterations performed.
+
+    Returns:
+        - norm_cluster_mean - ```float [n_clusters x n_dims]```.
+            Final normalised mean cluster vectors.
+        - cluster_ind - ```int [n_points]```.
+            Index of cluster each point was assigned to. ```-1``` means fell below score_thresh and not assigned.
+        - cluster_eig_value - ```float [n_clusters]```.
+            First eigenvalue of outer product matrix for each cluster.
     """
     # normalise starting points and original data
     norm_cluster_mean = initial_cluster_mean / np.linalg.norm(initial_cluster_mean, axis=1).reshape(-1, 1)
@@ -63,30 +67,33 @@ def scaled_k_means(x, initial_cluster_mean, score_thresh=0, min_cluster_size=10,
     return norm_cluster_mean, cluster_ind, cluster_eig_val
 
 
-def get_bleed_matrix(spot_colors, initial_bleed_matrix, method, score_thresh=0, min_cluster_size=10, n_iter=100):
+def get_bleed_matrix(spot_colors: np.ndarray, initial_bleed_matrix: np.ndarray, method: str, score_thresh: float = 0,
+                     min_cluster_size: int = 10, n_iter: int = 100) -> np.ndarray:
     """
-    this returns a bleed matrix such that the expected intensity of dye d in round r
-    is a constant multiple of bleed_matrix[r, :, d].
+    This returns a bleed matrix such that the expected intensity of dye ```d``` in round ```r```
+    is a constant multiple of ```bleed_matrix[r, :, d]```.
 
-    :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]
-        intensity found for each spot in each round and channel, normalized in some way to equalize channel intensities
-        typically, the normalisation will be such that spot_colors vary between around -5 to 10 with most near 0.
-    :param initial_bleed_matrix: numpy float array [n_rounds x n_channels x n_dyes]
-        initial guess for intensity we expect each dye to produce in each channel and round.
-        Should be normalized in same way as spot_colors.
-    :param method: string, 'single' or 'separate'
-        'single': a single bleed matrix is produced for all rounds
-        'separate': a different bleed matrix is made for each round
-    :param score_thresh: float between 0 and 1, optional
-        threshold used for scaled_k_means affecting which spots contribute to bleed matrix estimate
-        default: 0
-    :param min_cluster_size: integer, optional
-        if less than this many points assigned to a dye, that dye mean vector will be set to 0.
-        default: 10
-    :param n_iter: integer, optional
-        maximum number of iterations performed in scaled_k_means
-        default: 100
-    :return: numpy float array [n_rounds x n_channels x n_dyes]
+    Args:
+        spot_colors: ```float [n_spots x n_rounds x n_channels]```.
+            Intensity found for each spot in each round and channel, normalized in some way to equalize channel
+            intensities typically, the normalisation will be such that spot_colors vary between around
+            ```-5``` to ```10``` with most near ```0```.
+        initial_bleed_matrix: ```float [n_rounds x n_channels x n_dyes]```.
+            Initial guess for intensity we expect each dye to produce in each channel and round.
+            Should be normalized in same way as spot_colors.
+        method: Must be one of the following:
+
+            - ```'single'``` - A single bleed matrix is produced for all rounds.
+            - ```'separate'``` - A different bleed matrix is made for each round.
+        score_thresh: Scalar between ```0``` and ```1```.
+            Threshold used for ```scaled_k_means``` affecting which spots contribute to bleed matrix estimate.
+        min_cluster_size: If less than this many points assigned to a dye, that dye mean vector will be set to ```0```.
+        n_iter: Maximum number of iterations performed in ```scaled_k_means```.
+
+    Returns:
+        ```float [n_rounds x n_channels x n_dyes]```.
+            ```bleed_matrix``` such that the expected intensity of dye ```d``` in round ```r```
+            is a constant multiple of ```bleed_matrix[r, _, d]```.
     """
     n_rounds, n_channels = spot_colors.shape[1:]
     n_dyes = initial_bleed_matrix.shape[2]
@@ -122,24 +129,31 @@ def get_bleed_matrix(spot_colors, initial_bleed_matrix, method, score_thresh=0, 
     return bleed_matrix
 
 
-def get_dye_channel_intensity_guess(csv_file_name, dyes, cameras, lasers):
+def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], np.ndarray],
+                                    cameras: Union[List[int], np.ndarray],
+                                    lasers: Union[List[int], np.ndarray]) -> np.ndarray:
     """
-    this gets an estimate for the intensity of each dye in each channel (before any channel normalisation)
-    which is then used as the starting point for the bleed matrix computation
+    This gets an estimate for the intensity of each dye in each channel (before any channel normalisation)
+    which is then used as the starting point for the bleed matrix computation.
 
-    :param csv_file_name: string, path to csv file which has 4 columns with headers Dye, Camera, Laser, Intensity
-        Dye is a column of names of different dyes
-        Camera is a column of integers indicating the wavelength in nm of the camera.
-        Laser is a column of integers indicating the wavelength in nm of the laser.
-        Intensity[i] is the approximate intensity of Dye[i] in a channel with Camera[i] and Laser [i].
-    :param dyes: list of strings or numpy string array [n_dyes]
-        names of dyes used in particular experiment.
-    :param cameras: list of integers or numpy integer array [n_channels]
-        wavelength of camera in nm used in each channel.
-    :param lasers: list of integers or numpy integer array [n_channels]
-        wavelength of laser in nm used in each channel.
-    :return:
-        numpy float array [n_dyes x n_channels]
+    Args:
+        csv_file_name: Path to csv file which has 4 columns with headers Dye, Camera, Laser, Intensity:
+
+            - Dye is a column of names of different dyes
+            - Camera is a column of integers indicating the wavelength in nm of the camera.
+            - Laser is a column of integers indicating the wavelength in nm of the laser.
+            - Intensity```[i]``` is the approximate intensity of Dye```[i]``` in a channel with Camera```[i]``` and
+                Laser```[i]```.
+        dyes: ```str [n_dyes]```.
+            Names of dyes used in particular experiment.
+        cameras: ```int [n_channels]```.
+            Wavelength of camera in nm used in each channel.
+        lasers: ```int [n_channels]```.
+            Wavelength of laser in nm used in each channel.
+
+    Returns:
+        ```float [n_dyes x n_channels]```.
+            ```[d, c]``` is estimate of intensity of dye ```d``` in channel ```c```.
     """
     n_dyes = len(dyes)
     cameras = np.array(cameras)

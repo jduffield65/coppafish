@@ -75,9 +75,11 @@ def get_average_spot_image(spot_images: np.ndarray, av_type: str = 'mean', symme
         spot_images: ```float [n_peaks x y_shape x x_shape (x z_shape)]```.
             ```spot_images[s]``` is the small image surrounding spot ```s```.
         av_type: Optional, one of the following indicating which average to use:
-                - ```'mean'```
-                - ```'mean'```
+
+            - ```'mean'```
+            - ```'median'```
         symmetry: Optional, one of the following:
+
             - ```None``` - Just finds mean at every pixel.
             - ```'quadrant_2d'``` - Assumes each quadrant of each z-plane expected to look the same so concatenates
                 these.

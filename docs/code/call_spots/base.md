@@ -1,0 +1,1 @@
+::: iss.call_spots.base

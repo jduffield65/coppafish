@@ -1,34 +1,43 @@
 import numpy as np
 from .. import utils
+from typing import Union, List, Optional, Tuple
 
 
-def color_normalisation(hist_values, hist_counts, thresh_intensities, thresh_probs, method):
+def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
+                        thresh_intensities: Union[float, List[float], np.ndarray],
+                        thresh_probs: Union[float, List[float], np.ndarray], method: str) -> np.ndarray:
     """
-    This finds the normalisations for each round, r, and channel, c, such that if
-    norm_spot_color[r,c] = spot_color[r,c] / norm_factor[r,c], the probability of norm_spot_color being larger than
-    thresh_intensities[i] is less than thresh_probs[i] for every i.
+    This finds the normalisations for each round, ```r```, and channel, ```c```, such that if ```norm_spot_color[r,c] =
+    spot_color[r,c] / norm_factor[r,c]```, the probability of ```norm_spot_color``` being larger than ```
+    thresh_intensities[i]``` is less than ```thresh_probs[i]``` for every ```i```.
     Where the probability is based on all pixels from all tiles in that round and channel.
 
-    :param hist_values: numpy integer array [n_pixel_values]
-        all possible pixel values in saved tiff images i.e. n_pixel_values is approximately np.iinfo(np.uint16).max
-        because tiffs saved as uint16 images.
-    :param hist_counts: numpy integer array [n_pixel_values x n_rounds x n_channels]
-        hist_counts[i, r, c] is the number of pixels across all tiles in round r, channel c
-        which had the value hist_values[i].
-    :param thresh_intensities: float, list or numpy array [n_thresholds]
-        thresholds such that the probability of having a normalised spot_color greater than this are quite low.
-        Need to be ascending.
-        Typical: [0.5, 1, 5] i.e. we want most of normalised spot_colors to be less than 0.5 so high
-        normalised spot color is on the order of 1.
-    :param thresh_probs: float, list or numpy array [n_thresholds]
-        probability of normalised spot color being greater than thresh_intensities[i] must be less than thresh_probs[i].
-        Needs to be same shape as thresh_intensities and descending.
-        Typical: [0.01, 5e-4, 1e-5] i.e. want almost all non spot pixels to have normalised intensity less than 0.5.
-    :param method: string, 'single' or 'separate'
-        'single': a single normalisation factor is produced for all rounds of each channel
-            i.e. norm_factor[r, b] for a given b value, will be the same for all r values.
-        'separate': a different normalisation factor is made for each round and channel.
-    :return:
+    Args:
+        hist_values: ```int [n_pixel_values]```.
+            All possible pixel values in saved tiff images i.e. n_pixel_values is approximately
+            ```np.iinfo(np.uint16).max``` because tiffs saved as ```uint16``` images.
+        hist_counts: ```int [n_pixel_values x n_rounds x n_channels]```.
+            ```hist_counts[i, r, c]``` is the number of pixels across all tiles in round ```r```, channel ```c```
+            which had the value ```hist_values[i]```.
+        thresh_intensities: ```float [n_thresholds]```.
+            Thresholds such that the probability of having a normalised spot_color greater than this are quite low.
+            Need to be ascending.
+            Typical: ```[0.5, 1, 5]``` i.e. we want most of ```normalised spot_colors``` to be less than ```0.5``` so
+            high normalised spot color is on the order of ```1```.
+        thresh_probs: ```float [n_thresholds]```.
+            Probability of normalised spot color being greater than ```thresh_intensities[i]``` must be less than
+            ```thresh_probs[i]```. Needs to be same shape as thresh_intensities and descending.
+            Typical: ```[0.01, 5e-4, 1e-5]``` i.e. want almost all non spot pixels to have
+            normalised intensity less than ```0.5```.
+        method: Must be one of the following:
+
+            - ```'single'``` - A single normalisation factor is produced for all rounds of each channel
+                i.e. ```norm_factor[r, b]``` for a given ```b``` value, will be the same for all ```r``` values.
+            - ```'separate'``` - A different normalisation factor is made for each round and channel.
+
+    Returns:
+        ```float [n_rounds x n_channels]```.
+            ```norm_factor``` such that ```norm_spot_color[s,r,c] = spot_color[s,r,c] / norm_factor[r,c]```.
     """
     if not utils.errors.check_shape(hist_values, hist_counts.shape[:1]):
         raise utils.errors.ShapeError('hist_values', hist_values.shape, hist_counts.shape[:1])
@@ -75,17 +84,23 @@ def color_normalisation(hist_values, hist_counts, thresh_intensities, thresh_pro
     return norm_factor
 
 
-def get_bled_codes(gene_codes, bleed_matrix):
+def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarray:
     """
-    this gets bled_codes such that the spot_color of a gene g in round r is expected to be a constant
-    multiple of bled_codes[g, r, :].
+    This gets ```bled_codes``` such that the spot_color of a gene ```g``` in round ```r``` is expected to be a constant
+    multiple of ```bled_codes[g, r, :]```.
 
-    :param gene_codes: numpy integer array [n_genes x n_rounds]
-        gene_codes[g, r] indicates the dye that should be present for gene g in round r.
-    :param bleed_matrix: numpy float array [n_rounds x n_channels x n_dyes]
-        expected intensity of dye d in round r is a constant multiple of bleed_matrix[r, :, d].
-    :return: numpy float array [n_genes x n_rounds x n_channels]
+    Args:
+        gene_codes: ```int [n_genes x n_rounds]```.
+            ```gene_codes[g, r]``` indicates the dye that should be present for gene ```g``` in round ```r```.
+        bleed_matrix: ```float [n_rounds x n_channels x n_dyes]```.
+            Expected intensity of dye ```d``` in round ```r``` is a constant multiple of ```bleed_matrix[r, :, d]```.
+
+    Returns:
+        ```float [n_genes x n_rounds x n_channels]```. ```bled_codes``` such that ```spot_color``` of a gene ```g```
+            in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r]```.
     """
+    # ```bled_codes``` such that ```spot_color``` of a gene ```
+    #         g``` in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r, :]```.
     n_genes = gene_codes.shape[0]
     n_rounds, n_channels, n_dyes = bleed_matrix.shape
     if not utils.errors.check_shape(gene_codes, [n_genes, n_rounds]):
@@ -108,22 +123,33 @@ def get_bled_codes(gene_codes, bleed_matrix):
     return bled_codes
 
 
-def dot_product(data_vectors, cluster_vectors, norm_axis=None):
+def dot_product(data_vectors: np.ndarray, cluster_vectors: np.ndarray,
+                norm_axis: Optional[Union[int, Tuple[int]]] = None) -> np.ndarray:
     """
-    Will normalise both data_vectors and cluster_vectors and then find the dot product between each vector in
-    data_vectors with each vector in cluster_vectors.
+    Will normalise both ```data_vectors``` and ```cluster_vectors``` and then find the dot product between each vector
+    in ```data_vectors``` with each vector in ```cluster_vectors```.
 
-    :param data_vectors: numpy float array [n_data x ax1_dim x ax2_dim x ... x axN_dim]
-    :param cluster_vectors: numpy float array [n_clusters x ax1_dim x ax2_dim x ... x axN_dim]
-    :param norm_axis: integer or tuple of integers, optional
-        which axis to sum over for normalisation
-        e.g. consider example where data_vectors shape is [800 x 5 x 10]
-            norm_axis = (1,2): normalisation will sum over both axis so maximum possible dot product is 1.
-            norm_axis = 1: normalisation will sum over axis 1 so maximum possible dot product is 10.
-            norm_axis = 2: normalisation will sum over axis 2 so maximum possible dot product is 5.
-        default is summing over all axis i.e. (1,...,N).
-    :return:
-        numpy float array [n_data x n_clusters] giving dot product for each data vector with each cluster vector
+    Args:
+        data_vectors: ```float [n_data x ax1_dim x ax2_dim x ... x axN_dim]```.
+            Data vectors to find dot product for.
+        cluster_vectors: ```float [n_clusters x ax1_dim x ax2_dim x ... x axN_dim]```.
+            Cluster vectors to find dot product with.
+        norm_axis: Which axis to sum over for normalisation
+            e.g. consider example where ```data_vectors``` shape is ```[800 x 5 x 10]```:
+
+            - ```norm_axis = (1,2)```: normalisation will sum over both axis so maximum possible dot product is
+                ```1```.
+            - ```norm_axis = 1```: normalisation will sum over axis ```1``` so maximum possible dot product is
+                ```10```.
+            - ```norm_axis = 2```: normalisation will sum over axis ```2``` so maximum possible dot product is
+                ```5```.
+
+            If ```norm_axis=None```, summing over all axis i.e. ```(1,...,N)```.
+
+    Returns:
+        ```float [n_data x n_clusters]```.
+            ```dot_product``` such that ```dot_product[d, c]``` gives dot product between data vector ```d```
+            with cluster vector ```c```.
     """
     if not utils.errors.check_shape(data_vectors[0], cluster_vectors[0].shape):
         raise utils.errors.ShapeError('data_vectors', data_vectors.shape,
@@ -145,15 +171,20 @@ def dot_product(data_vectors, cluster_vectors, norm_axis=None):
                      np.reshape(norm_cluster_vectors, (n_clusters, -1)).transpose())
 
 
-def get_spot_intensity(spot_colors):
+def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
     """
-    finds the max intensity for each imaging round across all imaging channels for each spot.
+    Finds the max intensity for each imaging round across all imaging channels for each spot.
     Then median of these max round intensities is returned.
     Logic is that we expect spots that are genes to have at least one large intensity value in each round
     so high spot intensity is more indicative of a gene.
 
-    :param spot_colors: numpy float array [n_spots x n_rounds x n_channels]
-    :return: numpy float array [n_spots]
+    Args:
+        spot_colors: ```float [n_spots x n_rounds x n_channels]```.
+            Spot colors normalised to equalise intensities between channels (and rounds).
+
+    Returns:
+        ```float [n_spots]```.
+            ```[s]``` is the intensity of spot ```s```.
     """
     diff_to_int = np.round(spot_colors[~np.isnan(spot_colors)]).astype(int)-spot_colors[~np.isnan(spot_colors)]
     if np.abs(diff_to_int).max() == 0:
