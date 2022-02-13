@@ -138,14 +138,23 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                     # for 2d all channels in same file
                     file_exists = os.path.isfile(nbp_file.tile[t][r])
                 for c in range(nbp_basic.n_channels):
+                    if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
+                        # max value that can be saved and no shifting done for DAPI
+                        max_tiff_pixel_value = np.iinfo(np.uint16).max
+                    else:
+                        max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
                     if c in use_channels:
                         if nbp_basic.is_3d:
                             file_exists = os.path.isfile(nbp_file.tile[t][r][c])
                         pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                         if file_exists:
-                            nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_debug,
-                                                                        config['auto_thresh_multiplier'],
-                                                                        hist_bin_edges, t, r, c)
+                            im = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, nbp_extract_debug=nbp_debug)
+                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                nbp_debug.clip_extract_scale[t, r, c] = \
+                                extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
+                                                         max_tiff_pixel_value, scale)
+                            if r != nbp_basic.anchor_round:
+                                nbp.hist_counts[:, r, c] += hist_counts_trc
                         else:
                             im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
                                                                                       nbp_basic.tilepos_yx),
@@ -165,9 +174,14 @@ def extract_and_filter(config, nbp_file, nbp_basic):
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 # TODO: make below quicker by getting from one z-plane
-                                nbp, nbp_debug = extract.update_log_extract(nbp_file, nbp_basic, nbp, nbp_debug,
-                                                                            config['auto_thresh_multiplier'],
-                                                                            hist_bin_edges, t, r, c, im, bad_columns)
+                                # only use image unaffected by strip_hack to get information from tile
+                                good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
+                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                    nbp_debug.clip_extract_scale[t, r, c] = \
+                                    extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
+                                                             hist_bin_edges, max_tiff_pixel_value, scale)
+                                if r != nbp_basic.anchor_round:
+                                    nbp.hist_counts[:, r, c] += hist_counts_trc
                             utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)
                         pbar.update(1)
                     elif not nbp_basic.is_3d and not file_exists:

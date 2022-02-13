@@ -1,0 +1,14 @@
+site_name: My Docs
+
+nav:
+    - Home: index.md
+    - Code:
+        - Extract:
+          - Base: code/extract/base.md
+
+theme:
+  name: "material"
+
+plugins:
+  - search
+  - mkdocstrings
