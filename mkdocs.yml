@@ -8,9 +8,11 @@ nav:
           - Deconvolution: code/extract/deconvolution.md
           - Fstack: code/extract/fstack.md
           - Scale: code/extract/scale.md
-        - Call_spots:
-            - Base: code/call_spots/base.md
-            - Bleed Matrix: code/call_spots/bleed_matrix.md
+        - Find Spots:
+          - Base: code/find_spots/base.md
+        - Call Spots:
+          - Base: code/call_spots/base.md
+          - Bleed Matrix: code/call_spots/bleed_matrix.md
 
 theme:
   name: "material"
