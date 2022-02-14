@@ -1,22 +1,28 @@
 import numpy as np
 
 
-def get_tile_origin(v_pairs, v_shifts, h_pairs, h_shifts, n_tiles, home_tile):
+def get_tile_origin(v_pairs: np.ndarray, v_shifts: np.ndarray, h_pairs: np.ndarray, h_shifts: np.ndarray,
+                    n_tiles: int, home_tile: int) -> np.ndarray:
     """
-    this finds the origin of each tile in a global coordinate system based on the shifts between overlapping tiles.
+    This finds the origin of each tile in a global coordinate system based on the shifts between overlapping tiles.
 
-    :param v_pairs: numpy integer array [n_v_pairs x 2].
-        v_pairs[i,1] is the tile index of the tile to the south of v_pairs[i,0]
-    :param v_shifts: numpy integer array [n_v_pairs x 3].
-        v_shifts[i, :] is the yxz shift from v_pairs[i,0] to v_pairs[i,1]. v_shifts[:, 0] should all be negative.
-    :param h_pairs: numpy integer array [n_h_pairs x 2].
-        h_pairs[i,1] is the tile index of the tile to the west of h_pairs[i,0]
-    :param h_shifts: numpy integer array [n_h_pairs x 3].
-        h_shifts[i, :] is the yxz shift from h_pairs[i,0] to h_pairs[i,1]. h_shifts[:, 1] should all be negative.
-    :param n_tiles: integer, number of tiles (including those not used) in data set.
-    :param home_tile: integer, index of tile that is anchored to a fixed coordinate when finding tile origins
-        It should be the tile nearest to the centre.
-    :return: numpy float array [n_tiles x 3] giving yxz origin of each tile.
+    Args:
+        v_pairs: `int [n_v_pairs x 2]`.
+            `v_pairs[i,1]` is the tile index of the tile to the south of `v_pairs[i,0]`.
+        v_shifts: `int [n_v_pairs x 3]`.
+            `v_shifts[i, :]` is the yxz shift from `v_pairs[i,0]` to `v_pairs[i,1]`.
+            `v_shifts[:, 0]` should all be negative.
+        h_pairs: `int [n_h_pairs x 2]`.
+            `h_pairs[i,1]` is the tile index of the tile to the west of `h_pairs[i,0]`.
+        h_shifts: `int [n_h_pairs x 3]`.
+            `h_shifts[i, :]` is the yxz shift from `h_pairs[i,0]` to `h_pairs[i,1]`.
+            `h_shifts[:, 1]` should all be negative.
+        n_tiles: Number of tiles (including those not used) in data set.
+        home_tile: Index of tile that is anchored to a fixed coordinate when finding tile origins.
+            It should be the tile nearest to the centre.
+
+    Returns:
+        `float [n_tiles x 3]`. yxz origin of each tile.
     """
 
     # solve a set of linear equations for each shift,

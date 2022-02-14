@@ -7,17 +7,22 @@ nav:
             - Notebook: code/setup/notebook.md
             - Tile Detail: code/setup/tile_details.md
         - Extract:
-          - Base: code/extract/base.md
-          - Deconvolution: code/extract/deconvolution.md
-          - Fstack: code/extract/fstack.md
-          - Scale: code/extract/scale.md
+            - Base: code/extract/base.md
+            - Deconvolution: code/extract/deconvolution.md
+            - Fstack: code/extract/fstack.md
+            - Scale: code/extract/scale.md
         - Find Spots:
-          - Base: code/find_spots/base.md
+            - Base: code/find_spots/base.md
+        - Stitch:
+            - Shift: code/stitch/shift.md
+            - Tile Origin: code/stitch/tile_origin.md
         - Point Cloud Registration:
-          - Base: code/pcr/base.md
+            - Base: code/pcr/base.md
+        - Spot Colors:
+            - Base: code/spot_colors/base.md
         - Call Spots:
-          - Base: code/call_spots/base.md
-          - Bleed Matrix: code/call_spots/bleed_matrix.md
+            - Base: code/call_spots/base.md
+            - Bleed Matrix: code/call_spots/bleed_matrix.md
         - Pipeline:
             - Run: code/pipeline/run.md
             - Basic Info: code/pipeline/basic_info.md

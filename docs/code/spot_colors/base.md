@@ -1,0 +1,1 @@
+::: iss.spot_colors.base

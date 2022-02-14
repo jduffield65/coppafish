@@ -1,36 +1,44 @@
 import numpy as np
 from .. import pcr, utils
+from ..setup.notebook import NotebookPage
+from typing import List, Optional
 
 
-def get_spot_colors(yxz_base, t, transforms, nbp_file, nbp_basic, use_rounds=None, use_channels=None):
+def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_file: NotebookPage,
+                    nbp_basic: NotebookPage, use_rounds: Optional[List[int]] = None,
+                    use_channels: Optional[List[int]] = None) -> np.ndarray:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
 
-    :param yxz_base: numpy integer array [n_spots x 3]
-        local yxz coordinates of spots found in the reference round/reference channel of tile t
-        yx coordinates are in units of yx pixels. z coordinates are in units of z pixels
-    :param t: integer
-        tile that spots were found on
-    :param transforms: numpy float array [n_tiles x n_rounds x n_channels x 4 x 3]
-        transforms[t, r, c] is the affine transform to get from tile t, ref_round, ref_channel to
-        tile t, round r, channel c
-    :param nbp_file: NotebookPage object containing file names
-    :param nbp_basic: NotebookPage object containing basic info
-    :param use_rounds: list, optional
-        rounds you would like to find the spot color for
-        (error will raise if transform is zero for particular round)
-        default: None, meaning use all rounds in nbp_basic['use_rounds']
-    :param use_channels:
-        channels you would like to find the spot color for
-        (error will raise if transform is zero for particular channel)
-        default: None, meaning use all channels in nbp_basic['use_channels']
-    :return:
-        spot_colors: numpy float array [n_spots x n_rounds x n_channels]
-            spot_colors[s, r, c] is the spot color for spot s in round r, channel c.
-            It will be nan if the registered coordinate of spot s is outside the tile in round r, channel c or
-            if  r/c is not in use_rounds/use_channels.
-            Note n_rounds/n_channels are total number of rounds/channels in raw nd2 file as saved in nbp_basic.
+    Args:
+        yxz_base: `int [n_spots x 3]`.
+            Local yxz coordinates of spots found in the reference round/reference channel of tile `t`
+            yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
+        t: Tile that spots were found on.
+        transforms: `float [n_tiles x n_rounds x n_channels x 4 x 3]`.
+            `transforms[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
+            tile `t`, round `r`, channel `c`.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        use_rounds: `int [n_use_rounds]`.
+            Rounds you would like to find the `spot_color` for.
+            Error will raise if transform is zero for particular round.
+            If `None`, all rounds in `nbp_basic.use_rounds` used.
+        use_channels: `int [n_use_channels]`.
+            Channels you would like to find the `spot_color` for.
+            Error will raise if transform is zero for particular channel.
+            If `None`, all channels in `nbp_basic.use_channels` used.
+
+    Returns:
+        `float [n_spots x n_rounds x n_channels]`.
+
+        `spot_colors[s, r, c]` is the spot color for spot `s` in round `r`, channel `c`.
+
+        It will be nan if the registered coordinate of spot `s` is outside the tile in round `r`, channel `c` or
+        if  `r`/`c` is not in `use_rounds`/`use_channels`.
+
+        Note `n_rounds`/`n_channels` are total number of rounds/channels in raw nd2 file as saved in `nbp_basic`.
     """
     if use_rounds is None:
         use_rounds = nbp_basic.use_rounds
