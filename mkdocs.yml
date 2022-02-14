@@ -33,6 +33,14 @@ nav:
             - Register: code/pipeline/register.md
             - Reference Spots: code/pipeline/reference_spots.md
             - Call Reference Spots: code/pipeline/call_reference_spots.md
+        - Utils:
+            - Base: code/utils/base.md
+            - Errors: code/utils/errors.md
+            - Matlab: code/utils/matlab.md
+            - Morphology: code/utils/morphology.md
+            - ND2: code/utils/nd2.md
+            - Strel: code/utils/strel.md
+            - Tiff: code/utils/tiff.md
 
 theme:
   name: "material"
@@ -40,3 +48,8 @@ theme:
 plugins:
   - search
   - mkdocstrings
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences

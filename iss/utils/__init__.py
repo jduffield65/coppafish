@@ -5,4 +5,4 @@ from . import matlab
 from . import morphology
 from . import strel
 from . import warnings
-from .base import round_any, multi_array_ind, setdiff2d
+from .base import round_any, setdiff2d

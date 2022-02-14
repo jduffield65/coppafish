@@ -2,16 +2,19 @@ from math import floor
 import cv2
 import numpy as np
 from .morphology import dilate
+from typing import Optional
 
 
-def periodic_line(p, v):
+def periodic_line(p: int, v: np.ndarray) -> np.ndarray:
     """
-    creates a flat structuring element
-    containing 2*p+1 members.  v is a two-element vector containing
-    integer-valued row and column offsets.  One structuring element member
-    is located at the origin.  The other members are located at 1*v, -1*v,
-    2*v, -2*v, ..., p*v, -p*v.
-    copy of MATLAB strel('periodicline')
+    Creates a flat structuring element containing `2*p+1` members.
+
+    `v` is a two-element vector containing integer-valued row and column offsets.
+
+    One structuring element member is located at the origin.
+    The other members are located at `1*v, -1*v, 2*v, -2*v, ..., p*v, -p*v`.
+
+    Copy of MATLAB `strel('periodicline')`.
     """
     pp = np.repeat(np.arange(-p, p + 1).reshape(-1, 1), 2, axis=1)
     rc = pp * v
@@ -25,23 +28,28 @@ def periodic_line(p, v):
     return nhood.astype(np.uint8)
 
 
-def disk(r, n=4):
+def disk(r: int, n: int = 4) -> np.ndarray:
     """
-    creates a flat disk-shaped structuring element
-    with the specified radius, r.  r must be a nonnegative integer.  n must
-    be 0, 4, 6, or 8.  When n is greater than 0, the disk-shaped structuring
-    element is approximated by a sequence of n (or sometimes n+2)
-    periodic-line structuring elements.  When n is 0, no approximation is
-    used, and the structuring element members comprise all pixels whose
-    centers are no greater than r away from the origin.  n can be omitted,
-    in which case its default value is 4.  Note: Morphological operations
-    using disk approximations (n>0) run much faster than when n=0.  Also,
-    the structuring elements resulting from choosing n>0 are suitable for
-    computing granulometries, which is not the case for n=0.  Sometimes it
-    is necessary for STREL to use two extra line structuring elements in the
-    approximation, in which case the number of decomposed structuring
-    elements used is n+2.
-    copy of MATLAB strel('disk')
+    Creates a flat disk-shaped structuring element with the specified radius, `r`.
+
+    `r` must be a nonnegative integer.
+
+    `n` must be `0, 4, 6, or 8`.
+    When `n` is greater than `0`, the disk-shaped structuring
+    element is approximated by a sequence of `n` (or sometimes `n+2`)
+    periodic-line structuring elements.
+    When `n` is `0`, no approximation is used, and the structuring element members comprise all pixels whose
+    centers are no greater than `r` away from the origin.  `n` can be omitted, in which case its default value is `4`.
+
+    !!! note
+        Morphological operations using disk approximations (`n>0`) run much faster than when `n=0`.
+        Also, the structuring elements resulting from choosing `n>0` are suitable for
+        computing granulometries, which is not the case for `vn=0`.  Sometimes it
+        is necessary for STREL to use two extra line structuring elements in the
+        approximation, in which case the number of decomposed structuring
+        elements used is `n+2`.
+
+    Copy of MATLAB `strel('disk')`.
     """
     if r < 3:
         # Radius is too small to use decomposition, so force n=0.
@@ -102,32 +110,37 @@ def disk(r, n=4):
     return nhood.astype(int)
 
 
-def disk_3d(r_xy, r_z):
+def disk_3d(r_xy: int, r_z: int) -> np.ndarray:
     """
-    gets structuring element used to find spots when dilated with 3d image.
+    Gets structuring element used to find spots when dilated with 3d image.
 
-    :param r_xy: integer
-    :param r_z: integer
-    :return: numpy integer array [2*r_xy+1, 2*r_xy+1, 2*r_z+1]. Each element either 0 or 1.
+    Args:
+        r_xy: Radius in xy direction.
+        r_z: Radius in z direction.
+
+    Returns:
+        `int [2*r_xy+1, 2*r_xy+1, 2*r_z+1]`.
+            Structuring element with each element either `0` or `1`.
     """
     y, x, z = np.meshgrid(np.arange(-r_xy, r_xy + 1), np.arange(-r_xy, r_xy + 1), np.arange(-r_z, r_z + 1))
     se = x ** 2 + y ** 2 + z ** 2 <= r_xy ** 2
     return se.astype(int)
 
 
-def annulus(r0, r_xy, r_z=None):
+def annulus(r0: float, r_xy: float, r_z: Optional[float] = None) -> np.ndarray:
     """
-    gets structuring element used to assess if spot isolated
+    Gets structuring element used to assess if spot isolated.
 
-    :param r0: float
-        inner radius within which values are all zero.
-    :param r_xy: float
-        outer radius in xy direction.
-        can be float not integer because all values with radius < r_xy1 and > r0 will be set to 1.
-    :param r_z: float, optional
-        outer radius in z direction. (size in z-pixels not normalised to xy pixel size).
-        default: None meaning 2d annulus.
-    :return: numpy integer array [2*floor(r_xy1)+1, 2*floor(r_xy1)+1, 2*floor(r_z1)+1]. Each element either 0 or 1.
+    Args:
+        r0: Inner radius within which values are all zero.
+        r_xy: Outer radius in xy direction.
+            Can be float not integer because all values with `radius < r_xy1` and `> r0` will be set to `1`.
+        r_z: Outer radius in z direction. Size in z-pixels.
+            None means 2D annulus returned.
+
+    Returns:
+        `int [2*floor(r_xy1)+1, 2*floor(r_xy1)+1, 2*floor(r_z1)+1]`.
+            Structuring element with each element either `0` or `1`.
     """
     r_xy1_int = floor(r_xy)
     if r_z is None:

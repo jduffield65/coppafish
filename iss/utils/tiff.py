@@ -5,20 +5,27 @@ import re
 from . import errors
 import warnings
 from tqdm import tqdm
+from typing import Optional, Union, List, Tuple
+from ..setup import NotebookPage
 
 
-def save(image, im_file, description=None, append=False):
+def save(image: np.ndarray, im_file: str, description: Optional[str] = None, append: bool = False):
     """
-    save image as tiff at path given by im_file
-    If image has 3 dimensions, axis at position 2 is moved to position 0.
+    Save image as tiff at path given by `im_file`.
 
-    :param image: 2d (or 3d) numpy array [ny x nx (x nz or n_channels)]
-    :param im_file: string. path to save file
-    :param description: string, short description to save to metadata to describe image
-        found after saving through tifffile.TiffFile(im_file).pages[0].tags["ImageDescription"].value
-        default: None
-    :param append: boolean. Whether to add to file if it exists or replace, optional.
-        default: False
+    !!! note
+        If image has 3 dimensions, axis at position 2 is moved to position 0.
+
+        Any pixel values outside range of `uint16` are clamped before saving.
+        I.e. `<0` set to `0` and `>np.iinfo(np.uint16).max` set to `np.iinfo(np.uint16).max`.
+
+    Args:
+        image: `int [ny x nx (x n_dim3)]`.
+            2D or 3D image to be saved.
+        im_file: Path to save file.
+        description: Short description to save to metadata to describe image.
+            Found after saving through `tifffile.TiffFile(im_file).pages[0].tags["ImageDescription"].value`.
+        append: Whether to add to file if it exists or replace.
     """
     # truncate image so don't get aliased values
     image[image > np.iinfo(np.uint16).max] = np.iinfo(np.uint16).max
@@ -31,17 +38,20 @@ def save(image, im_file, description=None, append=False):
     tifffile.imwrite(im_file, image, append=append, description=description)
 
 
-def save_tile(nbp_file, nbp_basic, nbp_extract_debug, image, t, r, c):
+def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract_debug: NotebookPage, image: np.ndarray,
+              t: int, r: int, c: int):
     """
-    wrapper function to save tiles as tiff files with correct shift and a short description in the metadata
+    Wrapper function to save tiles as tiff files with correct shift and a short description in the metadata.
 
-    :param nbp_file: NotebookPage object containing file names
-    :param nbp_basic: NotebookPage object containing basic info
-    :param nbp_extract_debug: NotebookPage object containing scale and scale_anchor
-    :param image: numpy float array [ny x nx (x nz)]
-    :param t: integer, tiff tile index considering
-    :param r: integer, round considering
-    :param c: integer, channel considering
+    Args:
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        nbp_extract_debug: `extract_debug` notebook page
+        image: `float [ny x nx (x nz)]`.
+            Image to save.
+        t: tiff tile index considering
+        r: Round considering
+        c: Channel considering
     """
     if r == nbp_basic.anchor_round:
         round = "anchor"
@@ -81,21 +91,27 @@ def save_tile(nbp_file, nbp_basic, nbp_extract_debug, image, t, r, c):
         save(image, nbp_file.tile[t][r], append=True, description=description)
 
 
-def load(im_file, planes=None, y_roi=None, x_roi=None):
+def load(im_file: str, planes: Optional[Union[int, List[int], np.ndarray]] = None,
+         y_roi: Optional[Union[int, List[int], np.ndarray]] = None,
+         x_roi: Optional[Union[int, List[int], np.ndarray]] = None) -> np.ndarray:
     """
-    load tiff from path given by im_file
+    Load tiff from path given by `im_file`.
 
-    :param im_file: string, path to tiff to load
-    :param planes: integer or integer list/numpy array, optional.
-        which planes in tiff file to load
-        default: None meaning all planes
-    :param y_roi: integer or integer list/numpy array, optional.
-        y pixels to read in
-        default: None meaning all y pixels
-    :param x_roi: integer or integer list/numpy array
-        x pixels to read in
-        default: None meaning all x pixels
-    :return: numpy array [len(y_roi) x len(x_roi) (x len(planes))]
+    !!! note
+        If saved image in tiff file has 3 dimensions, axis at position 0 is moved to position 2 before returning.
+
+    Args:
+        im_file: Path to tiff to load.
+        planes: `int [n_z_planes]`.
+            Which planes in tiff file to load. `None` means all planes.
+        y_roi: int [n_y_pixels].
+            Y pixels to read in. `None` means all y pixels.
+        x_roi: `int [n_x_pixels]`.
+            X pixels to read in. `None` means all x pixels.
+
+    Returns:
+        `int [n_y_pixels x n_x_pixels (x n_z_planes)]`.
+            Loaded image. If `n_z_planes = 1` or image in tiff file is 2D, 2D image is returned.
     """
     image = tifffile.imread(im_file, key=planes)
     if image.ndim == 3:
@@ -111,29 +127,31 @@ def load(im_file, planes=None, y_roi=None, x_roi=None):
     return image
 
 
-def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_debug=None):
+def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c: int,
+              y: Optional[Union[int, List[int], np.ndarray]] = None,
+              x: Optional[Union[int, List[int], np.ndarray]] = None,
+              z: Optional[Union[int, List[int], np.ndarray]] = None,
+              nbp_extract_debug: Optional[NotebookPage] = None) -> np.ndarray:
     """
-    load tile t, channel c, round r with pixel value shift subtracted if not DAPI.
 
-    :param nbp_file: NotebookPage object containing file names
-    :param nbp_basic: NotebookPage object containing basic info
-    :param t: integer, tiff tile index considering
-    :param r: integer, round considering
-    :param c: integer, channel considering
-    :param y: integer or integer list/numpy array, optional.
-        y pixels to read in
-        default: None meaning all y pixels
-    :param x: integer or integer list/numpy array
-        x pixels to read in
-        default: None meaning all x pixels
-    :param z: integer or integer list/numpy array, optional.
-        which z-planes in tiff file to load
-        default: None meaning all z-planes
-    :param nbp_extract_params: NotebookPage object containing scale and scale_anchor, optional.
-        provide nbp_extract_params if want to check scale and shift in it match those used to make tiffs
-        default: None
-    :return:
-        numpy (uint16 if dapi otherwise int32) array [ny x nx (x nz)]
+    Args:
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        t: tiff tile index considering
+        r: Round considering
+        c: Channel considering
+        y: `int [n_y_pixels]`.
+            Y pixels to read in. `None` means all y pixels.
+        x: `int [n_x_pixels]`.
+            X pixels to read in. `None` means all x pixels.
+        z: `int [n_z_planes]`.
+            Which z-planes in tiff file to load. `None` means all z-planes.
+        nbp_extract_debug: `extract_debug` notebook page.
+            Provide `nbp_extract_debug` if want to check `scale` and `shift` in it match those used to make tiffs.
+
+    Returns:
+        `int [ny x nx (x nz)]`.
+            Loaded image.
     """
     if nbp_extract_debug is not None:
         description = load_tile_description(nbp_file, nbp_basic, t, r, c)
@@ -177,15 +195,16 @@ def load_tile(nbp_file, nbp_basic, t, r, c, y=None, x=None, z=None, nbp_extract_
     return image
 
 
-def load_description(im_file, plane=0):
+def load_description(im_file: str, plane: int = 0) -> str:
     """
-    loads in description from tiff file.
-    if no description, "N/A" is returned
+    Loads in description from tiff file. If no description, `"N/A"` is returned
 
-    :param im_file: string, path to tiff to load
-    :param plane: plane to load description from, optional.
-        default: 0
-    :return: string
+    Args:
+        im_file: Path to tiff to load
+        plane: Plane to load description from
+
+    Returns:
+        Description saved in tiff file. `"N/A"` if no description.
     """
     dict = tifffile.TiffFile(im_file).pages[plane].tags
     description = dict.get("ImageDescription")
@@ -196,16 +215,19 @@ def load_description(im_file, plane=0):
     return description
 
 
-def load_tile_description(nbp_file, nbp_basic, t, r, c):
+def load_tile_description(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c: int) -> str:
     """
-    load in description saved in tiff for tile t, channel c, round r.
+    Loads in description saved in tiff for tile `t`, channel `c`, round `r`.
 
-    :param nbp_file: NotebookPage object containing file names
-    :param nbp_basic: NotebookPage object containing basic info
-    :param t: integer, tiff tile index considering
-    :param r: integer, round considering
-    :param c: integer, channel considering
-    :return: string
+    Args:
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        t: tiff tile index considering
+        r: Round considering
+        c: Channel considering
+
+    Returns:
+        Description saved in tiff file. `"N/A"` if no description.
     """
     if nbp_basic.is_3d:
         description = load_description(nbp_file.tile[t][r][c])
@@ -214,34 +236,39 @@ def load_tile_description(nbp_file, nbp_basic, t, r, c):
     return description
 
 
-def get_scale_shift_from_tiff(description):
+def get_scale_shift_from_tiff(description: str) -> Tuple[float, int]:
     """
-    Returns scale and shift values detailed in the tiff description
+    Returns `scale` and `shift` values detailed in the tiff description.
 
-    :param description: string, description saved in tiff file.
-    :return:
-        scale: float, scale factor applied to tiff
-        shift: integer, shift applied to tiff to ensure pixel values positive.
+    Args:
+        description: `description` saved in tiff file.
+
+    Returns:
+        - `scale` - `float`. Scale factor applied to tiff.
+        - `shift` - `int`. Shift applied to tiff to ensure pixel values positive.
     """
     # scale value is after 'Scale = ' in description
-    scale = np.float64(description.split("Scale = ", 1)[1])
+    scale = float(description.split("Scale = ", 1)[1])
     # shift value is between 'Shift = ' and '. Scale = ' in description
     shift = int(re.findall(r'Shift = (.+?). Scale = ', description)[0])
     return scale, shift
 
 
-def get_scale_shift_from_nbp(nbp_basic, nbp_extract_debug, r, c):
+def get_scale_shift_from_nbp(nbp_basic: NotebookPage, nbp_extract_debug: NotebookPage, r: int,
+                             c: int) -> Tuple[float, int]:
     """
-    Returns scale and shift values detailed in notebook.
+    Returns `scale` and `shift` values detailed in notebook.
 
-    :param nbp_basic: NotebookPage object containing basic info
-    :param nbp_extract_debug: NotebookPage object containing scale and scale_anchor
-    :param r: integer, round considering
-    :param c: integer, channel considering
-    :return:
-        scale: float, scale factor applied to tiff, found from nb['extract_params']['scale']
-        shift: integer, shift applied to tiff to ensure pixel values positive.
-            Found from nb['basic_info']['tile_pixel_value_shift']
+    Args:
+        nbp_basic: `basic_info` notebook page
+        nbp_extract_debug: `extract_debug` notebook page
+        r: Round considering
+        c: Channel considering
+
+    Returns:
+        - `scale` - `float`. Scale factor applied to tiff. Found from `nb.extract_debug.scale`.
+        - `shift` - `int`. Shift applied to tiff to ensure pixel values positive.
+            Found from `nb.basic_info.tile_pixel_value_shift`.
     """
     shift = nbp_basic.tile_pixel_value_shift
     if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
@@ -254,16 +281,19 @@ def get_scale_shift_from_nbp(nbp_basic, nbp_extract_debug, r, c):
     return scale, shift
 
 
-def save_stitched(im_file, nbp_file, nbp_basic, tile_origin, r, c):
+def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
+                  r: int, c: int):
     """
-    stitches together all tiles from round r, channel c and saves the resultant tiff at im_file.
+    Stitches together all tiles from round `r`, channel `c` and saves the resultant tiff at `im_file`.
 
-    :param im_file: string. path to save file
-    :param nbp_file: NotebookPage object containing file names
-    :param nbp_basic: NotebookPage object containing basic info
-    :param tile_origin: numpy float array [n_tiles x 3]. yxz origin of each tile on round r.
-    :param r: integer, this will save stitched image of all tiles of round r, channel c.
-    :param c: integer, this will save stitched image of all tiles of round r, channel c.
+    Args:
+        im_file: Path to save file.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        tile_origin: `float [n_tiles x 3]`.
+            yxz origin of each tile on round `r`.
+        r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
+        c: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()

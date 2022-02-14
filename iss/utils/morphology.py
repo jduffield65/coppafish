@@ -5,17 +5,24 @@ from scipy.ndimage import convolve, correlate
 import numbers
 from . import errors
 import cv2
+from typing import Optional, Union
 
 
-def ftrans2(b, t=None):
+def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
     """
-    Produces a 2D convolve_2d that corresponds to the 1D convolve_2d b, using the transform t
-    Copied from MATLAB ftrans2: https://www.mathworks.com/help/images/ref/ftrans2.html
+    Produces a 2D convolve kernel that corresponds to the 1D convolve kernel, `b`, using the transform, `t`.
+    Copied from [MATLAB `ftrans2`](https://www.mathworks.com/help/images/ref/ftrans2.html).
 
-    :param b: float numpy array [Q,]
-    :param t: float numpy array [M, N], optional.
-        default: McClellan transform
-    :return: float numpy array [(M-1)*(Q-1)/2+1, (N-1)*(Q-1)/2+1]
+    Args:
+        b: `float [Q]`.
+            1D convolve kernel.
+        t: `float [M x N]`.
+            Transform to make `b` a 2D convolve kernel.
+            If `None`, McClellan transform used.
+
+    Returns:
+        `float [(M-1)*(Q-1)/2+1 x (N-1)*(Q-1)/2+1]`.
+            2D convolve kernel.
     """
     if t is None:
         # McClellan transformation
@@ -52,16 +59,18 @@ def ftrans2(b, t=None):
     return h
 
 
-def hanning_diff(r1, r2):
+def hanning_diff(r1: int, r2: int) -> np.ndarray:
     """
-    gets difference of two hanning window convolve_2d
-    (central positive, outer negative) with sum of 0.
+    Gets difference of two hanning window 2D convolve kernel.
+    Central positive, outer negative with sum of `0`.
 
-    :param r1: integer
-        radius in pixels of central positive hanning convolve_2d
-    :param r2: integer, must be greater than r1
-        radius in pixels of outer negative hanning convolve_2d
-    :return: float numpy array [2*r2 + 1, 2*r2 + 1]
+    Args:
+        r1: radius in pixels of central positive hanning convolve kernel.
+        r2: radius in pixels of outer negative hanning convolve kernel.
+
+    Returns:
+        `float [2*r2+1 x 2*r2+1]`.
+            Difference of two hanning window 2D convolve kernel.
     """
     if not 0 <= r1 <= r2-1:
         raise errors.OutOfBoundsError("r1", r1, 0, r2-1)
@@ -77,29 +86,44 @@ def hanning_diff(r1, r2):
     return h
 
 
-def convolve_2d(image, kernel):
+def convolve_2d(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     """
-    convolves image with kernel, padding by replicating border pixels
-    np.flip is to give same as convn with replicate padding in MATLAB
+    Convolves `image` with `kernel`, padding by replicating border pixels.
 
-    :param image: numpy array [image_sz1 x image_sz2]
-    :param kernel: numpy float array
-    :return: numpy float array [image_sz1 x image_sz2]
+    Args:
+        image: `float [image_sz1 x image_sz2]`.
+            Image to convolve.
+        kernel: `float [kernel_sz1 x kernel_sz2]`.
+            2D kernel
+
+    Returns:
+        `float [image_sz1 x image_sz2]`.
+            `image` after being convolved with `kernel`.
+
+    !!! note
+        `np.flip` is used to give same result as `convn` with replicate padding in MATLAB.
     """
     return cv2.filter2D(image.astype(float), -1, np.flip(kernel), borderType=cv2.BORDER_REPLICATE)
 
 
-def ensure_odd_kernel(kernel, pad_location='start'):
+def ensure_odd_kernel(kernel: np.ndarray, pad_location: str = 'start') -> np.ndarray:
     """
-    This ensures all dimensions of kernel are odd by padding even dimensions with zeros.
+    This ensures all dimensions of `kernel` are odd by padding even dimensions with zeros.
     Replicates MATLAB way of dealing with even kernels.
-    e.g. if pad_location is 'start': [[5,4];[3,1]] --> [[0,0,0],[0,5,4],[0,3,1]]
 
-    :param kernel: numpy float array
-        Multidimensional filter
-    :param pad_location: string either 'start' or 'end'
-        where to put zeros.
-    :return: numpy float array
+    Args:
+        kernel: `float [kernel_sz1 x kernel_sz2 x ... x kernel_szN]`.
+        pad_location: One of the following, indicating where to pad with zeros -
+
+            - `'start'` - Zeros at start of kernel.
+            - `'end'` - Zeros at end of kernel.
+
+    Returns:
+        `float [odd_kernel_sz1 x odd_kernel_sz2 x ... x odd_kernel_szN]`.
+            `kernel` padded with zeros so each dimension is odd.
+
+    Example:
+        If `pad_location` is `'start'` then `[[5,4];[3,1]]` becomes `[[0,0,0],[0,5,4],[0,3,1]]`.
     """
     even_dims = (np.mod(kernel.shape, 2) == 0).astype(int)
     if max(even_dims) == 1:
@@ -114,13 +138,19 @@ def ensure_odd_kernel(kernel, pad_location='start'):
         return kernel
 
 
-def top_hat(image, kernel):
+def top_hat(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     """
-    does tophat filtering of image with kernel
+    Does tophat filtering of `image` with `kernel`.
 
-    :param image: numpy float or uint16 array [image_sz1 x image_sz2]
-    :param kernel: numpy np.uint8 array containing only zeros or ones.
-    :return: numpy float array [image_sz1 x image_sz2]
+    Args:
+        image: `float [image_sz1 x image_sz2]`.
+            Image to filter.
+        kernel: `np.uint8 [kernel_sz1 x kernel_sz2]`.
+            Top hat `kernel` containing only zeros or ones.
+
+    Returns:
+        `float [image_sz1 x image_sz2]`.
+            `image` after being top hat filtered with `kernel`.
     """
     if kernel.dtype != np.uint8:
         if sum(np.unique(kernel) == [0, 1]) == len(np.unique(kernel)):
@@ -140,13 +170,19 @@ def top_hat(image, kernel):
     return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel).astype(image_dtype)
 
 
-def dilate(image, kernel):
+def dilate(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     """
-    dilates image with kernel, using zero padding.
+    Dilates `image` with `kernel`, using zero padding.
 
-    :param image: numpy float array [image_sz1 x image_sz2]
-    :param kernel: numpy integer array containing only zeros or ones.
-    :return: numpy float array [image_sz1 x image_sz2]
+    Args:
+        image: `float [image_sz1 x image_sz2]`.
+            Image to be dilated.
+        kernel: `int [kernel_sz1 x kernel_sz2]`.
+            Dilation kernel containing only zeros or ones.
+
+    Returns:
+        `float [image_sz1 x image_sz2]`.
+            `image` after being dilated with `kernel`.
     """
     kernel = ensure_odd_kernel(kernel)
     # mode refers to the padding. We pad with zeros to keep results the same as MATLAB
@@ -154,28 +190,35 @@ def dilate(image, kernel):
     # return morphology.dilation(image, kernel)
 
 
-def imfilter(image, kernel, padding=0, corr_or_conv='corr'):
+def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] = 0,
+             corr_or_conv: str = 'corr') -> np.ndarray:
     """
-    copy of MATLAB imfilter function with 'output_size' equal to 'same'.
+    Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
 
-    :param image: numpy float array [image_sz1 x image_sz2]
-        Image to be filtered
-    :param kernel: numpy float array
-        Multidimensional filter
-    :param padding:
-        numeric scalar: Input array values outside the bounds of the array are assigned the value X.
-                        When no padding option is specified, the default is 0.
-        ‘reflect’: 	    Input array values outside the bounds of the array are computed by
-                        mirror-reflecting the array across the array border.
-        ‘nearest’:      Input array values outside the bounds of the array are assumed to equal
-                        the nearest array border value.
-        'wrap':         Input array values outside the bounds of the array are computed by implicitly
-                        assuming the input array is periodic.
-    :param corr_or_conv:
-        'corr':         imfilter performs multidimensional filtering using correlation.
-                        This is the default when no option specified.
-        'conv':         imfilter performs multidimensional filtering using convolution.
-    :return: numpy float array [image_sz1 x image_sz2]
+    Args:
+        image: `float [image_sz1 x image_sz2]`.
+            Image to be filtered.
+        kernel: `float [kernel_sz1 x kernel_sz2]`.
+            Multidimensional filter.
+        padding: One of the following, indicated which padding to be used.
+
+            - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
+                When no padding option is specified, the default is `0`.
+            - `‘reflect’` - Input array values outside the bounds of the array are computed by
+                mirror-reflecting the array across the array border.
+            - `‘nearest’`- Input array values outside the bounds of the array are assumed to equal
+                the nearest array border value.
+            - `'wrap'` - Input array values outside the bounds of the array are computed by implicitly
+                assuming the input array is periodic.
+        corr_or_conv:
+
+            - `'corr'` - Performs multidimensional filtering using correlation.
+                This is the default when no option specified.
+            - `'conv'` - Performs multidimensional filtering using convolution.
+
+    Returns:
+        `float [image_sz1 x image_sz2]`.
+            `image` after being filtered.
     """
     if isinstance(padding, numbers.Number):
         pad_value = padding

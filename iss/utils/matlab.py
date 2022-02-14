@@ -1,16 +1,23 @@
 import h5py
 import numpy as np
 from scipy import io
+from typing import Union, List
 
 
-def load_v_less_7_3(file_name, var_names):
+def load_v_less_7_3(file_name: str, var_names: Union[str, List[str]]) -> Union[tuple, np.ndarray]:
     """
-    this is used to load info from earlier than v7.3  matlab files.
-    it is also good at dealing with complicated matlab cell arrays which are loaded as numpy object arrays.
+    This is used to load info from earlier than v7.3  matlab files.
+    It is also good at dealing with complicated matlab cell arrays which are loaded as numpy object arrays.
 
-    :param file_name:
-    :param var_names: string or list of strings
-    :return:
+    If `var_names` is `str`, one value is returned, otherwise tuple of all values requested is returned.
+
+    Args:
+        file_name: Path of MATLAB file.
+        var_names: `str [n_vars]`.
+            Names of variables desired.
+
+    Returns:
+        `Tuple` of `n_vars` numpy arrays.
     """
     f = io.loadmat(file_name)
     if not isinstance(var_names, list):
@@ -23,13 +30,20 @@ def load_v_less_7_3(file_name, var_names):
     return output
 
 
-def load_array(file_name, var_names):
+def load_array(file_name: str, var_names: Union[str, List[str]]) -> Union[tuple, np.ndarray]:
     """
-    this is used to load info from v7.3 or later matlab
+    This is used to load info from v7.3 or later matlab files.
+    It is also good at dealing with complicated matlab cell arrays which are loaded as numpy object arrays.
 
-    :param file_name:
-    :param var_names: string or list of strings
-    :return:
+    If `var_names` is `str`, one value is returned, otherwise `tuple` of all values requested is returned.
+
+    Args:
+        file_name: Path of MATLAB file.
+        var_names: `str [n_vars]`.
+            Names of variables desired.
+
+    Returns:
+        `Tuple` of `n_vars` numpy arrays.
     """
     f = h5py.File(file_name)
     if not isinstance(var_names, list):
@@ -42,13 +56,17 @@ def load_array(file_name, var_names):
     return output
 
 
-def load_cell(file_name, var_name):
+def load_cell(file_name: str, var_name: str) -> list:
     """
-    If cell is M x N, will return list of length M where each entry is another list of length N
+    If cell is `M x N`, will return list of length `M` where each entry is another list of length `N`
     and each element of this list is a numpy array.
-    :param file_name:
-    :param var_name:
-    :return:
+
+    Args:
+        file_name: Path of MATLAB file.
+        var_name: Names of variable in MATLAB file.
+
+    Returns:
+        MATLAB cell `var_name` as a list of numpy arrays.
     """
     # MAYBE CHANGE THIS TO OBJECT NUMPY ARRAY
     f = h5py.File(file_name)

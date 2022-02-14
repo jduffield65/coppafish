@@ -1,16 +1,18 @@
 import numpy as np
+from typing import Tuple, Union
 
 
 class OutOfBoundsError(Exception):
-    def __init__(self, var_name, oob_val, min_allowed, max_allowed):
+    def __init__(self, var_name: str, oob_val: float, min_allowed: float, max_allowed: float):
         """
-        Error raised because oob_val is outside expected range between
-        min_allowed and max_allowed inclusive.
+        Error raised because `oob_val` is outside expected range between
+        `min_allowed` and `max_allowed` inclusive.
 
-        :param var_name: string, name of variable testing
-        :param oob_val: float, value in array that is not in expected range
-        :param min_allowed: float, smallest allowed value i.e. >= min_allowed
-        :param max_allowed: float, largest allowed value i.e. <= max_allowed
+        Args:
+            var_name: Name of variable testing.
+            oob_val: Value in array that is not in expected range.
+            min_allowed: Smallest allowed value i.e. `>= min_allowed`.
+            max_allowed: Largest allowed value i.e. `<= max_allowed`.
         """
         self.message = f"\n{var_name} contains the value {oob_val}." \
                        f"\nThis is outside the expected range between {min_allowed} and {max_allowed}"
@@ -18,34 +20,40 @@ class OutOfBoundsError(Exception):
 
 
 class NoFileError(Exception):
-    def __init__(self, file_path):
+    def __init__(self, file_path: str):
         """
-        Error raised because file_path does not exist
+        Error raised because `file_path` does not exist.
 
-        :param file_path: string, path to file of interest
+        Args:
+            file_path: Path to file of interest.
         """
         self.message = f"\nNo file with the following path:\n{file_path}\nexists"
         super().__init__(self.message)
 
 
 class EmptyListError(Exception):
-    def __init__(self, var_name):
+    def __init__(self, var_name: str):
         """
-        Error raised because the variable indicated by var_name contains no data
+        Error raised because the variable indicated by `var_name` contains no data.
 
-        :param var_name: string, name of list or numpy array
+        Args:
+            var_name: Name of list or numpy array
         """
         self.message = f"\n{var_name} contains no data"
         super().__init__(self.message)
 
 
-def check_shape(array, expected_shape):
+def check_shape(array: np.ndarray, expected_shape: Union[list, tuple, np.ndarray]) -> bool:
     """
-    Checks to see if array has the shape indicated by expected_shape.
+    Checks to see if `array` has the shape indicated by `expected_shape`.
 
-    :param array: numpy array
-    :param expected_shape: list, tuple or 1D numpy array [n_array_dims]
-    :return: boolean, True if shape of array is correct
+    Args:
+        array: Array to check the shape of.
+        expected_shape: `int [n_array_dims]`.
+            Expected shape of array.
+
+    Returns:
+        `True` if shape of array is correct.
     """
     correct_shape = array.ndim == len(expected_shape)  # first check if number of dimensions are correct
     if correct_shape:
@@ -54,29 +62,30 @@ def check_shape(array, expected_shape):
 
 
 class ShapeError(Exception):
-    def __init__(self, var_name, var_shape, expected_shape):
+    def __init__(self, var_name: str, var_shape: tuple, expected_shape: tuple):
         """
-        Error raised because variable indicated by var_name has wrong shape
+        Error raised because variable indicated by `var_name` has wrong shape.
 
-        :param var_name: string, name of numpy array
-        :param var_shape: tuple, shape of numpy array
-        :param expected_shape: tuple, expected shape of numpy array
+        Args:
+            var_name: Name of numpy array.
+            var_shape: Shape of numpy array.
+            expected_shape: Expected shape of numpy array.
         """
         self.message = f"\nShape of {var_name} is {var_shape} but should be {expected_shape}"
         super().__init__(self.message)
 
 
 class TiffError(Exception):
-    def __init__(self, scale_tiff, scale_nbp, shift_tiff, shift_nbp):
+    def __init__(self, scale_tiff: float, scale_nbp: float, shift_tiff: int, shift_nbp: int):
         """
         Error raised because parameters used to produce tiff files are different to those in the current notebook.
 
-        :param scale_tiff: float, scale factor applied to tiff, found from tiff description
-        :param scale_nbp: float, scale factor applied to tiff, found from nb['extract_params']['scale']
-        :param shift_tiff: integer, shift applied to tiff to ensure pixel values positive.
-            Found from tiff description
-        :param shift_nbp: integer, shift applied to tiff to ensure pixel values positive.
-            Found from nb['basic_info']['tile_pixel_value_shift']
+        Args:
+            scale_tiff: Scale factor applied to tiff. Found from tiff description.
+            scale_nbp: Scale factor applied to tiff. Found from `nb.extract_debug.scale`.
+            shift_tiff: Shift applied to tiff to ensure pixel values positive. Found from tiff description.
+            shift_nbp: Shift applied to tiff to ensure pixel values positive.
+                Found from `nb.basic_info.tile_pixel_value_shift`.
         """
         self.message = f"\nThere are differences between the parameters used to make the tiffs and the parameters " \
                        f"in the Notebook:"
