@@ -20,6 +20,7 @@ nav:
             - Basic Info: code/pipeline/basic_info.md
             - Extract: code/pipeline/extract_run.md
             - Find Spots: code/pipeline/find_spots.md
+            - Stitch: code/pipeline/stitch.md
             - Register Initial: code/pipeline/register_initial.md
             - Register: code/pipeline/register.md
             - Reference Spots: code/pipeline/reference_spots.md

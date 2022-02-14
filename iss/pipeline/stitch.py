@@ -4,9 +4,27 @@ from tqdm import tqdm
 from ..find_spots import spot_yxz
 import numpy as np
 import warnings
+from ..setup.notebook import NotebookPage
 
 
-def stitch(config, nbp_basic, spot_details):
+def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> NotebookPage:
+    """
+    This gets the origin of each tile such that a global coordinate system can be built.
+
+    See `'stitch_debug'` section of `notebook_comments.json` file
+    for description of the variables in the page.
+
+    Args:
+        config: Dictionary obtained from `'stitch'` section of config file.
+        nbp_basic: `basic_info` notebook page
+        spot_details: `int [n_spots x 7]`.
+            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
+            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+
+    Returns:
+        `NotebookPage[stitch_debug]` - Page contains information about how tiles were stitched together to give
+            global coordinates.
+    """
     nbp_debug = setup.NotebookPage("stitch_debug")
 
     # determine shifts to search over
