@@ -2,9 +2,41 @@ from .. import setup
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
     dot_product, get_spot_intensity
 import numpy as np
+from ..setup.notebook import NotebookPage
+from typing import Tuple
 
 
-def call_reference_spots(config, nbp_file, nbp_basic, nbp_ref_spots, hist_values, hist_counts):
+def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_ref_spots: NotebookPage,
+                         hist_values: np.ndarray, hist_counts: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
+    """
+    This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
+    simple dot product for spots found on the reference round.
+
+    Returns the `call_spots` notebook page and adds the following variables to the `ref_spots` page:
+    `gene_no`, `score`, `score_diff`, `intensity`.
+
+    See `'call_spots'` and `'ref_spots'` sections of `notebook_comments.json` file
+    for description of the variables in each page.
+
+    Args:
+        config: Dictionary obtained from `'call_spots'` section of config file.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        nbp_ref_spots: `ref_spots` notebook page containing all variables produced in `pipeline/reference_spots.py` i.e.
+            `global_yxz`, `isolated`, `tile`, `colors`.
+        hist_values: `int [n_pixel_values]`.
+            All possible pixel values in saved tiff images i.e. `n_pixel_values` is approximately
+            `np.iinfo(np.uint16).max` because tiffs saved as `uint16` images.
+            This is saved in the extract notebook page i.e. `nb.extract.hist_values`.
+        hist_counts: `int [n_pixel_values x n_rounds x n_channels]`.
+            `hist_counts[i, r, c]` is the number of pixels across all tiles in round `r`, channel `c`
+            which had the value `hist_values[i]`.
+            This is saved in extract notebook page i.e. `nb.extract.hist_counts`.
+
+    Returns:
+        - `NotebookPage[call_spots]` - Page contains bleed matrix and expected code for each gene.
+        - `NotebookPage[ref_spots]` - Page contains gene assignments and info for spots found on reference round.
+    """
     nbp = setup.NotebookPage("call_spots")
 
     # get color norm factor

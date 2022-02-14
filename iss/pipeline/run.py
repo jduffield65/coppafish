@@ -3,9 +3,19 @@ from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
     call_reference_spots
 import warnings
+from typing import Union
 
 
-def run_pipeline(config_file):
+def run_pipeline(config_file: str) -> setup.Notebook:
+    """
+    Bridge function to run every step of the pipeline.
+
+    Args:
+        config_file: Path to config file.
+
+    Returns:
+        `Notebook` containing all information gathered during the pipeline.
+    """
     nb = initialize_nb(config_file)
     config = setup.get_config(config_file)
     nb = run_extract(nb, config)
@@ -16,7 +26,19 @@ def run_pipeline(config_file):
     return nb
 
 
-def initialize_nb(config_file):
+def initialize_nb(config_file: str) -> setup.Notebook:
+    """
+    Quick function which creates a `Notebook` and adds `file_names` and `basic_info` pages
+    before saving.
+
+    If `Notebook` already exists and contains these pages, it will just be returned.
+
+    Args:
+        config_file: Path to config file.
+
+    Returns:
+        `Notebook` containing `file_names` and `basic_info` pages.
+    """
     config = setup.get_config(config_file)
     nb_path = os.path.join(config['file_names']['output_dir'], 'notebook.npz')
     nb = setup.Notebook(nb_path, config_file)
@@ -30,7 +52,22 @@ def initialize_nb(config_file):
     return nb
 
 
-def run_extract(nb, config):
+def run_extract(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
+    """
+    This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
+
+    `extract` and `extract_debug` pages are added to the `Notebook` before saving.
+
+    If `Notebook` already contains these pages, it will just be returned.
+
+    Args:
+        nb: `Notebook` containing `file_names` and `basic_info` pages.
+        config: Path to config file or Dictionary obtained from config file containing key
+            `'extract'` which is another dict.
+
+    Returns:
+        `Notebook` with `extract` and `extract_debug` pages added.
+    """
     if isinstance(config, str):
         # sometimes I guess it will be easier to pass the config file name so deal with that case here too
         config = setup.get_config(config)
@@ -44,7 +81,22 @@ def run_extract(nb, config):
     return nb
 
 
-def run_find_spots(nb, config):
+def run_find_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
+    """
+    This runs the `find_spots` step of the pipeline to produce point cloud from each tiff file in the tile directory.
+
+    `find_spots` page added to the `Notebook` before saving.
+
+    If `Notebook` already contains this page, it will just be returned.
+
+    Args:
+        nb: `Notebook` containing `extract` page.
+        config: Path to config file or Dictionary obtained from config file containing key
+            `'find_spots'` which is another dict.
+
+    Returns:
+        `Notebook` with `find_spots` page added.
+    """
     if isinstance(config, str):
         config = setup.get_config(config)
     if not nb.has_page("find_spots"):
@@ -55,7 +107,24 @@ def run_find_spots(nb, config):
     return nb
 
 
-def run_stitch(nb, config):
+def run_stitch(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
+    """
+    This runs the `stitch` step of the pipeline to produce origin of each tile
+    such that a global coordinate system can be built. Also saves stitched DAPI and reference channel images.
+
+    `stitch_debug` page added to the `Notebook` before saving.
+
+    If `Notebook` already contains this page, it will just be returned.
+    If stitched images already exist, they won't be created again.
+
+    Args:
+        nb: `Notebook` containing `find_spots` page.
+        config: Path to config file or Dictionary obtained from config file containing key
+            `'stitch'` which is another dict.
+
+    Returns:
+        `Notebook` with `stitch_debug` page added.
+    """
     if isinstance(config, str):
         config = setup.get_config(config)
     if not nb.has_page("stitch_debug"):
@@ -76,7 +145,24 @@ def run_stitch(nb, config):
     return nb
 
 
-def run_register(nb, config):
+def run_register(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
+    """
+    This runs the `register_initial` step of the pipeline to find shift between ref round/channel to each imaging round
+    for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
+    the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
+
+    `register_initial_debug`, `register` and `register_debug` pages are added to the `Notebook` before saving.
+
+    If `Notebook` already contains these pages, it will just be returned.
+
+    Args:
+        nb: `Notebook` containing `extract` page.
+        config: Path to config file or Dictionary obtained from config file containing keys
+            `'register_initial'` and `'register'` which each are also dictionaries.
+
+    Returns:
+        `Notebook` with `register_initial_debug`,`register` and `register_debug` pages added.
+    """
     if isinstance(config, str):
         config = setup.get_config(config)
     if not nb.has_page("register_initial_debug"):
@@ -96,7 +182,26 @@ def run_register(nb, config):
     return nb
 
 
-def run_reference_spots(nb, config):
+def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
+    """
+    This runs the `reference_spots` step of the pipeline to get the intensity of each spot on the reference
+    round/channel in each imaging round/channel. The `call_spots` step of the pipeline is then run to produce the
+    `bleed_matrix`, `bled_code` for each gene and the gene assignments of the spots on the reference round.
+
+    `ref_spots` and `call_spots` pages are added to the Notebook before saving.
+
+    If `Notebook` already contains these pages, it will just be returned.
+
+    Args:
+        nb: `Notebook` containing `stitch_debug` and `register` pages.
+        config: Path to config file or Dictionary obtained from config file containing key
+            `'call_spots'` which is another dict.
+
+    Returns:
+        `Notebook` with `ref_spots` and `call_spots` pages added.
+    """
+    if isinstance(config, str):
+        config = setup.get_config(config)
     if not all(nb.has_page(["ref_spots", "call_spots"])):
         nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
                                         nb.stitch_debug.tile_origin, nb.register.transform)

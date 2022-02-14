@@ -2,15 +2,32 @@ from .. import utils, extract, setup
 import numpy as np
 import os
 from tqdm import tqdm
+from ..setup.notebook import NotebookPage
+from typing import Tuple
 
 
-def extract_and_filter(config, nbp_file, nbp_basic):
+def extract_and_filter(config: dict, nbp_file: NotebookPage,
+                       nbp_basic: NotebookPage) -> Tuple[NotebookPage, NotebookPage]:
     """
+    This reads in images from the raw `nd2` files, filters them and then saves them as tiff files in the tile directory.
+    Also gets `auto_thresh` for use in turning images to point clouds and `hist_values`, `hist_counts` required for
+    normalisation between channels.
 
-    :param config:
-    :param nbp_file:
-    :param nbp_basic:
-    :return:
+    Returns the `extract` and `extract_debug` notebook pages.
+
+    See `'extract'` and `'extract_debug'` sections of `notebook_comments.json` file
+    for description of the variables in each page.
+
+    Args:
+        config: Dictionary obtained from `'extract'` section of config file.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+
+    Returns:
+        - `NotebookPage[extract]` - Page containing `auto_thresh` for use in turning images to point clouds and
+            `hist_values`, `hist_counts` required for normalisation between channels.
+        - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
+            but may be useful for debugging purposes.
     """
     # initialise notebook pages
     if not nbp_basic.is_3d:

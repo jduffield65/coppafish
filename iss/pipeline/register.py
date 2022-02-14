@@ -3,9 +3,35 @@ from .. import pcr
 from ..find_spots import spot_yxz
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from ..setup.notebook import NotebookPage
+from typing import Tuple
 
 
-def register(config, nbp_basic, spot_details, initial_shift):
+def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
+             initial_shift: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
+    """
+    This finds the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
+    It uses point cloud registration and the starting shifts found in `pipeline/register_initial.py`.
+
+    See `'register'` and `'register_debug'` sections of `notebook_comments.json` file
+    for description of the variables in each page.
+
+    Args:
+        config: Dictionary obtained from `'register'` section of config file.
+        nbp_basic: `basic_info` notebook page
+        spot_details: `int [n_spots x 7]`.
+            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
+            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+        initial_shift: `int [n_tiles x n_rounds x 3]`.
+            `initial_shift[t, r]` is the yxz shift found that is applied to tile `t`, `ref_round` to take it to
+            tile `t`, round `r`. Units: `[yx_pixels, yx_pixels, z_pixels]`.
+            This is saved in the `register_initial_debug` notebook page i.e. `nb.register_initial_debug.shift`.
+
+    Returns:
+        - `NotebookPage[register]` - Page contains the affine transforms to go from the ref round/channel to
+            each imaging round/channel for every tile.
+        - `NotebookPage[register_debug]` - Page contains information on how the affine transforms were calculated.
+    """
     nbp = setup.NotebookPage("register")
     nbp_debug = setup.NotebookPage("register_debug")
     nbp.initial_shift = initial_shift.copy()

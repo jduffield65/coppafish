@@ -2,9 +2,28 @@ from .. import utils, setup
 from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
+from ..setup.notebook import NotebookPage
 
 
-def find_spots(config, nbp_file, nbp_basic, auto_thresh):
+def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, auto_thresh: np.ndarray) -> NotebookPage:
+    """
+    This function turns each tiff file in the tile directory into a point cloud, saving the results
+    as `spot_details` in the `find_spots` notebook page.
+
+    See `'find_spots'` section of `notebook_comments.json` file
+    for description of the variables in the page.
+
+    Args:
+        config: Dictionary obtained from `'find_spots'` section of config file.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        auto_thresh: `float [n_tiles x n_rounds x n_channels]`.
+            `auto_thresh[t, r, c]` is the threshold for the tiff file corresponding to tile `t`, round `r`, channel `c`
+            such that all local maxima with pixel values greater than this are considered spots.
+
+    Returns:
+        `NotebookPage[find_spots]` - Page containing point cloud of all tiles, rounds and channels.
+    """
     nbp = setup.NotebookPage("find_spots")
     if nbp_basic.is_3d is False:
         # set z details to None if using 2d pipeline

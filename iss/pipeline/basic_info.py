@@ -3,22 +3,32 @@ import os
 from .. import utils, setup
 import warnings
 from datetime import datetime
+from ..setup.notebook import NotebookPage
+from typing import Tuple
 
 
-def set_basic_info(config_file, config_basic):
+def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage, NotebookPage]:
     """
-    Adds info from 'file_name' and 'basic_info' sections of config file
-    to log object.
-    To file_name, the following is added:
-    tile, big_dapi_image, big_anchor_image
-    To basic_info, the following is added:
-    anchor_round, n_rounds, n_extra_rounds, n_tiles, n_channels, nz, tile_sz, tilepos_yx, pixel_size
-    Also use_rounds, use_tiles, use_channels and use_z are changed if they were None.
+    Adds info from `'file_names'` and `'basic_info'` sections of config file
+    to notebook pages of the same name.
 
-    :param config_file: 'file_name' key of config dictionary
-    :param config_basic: 'basic_info' key of config dictionary.
-    :return:
-        log: dictionary with 'file_name and 'basic_info'
+    To `file_names` page, the following is also added:
+    `tile`, `big_dapi_image`, `big_anchor_image`
+
+    To `basic_info` page, the following is also added:
+    `anchor_round`, `n_rounds`, `n_extra_rounds`, `n_tiles`, `n_channels`, `nz`, `tile_sz`, `tilepos_yx`,
+    `tilepos_yx_nd2`, `pixel_size_xy`, `pixel_size_z`, `tile_centre`, `use_anchor`.
+
+    See `'file_names'` and `'basic_info'` sections of `notebook_comments.json` file
+    for description of the variables in each page.
+
+    Args:
+        config_file: Dictionary obtained from `'file_names'` section of config file.
+        config_basic: Dictionary obtained from `'basic_info'` section of config file.
+
+    Returns:
+        - `NotebookPage[file_names]` - Page contains all files that are used throughout the pipeline.
+        - `NotebookPage[basic_info]` - Page contains information that is used at all stages of the pipeline.
     """
     # remove file extension from round and anchor file names if it is present
     config_file['round'] = [r.replace(config_file['raw_extension'], '') for r in config_file['round']]

@@ -4,9 +4,36 @@ from ..find_spots import spot_yxz
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from tqdm import tqdm
+from ..setup.notebook import NotebookPage
 
 
-def reference_spots(nbp_file, nbp_basic, spot_details, tile_origin, transform):
+def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_details: np.ndarray,
+                    tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
+    """
+    This takes each spot found on the reference round/channel and computes the corresponding intensity
+    in each of the imaging rounds/channels.
+
+    See `'ref_spots'` section of `notebook_comments.json` file
+    for description of the variables in the page.
+
+    Args:
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        spot_details: `int [n_spots x 7]`.
+            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
+            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+        tile_origin: `float [n_tiles x 3]`.
+            `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
+            yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
+            This is saved in the `stitch_debug` notebook page i.e. `nb.stitch_debug.tile_origin`.
+        transform: `float [n_tiles x n_rounds x n_channels x 4 x 3]`.
+            `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
+            tile `t`, round `r`, channel `c`.
+            This is saved in the register notebook page i.e. `nb.register.transform`.
+
+    Returns:
+        `NotebookPage[ref_spots]` - Page containing intensity of each reference spot on each imaging round/channel.
+    """
     nbp = setup.NotebookPage("ref_spots")
     r = nbp_basic.ref_round
     c = nbp_basic.ref_channel

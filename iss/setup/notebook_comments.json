@@ -126,7 +126,8 @@
 
   "extract":
   {
-    "DESCRIPTION": ["extract page contains information from extract_and_filter step which are used later in the pipeline.",
+    "DESCRIPTION": ["extract page contains variables from extract_and_filter step which are used later in the pipeline.",
+      "auto_thresh is used to find spots. hist_values and hist_counts are used for normalisation between channels.",
       "Page added to notebook in pipeline/extract_run.py"],
 
     "auto_thresh": ["Numpy float array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
@@ -140,7 +141,7 @@
 
   "extract_debug":
   {
-    "DESCRIPTION": ["extract_debug page stores information from extract_and_filter step which is not needed later",
+    "DESCRIPTION": ["extract_debug page stores variables from extract_and_filter step which are not needed later",
       "in the pipeline but may be useful for debugging purposes.",
       "Page added to notebook in pipeline/extract_run.py"],
 
@@ -266,8 +267,8 @@
   "register_initial_debug":
   {
     "DESCRIPTION": ["register_initial_debug page contains information about how shift between ref round/channel",
-      "to each imaging round for each tile was found. These are then used as starting point",
-      "for determining affine transform. Only 'shift' is used in later stages of the pipeline.",
+      "to each imaging round for each tile was found. These are then used as the starting point",
+      "for determining the affine transforms. Only 'shift' is used in later stages of the pipeline.",
       "Page added to notebook in pipeline/register_initial.py"],
 
     "shift": ["Numpy integer array [n_tiles x n_rounds x 3]",

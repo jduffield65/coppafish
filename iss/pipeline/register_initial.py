@@ -3,10 +3,29 @@ import numpy as np
 from tqdm import tqdm
 from ..stitch import compute_shift, update_shifts
 from ..find_spots import spot_yxz
+from ..setup.notebook import NotebookPage
 import warnings
 
 
-def register_initial(config, nbp_basic, spot_details):
+def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> NotebookPage:
+    """
+    This finds the shift between ref round/channel to each imaging round for each tile.
+    These are then used as the starting point for determining the affine transforms in `pipeline/register.py`.
+
+    See `'register_initial_debug'` section of `notebook_comments.json` file
+    for description of the variables in the page.
+
+    Args:
+        config: Dictionary obtained from `'register_initial'` section of config file.
+        nbp_basic: `basic_info` notebook page
+        spot_details: `int [n_spots x 7]`.
+            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
+            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+
+    Returns:
+        `NotebookPage[register_initial_debug]` - Page contains information about how shift between ref round/channel
+            to each imaging round for each tile was found.
+    """
     nbp_debug = setup.NotebookPage("register_initial_debug")
     if config['shift_channel'] is None:
         config['shift_channel'] = nbp_basic.ref_channel
