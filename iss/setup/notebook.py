@@ -150,33 +150,35 @@ class InvalidNotebookPageError(Exception):
 class Notebook:
     """A write-only file-synchronized class to keep track of ISS results.
 
-    The Notebook object stores all of the outputs of the script.  Almost all
-    information saved in the Notebook is encapsulated within "pages", from the
-    NotebookPage object.  To add a NotebookPage object to a notebook, use the
-    "add_page" method.  You can add pages, but you cannot remove them.  Pages
+    The `Notebook` object stores all of the outputs of the script.  Almost all
+    information saved in the `Notebook` is encapsulated within `"pages"`, from the
+    NotebookPage object.  To add a `NotebookPage` object to a `Notebook`, use the
+    `"add_page"` method.  You can add pages, but you cannot remove them.  Pages
     can be referenced by their name using the square bracket (subscript)
     notation.  In addition to saving pages, it also saves the contents of the
     config file, and the time at which the notebook and each page was created.
 
-    To create a Notebook, pass it the path to the file where the Notebook is to
+    To create a `Notebook`, pass it the path to the file where the `Notebook` is to
     be stored (`notebook_file`), and the path to the configuration file
     (`config_file`).  If `notebook_file` already exists, the notebook located
     at this path will be loaded.  If not, a new file will be created as soon as
-    the first data is written to the Notebook.
+    the first data is written to the `Notebook`.
 
     Example:
-
+    ```python
         nb = Notebook("nbfile.npz")
         nbp = NotebookPage("pagename")
         nbp.var = 1
         nb.add_page(nbp) or nb += nbp or nb.pagename = nbp
         assert nb.pagename.var == 1
+    ```
 
     Because it is automatically saved to the disk, you can close Python, reopen
     it, and do the following:
-
+    ```python
         nb2 = Notebook("nbfile.npz")
         assert nb2.pagename.var == 1
+    ```
     """
     _SEP = "_-_"  # Separator between notebook page name and item name when saving to file
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
@@ -292,9 +294,9 @@ class Notebook:
 
     def __setattr__(self, key, value):
         """
-        deals with the syntax nb.key = value
-        automatically triggers save if NotebookPage is added.
-        If adding something other than a NotebookPage, this syntax does exactly as it is for other classes.
+        Deals with the syntax `nb.key = value`
+        automatically triggers save if `NotebookPage` is added.
+        If adding something other than a `NotebookPage`, this syntax does exactly as it is for other classes.
         """
         if isinstance(value, NotebookPage):
             if self._SEP in key:
@@ -329,7 +331,7 @@ class Notebook:
             object.__setattr__(self, key, value)
 
     def add_page(self, page):
-        """Insert the page `page` into the Notebook.
+        """Insert the page `page` into the `Notebook`.
 
         This function automatically triggers a save.
         """
@@ -396,15 +398,15 @@ class Notebook:
         print(f"Notebook saved: took {time.time() - save_start_time} seconds")
 
     def from_file(self, fn):
-        """Read a Notebook from a file
+        """Read a `Notebook` from a file
 
-        The only argument is `fn`, the filename of the saved Notebook to load.
+        The only argument is `fn`, the filename of the saved `Notebook` to load.
 
-        This returns a tuple of three objects:
+        This returns a tuple of four objects:
 
-        - A list of NotebookPage objects
-        - A dictionary of timestamps, of identical length to the list of NotebookPage objects and keys are page.name
-        - A timestamp for the time the Notebook was created.
+        - A list of `NotebookPage` objects
+        - A dictionary of timestamps, of identical length to the list of `NotebookPage` objects and keys are `page.name`
+        - A timestamp for the time the `Notebook` was created.
         - A string of the config file
         """
         # Right now we won't use lazy loading.  One problem with lazy loading
@@ -444,23 +446,24 @@ class Notebook:
 
 
 class NotebookPage:
-    """A page, to be added to a Notebook object
+    """A page, to be added to a `Notebook` object
 
-    Expected usage is for a NotebookPage to be created at the beginning of a
+    Expected usage is for a `NotebookPage` to be created at the beginning of a
     large step in the analysis pipeline.  The name of the page should reflect
     its function, and it will be used as the indexing key when it is added to a
-    Notebook.  The NotebookPage should be created at the beginning of the step
+    Notebook.  The `NotebookPage` should be created at the beginning of the step
     in the pipeline, because then the timestamp will be more meaningful.  As
     results are computed, they should be added.  This will provide a timestamp
     for each of the results as well.  Then, at the end, the pipeline step should return
-    a NotebookPage, which can then be added to the Notebook.
+    a `NotebookPage`, which can then be added to the `Notebook`.
 
     Example:
-
+    ```python
         nbp = NotebookPage("extract_and_filter")
         nbp.scale_factor = 10
         ...
         return nbp
+    ```
     """
     _PAGEMETA = "PAGEINFO"  # Filename for metadata about the page
     _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
@@ -565,7 +568,7 @@ class NotebookPage:
     def __setattr__(self, key, value):
         """Add an item to the notebook page.
 
-        For a NotebookPage object nbp, this handles the syntax nbp.key = value.
+        For a `NotebookPage` object `nbp`, this handles the syntax `nbp.key = value`.
         It checks the key and value for validity, and then adds them to the
         notebook.  Specifically, it implements a write-once mechanism.
         """
@@ -622,7 +625,7 @@ class NotebookPage:
         """Convert to a dictionary which can be written to a file.
 
         In general, this function shouldn't need to be called other than within
-        a Notebook object.
+        a `Notebook` object.
         """
         keys = {}
         keys[self._PAGEMETA] = self.name
@@ -636,10 +639,10 @@ class NotebookPage:
 
     @classmethod
     def from_serial_dict(cls, d):
-        """Convert from a dictionary to a NotebookPage object
+        """Convert from a dictionary to a `NotebookPage` object
 
         In general, this function shouldn't need to be called other than within
-        a Notebook object.
+        a `Notebook` object.
         """
         # Note that this method will need to be updated if you update the
         # constructor.

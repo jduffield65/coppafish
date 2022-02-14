@@ -3,6 +3,9 @@ site_name: My Docs
 nav:
     - Home: index.md
     - Code:
+        - Setup:
+            - Notebook: code/setup/notebook.md
+            - Tile Detail: code/setup/tile_details.md
         - Extract:
           - Base: code/extract/base.md
           - Deconvolution: code/extract/deconvolution.md

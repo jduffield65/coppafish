@@ -1,21 +1,26 @@
 import numpy as np
 import os
+from typing import Tuple, Optional, List
 
 
-def get_tilepos(xy_pos, tile_sz):
+def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarray]:
     """
-    tilepos_yx_nd2[i, 0] is y index of tile with fov index i in nd2 file.
-    tilepos_yx_nd2[i, 1] is x index of tile with fov index i in nd2 file.
-    tilepos_yx_tiff[i, 0] is y index of tile with tile directory (tiff files) index i.
-    tilepos_yx_tiff[i, 1] is x index of tile with tile directory (tiff files) index i.
+    Using `xy_pos` from nd2 metadata, this obtains the yx position of each tile.
+    I.e. how tiles are arranged with respect to each other.
+    Note that this is indexed differently in nd2 file and tiff files in the tile directory.
 
-    :param xy_pos: numpy array [nTiles x 2]
-        xy position of tiles in pixels.
-    :param tile_sz: integer
-        xy dimension of tile in pixels.
-    :return:
-        tilepos_yx_nd2: integer numpy array [nTiles x 2]
-        tilepos_yx_tiff: integer numpy array [nTiles x 2]
+    Args:
+        xy_pos: `float [n_tiles x 2]`.
+            xy position of tiles in pixels. Obtained from nd2 metadata.
+        tile_sz: xy dimension of tile in pixels.
+
+    Returns:
+        - `tilepos_yx_nd2` - `int [n_tiles x 2]`.
+            `tilepos_yx_nd2[i, 0]` is y index of tile with fov index `i` in nd2 file.
+            `tilepos_yx_nd2[i, 1]` is x index of tile with fov index `i` in nd2 file.
+        - `tilepos_yx_tiff` - `int [n_tiles x 2]`.
+            `tilepos_yx_tiff[i, 0]` is y index of tile with tile directory (tiff files) index `i`.
+            `tilepos_yx_tiff[i, 1]` is x index of tile with tile directory (tiff files) index `i`.
     """
     tilepos_yx_nd2 = np.zeros_like(xy_pos, dtype=int)
     if np.shape(xy_pos)[0] != 1:
@@ -38,34 +43,42 @@ def get_tilepos(xy_pos, tile_sz):
     return tilepos_yx_nd2, tilepos_yx_tiff
 
 
-def get_tile_file_indices(tilepos_yx_nd2):
+def get_tile_file_indices(tilepos_yx_nd2: np.ndarray) -> np.ndarray:
     """
-    Tile with nd2 fov index i is at yx position tilepos_yx_nd2[i, :]
-    and tiff file has tile index given by tile_file_index[i].
-    Tile file indices are different because want tile_file_index[0]
-    to refer to tile at yx position [0, 0].
+    Tile with nd2 fov index `i` is at yx position `tilepos_yx_nd2[i, :]`
+    and tiff file has tile index given by `tile_file_index[i]`.
 
-    :param tilepos_yx_nd2: integer numpy array [nTiles x 2]
-        tilepos_yx[i, 0] is y index of tile with fov index i in nd2 file.
-        tilepos_yx[i, 1] is x index of tile with fov index i in nd2 file.
-    :return:
-        tile_file_index: integer numpy array [nTiles,]
+    Tile file indices are different because want `tile_file_index[0]`
+    to refer to tile at yx position `[0, 0]`.
+
+    Args:
+        tilepos_yx_nd2: `int [n_tiles x 2]`.
+            `tilepos_yx[i, 0]` is y index of tile with fov index `i` in nd2 file.
+            `tilepos_yx[i, 1]` is x index of tile with fov index `i` in nd2 file.
+
+    Returns:
+        `int [n_tiles]`.
+            `tile_file_index` such that tile with nd2 fov index `i` has tiff file index `tile_file_index[i]`.
     """
     ny, nx = tuple(np.max(tilepos_yx_nd2, 0) + 1)
     tile_file_index = np.ravel_multi_index(np.array([tilepos_yx_nd2[:, 0], tilepos_yx_nd2[:, 1]]), (ny, nx))
     return tile_file_index
 
 
-def get_tile_name(tile_directory, file_base, r, t, c=None):
+def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: Optional[int] = None) -> str:
     """
+    Finds the full path to tile, `t`, of particular round, `r`, and channel, `c`, in `tile_directory`.
 
-    :param tile_directory: path to folder where tiles tiff files saved.
-    :param file_base: object numpy array or list [n_rounds,].
-        file_base[r] is identifier for round r.
-    :param r: round
-    :param t: tiff tile index
-    :param c: channel
-    :return: string giving full path of tile.
+    Args:
+        tile_directory: Path to folder where tiles tiff files saved.
+        file_base: `str [n_rounds]`.
+            `file_base[r]` is identifier for round `r`.
+        r: Round of desired tiff image.
+        t: Tile of desired tiff image.
+        c: Channel of desired tiff image.
+
+    Returns:
+        Full path of tile tiff file.
     """
     if c is None:
         tile_name = os.path.join(tile_directory, '{}_t{}.tif'.format(file_base[r], t))
@@ -74,23 +87,30 @@ def get_tile_name(tile_directory, file_base, r, t, c=None):
     return tile_name
 
 
-def get_tile_file_names(tile_directory, file_base, tilepos_yx_nd2, matlab_tile_names, n_channels=0):
+def get_tile_file_names(tile_directory: str, file_base: List[str], tilepos_yx_nd2: np.ndarray, matlab_tile_names: bool,
+                        n_channels: int = 0) -> np.ndarray:
     """
+    Gets array of all tile file paths which will be saved in tile directory.
 
-    :param tile_directory: path to folder where tiles tiff files saved.
-    :param file_base: object numpy array or list [n_rounds,].
-        file_base[r] is identifier for round r.
-    :param tilepos_yx_nd2: integer numpy array [nTiles x 2]
-        tilepos_yx_nd2[i, 0] is y index of tile with fov index i in nd2 file.
-        tilepos_yx_nd2[i, 1] is x index of tile with fov index i in nd2 file.
-    :param matlab_tile_names: boolean
-        if true tile files will have t and c index starting at 1 else will start at 0
-    :param n_channels: total number of imaging channels if using 3D, optional.
-        0 if using 2D pipeline as all channels saved in same file.
-        default: 0.
-    :return: tiles_files. object numpy array
-        [n_tiles x n_rounds] if 2D
-        [n_tiles x n_rounds x n_channels] if 3D
+    Args:
+        tile_directory: Path to folder where tiles tiff files saved.
+        file_base: `str [n_rounds]`.
+            `file_base[r]` is identifier for round `r`.
+        tilepos_yx_nd2: `int [n_tiles x 2]`.
+            `tilepos_yx_nd2[i, 0]` is y index of tile with fov index `i` in nd2 file.
+            `tilepos_yx_nd2[i, 1]` is x index of tile with fov index `i` in nd2 file.
+        matlab_tile_names: If `True`, tile files will have `t` and `c` index starting at `1` else will start at `0`.
+        n_channels: Total number of imaging channels if using 3D.
+            `0` if using 2D pipeline as all channels saved in same file.
+
+    Returns:
+        `object [n_tiles x n_rounds (x n_channels)]`.
+        `tile_files` such that
+
+        - If 2D so `n_channels = 0`, `tile_files[t, r]` is the full path to tiff file containing all channels of
+            tile `t`, round `r`.
+        - If 3D so `n_channels > 0`, `tile_files[t, r]` is the full path to tiff file containing all z-planes of
+        tile `t`, round `r`, channel `c`.
     """
     t_tiff = get_tile_file_indices(tilepos_yx_nd2)
     n_tiles = np.shape(tilepos_yx_nd2)[0]
