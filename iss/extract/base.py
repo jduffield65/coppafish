@@ -108,6 +108,8 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
                      scale: float) -> Tuple[float, np.ndarray, int, float]:
     """
     Gets information from filtered scaled images useful for later in the pipeline.
+    If 3D image, only middle z-plane used for `auto_thresh` and `hist_counts` calculation for speed and the that the
+    exact value of these is not that important, just want a rough idea.
 
     Args:
         image: ```int [n_y x n_x (x n_z)]```
@@ -129,10 +131,13 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
         - ```clip_scale``` - ```float``` Suggested scale factor to multiply un-scaled ```image``` by in order for
             ```n_clip_pixels``` to be 0.
     """
-    # TODO: I think this is very slow in 3d (30s per image when 50 z-plane image already in tile directory)
-    # TODO: check this function works as intended.
-    auto_thresh = np.median(np.abs(image)) * auto_thresh_multiplier
-    hist_counts = np.histogram(image, hist_bin_edges)[0]
+    if image.ndim == 3:
+        z_plane = np.floor(image.shape[2]/2).astype(int)
+        auto_thresh = np.median(np.abs(image[:, :, z_plane])) * auto_thresh_multiplier
+        hist_counts = np.histogram(image[:, :, z_plane], hist_bin_edges)[0]
+    else:
+        auto_thresh = np.median(np.abs(image)) * auto_thresh_multiplier
+        hist_counts = np.histogram(image, hist_bin_edges)[0]
     n_clip_pixels = np.sum(image > max_pixel_value)
     if n_clip_pixels > 0:
         # image has already been multiplied by scale hence inclusion of scale here
