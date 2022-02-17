@@ -1,4 +1,4 @@
-from math import floor
+from math import floor, ceil
 import cv2
 import numpy as np
 from .morphology import dilate
@@ -155,3 +155,63 @@ def annulus(r0: float, r_xy: float, r_z: Optional[float] = None) -> np.ndarray:
     annulus = r_xy ** 2 >= m
     annulus = np.logical_and(annulus, m > r0 ** 2)
     return annulus.astype(int)
+
+
+def fspecial(r_y: float, r_x: Optional[float] = None, r_z: Optional[float] = None) -> np.ndarray:
+    """
+    Creates an ellipsoidal 3D filter kernel if `r_y`, `r_x` and `r_z` given.
+    Copy of MATlAB `fspecial3('ellipsoid')`.
+
+    Creates a disk 2D filter kernel if just `r_y` given. Copy of MATlAB `fspecial('disk')`.
+
+    Args:
+        r_y: Radius in y direction or radius of disk if only parameter provided.
+        r_x: Radius in x direction.
+        r_z: Radius in z direction.
+
+    Returns:
+        `float [2*ceil(r_y)+1, 2*ceil(r_x)+1, 2*ceil(r_z)+1]`.
+            Filtering kernel.
+    """
+    if r_x is None and r_z is None:
+        r = r_y
+        crad = ceil(r - 0.5)
+        x, y = np.meshgrid(np.arange(-crad, crad + 1), np.arange(-crad, crad + 1))
+        max_xy = np.maximum(np.abs(x), np.abs(y))
+        min_xy = np.minimum(np.abs(x), np.abs(y))
+        m1 = (r ** 2 < (max_xy + 0.5) ** 2 + (min_xy - 0.5) ** 2) * (min_xy - 0.5) + \
+             (r ** 2 >= (max_xy + 0.5) ** 2 + (min_xy - 0.5) ** 2) * np.sqrt(r ** 2 - (max_xy + 0.5) ** 2,
+                                                                             dtype=np.complex_)
+        m1 = np.real(m1)
+        m2 = (r ** 2 > (max_xy - 0.5) ** 2 + (min_xy + 0.5) ** 2) * (min_xy + 0.5) + \
+             (r ** 2 <= (max_xy - 0.5) ** 2 + (min_xy + 0.5) ** 2) * np.sqrt(r ** 2 - (max_xy - 0.5) ** 2,
+                                                                             dtype=np.complex_)
+        m2 = np.real(m2)
+        sgrid = (r ** 2 * (0.5 * (np.arcsin(m2 / r) - np.arcsin(m1 / r)) +
+                           0.25 * (np.sin(2 * np.arcsin(m2 / r)) - np.sin(2 * np.arcsin(m1 / r)))) - (max_xy - 0.5) * (
+                             m2 - m1) +
+                 (m1 - min_xy + 0.5)) * ((((r ** 2 < (max_xy + 0.5) ** 2 + (min_xy + 0.5) ** 2) &
+                                           (r ** 2 > (max_xy - 0.5) ** 2 + (min_xy - 0.5) ** 2)) |
+                                          ((min_xy == 0) & (max_xy - 0.5 < r) & (max_xy + 0.5 >= r))))
+        sgrid = sgrid + ((max_xy + 0.5) ** 2 + (min_xy + 0.5) ** 2 < r ** 2)
+        sgrid[crad, crad] = min(np.pi * r ** 2, np.pi / 2)
+        if crad > 0.0 and r > crad - 0.5 and r ** 2 < (crad - 0.5) ** 2 + 0.25:
+            m1 = np.sqrt(r ** 2 - (crad - 0.5) ** 2)
+            m1n = m1 / r
+            sg0 = 2 * (r ** 2 * (0.5 * np.arcsin(m1n) + 0.25 * np.sin(2 * np.arcsin(m1n))) - m1 * (crad - 0.5))
+            sgrid[2 * crad, crad] = sg0
+            sgrid[crad, 2 * crad] = sg0
+            sgrid[crad, 0] = sg0
+            sgrid[0, crad] = sg0
+            sgrid[2 * crad - 1, crad] = sgrid[2 * crad - 1, crad] - sg0
+            sgrid[crad, 2 * crad - 1] = sgrid[crad, 2 * crad - 1] - sg0
+            sgrid[crad, 1] = sgrid[crad, 1] - sg0
+            sgrid[1, crad] = sgrid[1, crad + 1] - sg0
+        sgrid[crad, crad] = min(sgrid[crad, crad], 1)
+        h = sgrid / np.sum(sgrid)
+    else:
+        x, y, z = np.meshgrid(np.arange(-ceil(r_x), ceil(r_x) + 1), np.arange(-ceil(r_y), ceil(r_y) + 1),
+                              np.arange(-ceil(r_z), ceil(r_z) + 1))
+        h = (1 - x ** 2 / r_x ** 2 - y ** 2 / r_y ** 2 - z ** 2 / r_z ** 2) >= 0
+        h = h / np.sum(h)
+    return h

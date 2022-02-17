@@ -4,6 +4,7 @@ import os
 from tqdm import tqdm
 from ..setup.notebook import NotebookPage
 from typing import Tuple
+import warnings
 
 
 def extract_and_filter(config: dict, nbp_file: NotebookPage,
@@ -61,8 +62,25 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     filter_kernel = utils.morphology.hanning_diff(nbp_debug.r1, nbp_debug.r2)
     filter_kernel_dapi = utils.strel.disk(nbp_debug.r_dapi)
 
+    if config['r_smooth'] is not None:
+        if len(config['r_smooth']) == 1:
+            if nbp_basic.is_3d:
+                warnings.warn(f"Running 3D pipeline but only 2D smoothing requested with r_smooth"
+                              f" = {config['r_smooth'][0]}.")
+        elif len(config['r_smooth']) == 3:
+            if not nbp_basic.is_3d:
+                raise ValueError("Running 2D pipeline but 3D smoothing requested.")
+        else:
+            raise ValueError(f"r_smooth provided was {config['r_smooth']}.\n"
+                             f"But it needs to be a single radius for 2D smoothing or 3 radii for 3D smoothing.\n"
+                             f"I.e. it is the wrong shape.")
+        if config['r_smooth'][0] > config['r2']:
+            raise ValueError(f"Smoothing radius, {config['r_smooth'][0]}, is larger than the outer radius of the\n"
+                             f"hanning filter, {config['r2']}, making the filtering step redundant.")
+
+        smooth_kernel = utils.strel.fspecial(*tuple(config['r_smooth']))
+
     if config['deconvolve']:
-        # TODO: add smooth as well as this seems to work well with quadcam
         if not os.path.isfile(nbp_file.psf):
             if nbp_basic.ref_round == nbp_basic.anchor_round:
                 im_file = os.path.join(nbp_file.input_dir, nbp_file.anchor + nbp_file.raw_extension)
@@ -188,9 +206,10 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 im[:, bad_columns] = 0
                             else:
                                 im = utils.morphology.convolve_2d(im, filter_kernel) * scale
+                                if config['r_smooth'] is not None:
+                                    im = utils.morphology.imfilter(im, smooth_kernel)
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
-                                # TODO: make below quicker by getting from one z-plane
                                 # only use image unaffected by strip_hack to get information from tile
                                 good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
                                 nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \

@@ -80,7 +80,8 @@ _options = {
             'psf_shape': 'list_int',
             'psf_annulus_width': 'number',
             'wiener_constant': 'number',
-            'wiener_pad_shape': 'list_int'
+            'wiener_pad_shape': 'list_int',
+            'r_smooth': 'maybe_list_number'
         },
     'find_spots':
         {
@@ -168,6 +169,7 @@ _option_type_checkers = {
     'maybe_int': lambda x: x.strip() == "" or _option_type_checkers['int'](x),
     'maybe_number': lambda x: x.strip() == "" or _option_type_checkers['number'](x),
     'maybe_list_int': lambda x: x.strip() == "" or _option_type_checkers['list_int'](x),
+    'maybe_list_number': lambda x: x.strip() == "" or _option_type_checkers['list_number'](x),
     'maybe_str': lambda x: x.strip() == "" or _option_type_checkers['str'](x),
     'maybe_list_str': lambda x: x.strip() == "" or _option_type_checkers['list_str'](x),
     'maybe_file': lambda x: x.strip() == "" or _option_type_checkers['file'](x)
@@ -186,6 +188,7 @@ _option_formatters = {
     'maybe_int': lambda x: None if x == "" else _option_formatters['int'](x),
     'maybe_number': lambda x: None if x == "" else _option_formatters['number'](x),
     'maybe_list_int': lambda x: None if x == "" else _option_formatters['list_int'](x),
+    'maybe_list_number': lambda x: None if x == "" else _option_formatters['list_number'](x),
     'maybe_str': lambda x: None if x == "" else _option_formatters['str'](x),
     'maybe_list_str': lambda x: None if x == "" else _option_formatters['list_str'](x),
     'maybe_file': lambda x: None if x == "" else _option_formatters['file'](x)

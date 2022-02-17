@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter
-from ..strel import disk, disk_3d, annulus
+from ..strel import disk, disk_3d, annulus, fspecial
 from ...utils import matlab, errors
 
 
@@ -102,6 +102,32 @@ class TestMorphology(unittest.TestCase):
                 output_python = annulus(float(r0), float(r_xy), float(r_z))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
+
+    def test_fspecial_ellipsoid(self):
+        folder = os.path.join(self.folder, 'fspecial_ellipsoid')
+        test_files = [s for s in os.listdir(folder) if "test" in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(folder, file_name)
+            se_sz, output_matlab = matlab.load_array(test_file, ['SE_sz', 'SE'])
+            se_sz = se_sz[0]
+            output_python = fspecial(*tuple(se_sz))
+            diff = output_python - output_matlab
+            self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
+
+    def test_fspecial_disk(self):
+        folder = os.path.join(self.folder, 'fspecial_disk')
+        test_files = [s for s in os.listdir(folder) if "test" in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(folder, file_name)
+            se_sz, output_matlab = matlab.load_array(test_file, ['SE_sz', 'SE'])
+            se_sz = se_sz[0]
+            output_python = fspecial(*tuple(se_sz))
+            diff = output_python - output_matlab
+            self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
 
     def test_convolve_2d(self):
         """

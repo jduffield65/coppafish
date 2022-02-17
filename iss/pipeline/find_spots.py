@@ -57,7 +57,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             if r == nbp_basic.anchor_round:
                 use_channels = [nbp_basic.anchor_channel]
             else:
-                use_channels = nbp_basic.use_channels  # TODO: this will fail if use_channels is an integer not array
+                use_channels = nbp_basic.use_channels
             for t in nbp_basic.use_tiles:
                 for c in use_channels:
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c})

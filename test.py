@@ -16,9 +16,9 @@ def suite_utils():
 
 def suite_setup():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(setup.TestConfig, 'test'))
+    #suite.addTest(unittest.makeSuite(setup.TestConfig, 'test'))
     suite.addTest(unittest.makeSuite(setup.TestNotebook, 'test'))
-    suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
+    #suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
     return suite
 
 
@@ -72,5 +72,5 @@ def suite_all():
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_call_spots', exit=True)
+    unittest.main(defaultTest='suite_utils', exit=True)
     hi = 5

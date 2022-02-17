@@ -196,9 +196,9 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
     Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
 
     Args:
-        image: `float [image_sz1 x image_sz2]`.
+        image: `float [image_sz1 x image_sz2 x ... x image_szN]`.
             Image to be filtered.
-        kernel: `float [kernel_sz1 x kernel_sz2]`.
+        kernel: `float [kernel_sz1 x kernel_sz2 x ... x kernel_szN]`.
             Multidimensional filter.
         padding: One of the following, indicated which padding to be used.
 
@@ -217,7 +217,7 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
             - `'conv'` - Performs multidimensional filtering using convolution.
 
     Returns:
-        `float [image_sz1 x image_sz2]`.
+        `float [image_sz1 x image_sz2 x ... x image_szN]`.
             `image` after being filtered.
     """
     if isinstance(padding, numbers.Number):
