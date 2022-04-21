@@ -15,7 +15,7 @@ class OutOfBoundsError(Exception):
             max_allowed: Largest allowed value i.e. `<= max_allowed`.
         """
         self.message = f"\n{var_name} contains the value {oob_val}." \
-                       f"\nThis is outside the expected range between {min_allowed} and {max_allowed}"
+                       f"\nThis is outside the expected inclusive range between {min_allowed} and {max_allowed}"
         super().__init__(self.message)
 
 

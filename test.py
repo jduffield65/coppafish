@@ -55,6 +55,9 @@ def suite_call_spots():
     suite = unittest.TestSuite()
     #suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
     suite.addTest(unittest.makeSuite(call_spots.TestGetBleedMatrix, 'test'))
+    #suite.addTest(unittest.makeSuite(call_spots.TestDotProductScore, 'test'))
+    #suite.addTest(unittest.makeSuite(call_spots.TestFitBackground, 'test'))
+    #suite.addTest(unittest.makeSuite(call_spots.TestGetGeneEfficiency, 'test'))
     #suite.addTest(unittest.makeSuite(call_spots.TestGetDyeChannelIntensityGuess, 'test'))
     #suite.addTest(unittest.makeSuite(call_spots.TestColorNormalisation, 'test'))
     return suite
@@ -72,5 +75,5 @@ def suite_all():
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_utils', exit=True)
+    unittest.main(defaultTest='suite_call_spots', exit=True)
     hi = 5

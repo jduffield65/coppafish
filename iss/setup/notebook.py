@@ -232,6 +232,7 @@ class Notebook:
         """
         describe(var) will print comments for variables called var in each page.
         """
+        # TODO: nb.describe('round') prints same description in file_names twice for some reason
         if key is None:
             print(self.__repr__())
         elif len(self._page_times) == 0:

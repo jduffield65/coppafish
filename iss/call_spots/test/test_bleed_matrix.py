@@ -40,7 +40,7 @@ class TestScaledKMeans(unittest.TestCase):
             min_cluster_size = int(min_cluster_size)
             k_matlab = k_matlab.flatten() - 1
             s2_matlab = s2_matlab.flatten()
-            v_python, k_python, s2_python = scaled_k_means(x, v0, score_thresh, min_cluster_size, max_iter)
+            v_python, s2_python, k_python, k_score = scaled_k_means(x, v0, score_thresh, min_cluster_size, max_iter)
             diff_1 = v_python - v_matlab
             diff_2 = k_python - k_matlab
             diff_3 = s2_python - s2_matlab
@@ -92,8 +92,9 @@ class TestGetBleedMatrix(unittest.TestCase):
             initial_bleed_matrix = np.expand_dims(dye_channel_matrix.transpose(), 0)
             n_rounds = bleed_matrix_matlab.shape[0]
             initial_bleed_matrix = np.tile(initial_bleed_matrix, (n_rounds, 1, 1))
+            # all tests were run with score_thresh_anneal = False
             bleed_matrix_python = get_bleed_matrix(spot_colors, initial_bleed_matrix, method, score_thresh,
-                                                   min_cluster_size, n_iter)
+                                                   min_cluster_size, n_iter, False)
             diff = bleed_matrix_python - bleed_matrix_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)
 

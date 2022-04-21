@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from .. import utils
 from typing import Union, List, Optional, Tuple
@@ -73,7 +75,7 @@ def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
             n_pixels = cum_sum_rb[-1]
             norm_factor_rb = -np.inf
             for thresh_intensity, thresh_prob in zip(thresh_intensities, thresh_probs):
-                prob = sum(hist_counts_rb[hist_values >= thresh_intensity*norm_factor_rb]) / n_pixels
+                prob = sum(hist_counts_rb[hist_values >= thresh_intensity * norm_factor_rb]) / n_pixels
                 if prob > thresh_prob:
                     norm_factor_rb = hist_values[np.where(cum_sum_rb > (1 - thresh_prob) * n_pixels)[0][1]
                                      ] / thresh_intensity
@@ -148,7 +150,7 @@ def dot_product(data_vectors: np.ndarray, cluster_vectors: np.ndarray,
 
     Returns:
         ```float [n_data x n_clusters]```.
-            ```dot_product``` such that ```dot_product[d, c]``` gives dot product between data vector ```d```
+            ```dot_product_score``` such that ```dot_product_score[d, c]``` gives dot product between data vector ```d```
             with cluster vector ```c```.
     """
     if not utils.errors.check_shape(data_vectors[0], cluster_vectors[0].shape):
@@ -167,8 +169,58 @@ def dot_product(data_vectors: np.ndarray, cluster_vectors: np.ndarray,
 
     n_data = np.shape(data_vectors)[0]
     n_clusters = np.shape(cluster_vectors)[0]
+    # TODO: matmul replace by @
     return np.matmul(np.reshape(norm_data_vectors, (n_data, -1)),
                      np.reshape(norm_cluster_vectors, (n_clusters, -1)).transpose())
+
+
+def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
+                      weight: Optional[np.ndarray] = None) -> np.ndarray:
+    """
+
+    Args:
+        spot_colors: `float [n_spots x n_rounds x n_channels]`.
+            Spot colors normalised to equalise intensities between channels (and rounds).
+        bled_codes: `float [n_genes x n_rounds x n_channels]`.
+            `bled_codes` such that `spot_color` of a gene `g`
+            in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
+        norm_shift: shift to apply to normalisation of spot_colors to limit boost of weak spots.
+        weight: `float [n_spots x n_rounds x n_channels]`.
+            weight to apply to each round/channel for each spot when computing dot product.
+            If `None`, all rounds, channels treated equally.
+
+    Returns:
+        `float [n_spots x n_genes]`.
+            `score` such that `score[d, c]` gives dot product between `spot_colors` vector `d`
+            with `bled_codes` vector `c`.
+    """
+    # TODO: accept no nan values in spot_colors
+    n_spots = spot_colors.shape[0]
+    n_genes = bled_codes.shape[0]
+    if not utils.errors.check_shape(spot_colors[0], bled_codes[0].shape):
+        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
+                                      (n_spots,) + bled_codes[0].shape)
+    spot_norm_factor = np.expand_dims(np.linalg.norm(spot_colors, axis=(1, 2)), (1, 2))
+    spot_norm_factor = spot_norm_factor + norm_shift
+    spot_colors = spot_colors / spot_norm_factor
+
+    gene_norm_factor = np.expand_dims(np.linalg.norm(bled_codes, axis=(1, 2)), (1, 2))
+    bled_codes = bled_codes / gene_norm_factor
+
+    if weight is not None:
+        if not utils.errors.check_shape(weight, spot_colors.shape):
+            raise utils.errors.ShapeError('weight', weight.shape,
+                                          spot_colors.shape)
+        spot_colors = spot_colors * weight ** 2
+
+    score = np.reshape(spot_colors, (n_spots, -1)) @ np.reshape(bled_codes, (n_genes, -1)).transpose()
+
+    if weight is not None:
+        score = score / np.expand_dims(np.sum(weight ** 2, axis=(1, 2)), 1)
+        n_rounds, n_channels = spot_colors[0].shape
+        score = score * n_rounds * n_channels  # make maximum score 1 if all weight the same and dot product perfect.
+
+    return score
 
 
 def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
@@ -186,9 +238,130 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
         ```float [n_spots]```.
             ```[s]``` is the intensity of spot ```s```.
     """
-    diff_to_int = np.round(spot_colors[~np.isnan(spot_colors)]).astype(int)-spot_colors[~np.isnan(spot_colors)]
+    diff_to_int = np.round(spot_colors[~np.isnan(spot_colors)]).astype(int) - spot_colors[~np.isnan(spot_colors)]
     if np.abs(diff_to_int).max() == 0:
         raise ValueError("spot_intensities should be found using normalised spot_colors. "
                          "\nBut all values in spot_colors given are integers indicating they are the raw intensities.")
     round_max_color = np.nanmax(spot_colors, axis=2)
     return np.nanmedian(round_max_color, axis=1)
+
+
+def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    This determines the coefficient of the background vectors for each spot.
+    Coefficients determined using a weighted dot product as to avoid overfitting
+    and accounting for the fact that background coefficients are not updated after this.
+
+    !!! note
+        background vector `i` is 1 in channel `i` for all rounds and 0 otherwise.
+        It is then normalised to have L2 norm of 1 when summed over all rounds and channels.
+
+    Args:
+        spot_colors: `float [n_spots x n_rounds x n_channels]`.
+            Spot colors normalised to equalise intensities between channels (and rounds).
+        weight_shift: shift to apply to weighting of each background vector to limit boost of weak spots.
+
+    Returns:
+        - residual - `float [n_spots x n_rounds x n_channels]`.
+            `spot_colors` after background removed.
+        - coef - ```float [n_spots, n_channels]```.
+            coefficient value for each background vector found for each spot.
+    """
+    if weight_shift < 1e-20:
+        warnings.warn(f'weight_shift value given, {weight_shift} is below 1e-20.'
+                      f'Using weight_shift=1e-20 to stop blow up to infinity.')
+    weight_shift = np.clip(weight_shift, 1e-20, np.inf)  # ensure weight_shift > 1e-20 to avoid blow up to infinity.
+
+    n_spots, n_rounds, n_channels = spot_colors.shape
+    coef = np.zeros([n_spots, n_channels])
+    background_contribution = np.zeros_like(spot_colors)
+    for c in range(n_channels):
+        weight_factor = np.zeros([n_spots, n_rounds])
+        for r in range(n_rounds):
+            weight_factor[:, r] = 1 / (abs(spot_colors[:, r, c]) + weight_shift)
+        weight_factor = np.expand_dims(weight_factor, 2)
+
+        background_vector = np.zeros([1, n_rounds, n_channels])
+        background_vector[:, :, c] = 1
+        # give background_vector an L2 norm of 1 so can compare coefficients with other genes.
+        background_vector = background_vector / np.expand_dims(np.linalg.norm(background_vector, axis=(1, 2)), (1, 2))
+
+        background_weight = background_vector * weight_factor
+        spot_weight = spot_colors * weight_factor
+
+        coef[:, c] = np.sum(spot_weight * background_weight, axis=(1, 2)) / np.sum(background_weight ** 2, axis=(1, 2))
+        background_contribution[:, :, c] = np.expand_dims(coef[:, c], 1) * background_vector[0, 0, c]
+
+    residual = spot_colors - background_contribution
+    return residual, coef
+
+
+def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_codes: np.ndarray,
+                        bleed_matrix: np.ndarray, min_spots: int = 10) -> np.ndarray:
+    """
+    `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected
+    by the `bleed_matrix`. It is computed based on the average of all `spot_colors` assigned to that gene.
+
+    Args:
+        spot_colors: `float [n_spots x n_rounds x n_channels]`.
+            Spot colors normalised to equalise intensities between channels (and rounds).
+        spot_gene_no: `int [n_spots]`.
+            Gene each spot was assigned to.
+        gene_codes: `int [n_genes, n_rounds]`.
+            `gene_codes[g, r]` indicates the dye that should be present for gene `g` in round `r`.
+        bleed_matrix: `float [n_rounds x n_channels x n_dyes]`.
+            For a spot, `s` matched to gene with dye `d` in round `r`, we expect `spot_colors[s, r]`",
+            to be a constant multiple of `bleed_matrix[r, :, d]`"
+        min_spots: If number of spots assigned to a gene less than or equal to this, `gene_efficiency[g]=1`
+            for all rounds.
+
+    Returns:
+        `float [n_genes x n_rounds]`.
+            `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected
+            by the `bleed_matrix`.
+    """
+    # Check n_spots, n_rounds, n_channels, n_genes consistent across all variables.
+    if not utils.errors.check_shape(spot_colors[0], bleed_matrix[:, :, 0].shape):
+        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
+                                      (spot_colors.shape[0],) + bleed_matrix[:, :, 0].shape)
+    if not utils.errors.check_shape(spot_colors[:, 0, 0], spot_gene_no.shape):
+        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
+                                      spot_gene_no.shape + bleed_matrix[:, :, 0].shape)
+    n_genes, n_rounds = gene_codes.shape
+    if not utils.errors.check_shape(spot_colors[0, :, 0].squeeze(), gene_codes[0].shape):
+        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
+                                      spot_gene_no.shape + (n_rounds,) + (bleed_matrix.shape[1],))
+
+    gene_no_oob = [val for val in spot_gene_no if val < 0 or val >= n_genes]
+    if len(gene_no_oob) > 0:
+        raise utils.errors.OutOfBoundsError("spot_gene_no", gene_no_oob[0], 0, n_genes - 1)
+
+    gene_efficiency = np.ones([n_genes, n_rounds])
+    for g in range(n_genes):
+        use = spot_gene_no == g
+        if np.sum(use) > min_spots:
+            round_strength = np.zeros([np.sum(use), n_rounds])
+            for r in range(n_rounds):
+                dye_ind = gene_codes[g, r]
+                # below is equivalent to MATLAB spot_colors / bleed_matrix.
+                round_strength[:, r] = np.linalg.lstsq(bleed_matrix[r, :, dye_ind:dye_ind + 1],
+                                                       spot_colors[use, r].transpose(), rcond=None)[0]
+
+            # find a reference round for each gene as that with median strength.
+            av_round_strength = np.median(round_strength, 0)
+            ref_round = np.abs(av_round_strength - np.median(av_round_strength)).argmin()
+
+            # for each spot, find strength of each round relative to strength in
+            # ref_round. Need relative strength not absolute strength
+            # because expect spot color to be constant multiple of bled code.
+            # So for all genes, gene_efficiency[g, ref_round] = 1 but ref_round is different between genes.
+
+            # Only use spots whose strength in RefRound is positive.
+            use = round_strength[:, ref_round] > 0
+            if np.sum(use) > min_spots:
+                relative_round_strength = round_strength[use] / np.expand_dims(round_strength[use, ref_round], 1)
+                gene_efficiency[g] = np.median(relative_round_strength, 0)
+
+    # set negative values to 0
+    gene_efficiency = np.clip(gene_efficiency, 0, np.inf)
+    return gene_efficiency

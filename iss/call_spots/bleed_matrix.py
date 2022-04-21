@@ -3,8 +3,8 @@ from .. import utils
 from typing import Tuple, List, Union
 
 
-def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh: float = 0, min_cluster_size: int = 10,
-                   n_iter: int = 100) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh: Union[float, np.ndarray] = 0, min_cluster_size: int = 10,
+                   n_iter: int = 100) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Does a clustering that minimizes the norm of ```x[i] - g[i] * cluster_mean[cluster_ind[i]]```
     for each data point ```i``` in ```x```, where ```g``` is the gain which is not explicitly computed.
@@ -14,7 +14,8 @@ def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh
             Data set of vectors to build cluster means from.
         initial_cluster_mean: ```float [n_clusters x n_dims]```.
             Starting point of mean cluster vectors.
-        score_thresh: Scalar between ```0``` and ```1```.
+        score_thresh: `float` or give different score for each cluster as `float [n_clusters]`
+            Scalar between ```0``` and ```1```.
             Points in ```x``` with dot product to a cluster mean vector greater than this
             contribute to new estimate of mean vector.
         min_cluster_size: If less than this many points assigned to a cluster,
@@ -24,10 +25,12 @@ def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh
     Returns:
         - norm_cluster_mean - ```float [n_clusters x n_dims]```.
             Final normalised mean cluster vectors.
-        - cluster_ind - ```int [n_points]```.
-            Index of cluster each point was assigned to. ```-1``` means fell below score_thresh and not assigned.
         - cluster_eig_value - ```float [n_clusters]```.
             First eigenvalue of outer product matrix for each cluster.
+        - cluster_ind - ```int [n_points]```.
+            Index of cluster each point was assigned to. ```-1``` means fell below score_thresh and not assigned.
+        - top_score - ```float [n_points]```.
+            `top_score[i]` is the dot product score between `x[i]` and `norm_cluster_mean[cluster_ind[i]]`.
     """
     # normalise starting points and original data
     norm_cluster_mean = initial_cluster_mean / np.linalg.norm(initial_cluster_mean, axis=1).reshape(-1, 1)
@@ -40,6 +43,13 @@ def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh
     if not utils.errors.check_shape(initial_cluster_mean, [n_clusters, n_dims]):
         raise utils.errors.ShapeError('initial_cluster_mean', initial_cluster_mean.shape, (n_clusters, n_dims))
 
+    if len(np.array([score_thresh]).flatten()) == 1:
+        # if single threshold, set the same for each cluster
+        score_thresh = np.ones(n_clusters) * score_thresh
+
+    if not utils.errors.check_shape(score_thresh, [n_clusters]):
+        raise utils.errors.ShapeError('score_thresh', score_thresh.shape, (n_clusters,))
+
     for i in range(n_iter):
         cluster_ind_old = cluster_ind.copy()
 
@@ -47,8 +57,8 @@ def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh
         score = np.matmul(x_norm, norm_cluster_mean.transpose())
         cluster_ind = np.argmax(score, axis=1)  # find best cluster for each point
         top_score = score[np.arange(n_points), cluster_ind]
-        top_score[np.where(np.isnan(top_score))[0]] = score_thresh-1  # don't include nan values
-        cluster_ind[top_score < score_thresh] = -1  # unclusterable points
+        top_score[np.where(np.isnan(top_score))[0]] = score_thresh.min()-1  # don't include nan values
+        cluster_ind[top_score < score_thresh[cluster_ind]] = -1  # unclusterable points
 
         if (cluster_ind == cluster_ind_old).all():
             break
@@ -64,11 +74,11 @@ def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh
             norm_cluster_mean[c] = eigs[:, best_eig_ind] * np.sign(eigs[:, best_eig_ind].mean())  # make them positive
             cluster_eig_val[c] = eig_vals[best_eig_ind]
 
-    return norm_cluster_mean, cluster_ind, cluster_eig_val
+    return norm_cluster_mean, cluster_eig_val, cluster_ind, top_score
 
 
 def get_bleed_matrix(spot_colors: np.ndarray, initial_bleed_matrix: np.ndarray, method: str, score_thresh: float = 0,
-                     min_cluster_size: int = 10, n_iter: int = 100) -> np.ndarray:
+                     min_cluster_size: int = 10, n_iter: int = 100, score_thresh_anneal: bool = True) -> np.ndarray:
     """
     This returns a bleed matrix such that the expected intensity of dye ```d``` in round ```r```
     is a constant multiple of ```bleed_matrix[r, :, d]```.
@@ -89,6 +99,10 @@ def get_bleed_matrix(spot_colors: np.ndarray, initial_bleed_matrix: np.ndarray, 
             Threshold used for ```scaled_k_means``` affecting which spots contribute to bleed matrix estimate.
         min_cluster_size: If less than this many points assigned to a dye, that dye mean vector will be set to ```0```.
         n_iter: Maximum number of iterations performed in ```scaled_k_means```.
+        score_thresh_anneal: If `True`, `scaled_k_means` will be performed twice.
+            The second time starting with the output of the first and with `score_thresh` for cluster `i`
+            set to the median of the scores assigned to cluster `i` in the first run.
+            This limits the influence of bad spots to the bleed matrix.
 
     Returns:
         ```float [n_rounds x n_channels x n_dyes]```.
@@ -107,8 +121,16 @@ def get_bleed_matrix(spot_colors: np.ndarray, initial_bleed_matrix: np.ndarray, 
             spot_channel_intensity = spot_colors[:, r, :]
             # get rid of any nan codes
             spot_channel_intensity = spot_channel_intensity[~np.isnan(spot_channel_intensity).any(axis=1)]
-            dye_codes, _, dye_eig_vals = scaled_k_means(spot_channel_intensity, initial_bleed_matrix[r].transpose(),
-                                                        score_thresh, min_cluster_size, n_iter)
+            dye_codes, dye_eig_vals, cluster_ind, cluster_score = \
+                scaled_k_means(spot_channel_intensity, initial_bleed_matrix[r].transpose(),
+                               score_thresh, min_cluster_size, n_iter)
+            if score_thresh_anneal:
+                # repeat with higher score_thresh so bad spots contribute less.
+                score_thresh2 = np.zeros(n_dyes)
+                for d in range(n_dyes):
+                    score_thresh2[d] = np.median(cluster_score[cluster_ind == d])
+                dye_codes, dye_eig_vals, cluster_ind, cluster_score = \
+                    scaled_k_means(spot_channel_intensity, dye_codes, score_thresh2, min_cluster_size, n_iter)
             for d in range(n_dyes):
                 bleed_matrix[r, :, d] = dye_codes[d] * np.sqrt(dye_eig_vals[d])
     elif method.lower() == 'single':
@@ -119,8 +141,16 @@ def get_bleed_matrix(spot_colors: np.ndarray, initial_bleed_matrix: np.ndarray, 
         spot_channel_intensity = spot_colors.reshape(-1, n_channels)
         # get rid of any nan codes
         spot_channel_intensity = spot_channel_intensity[~np.isnan(spot_channel_intensity).any(axis=1)]
-        dye_codes, _, dye_eig_vals = scaled_k_means(spot_channel_intensity, initial_bleed_matrix[0].transpose(),
-                                                    score_thresh, min_cluster_size, n_iter)
+        dye_codes, dye_eig_vals, cluster_ind, cluster_score = \
+            scaled_k_means(spot_channel_intensity, initial_bleed_matrix[0].transpose(),
+                           score_thresh, min_cluster_size, n_iter)
+        if score_thresh_anneal:
+            # repeat with higher score_thresh so bad spots contribute less.
+            score_thresh2 = np.zeros(n_dyes)
+            for d in range(n_dyes):
+                score_thresh2[d] = np.median(cluster_score[cluster_ind == d])
+            dye_codes, dye_eig_vals, cluster_ind, cluster_score = \
+                scaled_k_means(spot_channel_intensity, dye_codes, score_thresh2, min_cluster_size, n_iter)
         for r in range(n_rounds):
             for d in range(n_dyes):
                 bleed_matrix[r, :, d] = dye_codes[d] * np.sqrt(dye_eig_vals[d])
