@@ -144,7 +144,7 @@ class TestFitBackground(unittest.TestCase):
 
 class TestGetGeneEfficiency(unittest.TestCase):
     """
-    Check whether DotProductScore works the same as MATLAB function.
+    Check whether gene_efficiencies function works the same as MATLAB function.
     Test data got using the function:
     python_testing/call_spots/gene_efficiencies.m
 

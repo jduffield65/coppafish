@@ -5,6 +5,7 @@ import iss.stitch.test as stitch
 import iss.setup.test as setup
 import iss.pcr.test as pcr
 import iss.call_spots.test as call_spots
+import iss.omp.test as omp
 import unittest
 
 
@@ -63,6 +64,12 @@ def suite_call_spots():
     return suite
 
 
+def suite_omp():
+    suite = unittest.TestSuite()
+    #suite.addTest(unittest.makeSuite(omp.TestFittingStandardDeviation, 'test'))
+    suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))
+    return suite
+
 def suite_all():
     suite = suite_utils()
     suite.addTest(suite_setup())
@@ -71,9 +78,10 @@ def suite_all():
     suite.addTest(suite_stitch())
     suite.addTest(suite_pcr())
     suite.addTest(suite_call_spots())
+    suite.addTest(suite_omp())
     return suite
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_call_spots', exit=True)
+    unittest.main(defaultTest='suite_omp', exit=True)
     hi = 5

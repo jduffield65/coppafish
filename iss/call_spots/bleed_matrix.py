@@ -3,7 +3,8 @@ from .. import utils
 from typing import Tuple, List, Union
 
 
-def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray, score_thresh: Union[float, np.ndarray] = 0, min_cluster_size: int = 10,
+def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray,
+                   score_thresh: Union[float, np.ndarray] = 0, min_cluster_size: int = 10,
                    n_iter: int = 100) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Does a clustering that minimizes the norm of ```x[i] - g[i] * cluster_mean[cluster_ind[i]]```
