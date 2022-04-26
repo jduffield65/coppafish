@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs
+from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs, count_spot_neighbours
 
 
 class TestFittingStandardDeviation(unittest.TestCase):
@@ -157,5 +157,47 @@ class TestGetAllCoefs(unittest.TestCase):
                                                                   dp_thresh, alpha, beta, max_genes, weight_coef_fit)
             diff1 = coefs_python - coefs_matlab
             diff2 = background_coefs_python - background_coefs_matlab
+            self.assertTrue(np.abs(diff1).max() <= self.tol)
+            self.assertTrue(np.abs(diff2).max() <= self.tol)
+
+
+class TestCountSpotNeighbours(unittest.TestCase):
+    """
+    Check whether count_spot_neighbours works the same as MATLAB function:
+    iss-Josh/@iss_OMP/detect_peak_genes_omp.
+    Data saved with script:
+    python_testing/omp/get_spot_neighbours.m
+
+    test files contain:
+    GeneIm: float array [nY x nX]
+        Gene coefficient image.
+    PeakYXZ: int array [nSpots x 3]
+        YXZ coordinate of spots found. Z is always 1.
+    PosFilter: int array [nFilterY x nFilterX]
+        Filter indicates region about each spot we expect positive coefficients.
+    NegFilter: int array [nFilterY x nFilterX]
+        Filter indicates region about each spot we expect negative coefficients.
+    nPosNeighb: int array [nSpots]
+        Number of positive neighbours about each spot.
+    nNegNeighb: int array [nSpots]
+        Number of negative neighbours about each spot.
+    """
+    folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
+    tol = 1e-10
+
+    def test_count_spot_neighbours(self):
+        folder = os.path.join(self.folder, 'count_spot_neighbours')
+        test_files = [s for s in os.listdir(folder) if "test" in s]
+        if len(test_files) == 0:
+            raise errors.EmptyListError("test_files")
+        for file_name in test_files:
+            test_file = os.path.join(folder, file_name)
+            image, spot_yxz, pos_filter, neg_filter, pos_neighb_matlab, neg_neighb_matlab = \
+                matlab.load_array(test_file, ['GeneIm', 'PeakYXZ', 'PosFilter', 'NegFilter',
+                                              'nPosNeighb', 'nNegNeighb'])
+            spot_yxz = (spot_yxz - 1).astype(int)  # MATLAB to python indexing.
+            pos_neighb_python, neg_neighb_python = count_spot_neighbours(image, spot_yxz, pos_filter, neg_filter)
+            diff1 = pos_neighb_python - pos_neighb_matlab.squeeze()
+            diff2 = neg_neighb_python - neg_neighb_matlab.squeeze()
             self.assertTrue(np.abs(diff1).max() <= self.tol)
             self.assertTrue(np.abs(diff2).max() <= self.tol)

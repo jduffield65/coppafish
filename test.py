@@ -68,7 +68,8 @@ def suite_omp():
     suite = unittest.TestSuite()
     #suite.addTest(unittest.makeSuite(omp.TestFittingStandardDeviation, 'test'))
     #suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))
-    suite.addTest(unittest.makeSuite(omp.TestGetAllCoefs, 'test'))
+    #suite.addTest(unittest.makeSuite(omp.TestGetAllCoefs, 'test'))
+    suite.addTest(unittest.makeSuite(omp.TestCountSpotNeighbours, 'test'))
     return suite
 
 def suite_all():

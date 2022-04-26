@@ -121,7 +121,6 @@ def check_neighbour_intensity(image: np.ndarray, spot_yxz: np.ndarray, thresh: f
     Returns:
         ```float [n_peaks]```.
             ```True``` if no neighbours below thresh.
-
     """
     if image.ndim == 3:
         transforms = [[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]

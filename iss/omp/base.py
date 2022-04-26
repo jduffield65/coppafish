@@ -218,3 +218,63 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
     gene_coefs = all_coefs[:, :n_genes]
     background_coefs = all_coefs[:, -n_channels:]
     return gene_coefs, background_coefs
+
+
+def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: np.ndarray,
+                        neg_filter: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Counts the number of positive and negative pixels in a neighbourhood about each spot.
+
+    Args:
+        image: `float [n_y x n_x (x n_z)]`.
+            image spots were found on.
+        spot_yxz: `int [n_peaks x image.ndim]`.
+            yx or yxz location of spots found.
+        pos_filter: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.
+            Number of positive pixels counted in this neighbourhood about each spot in image.
+            Only contains values 0 and 1.
+        neg_filter: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.
+            Number of negative pixels counted in this neighbourhood about each spot in image.
+            Only contains values 0 and 1.
+
+    Returns:
+        - n_pos_neighbours - `float [n_pixels x n_genes]`.
+            `gene_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm. Most are zero.
+        - n_neg_neighbours - `float [n_pixels x n_channels]`.
+            coefficient value for each background vector found for each pixel.
+    """
+    # Correct for 2d cases where an empty dimension has been used for some variables.
+    if all([image.ndim == 2, spot_yxz.shape[1] == 3, np.max(np.abs(spot_yxz[:, -1])) == 0]):
+        # Image 2D but spots 3D
+        spot_yxz = spot_yxz[:, :2]
+    if all([image.ndim == 3, spot_yxz.shape[1] == 2, image.shape[-1] == 1]):
+        # Image 3D but spots 2D
+        image = image[:, :, 0]
+    if all([image.ndim == 2, pos_filter.ndim == 3, pos_filter.shape[-1] == 1]):
+        # Image 2D but pos_filter 3D
+        pos_filter = pos_filter[:, :, 0]
+    if all([image.ndim == 2, neg_filter.ndim == 3, neg_filter.shape[-1] == 1]):
+        # Image 2D but pos_filter 3D
+        neg_filter = neg_filter[:, :, 0]
+
+    if not np.isin(pos_filter, [0, 1]).all():
+        raise ValueError('pos_filter contains values other than 0 or 1.')
+    if not np.isin(neg_filter, [0, 1]).all():
+        raise ValueError('neg_filter contains values other than 0 or 1.')
+
+    # Check all spots in image
+    max_yxz = np.array(image.shape)-1
+    spot_oob = [val for val in spot_yxz if val.min() < 0 or any(val > max_yxz)]
+    if len(spot_oob) > 0:
+        raise utils.errors.OutOfBoundsError("spot_yxz", spot_oob[0], [0]*image.ndim, max_yxz)
+
+    # make binary images indicating sign of image.
+    pos_image = (image > 0).astype(int)
+    neg_image = (image < 0).astype(int)
+    # filter these to count neighbours at each pixel.
+    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter.astype(int), 'reflect')
+    neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter.astype(int), 'reflect')
+    # find number of neighbours at each spot.
+    n_pos_neighbours = pos_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
+    n_neg_neighbours = neg_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
+    return n_pos_neighbours, n_neg_neighbours
