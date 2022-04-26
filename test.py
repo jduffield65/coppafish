@@ -67,7 +67,8 @@ def suite_call_spots():
 def suite_omp():
     suite = unittest.TestSuite()
     #suite.addTest(unittest.makeSuite(omp.TestFittingStandardDeviation, 'test'))
-    suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))
+    #suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))
+    suite.addTest(unittest.makeSuite(omp.TestGetAllCoefs, 'test'))
     return suite
 
 def suite_all():
