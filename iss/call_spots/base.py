@@ -365,3 +365,4 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
     # set negative values to 0
     gene_efficiency = np.clip(gene_efficiency, 0, np.inf)
     return gene_efficiency
+
