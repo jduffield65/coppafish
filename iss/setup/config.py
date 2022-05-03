@@ -57,7 +57,8 @@ _options = {
             'dye_camera_laser': 'maybe_str',
             'code_book': 'str',
             'matlab_tile_names': 'bool',
-            'psf': 'maybe_file'
+            'psf': 'maybe_file',
+            'omp_spot_shape': 'maybe_file'
         },
     'extract':
         {
@@ -145,6 +146,24 @@ _options = {
             'gene_efficiency_n_iter': 'int',
             'score_thresh': 'number',
             'intensity_thresh': 'number'
+        },
+    'omp':
+        {
+            'weight_coef_fit': 'bool',
+            'initial_intensity_thresh': 'number',
+            'max_genes': 'int',
+            'dp_thresh': 'number',
+            'alpha': 'number',
+            'beta': 'number',
+            'initial_score_thresh': 'int',
+            'radius_xy': 'int',
+            'radius_z': 'int',
+            'shape_max_size': 'list_int',
+            'shape_pos_neighbour_thresh': 'int',
+            'shape_isolation_dist': 'number',
+            'intensity_thresh': 'number',
+            'score_thresh': 'number',
+            'score_multiplier': 'number'
         }
 }
 

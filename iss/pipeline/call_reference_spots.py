@@ -133,6 +133,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         # only use isolated spots which pass quality_threshold to compute gene_efficiencies
         # If change call_spots/base/quality_threshold function, will need to change this.
         use_ge = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh]).all(axis=0)
+        # nan_to_num line below converts nan in bleed_matrix to 0.
+        # This basically just says that for dyes not in use_dyes, we expect intensity to be 0.
         gene_efficiency_use = get_gene_efficiency(spot_colors_use[use_ge], spot_gene_no[use_ge],
                                                   gene_codes[:, nbp_basic.use_rounds],
                                                   np.nan_to_num(bleed_matrix[rc_ind]),

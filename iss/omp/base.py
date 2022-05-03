@@ -2,7 +2,7 @@ import numpy as np
 from .. import utils
 from ..call_spots.base import fit_background, dot_product_score
 from ..extract.deconvolution import get_isolated_points, get_spot_images, get_average_spot_image
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union, List
 from tqdm import tqdm
 from scipy.sparse import csr_matrix
 
@@ -291,8 +291,9 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
         return n_pos_neighbours, n_neg_neighbours
 
 
-def spot_neighbourhood(pixel_coef: csr_matrix, pixel_yxz: np.ndarray, spot_yxzg: np.ndarray, pos_neighbour_thresh: int,
-                       isolation_dist: float, z_scale: float, mean_sign_thresh: float) -> np.ndarray:
+def spot_neighbourhood(pixel_coef: csr_matrix, pixel_yxz: np.ndarray, spot_yxzg: np.ndarray,
+                       max_size: Union[np.ndarray, List], pos_neighbour_thresh: int, isolation_dist: float,
+                       z_scale: float, mean_sign_thresh: float) -> np.ndarray:
     """
     Finds the expected sign the coefficient should have in the neighbourhood about a spot.
 
@@ -307,6 +308,8 @@ def spot_neighbourhood(pixel_coef: csr_matrix, pixel_yxz: np.ndarray, spot_yxzg:
             ```spot_yxzg[s, :2]``` are the local yx coordinates in ```yx_pixels``` for spot ```s```.
             ```spot_yxzg[s, 2]``` is the local z coordinate in ```z_pixels``` for spot ```s```.
             ```spot_yxzg[s, 3]``` is the gene that this spot is assigned to.
+        max_size: `int [n_spots x 3]`.
+            max YXZ size of spot shape returned. Zeros at extremities will be cropped.
         pos_neighbour_thresh: For spot to be used to find av_spot_image, it must have this many pixels
             around it on the same z-plane that have a positive coefficient.
             If 3D, also, require 1 positive pixel on each neighbouring plane (i.e. 2 is added to this value).
@@ -341,9 +344,15 @@ def spot_neighbourhood(pixel_coef: csr_matrix, pixel_yxz: np.ndarray, spot_yxzg:
         pos_filter[mid_yx, mid_yx, 0] = 1
         pos_filter[mid_yx, mid_yx, 2] = 1
 
-    spot_image_shape = [27, 27, pos_filter_shape_z**2]  # Big image shape which will be cropped later
+    max_size = np.array(max_size)
+    if n_z == 1:
+        max_size[2] = 1
+    max_size_odd_loc = np.where(np.array(max_size) % 2 == 0)[0]
+    if max_size_odd_loc.size > 0:
+        max_size[max_size_odd_loc] += 1  # ensure shape is odd
+
     n_spots = spot_yxzg.shape[0]
-    spot_images = np.zeros((n_spots, *spot_image_shape), dtype=int)
+    spot_images = np.zeros((n_spots, *max_size), dtype=int)  # Big image shape which will be cropped later
     spots_used = np.zeros(n_spots, dtype=bool)
     for g in range(n_genes):
         coef_sign_image = np.zeros((n_y, n_x, n_z), dtype=int)
@@ -354,7 +363,7 @@ def spot_neighbourhood(pixel_coef: csr_matrix, pixel_yxz: np.ndarray, spot_yxzg:
         use = np.logical_and(use, n_pos_neighb == pos_filter.sum())
         if use.any():
             # Maybe need float coef_sign_image here
-            spot_images[use] = get_spot_images(coef_sign_image, spot_yxzg[use, :-1], spot_image_shape)
+            spot_images[use] = get_spot_images(coef_sign_image, spot_yxzg[use, :-1], max_size)
             spots_used[use] = True
 
     # Compute average spot image from all isolated spots
