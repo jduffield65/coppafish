@@ -1,6 +1,6 @@
 from .. import setup
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
-    dot_product, get_spot_intensity
+    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
 import numpy as np
 from ..setup.notebook import NotebookPage
 from typing import Tuple
@@ -61,18 +61,23 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     else:
         if nbp_basic.n_dyes != nbp_basic.n_channels:
             raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
-                             f"\nBut n_channels={nbp_basic['n_channels']} and n_dyes={nbp_basic['n_dyes']}")
+                             f"\nBut n_channels={nbp_basic.n_channels} and n_dyes={nbp_basic.n_dyes}")
         if nbp_basic.use_channels != nbp_basic.use_dyes:
             raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
                              f"\nBleed matrix computation requires use_channels and use_dyes to be the same to work."
-                             f"\nBut use_channels={nbp_basic['use_channels']} and use_dyes={nbp_basic['use_dyes']}")
+                             f"\nBut use_channels={nbp_basic.use_channels} and use_dyes={nbp_basic.use_dyes}")
         initial_bleed_matrix = initial_raw_bleed_matrix.copy()
         initial_bleed_matrix[rcd_ind] = np.tile(np.expand_dims(np.eye(nbp_basic.n_channels), 0),
                                                 (nbp_basic.n_rounds, 1, 1))[rcd_ind]
 
     # get bleed matrix
-    spot_colors = nbp_ref_spots.colors / color_norm_factor
-    spot_colors_use = np.moveaxis(np.moveaxis(spot_colors, 0, -1)[rc_ind], -1, 0)
+    spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
+    # Remove background first
+    background_coef = np.zeros((spot_colors_use.shape[0], nbp_basic.n_rounds))
+    background_codes = np.ones((nbp_basic.n_channels, nbp_basic.n_rounds, nbp_basic.n_channels)) * np.nan
+    crc_ind = np.ix_(nbp_basic.use_channels, nbp_basic.use_rounds, nbp_basic.use_channels)
+    spot_colors_use, background_coef[:, nbp_basic.use_channels], background_codes[crc_ind] = \
+        fit_background(spot_colors_use, config['background_weight_shift'])
     bleed_matrix = initial_raw_bleed_matrix.copy()
     bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
                                              config['bleed_matrix_method'], config['bleed_matrix_score_thresh'])
@@ -80,8 +85,22 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # get gene codes
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
     gene_codes = np.array([[int(i) for i in gene_codes[j]] for j in range(len(gene_codes))])
+    # bled_codes[g,r,c] returned below is nan where r/c/gene_codes[g,r] outside use_rounds/channels/dyes
     bled_codes = get_bled_codes(gene_codes, bleed_matrix)
+
+    # get bled_codes_use with no nan values and L2 norm=1
     bled_codes_use = np.moveaxis(np.moveaxis(bled_codes, 0, -1)[rc_ind], -1, 0)
+    bled_codes_use[np.isnan(bled_codes_use)] = 0  # set all round vectors where dye is not in use_dyes to 0.
+    # Give all bled codes an L2 norm of 1 across use_rounds and use_channels
+    norm_factor = np.expand_dims(np.linalg.norm(bled_codes_use, axis=(1, 2)), (1, 2))
+    norm_factor[norm_factor == 0] = 1  # For genes with no dye in use_dye, this avoids blow up on next line
+    bled_codes_use = bled_codes_use / norm_factor
+
+    # bled_codes[g,r,c] so nan when r/c outside use_rounds/channels and 0 when gene_codes[g,r] outside use_dyes
+    n_genes = bled_codes_use.shape[0]
+    bled_codes = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, n_genes)) * np.nan
+    bled_codes[rc_ind] = np.moveaxis(bled_codes_use, 0, -1)
+    bled_codes = np.moveaxis(bled_codes, -1, 0)
 
     nbp.gene_names = gene_names
     nbp.gene_codes = gene_codes
@@ -90,22 +109,71 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.initial_bleed_matrix = initial_bleed_matrix
     nbp.bleed_matrix = bleed_matrix
     nbp.bled_codes = bled_codes
+    nbp.background_codes = background_codes
 
     # get gene assignment and score
-    if config['dot_product_method'].lower() == 'single':
-        norm_axis = (1, 2) # dot product considering all rounds together
-    elif config['dot_product_method'].lower() == 'separate':
-        norm_axis = 2  # independent dot product for each round
-    else:
-        raise ValueError(f"dot_product_method is {config['dot_product_method']}, "
-                         f"but should be either 'single' or 'separate'.")
-    scores = dot_product(spot_colors_use, bled_codes_use, norm_axis)
+    nbp_ref_spots.score_thresh = config['score_thresh']
+    nbp_ref_spots.intensity_thresh = config['intensity_thresh']
+    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use)
+
+    # shift in config file is just for one round.
+    n_spots, n_rounds_use, n_channels_use = spot_colors_use.shape
+    dp_norm_shift = config['dp_norm_shift'] * np.sqrt(n_rounds_use)
+
+    # find spot assignments to genes and gene efficiency
+    n_iter = config['gene_efficiency_n_iter'] + 1
+    pass_intensity_thresh = nbp_ref_spots.intensity > nbp_ref_spots.intensity_thresh
+    use_ge_last = np.zeros(n_spots).astype(bool)
+    bled_codes_ge_use = bled_codes_use.copy()
+    for i in range(n_iter):
+        scores = dot_product_score(spot_colors_use, bled_codes_ge_use, dp_norm_shift)
+        spot_gene_no = np.argmax(scores, 1)
+        spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
+        pass_score_thresh = spot_score > nbp_ref_spots.score_thresh
+        # only use isolated spots which pass quality_threshold to compute gene_efficiencies
+        # If change call_spots/base/quality_threshold function, will need to change this.
+        use_ge = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh]).all(axis=0)
+        gene_efficiency_use = get_gene_efficiency(spot_colors_use[use_ge], spot_gene_no[use_ge],
+                                                  gene_codes[:, nbp_basic.use_rounds],
+                                                  np.nan_to_num(bleed_matrix[rc_ind]),
+                                                  config['gene_efficiency_min_spots'])
+
+        # get new bled codes using gene efficiency with L2 norm = 1.
+        multiplier_ge = np.tile(np.expand_dims(gene_efficiency_use, 2), [1, 1, n_channels_use])
+        bled_codes_ge_use = bled_codes_use * multiplier_ge
+        norm_factor = np.expand_dims(np.linalg.norm(bled_codes_ge_use, axis=(1, 2)), (1, 2))
+        norm_factor[norm_factor == 0] = 1  # For genes with no dye in use_dye, this avoids blow up on next line
+        bled_codes_ge_use = bled_codes_ge_use / norm_factor
+
+        if np.sum(use_ge != use_ge_last) < 3:
+            # if less than 3 spots different in spots used for ge computation, end.
+            break
+        use_ge_last = use_ge.copy()
+
+    if config['gene_efficiency_n_iter'] > 0:
+        # Compute score with final gene efficiency
+        scores = dot_product_score(spot_colors_use, bled_codes_ge_use, dp_norm_shift)
+        spot_gene_no = np.argmax(scores, 1)
+        spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
+
+    # save score using latest gene efficiency and diff to second best gene
+    nbp_ref_spots.background_coef = background_coef
+    nbp_ref_spots.score = spot_score
+    nbp_ref_spots.gene_no = spot_gene_no
     sort_gene_inds = np.argsort(scores, axis=1)
-    nbp_ref_spots.gene_no = sort_gene_inds[:, -1]
     gene_no_second_best = sort_gene_inds[:, -2]
-    nbp_ref_spots.score = scores[np.arange(np.shape(scores)[0]), nbp_ref_spots.gene_no]
     score_second_best = scores[np.arange(np.shape(scores)[0]), gene_no_second_best]
     nbp_ref_spots.score_diff = nbp_ref_spots.score - score_second_best
-    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use)
+
+    # save gene_efficiency[g,r] with nan when r outside use_rounds and 1 when gene_codes[g,r] outside use_dyes.
+    gene_efficiency = np.ones((n_genes, nbp_basic.n_rounds)) * np.nan
+    gene_efficiency[:, nbp_basic.use_rounds] = gene_efficiency_use
+    nbp.gene_efficiency = gene_efficiency
+
+    # bled_codes_ge[g,r,c] so nan when r/c outside use_rounds/channels and 0 when gene_codes[g,r] outside use_dyes
+    bled_codes_ge = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, n_genes)) * np.nan
+    bled_codes_ge[rc_ind] = np.moveaxis(bled_codes_ge_use, 0, -1)
+    bled_codes_ge = np.moveaxis(bled_codes_ge, -1, 0)
+    nbp.bled_codes_ge = bled_codes_ge
 
     return nbp, nbp_ref_spots

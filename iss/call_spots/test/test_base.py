@@ -135,7 +135,7 @@ class TestFitBackground(unittest.TestCase):
             matlab_norm_factor = np.linalg.norm(np.ones(n_rounds))
             coef_matlab = coef_matlab * matlab_norm_factor
 
-            residual_python, coef_python = fit_background(spot_colors, weight_shift)
+            residual_python, coef_python, background_vectors = fit_background(spot_colors, weight_shift)
             diff1 = residual_python - residual_matlab
             diff2 = coef_python - coef_matlab
             self.assertTrue(np.abs(diff1).max() <= self.tol)

@@ -357,6 +357,8 @@
       "Tile each spot was found on."],
     "colors": ["Numpy float array [n_spots x n_rounds x n_channels]",
       "[s, r, c] is the intensity of spot s on round r, channel c. Nan if that round/channel not used."],
+    "background_coef": ["Numpy float array [n_spots x n_channels]",
+      "background_coef[s, c] is the coefficient found for background_codes[c] for spot s."],
     "gene_no": ["Numpy integer array [n_spots]",
       "gene_no[s] is the index of the gene assigned to spot s."],
     "score": ["Numpy float array [n_spots]",
@@ -366,7 +368,15 @@
       "score_diff[s] is score[s] minus the score for the second best gene assignement for spot s."],
     "intensity": ["Numpy float array [n_spots]",
       "if max_intensity[s, r] is the maximum normalised intensity of spot s in round r:",
-      "intensity[s] = median(max_intensity[s])"]
+      "intensity[s] = median(max_intensity[s])"],
+    "score_thresh": ["Float",
+      "Final accepted spots are those which pass quality_threshold which is:",
+      "score > score_thresh and intensity > intensity_thresh. This is copied from config[call_spots].",
+      "Max score is 1 so score_thresh should be less than this."],
+    "intensity_thresh": ["Float",
+      "Final accepted spots are those which pass quality_threshold which is:",
+      "score > score_thresh and intensity > intensity_thresh. This is copied from config[call_spots].",
+      "intensity for a really intense spot is about 1 so intensity_thresh should be less than this."]
   },
 
   "call_spots":
@@ -391,8 +401,22 @@
     "bleed_matrix": ["Numpy float array [n_rounds x n_channels x n_dyes]",
       "For a spot, s, which should be dye d in round r, we expect color[s, r]/color_norm_factor[r]",
       "to be a constant multiple of bleed_matrix[r, :, d]"],
+    "background_codes": ["Numpy float array [n_channels x n_rounds x n_channels]",
+      "These are the background codes for which each spot has a background_coef.",
+      "background_codes[C, r, c] is 1 if c==C and 0 otherwise for all rounds r.",
+      "nan if r/c outside use_rounds/channels."],
     "bled_codes": ["Numpy float array [n_genes x n_rounds x n_channels]",
       "color[s, r]/color_norm_factor[r] of spot, s, corresponding to gene g",
-      "is expected to be a constant multiple of bled_codes[g, r] in round r."]
+      "is expected to be a constant multiple of bled_codes[g, r] in round r.",
+      "nan if r/c outside use_rounds/channels and 0 if gene_codes[g,r] outside use_dyes.",
+      "All codes have L2 norm = 1 when summed across all use_rounds and use_channels."],
+    "gene_efficiency": ["Numpy float array [n_genes x n_rounds]",
+      "gene_efficiency[g,r] gives the expected intensity of gene g in round r compared to that expected by the bleed_matrix.",
+      "It is computed based on the average of isolated spot_colors assigned to that gene.",
+      "For all g, there is a ref_round[g] such that gene_efficiency[g, ref_round[g]] = 1.",
+      "nan if r outside use_rounds and 1 if gene_codes[g,r] outside use_dyes."],
+    "bled_codes_ge": ["Numpy float array [n_genes x n_rounds x n_channels]",
+      "bled_codes using gene_efficiency information i.e. bled_codes * gene_efficiency.",
+      "All codes have L2 norm = 1 when summed across all use_rounds and use_channels." ]
   }
 }

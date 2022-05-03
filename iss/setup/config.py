@@ -135,11 +135,16 @@ _options = {
         },
     'call_spots':
         {
-           'bleed_matrix_method': 'str',
-           'color_norm_intensities': 'list_number',
-           'color_norm_probs': 'list_number',
-           'bleed_matrix_score_thresh': 'number',
-           'dot_product_method': 'str'
+            'bleed_matrix_method': 'str',
+            'color_norm_intensities': 'list_number',
+            'color_norm_probs': 'list_number',
+            'bleed_matrix_score_thresh': 'number',
+            'background_weight_shift': 'number',
+            'dp_norm_shift': 'number',
+            'gene_efficiency_min_spots': 'int',
+            'gene_efficiency_n_iter': 'int',
+            'score_thresh': 'number',
+            'intensity_thresh': 'number'
         }
 }
 

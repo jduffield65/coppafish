@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 from .. import utils
 from typing import Union, List, Optional, Tuple
+from ..setup.notebook import NotebookPage
 
 
 def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
@@ -89,7 +90,13 @@ def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
 def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarray:
     """
     This gets ```bled_codes``` such that the spot_color of a gene ```g``` in round ```r``` is expected to be a constant
-    multiple of ```bled_codes[g, r, :]```.
+    multiple of ```bled_codes[g, r]```.
+    This function should be run with full bleed_matrix with any rounds/channels/dyes outside those using set to nan.
+    Otherwise will get confusion with dye indices in `gene_codes` being outside size of `bleed_matrix`.
+
+    !!! note
+        All bled_codes returned with an L2 norm of 1 when summed over all rounds and channels
+        with any nan values assumed to be 0.
 
     Args:
         gene_codes: ```int [n_genes x n_rounds]```.
@@ -98,11 +105,10 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
             Expected intensity of dye ```d``` in round ```r``` is a constant multiple of ```bleed_matrix[r, :, d]```.
 
     Returns:
-        ```float [n_genes x n_rounds x n_channels]```. ```bled_codes``` such that ```spot_color``` of a gene ```g```
+        ```float [n_genes x n_rounds x n_channels]```.
+            ```bled_codes``` such that ```spot_color``` of a gene ```g```
             in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r]```.
     """
-    # ```bled_codes``` such that ```spot_color``` of a gene ```
-    #         g``` in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r, :]```.
     n_genes = gene_codes.shape[0]
     n_rounds, n_channels, n_dyes = bleed_matrix.shape
     if not utils.errors.check_shape(gene_codes, [n_genes, n_rounds]):
@@ -122,56 +128,11 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
             for c in range(n_channels):
                 bled_codes[g, r, c] = bleed_matrix[r, c, gene_codes[g, r]]
 
+    # Give all bled codes an L2 norm of 1 assuming any nan values are 0
+    norm_factor = np.expand_dims(np.linalg.norm(np.nan_to_num(bled_codes), axis=(1, 2)), (1, 2))
+    norm_factor[norm_factor == 0] = 1   # For genes with no dye in any rounds, this avoids blow up on next line
+    bled_codes = bled_codes / norm_factor
     return bled_codes
-
-
-def dot_product(data_vectors: np.ndarray, cluster_vectors: np.ndarray,
-                norm_axis: Optional[Union[int, Tuple[int]]] = None) -> np.ndarray:
-    """
-    Will normalise both ```data_vectors``` and ```cluster_vectors``` and then find the dot product between each vector
-    in ```data_vectors``` with each vector in ```cluster_vectors```.
-
-    Args:
-        data_vectors: ```float [n_data x ax1_dim x ax2_dim x ... x axN_dim]```.
-            Data vectors to find dot product for.
-        cluster_vectors: ```float [n_clusters x ax1_dim x ax2_dim x ... x axN_dim]```.
-            Cluster vectors to find dot product with.
-        norm_axis: Which axis to sum over for normalisation
-            e.g. consider example where ```data_vectors``` shape is ```[800 x 5 x 10]```:
-
-            - ```norm_axis = (1,2)```: normalisation will sum over both axis so maximum possible dot product is
-                ```1```.
-            - ```norm_axis = 1```: normalisation will sum over axis ```1``` so maximum possible dot product is
-                ```10```.
-            - ```norm_axis = 2```: normalisation will sum over axis ```2``` so maximum possible dot product is
-                ```5```.
-
-            If ```norm_axis=None```, summing over all axis i.e. ```(1,...,N)```.
-
-    Returns:
-        ```float [n_data x n_clusters]```.
-            ```dot_product_score``` such that ```dot_product_score[d, c]``` gives dot product between data vector ```d```
-            with cluster vector ```c```.
-    """
-    if not utils.errors.check_shape(data_vectors[0], cluster_vectors[0].shape):
-        raise utils.errors.ShapeError('data_vectors', data_vectors.shape,
-                                      data_vectors.shape[:1] + cluster_vectors[0].shape)
-    if norm_axis is None:
-        norm_axis = tuple(np.arange(data_vectors.ndim))[1:]
-    data_vectors_intensity = np.sqrt(np.nansum(data_vectors ** 2, axis=norm_axis))
-    norm_data_vectors = data_vectors / np.expand_dims(data_vectors_intensity, norm_axis)
-    cluster_vectors_intensity = np.sqrt(np.nansum(cluster_vectors ** 2, axis=norm_axis))
-    norm_cluster_vectors = cluster_vectors / np.expand_dims(cluster_vectors_intensity, norm_axis)
-
-    # set nan values to 0.
-    norm_data_vectors[np.isnan(norm_data_vectors)] = 0
-    norm_cluster_vectors[np.isnan(norm_cluster_vectors)] = 0
-
-    n_data = np.shape(data_vectors)[0]
-    n_clusters = np.shape(cluster_vectors)[0]
-    # TODO: matmul replace by @
-    return np.matmul(np.reshape(norm_data_vectors, (n_data, -1)),
-                     np.reshape(norm_cluster_vectors, (n_clusters, -1)).transpose())
 
 
 def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
@@ -194,7 +155,7 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
             `score` such that `score[d, c]` gives dot product between `spot_colors` vector `d`
             with `bled_codes` vector `c`.
     """
-    # TODO: accept no nan values in spot_colors
+    # TODO: accept no nan values in spot_colors or bled_codes
     n_spots = spot_colors.shape[0]
     n_genes = bled_codes.shape[0]
     if not utils.errors.check_shape(spot_colors[0], bled_codes[0].shape):
@@ -205,6 +166,7 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
     spot_colors = spot_colors / spot_norm_factor
 
     gene_norm_factor = np.expand_dims(np.linalg.norm(bled_codes, axis=(1, 2)), (1, 2))
+    gene_norm_factor[gene_norm_factor == 0] = 1  # so don't blow up if bled_code is all 0 for a gene.
     bled_codes = bled_codes / gene_norm_factor
 
     if weight is not None:
@@ -213,6 +175,7 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
                                           spot_colors.shape)
         spot_colors = spot_colors * weight ** 2
 
+    # TODO: matmul replace by @
     score = np.reshape(spot_colors, (n_spots, -1)) @ np.reshape(bled_codes, (n_genes, -1)).transpose()
 
     if weight is not None:
@@ -246,14 +209,14 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
     return np.nanmedian(round_max_color, axis=1)
 
 
-def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray]:
+def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This determines the coefficient of the background vectors for each spot.
     Coefficients determined using a weighted dot product as to avoid overfitting
     and accounting for the fact that background coefficients are not updated after this.
 
     !!! note
-        background vector `i` is 1 in channel `i` for all rounds and 0 otherwise.
+        `background_vectors[i]` is 1 in channel `i` for all rounds and 0 otherwise.
         It is then normalised to have L2 norm of 1 when summed over all rounds and channels.
 
     Args:
@@ -264,8 +227,11 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
     Returns:
         - residual - `float [n_spots x n_rounds x n_channels]`.
             `spot_colors` after background removed.
-        - coef - ```float [n_spots, n_channels]```.
+        - coef - `float [n_spots, n_channels]`.
             coefficient value for each background vector found for each spot.
+        - background_vectors `float [n_channels x n_rounds x n_channels]`.
+            background_vectors[c] is the background vector for channel c.
+
     """
     if weight_shift < 1e-20:
         warnings.warn(f'weight_shift value given, {weight_shift} is below 1e-20.'
@@ -275,6 +241,7 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
     n_spots, n_rounds, n_channels = spot_colors.shape
     coef = np.zeros([n_spots, n_channels])
     background_contribution = np.zeros_like(spot_colors)
+    background_vectors = np.zeros([n_channels, n_rounds, n_channels])
     for c in range(n_channels):
         weight_factor = np.zeros([n_spots, n_rounds])
         for r in range(n_rounds):
@@ -285,6 +252,7 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
         background_vector[:, :, c] = 1
         # give background_vector an L2 norm of 1 so can compare coefficients with other genes.
         background_vector = background_vector / np.expand_dims(np.linalg.norm(background_vector, axis=(1, 2)), (1, 2))
+        background_vectors[c] = background_vector
 
         background_weight = background_vector * weight_factor
         spot_weight = spot_colors * weight_factor
@@ -293,11 +261,11 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
         background_contribution[:, :, c] = np.expand_dims(coef[:, c], 1) * background_vector[0, 0, c]
 
     residual = spot_colors - background_contribution
-    return residual, coef
+    return residual, coef, background_vectors
 
 
 def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_codes: np.ndarray,
-                        bleed_matrix: np.ndarray, min_spots: int = 10) -> np.ndarray:
+                        bleed_matrix: np.ndarray, min_spots: int = 30) -> np.ndarray:
     """
     `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected
     by the `bleed_matrix`. It is computed based on the average of all `spot_colors` assigned to that gene.
@@ -363,6 +331,19 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
                 gene_efficiency[g] = np.median(relative_round_strength, 0)
 
     # set negative values to 0
+    # TODO: maybe set a maximum value of gene efficiency so no one round can dominate too much.
     gene_efficiency = np.clip(gene_efficiency, 0, np.inf)
     return gene_efficiency
+
+
+def quality_threshold(nbp: NotebookPage) -> np.ndarray:
+    """
+
+    Args:
+        nbp:
+
+    Returns:
+
+    """
+    return np.array([nbp.score > nbp.score_thresh, nbp.intensity > nbp.intensity_thresh]).all(axis=0)
 

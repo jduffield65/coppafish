@@ -185,6 +185,8 @@ class Notebook:
     _CONFIGMETA = "CONFIGFILE"  # Key for config string
     _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
 
+    # TODO: way of deleting page which is just del nb._page_times['ref_spots'] and del nb.__dict__['call_spots']
+
     def __init__(self, notebook_file, config_file):
         # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.

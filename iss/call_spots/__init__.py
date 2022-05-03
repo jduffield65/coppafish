@@ -1,3 +1,3 @@
 from .base import color_normalisation, get_bled_codes, get_spot_intensity, dot_product_score, fit_background, \
-    dot_product, get_gene_efficiency
+    get_gene_efficiency
 from .bleed_matrix import get_bleed_matrix, get_dye_channel_intensity_guess
