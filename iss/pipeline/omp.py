@@ -18,7 +18,7 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
                    transform: np.ndarray) -> NotebookPage:
     nbp = setup.NotebookPage("omp")
 
-    # use bled_codes with gene efficiency incorporated.
+    # use bled_codes with gene efficiency incorporated and only use_rounds/channels
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     bled_codes = np.moveaxis(np.moveaxis(nbp_call_spots.bled_codes_ge, 0, -1)[rc_ind], -1, 0)
     norm_bled_codes = np.linalg.norm(bled_codes, axis=(1, 2))
@@ -37,7 +37,8 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do central tile first because better to compute spot_shape from central tile.
         t_centre = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
-        use_tiles[0], use_tiles[t_centre] = use_tiles[t_centre], use_tiles[0]
+        t_centre_ind = np.where(np.array(nbp_basic.use_tiles)==t_centre)[0][0]
+        use_tiles[0], use_tiles[t_centre_ind] = use_tiles[t_centre_ind], use_tiles[0]
         spot_shape = None
     else:
         nbp.shape_tile = None
@@ -53,6 +54,7 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     spot_background_coefs = np.zeros((0, n_channels_use))
     spot_colors = np.zeros((0, n_rounds_use, n_channels_use), dtype=int)
     for t in use_tiles:
+        # this returns colors in use_rounds/channels only and no nan.
         pixel_colors, pixel_yxz = get_all_pixel_colors(t, transform, nbp_file, nbp_basic)
 
         # Only keep pixels with significant absolute intensity to save memory.
@@ -92,7 +94,7 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
         pixel_index = numpy_indexed.indices(pixel_yxz, spot_info_t[:, :3])
 
         # append this tile info to all tile info
-        spot_colors = np.append(spot_colors, pixel_colors[pixel_index])
+        spot_colors = np.append(spot_colors, pixel_colors[pixel_index], axis=0)
         del pixel_colors
         spot_coefs = np.append(spot_coefs, pixel_coefs[pixel_index], axis=0)
         del pixel_coefs
@@ -114,12 +116,17 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     # Add spot info to notebook page
     nbp.local_yxz = spot_info[not_duplicate, :3]
     nbp.tile = spot_info[not_duplicate, 6]
+
+    # spot_colors and background_coef have nans if use_rounds / use_channels used.
     n_spots = np.sum(not_duplicate)
-    spot_colors_full = np.zeros((nbp_basic.n_rounds, nbp_basic.n_channels, n_spots), dtype=int)
-    spot_colors_full[rc_ind] = np.moveaxis(spot_colors[not_duplicate], 0, -1)[rc_ind]
+    spot_colors_full = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, n_spots), dtype=float) * np.nan
+    spot_colors_full[rc_ind] = np.moveaxis(spot_colors[not_duplicate], 0, -1)
     nbp.colors = np.moveaxis(spot_colors_full, -1, 0)
-    nbp.background_coef = spot_background_coefs[not_duplicate]
-    nbp.coefs = spot_coefs[not_duplicate]
+    background_coefs_full = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
+    background_coefs_full[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = spot_background_coefs[not_duplicate]
+    nbp.background_coef = background_coefs_full
+
+    nbp.coef = spot_coefs[not_duplicate]
     nbp.gene_no = spot_info[not_duplicate, 3]
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]
     nbp.n_neighbours_neg = spot_info[not_duplicate, 5]

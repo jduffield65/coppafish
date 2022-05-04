@@ -81,6 +81,7 @@ def get_average_spot_image(spot_images: np.ndarray, av_type: str = 'mean', symme
     Args:
         spot_images: ```float [n_peaks x y_shape x x_shape (x z_shape)]```.
             ```spot_images[s]``` is the small image surrounding spot ```s```.
+            Any nan values will be ignored when computing the average spot image.
         av_type: Optional, one of the following indicating which average to use:
 
             - ```'mean'```
@@ -100,6 +101,7 @@ def get_average_spot_image(spot_images: np.ndarray, av_type: str = 'mean', symme
     Returns:
         ```float [y_shape x x_shape (x z_shape)]```. Average small image about a spot.
     """
+    # avoid nan in average because some spot_images may have nans because the image ran out of bounds of the tile.
     if av_type == 'mean':
         av_func = lambda x, axis: np.nanmean(x, axis)
     elif av_type == 'median':

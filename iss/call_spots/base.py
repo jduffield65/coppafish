@@ -345,5 +345,12 @@ def quality_threshold(nbp: NotebookPage) -> np.ndarray:
     Returns:
 
     """
-    return np.array([nbp.score > nbp.score_thresh, nbp.intensity > nbp.intensity_thresh]).all(axis=0)
-
+    if nbp.name == 'ref_spots':
+        score = nbp.score
+    elif nbp.name == 'omp':
+        max_score = nbp.score_multiplier * np.sum(nbp.spot_shape == 1) + np.sum(nbp.spot_shape == -1)
+        score = (nbp.score_multiplier * nbp.n_neighbours_pos + nbp.n_neighbours_neg) / max_score
+    else:
+        raise ValueError(f"Notebook page has name {nbp.name} but needs to be 'ref_spots' or 'omp'.")
+    qual_ok = np.array([score > nbp.score_thresh, nbp.intensity > nbp.intensity_thresh]).all(axis=0)
+    return qual_ok

@@ -66,6 +66,7 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     for t in tqdm(range(nbp_basic.n_tiles), desc='Current Tile'):
         in_tile = nd_local_tile == t
         if sum(in_tile) > 0:
+            # this function will return nan for r/c outside use_rounds/channels
             nd_spot_colors[in_tile] = get_spot_colors(nd_local_yxz[in_tile], t, transform, nbp_file, nbp_basic)
 
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.

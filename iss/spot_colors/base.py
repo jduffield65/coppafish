@@ -87,7 +87,7 @@ def get_all_pixel_colors(t: int, transforms: np.ndarray, nbp_file: NotebookPage,
         nbp_basic: `basic_info` notebook page
 
     Returns:
-        - ```pixel_colors``` - `float [n_pixels x n_rounds_use x n_channels_use]`.
+        - ```pixel_colors``` - `int [n_pixels x n_rounds_use x n_channels_use]`.
             `pixel_colors[s, r, c]` is the color at `pixel_yxz[s]` in round `use_rounds[r]`, channel `use_channels[c]`.
         - ```pixel_yxz``` - `float [n_pixels x 3]`.
             Local yxz coordinates of pixels in the reference round/reference channel of tile `t`
@@ -105,6 +105,6 @@ def get_all_pixel_colors(t: int, transforms: np.ndarray, nbp_file: NotebookPage,
                                        nbp_basic.use_channels)]
     # only keep spots in all rounds/channels meaning no nan values
     keep = np.sum(np.isnan(pixel_colors), (1, 2)) == 0
-    pixel_colors = pixel_colors[keep]
+    pixel_colors = pixel_colors[keep].astype(int)
     pixel_yxz = pixel_yxz[keep]
     return pixel_colors, pixel_yxz

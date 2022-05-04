@@ -109,8 +109,8 @@ def spot_neighbourhood(pixel_coefs: np.array, pixel_yxz: np.ndarray, spot_yxz: n
             Expected sign of omp coefficient in neighbourhood centered on spot.
         - spot_indices_used - `int [n_spots_used]`.
             indices of spots in `spot_yxzg` used to make av_spot_image.
-        - av_spot_image_float - `float [max_size[0] x max_size[1] (x max_size[2])]`
-            Mean sign of omp coefficient in neighbourhood centered on spot.
+        - av_spot_image_float - `float [max_size[0] x max_size[1] x max_size[2]]`
+            Mean of omp coefficient sign in neighbourhood centered on spot.
             This is before cropping and thresholding.
     """
     # TODO: Maybe provide pixel_coef_sign instead of pixel_coef as less memory or use csr_matrix.
@@ -272,20 +272,20 @@ def get_spots(pixel_coefs: np.array, pixel_yxz: np.ndarray, radius_xy: int, radi
             coef_image = np.zeros((n_y, n_x, n_z))
         coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g]
         spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
+        if spot_yxz.shape[0] > 0:
+            if spot_shape is None:
+                keep = np.ones(spot_yxz.shape[0], dtype=bool)
+                spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
+            else:
+                n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, pos_filter, neg_filter)
+                keep = n_pos_neighb > pos_neighbour_thresh
+                spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
+                spot_info_g[:, 4] = n_pos_neighb[keep]
+                spot_info_g[:, 5] = n_neg_neighb[keep]
 
-        if spot_shape is None:
-            keep = np.ones(spot_yxz.shape[0], dtype=bool)
-            spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
-        else:
-            n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, pos_filter, neg_filter)
-            keep = n_pos_neighb > pos_neighbour_thresh
-            spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
-            spot_info_g[:, 4] = n_pos_neighb[keep]
-            spot_info_g[:, 5] = n_neg_neighb[keep]
-
-        spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
-        spot_info_g[:, 3] = g
-        spot_info = np.append(spot_info, spot_info_g, axis=0)
+            spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
+            spot_info_g[:, 3] = g
+            spot_info = np.append(spot_info, spot_info_g, axis=0)
 
     spot_info[:, :3] = spot_info[:, :3] + coord_shift  # shift spot_yxz back
     if spot_shape is None:
