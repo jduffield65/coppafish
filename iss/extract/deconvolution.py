@@ -50,20 +50,26 @@ def get_spot_images(image: np.ndarray, spot_yxz: np.ndarray, shape: Union[np.nda
     spot_images = np.empty((spot_yxz.shape[0], *shape))
     spot_images[:] = np.nan  # set to nan if spot image goes out of bounds of image.
     max_image_index = np.array(image.shape)
-    for s in tqdm(range(spot_yxz.shape[0])):
-        min_pos = np.clip((spot_yxz[s] - mid_index), 0, max_image_index)
-        max_pos = np.clip((spot_yxz[s] + mid_index + 1), 0, max_image_index)
-        spot_images_min_index = mid_index - (spot_yxz[s] - min_pos)
-        spot_images_max_index = mid_index + (max_pos - spot_yxz[s])
-        if len(shape) == 2:
-            small_im = image[min_pos[0]:max_pos[0], min_pos[1]:max_pos[1]]
-            spot_images[s, spot_images_min_index[0]:spot_images_max_index[0],
-            spot_images_min_index[1]:spot_images_max_index[1]] = small_im
-        elif len(shape) == 3:
-            small_im = image[min_pos[0]:max_pos[0], min_pos[1]:max_pos[1], min_pos[2]:max_pos[2]]
-            spot_images[s, spot_images_min_index[0]:spot_images_max_index[0],
-            spot_images_min_index[1]:spot_images_max_index[1],
-            spot_images_min_index[2]:spot_images_max_index[2]] = small_im
+    n_spots = spot_yxz.shape[0]
+    no_verbose = n_spots < 6000 / len(shape)  # show progress bar with lots of pixels.
+    with tqdm(total=n_spots, disable=no_verbose) as pbar:
+        pbar.set_description("Loading in spot images from tiff files")
+        for s in range(n_spots):
+            min_pos = np.clip((spot_yxz[s] - mid_index), 0, max_image_index)
+            max_pos = np.clip((spot_yxz[s] + mid_index + 1), 0, max_image_index)
+            spot_images_min_index = mid_index - (spot_yxz[s] - min_pos)
+            spot_images_max_index = mid_index + (max_pos - spot_yxz[s])
+            if len(shape) == 2:
+                small_im = image[min_pos[0]:max_pos[0], min_pos[1]:max_pos[1]]
+                spot_images[s, spot_images_min_index[0]:spot_images_max_index[0],
+                spot_images_min_index[1]:spot_images_max_index[1]] = small_im
+            elif len(shape) == 3:
+                small_im = image[min_pos[0]:max_pos[0], min_pos[1]:max_pos[1], min_pos[2]:max_pos[2]]
+                spot_images[s, spot_images_min_index[0]:spot_images_max_index[0],
+                spot_images_min_index[1]:spot_images_max_index[1],
+                spot_images_min_index[2]:spot_images_max_index[2]] = small_im
+            pbar.update(1)
+    pbar.close()
     return spot_images
 
 

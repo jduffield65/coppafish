@@ -36,6 +36,9 @@
       "File or None",
       "tiff file indicating average spot shape (before padding and scaled to fill uint16 range).",
       "Will be None if 2d pipeline used. File won't exist/used if config['extract']['deconvolve'] is False."],
+    "omp_spot_shape": ["File",
+      "tiff file indicating average spot shape in omp coefficient sign images.",
+      "Saved image is uint16 tiff so -1, 0, 1 saved as 0, 1, 2. When load in, subtract 1."],
     "big_dapi_image": [
       "File or None",
       "tiff file of stitched DAPI image. None if nb.basic_info.dapi_channel is None"],

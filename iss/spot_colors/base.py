@@ -1,7 +1,7 @@
 import numpy as np
 from .. import pcr, utils
 from ..setup.notebook import NotebookPage
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_file: NotebookPage,
@@ -66,3 +66,45 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
             else:
                 spot_colors[in_range, r, c] = image[yxz_transform[in_range, 0], yxz_transform[in_range, 1]]
     return spot_colors
+
+
+def get_all_pixel_colors(t: int, transforms: np.ndarray, nbp_file: NotebookPage,
+                         nbp_basic: NotebookPage) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Finds colors for every pixel in a tile.
+    Keeping only pixels within tile bounds on each round and channel in nbp_basic.use_rounds/channels.
+
+    !!! note
+        Returned pixel colors have dimension `n_pixels x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)` not
+        `n_pixels x nbp_basic.n_rounds x nbp_basic.n_channels`.
+
+    Args:
+        t: Tile that spots were found on.
+        transforms: `float [n_tiles x n_rounds x n_channels x 4 x 3]`.
+            `transforms[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
+            tile `t`, round `r`, channel `c`.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+
+    Returns:
+        - ```pixel_colors``` - `float [n_pixels x n_rounds_use x n_channels_use]`.
+            `pixel_colors[s, r, c]` is the color at `pixel_yxz[s]` in round `use_rounds[r]`, channel `use_channels[c]`.
+        - ```pixel_yxz``` - `float [n_pixels x 3]`.
+            Local yxz coordinates of pixels in the reference round/reference channel of tile `t`
+            yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
+    """
+    if nbp_basic.is_3d:
+        n_z = nbp_basic.n_z
+    else:
+        n_z = 1
+    pixel_yxz = np.array(np.meshgrid(np.arange(nbp_basic.tile_sz),
+                                     np.arange(nbp_basic.tile_sz), np.arange(n_z))).T.reshape(-1, 3)
+    pixel_colors = get_spot_colors(pixel_yxz, t, transforms, nbp_file, nbp_basic)
+    # only keep used rounds/channels to save memory.
+    pixel_colors = pixel_colors[np.ix_(np.arange(pixel_colors.shape[0]), nbp_basic.use_rounds,
+                                       nbp_basic.use_channels)]
+    # only keep spots in all rounds/channels meaning no nan values
+    keep = np.sum(np.isnan(pixel_colors), (1, 2)) == 0
+    pixel_colors = pixel_colors[keep]
+    pixel_yxz = pixel_yxz[keep]
+    return pixel_colors, pixel_yxz

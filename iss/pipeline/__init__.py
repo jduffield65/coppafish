@@ -6,3 +6,4 @@ from .register_initial import register_initial
 from .register import register
 from .reference_spots import reference_spots
 from .call_reference_spots import call_reference_spots
+from .omp import call_spots_omp

@@ -201,12 +201,12 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
         ```float [n_spots]```.
             ```[s]``` is the intensity of spot ```s```.
     """
-    diff_to_int = np.round(spot_colors[~np.isnan(spot_colors)]).astype(int) - spot_colors[~np.isnan(spot_colors)]
+    diff_to_int = np.round(spot_colors).astype(int) - spot_colors
     if np.abs(diff_to_int).max() == 0:
         raise ValueError("spot_intensities should be found using normalised spot_colors. "
                          "\nBut all values in spot_colors given are integers indicating they are the raw intensities.")
-    round_max_color = np.nanmax(spot_colors, axis=2)
-    return np.nanmedian(round_max_color, axis=1)
+    round_max_color = np.max(spot_colors, axis=2)
+    return np.median(round_max_color, axis=1)
 
 
 def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

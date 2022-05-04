@@ -161,6 +161,7 @@ _options = {
             'shape_max_size': 'list_int',
             'shape_pos_neighbour_thresh': 'int',
             'shape_isolation_dist': 'number',
+            'shape_sign_thresh': 'number',
             'intensity_thresh': 'number',
             'score_thresh': 'number',
             'score_multiplier': 'number'

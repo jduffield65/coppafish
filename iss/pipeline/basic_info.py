@@ -72,6 +72,17 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
         else:
             nbp_file.psf = None
 
+    if config_file['omp_spot_shape'] is None:
+        # where to save omp_spot_shape, indicating average spot shape in omp coefficient sign images.
+        omp_spot_shape_file = os.path.join(config_file['output_dir'], 'omp_spot_shape.tif')
+        if not os.path.isfile(omp_spot_shape_file):
+            nbp_file.omp_spot_shape = omp_spot_shape_file
+        else:
+            # if file already exists, specify file with different name based on current time
+            dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
+            nbp_file.omp_spot_shape = os.path.join(config_file['output_dir'], 'omp_spot_shape_' + dt_string + '.tif')
+
+
     # get round info from config file
     n_rounds = len(config_file['round'])
     if config_basic['use_rounds'] is None:

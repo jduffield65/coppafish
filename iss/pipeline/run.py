@@ -1,7 +1,7 @@
 import os
 from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
-    call_reference_spots
+    call_reference_spots, call_spots_omp
 import warnings
 from typing import Union
 
@@ -23,6 +23,7 @@ def run_pipeline(config_file: str) -> setup.Notebook:
     nb = run_stitch(nb, config)
     nb = run_register(nb, config)
     nb = run_reference_spots(nb, config)
+    nb = run_omp(nb, config)
     return nb
 
 
@@ -212,6 +213,18 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.N
     else:
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
+    return nb
+
+
+def run_omp(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
+    if isinstance(config, str):
+        config = setup.get_config(config)
+    if not nb.has_page("omp"):
+        nbp = call_spots_omp(config['omp'], config['call_spots'], nb.file_names, nb.basic_info,
+                                        nb.call_spots, nb.stitch_debug.tile_origin, nb.register.transform)
+        nb += nbp
+    else:
+        warnings.warn('omp', utils.warnings.NotebookPageWarning)
     return nb
 
 

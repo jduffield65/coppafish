@@ -1,3 +1,4 @@
+import warnings
 from .. import utils
 import numpy as np
 from typing import Optional, Tuple, Union
@@ -45,7 +46,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: int, rad
         radius_z: Radius of dilation structuring element in z direction (approximately spot radius).
             If ```None```, 2D filter is used.
         remove_duplicates: Whether to only keep one pixel if two or more pixels are local maxima and have
-            same intensity.
+            same intensity. Only works with integer image.
 
     Returns:
         - ```peak_yxz``` - ```int [n_peaks x image.ndim]```.
@@ -55,10 +56,16 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: int, rad
     """
     if radius_z is not None:
         se = utils.strel.disk_3d(radius_xy, radius_z)
+        if image.ndim == 2:
+            warnings.warn('2D image provided but 3D filter asked for. Using the middle plane of this filter.')
+            se = se[:, :, radius_z]
     else:
         se = utils.strel.disk(radius_xy)
     small = 1e-6  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
     if remove_duplicates:
+        diff_to_int = np.round(image).astype(int) - image
+        if np.abs(diff_to_int).max() > 0:
+            raise ValueError("image should be integer to remove_duplicates but image is float.")
         # perturb image by small amount so two neighbouring pixels that did have the same value now differ slightly.
         # hence when find maxima, will only get one of the pixels not both.
         rng = np.random.default_rng(0)   # So shift is always the same.
