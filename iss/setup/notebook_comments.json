@@ -210,9 +210,9 @@
       "y, x gives the local tile coordinates in yx_pixels. z gives local tile coordinate in z_pixels (0 if 2d)"]
   },
 
-  "stitch_debug":
+  "stitch":
   {
-    "DESCRIPTION": ["stitch_debug page contains information about how tiles were stitched together to give global coordinates.",
+    "DESCRIPTION": ["stitch page contains information about how tiles were stitched together to give global coordinates.",
       "Only 'tile_origin' is used in later stages of the pipeline.",
       "Page added to notebook in pipeline/stitch.py"],
 
@@ -352,13 +352,14 @@
     "DESCRIPTION": ["ref_spots page contains gene assignments and info for spots found on reference round.",
       "Page added to notebook in pipeline/call_reference_spots.py"],
 
-    "global_yxz": ["Numpy float array [n_spots, 3]",
-      "yxz coordinates of every spot found on ref round/channel in global coordinate system."],
+    "local_yxz": ["Numpy int array [n_spots, 3]",
+      "yxz coordinates on tile found on of every spot found on ref round/channel.",
+      "To get global_yxz, add nb.stitch.tile_origin[tile]."],
     "isolated": ["Numpy boolean array [n_spots]",
       "True for spots that are well isolated i.e. surroundings have low intensity so no nearby spots."],
     "tile": ["Numpy integer array [n_spots]",
       "Tile each spot was found on."],
-    "colors": ["Numpy float array [n_spots x n_rounds x n_channels]",
+    "colors": ["Numpy integer array [n_spots x n_rounds x n_channels]",
       "[s, r, c] is the intensity of spot s on round r, channel c. Nan if that round/channel not used."],
     "background_coef": ["Numpy float array [n_spots x n_channels]",
       "background_coef[s, c] is the coefficient found for background_codes[c] for spot s."],

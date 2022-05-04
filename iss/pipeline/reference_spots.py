@@ -60,7 +60,6 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
 
     # nd means all spots that are not duplicate
     nd_local_yxz = all_local_yxz[not_duplicate]
-    nd_global_yxz = all_global_yxz[not_duplicate]
     nd_isolated = all_isolated[not_duplicate]
     nd_local_tile = all_local_tile[not_duplicate]
     nd_spot_colors = np.zeros((nd_local_tile.shape[0], nbp_basic.n_rounds, nbp_basic.n_channels))
@@ -75,13 +74,13 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     nd_spot_colors_use = np.moveaxis(nd_spot_colors_use[use_rc_index], -1, 0)
     good = ~np.any(np.isnan(nd_spot_colors_use), axis=(1, 2))
 
-    good_global_yxz = nd_global_yxz[good]
+    good_local_yxz = nd_local_yxz[good]
     good_isolated = nd_isolated[good]
     good_local_tile = nd_local_tile[good]
     good_spot_colors = nd_spot_colors[good]
 
     # save spot info to notebook
-    nbp.global_yxz = good_global_yxz
+    nbp.local_yxz = good_local_yxz
     nbp.isolated = good_isolated
     nbp.tile = good_local_tile
     nbp.colors = good_spot_colors

@@ -2,7 +2,8 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs, count_spot_neighbours
+from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs
+from ..spots import count_spot_neighbours
 
 
 class TestFittingStandardDeviation(unittest.TestCase):

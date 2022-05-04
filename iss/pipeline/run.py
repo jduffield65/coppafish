@@ -113,7 +113,7 @@ def run_stitch(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
     This runs the `stitch` step of the pipeline to produce origin of each tile
     such that a global coordinate system can be built. Also saves stitched DAPI and reference channel images.
 
-    `stitch_debug` page added to the `Notebook` before saving.
+    `stitch` page added to the `Notebook` before saving.
 
     If `Notebook` already contains this page, it will just be returned.
     If stitched images already exist, they won't be created again.
@@ -124,15 +124,15 @@ def run_stitch(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
             `'stitch'` which is another dict.
 
     Returns:
-        `Notebook` with `stitch_debug` page added.
+        `Notebook` with `stitch` page added.
     """
     if isinstance(config, str):
         config = setup.get_config(config)
-    if not nb.has_page("stitch_debug"):
+    if not nb.has_page("stitch"):
         nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
         nb += nbp_debug
     else:
-        warnings.warn('stitch_debug', utils.warnings.NotebookPageWarning)
+        warnings.warn('stitch', utils.warnings.NotebookPageWarning)
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
         # save stitched dapi
         utils.tiff.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
@@ -205,7 +205,7 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.N
         config = setup.get_config(config)
     if not all(nb.has_page(["ref_spots", "call_spots"])):
         nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
-                                        nb.stitch_debug.tile_origin, nb.register.transform)
+                                        nb.stitch.tile_origin, nb.register.transform)
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nbp_ref_spots,
                                                   nb.extract.hist_values, nb.extract.hist_counts)
         nb += nbp_ref_spots
@@ -221,7 +221,7 @@ def run_omp(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
         config = setup.get_config(config)
     if not nb.has_page("omp"):
         nbp = call_spots_omp(config['omp'], config['call_spots'], nb.file_names, nb.basic_info,
-                                        nb.call_spots, nb.stitch_debug.tile_origin, nb.register.transform)
+                                        nb.call_spots, nb.stitch.tile_origin, nb.register.transform)
         nb += nbp
     else:
         warnings.warn('omp', utils.warnings.NotebookPageWarning)

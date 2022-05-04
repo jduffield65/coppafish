@@ -25,7 +25,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
         `NotebookPage[stitch_debug]` - Page contains information about how tiles were stitched together to give
             global coordinates.
     """
-    nbp_debug = setup.NotebookPage("stitch_debug")
+    nbp_debug = setup.NotebookPage("stitch")
 
     # determine shifts to search over
     expected_shift_south = np.array([-(1 - config['expected_overlap']) * nbp_basic.tile_sz, 0, 0]).astype(int)

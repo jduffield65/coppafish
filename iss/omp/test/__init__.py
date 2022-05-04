@@ -1,1 +1,1 @@
-from .test_base import TestFittingStandardDeviation, TestFitCoefs, TestGetAllCoefs, TestCountSpotNeighbours
+from .test_all import TestFittingStandardDeviation, TestFitCoefs, TestGetAllCoefs, TestCountSpotNeighbours

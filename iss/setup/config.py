@@ -155,7 +155,7 @@ _options = {
             'dp_thresh': 'number',
             'alpha': 'number',
             'beta': 'number',
-            'initial_score_thresh': 'int',
+            'initial_pos_neighbour_thresh': 'int',
             'radius_xy': 'int',
             'radius_z': 'int',
             'shape_max_size': 'list_int',
