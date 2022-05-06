@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from typing import Tuple, Optional, List
+from .notebook import NotebookPage
 
 
 def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -133,5 +134,41 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], tilepos_yx_nd
                         get_tile_name(tile_directory, file_base, r, t_tiff[t_nd2] + index_shift,
                                       c + index_shift)
     return tile_files
-
 # TODO: Make tile_pos work for non rectangular array of tiles in nd2 file
+
+
+def change_tile_dir(nbp: NotebookPage, tile_dir_new: str):
+    """
+    Changes names of all tile_files in nbp object to new tile directory.
+
+    Args:
+        nbp: file_names NotebookPage
+        tile_dir_new: path of new tile directory.
+    """
+    if not nbp.name == 'file_names':
+        raise ValueError("NotebookPage must be 'file_names'")
+    tile_dir_old = nbp.tile_dir
+    if tile_dir_old[-1] == "/":
+        # tile directory has no "/" at the end.
+        tile_dir_old = tile_dir_old[:-1]
+    if tile_dir_new[-1] == "/":
+        # tile directory has no "/" at the end.
+        tile_dir_new = tile_dir_new[:-1]
+
+    # change tile tiff file names
+    tile_names = nbp.tile
+    n_tiles = len(tile_names)
+    n_images = tile_names[0].size # n_rounds in 2d or n_rounds x n_channels in 3d
+    for t in range(n_tiles):
+        tile_names[t] = tile_names[t].astype(object)  # make object so can change size of each name
+        for i in range(n_images):
+            old_name = tile_names[t][np.unravel_index(i, tile_names[t].shape)]
+            tile_names[t][np.unravel_index(i, tile_names[t].shape)] = old_name.replace(tile_dir_old, tile_dir_new)
+        tile_names[t] = tile_names[t].astype(str) # make string again
+
+    # change tile_dir name
+    finalized = nbp.finalized
+    nbp.finalized = False
+    del nbp.tile_dir
+    nbp.tile_dir = tile_dir_new
+    nbp.finalized = finalized

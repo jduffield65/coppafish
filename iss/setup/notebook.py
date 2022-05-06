@@ -185,8 +185,6 @@ class Notebook:
     _CONFIGMETA = "CONFIGFILE"  # Key for config string
     _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
 
-    # TODO: way of deleting page which is just del nb._page_times['ref_spots'] and del nb.__dict__['call_spots']
-
     def __init__(self, notebook_file, config_file):
         # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.
@@ -332,6 +330,15 @@ class Notebook:
             raise ValueError(f"Page with name {key} in notebook so can't add variable with this name.")
         else:
             object.__setattr__(self, key, value)
+
+    def __delattr__(self, name):
+        """
+        Method to delete a page or attribute. Deals with del nb.name
+        """
+        object.__delattr__(self, name)
+        if name in self._page_times:
+            # extra bit if page
+            del self._page_times[name]
 
     def add_page(self, page):
         """Insert the page `page` into the `Notebook`.
@@ -610,6 +617,17 @@ class NotebookPage:
                                       f"its value was returned.")
                         return config[section][param]
         object.__getattribute__(self, name)  # this is default if name is in page or nothing found in config file.
+
+    def __delattr__(self, name):
+        """
+        Method to delete a result or attribute. Deals with del nbp.name.
+        """
+        if self.finalized:
+            raise ValueError("This NotebookPage has already been added to a Notebook, no values can be deleted.")
+        object.__delattr__(self, name)
+        if name in self._times:
+            # extra bit if _is_result_key
+            del self._times[name]
 
     def has_item(self, key):
         return key in self._times.keys()

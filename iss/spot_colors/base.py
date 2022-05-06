@@ -1,6 +1,7 @@
 import numpy as np
 from .. import pcr, utils
 from ..setup.notebook import NotebookPage
+from ..call_spots import get_spot_intensity
 from typing import List, Optional, Tuple
 
 
@@ -59,17 +60,28 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
             yxz_transform = pcr.apply_transform(yxz_base, transforms[t, r, c], nbp_basic.tile_centre, z_scale)
             in_range = np.logical_and(np.min(yxz_transform >= [0, 0, 0], axis=1),
                                       np.min(yxz_transform < tile_sz, axis=1))  # set color to nan if out range
-            image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c)
-            if nbp_basic.is_3d:
-                spot_colors[in_range, r, c] = image[yxz_transform[in_range, 0], yxz_transform[in_range, 1],
-                                                    yxz_transform[in_range, 2]]
+            yxz_transform = yxz_transform[in_range]
+
+            # only load in section of image required for speed.
+            yxz_min = np.min(yxz_transform, axis=0)
+            yxz_max = np.max(yxz_transform, axis=0)
+            load_y = np.arange(yxz_min[0], yxz_max[0] + 1)
+            load_x = np.arange(yxz_min[1], yxz_max[1] + 1)
+            load_z = np.arange(yxz_min[2], yxz_max[2] + 1)
+            image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, load_y, load_x, load_z)
+
+            yxz_transform = yxz_transform - yxz_min  # shift yxz so load in correct colors from cropped image.
+            if image.ndim == 3:
+                spot_colors[in_range, r, c] = image[yxz_transform[:, 0], yxz_transform[:, 1],
+                                                    yxz_transform[:, 2]]
             else:
-                spot_colors[in_range, r, c] = image[yxz_transform[in_range, 0], yxz_transform[in_range, 1]]
+                spot_colors[in_range, r, c] = image[yxz_transform[:, 0], yxz_transform[:, 1]]
     return spot_colors
 
 
 def get_all_pixel_colors(t: int, transforms: np.ndarray, nbp_file: NotebookPage,
-                         nbp_basic: NotebookPage) -> Tuple[np.ndarray, np.ndarray]:
+                         nbp_basic: NotebookPage, color_norm_factor: np.ndarray = None,
+                         abs_intensity_thresh: float = 0) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds colors for every pixel in a tile.
     Keeping only pixels within tile bounds on each round and channel in nbp_basic.use_rounds/channels.
@@ -94,17 +106,27 @@ def get_all_pixel_colors(t: int, transforms: np.ndarray, nbp_file: NotebookPage,
             yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
     """
     if nbp_basic.is_3d:
-        n_z = nbp_basic.n_z
+        n_z = nbp_basic.nz
     else:
         n_z = 1
-    pixel_yxz = np.array(np.meshgrid(np.arange(nbp_basic.tile_sz),
-                                     np.arange(nbp_basic.tile_sz), np.arange(n_z))).T.reshape(-1, 3)
-    pixel_colors = get_spot_colors(pixel_yxz, t, transforms, nbp_file, nbp_basic)
-    # only keep used rounds/channels to save memory.
-    pixel_colors = pixel_colors[np.ix_(np.arange(pixel_colors.shape[0]), nbp_basic.use_rounds,
-                                       nbp_basic.use_channels)]
-    # only keep spots in all rounds/channels meaning no nan values
-    keep = np.sum(np.isnan(pixel_colors), (1, 2)) == 0
-    pixel_colors = pixel_colors[keep].astype(int)
-    pixel_yxz = pixel_yxz[keep]
+    rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    pixel_yxz_all = np.array(np.meshgrid(np.arange(nbp_basic.tile_sz),
+                                         np.arange(nbp_basic.tile_sz), np.arange(1))).T.reshape(-1, 3)
+    pixel_colors = np.zeros((0, len(nbp_basic.use_rounds), len(nbp_basic.use_channels)), dtype=int)
+    pixel_yxz = np.zeros((0, 3), dtype=int)
+    for z in range(n_z):
+        pixel_yxz_all[:, 2] = z
+        pixel_colors_all = get_spot_colors(pixel_yxz_all, t, transforms, nbp_file, nbp_basic)
+        # only keep used rounds/channels to save memory.
+        pixel_colors_all = pixel_colors_all[np.ix_(np.arange(pixel_colors_all.shape[0]), nbp_basic.use_rounds,
+                                               nbp_basic.use_channels)]
+        # only keep spots in all rounds/channels meaning no nan values
+        keep = np.sum(np.isnan(pixel_colors_all), (1, 2)) == 0
+        if color_norm_factor is not None and abs_intensity_thresh > 0:
+            # Only keep pixels with significant absolute intensity to save memory.
+            # absolute because important to find negative coefficients as well.
+            pixel_intensity = get_spot_intensity(np.abs(pixel_colors_all[keep] / color_norm_factor[rc_ind]))
+            keep[np.where(keep)[0]] = pixel_intensity > abs_intensity_thresh
+        pixel_colors = np.append(pixel_colors, pixel_colors_all[keep], axis=0)
+        pixel_yxz = np.append(pixel_yxz, pixel_yxz_all[keep], axis=0)
     return pixel_colors, pixel_yxz

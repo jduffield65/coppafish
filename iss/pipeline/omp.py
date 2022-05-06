@@ -55,15 +55,17 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     spot_colors = np.zeros((0, n_rounds_use, n_channels_use), dtype=int)
     for t in use_tiles:
         # this returns colors in use_rounds/channels only and no nan.
-        pixel_colors, pixel_yxz = get_all_pixel_colors(t, transform, nbp_file, nbp_basic)
+        pixel_colors, pixel_yxz = get_all_pixel_colors(t, transform, nbp_file, nbp_basic,
+                                                       nbp_call_spots.color_norm_factor,
+                                                       config['initial_intensity_thresh'])
 
         # Only keep pixels with significant absolute intensity to save memory.
         # absolute because important to find negative coefficients as well.
-        pixel_intensity = get_spot_intensity(np.abs(pixel_colors / nbp_call_spots.color_norm_factor[rc_ind]))
-        keep = pixel_intensity > config['initial_intensity_thresh']
-        pixel_colors = pixel_colors[keep]
-        pixel_yxz = pixel_yxz[keep]
-        del pixel_intensity, keep
+        # pixel_intensity = get_spot_intensity(np.abs(pixel_colors / nbp_call_spots.color_norm_factor[rc_ind]))
+        # keep = pixel_intensity > config['initial_intensity_thresh']
+        # pixel_colors = pixel_colors[keep]
+        # pixel_yxz = pixel_yxz[keep]
+        # del pixel_intensity, keep
 
         pixel_coefs, pixel_background_coefs = \
             omp.get_all_coefs(pixel_colors / nbp_call_spots.color_norm_factor[rc_ind], bled_codes,
