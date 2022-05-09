@@ -4,6 +4,7 @@ import numpy as np
 from .. import utils
 from ..extract.deconvolution import get_spot_images, get_isolated_points, get_average_spot_image
 from ..find_spots import detect_spots
+from scipy.sparse import csr_matrix
 
 
 def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: np.ndarray,
@@ -72,9 +73,10 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
         return n_pos_neighbours, n_neg_neighbours
 
 
-def spot_neighbourhood(pixel_coefs: np.array, pixel_yxz: np.ndarray, spot_yxz: np.ndarray, spot_gene_no: np.ndarray,
-                       max_size: Union[np.ndarray, List], pos_neighbour_thresh: int, isolation_dist: float,
-                       z_scale: float, mean_sign_thresh: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, spot_yxz: np.ndarray,
+                       spot_gene_no: np.ndarray, max_size: Union[np.ndarray, List], pos_neighbour_thresh: int,
+                       isolation_dist: float, z_scale: float,
+                       mean_sign_thresh: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Finds the expected sign the coefficient should have in the neighbourhood about a spot.
 
@@ -156,8 +158,12 @@ def spot_neighbourhood(pixel_coefs: np.array, pixel_yxz: np.ndarray, spot_yxz: n
     spots_used = np.zeros(n_spots, dtype=bool)
     for g in range(n_genes):
         coef_sign_image = np.zeros((n_y, n_x, n_z), dtype=int)
-        coef_sign_image[tuple([pixel_yxz[:, j] for j in range(coef_sign_image.ndim)])] = \
-            np.sign(pixel_coefs[:, g]).astype(int)
+        if isinstance(pixel_coefs, csr_matrix):
+            coef_sign_image[tuple([pixel_yxz[:, j] for j in range(coef_sign_image.ndim)])] = \
+                np.sign(pixel_coefs[:, g].toarray().flatten()).astype(int)
+        else:
+            coef_sign_image[tuple([pixel_yxz[:, j] for j in range(coef_sign_image.ndim)])] = \
+                np.sign(pixel_coefs[:, g]).astype(int)
         use = spot_gene_no == g
         if use.any():
             # Only keep spots with all neighbourhood having positive coefficient.
@@ -198,7 +204,7 @@ def spot_neighbourhood(pixel_coefs: np.array, pixel_yxz: np.ndarray, spot_yxz: n
     return av_spot_image, spot_indices_used, av_spot_image_float
 
 
-def get_spots(pixel_coefs: np.array, pixel_yxz: np.ndarray, radius_xy: int, radius_z: Optional[int],
+def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, radius_xy: int, radius_z: Optional[int],
               coef_thresh: float = 0, spot_shape: Optional[np.ndarray] = None,
               pos_neighbour_thresh: int = 0) -> Union[Tuple[np.ndarray, np.ndarray],
                                                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
@@ -270,7 +276,10 @@ def get_spots(pixel_coefs: np.array, pixel_yxz: np.ndarray, radius_xy: int, radi
             coef_image = np.zeros((n_y, n_x))
         else:
             coef_image = np.zeros((n_y, n_x, n_z))
-        coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g]
+        if isinstance(pixel_coefs, csr_matrix):
+            coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g].toarray().flatten()
+        else:
+            coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g]
         spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
         if spot_yxz.shape[0] > 0:
             if spot_shape is None:

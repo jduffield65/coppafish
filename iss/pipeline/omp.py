@@ -5,12 +5,12 @@ import numpy as np
 import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_all_pixel_colors
-from ..call_spots import get_spot_intensity
+from ..spot_colors import get_all_pixel_colors, get_spot_colors
+from ..call_spots import get_spot_intensity, fit_background
 from .. import omp
-from typing import Tuple
 from sklearn.neighbors import NearestNeighbors
 import os
+from scipy import sparse
 
 
 def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
@@ -30,8 +30,10 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
 
     if nbp_basic.is_3d:
         detect_radius_z = config['radius_z']
+        n_z = nbp_basic.nz
     else:
         detect_radius_z = None
+        n_z = 1
 
     use_tiles = nbp_basic.use_tiles.copy()
     if not os.path.isfile(nbp_file.omp_spot_shape):
@@ -48,35 +50,47 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
         # -1 because saved as uint16 so convert 0, 1, 2 to -1, 0, 1.
         spot_shape = utils.tiff.load(nbp_file.omp_spot_shape).astype(int) - 1
 
-    spot_info = np.zeros((0, 7), dtype=int)
-    spot_coefs = np.zeros((0, n_genes))
-    # While iterating through tiles, only save info for rounds/channels using - add all rounds/channels back in later
-    spot_background_coefs = np.zeros((0, n_channels_use))
-    spot_colors = np.zeros((0, n_rounds_use, n_channels_use), dtype=int)
+    spot_info = np.zeros((0, 7), dtype=np.int16)
+    spot_coefs = sparse.csr_matrix(np.zeros((0, n_genes)))
     for t in use_tiles:
-        # this returns colors in use_rounds/channels only and no nan.
-        pixel_colors, pixel_yxz = get_all_pixel_colors(t, transform, nbp_file, nbp_basic,
-                                                       nbp_call_spots.color_norm_factor,
-                                                       config['initial_intensity_thresh'])
+        # TODO: 3D: see if color_norm is different if use histograms form mid-z-plane not all z-planes.
+        #  Maybe detect spots on each z-plane then convolution at end.
+        pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
+        pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
+        for z in range(n_z):
+            # While iterating through tiles, only save info for rounds/channels using - add all rounds/channels back in later
+            # this returns colors in use_rounds/channels only and no nan.
+            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(t, transform, nbp_file, nbp_basic, z)
+            # save memory - colors max possible value is around 80000. yxz max possible value is around 2048.
+            pixel_colors_tz = pixel_colors_tz.astype(np.int32)
+            pixel_yxz_tz = pixel_yxz_tz.astype(np.int16)
 
-        # Only keep pixels with significant absolute intensity to save memory.
-        # absolute because important to find negative coefficients as well.
-        # pixel_intensity = get_spot_intensity(np.abs(pixel_colors / nbp_call_spots.color_norm_factor[rc_ind]))
-        # keep = pixel_intensity > config['initial_intensity_thresh']
-        # pixel_colors = pixel_colors[keep]
-        # pixel_yxz = pixel_yxz[keep]
-        # del pixel_intensity, keep
+            # Only keep pixels with significant absolute intensity to save memory.
+            # absolute because important to find negative coefficients as well.
+            pixel_intensity_tz = get_spot_intensity(np.abs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind]))
+            keep = pixel_intensity_tz > config['initial_intensity_thresh']
+            pixel_colors_tz = pixel_colors_tz[keep]
+            pixel_yxz_tz = pixel_yxz_tz[keep]
+            del pixel_intensity_tz, keep
 
-        pixel_coefs, pixel_background_coefs = \
-            omp.get_all_coefs(pixel_colors / nbp_call_spots.color_norm_factor[rc_ind], bled_codes,
-                              config_call_spots['background_weight_shift'],  dp_norm_shift, config['dp_thresh'],
-                              config['alpha'], config['beta'],  config['max_genes'], config['weight_coef_fit'])
+            pixel_coefs_tz = sparse.csr_matrix(
+                omp.get_all_coefs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind], bled_codes,
+                                  config_call_spots['background_weight_shift'],  dp_norm_shift, config['dp_thresh'],
+                                  config['alpha'], config['beta'],  config['max_genes'], config['weight_coef_fit'])[0])
+            del pixel_colors_tz
+            # Only keep pixels for which at least one gene has non-zero coefficient.
+            keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
+            pixel_yxz_t = np.append(pixel_yxz_t, pixel_yxz_tz[keep].astype(np.int16), axis=0)
+            del pixel_yxz_tz
+            pixel_coefs_t = sparse.vstack((pixel_coefs_t, pixel_coefs_tz[keep]))
+            del pixel_coefs_tz, keep
+
         if spot_shape is None:
             nbp.shape_tile = t
-            spot_yxz, spot_gene_no = omp.get_spots(pixel_coefs, pixel_yxz, config['radius_xy'], detect_radius_z)
+            spot_yxz, spot_gene_no = omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z)
             z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
             spot_shape, spots_used, nbp.spot_shape_float = \
-                omp.spot_neighbourhood(pixel_coefs, pixel_yxz, spot_yxz, spot_gene_no, config['shape_max_size'],
+                omp.spot_neighbourhood(pixel_coefs_t, pixel_yxz_t, spot_yxz, spot_gene_no, config['shape_max_size'],
                                        config['shape_pos_neighbour_thresh'], config['shape_isolation_dist'], z_scale,
                                        config['shape_sign_thresh'])
 
@@ -86,22 +100,19 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
             del spot_yxz, spot_gene_no, spots_used
 
         spot_info_t = \
-            omp.get_spots(pixel_coefs, pixel_yxz, config['radius_xy'], detect_radius_z, 0, spot_shape,
+            omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z, 0, spot_shape,
                           config['initial_pos_neighbour_thresh'])
         n_spots = spot_info_t[0].shape[0]
-        spot_info_t = np.concatenate([spot_var.reshape(n_spots, -1) for spot_var in spot_info_t], axis=1)
-        spot_info_t = np.append(spot_info_t, np.ones((n_spots, 1), dtype=int) * t, axis=1)
+        spot_info_t = np.concatenate([spot_var.reshape(n_spots, -1).astype(np.int16) for spot_var in spot_info_t],
+                                     axis=1)
+        spot_info_t = np.append(spot_info_t, np.ones((n_spots, 1), dtype=np.int16) * t, axis=1)
 
         # find index of each spot in pixel array to add colors and coefs
-        pixel_index = numpy_indexed.indices(pixel_yxz, spot_info_t[:, :3])
+        pixel_index = numpy_indexed.indices(pixel_yxz_t, spot_info_t[:, :3])
 
         # append this tile info to all tile info
-        spot_colors = np.append(spot_colors, pixel_colors[pixel_index], axis=0)
-        del pixel_colors
-        spot_coefs = np.append(spot_coefs, pixel_coefs[pixel_index], axis=0)
-        del pixel_coefs
-        spot_background_coefs = np.append(spot_background_coefs, pixel_background_coefs[pixel_index], axis=0)
-        del pixel_background_coefs, pixel_index
+        spot_coefs = sparse.vstack((spot_coefs, pixel_coefs_t[pixel_index]))
+        del pixel_coefs_t, pixel_index
         spot_info = np.append(spot_info, spot_info_t, axis=0)
         del spot_info_t
 
@@ -119,20 +130,30 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     nbp.local_yxz = spot_info[not_duplicate, :3]
     nbp.tile = spot_info[not_duplicate, 6]
 
-    # spot_colors and background_coef have nans if use_rounds / use_channels used.
+    # Get colors, background_coef and intensity of final spots.
     n_spots = np.sum(not_duplicate)
-    spot_colors_full = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, n_spots), dtype=float) * np.nan
-    spot_colors_full[rc_ind] = np.moveaxis(spot_colors[not_duplicate], 0, -1)
-    nbp.colors = np.moveaxis(spot_colors_full, -1, 0)
-    background_coefs_full = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
-    background_coefs_full[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = spot_background_coefs[not_duplicate]
-    nbp.background_coef = background_coefs_full
+    nan_value = -nbp_basic.tile_pixel_value_shift - 1
+    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
+    for t in tqdm(use_tiles, desc='Current Tile'):
+        in_tile = nbp.tile == t
+        if np.sum(in_tile) > 0:
+            nd_spot_colors[in_tile] = get_spot_colors(nbp.local_yxz[in_tile], t, transform, nbp_file, nbp_basic)
+    utils.errors.check_spot_color_nan(nd_spot_colors, nbp_basic)
+    nbp.colors = nd_spot_colors
 
-    nbp.coef = spot_coefs[not_duplicate]
+    nd_background_coefs = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
+    spot_colors_norm = nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)
+                       ] / nbp_call_spots.color_norm_factor[rc_ind]
+    nd_background_coefs[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = \
+        fit_background(spot_colors_norm, config_call_spots['background_weight_shift'])[1]
+    nbp.background_coef = nd_background_coefs
+    nbp.intensity = get_spot_intensity(spot_colors_norm)
+    del spot_colors_norm
+
+    nbp.coef = spot_coefs[not_duplicate].toarray()
     nbp.gene_no = spot_info[not_duplicate, 3]
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]
     nbp.n_neighbours_neg = spot_info[not_duplicate, 5]
-    nbp.intensity = get_spot_intensity(spot_colors[not_duplicate] / nbp_call_spots.color_norm_factor[rc_ind])
 
     # Add quality thresholds to notebook page
     nbp.score_multiplier = config['score_multiplier']

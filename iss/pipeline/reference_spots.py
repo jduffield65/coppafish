@@ -5,6 +5,7 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from tqdm import tqdm
 from ..setup.notebook import NotebookPage
+from .. import utils
 
 
 def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_details: np.ndarray,
@@ -62,23 +63,25 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     nd_local_yxz = all_local_yxz[not_duplicate]
     nd_isolated = all_isolated[not_duplicate]
     nd_local_tile = all_local_tile[not_duplicate]
-    nd_spot_colors = np.zeros((nd_local_tile.shape[0], nbp_basic.n_rounds, nbp_basic.n_channels))
+    nan_value = -nbp_basic.tile_pixel_value_shift - 1
+    nd_spot_colors = np.ones((nd_local_tile.shape[0], nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
     for t in tqdm(range(nbp_basic.n_tiles), desc='Current Tile'):
         in_tile = nd_local_tile == t
         if sum(in_tile) > 0:
-            # this function will return nan for r/c outside use_rounds/channels
+            # this line will return nan_value for r/c outside use_rounds/channels
             nd_spot_colors[in_tile] = get_spot_colors(nd_local_yxz[in_tile], t, transform, nbp_file, nbp_basic)
 
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
     nd_spot_colors_use = np.moveaxis(nd_spot_colors, 0, -1)
     use_rc_index = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     nd_spot_colors_use = np.moveaxis(nd_spot_colors_use[use_rc_index], -1, 0)
-    good = ~np.any(np.isnan(nd_spot_colors_use), axis=(1, 2))
+    good = ~np.any(nd_spot_colors_use == nan_value, axis=(1, 2))
 
     good_local_yxz = nd_local_yxz[good]
     good_isolated = nd_isolated[good]
     good_local_tile = nd_local_tile[good]
     good_spot_colors = nd_spot_colors[good]
+    utils.errors.check_spot_color_nan(good_spot_colors, nbp_basic)
 
     # save spot info to notebook
     nbp.local_yxz = good_local_yxz
