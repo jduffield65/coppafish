@@ -207,7 +207,7 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.N
         nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
                                         nb.stitch.tile_origin, nb.register.transform)
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nbp_ref_spots,
-                                                  nb.extract.hist_values, nb.extract.hist_counts)
+                                                  nb.extract.hist_values, nb.extract.hist_counts, nb.register.transform)
         nb += nbp_ref_spots
         nb += nbp
     else:
@@ -220,8 +220,8 @@ def run_omp(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
     if isinstance(config, str):
         config = setup.get_config(config)
     if not nb.has_page("omp"):
-        nbp = call_spots_omp(config['omp'], config['call_spots'], nb.file_names, nb.basic_info,
-                                        nb.call_spots, nb.stitch.tile_origin, nb.register.transform)
+        nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
+                             nb.stitch.tile_origin, nb.register.transform, nb.ref_spots.intensity_thresh)
         nb += nbp
     else:
         warnings.warn('omp', utils.warnings.NotebookPageWarning)

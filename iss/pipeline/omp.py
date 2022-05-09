@@ -13,9 +13,9 @@ import os
 from scipy import sparse
 
 
-def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
+def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
-                   transform: np.ndarray) -> NotebookPage:
+                   transform: np.ndarray, ref_spots_intensity_thresh: float) -> NotebookPage:
     nbp = setup.NotebookPage("omp")
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
@@ -26,7 +26,7 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
         raise ValueError("nbp_call_spots.bled_codes_ge don't all have an L2 norm of 1 over "
                          "use_rounds and use_channels.")
     n_genes, n_rounds_use, n_channels_use = bled_codes.shape
-    dp_norm_shift = config_call_spots['dp_norm_shift'] * np.sqrt(n_rounds_use)
+    dp_norm_shift = nbp_call_spots.dp_norm_shift * np.sqrt(n_rounds_use)
 
     if nbp_basic.is_3d:
         detect_radius_z = config['radius_z']
@@ -35,11 +35,20 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
         detect_radius_z = None
         n_z = 1
 
+    # determine initial_intensity_thresh from average intensity over all pixels on central z-plane.
+    if config['initial_intensity_thresh'] is None:
+        config['initial_intensity_thresh'] = \
+            utils.round_any(nbp_call_spots.median_abs_intensity * config['initial_intensity_thresh_auto_param'],
+                            config['initial_intensity_precision'])
+    nbp.initial_intensity_thresh = \
+        float(np.clip(config['initial_intensity_thresh'], config['initial_intensity_thresh_min'],
+                      config['initial_intensity_thresh_max']))
+
     use_tiles = nbp_basic.use_tiles.copy()
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do central tile first because better to compute spot_shape from central tile.
         t_centre = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
-        t_centre_ind = np.where(np.array(nbp_basic.use_tiles)==t_centre)[0][0]
+        t_centre_ind = np.where(np.array(nbp_basic.use_tiles) == t_centre)[0][0]
         use_tiles[0], use_tiles[t_centre_ind] = use_tiles[t_centre_ind], use_tiles[0]
         spot_shape = None
     else:
@@ -53,8 +62,7 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     spot_info = np.zeros((0, 7), dtype=np.int16)
     spot_coefs = sparse.csr_matrix(np.zeros((0, n_genes)))
     for t in use_tiles:
-        # TODO: 3D: see if color_norm is different if use histograms form mid-z-plane not all z-planes.
-        #  Maybe detect spots on each z-plane then convolution at end.
+        # TODO: Maybe detect spots on each z-plane then convolution at end.
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
         for z in range(n_z):
@@ -68,14 +76,14 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
             pixel_intensity_tz = get_spot_intensity(np.abs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind]))
-            keep = pixel_intensity_tz > config['initial_intensity_thresh']
+            keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             pixel_colors_tz = pixel_colors_tz[keep]
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
 
             pixel_coefs_tz = sparse.csr_matrix(
                 omp.get_all_coefs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind], bled_codes,
-                                  config_call_spots['background_weight_shift'],  dp_norm_shift, config['dp_thresh'],
+                                  nbp_call_spots.background_weight_shift,  dp_norm_shift, config['dp_thresh'],
                                   config['alpha'], config['beta'],  config['max_genes'], config['weight_coef_fit'])[0])
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.
@@ -145,7 +153,7 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     spot_colors_norm = nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)
                        ] / nbp_call_spots.color_norm_factor[rc_ind]
     nd_background_coefs[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = \
-        fit_background(spot_colors_norm, config_call_spots['background_weight_shift'])[1]
+        fit_background(spot_colors_norm, nbp_call_spots.background_weight_shift)[1]
     nbp.background_coef = nd_background_coefs
     nbp.intensity = get_spot_intensity(spot_colors_norm)
     del spot_colors_norm
@@ -158,6 +166,9 @@ def call_spots_omp(config: dict, config_call_spots: dict, nbp_file: NotebookPage
     # Add quality thresholds to notebook page
     nbp.score_multiplier = config['score_multiplier']
     nbp.score_thresh = config['score_thresh']
-    nbp.intensity_thresh = config['intensity_thresh']
+    if config['intensity_thresh'] is None:
+        nbp.intensity_thresh = ref_spots_intensity_thresh
+    else:
+        nbp.intensity_thresh = config['intensity_thresh']
 
     return nbp

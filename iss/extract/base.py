@@ -5,7 +5,7 @@ import time
 
 from tqdm import tqdm
 from .. import utils
-from typing import Tuple, Union, Iterable
+from typing import Tuple, Union, Iterable, Optional
 
 
 def wait_for_data(file_path: str, wait_time: int):
@@ -25,10 +25,14 @@ def wait_for_data(file_path: str, wait_time: int):
             wait_time_print = round(wait_time, 1)
             wait_time_unit = 'seconds'
         warnings.warn(f'\nNo file named\n{file_path}\nexists. Waiting for {wait_time_print} {wait_time_unit}...')
-        for _ in tqdm(range(wait_time)):
-            time.sleep(1)
-            if os.path.isfile(file_path):
-                break
+        with tqdm(total=wait_time, position=0) as pbar:
+            pbar.set_description(f"Waiting for {file_path}")
+            for i in range(wait_time):
+                time.sleep(1)
+                if os.path.isfile(file_path):
+                    break
+                pbar.update(1)
+        pbar.close()
         if not os.path.isfile(file_path):
             raise utils.errors.NoFileError(file_path)
         print("file found!\nWaiting for file to fully load...")
@@ -105,10 +109,10 @@ def strip_hack(image: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_edges: np.ndarray, max_pixel_value: int,
-                     scale: float) -> Tuple[float, np.ndarray, int, float]:
+                     scale: float, z_info: Optional[int] = None) -> Tuple[float, np.ndarray, int, float]:
     """
     Gets information from filtered scaled images useful for later in the pipeline.
-    If 3D image, only middle z-plane used for `auto_thresh` and `hist_counts` calculation for speed and the that the
+    If 3D image, only z-plane used for `auto_thresh` and `hist_counts` calculation for speed and the that the
     exact value of these is not that important, just want a rough idea.
 
     Args:
@@ -121,6 +125,7 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
         max_pixel_value: Maximum pixel value that image can contain when saving as tiff file.
             If no shift was applied, this would be ```np.iinfo(np.uint16).max```.
         scale: Factor by which, ```image``` has been multiplied in order to fill out available values in tiff file.
+        z_info: z-plane to get `auto_thresh` and `hist_counts` from.
 
     Returns:
         - ```auto_thresh``` - ```float``` Pixel values above ```auto_thresh``` in ```image``` are likely spots.
@@ -132,9 +137,10 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
             ```n_clip_pixels``` to be 0.
     """
     if image.ndim == 3:
-        z_plane = np.floor(image.shape[2]/2).astype(int)
-        auto_thresh = np.median(np.abs(image[:, :, z_plane])) * auto_thresh_multiplier
-        hist_counts = np.histogram(image[:, :, z_plane], hist_bin_edges)[0]
+        if z_info is None:
+            raise ValueError("z_info not provided")
+        auto_thresh = np.median(np.abs(image[:, :, z_info])) * auto_thresh_multiplier
+        hist_counts = np.histogram(image[:, :, z_info], hist_bin_edges)[0]
     else:
         auto_thresh = np.median(np.abs(image)) * auto_thresh_multiplier
         hist_counts = np.histogram(image, hist_bin_edges)[0]

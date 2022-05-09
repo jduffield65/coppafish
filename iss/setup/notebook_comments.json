@@ -191,7 +191,9 @@
       "None if config['scale_anchor'] provided or use_anchor is False."],
     "scale_anchor_z": ["Integer or None",
       "z plane of image in anchor round/channel that scale_anchor was found from.",
-      "None if config['scale_anchor'] provided or use_anchor is False."]
+      "None if config['scale_anchor'] provided or use_anchor is False."],
+    "z_info": ["Integer",
+      "z plane in tiff file from which auto_thresh and hist_counts were calculated. By default, this is the mid plane."]
   },
 
   "find_spots":
@@ -423,7 +425,26 @@
       "nan if r outside use_rounds and 1 if gene_codes[g,r] outside use_dyes."],
     "bled_codes_ge": ["Numpy float array [n_genes x n_rounds x n_channels]",
       "bled_codes using gene_efficiency information i.e. bled_codes * gene_efficiency.",
-      "All codes have L2 norm = 1 when summed across all use_rounds and use_channels." ]
+      "All codes have L2 norm = 1 when summed across all use_rounds and use_channels." ],
+    "background_weight_shift": ["Float",
+      "shift to apply to weighting of each background vector to limit boost of weak spots.",
+      "The weighting of round r for the fitting of the background vector for channel c is",
+      "1 / (spot_color[r, c] + background_weight_shift) ",
+      "so background_weight_shift ensures this does not go to infinity for small spot_color[r, c].",
+      "Typical spot_color[r, c] is 1 for intense spot so background_weight_shift is small fraction of this."],
+    "dp_norm_shift": ["Float",
+      "When calculating the dot_product_score, this is the small shift to apply when normalising spot_colors",
+      "to ensure don't divide by zero.",
+      "Value is for a single round and is multiplied by sqrt(n_rounds_used) when computing dot_product_score.",
+      "Expected norm of a spot_color for a single round is 1 so dp_norm_shift is a small fraction of this."],
+    "median_abs_intensity": ["Float or None",
+      "Median intensity of absolute pixel_colors of from norm_shift_tile, norm_shift_z."],
+    "norm_shift_tile": ["Integer or None",
+      "Tile that is used to compute median_abs_intensity from which dp_norm_shift, background_weight_shift ",
+      "and intensity_thresh are computed. None if all these variables given in config file."],
+    "norm_shift_z": ["Integer or None",
+      "z-plane that is used to compute median_abs_intensity from which dp_norm_shift, background_weight_shift ",
+      "and intensity_thresh are computed. None if all these variables given in config file."]
   },
 
   "omp":
@@ -434,6 +455,11 @@
       "in a neighbourhood centered on a spot.",
       "Page added to notebook in pipeline/call_spots_omp.py"],
 
+    "initial_intensity_thresh": ["Float",
+      "To save time in call_spots_omp, coefficients only found for pixels with intensity ",
+      "of absolute spot_colors greater than initial_intensity_thresh.",
+      "This threshold is set to initial_intensity_thresh_auto_param*nb.call_spots.median_abs_intensity",
+      "It is also clamped between the min and max values given in config file."],
     "shape_tile": ["Integer or None",
       "spot_shape was found from spots detected on this tile.",
       "None if spot_shape not computed in this experiment."],

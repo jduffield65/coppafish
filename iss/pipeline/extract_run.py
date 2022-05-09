@@ -40,13 +40,15 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 nbp_basic.n_channels))
     nbp.hist_values = np.arange(-nbp_basic.tile_pixel_value_shift, np.iinfo(np.uint16).max -
                                    nbp_basic.tile_pixel_value_shift + 2, 1)
-    nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
-                                   nbp_basic.n_channels), dtype=int)
-    hist_bin_edges = np.concatenate(
-        (nbp.hist_values - 0.5, nbp.hist_values[-1:] + 0.5))
+    nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int)
+    hist_bin_edges = np.concatenate((nbp.hist_values - 0.5, nbp.hist_values[-1:] + 0.5))
     # initialise debugging info as 'debug' page
     nbp_debug.n_clip_pixels = np.zeros_like(nbp.auto_thresh, dtype=int)
     nbp_debug.clip_extract_scale = np.zeros_like(nbp.auto_thresh)
+    if nbp_basic.is_3d:
+        nbp_debug.z_info = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
+    else:
+        nbp_debug.z_info = 0
 
     # update config params in notebook. All optional parameters in config are added to debug page
     if config['r1'] is None:
@@ -183,13 +185,18 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             file_exists = os.path.isfile(nbp_file.tile[t][r][c])
                         pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                         if file_exists:
-                            im = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, nbp_extract_debug=nbp_debug)
-                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                nbp_debug.clip_extract_scale[t, r, c] = \
-                                extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
-                                                         max_tiff_pixel_value, scale)
-                            if r != nbp_basic.anchor_round:
-                                nbp.hist_counts[:, r, c] += hist_counts_trc
+                            if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+                                pass
+                            else:
+                                # Only need to load in mid-z plane if 3D.
+                                im = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c,
+                                                          z=nbp_debug.z_info, nbp_extract_debug=nbp_debug)
+                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                    nbp_debug.clip_extract_scale[t, r, c] = \
+                                    extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
+                                                             max_tiff_pixel_value, scale)
+                                if r != nbp_basic.anchor_round:
+                                    nbp.hist_counts[:, r, c] += hist_counts_trc
                         else:
                             im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
                                                                                       nbp_basic.tilepos_yx),
@@ -215,7 +222,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
                                     nbp_debug.clip_extract_scale[t, r, c] = \
                                     extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
-                                                             hist_bin_edges, max_tiff_pixel_value, scale)
+                                                             hist_bin_edges, max_tiff_pixel_value, scale,
+                                                             nbp_debug.z_info)
                                 if r != nbp_basic.anchor_round:
                                     nbp.hist_counts[:, r, c] += hist_counts_trc
                             utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)

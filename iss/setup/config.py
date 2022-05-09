@@ -140,17 +140,26 @@ _options = {
             'color_norm_intensities': 'list_number',
             'color_norm_probs': 'list_number',
             'bleed_matrix_score_thresh': 'number',
-            'background_weight_shift': 'number',
-            'dp_norm_shift': 'number',
+            'background_weight_shift': 'maybe_number',
+            'dp_norm_shift': 'maybe_number',
+            'norm_shift_auto_param': 'number',
+            'norm_shift_min': 'number',
+            'norm_shift_max': 'number',
+            'norm_shift_precision': 'number',
+            'norm_shift_to_intensity_scale': 'number',
             'gene_efficiency_min_spots': 'int',
             'gene_efficiency_n_iter': 'int',
             'score_thresh': 'number',
-            'intensity_thresh': 'number'
+            'intensity_thresh': 'maybe_number'
         },
     'omp':
         {
             'weight_coef_fit': 'bool',
-            'initial_intensity_thresh': 'number',
+            'initial_intensity_thresh': 'maybe_number',
+            'initial_intensity_thresh_auto_param': 'number',
+            'initial_intensity_thresh_min': 'number',
+            'initial_intensity_thresh_max': 'number',
+            'initial_intensity_precision': 'number',
             'max_genes': 'int',
             'dp_thresh': 'number',
             'alpha': 'number',
@@ -162,7 +171,7 @@ _options = {
             'shape_pos_neighbour_thresh': 'int',
             'shape_isolation_dist': 'number',
             'shape_sign_thresh': 'number',
-            'intensity_thresh': 'number',
+            'intensity_thresh': 'maybe_number',
             'score_thresh': 'number',
             'score_multiplier': 'number'
         }

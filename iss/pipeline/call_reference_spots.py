@@ -3,11 +3,15 @@ from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_
     dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
 import numpy as np
 from ..setup.notebook import NotebookPage
+from ..extract import scale
+from ..spot_colors import get_all_pixel_colors
+from ..utils import round_any
 from typing import Tuple
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_ref_spots: NotebookPage,
-                         hist_values: np.ndarray, hist_counts: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
+                         hist_values: np.ndarray, hist_counts: np.ndarray,
+                         transform: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
     simple dot product for spots found on the reference round.
@@ -32,6 +36,10 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             `hist_counts[i, r, c]` is the number of pixels across all tiles in round `r`, channel `c`
             which had the value `hist_values[i]`.
             This is saved in extract notebook page i.e. `nb.extract.hist_counts`.
+        transform: `float [n_tiles x n_rounds x n_channels x 4 x 3]`.
+            `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
+            tile `t`, round `r`, channel `c`.
+            This is saved in the register notebook page i.e. `nb.register.transform`.
 
     Returns:
         - `NotebookPage[call_spots]` - Page contains bleed matrix and expected code for each gene.
@@ -70,14 +78,47 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         initial_bleed_matrix[rcd_ind] = np.tile(np.expand_dims(np.eye(nbp_basic.n_channels), 0),
                                                 (nbp_basic.n_rounds, 1, 1))[rcd_ind]
 
+    # Get norm_shift and intensity_thresh from middle tile/ z-plane average intensity
+    # This is because these variables are all a small fraction of a spot_color L2 norm in one round.
+    # Hence use average pixel as example of low intensity spot.
+    if any([config['dp_norm_shift'] is None, config['background_weight_shift'] is None,
+            config['intensity_thresh'] is None]):
+        nbp.norm_shift_tile = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+        if nbp_basic.is_3d:
+            nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
+        else:
+            nbp.norm_shift_z = 0
+        pixel_colors = get_all_pixel_colors(nbp.norm_shift_tile, transform, nbp_file, nbp_basic, nbp.norm_shift_z)[0]
+        pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
+        nbp.median_abs_intensity = float(np.median(pixel_intensity))
+        if config['dp_norm_shift'] is None:
+            config['dp_norm_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
+        if config['background_weight_shift'] is None:
+            config['background_weight_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
+        if config['intensity_thresh'] is None:
+            config['intensity_thresh'] = \
+                float(round_any(nbp.median_abs_intensity / config['norm_shift_to_intensity_scale'],
+                                config['norm_shift_precision']/config['norm_shift_to_intensity_scale'], 'ceil'))
+    else:
+        nbp.norm_shift_tile = None
+        nbp.norm_shift_z = None
+        nbp.median_abs_intensity = None
+    nbp.dp_norm_shift = float(np.clip(config['dp_norm_shift'], config['norm_shift_min'], config['norm_shift_max']))
+    nbp.background_weight_shift = float(np.clip(config['background_weight_shift'],
+                                                config['norm_shift_min'], config['norm_shift_max']))
+    nbp_ref_spots.intensity_thresh = float(np.clip(config['intensity_thresh'],
+                                                   config['norm_shift_min']/config['norm_shift_to_intensity_scale'],
+                                                   config['norm_shift_max']/config['norm_shift_to_intensity_scale']))
+
     # get bleed matrix
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
+    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use)
     # Remove background first
     background_coef = np.zeros((spot_colors_use.shape[0], nbp_basic.n_rounds))
     background_codes = np.ones((nbp_basic.n_channels, nbp_basic.n_rounds, nbp_basic.n_channels)) * np.nan
     crc_ind = np.ix_(nbp_basic.use_channels, nbp_basic.use_rounds, nbp_basic.use_channels)
     spot_colors_use, background_coef[:, nbp_basic.use_channels], background_codes[crc_ind] = \
-        fit_background(spot_colors_use, config['background_weight_shift'])
+        fit_background(spot_colors_use, nbp.background_weight_shift)
     bleed_matrix = initial_raw_bleed_matrix.copy()
     bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
                                              config['bleed_matrix_method'], config['bleed_matrix_score_thresh'])
@@ -113,12 +154,10 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # get gene assignment and score
     nbp_ref_spots.score_thresh = config['score_thresh']
-    nbp_ref_spots.intensity_thresh = config['intensity_thresh']
-    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use)
 
     # shift in config file is just for one round.
     n_spots, n_rounds_use, n_channels_use = spot_colors_use.shape
-    dp_norm_shift = config['dp_norm_shift'] * np.sqrt(n_rounds_use)
+    dp_norm_shift = nbp.dp_norm_shift * np.sqrt(n_rounds_use)
 
     # find spot assignments to genes and gene efficiency
     n_iter = config['gene_efficiency_n_iter'] + 1
