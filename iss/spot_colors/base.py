@@ -2,6 +2,7 @@ import numpy as np
 from .. import pcr, utils
 from ..setup.notebook import NotebookPage
 from typing import List, Optional, Tuple, Union
+from tqdm import tqdm
 
 
 def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_file: NotebookPage,
@@ -52,32 +53,40 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     if not nbp_basic.is_3d:
         tile_sz[2] = 1
 
+    n_spots = yxz_base.shape[0]
+    no_verbose = n_spots < 10000
     # note using nan means can't use integer even though data is integer
-    spot_colors = np.ones((yxz_base.shape[0], nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
-    for r in use_rounds:
-        for c in use_channels:
-            if transforms[t, r, c, 0, 0] == 0:
-                raise ValueError(f"Transform for tile {t}, round {r}, channel {c} is zero:"
-                                 f"\n{transforms[t, r, c]}")
-            yxz_transform = pcr.apply_transform(yxz_base, transforms[t, r, c], nbp_basic.tile_centre, z_scale)
-            in_range = np.logical_and(np.min(yxz_transform >= [0, 0, 0], axis=1),
-                                      np.min(yxz_transform < tile_sz, axis=1))  # set color to nan if out range
-            yxz_transform = yxz_transform[in_range]
+    spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
+    n_images = len(use_rounds) * len(nbp_basic.use_channels)
+    with tqdm(total=n_images, disable=no_verbose) as pbar:
+        for r in use_rounds:
+            for c in use_channels:
+                pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from tiff files.")
+                pbar.set_postfix({'round': r, 'channel': c})
+                if transforms[t, r, c, 0, 0] == 0:
+                    raise ValueError(f"Transform for tile {t}, round {r}, channel {c} is zero:"
+                                     f"\n{transforms[t, r, c]}")
+                yxz_transform = pcr.apply_transform(yxz_base, transforms[t, r, c], nbp_basic.tile_centre, z_scale)
+                in_range = np.logical_and(np.min(yxz_transform >= [0, 0, 0], axis=1),
+                                          np.min(yxz_transform < tile_sz, axis=1))  # set color to nan if out range
+                if in_range.any():
+                    yxz_transform = yxz_transform[in_range]
 
-            # only load in section of image required for speed.
-            yxz_min = np.min(yxz_transform, axis=0)
-            yxz_max = np.max(yxz_transform, axis=0)
-            load_y = np.arange(yxz_min[0], yxz_max[0] + 1)
-            load_x = np.arange(yxz_min[1], yxz_max[1] + 1)
-            load_z = np.arange(yxz_min[2], yxz_max[2] + 1)
-            image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, load_y, load_x, load_z)
+                    # only load in section of image required for speed.
+                    yxz_min = np.min(yxz_transform, axis=0)
+                    yxz_max = np.max(yxz_transform, axis=0)
+                    load_y = np.arange(yxz_min[0], yxz_max[0] + 1)
+                    load_x = np.arange(yxz_min[1], yxz_max[1] + 1)
+                    load_z = np.arange(yxz_min[2], yxz_max[2] + 1)
+                    image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c, load_y, load_x, load_z)
 
-            yxz_transform = yxz_transform - yxz_min  # shift yxz so load in correct colors from cropped image.
-            if image.ndim == 3:
-                spot_colors[in_range, r, c] = image[yxz_transform[:, 0], yxz_transform[:, 1],
-                                                    yxz_transform[:, 2]]
-            else:
-                spot_colors[in_range, r, c] = image[yxz_transform[:, 0], yxz_transform[:, 1]]
+                    yxz_transform = yxz_transform - yxz_min  # shift yxz so load in correct colors from cropped image.
+                    if image.ndim == 3:
+                        spot_colors[in_range, r, c] = image[yxz_transform[:, 0], yxz_transform[:, 1],
+                                                            yxz_transform[:, 2]]
+                    else:
+                        spot_colors[in_range, r, c] = image[yxz_transform[:, 0], yxz_transform[:, 1]]
+                pbar.update(1)
     return spot_colors
 
 
@@ -123,7 +132,9 @@ def get_all_pixel_colors(t: int, transforms: np.ndarray, nbp_file: NotebookPage,
                                                    nbp_basic.use_channels)]
         # only keep spots in all rounds/channels meaning no nan values
         keep = ~np.any(pixel_colors_all == nan_value, axis=(1, 2))
-        pixel_colors = np.append(pixel_colors, pixel_colors_all[keep].astype(int), axis=0)
-        pixel_yxz = np.append(pixel_yxz, pixel_yxz_all[keep], axis=0)
-    utils.errors.check_spot_color_nan(pixel_colors, nbp_basic)
+        if keep.any():
+            pixel_colors = np.append(pixel_colors, pixel_colors_all[keep].astype(int), axis=0)
+            pixel_yxz = np.append(pixel_yxz, pixel_yxz_all[keep], axis=0)
+    if pixel_colors.shape[0] > 0:
+        utils.errors.check_color_nan(pixel_colors, nbp_basic)
     return pixel_colors, pixel_yxz

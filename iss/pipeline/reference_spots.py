@@ -81,7 +81,7 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     good_isolated = nd_isolated[good]
     good_local_tile = nd_local_tile[good]
     good_spot_colors = nd_spot_colors[good]
-    utils.errors.check_spot_color_nan(good_spot_colors, nbp_basic)
+    utils.errors.check_color_nan(good_spot_colors, nbp_basic)
 
     # save spot info to notebook
     nbp.local_yxz = good_local_yxz

@@ -154,6 +154,7 @@ _options = {
         },
     'omp':
         {
+            'use_z': 'maybe_list_int',
             'weight_coef_fit': 'bool',
             'initial_intensity_thresh': 'maybe_number',
             'initial_intensity_thresh_auto_param': 'number',

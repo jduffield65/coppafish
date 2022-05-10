@@ -142,9 +142,11 @@ def get_average_spot_image(spot_images: np.ndarray, av_type: str = 'mean', symme
             n_z = spot_images.shape[3]
             if n_z % 2 == 0:
                 raise ValueError("Must have odd number of z-planes with symmetry = 'annulus_3d'")
+            # ensure each z-plane has unique set of indices so can average each separately.
             bin_index = np.tile(np.expand_dims(bin_index, 2), [1, 1, n_z])
             for i in range(mid_index[2]):
-                bin_index[:, :, mid_index[2] - i - 1] = bin_index[:, :, mid_index[2]] + (i + 1) * n_z
+                current_max_index = bin_index[:, :, mid_index[2] - i].max()
+                bin_index[:, :, mid_index[2] - i - 1] = bin_index[:, :, mid_index[2]] + current_max_index + 1
                 bin_index[:, :, mid_index[2] + i + 1] = bin_index[:, :, mid_index[2] - i - 1]
         for i in np.unique(bin_index):
             current_bin = bin_index == i

@@ -21,6 +21,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     bled_codes = np.moveaxis(np.moveaxis(nbp_call_spots.bled_codes_ge, 0, -1)[rc_ind], -1, 0)
+    utils.errors.check_color_nan(bled_codes, nbp_basic)
     norm_bled_codes = np.linalg.norm(bled_codes, axis=(1, 2))
     if np.abs(norm_bled_codes-1).max() > 1e-6:
         raise ValueError("nbp_call_spots.bled_codes_ge don't all have an L2 norm of 1 over "
@@ -34,6 +35,15 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     else:
         detect_radius_z = None
         n_z = 1
+        config['use_z'] = np.arange(n_z)
+
+    if config['use_z'] is not None:
+        use_z_oob = [val for val in config['use_z'] if val < 0 or val >= n_z]
+        if len(use_z_oob) > 0:
+            raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, n_z - 1)
+        use_z = np.array(config['use_z'])
+    else:
+        use_z = np.arange(n_z)
 
     # determine initial_intensity_thresh from average intensity over all pixels on central z-plane.
     if config['initial_intensity_thresh'] is None:
@@ -44,7 +54,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         float(np.clip(config['initial_intensity_thresh'], config['initial_intensity_thresh_min'],
                       config['initial_intensity_thresh_max']))
 
-    use_tiles = nbp_basic.use_tiles.copy()
+    use_tiles = np.array(nbp_basic.use_tiles.copy())
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do central tile first because better to compute spot_shape from central tile.
         t_centre = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
@@ -65,10 +75,14 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         # TODO: Maybe detect spots on each z-plane then convolution at end.
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
-        for z in range(n_z):
+        for z in use_z:
+            print(f"Tile {np.where(use_tiles==t)[0][0]+1}/{len(use_tiles)},"
+                  f" Z-plane {np.where(use_z==z)[0][0]+1}/{len(use_z)}")
             # While iterating through tiles, only save info for rounds/channels using - add all rounds/channels back in later
             # this returns colors in use_rounds/channels only and no nan.
-            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(t, transform, nbp_file, nbp_basic, z)
+            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(int(t), transform, nbp_file, nbp_basic, int(z))
+            if pixel_colors_tz.shape[0] == 0:
+                continue
             # save memory - colors max possible value is around 80000. yxz max possible value is around 2048.
             pixel_colors_tz = pixel_colors_tz.astype(np.int32)
             pixel_yxz_tz = pixel_yxz_tz.astype(np.int16)
@@ -77,6 +91,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             # absolute because important to find negative coefficients as well.
             pixel_intensity_tz = get_spot_intensity(np.abs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind]))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
+            if not keep.any():
+                continue
             pixel_colors_tz = pixel_colors_tz[keep]
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
@@ -88,13 +104,15 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.
             keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
+            if len(keep) == 0:
+                continue
             pixel_yxz_t = np.append(pixel_yxz_t, pixel_yxz_tz[keep].astype(np.int16), axis=0)
             del pixel_yxz_tz
             pixel_coefs_t = sparse.vstack((pixel_coefs_t, pixel_coefs_tz[keep]))
             del pixel_coefs_tz, keep
 
         if spot_shape is None:
-            nbp.shape_tile = t
+            nbp.shape_tile = int(t)
             spot_yxz, spot_gene_no = omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z)
             z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
             spot_shape, spots_used, nbp.spot_shape_float = \
@@ -146,7 +164,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
             nd_spot_colors[in_tile] = get_spot_colors(nbp.local_yxz[in_tile], t, transform, nbp_file, nbp_basic)
-    utils.errors.check_spot_color_nan(nd_spot_colors, nbp_basic)
+    utils.errors.check_color_nan(nd_spot_colors, nbp_basic)
     nbp.colors = nd_spot_colors
 
     nd_background_coefs = np.ones((n_spots, nbp_basic.n_channels)) * np.nan

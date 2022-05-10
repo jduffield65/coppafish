@@ -5,6 +5,7 @@ from .. import utils
 from ..extract.deconvolution import get_spot_images, get_isolated_points, get_average_spot_image
 from ..find_spots import detect_spots
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
 
 def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: np.ndarray,
@@ -154,7 +155,8 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
         max_size[max_size_odd_loc] += 1  # ensure shape is odd
 
     # get image centred on each spot.
-    spot_images = np.zeros((n_spots, *max_size), dtype=int)  # Big image shape which will be cropped later
+    # Big image shape which will be cropped later. Not int as will contain nans
+    spot_images = np.zeros((n_spots, *max_size))
     spots_used = np.zeros(n_spots, dtype=bool)
     for g in range(n_genes):
         coef_sign_image = np.zeros((n_y, n_x, n_z), dtype=int)
@@ -177,7 +179,8 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
     # Compute average spot image from all isolated spots
     spot_images = spot_images[spots_used]
     isolated = get_isolated_points(spot_yxz[spots_used] * [1, 1, z_scale], isolation_dist)
-    av_spot_image = get_average_spot_image(spot_images[isolated].astype(float), 'mean', 'annulus_3d')
+    # get_average below ignores the nan values.
+    av_spot_image = get_average_spot_image(spot_images[isolated], 'mean', 'annulus_3d')
     av_spot_image_float = av_spot_image.copy()
     spot_indices_used = np.where(spots_used)[0][isolated]
 
@@ -270,31 +273,35 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
         neg_filter = (spot_shape < 0).astype(int)
         spot_info = np.zeros((0, 6), dtype=int)
 
-    for g in range(n_genes):
-        # coef_image at pixels not indicated by pixel_yxz is set to 0.
-        if n_z == 1:
-            coef_image = np.zeros((n_y, n_x))
-        else:
-            coef_image = np.zeros((n_y, n_x, n_z))
-        if isinstance(pixel_coefs, csr_matrix):
-            coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g].toarray().flatten()
-        else:
-            coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g]
-        spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
-        if spot_yxz.shape[0] > 0:
-            if spot_shape is None:
-                keep = np.ones(spot_yxz.shape[0], dtype=bool)
-                spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
+    with tqdm(total=n_genes) as pbar:
+        pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
+        for g in range(n_genes):
+            # coef_image at pixels not indicated by pixel_yxz is set to 0.
+            if n_z == 1:
+                coef_image = np.zeros((n_y, n_x))
             else:
-                n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, pos_filter, neg_filter)
-                keep = n_pos_neighb > pos_neighbour_thresh
-                spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
-                spot_info_g[:, 4] = n_pos_neighb[keep]
-                spot_info_g[:, 5] = n_neg_neighb[keep]
+                coef_image = np.zeros((n_y, n_x, n_z))
+            if isinstance(pixel_coefs, csr_matrix):
+                coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g].toarray().flatten()
+            else:
+                coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g]
+            spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
+            if spot_yxz.shape[0] > 0:
+                if spot_shape is None:
+                    keep = np.ones(spot_yxz.shape[0], dtype=bool)
+                    spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
+                else:
+                    n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, pos_filter, neg_filter)
+                    keep = n_pos_neighb > pos_neighbour_thresh
+                    spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
+                    spot_info_g[:, 4] = n_pos_neighb[keep]
+                    spot_info_g[:, 5] = n_neg_neighb[keep]
 
-            spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
-            spot_info_g[:, 3] = g
-            spot_info = np.append(spot_info, spot_info_g, axis=0)
+                spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
+                spot_info_g[:, 3] = g
+                spot_info = np.append(spot_info, spot_info_g, axis=0)
+            pbar.update(1)
+    pbar.close()
 
     spot_info[:, :3] = spot_info[:, :3] + coord_shift  # shift spot_yxz back
     if spot_shape is None:
