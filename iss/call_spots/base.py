@@ -238,29 +238,42 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
                       f'Using weight_shift=1e-20 to stop blow up to infinity.')
     weight_shift = np.clip(weight_shift, 1e-20, np.inf)  # ensure weight_shift > 1e-20 to avoid blow up to infinity.
 
-    n_spots, n_rounds, n_channels = spot_colors.shape
-    coef = np.zeros([n_spots, n_channels])
-    background_contribution = np.zeros_like(spot_colors)
-    background_vectors = np.zeros([n_channels, n_rounds, n_channels])
-    for c in range(n_channels):
-        weight_factor = np.zeros([n_spots, n_rounds])
-        for r in range(n_rounds):
-            weight_factor[:, r] = 1 / (abs(spot_colors[:, r, c]) + weight_shift)
-        weight_factor = np.expand_dims(weight_factor, 2)
+    n_rounds, n_channels = spot_colors[0].shape
+    background_vectors = np.repeat(np.eye(n_rounds, n_channels), n_channels, axis=0
+                                   ).reshape(n_channels, n_rounds, n_channels)
+    # give background_vectors an L2 norm of 1 so can compare coefficients with other genes.
+    background_vectors = background_vectors / np.expand_dims(np.linalg.norm(background_vectors, axis=(1, 2)), (1, 2))
 
-        background_vector = np.zeros([1, n_rounds, n_channels])
-        background_vector[:, :, c] = 1
-        # give background_vector an L2 norm of 1 so can compare coefficients with other genes.
-        background_vector = background_vector / np.expand_dims(np.linalg.norm(background_vector, axis=(1, 2)), (1, 2))
-        background_vectors[c] = background_vector
+    weight_factor = 1 / (abs(spot_colors) + weight_shift)
+    spot_weight = spot_colors * weight_factor
+    background_weight = np.ones((1, n_rounds, n_channels)) * background_vectors[0, 0, 0] * weight_factor
+    coef = np.sum(spot_weight * background_weight, axis=1) / np.sum(background_weight ** 2, axis=1)
+    residual = spot_colors - np.expand_dims(coef, 1) * np.ones((1, n_rounds, n_channels)) * background_vectors[0, 0, 0]
 
-        background_weight = background_vector * weight_factor
-        spot_weight = spot_colors * weight_factor
-
-        coef[:, c] = np.sum(spot_weight * background_weight, axis=(1, 2)) / np.sum(background_weight ** 2, axis=(1, 2))
-        background_contribution[:, :, c] = np.expand_dims(coef[:, c], 1) * background_vector[0, 0, c]
-
-    residual = spot_colors - background_contribution
+    # # Old method, about 10x slower
+    # coef = np.zeros([n_spots, n_channels])
+    # background_contribution = np.zeros_like(spot_colors)
+    # background_vectors = np.zeros([n_channels, n_rounds, n_channels])
+    # for c in range(n_channels):
+    #     weight_factor = np.zeros([n_spots, n_rounds])
+    #     for r in range(n_rounds):
+    #         weight_factor[:, r] = 1 / (abs(spot_colors[:, r, c]) + weight_shift)
+    #     weight_factor = np.expand_dims(weight_factor, 2)
+    #
+    #     background_vector = np.zeros([1, n_rounds, n_channels])
+    #     background_vector[:, :, c] = 1
+    #     # give background_vector an L2 norm of 1 so can compare coefficients with other genes.
+    #     background_vector = background_vector / np.expand_dims(np.linalg.norm(background_vector, axis=(1, 2)), (1, 2))
+    #     background_vectors[c] = background_vector
+    #
+    #     background_weight = background_vector * weight_factor
+    #     spot_weight = spot_colors * weight_factor
+    #
+    #     coef[:, c] = np.sum(spot_weight * background_weight, axis=(1, 2)
+    #     ) / np.sum(background_weight ** 2, axis=(1, 2))
+    #     background_contribution[:, :, c] = np.expand_dims(coef[:, c], 1) * background_vector[0, 0, c]
+    #
+    # residual = spot_colors - background_contribution
     return residual, coef, background_vectors
 
 
