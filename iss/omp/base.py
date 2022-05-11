@@ -24,18 +24,20 @@ def fitting_standard_deviation(bled_codes: np.ndarray, coef: np.ndarray, alpha: 
         `float [n_pixels x n_rounds x n_channels]`
             Standard deviation of each pixel in each round/channel based on genes fit.
     """
-    n_genes, n_rounds, n_channels = bled_codes.shape
+    n_genes = bled_codes.shape[0]
     n_pixels = coef.shape[0]
-
     if not utils.errors.check_shape(coef, [n_pixels, n_genes]):
         raise utils.errors.ShapeError('coef', coef.shape, (n_pixels, n_genes))
 
-    var = np.ones((n_pixels, n_rounds, n_channels)) * beta ** 2
-    for g in range(n_genes):
-        var = var + alpha * np.expand_dims(coef[:, g] ** 2, (1, 2)) * np.expand_dims(bled_codes[g] ** 2, 0)
+    var = np.moveaxis(coef**2 @ np.moveaxis(bled_codes**2, 0, 1), 1, 0) * alpha + beta ** 2
 
-    sigma = np.sqrt(var)
-    return sigma
+    # # Old method - much slower
+    # n_genes, n_rounds, n_channels = bled_codes.shape
+    # var = np.ones((n_pixels, n_rounds, n_channels)) * beta ** 2
+    # for g in range(n_genes):
+    #     var = var + alpha * np.expand_dims(coef[:, g] ** 2, (1, 2)) * np.expand_dims(bled_codes[g] ** 2, 0)
+
+    return np.sqrt(var)
 
 
 def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, weight: Optional[np.ndarray] = None) -> Tuple[
