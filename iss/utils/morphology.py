@@ -6,6 +6,7 @@ import numbers
 from . import errors
 import cv2
 from typing import Optional, Union
+from scipy.signal import oaconvolve
 
 
 def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
@@ -204,9 +205,9 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
 
             - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
                 When no padding option is specified, the default is `0`.
-            - `‘reflect’` - Input array values outside the bounds of the array are computed by
+            - `‘symmetric’` - Input array values outside the bounds of the array are computed by
                 mirror-reflecting the array across the array border.
-            - `‘nearest’`- Input array values outside the bounds of the array are assumed to equal
+            - `‘edge’`- Input array values outside the bounds of the array are assumed to equal
                 the nearest array border value.
             - `'wrap'` - Input array values outside the bounds of the array are computed by implicitly
                 assuming the input array is periodic.
@@ -220,17 +221,28 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
         `float [image_sz1 x image_sz2 x ... x image_szN]`.
             `image` after being filtered.
     """
-    if isinstance(padding, numbers.Number):
-        pad_value = padding
-        padding = 'constant'
-    else:
-        pad_value = 0.0  # doesn't do anything for non-constant padding
     if corr_or_conv == 'corr':
-        kernel = ensure_odd_kernel(kernel, 'start')
-        return correlate(image, kernel, mode=padding, cval=pad_value)
-    elif corr_or_conv == 'conv':
-        kernel = ensure_odd_kernel(kernel, 'end')
-        # TODO: see if scipy.signal.oaconvolve is quicker. Do same for convolve2D function
-        return convolve(image, kernel, mode=padding, cval=pad_value)
-    else:
+        kernel = np.flip(kernel)
+    elif corr_or_conv != 'conv':
         raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
+    kernel = ensure_odd_kernel(kernel, 'end')
+    pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
+    if isinstance(padding, numbers.Number):
+        return oaconvolve(np.pad(image, pad_size, 'constant', constant_values=padding), kernel, 'valid')
+    else:
+        return oaconvolve(np.pad(image, pad_size, padding), kernel, 'valid')
+
+    # Old method, about 10x slower for filtering large 3d image with small 3d kernel
+    # if isinstance(padding, numbers.Number):
+    #     pad_value = padding
+    #     padding = 'constant'
+    # else:
+    #     pad_value = 0.0  # doesn't do anything for non-constant padding
+    # if corr_or_conv == 'corr':
+    #     kernel = ensure_odd_kernel(kernel, 'start')
+    #     return correlate(image, kernel, mode=padding, cval=pad_value)
+    # elif corr_or_conv == 'conv':
+    #     kernel = ensure_odd_kernel(kernel, 'end')
+    #     return convolve(image, kernel, mode=padding, cval=pad_value)
+    # else:
+    #     raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")

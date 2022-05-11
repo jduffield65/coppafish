@@ -62,14 +62,14 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
     # TODO: give option of providing pos_image and neg_image instead of image as less memory.
     pos_image = (image > 0).astype(int)
     # filter these to count neighbours at each pixel.
-    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter.astype(int), 'reflect')
+    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter, 'symmetric').astype(int)
     # find number of neighbours at each spot.
     n_pos_neighbours = pos_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
     if neg_filter is None:
         return n_pos_neighbours
     else:
         neg_image = (image < 0).astype(int)
-        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter.astype(int), 'reflect')
+        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter, 'symmetric').astype(int)
         n_neg_neighbours = neg_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
         return n_pos_neighbours, n_neg_neighbours
 

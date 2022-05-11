@@ -212,12 +212,24 @@ class TestMorphology(unittest.TestCase):
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
 
     def test_imfilter(self):
+        """
+        Check whether imfilter gives same results as MATLAB imfilter function.
+
+        test_file contains:
+        image: image to filter (no padding)
+        kernel: structuring element to filter with.
+        pad: method of padding, if number means constant at each edge.
+        conv_or_corr: whether convolution or correlation was used.
+        image_filtered: result of filtering.
+        """
         tol = 1e-5
         folder = os.path.join(self.folder, 'imfilter')
-        test_files = [s for s in os.listdir(folder) if "test" in s and "conv" in s]
+        test_files = [s for s in os.listdir(folder) if "test" in s]
         if len(test_files) == 0:
             raise errors.EmptyListError("test_files")
-        matlab_to_python_pad = {'symmetric': 'reflect', 'replicate': 'nearest', 'circular': 'wrap'}
+        # matlab_to_python_pad = {
+        # 'symmetric': 'reflect', 'replicate': 'nearest', 'circular': 'wrap'} # for old conv method
+        matlab_to_python_pad = {'symmetric': 'symmetric', 'replicate': 'edge', 'circular': 'wrap'}
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             image, pad, corr_or_conv, kernel, output_matlab = \
