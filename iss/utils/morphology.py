@@ -232,7 +232,7 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
     else:
         return oaconvolve(np.pad(image, pad_size, padding), kernel, 'valid')
 
-    # Old method, about 10x slower for filtering large 3d image with small 3d kernel
+    # Old method, about 3x slower for filtering large 3d image with small 3d kernel
     # if isinstance(padding, numbers.Number):
     #     pad_value = padding
     #     padding = 'constant'

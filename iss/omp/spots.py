@@ -60,18 +60,21 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
 
     # make binary images indicating sign of image.
     # TODO: give option of providing pos_image and neg_image instead of image as less memory.
-    pos_image = (image > 0).astype(int)
+    # pos_filter and pos_image are both integers but filtering quicker if np.float16.
+    pos_image = (image > 0).astype(np.float16)
+    pos_filter = pos_filter.astype(np.float16)
     # filter these to count neighbours at each pixel.
-    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter, 'symmetric').astype(int)
+    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter, 'symmetric')  # returned as float
     # find number of neighbours at each spot.
     n_pos_neighbours = pos_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
     if neg_filter is None:
-        return n_pos_neighbours
+        return np.round(n_pos_neighbours).astype(int)
     else:
-        neg_image = (image < 0).astype(int)
-        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter, 'symmetric').astype(int)
+        neg_image = (image < 0).astype(np.float16)
+        neg_filter = neg_filter.astype(np.float16)
+        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter, 'symmetric')  # returned as float
         n_neg_neighbours = neg_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
-        return n_pos_neighbours, n_neg_neighbours
+        return np.round(n_pos_neighbours).astype(int), np.round(n_neg_neighbours).astype(int)
 
 
 def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, spot_yxz: np.ndarray,

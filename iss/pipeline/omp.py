@@ -160,7 +160,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     n_spots = np.sum(not_duplicate)
     nan_value = -nbp_basic.tile_pixel_value_shift - 1
     nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
-    for t in tqdm(use_tiles, desc='Current Tile'):
+    for t in use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
             nd_spot_colors[in_tile] = get_spot_colors(nbp.local_yxz[in_tile], t, transform, nbp_file, nbp_basic)

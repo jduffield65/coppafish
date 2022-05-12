@@ -239,8 +239,7 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
     weight_shift = np.clip(weight_shift, 1e-20, np.inf)  # ensure weight_shift > 1e-20 to avoid blow up to infinity.
 
     n_rounds, n_channels = spot_colors[0].shape
-    background_vectors = np.repeat(np.eye(n_rounds, n_channels), n_channels, axis=0
-                                   ).reshape(n_channels, n_rounds, n_channels)
+    background_vectors = np.repeat(np.expand_dims(np.eye(n_channels), axis=1), n_rounds, axis=1)
     # give background_vectors an L2 norm of 1 so can compare coefficients with other genes.
     background_vectors = background_vectors / np.expand_dims(np.linalg.norm(background_vectors, axis=(1, 2)), (1, 2))
 
@@ -251,6 +250,7 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
     residual = spot_colors - np.expand_dims(coef, 1) * np.ones((1, n_rounds, n_channels)) * background_vectors[0, 0, 0]
 
     # # Old method, about 10x slower
+    # n_spots = spot_colors.shape[0]
     # coef = np.zeros([n_spots, n_channels])
     # background_contribution = np.zeros_like(spot_colors)
     # background_vectors = np.zeros([n_channels, n_rounds, n_channels])
