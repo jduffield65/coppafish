@@ -197,7 +197,14 @@ class TestCountSpotNeighbours(unittest.TestCase):
                 matlab.load_array(test_file, ['GeneIm', 'PeakYXZ', 'PosFilter', 'NegFilter',
                                               'nPosNeighb', 'nNegNeighb'])
             spot_yxz = (spot_yxz - 1).astype(int)  # MATLAB to python indexing.
-            pos_neighb_python, neg_neighb_python = count_spot_neighbours(image, spot_yxz, pos_filter, neg_filter)
+            # In MATLAB, did 'symmetric' padding but in Python, doing 0 padding
+            # (i.e. assuming all coefficients are 0 outside image).
+            pad_size = [(int((ax_size - 1) / 2),) * 2 for ax_size in pos_filter.shape]
+            spot_yxz_pad = spot_yxz.copy()
+            for i in range(len(pad_size)):
+                spot_yxz_pad[:, i] = spot_yxz[:,i] + pad_size[i][0]
+            pos_neighb_python, neg_neighb_python = count_spot_neighbours(np.pad(image, pad_size, 'symmetric'),
+                                                                         spot_yxz_pad, pos_filter, neg_filter)
             diff1 = pos_neighb_python - pos_neighb_matlab.squeeze()
             diff2 = neg_neighb_python - neg_neighb_matlab.squeeze()
             self.assertTrue(np.abs(diff1).max() <= self.tol)

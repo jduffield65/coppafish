@@ -60,21 +60,69 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
 
     # make binary images indicating sign of image.
     # TODO: give option of providing pos_image and neg_image instead of image as less memory.
-    # pos_filter and pos_image are both integers but filtering quicker if np.float16.
-    pos_image = (image > 0).astype(np.float16)
-    pos_filter = pos_filter.astype(np.float16)
+    # pos_filter and pos_image are both integers but filtering quicker if np.float32
+    # (float32 slightly quicker than float16).
+    pos_image = (image > 0).astype(np.float32)
+    pos_filter = pos_filter.astype(np.float32)
+    if pos_image.ndim == 2 and pos_filter.ndim == 3:
+        warnings.warn('2D image provided but 3D pos_filter asked for. Using the middle plane of pos_filter.')
+        pos_filter = pos_filter[:, :, int(np.floor(pos_filter.shape[2]/2))]
     # filter these to count neighbours at each pixel.
-    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter, 'symmetric')  # returned as float
+    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter)  # returned as float
     # find number of neighbours at each spot.
     n_pos_neighbours = pos_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
     if neg_filter is None:
         return np.round(n_pos_neighbours).astype(int)
     else:
-        neg_image = (image < 0).astype(np.float16)
-        neg_filter = neg_filter.astype(np.float16)
-        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter, 'symmetric')  # returned as float
+        neg_image = (image < 0).astype(np.float32)
+        neg_filter = neg_filter.astype(np.float32)
+        if neg_image.ndim == 2 and neg_filter.ndim == 3:
+            warnings.warn('2D image provided but 3D neg_filter asked for. Using the middle plane of neg_filter.')
+            neg_filter = neg_filter[:, :, int(np.floor(neg_filter.shape[2] / 2))]
+        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter)  # returned as float
         n_neg_neighbours = neg_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
         return np.round(n_pos_neighbours).astype(int), np.round(n_neg_neighbours).astype(int)
+
+
+def cropped_coef_image(pixel_yxz: np.ndarray,
+                       pixel_coefs: Union[csr_matrix, np.array]) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Make cropped coef_image which is smallest possible image such that all non-zero pixel_coefs included.
+
+    Args:
+        pixel_yxz: `int [n_pixels x 3]`
+            ```pixel_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for pixel ```s```.
+            ```pixel_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for pixel ```s```.
+        pixel_coefs: `float [n_pixels x 1]`.
+            `pixel_coefs[s]` is the weighting of pixel `s` for a given gene found by the omp algorithm.
+             Most are zero hence sparse form used.
+
+    Returns:
+        - coef_image - `float [im_size_y x im_size_x x im_size_z]`
+            cropped omp coefficient.
+        - coord_shift - `int [3]`.
+            yxz shift subtracted from pixel_yxz to build coef_image.
+    """
+    if isinstance(pixel_coefs, csr_matrix):
+        nz_ind = pixel_coefs.nonzero()[0]
+        nz_pixel_coefs = pixel_coefs[nz_ind].toarray().flatten()
+    else:
+        nz_ind = pixel_coefs != 0
+        nz_pixel_coefs = pixel_coefs[nz_ind]
+    nz_pixel_yxz = pixel_yxz[nz_ind, :]
+
+    # shift nz_pixel_yxz so min is 0 in each axis so smaller image can be formed.
+    coord_shift = nz_pixel_yxz.min(axis=0)
+    nz_pixel_yxz = nz_pixel_yxz - coord_shift
+    n_y, n_x, n_z = nz_pixel_yxz.max(axis=0) + 1
+
+    # coef_image at pixels other than nz_pixel_yxz is set to 0.
+    if n_z == 1:
+        coef_image = np.zeros((n_y, n_x))
+    else:
+        coef_image = np.zeros((n_y, n_x, n_z))
+    coef_image[tuple([nz_pixel_yxz[:, j] for j in range(coef_image.ndim)])] = nz_pixel_coefs
+    return coef_image, coord_shift
 
 
 def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, spot_yxz: np.ndarray,
@@ -129,23 +177,19 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
         raise utils.errors.ShapeError('spot_yxz', spot_yxz.shape,
                                       (n_spots, 3))
 
-    # shift coordinates so min is 0 in each axis so smaller image can be formed.
-    coord_shift = np.min([pixel_yxz.min(axis=0), spot_yxz.min(axis=0)], axis=0)
-    spot_yxz = spot_yxz - coord_shift
-    pixel_yxz = pixel_yxz - coord_shift
-    n_y, n_x, n_z = pixel_yxz.max(axis=0) + 1
+    n_z = pixel_yxz.max(axis=0)[2] + 1
 
     pos_filter_shape_yx = np.ceil(np.sqrt(pos_neighbour_thresh)).astype(int)
     if pos_filter_shape_yx % 2 == 0:
         # Shape must be odd
         pos_filter_shape_yx = pos_filter_shape_yx + 1
-    if n_z == 1:
+    if n_z <= 2:
         pos_filter_shape_z = 1
     else:
         pos_filter_shape_z = 3
     pos_filter = np.zeros((pos_filter_shape_yx, pos_filter_shape_yx, pos_filter_shape_z), dtype=int)
     pos_filter[:, :, np.floor(pos_filter_shape_z/2).astype(int)] = 1
-    if n_z > 1:
+    if pos_filter_shape_z == 3:
         mid_yx = np.floor(pos_filter_shape_yx/2).astype(int)
         pos_filter[mid_yx, mid_yx, 0] = 1
         pos_filter[mid_yx, mid_yx, 2] = 1
@@ -159,31 +203,34 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
 
     # get image centred on each spot.
     # Big image shape which will be cropped later. Not int as will contain nans
-    spot_images = np.zeros((n_spots, *max_size))
+    spot_images = np.zeros((n_spots, *max_size), dtype=int)
     spots_used = np.zeros(n_spots, dtype=bool)
     for g in range(n_genes):
-        coef_sign_image = np.zeros((n_y, n_x, n_z), dtype=int)
-        if isinstance(pixel_coefs, csr_matrix):
-            coef_sign_image[tuple([pixel_yxz[:, j] for j in range(coef_sign_image.ndim)])] = \
-                np.sign(pixel_coefs[:, g].toarray().flatten()).astype(int)
-        else:
-            coef_sign_image[tuple([pixel_yxz[:, j] for j in range(coef_sign_image.ndim)])] = \
-                np.sign(pixel_coefs[:, g]).astype(int)
         use = spot_gene_no == g
         if use.any():
+            # Note size of image will be different for each gene.
+            coef_sign_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
+            coef_sign_image = np.sign(coef_sign_image).astype(int)
+            g_spot_yxz = spot_yxz[use] - coord_shift
+
             # Only keep spots with all neighbourhood having positive coefficient.
-            n_pos_neighb = count_spot_neighbours(coef_sign_image, spot_yxz[use], pos_filter)
-            use[np.where(use)[0][n_pos_neighb != pos_filter.sum()]] = False
+            n_pos_neighb = count_spot_neighbours(coef_sign_image, g_spot_yxz, pos_filter)
+            g_use = n_pos_neighb == pos_filter.sum()
+            use[np.where(use)[0][np.invert(g_use)]] = False
             if use.any():
-                # Maybe need float coef_sign_image here
-                spot_images[use] = get_spot_images(coef_sign_image, spot_yxz[use], max_size)
+                # nan_to_num sets nan to zero i.e. if out of range of coef_sign_image, coef assumed zero.
+                # This is what we want as have cropped coef_sign_image to eclude zero coefficients.
+                spot_images[use] = np.nan_to_num(get_spot_images(coef_sign_image, g_spot_yxz[g_use], max_size)
+                                                 ).astype(int)
                 spots_used[use] = True
 
+    if not spots_used.any():
+        raise ValueError("No spots found to make average spot image from.")
     # Compute average spot image from all isolated spots
     spot_images = spot_images[spots_used]
     isolated = get_isolated_points(spot_yxz[spots_used] * [1, 1, z_scale], isolation_dist)
     # get_average below ignores the nan values.
-    av_spot_image = get_average_spot_image(spot_images[isolated], 'mean', 'annulus_3d')
+    av_spot_image = get_average_spot_image(spot_images[isolated].astype(float), 'mean', 'annulus_3d')
     av_spot_image_float = av_spot_image.copy()
     spot_indices_used = np.where(spots_used)[0][isolated]
 
@@ -255,11 +302,6 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
         raise utils.errors.ShapeError('pixel_yxz', pixel_yxz.shape,
                                       (n_pixels, 3))
 
-    # shift pixel_yxz so min is 0 in each axis so smaller image can be formed.
-    coord_shift = pixel_yxz.min(axis=0)
-    pixel_yxz = pixel_yxz - coord_shift
-    n_y, n_x, n_z = pixel_yxz.max(axis=0) + 1
-
     if spot_shape is None:
         spot_info = np.zeros((0, 4), dtype=int)
     else:
@@ -279,15 +321,10 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
     with tqdm(total=n_genes) as pbar:
         pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
         for g in range(n_genes):
-            # coef_image at pixels not indicated by pixel_yxz is set to 0.
-            if n_z == 1:
-                coef_image = np.zeros((n_y, n_x))
-            else:
-                coef_image = np.zeros((n_y, n_x, n_z))
-            if isinstance(pixel_coefs, csr_matrix):
-                coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g].toarray().flatten()
-            else:
-                coef_image[tuple([pixel_yxz[:, j] for j in range(coef_image.ndim)])] = pixel_coefs[:, g]
+            # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
+            # Note size of image will be different for each gene.
+            coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
+
             spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
             if spot_yxz.shape[0] > 0:
                 if spot_shape is None:
@@ -301,12 +338,12 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
                     spot_info_g[:, 5] = n_neg_neighb[keep]
 
                 spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
+                spot_info_g[:, :3] = spot_info_g[:, :3] + coord_shift  # shift spot_yxz back
                 spot_info_g[:, 3] = g
                 spot_info = np.append(spot_info, spot_info_g, axis=0)
             pbar.update(1)
     pbar.close()
 
-    spot_info[:, :3] = spot_info[:, :3] + coord_shift  # shift spot_yxz back
     if spot_shape is None:
         return spot_info[:, :3], spot_info[:, 3]
     else:
