@@ -123,11 +123,16 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             nbp.shape_spot_local_yxz = spot_yxz[spots_used]
             nbp.shape_spot_gene_no = spot_gene_no[spots_used]
             utils.tiff.save(spot_shape + 1, nbp_file.omp_spot_shape)  # add 1 so can be saved as uint16.
+            # already found spots so don't find again.
+            spot_yxzg = np.append(spot_yxz, spot_gene_no.reshape(-1, 1), axis=1)
             del spot_yxz, spot_gene_no, spots_used
+        else:
+            spot_yxzg = None
 
         spot_info_t = \
             omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z, 0, spot_shape,
-                          config['initial_pos_neighbour_thresh'])
+                          config['initial_pos_neighbour_thresh'], spot_yxzg)
+        del spot_yxzg
         n_spots = spot_info_t[0].shape[0]
         spot_info_t = np.concatenate([spot_var.reshape(n_spots, -1).astype(np.int16) for spot_var in spot_info_t],
                                      axis=1)

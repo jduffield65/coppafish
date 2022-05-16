@@ -6,6 +6,7 @@ from ..extract.deconvolution import get_spot_images, get_isolated_points, get_av
 from ..find_spots import detect_spots
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
+import numpy_indexed
 
 
 def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: np.ndarray,
@@ -259,8 +260,8 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
 
 def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, radius_xy: int, radius_z: Optional[int],
               coef_thresh: float = 0, spot_shape: Optional[np.ndarray] = None,
-              pos_neighbour_thresh: int = 0) -> Union[Tuple[np.ndarray, np.ndarray],
-                                                Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+              pos_neighbour_thresh: int = 0, spot_yxzg: Optional[np.ndarray] = None
+              ) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
     Finds all local maxima in `coef_image` of each gene with coefficient exceeding `coef_thresh`
     and returns corresponding `yxz` position and `gene_no`.
@@ -284,6 +285,13 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
             0 means unsure of expected sign so ignore.
         pos_neighbour_thresh: Only spots with number of positive neighbours exceeding this will be kept
             if `spot_shape` provided.
+        spot_yxzg: `float [n_spots x 4]`.
+            Can provide location and gene identity of spots if already computed.
+            Where spots are local maxima above `coef_thresh` in `pixel_coefs` image for each gene.
+            If None, spots are determined from `pixel_coefs`.
+            ```spot_yxzg[s, :2]``` are the local yx coordinates in ```yx_pixels``` for spot ```s```.
+            ```spot_yxzg[s, 2]``` is the local z coordinate in ```z_pixels``` for spot ```s```.
+            ```spot_yxzg[s, 3]``` is the gene number of spot ```s```.
 
     Returns:
         - spot_yxz - `int [n_spots x 3]`
@@ -318,14 +326,28 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
         neg_filter = (spot_shape < 0).astype(int)
         spot_info = np.zeros((0, 6), dtype=int)
 
+    if spot_yxzg is not None:
+        # check pixel coefficient is positive for random subset of 500 spots.
+        spots_to_check = np.random.choice(range(spot_yxzg.shape[0]), np.clip(500, 0, spot_yxzg.shape[0]), replace=False)
+        pixel_index = numpy_indexed.indices(pixel_yxz, spot_yxzg[spots_to_check, :3].astype(pixel_yxz.dtype))
+        spot_coefs_check = pixel_coefs[pixel_index, spot_yxzg[spots_to_check, 3]]
+        if spot_coefs_check.min() <= coef_thresh:
+            bad_spot = spots_to_check[spot_coefs_check.argmin()]
+            raise ValueError(f"spot_yxzg provided but gene {spot_yxzg[bad_spot, 3]} coefficient for spot {bad_spot}\n"
+                             f"at yxz = {spot_yxzg[bad_spot, :3]} is {spot_coefs_check.min()} \n"
+                             f"whereas it should be more than coef_thresh = {coef_thresh} as it is listed as a spot.")
+
     with tqdm(total=n_genes) as pbar:
         pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
         for g in range(n_genes):
             # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
             # Note size of image will be different for each gene.
             coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
-
-            spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
+            if spot_yxzg is None:
+                spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
+            else:
+                # spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.
+                spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g, :3] - coord_shift
             if spot_yxz.shape[0] > 0:
                 if spot_shape is None:
                     keep = np.ones(spot_yxz.shape[0], dtype=bool)
