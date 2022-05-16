@@ -110,7 +110,7 @@ def disk(r: int, n: int = 4) -> np.ndarray:
     return nhood.astype(int)
 
 
-def disk_3d(r_xy: int, r_z: int) -> np.ndarray:
+def disk_3d(r_xy: float, r_z: float) -> np.ndarray:
     """
     Gets structuring element used to find spots when dilated with 3d image.
 
@@ -122,8 +122,13 @@ def disk_3d(r_xy: int, r_z: int) -> np.ndarray:
         `int [2*r_xy+1, 2*r_xy+1, 2*r_z+1]`.
             Structuring element with each element either `0` or `1`.
     """
-    y, x, z = np.meshgrid(np.arange(-r_xy, r_xy + 1), np.arange(-r_xy, r_xy + 1), np.arange(-r_z, r_z + 1))
+    y, x, z = np.meshgrid(np.arange(-np.ceil(r_xy), np.ceil(r_xy) + 1), np.arange(-np.ceil(r_xy), np.ceil(r_xy) + 1),
+                          np.arange(-np.ceil(r_z), np.ceil(r_z) + 1))
     se = x ** 2 + y ** 2 + z ** 2 <= r_xy ** 2
+    # Crop se to remove zeros at extremities
+    se = se[:, :, ~np.all(se == 0, axis=(0, 1))]
+    se = se[:, ~np.all(se == 0, axis=(0, 2)), :]
+    se = se[~np.all(se == 0, axis=(1, 2)), :, :]
     return se.astype(int)
 
 

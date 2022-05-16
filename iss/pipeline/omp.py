@@ -72,7 +72,6 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     spot_info = np.zeros((0, 7), dtype=np.int16)
     spot_coefs = sparse.csr_matrix(np.zeros((0, n_genes)))
     for t in use_tiles:
-        # TODO: Maybe detect spots on each z-plane then convolution at end.
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
         for z in use_z:

@@ -336,15 +336,25 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
             raise ValueError(f"spot_yxzg provided but gene {spot_yxzg[bad_spot, 3]} coefficient for spot {bad_spot}\n"
                              f"at yxz = {spot_yxzg[bad_spot, :3]} is {spot_coefs_check.min()} \n"
                              f"whereas it should be more than coef_thresh = {coef_thresh} as it is listed as a spot.")
-
+    if radius_z is None:
+        se = utils.strel.disk(radius_xy)
+    else:
+        se = utils.strel.disk_3d(radius_xy, radius_z)
+    # se = np.ones((2*(radius_xy-1)+1, 2*(radius_xy-1)+1, 2*(radius_z-1)+1), dtype=int)
     with tqdm(total=n_genes) as pbar:
+        # TODO: if 2D can do all genes together.
         pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
         for g in range(n_genes):
             # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
             # Note size of image will be different for each gene.
             coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
+            if se.ndim == 3 and coef_image.ndim == 2:
+                warnings.warn('2D image provided but 3D filter asked for. Using the middle plane of this filter.')
+                se = se[:, :, radius_z]
             if spot_yxzg is None:
-                spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
+                # TODO: try dilate with square array by se = np.ones((5,5,3), dtype=int)
+                # spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False, se)
+                spot_yxz = utils.morphology.sparse_local_maxima(coef_image, se, 0)
             else:
                 # spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.
                 spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g, :3] - coord_shift

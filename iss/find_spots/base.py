@@ -33,8 +33,8 @@ def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int,
         return spot_details[use, 4:]
 
 
-def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: int, radius_z: Optional[int] = None,
-                 remove_duplicates: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int], radius_z: Optional[int] = None,
+                 remove_duplicates: bool = True, se: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds local maxima in image exceeding ```intensity_thresh```.
 
@@ -47,6 +47,9 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: int, rad
             If ```None```, 2D filter is used.
         remove_duplicates: Whether to only keep one pixel if two or more pixels are local maxima and have
             same intensity. Only works with integer image.
+        se: ```int [se_sz_y x se_sz_x x se_sz_z]```.
+            Can give structuring element manually rather than using a disk element.
+            Must only contain zeros and ones.
 
     Returns:
         - ```peak_yxz``` - ```int [n_peaks x image.ndim]```.
@@ -54,13 +57,17 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: int, rad
         - ```peak_intensity``` - ```float [n_peaks]```.
             Pixel value of spots found.
     """
-    if radius_z is not None:
-        se = utils.strel.disk_3d(radius_xy, radius_z)
-        if image.ndim == 2:
-            warnings.warn('2D image provided but 3D filter asked for. Using the middle plane of this filter.')
-            se = se[:, :, radius_z]
-    else:
-        se = utils.strel.disk(radius_xy)
+    if se is None:
+        if radius_z is not None:
+            se = utils.strel.disk_3d(radius_xy, radius_z)
+        else:
+            se = utils.strel.disk(radius_xy)
+    if image.ndim == 2 and se.ndim == 3:
+        mid_z = int(np.floor((se.shape[2]-1)/2))
+        warnings.warn(f"2D image provided but 3D filter asked for.\n"
+                      f"Using the middle plane ({mid_z}) of this filter.")
+        se = se[:, :, mid_z]
+
     small = 1e-6  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
     if remove_duplicates:
         diff_to_int = np.round(image).astype(int) - image
