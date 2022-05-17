@@ -44,11 +44,12 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
         intensity_thresh: Spots are local maxima in image with ```pixel_value > intensity_thresh```.
         radius_xy: Radius of dilation structuring element in xy plane (approximately spot radius).
         radius_z: Radius of dilation structuring element in z direction (approximately spot radius).
+            Must be more than 1 to be 3D.
             If ```None```, 2D filter is used.
         remove_duplicates: Whether to only keep one pixel if two or more pixels are local maxima and have
             same intensity. Only works with integer image.
         se: ```int [se_sz_y x se_sz_x x se_sz_z]```.
-            Can give structuring element manually rather than using a disk element.
+            Can give structuring element manually rather than using a cuboid element.
             Must only contain zeros and ones.
 
     Returns:
@@ -58,10 +59,11 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
             Pixel value of spots found.
     """
     if se is None:
+        # Default is a cuboid se of all ones as is quicker than disk and very similar results.
         if radius_z is not None:
-            se = utils.strel.disk_3d(radius_xy, radius_z)
+            se = np.ones((2*radius_xy-1, 2*radius_xy-1, 2*radius_z-1), dtype=int)
         else:
-            se = utils.strel.disk(radius_xy)
+            se = np.ones((2*radius_xy-1, 2*radius_xy-1), dtype=int)
     if image.ndim == 2 and se.ndim == 3:
         mid_z = int(np.floor((se.shape[2]-1)/2))
         warnings.warn(f"2D image provided but 3D filter asked for.\n"

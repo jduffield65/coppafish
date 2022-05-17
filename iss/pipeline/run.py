@@ -4,6 +4,7 @@ from . import set_basic_info, extract_and_filter, find_spots, stitch, register_i
     call_reference_spots, call_spots_omp
 import warnings
 from typing import Union
+import numpy as np
 
 
 def run_pipeline(config_file: str) -> setup.Notebook:

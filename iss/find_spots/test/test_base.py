@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 from ..base import detect_spots, get_isolated
-from ...utils import matlab, errors
+from ...utils import matlab, errors, strel
 
 
 class TestBase(unittest.TestCase):
@@ -34,13 +34,14 @@ class TestBase(unittest.TestCase):
                 matlab.load_array(test_file, ['image', 'intensity_thresh', 'r', 'r_z',
                                               'remove_duplicates', 'PeakYX','PeakIntensity'])
             peak_intensity_matlab = peak_intensity_matlab.flatten()
+            # In MATLAB used disk se not cuboid se so provide se not radii to detect_spots function.
             if int(r_z) == 0:
-                r_z = None
+                se = strel.disk(int(r_xy))
             else:
-                r_z = int(r_z)
+                se = strel.disk_3d(int(r_xy), int(r_z))
             remove_duplicates = int(remove_duplicates) == 1
-            peak_yx_python, peak_intensity_python = detect_spots(image, float(thresh), int(r_xy),
-                                                                 r_z, remove_duplicates)
+            peak_yx_python, peak_intensity_python = detect_spots(image, float(thresh), None,
+                                                                 None, remove_duplicates, se)
             # Sort both data sets same way to compare (by intensity and then by y).
             # need to make intensity integer for sort to deal with random shift.
             sorted_arg_python = np.lexsort((peak_yx_python[:, 0], peak_intensity_python.astype(int)))
