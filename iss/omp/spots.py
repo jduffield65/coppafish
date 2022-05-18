@@ -9,28 +9,28 @@ from tqdm import tqdm
 import numpy_indexed
 
 
-def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: np.ndarray,
-                          neg_filter: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
+                          kernel: np.ndarray, cython: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Counts the number of positive (and negative) pixels in a neighbourhood about each spot.
+    If `filter` contains only 1 and 0, then number of positive pixels returned near each spot.
+    If `filter` contains only -1 and 0, then number of negative pixels returned near each spot.
+    If `filter` contains -1, 0 and 1, then number of positive and negative pixels returned near each spot.
 
     Args:
         image: `float [n_y x n_x (x n_z)]`.
             image spots were found on.
         spot_yxz: `int [n_spots x image.ndim]`.
             yx or yxz location of spots found.
-        pos_filter: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.
-            Number of positive pixels counted in this neighbourhood about each spot in image.
-            Only contains values 0 and 1.
-        neg_filter: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.
-            Number of negative pixels counted in this neighbourhood about each spot in image.
-            Only contains values 0 and 1.
-            `None` means don't find `n_neg_neighbours`.
+        kernel: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.
+            Number of positive (and negative) pixels counted in this neighbourhood about each spot in image.
+            Only contains values 0 and 1 (and -1).
+        cython: whether to use cython code.
 
     Returns:
-        - n_pos_neighbours - `int [n_spots]`.
+        - n_pos_neighbours - `int [n_spots]` (Only if `filter` contains 1).
             Number of positive pixels around each spot in neighbourhood given by `pos_filter`.
-        - n_neg_neighbours - `int [n_spots]` (Only if `neg_filter` given).
+        - n_neg_neighbours - `int [n_spots]` (Only if `filter` contains -1).
             Number of negative pixels around each spot in neighbourhood given by `neg_filter`.
     """
     # Correct for 2d cases where an empty dimension has been used for some variables.
@@ -40,18 +40,14 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
     if all([image.ndim == spot_yxz.shape[1] + 1, image.shape[-1] == 1]):
         # Image 3D but spots 2D
         image = np.mean(image, axis=image.ndim - 1)  # average over last dimension just means removing it.
-    if all([image.ndim == pos_filter.ndim - 1, pos_filter.shape[-1] == 1]):
+    if all([image.ndim == kernel.ndim - 1, kernel.shape[-1] == 1]):
         # Image 2D but pos_filter 3D
-        pos_filter = np.mean(pos_filter, axis=pos_filter.ndim - 1)
-    if neg_filter is not None:
-        if all([image.ndim == neg_filter.ndim - 1, neg_filter.shape[-1] == 1]):
-            # Image 2D but neg_filter 3D
-            neg_filter = np.mean(neg_filter, axis=neg_filter.ndim - 1)
-        if not np.isin(neg_filter, [0, 1]).all():
-            raise ValueError('neg_filter contains values other than 0 or 1.')
+        kernel = np.mean(kernel, axis=kernel.ndim - 1)
 
-    if not np.isin(pos_filter, [0, 1]).all():
-        raise ValueError('pos_filter contains values other than 0 or 1.')
+    # Check kernel contains right values.
+    kernel_vals = np.unique(kernel)
+    if not np.isin(kernel_vals, [0, 1, -1]).all():
+        raise ValueError('filter contains values other than -1, 0 or 1.')
 
     # Check all spots in image
     max_yxz = np.array(image.shape) - 1
@@ -59,30 +55,44 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray, pos_filter: n
     if len(spot_oob) > 0:
         raise utils.errors.OutOfBoundsError("spot_yxz", spot_oob[0], [0] * image.ndim, max_yxz)
 
-    # make binary images indicating sign of image.
-    # TODO: give option of providing pos_image and neg_image instead of image as less memory.
-    # pos_filter and pos_image are both integers but filtering quicker if np.float32
-    # (float32 slightly quicker than float16).
-    pos_image = (image > 0).astype(np.float32)
-    pos_filter = pos_filter.astype(np.float32)
-    if pos_image.ndim == 2 and pos_filter.ndim == 3:
-        warnings.warn('2D image provided but 3D pos_filter asked for. Using the middle plane of pos_filter.')
-        pos_filter = pos_filter[:, :, int(np.floor(pos_filter.shape[2]/2))]
-    # filter these to count neighbours at each pixel.
-    pos_neighbour_image = utils.morphology.imfilter(pos_image, pos_filter)  # returned as float
-    # find number of neighbours at each spot.
-    n_pos_neighbours = pos_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
-    if neg_filter is None:
-        return np.round(n_pos_neighbours).astype(int)
+    if np.isin([-1, 1], kernel_vals).all():
+        # Return positive and negative counts
+        # change kernel so can count number of negatives by number of multiples of neg_spacing such that
+        # max_pos_pixels * pos_spacing = neg_spacing - 3 and min_neg_pixels * neg_spacing == neg_spacing
+        # which is less than max_pos_pixels hence can distinguish positive from negative.
+        neg_spacing = np.sum(kernel == 1) + 3
+        kernel[kernel == -1] = neg_spacing
+        if cython:
+            n_pos, n_neg = utils.morphology.imfilter_coords(image > 0, kernel.astype(int), spot_yxz,
+                                                            image2=image < 0)
+        else:
+            sign_im = np.append(np.expand_dims(image > 0, image.ndim),
+                                np.expand_dims(image < 0, image.ndim), -1)
+            sign_im_filt = utils.morphology.imfilter(sign_im.astype(np.float32), kernel.astype(np.float32))
+            n_neighb = sign_im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
+            n_pos = n_neighb[:, 0]
+            n_neg = n_neighb[:, 1]
+        # Negative contribution will be multiple of neg_spacing so remove first.
+        n_pos = (n_pos - utils.round_any(n_pos, neg_spacing, 'floor')).astype(int)
+        # Negative contribution is multiple of neg_spacing at each point.
+        n_neg = np.round(utils.round_any(n_neg, neg_spacing, 'floor') / neg_spacing).astype(int)
+        return n_pos, n_neg
+    elif np.isin(-1, kernel_vals):
+        # Return negative counts
+        if cython:
+            return utils.morphology.imfilter_coords(image < 0, kernel < 0, spot_yxz).astype(int)
+        else:
+            im_filt = utils.morphology.imfilter((image < 0).astype(np.float32), (kernel < 0).astype(np.float32))
+            return im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])].astype(int)
+    elif np.isin(1, kernel_vals):
+        # Return positive counts
+        if cython:
+            return utils.morphology.imfilter_coords(image > 0, kernel > 0, spot_yxz).astype(int)
+        else:
+            im_filt = utils.morphology.imfilter((image > 0).astype(np.float32), (kernel > 0).astype(np.float32))
+            return im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])].astype(int)
     else:
-        neg_image = (image < 0).astype(np.float32)
-        neg_filter = neg_filter.astype(np.float32)
-        if neg_image.ndim == 2 and neg_filter.ndim == 3:
-            warnings.warn('2D image provided but 3D neg_filter asked for. Using the middle plane of neg_filter.')
-            neg_filter = neg_filter[:, :, int(np.floor(neg_filter.shape[2] / 2))]
-        neg_neighbour_image = utils.morphology.imfilter(neg_image, neg_filter)  # returned as float
-        n_neg_neighbours = neg_neighbour_image[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
-        return np.round(n_pos_neighbours).astype(int), np.round(n_neg_neighbours).astype(int)
+        raise ValueError('filter contains only 0.')
 
 
 def cropped_coef_image(pixel_yxz: np.ndarray,
@@ -319,11 +329,10 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
         if np.sum(spot_shape == -1) == 0:
             raise ValueError(f"spot_shape contains no pixels with a value of -1 which indicates the "
                              f"neighbourhood about a spot where we expect a negative coefficient.")
-        pos_filter = (spot_shape > 0).astype(int)
-        if pos_neighbour_thresh < 0 or pos_neighbour_thresh >= np.sum(pos_filter):
+        if pos_neighbour_thresh < 0 or pos_neighbour_thresh >= np.sum(spot_shape > 0):
             # Out of bounds if threshold for positive neighbours is above the maximum possible.
-            raise utils.errors.OutOfBoundsError("pos_neighbour_thresh", pos_neighbour_thresh, 0, np.sum(pos_filter)-1)
-        neg_filter = (spot_shape < 0).astype(int)
+            raise utils.errors.OutOfBoundsError("pos_neighbour_thresh", pos_neighbour_thresh, 0,
+                                                np.sum(spot_shape > 0)-1)
         spot_info = np.zeros((0, 6), dtype=int)
 
     if spot_yxzg is not None:
@@ -355,7 +364,7 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
                     keep = np.ones(spot_yxz.shape[0], dtype=bool)
                     spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
                 else:
-                    n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, pos_filter, neg_filter)
+                    n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, spot_shape)
                     keep = n_pos_neighb > pos_neighbour_thresh
                     spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
                     spot_info_g[:, 4] = n_pos_neighb[keep]

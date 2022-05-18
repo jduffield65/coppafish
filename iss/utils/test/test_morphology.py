@@ -1,7 +1,7 @@
 import unittest
 import os
 import numpy as np
-from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, sparse_local_maxima
+from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, sparse_local_maxima, imfilter_coords
 from ..strel import disk, disk_3d, annulus, fspecial
 from ...utils import matlab, errors
 
@@ -289,6 +289,41 @@ class TestMorphology(unittest.TestCase):
             corr_or_conv = ''.join([chr(val) for val in corr_or_conv.flatten()])
             output_python = imfilter(image, kernel, pad, corr_or_conv)
             diff = output_python - output_matlab
+            self.assertTrue(np.abs(diff).max() <= tol)  # check match MATLAB
+
+    def test_imfilter_coords(self):
+        """
+
+        """
+        tol = 1e-2  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
+
+        im_sz = np.random.randint(30, 300, 3)
+        kernel_sz = np.random.randint(3, 29, 3)
+        for ndims in [2, 3]:
+            image = np.random.choice([-1, 0, 1], im_sz[:ndims]).astype(np.int8)
+            n_spots = np.random.randint(3, np.clip(np.prod(image.shape)/10, 4, 300).astype(int))
+            coords = np.round(np.random.rand(n_spots, ndims) * (im_sz[:ndims]-1)).astype(int)
+
+            if ndims == 3 and bool(np.random.randint(2)):
+                # sometimes use a 2D kernel for 3D image
+                kernel = np.random.randint(0, 100, kernel_sz[:2])
+            else:
+                kernel = np.random.randint(0, 100, kernel_sz[:ndims])
+
+            corr_or_conv = np.random.choice(['conv', 'corr'])
+            padding = np.random.choice(['symmetric', 'edge', 'wrap', 'constant'])
+            if padding == 'constant':
+                padding = np.random.randint(-20, 20)
+
+            if ndims == 3 and kernel.ndim==2:
+                kernel_filt = np.expand_dims(kernel, 2)
+            else:
+                kernel_filt = kernel.copy()
+            im_filt = imfilter(image, kernel_filt, padding, corr_or_conv)
+            im_filt_result = im_filt[tuple([coords[:, j] for j in range(ndims)])]
+
+            cython_result = imfilter_coords(image, kernel, coords, padding, corr_or_conv)
+            diff = cython_result - im_filt_result
             self.assertTrue(np.abs(diff).max() <= tol)  # check match MATLAB
 
 

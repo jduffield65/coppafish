@@ -5,10 +5,11 @@ from scipy.ndimage import convolve, correlate
 import numbers
 from . import errors
 import cv2
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 from scipy.signal import oaconvolve
 import skimage.measure
 import skimage.feature
+from .cython_morphology import cy_convolve
 
 
 def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
@@ -251,6 +252,8 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
     elif corr_or_conv != 'conv':
         raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
     kernel = ensure_odd_kernel(kernel, 'end')
+    if kernel.ndim < image.ndim:
+        kernel = np.expand_dims(kernel, axis=tuple(np.arange(kernel.ndim, image.ndim)))
     pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
     if isinstance(padding, numbers.Number):
         return oaconvolve(np.pad(image, pad_size, 'constant', constant_values=padding), kernel, 'valid')
@@ -271,3 +274,85 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
     #     return convolve(image, kernel, mode=padding, cval=pad_value)
     # else:
     #     raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
+
+
+def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, padding: Union[float, str] = 0,
+                    corr_or_conv: str = 'corr',
+                    image2: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    """
+    Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
+    Only finds result of filtering at specific locations.
+
+    Args:
+        image: `np.int8 [image_szY x image_szX (x image_szZ)]`.
+            Image to be filtered. Must be 2D or 3D.
+            np.int8 as designed to use on np.sign of an image i.e. only contains -1, 0, 1.
+        kernel: `int [kernel_szY x kernel_szX (x kernel_szZ)]`.
+            Multidimensional filter. Only works with dtype = int.
+        coords: `int [n_points x image.ndims]`.
+            Coordinates where result of filtering is desired.
+        padding: One of the following, indicated which padding to be used.
+            - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
+                When no padding option is specified, the default is `0`.
+            - `‘symmetric’` - Input array values outside the bounds of the array are computed by
+                mirror-reflecting the array across the array border.
+            - `‘edge’`- Input array values outside the bounds of the array are assumed to equal
+                the nearest array border value.
+            - `'wrap'` - Input array values outside the bounds of the array are computed by implicitly
+                assuming the input array is periodic.
+        corr_or_conv:
+            - `'corr'` - Performs multidimensional filtering using correlation.
+                This is the default when no option specified.
+            - `'conv'` - Performs multidimensional filtering using convolution.
+        image2: `np.int8 [image_szY x image_szX (x image_szZ)]`.
+            Can provide another image to find result of filtering with too.
+            Must be same size as image.
+
+    Returns:
+        - `int [n_points]`.
+            Result of filtering of `image` at each point in `coords`.
+        - `int [n_points]`.
+            Result of filtering of `image2` at each point in `coords`. Only returned if `image2` provided.
+    """
+    if corr_or_conv == 'corr':
+        kernel = np.flip(kernel)
+    elif corr_or_conv != 'conv':
+        raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
+    kernel = ensure_odd_kernel(kernel, 'end')
+
+    # Ensure shape of image and kernel correct
+    if image.ndim != coords.shape[1]:
+        raise ValueError(f"Image has {image.ndim} dimensions but coords only have {coords.shape[1]} dimensions.")
+    if image.ndim == 2:
+        image = np.expand_dims(image, 2)
+    elif image.ndim != 3:
+        raise ValueError(f"image must have 2 or 3 dimensions but given image has {image.ndim}.")
+    if kernel.ndim == 2:
+        kernel = np.expand_dims(kernel, 2)
+    elif kernel.ndim != 3:
+        raise ValueError(f"kernel must have 2 or 3 dimensions but given image has {image.ndim}.")
+
+    if coords.shape[1] == 2:
+        # set all z coordinates to 0 if 2D.
+        coords = np.append(coords, np.zeros((coords.shape[0], 1), dtype=int), axis=1)
+    if (coords.max(axis=0) >= np.array(image.shape)).any():
+        raise ValueError(f"Max yxz coordinates provided are {coords.max(axis=0)} but image has shape {image.shape}.")
+
+    image = image.astype(np.int8)
+    # kernel = kernel.astype(np.float32)
+    pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
+    pad_coords = coords + np.array([val[0] for val in pad_size])
+    if image2 is not None:
+        if image2.ndim == 2:
+            image2 = np.expand_dims(image2, 2)
+        if image2.shape != image.shape:
+            raise ValueError(f"image2 has shape {image2.shape} but image has shape {image.shape}."
+                             f"They need to be the same.")
+        if isinstance(padding, numbers.Number):
+            image2 = np.pad(image2, pad_size, 'constant', constant_values=padding).astype(np.int8)
+        else:
+            image2 = np.pad(image2, pad_size, padding).astype(np.int8)
+    if isinstance(padding, numbers.Number):
+        return cy_convolve(np.pad(image, pad_size, 'constant', constant_values=padding), kernel, pad_coords, image2)
+    else:
+        return cy_convolve(np.pad(image, pad_size, padding), kernel, pad_coords, image2)

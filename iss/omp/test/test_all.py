@@ -203,8 +203,10 @@ class TestCountSpotNeighbours(unittest.TestCase):
             spot_yxz_pad = spot_yxz.copy()
             for i in range(len(pad_size)):
                 spot_yxz_pad[:, i] = spot_yxz[:,i] + pad_size[i][0]
+            if (pos_filter + neg_filter).max() > 1:
+                raise ValueError('Pos and Neg overlap')
             pos_neighb_python, neg_neighb_python = count_spot_neighbours(np.pad(image, pad_size, 'symmetric'),
-                                                                         spot_yxz_pad, pos_filter, neg_filter)
+                                                                         spot_yxz_pad, pos_filter-neg_filter)
             diff1 = pos_neighb_python - pos_neighb_matlab.squeeze()
             diff2 = neg_neighb_python - neg_neighb_matlab.squeeze()
             self.assertTrue(np.abs(diff1).max() <= self.tol)
