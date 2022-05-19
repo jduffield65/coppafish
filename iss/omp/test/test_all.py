@@ -2,8 +2,10 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs
+from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs, fit_coefs_jax,\
+    fit_coefs_weight_jax
 from ..spots import count_spot_neighbours
+import jax
 
 
 class TestFittingStandardDeviation(unittest.TestCase):
@@ -64,13 +66,15 @@ class TestFitCoefs(unittest.TestCase):
         Coefficient of each gene for each spot.
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    tol = 1e-10
+    tol = 1e-6
 
     def test_fit_coefs(self):
         folder = os.path.join(self.folder, 'fit_coefs')
         test_files = [s for s in os.listdir(folder) if "test" in s]
         if len(test_files) == 0:
             raise errors.EmptyListError("test_files")
+        batch_fit_coefs_jax = jax.vmap(fit_coefs_jax, in_axes=(None, 1, 0), out_axes=(1, 0))
+        batch_fit_coefs_weight_jax = jax.vmap(fit_coefs_weight_jax, in_axes=(None, 1, 0, 1), out_axes=(1, 0))
         for file_name in test_files:
             test_file = os.path.join(folder, file_name)
             bled_codes, spot_colors, residual_matlab, coefs_matlab = \
@@ -84,10 +88,35 @@ class TestFitCoefs(unittest.TestCase):
             residual_python, coefs_python = fit_coefs(bled_codes.reshape(n_genes, -1).transpose(),
                                                       spot_colors.reshape(n_spots, -1).transpose())
             residual_python = residual_python.transpose().reshape(n_spots, n_rounds, n_channels)
+            genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
+            residual_jax, coefs_jax = batch_fit_coefs_jax(bled_codes.reshape(n_genes, -1).transpose(),
+                                                          spot_colors.reshape(n_spots, -1).transpose(), genes_used)
+            residual_jax = np.asarray(residual_jax).transpose().reshape(n_spots, n_rounds, n_channels)
+            coefs_jax = np.asarray(coefs_jax)
             diff1 = residual_python - residual_matlab
             diff2 = coefs_python - coefs_matlab
+            diff1_jax = residual_python - residual_jax
+            diff2_jax = coefs_python - coefs_jax
             self.assertTrue(np.abs(diff1).max() <= self.tol)
             self.assertTrue(np.abs(diff2).max() <= self.tol)
+            self.assertTrue(np.abs(diff1_jax).max() <= self.tol)
+            self.assertTrue(np.abs(diff2_jax).max() <= self.tol)
+        if n_spots == 1:
+            # Check weighted least squares works if only 1 spot. If more than 1 spot, fit_coefs won't work.
+            weight = np.random.rand(n_channels*n_rounds, 1)
+            residual_python_weight, coefs_python_weight = fit_coefs(bled_codes.reshape(n_genes, -1).transpose(),
+                                                                    spot_colors.reshape(n_spots, -1).transpose(),
+                                                                    weight)
+            residual_python_weight = residual_python_weight.transpose().reshape(n_spots, n_rounds, n_channels)
+            residual_jax_weight, coefs_jax_weight = \
+                batch_fit_coefs_weight_jax(bled_codes.reshape(n_genes, -1).transpose(),
+                                           spot_colors.reshape(n_spots, -1).transpose(), genes_used, weight)
+            residual_jax_weight = np.asarray(residual_jax_weight).transpose().reshape(n_spots, n_rounds, n_channels)
+            coefs_jax_weight = np.asarray(coefs_jax_weight)
+            diff1_weight = residual_python_weight - residual_jax_weight
+            diff2_weight = coefs_python_weight - coefs_jax_weight
+            self.assertTrue(np.abs(diff1_weight).max() <= self.tol)
+            self.assertTrue(np.abs(diff2_weight).max() <= self.tol)
 
 
 class TestGetAllCoefs(unittest.TestCase):
@@ -124,7 +153,7 @@ class TestGetAllCoefs(unittest.TestCase):
         Coefficient found for each background vector for each pixel.
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    tol = 1e-10
+    tol = 1e-6
 
     def test_get_all_coefs(self):
         folder = os.path.join(self.folder, 'get_all_coefs')

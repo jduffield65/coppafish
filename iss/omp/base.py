@@ -3,6 +3,27 @@ from .. import utils
 from ..call_spots.base import fit_background, dot_product_score
 from typing import Tuple, Optional, Union, List
 from tqdm import tqdm
+import jax.numpy as jnp
+import jax
+
+@jax.jit
+def fit_coefs_jax(bled_codes, pixel_colors, genes):
+    coefs = jnp.linalg.lstsq(bled_codes[:, genes], pixel_colors)[0]
+    residual = pixel_colors - jnp.matmul(bled_codes[:, genes], coefs)
+    return residual, coefs.transpose()
+
+
+# batch_fit_coefs_jax = jax.vmap(fit_coefs_jax, in_axes=(None, 1, 0), out_axes=(1, 0))
+
+
+@jax.jit
+def fit_coefs_weight_jax(bled_codes, pixel_colors, genes, weight):
+    coefs = jnp.linalg.lstsq(bled_codes[:, genes] * weight.reshape(-1, 1), pixel_colors * weight)[0]
+    residual = pixel_colors * weight - jnp.matmul(bled_codes[:, genes] * weight.reshape(-1, 1), coefs)
+    return residual / weight, coefs.transpose()
+
+
+# batch_fit_coefs_weight_jax = jax.vmap(fit_coefs_weight_jax, in_axes=(None, 1, 0, 1), out_axes=(1, 0))
 
 
 def fitting_standard_deviation(bled_codes: np.ndarray, coef: np.ndarray, alpha: float, beta: float = 1) -> np.ndarray:
@@ -191,6 +212,10 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
     added_genes = np.ones((n_pixels, max_genes), dtype=int) * -1
     sigma = np.zeros((n_pixels, n_rounds, n_channels))
     continue_pixels = np.arange(n_pixels)
+    if weight_coef_fit:
+        batch_fit_coefs_weight_jax = jax.vmap(fit_coefs_weight_jax, in_axes=(None, 1, 0, 1), out_axes=(1, 0))
+    else:
+        batch_fit_coefs_jax = jax.vmap(fit_coefs_jax, in_axes=(None, 1, 0), out_axes=(1, 0))
     for i in range(max_genes):
         # only continue with pixels for which dot product score exceeds threshold
         added_genes[continue_pixels, i], sigma[continue_pixels] = get_best_gene(residual_pixel_colors[continue_pixels],
@@ -202,7 +227,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
         n_continue = sum(continue_pixels)
         if n_continue == 0:
             break
-        with tqdm(total=n_continue, disable=no_verbose) as pbar:
+        with tqdm(total=n_continue, disable=no_verbose or i > 0) as pbar:
             pbar.set_postfix({'iter': i, 'n_pixels': n_continue})
             if i == 0:
                 # When adding only 1 gene, can do many pixels at once if neglect weighting.
@@ -215,18 +240,31 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
             else:
                 if weight_coef_fit:
                     weight = 1 / sigma.reshape((n_pixels, -1)).transpose()
-                for s in np.where(continue_pixels)[0]:
-                    # s:s+1 is so shape is correct for fit_coefs function.
-                    if weight_coef_fit:
-                        residual_pixel_colors[:, s:s + 1], all_coefs[s, added_genes[s, :i + 1]] = \
-                            fit_coefs(bled_codes[:, added_genes[s, :i + 1]], pixel_colors[:, s:s + 1],
-                                      weight[:, s:s + 1])
-                    else:
-                        # TODO: maybe do this fitting with all unique combinations of genes so can do
-                        #  multiple spots at once.
-                        residual_pixel_colors[:, s:s + 1], all_coefs[s, added_genes[s, :i + 1]] = \
-                            fit_coefs(bled_codes[:, added_genes[s, :i + 1]], pixel_colors[:, s:s + 1])
-                    pbar.update(1)
+                    result = batch_fit_coefs_weight_jax(bled_codes, pixel_colors[:, continue_pixels],
+                                                        added_genes[continue_pixels, :i + 1],
+                                                        weight[:, continue_pixels])
+                else:
+                    result = batch_fit_coefs_jax(bled_codes, pixel_colors[:, continue_pixels],
+                                                 added_genes[continue_pixels, :i + 1])
+                residual_pixel_colors[:, continue_pixels] = np.asarray(result[0])
+                all_coefs[np.expand_dims(np.where(continue_pixels)[0], 1),
+                          added_genes[continue_pixels, :i + 1]] = np.asarray(result[1])
+
+                # # Old non jax method
+                # if weight_coef_fit:
+                #     weight = 1 / sigma.reshape((n_pixels, -1)).transpose()
+                # for s in np.where(continue_pixels)[0]:
+                #     # s:s+1 is so shape is correct for fit_coefs function.
+                #     if weight_coef_fit:
+                #         residual_pixel_colors[:, s:s + 1], all_coefs[s, added_genes[s, :i + 1]] = \
+                #             fit_coefs(bled_codes[:, added_genes[s, :i + 1]], pixel_colors[:, s:s + 1],
+                #                       weight[:, s:s + 1])
+                #     else:
+                #         # TODO: maybe do this fitting with all unique combinations of genes so can do
+                #         #  multiple spots at once.
+                #         residual_pixel_colors[:, s:s + 1], all_coefs[s, added_genes[s, :i + 1]] = \
+                #             fit_coefs(bled_codes[:, added_genes[s, :i + 1]], pixel_colors[:, s:s + 1])
+                #     pbar.update(1)
         pbar.close()
         residual_pixel_colors = residual_pixel_colors.transpose().reshape((n_pixels, n_rounds, n_channels))
 

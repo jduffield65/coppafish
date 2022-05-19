@@ -283,6 +283,9 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
     Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
     Only finds result of filtering at specific locations.
 
+    !!! note
+        image and image2 need to be np.int8 and kernel needs to be int otherwise will get cython error.
+
     Args:
         image: `np.int8 [image_szY x image_szX (x image_szZ)]`.
             Image to be filtered. Must be 2D or 3D.
@@ -338,8 +341,6 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
     if (coords.max(axis=0) >= np.array(image.shape)).any():
         raise ValueError(f"Max yxz coordinates provided are {coords.max(axis=0)} but image has shape {image.shape}.")
 
-    image = image.astype(np.int8)
-    # kernel = kernel.astype(np.float32)
     pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
     pad_coords = coords + np.array([val[0] for val in pad_size])
     if image2 is not None:

@@ -46,7 +46,7 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
 
     # Check kernel contains right values.
     kernel_vals = np.unique(kernel)
-    if not np.isin(kernel_vals, [0, 1, -1]).all():
+    if not np.isin(kernel_vals, [-1, 0, 1]).all():
         raise ValueError('filter contains values other than -1, 0 or 1.')
 
     # Check all spots in image
@@ -61,14 +61,15 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
         # max_pos_pixels * pos_spacing = neg_spacing - 3 and min_neg_pixels * neg_spacing == neg_spacing
         # which is less than max_pos_pixels hence can distinguish positive from negative.
         neg_spacing = np.sum(kernel == 1) + 3
-        kernel[kernel == -1] = neg_spacing
+        kernel_mod = kernel.copy().astype(int)  # Copy otherwise change original kernel.
+        kernel_mod[kernel_mod == -1] = neg_spacing
         if cython:
-            n_pos, n_neg = utils.morphology.imfilter_coords(image > 0, kernel.astype(int), spot_yxz,
-                                                            image2=image < 0)
+            n_pos, n_neg = utils.morphology.imfilter_coords((image > 0).astype(np.int8), kernel_mod, spot_yxz,
+                                                            image2=(image < 0).astype(np.int8))
         else:
             sign_im = np.append(np.expand_dims(image > 0, image.ndim),
                                 np.expand_dims(image < 0, image.ndim), -1)
-            sign_im_filt = utils.morphology.imfilter(sign_im.astype(np.float32), kernel.astype(np.float32))
+            sign_im_filt = utils.morphology.imfilter(sign_im.astype(np.float32), kernel_mod.astype(np.float32))
             n_neighb = sign_im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
             n_pos = n_neighb[:, 0]
             n_neg = n_neighb[:, 1]
@@ -80,14 +81,16 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
     elif np.isin(-1, kernel_vals):
         # Return negative counts
         if cython:
-            return utils.morphology.imfilter_coords(image < 0, kernel < 0, spot_yxz).astype(int)
+            return utils.morphology.imfilter_coords((image < 0).astype(np.int8), (kernel < 0).astype(int),
+                                                    spot_yxz).astype(int)
         else:
             im_filt = utils.morphology.imfilter((image < 0).astype(np.float32), (kernel < 0).astype(np.float32))
             return im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])].astype(int)
     elif np.isin(1, kernel_vals):
         # Return positive counts
         if cython:
-            return utils.morphology.imfilter_coords(image > 0, kernel > 0, spot_yxz).astype(int)
+            return utils.morphology.imfilter_coords((image > 0).astype(np.int8), (kernel > 0).astype(int),
+                                                    spot_yxz).astype(int)
         else:
             im_filt = utils.morphology.imfilter((image > 0).astype(np.float32), (kernel > 0).astype(np.float32))
             return im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])].astype(int)
