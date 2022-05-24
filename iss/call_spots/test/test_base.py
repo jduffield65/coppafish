@@ -88,12 +88,15 @@ class TestDotProductScore(unittest.TestCase):
             spot_colors = np.moveaxis(spot_colors, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             norm_shift = float(norm_shift)
+            n_rounds, n_channels = spot_colors[0].shape
             if weight.max() == 0:
                 # empty array in Matlab loaded as [0, 0].
                 weight_squared = None
             else:
                 weight_squared = np.moveaxis(weight, 1, 2).astype(float) ** 2 # change to r,c from MATLAB c,r
-            output_python = dot_product_score(spot_colors, bled_codes, norm_shift, weight_squared)
+                weight_squared = weight_squared.reshape(-1, n_rounds * n_channels)
+            output_python = dot_product_score(spot_colors.reshape(-1, n_rounds * n_channels),
+                                              bled_codes.reshape(-1, n_rounds * n_channels), norm_shift, weight_squared)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)
 

@@ -5,6 +5,8 @@ from .. import utils
 from typing import Union, List, Optional, Tuple
 from ..setup.notebook import NotebookPage
 from line_profiler_pycharm import profile
+import jax.numpy as jnp
+import jax
 
 
 def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
@@ -135,6 +137,18 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
     bled_codes = bled_codes / norm_factor
     return bled_codes
 
+
+@jax.jit
+def dp_jax(spot_colors, bled_codes, norm_shift, weight_squared):
+    n_genes, n_round_channels = bled_codes.shape
+    spot_colors = spot_colors / (jnp.linalg.norm(spot_colors) + norm_shift)
+    bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
+    spot_colors = spot_colors * weight_squared
+    score = spot_colors @ bled_codes.transpose()
+    score = score / np.sum(weight_squared) * n_round_channels
+    return score
+
+
 @profile
 def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
                       weight_squared: Optional[np.ndarray] = None) -> np.ndarray:
@@ -143,13 +157,13 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
     for a particular `spot_color`. Sum is over all rounds and channels.
 
     Args:
-        spot_colors: `float [n_spots x n_rounds x n_channels]`.
+        spot_colors: `float [n_spots x (n_rounds x n_channels)]`.
             Spot colors normalised to equalise intensities between channels (and rounds).
-        bled_codes: `float [n_genes x n_rounds x n_channels]`.
+        bled_codes: `float [n_genes x (n_rounds x n_channels)]`.
             `bled_codes` such that `spot_color` of a gene `g`
             in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
         norm_shift: shift to apply to normalisation of spot_colors to limit boost of weak spots.
-        weight_squared: `float [n_spots x n_rounds x n_channels]`.
+        weight_squared: `float [n_spots x (n_rounds x n_channels)]`.
             squared weight to apply to each round/channel for each spot when computing dot product.
             If `None`, all rounds, channels treated equally.
 
@@ -160,15 +174,15 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
     """
     # TODO: accept no nan values in spot_colors or bled_codes
     n_spots = spot_colors.shape[0]
-    n_genes = bled_codes.shape[0]
+    n_genes, n_round_channels = bled_codes.shape
     if not utils.errors.check_shape(spot_colors[0], bled_codes[0].shape):
         raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
-                                      (n_spots,) + bled_codes[0].shape)
-    spot_norm_factor = np.linalg.norm(spot_colors, axis=(1, 2), keepdims=True)
+                                      (n_spots, n_round_channels))
+    spot_norm_factor = np.linalg.norm(spot_colors, axis=1, keepdims=True)
     spot_norm_factor = spot_norm_factor + norm_shift
     spot_colors = spot_colors / spot_norm_factor
 
-    gene_norm_factor = np.linalg.norm(bled_codes, axis=(1, 2), keepdims=True)
+    gene_norm_factor = np.linalg.norm(bled_codes, axis=1, keepdims=True)
     gene_norm_factor[gene_norm_factor == 0] = 1  # so don't blow up if bled_code is all 0 for a gene.
     bled_codes = bled_codes / gene_norm_factor
 
@@ -179,12 +193,11 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
         spot_colors = spot_colors * weight_squared
 
     # TODO: matmul replace by @
-    score = np.reshape(spot_colors, (n_spots, -1)) @ np.reshape(bled_codes, (n_genes, -1)).transpose()
+    score = spot_colors @ bled_codes.transpose()
 
     if weight_squared is not None:
-        score = score / np.expand_dims(np.sum(weight_squared, axis=(1, 2)), 1)
-        n_rounds, n_channels = spot_colors[0].shape
-        score = score * n_rounds * n_channels  # make maximum score 1 if all weight the same and dot product perfect.
+        score = score / np.expand_dims(np.sum(weight_squared, axis=1), 1)
+        score = score * n_round_channels  # make maximum score 1 if all weight the same and dot product perfect.
 
     return score
 
@@ -210,6 +223,7 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
                          "\nBut all values in spot_colors given are integers indicating they are the raw intensities.")
     round_max_color = np.max(spot_colors, axis=2)
     return np.median(round_max_color, axis=1)
+
 
 @profile
 def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

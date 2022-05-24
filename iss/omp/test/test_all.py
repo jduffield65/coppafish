@@ -40,8 +40,9 @@ class TestFittingStandardDeviation(unittest.TestCase):
                 matlab.load_array(test_file, ['bled_codes', 'coef', 'alpha', 'beta', 'sigma'])
             bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             output_matlab = np.moveaxis(output_matlab, 1, 2).astype(float)  # change to r,c from MATLAB c,r
-            output_python = np.sqrt(fitting_variance(bled_codes, coef, float(alpha), float(beta)))
-            diff = output_python - output_matlab
+            n_pixels, n_genes = coef.shape
+            output_python = np.sqrt(fitting_variance(bled_codes.reshape(n_genes, -1), coef, float(alpha), float(beta)))
+            diff = output_python - output_matlab.reshape(n_pixels, -1)
             self.assertTrue(np.abs(diff).max() <= self.tol)
 
 
@@ -111,7 +112,10 @@ class TestFitCoefs(unittest.TestCase):
             # else:
             #     residual_python, coefs_python = fit_coefs_multi_genes(bc_use, sc_use, genes_used)
             residual_python, coefs_python = fit_coefs(bc_use, sc_use_python)
-            residual_python = residual_python.transpose().reshape(n_spots, n_rounds, n_channels)
+            if n_spots > 1:
+                residual_python = residual_python.reshape(n_spots, n_rounds, n_channels)
+            else:
+                residual_python = residual_python.transpose().reshape(n_spots, n_rounds, n_channels)
             #genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
             residual_jax, coefs_jax = batch_fit_coefs_jax(bc_use, sc_use, genes_used)
             residual_jax = np.asarray(residual_jax).transpose().reshape(n_spots, n_rounds, n_channels)

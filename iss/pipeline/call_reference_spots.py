@@ -165,7 +165,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     use_ge_last = np.zeros(n_spots).astype(bool)
     bled_codes_ge_use = bled_codes_use.copy()
     for i in range(n_iter):
-        scores = dot_product_score(spot_colors_use, bled_codes_ge_use, dp_norm_shift)
+        scores = dot_product_score(spot_colors_use.reshape(n_spots, -1), bled_codes_ge_use.reshape(n_genes, -1),
+                                   dp_norm_shift)
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
         pass_score_thresh = spot_score > nbp_ref_spots.score_thresh
@@ -193,7 +194,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     if config['gene_efficiency_n_iter'] > 0:
         # Compute score with final gene efficiency
-        scores = dot_product_score(spot_colors_use, bled_codes_ge_use, dp_norm_shift)
+        scores = dot_product_score(spot_colors_use.reshape(n_spots, -1), bled_codes_ge_use.reshape(n_genes, -1),
+                                   dp_norm_shift)
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
 
