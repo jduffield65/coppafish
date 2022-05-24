@@ -4,6 +4,7 @@ import numpy as np
 from .. import utils
 from typing import Union, List, Optional, Tuple
 from ..setup.notebook import NotebookPage
+from line_profiler_pycharm import profile
 
 
 def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
@@ -134,7 +135,7 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
     bled_codes = bled_codes / norm_factor
     return bled_codes
 
-
+@profile
 def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
                       weight: Optional[np.ndarray] = None) -> np.ndarray:
     """
@@ -208,7 +209,7 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
     round_max_color = np.max(spot_colors, axis=2)
     return np.median(round_max_color, axis=1)
 
-
+@profile
 def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This determines the coefficient of the background vectors for each spot.

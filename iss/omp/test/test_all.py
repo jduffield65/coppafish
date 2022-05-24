@@ -4,6 +4,7 @@ import numpy as np
 from ...utils import matlab, errors
 from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs, fit_coefs_jax,\
     fit_coefs_weight_jax
+from ..cython_omp import mat_mul, cy_fit_coefs
 from ..spots import count_spot_neighbours
 import jax
 
@@ -68,6 +69,18 @@ class TestFitCoefs(unittest.TestCase):
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
     tol = 1e-6
 
+    def test_mat_mul(self):
+        m = np.random.randint(100)
+        n = np.random.randint(100)
+        a = np.random.rand(m, n)
+        x = np.random.rand(n)
+        out_numpy = a @ x
+        out_cython = np.zeros(m)
+        # For some reason, need to transpose a twice here but not in fit_coefs.
+        mat_mul(a.transpose(), x, out_cython, transpose='t'.encode('utf-8'))
+        diff = out_numpy - out_cython
+        self.assertTrue(np.abs(diff).max() <= self.tol)
+
     def test_fit_coefs(self):
         folder = os.path.join(self.folder, 'fit_coefs')
         test_files = [s for s in os.listdir(folder) if "test" in s]
@@ -82,31 +95,46 @@ class TestFitCoefs(unittest.TestCase):
             bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             spot_colors = np.moveaxis(spot_colors, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             residual_matlab = np.moveaxis(residual_matlab, 1, 2).astype(float)  # change to r,c from MATLAB c,r
-            #coefs_matlab = coefs_matlab.transpose()  # change to g,s from MATLAB s,g.
+            coefs_matlab = coefs_matlab.flatten()  # change to g,s from MATLAB s,g.
             n_genes = bled_codes.shape[0]
             n_spots, n_rounds, n_channels = spot_colors.shape
-            residual_python, coefs_python = fit_coefs(bled_codes.reshape(n_genes, -1).transpose(),
-                                                      spot_colors.reshape(n_spots, -1).transpose())
-            residual_python = residual_python.transpose().reshape(n_spots, n_rounds, n_channels)
+
+            bc_use = bled_codes.reshape(n_genes, -1).transpose()
+            sc_use = spot_colors.reshape(n_spots, -1).transpose()
+            if n_spots == 1:
+                sc_use_python = sc_use.flatten()
+            else:
+                sc_use_python = sc_use
             genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
-            residual_jax, coefs_jax = batch_fit_coefs_jax(bled_codes.reshape(n_genes, -1).transpose(),
-                                                          spot_colors.reshape(n_spots, -1).transpose(), genes_used)
+            # if n_spots > 1:
+            #     residual_python, coefs_python = fit_coefs_single_gene(bc_use, sc_use_python, genes_used.flatten())
+            # else:
+            #     residual_python, coefs_python = fit_coefs_multi_genes(bc_use, sc_use, genes_used)
+            residual_python, coefs_python = fit_coefs(bc_use, sc_use_python)
+            residual_python = residual_python.transpose().reshape(n_spots, n_rounds, n_channels)
+            #genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
+            residual_jax, coefs_jax = batch_fit_coefs_jax(bc_use, sc_use, genes_used)
             residual_jax = np.asarray(residual_jax).transpose().reshape(n_spots, n_rounds, n_channels)
-            coefs_jax = np.asarray(coefs_jax)
+            coefs_jax = np.asarray(coefs_jax).flatten()
+            residual_cython, coefs_cython = cy_fit_coefs(bc_use, sc_use, genes_used)
+            coefs_cython = coefs_cython.flatten()
+            residual_cython = residual_cython.transpose().reshape(n_spots, n_rounds, n_channels)
             diff1 = residual_python - residual_matlab
             diff2 = coefs_python - coefs_matlab
             diff1_jax = residual_python - residual_jax
             diff2_jax = coefs_python - coefs_jax
+            diff1_cython = residual_cython - residual_python
+            diff2_cython = coefs_python - coefs_cython
             self.assertTrue(np.abs(diff1).max() <= self.tol)
             self.assertTrue(np.abs(diff2).max() <= self.tol)
             self.assertTrue(np.abs(diff1_jax).max() <= self.tol)
             self.assertTrue(np.abs(diff2_jax).max() <= self.tol)
+            self.assertTrue(np.abs(diff1_cython).max() <= self.tol)
+            self.assertTrue(np.abs(diff2_cython).max() <= self.tol)
         if n_spots == 1:
             # Check weighted least squares works if only 1 spot. If more than 1 spot, fit_coefs won't work.
             weight = np.random.rand(n_channels*n_rounds, 1)
-            residual_python_weight, coefs_python_weight = fit_coefs(bled_codes.reshape(n_genes, -1).transpose(),
-                                                                    spot_colors.reshape(n_spots, -1).transpose(),
-                                                                    weight)
+            residual_python_weight, coefs_python_weight = fit_coefs(bc_use, sc_use_python, weight.flatten())
             residual_python_weight = residual_python_weight.transpose().reshape(n_spots, n_rounds, n_channels)
             residual_jax_weight, coefs_jax_weight = \
                 batch_fit_coefs_weight_jax(bled_codes.reshape(n_genes, -1).transpose(),
