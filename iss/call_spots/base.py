@@ -164,11 +164,11 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
     if not utils.errors.check_shape(spot_colors[0], bled_codes[0].shape):
         raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
                                       (n_spots,) + bled_codes[0].shape)
-    spot_norm_factor = np.expand_dims(np.linalg.norm(spot_colors, axis=(1, 2)), (1, 2))
+    spot_norm_factor = np.linalg.norm(spot_colors, axis=(1, 2), keepdims=True)
     spot_norm_factor = spot_norm_factor + norm_shift
     spot_colors = spot_colors / spot_norm_factor
 
-    gene_norm_factor = np.expand_dims(np.linalg.norm(bled_codes, axis=(1, 2)), (1, 2))
+    gene_norm_factor = np.linalg.norm(bled_codes, axis=(1, 2), keepdims=True)
     gene_norm_factor[gene_norm_factor == 0] = 1  # so don't blow up if bled_code is all 0 for a gene.
     bled_codes = bled_codes / gene_norm_factor
 
@@ -244,9 +244,9 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
     n_rounds, n_channels = spot_colors[0].shape
     background_vectors = np.repeat(np.expand_dims(np.eye(n_channels), axis=1), n_rounds, axis=1)
     # give background_vectors an L2 norm of 1 so can compare coefficients with other genes.
-    background_vectors = background_vectors / np.expand_dims(np.linalg.norm(background_vectors, axis=(1, 2)), (1, 2))
+    background_vectors = background_vectors / np.linalg.norm(background_vectors, axis=(1, 2), keepdims=True)
 
-    weight_factor = 1 / (abs(spot_colors) + weight_shift)
+    weight_factor = 1 / (np.abs(spot_colors) + weight_shift)
     spot_weight = spot_colors * weight_factor
     background_weight = np.ones((1, n_rounds, n_channels)) * background_vectors[0, 0, 0] * weight_factor
     coef = np.sum(spot_weight * background_weight, axis=1) / np.sum(background_weight ** 2, axis=1)
