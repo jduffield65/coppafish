@@ -62,10 +62,10 @@ def fit_coefs_weight_jax(bled_codes, pixel_colors, genes, weight):
 #     return residual, coefs
 
 @profile
-def fitting_standard_deviation(bled_codes: np.ndarray, coef: np.ndarray, alpha: float, beta: float = 1) -> np.ndarray:
+def fitting_variance(bled_codes: np.ndarray, coef: np.ndarray, alpha: float, beta: float = 1) -> np.ndarray:
     """
-    Based on maximum likelihood estimation, this finds the standard deviation accounting for all genes fit in
-    each round/channel. The more genes added, the greater the standard deviation so if the inverse is used as a
+    Based on maximum likelihood estimation, this finds the variance accounting for all genes fit in
+    each round/channel. The more genes added, the greater the variance so if the inverse is used as a
     weighting for omp fitting, the rounds/channels which already have genes in will contribute less.
 
     Args:
@@ -94,7 +94,7 @@ def fitting_standard_deviation(bled_codes: np.ndarray, coef: np.ndarray, alpha: 
     # for g in range(n_genes):
     #     var = var + alpha * np.expand_dims(coef[:, g] ** 2, (1, 2)) * np.expand_dims(bled_codes[g] ** 2, 0)
 
-    return np.sqrt(var)
+    return var
 
 
 def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, weight: Optional[np.ndarray] = None) -> Tuple[
@@ -143,7 +143,7 @@ def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, weight: Optional
 def get_best_gene(residual_pixel_colors: np.ndarray, bled_codes: np.ndarray, coefs: np.ndarray, norm_shift: float,
                   score_thresh: float, alpha: float, beta: float,
                   ignore_genes: Optional[Union[np.ndarray, List]] = None,
-                  genes_for_sigma_calc: Optional[Union[np.ndarray, List]] = None) -> Tuple[np.ndarray, np.ndarray]:
+                  genes_for_var_calc: Optional[Union[np.ndarray, List]] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds the `best_gene` to add next to each pixel based on the dot product score with each `bled_code`.
 
@@ -168,7 +168,7 @@ def get_best_gene(residual_pixel_colors: np.ndarray, bled_codes: np.ndarray, coe
         beta: Used for `fitting_standard_deviation`, the variance with no genes added (`coef=0`) is `beta**2`.
         ignore_genes: `int [n_genes_ignore]`.
             Genes indices which if they are the best gene, best_gene will be set to -1.
-        genes_for_sigma_calc `int [n_genes_sigma_calc]`.
+        genes_for_var_calc: `int [n_genes_sigma_calc]`.
             Genes to use to compute sigma. If not specified, all genes are used.
             Only use this in first omp iteration when only background fit so only need to use these genes to compute
             sigma. Makes this iteration quicker.
@@ -176,25 +176,25 @@ def get_best_gene(residual_pixel_colors: np.ndarray, bled_codes: np.ndarray, coe
     Returns:
         - best_gene - `int [n_pixels]`.
             `best_gene[s]` is the best gene to add to pixel `s` next. It is -1 if no more genes should be added.
-        - sigma - `float [n_pixels x n_rounds x n_channels]`.
-            Standard deviation of each pixel in each round/channel based on genes fit on previous iteration.
+        - inverse_var - `float [n_pixels x n_rounds x n_channels]`.
+            Inverse of variance of each pixel in each round/channel based on genes fit on previous iteration.
 
     """
     if ignore_genes is None:
         ignore_genes = []
-    if genes_for_sigma_calc is None:
-        sigma = fitting_standard_deviation(bled_codes, coefs, alpha, beta)
+    if genes_for_var_calc is None:
+        inverse_var = 1 / fitting_variance(bled_codes, coefs, alpha, beta)
     else:
-        sigma = fitting_standard_deviation(bled_codes[genes_for_sigma_calc], coefs[:, genes_for_sigma_calc],
+        inverse_var = 1 / fitting_variance(bled_codes[genes_for_var_calc], coefs[:, genes_for_var_calc],
                                            alpha, beta)
-    all_scores = dot_product_score(residual_pixel_colors, bled_codes, norm_shift, 1 / sigma)
+    all_scores = dot_product_score(residual_pixel_colors, bled_codes, norm_shift, inverse_var)
     best_gene = np.argmax(np.abs(all_scores), 1)
     all_scores[coefs != 0] = 0  # best gene cannot be a gene which has already been added.
     for g in ignore_genes:
         all_scores[:, g] = 0  # best gene cannot be a gene in ignore_genes.
     best_score = all_scores[np.arange(all_scores.shape[0]), best_gene]
     best_gene[np.abs(best_score) <= score_thresh] = -1
-    return best_gene, sigma
+    return best_gene, inverse_var
 
 @profile
 def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_shift: float,
@@ -259,7 +259,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
     bled_codes = bled_codes.reshape((n_genes, -1)).transpose()
 
     added_genes = np.ones((n_pixels, max_genes), dtype=int) * -1
-    sigma = np.zeros((n_pixels, n_rounds, n_channels))
+    inverse_var = np.zeros((n_pixels, n_rounds, n_channels))
     continue_pixels = np.arange(n_pixels)
     if weight_coef_fit:
         batch_fit_coefs_weight_jax = jax.vmap(fit_coefs_weight_jax, in_axes=(None, 1, 0, 1), out_axes=(1, 0))
@@ -269,7 +269,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
         pbar.set_description('Finding OMP coefficients for each pixel')
         for i in range(max_genes):
             # only continue with pixels for which dot product score exceeds threshold
-            added_genes[continue_pixels, i], sigma[continue_pixels] = \
+            added_genes[continue_pixels, i], inverse_var[continue_pixels] = \
                 get_best_gene(residual_pixel_colors[continue_pixels], all_codes, all_coefs[continue_pixels], dp_shift,
                               dp_thresh, alpha, beta, background_genes, background_genes if i == 0 else None)
             residual_pixel_colors = residual_pixel_colors.reshape((n_pixels, -1)).transpose()
@@ -288,7 +288,12 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
             else:
                 # Old non jax method
                 if weight_coef_fit:
-                    weight = 1 / sigma.reshape((n_pixels, -1)).transpose()
+                    if i == 1:
+                        weight = np.sqrt(inverse_var).reshape((n_pixels, -1)).transpose()
+                    else:
+                        # Don't recompute weight for pixels no longer needed.
+                        weight[:, continue_pixels] = np.sqrt(inverse_var[continue_pixels]
+                                                             ).reshape((n_continue, -1)).transpose()
                 # if weight_coef_fit:
                 #     weight = 1 / sigma.reshape((n_pixels, -1)).transpose()
                 #     result = batch_fit_coefs_weight_jax(bled_codes, pixel_colors[:, continue_pixels],
@@ -308,7 +313,6 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
                     # all_coefs[np.expand_dims(np.where(continue_pixels)[0], 1),
                     #           added_genes[continue_pixels, :i + 1]] = i_coefs
                 for s in np.where(continue_pixels)[0]:
-                    # s:s+1 is so shape is correct for fit_coefs function.
                     if weight_coef_fit:
                         residual_pixel_colors[:, s], all_coefs[s, added_genes[s, :i + 1]] = \
                             fit_coefs(bled_codes[:, added_genes[s, :i + 1]], pixel_colors[:, s],

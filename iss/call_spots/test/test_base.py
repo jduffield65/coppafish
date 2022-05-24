@@ -90,10 +90,10 @@ class TestDotProductScore(unittest.TestCase):
             norm_shift = float(norm_shift)
             if weight.max() == 0:
                 # empty array in Matlab loaded as [0, 0].
-                weight = None
+                weight_squared = None
             else:
-                weight = np.moveaxis(weight, 1, 2).astype(float)  # change to r,c from MATLAB c,r
-            output_python = dot_product_score(spot_colors, bled_codes, norm_shift, weight)
+                weight_squared = np.moveaxis(weight, 1, 2).astype(float) ** 2 # change to r,c from MATLAB c,r
+            output_python = dot_product_score(spot_colors, bled_codes, norm_shift, weight_squared)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)
 

@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import fitting_standard_deviation, fit_coefs, get_all_coefs, fit_coefs_jax,\
+from ..base import fitting_variance, fit_coefs, get_all_coefs, fit_coefs_jax,\
     fit_coefs_weight_jax
 from ..cython_omp import mat_mul, cy_fit_coefs
 from ..spots import count_spot_neighbours
@@ -40,7 +40,7 @@ class TestFittingStandardDeviation(unittest.TestCase):
                 matlab.load_array(test_file, ['bled_codes', 'coef', 'alpha', 'beta', 'sigma'])
             bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             output_matlab = np.moveaxis(output_matlab, 1, 2).astype(float)  # change to r,c from MATLAB c,r
-            output_python = fitting_standard_deviation(bled_codes, coef, float(alpha), float(beta))
+            output_python = np.sqrt(fitting_variance(bled_codes, coef, float(alpha), float(beta)))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)
 

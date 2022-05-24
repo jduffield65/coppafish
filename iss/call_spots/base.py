@@ -137,8 +137,10 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
 
 @profile
 def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
-                      weight: Optional[np.ndarray] = None) -> np.ndarray:
+                      weight_squared: Optional[np.ndarray] = None) -> np.ndarray:
     """
+    Computes `sum(W**2(s * b) / W**2)` where `s` is a `spot_color`, `b` is a `bled_code` and `W**2` is weight_squared
+    for a particular `spot_color`. Sum is over all rounds and channels.
 
     Args:
         spot_colors: `float [n_spots x n_rounds x n_channels]`.
@@ -147,8 +149,8 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
             `bled_codes` such that `spot_color` of a gene `g`
             in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
         norm_shift: shift to apply to normalisation of spot_colors to limit boost of weak spots.
-        weight: `float [n_spots x n_rounds x n_channels]`.
-            weight to apply to each round/channel for each spot when computing dot product.
+        weight_squared: `float [n_spots x n_rounds x n_channels]`.
+            squared weight to apply to each round/channel for each spot when computing dot product.
             If `None`, all rounds, channels treated equally.
 
     Returns:
@@ -170,17 +172,17 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
     gene_norm_factor[gene_norm_factor == 0] = 1  # so don't blow up if bled_code is all 0 for a gene.
     bled_codes = bled_codes / gene_norm_factor
 
-    if weight is not None:
-        if not utils.errors.check_shape(weight, spot_colors.shape):
-            raise utils.errors.ShapeError('weight', weight.shape,
+    if weight_squared is not None:
+        if not utils.errors.check_shape(weight_squared, spot_colors.shape):
+            raise utils.errors.ShapeError('weight', weight_squared.shape,
                                           spot_colors.shape)
-        spot_colors = spot_colors * weight ** 2
+        spot_colors = spot_colors * weight_squared
 
     # TODO: matmul replace by @
     score = np.reshape(spot_colors, (n_spots, -1)) @ np.reshape(bled_codes, (n_genes, -1)).transpose()
 
-    if weight is not None:
-        score = score / np.expand_dims(np.sum(weight ** 2, axis=(1, 2)), 1)
+    if weight_squared is not None:
+        score = score / np.expand_dims(np.sum(weight_squared, axis=(1, 2)), 1)
         n_rounds, n_channels = spot_colors[0].shape
         score = score * n_rounds * n_channels  # make maximum score 1 if all weight the same and dot product perfect.
 
