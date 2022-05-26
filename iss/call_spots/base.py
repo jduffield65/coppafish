@@ -138,18 +138,23 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
     return bled_codes
 
 
-@jax.jit
-def dp_jax(spot_colors, bled_codes, norm_shift, weight_squared):
+def dot_product_score_jax(spot_colors, bled_codes, norm_shift, weight_squared):
     n_genes, n_round_channels = bled_codes.shape
     spot_colors = spot_colors / (jnp.linalg.norm(spot_colors) + norm_shift)
     bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
     spot_colors = spot_colors * weight_squared
     score = spot_colors @ bled_codes.transpose()
-    score = score / np.sum(weight_squared) * n_round_channels
+    score = score / jnp.sum(weight_squared) * n_round_channels
     return score
 
 
-@profile
+@jax.jit
+def dot_product_score_jax_vectorised(spot_colors, bled_codes, norm_shift, weight_squared):
+    score = jax.vmap(dot_product_score_jax, in_axes=(0, None, None, 0), out_axes=0)(spot_colors, bled_codes,
+                                                                                    norm_shift, weight_squared)
+    return score
+
+
 def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
                       weight_squared: Optional[np.ndarray] = None) -> np.ndarray:
     """
@@ -225,7 +230,6 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
     return np.median(round_max_color, axis=1)
 
 
-@profile
 def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This determines the coefficient of the background vectors for each spot.
