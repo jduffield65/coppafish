@@ -6,13 +6,16 @@ import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
 from ..spot_colors import get_all_pixel_colors, get_spot_colors
-from ..call_spots import get_spot_intensity, fit_background
+from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised
 from .. import omp
 from sklearn.neighbors import NearestNeighbors
 import os
 from scipy import sparse
+from line_profiler_pycharm import profile
+import jax.numpy as jnp
 
 
+@profile
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
                    transform: np.ndarray, ref_spots_intensity_thresh: float) -> NotebookPage:
@@ -83,12 +86,13 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             if pixel_colors_tz.shape[0] == 0:
                 continue
             # save memory - colors max possible value is around 80000. yxz max possible value is around 2048.
-            pixel_colors_tz = pixel_colors_tz.astype(np.int32)
+            pixel_colors_tz = jnp.array(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind])
             pixel_yxz_tz = pixel_yxz_tz.astype(np.int16)
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
-            pixel_intensity_tz = get_spot_intensity(np.abs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind]))
+            #pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
+            pixel_intensity_tz = get_spot_intensity_vectorised(jnp.abs(pixel_colors_tz))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             if not keep.any():
                 continue
@@ -97,9 +101,10 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             del pixel_intensity_tz, keep
 
             pixel_coefs_tz = sparse.csr_matrix(
-                omp.get_all_coefs(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind], bled_codes,
+                omp.get_all_coefs(pixel_colors_tz, jnp.array(bled_codes),
                                   nbp_call_spots.background_weight_shift,  dp_norm_shift, config['dp_thresh'],
                                   config['alpha'], config['beta'],  config['max_genes'], config['weight_coef_fit'])[0])
+            # a = 1 / 0
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.
             keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
@@ -172,12 +177,14 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nbp.colors = nd_spot_colors
 
     nd_background_coefs = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
-    spot_colors_norm = nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)
-                       ] / nbp_call_spots.color_norm_factor[rc_ind]
+    spot_colors_norm = jnp.array(
+        nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)] /
+        nbp_call_spots.color_norm_factor[rc_ind])
     nd_background_coefs[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = \
-        fit_background(spot_colors_norm, nbp_call_spots.background_weight_shift)[1]
+        np.asarray(fit_background_jax_vectorised(spot_colors_norm,
+                                                 nbp_call_spots.background_weight_shift)[1])
     nbp.background_coef = nd_background_coefs
-    nbp.intensity = get_spot_intensity(spot_colors_norm)
+    nbp.intensity = np.asarray(get_spot_intensity_vectorised(spot_colors_norm))
     del spot_colors_norm
 
     nbp.coef = spot_coefs[not_duplicate].toarray()

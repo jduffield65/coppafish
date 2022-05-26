@@ -1,7 +1,7 @@
 import numpy as np
 from .. import utils
-from ..call_spots.base import fit_background, dot_product_score_jax, dot_product_score_jax_vectorised
-from typing import Tuple, Optional, Union, List
+from ..call_spots.base import fit_background, dot_product_score_jax, fit_background_jax_vectorised
+from typing import Tuple
 from tqdm import tqdm
 import jax.numpy as jnp
 import jax
@@ -346,8 +346,7 @@ def get_best_gene_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes:
                                         score_thresh, alpha, background_genes, background_var)
 
 
-@profile
-def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_shift: float,
+def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background_shift: float,
                   dp_shift: float, dp_thresh: float, alpha: float, beta: float, max_genes: int,
                   weight_coef_fit: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -394,18 +393,21 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
 
     # Fit background and override initial pixel_colors
     gene_coefs = np.zeros((n_pixels, n_genes))  # coefs of all genes and background
-    pixel_colors, background_coefs, background_codes = fit_background(pixel_colors, background_shift)
+    pixel_colors, background_coefs, background_codes = fit_background_jax_vectorised(pixel_colors,
+                                                                                     background_shift)
+
     background_genes = jnp.arange(n_genes, n_genes + n_channels)
 
     # colors and codes for get_best_gene function
     # Includes background as if background is the best gene, iteration ends.
     # uses residual color as used to find next gene to add.
-    all_codes = jnp.array(np.concatenate((bled_codes, background_codes)).reshape((n_genes + n_channels, -1)))
+    bled_codes = bled_codes.reshape((n_genes, -1))
+    all_codes = jnp.concatenate((bled_codes, background_codes.reshape(n_channels, -1)))
+    bled_codes = bled_codes.transpose()
 
     # colors and codes for fit_coefs function (No background as this is not updated again).
     # always uses post background color as coefficients for all genes re-estimated at each iteration.
-    pixel_colors = jnp.array(pixel_colors.reshape((n_pixels, -1)))
-    bled_codes = jnp.array(bled_codes.reshape((n_genes, -1)).transpose())
+    pixel_colors = pixel_colors.reshape((n_pixels, -1))
 
     continue_pixels = jnp.arange(n_pixels)
     with tqdm(total=max_genes, disable=no_verbose) as pbar:
@@ -414,7 +416,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
             if i == 0:
                 # Background coefs don't change, hence contribution to variance won't either.
                 added_genes, pass_score_thresh, background_variance = \
-                    get_best_gene_first_iter_vectorised(pixel_colors, all_codes, jnp.array(background_coefs), dp_shift,
+                    get_best_gene_first_iter_vectorised(pixel_colors, all_codes, background_coefs, dp_shift,
                                                         dp_thresh, alpha, beta, background_genes)
                 inverse_var = 1 / background_variance
                 pixel_colors = pixel_colors.transpose()
@@ -424,7 +426,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
                     get_best_gene_vectorised(residual_pixel_colors, all_codes, i_coefs, added_genes, dp_shift,
                                              dp_thresh, alpha, background_genes, background_variance)
 
-                # For pixels with at least one non-zero coef, add to final coefs when fail the thresholding.
+                # For pixels with at least one non-zero coef, add to final gene_coefs when fail the thresholding.
                 fail_score_thresh = jnp.invert(pass_score_thresh)
                 # gene_coefs[np.asarray(continue_pixels[fail_score_thresh])] = np.asarray(i_coefs[fail_score_thresh])
                 gene_coefs[np.asarray(continue_pixels[fail_score_thresh])[:, np.newaxis],
@@ -451,9 +453,10 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
                 residual_pixel_colors, i_coefs = fit_coefs_vectorised(bled_codes, pixel_colors, added_genes)
 
             if i == max_genes-1:
+                # Add pixels to final gene_coefs when reach end of iteration.
                 gene_coefs[np.asarray(continue_pixels)[:, np.newaxis], np.asarray(added_genes)] = np.asarray(i_coefs)
 
             pbar.update(1)
     pbar.close()
 
-    return gene_coefs, background_coefs
+    return gene_coefs, np.asarray(background_coefs)

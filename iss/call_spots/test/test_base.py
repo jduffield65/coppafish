@@ -2,7 +2,9 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import color_normalisation, dot_product_score, fit_background, get_gene_efficiency
+from ..base import color_normalisation, dot_product_score, fit_background, get_gene_efficiency, \
+    fit_background_jax_vectorised, get_spot_intensity, get_spot_intensity_vectorised
+import jax.numpy as jnp
 
 
 class TestColorNormalisation(unittest.TestCase):
@@ -118,7 +120,7 @@ class TestFitBackground(unittest.TestCase):
         BackgroundVectors are just 1 in relavent channel so do not have L2 norm of 1.
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    tol = 1e-10
+    tol = 1e-6
 
     def test_fit_background(self):
         folder = os.path.join(self.folder, 'fit_background')
@@ -139,10 +141,17 @@ class TestFitBackground(unittest.TestCase):
             coef_matlab = coef_matlab * matlab_norm_factor
 
             residual_python, coef_python, background_vectors = fit_background(spot_colors, weight_shift)
+            residual_jax, coef_jax, background_vectors_jax = fit_background_jax_vectorised(spot_colors, weight_shift)
             diff1 = residual_python - residual_matlab
             diff2 = coef_python - coef_matlab
+            diff1_jax = np.asarray(residual_jax) - residual_python
+            diff2_jax = np.asarray(coef_jax) - coef_python
+            diff3_jax = np.asarray(background_vectors_jax) - background_vectors
             self.assertTrue(np.abs(diff1).max() <= self.tol)
             self.assertTrue(np.abs(diff2).max() <= self.tol)
+            self.assertTrue(np.abs(diff1_jax).max() <= self.tol)
+            self.assertTrue(np.abs(diff2_jax).max() <= self.tol)
+            self.assertTrue(np.abs(diff3_jax).max() <= self.tol)
 
 
 class TestGetGeneEfficiency(unittest.TestCase):
@@ -194,4 +203,22 @@ class TestGetGeneEfficiency(unittest.TestCase):
             if np.sum(use) == 0:
                 raise ValueError('No data with same ref_round to compare.')
             diff = output_python[use] - output_matlab[use]
+            self.assertTrue(np.abs(diff).max() <= self.tol)
+
+
+class TestGetSpotIntensity(unittest.TestCase):
+    """
+    Check whether intensity calculated using jax and numpy is the same.
+    """
+    tol = 1e-6
+
+    def test_get_spot_intensity(self):
+        for i in range(5):
+            n_spots = np.random.randint(3, 200)
+            n_rounds = np.random.randint(1, 10)
+            n_channels = np.random.randint(1, 10)
+            spot_colors = (np.random.rand(n_spots, n_rounds, n_channels) - 0.5) * 2
+            intensity = get_spot_intensity(spot_colors)
+            intensity_jax = np.asarray(get_spot_intensity_vectorised(jnp.array(spot_colors)))
+            diff = intensity - intensity_jax
             self.assertTrue(np.abs(diff).max() <= self.tol)

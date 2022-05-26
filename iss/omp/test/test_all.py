@@ -8,6 +8,7 @@ from ..spots import count_spot_neighbours
 from scipy.linalg.lapack import dgels
 from scipy.linalg.blas import dgemv
 from typing import Optional, Tuple
+import jax.numpy as jnp
 
 
 def fitting_variance(bled_codes: np.ndarray, coef: np.ndarray, alpha: float, beta: float = 1) -> np.ndarray:
@@ -78,7 +79,8 @@ class TestFittingStandardDeviation(unittest.TestCase):
             n_pixels, n_genes = coef.shape
             bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float).reshape(n_genes, -1)  # change to r,c from MATLAB c,r
             n_round_channels = bled_codes.shape[1]
-            spot_colors = np.zeros((n_pixels, n_round_channels)) # spot_colors place holder, needed for function but not variance calc.
+            # spot_colors is placeholder, needed for function but not variance calc.
+            spot_colors = np.zeros((n_pixels, n_round_channels))
             output_matlab = np.moveaxis(output_matlab, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             genes_added = np.where(coef != 0)[1].reshape(n_pixels, -1)
             # genes present for all pixels are background genes.
@@ -284,8 +286,8 @@ class TestGetAllCoefs(unittest.TestCase):
                 matlab.load_array(test_file, ['spot_colors', 'bled_codes', 'background_shift', 'dp_shift', 'alpha',
                                               'beta', 'max_genes', 'dp_thresh', 'mod_fit',
                                               'FinalCoefs','BackgroundCoef'])
-            bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float)  # change to r,c from MATLAB c,r
-            spot_colors = np.moveaxis(spot_colors, 1, 2).astype(float)  # change to r,c from MATLAB c,r
+            bled_codes = jnp.array(np.moveaxis(bled_codes, 1, 2).astype(float))  # change to r,c from MATLAB c,r
+            spot_colors = jnp.array(np.moveaxis(spot_colors, 1, 2).astype(float))  # change to r,c from MATLAB c,r
             bled_codes = bled_codes / np.expand_dims(np.linalg.norm(bled_codes, axis=(1, 2)), (1, 2)) # make norm of all codes 1.
             n_rounds = spot_colors.shape[1]
 
