@@ -3,6 +3,7 @@ from sklearn.neighbors import NearestNeighbors
 from scipy.stats import iqr
 from ..utils.base import setdiff2d
 from typing import Tuple, Optional, List
+import warnings
 
 
 def shift_score(distances: np.ndarray, thresh: float) -> float:
@@ -19,7 +20,7 @@ def shift_score(distances: np.ndarray, thresh: float) -> float:
     Returns:
         Score to quantify how good a shift is based on the distances between the neighbours found.
     """
-    return np.sum(np.exp(-distances**2 / (2*thresh**2)))
+    return np.sum(np.exp(-distances ** 2 / (2 * thresh ** 2)))
 
 
 def extend_array(array: np.ndarray, extend_scale: int, direction: str = 'both') -> np.ndarray:
@@ -44,8 +45,8 @@ def extend_array(array: np.ndarray, extend_scale: int, direction: str = 'both') 
         ext_array = array
     else:
         step = np.mean(np.ediff1d(array))
-        ext_below = np.arange(array.min() - extend_scale*step, array.min(), step)
-        ext_above = np.arange(array.max() + step, array.max() + extend_scale*step + step / 2, step)
+        ext_below = np.arange(array.min() - extend_scale * step, array.min(), step)
+        ext_above = np.arange(array.max() + step, array.max() + extend_scale * step + step / 2, step)
         if direction == 'below':
             ext_array = np.concatenate((ext_below, array))
         elif direction == 'above':
@@ -88,7 +89,7 @@ def refined_shifts(shifts: np.ndarray, best_shift: float, refined_scale: float =
         step = np.mean(np.ediff1d(shifts))
         refined_step = np.ceil(refined_scale * step).astype(int)
         refined_shifts = np.arange(best_shift - extend_scale * step,
-                                   best_shift + extend_scale * step + refined_step/2, refined_step)
+                                   best_shift + extend_scale * step + refined_step / 2, refined_step)
     return refined_shifts
 
 
@@ -114,7 +115,7 @@ def update_shifts(search_shifts: np.ndarray, prev_found_shifts: np.ndarray) -> n
     if n_shifts > 1:
         step = np.mean(np.ediff1d(search_shifts))
         mean_shift = np.mean(prev_found_shifts, dtype=int)
-        n_shifts_new = 2*np.ceil((max(prev_found_shifts) - mean_shift)/step + 1).astype(int)+1
+        n_shifts_new = 2 * np.ceil((max(prev_found_shifts) - mean_shift) / step + 1).astype(int) + 1
         if n_shifts_new < n_shifts or mean_shift <= search_shifts.min() or mean_shift >= search_shifts.max():
             # only update shifts if results in less to search over.
             search_shifts = refined_shifts(search_shifts, mean_shift, 1, ((n_shifts_new - 1) / 2).astype(int))
@@ -170,7 +171,7 @@ def get_best_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, neighb_dist_
 def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Optional[float],
                   min_score_auto_param: float, neighb_dist_thresh: float,
                   y_shifts: np.ndarray, x_shifts: np.ndarray, z_shifts: np.ndarray, widen: Optional[List[int]] = None,
-                  z_scale: float = 1) -> Tuple[np.ndarray, float, float]:
+                  max_range: Optional[List[int]] = None, z_scale: float = 1) -> Tuple[np.ndarray, float, float]:
     """
     This finds the shift from those given that is best applied to `yxz_base` to match `yxz_transform`.
 
@@ -200,6 +201,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             This many are added above and below current range.
             If all widen parameters are `0`, widened search is never performed.
             If `None`, set to `[0, 0, 0]`.
+        max_range: `int [3]`.
+            The range of shifts searched over will continue to be increased according to `widen` until
+            the `max_range` is reached in each dimension.
+            If a good shift is still not found, the best shift will still be returned without error.
+            If None and widen supplied, range will only be widened once.
         z_scale: By what scale factor to multiply z coordinates to make them same units as xy.
             I.e. `z_pixel_size / xy_pixel_size`.
 
@@ -218,23 +224,46 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
     shift, score, score_median, score_iqr = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh,
                                                            y_shifts, x_shifts, z_shifts * z_scale)
     # save initial_shifts so don't look over same shifts twice
-    initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts*z_scale)).T.reshape(-1, 3)
+    initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
     if min_score is None:
         # TODO: maybe make min_score equal to min_score_auto_param times 10th highest score.
         #  That way, it is independent of number of shifts searched
         min_score = score_median + min_score_auto_param * score_iqr
     if score < min_score and np.max(widen) > 0:
-        # look over extended range of shifts if score below threshold
-        y_shifts = extend_array(y_shifts, widen[0])
-        x_shifts = extend_array(x_shifts, widen[1])
-        z_shifts = extend_array(z_shifts, widen[2])
-        shift, score, score_median2, score_iqr2 = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh,
-                                                                 y_shifts, x_shifts, z_shifts * z_scale, initial_shifts)
+        shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts, z_shifts]])
+        if max_range is None:
+            # If don't specify max_range, only widen once.
+            max_range = shift_ranges * (np.array(widen) > 0)
+            max_range[max_range > 0] += 1
+        else:
+            max_range = np.asarray(max_range)
+        # keep extending range of shifts until good score reached or hit max shift_range.
+        while score < min_score:
+            if np.all(shift_ranges >= max_range):
+                warnings.warn(f"Shift search range exceeds max_range = {max_range} in yxz directions but \n"
+                              f"best score is only {round(score, 2)} which is below min_score = {round(min_score, 2)}."
+                              f"\nBest shift found was {shift}.")
+                break
+            else:
+                warnings.warn(f"Best shift found ({shift}) has score of {round(score, 2)} which is below min_score = "
+                              f"{round(min_score, 2)}.\nRunning again with extended shift search range.")
+            if shift_ranges[0] < max_range[0]:
+                y_shifts = extend_array(y_shifts, widen[0])
+            if shift_ranges[1] < max_range[1]:
+                x_shifts = extend_array(x_shifts, widen[1])
+            if shift_ranges[2] < max_range[2]:
+                z_shifts = extend_array(z_shifts, widen[2])
+            shift, score, score_median2, score_iqr2 = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh,
+                                                                     y_shifts, x_shifts, z_shifts * z_scale,
+                                                                     initial_shifts)
+            # update initial_shifts so don't look over same shifts twice
+            initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
+            shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts, z_shifts]])
     if score > min_score:
         # refined search near maxima with half the step
         y_shifts = refined_shifts(y_shifts, shift[0])
         x_shifts = refined_shifts(x_shifts, shift[1])
-        z_shifts = refined_shifts(z_shifts, shift[2]/z_scale)
+        z_shifts = refined_shifts(z_shifts, shift[2] / z_scale)
         shift2, score2, _, _ = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh, y_shifts, x_shifts,
                                               z_shifts * z_scale, initial_shifts)
         if score2 > score:
@@ -242,12 +271,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         # final search with a step of 1
         y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
         x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
-        z_shifts = refined_shifts(z_shifts, shift[2]/z_scale, refined_scale=1e-50, extend_scale=1)
+        z_shifts = refined_shifts(z_shifts, shift[2] / z_scale, refined_scale=1e-50, extend_scale=1)
         shift, score, _, _ = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh, y_shifts, x_shifts,
                                             z_shifts * z_scale, initial_shifts)
         shift[2] = shift[2] / z_scale
     return shift.astype(int), score, min_score
-
 
 # TODO: Not sure what amend_shifts function was for. Does not seem to be used in anything.
 # def amend_shifts(shift_info, shifts, spot_details, c, r, neighb_dist_thresh, z_scale):

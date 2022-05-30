@@ -106,6 +106,7 @@ _options = {
             'shift_west_max': 'maybe_list_int',
             'shift_step': 'list_int',
             'shift_widen': 'list_int',
+            'shift_max_range': 'list_int',
             'neighb_dist_thresh': 'number',
             'shift_score_thresh': 'maybe_number',
             'shift_score_auto_param': 'maybe_number'
@@ -117,6 +118,7 @@ _options = {
             'shift_max': 'list_int',
             'shift_step': 'list_int',
             'shift_widen': 'list_int',
+            'shift_max_range': 'list_int',
             'neighb_dist_thresh': 'number',
             'shift_score_thresh': 'maybe_number',
             'shift_score_auto_param': 'maybe_number'

@@ -42,6 +42,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                                                           config['shift_step'][i]]
     if nbp_basic.is_3d is False:
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
+        config['shift_max_range'][2] = 0
         shifts[0]['z'] = np.array([0], dtype=int)
         start_shift_search[:, 2, :2] = 0
     shifts = shifts * nbp_basic.n_rounds  # get one set of shifts for each round
@@ -59,14 +60,11 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
         for r in nbp_basic.use_rounds:
             for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'round': r, 'tile': t})
-                shift[t, r], shift_score[t, r], \
-                shift_score_thresh[t, r] = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
-                                                         spot_yxz(spot_details, t, r, c_imaging),
-                                                         config['shift_score_thresh'],
-                                                         config['shift_score_auto_param'],
-                                                         config['neighb_dist_thresh'], shifts[r]['y'],
-                                                         shifts[r]['x'], shifts[r]['z'],
-                                                         config['shift_widen'], z_scale)
+                shift[t, r], shift_score[t, r], shift_score_thresh[t, r] = \
+                    compute_shift(spot_yxz(spot_details, t, r_ref, c_ref), spot_yxz(spot_details, t, r, c_imaging),
+                                  config['shift_score_thresh'], config['shift_score_auto_param'],
+                                  config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
+                                  config['shift_widen'], config['shift_max_range'], z_scale)
                 good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
                 if sum(good_shifts) >= 3:
                     # once found shifts, refine shifts to be searched around these
@@ -104,7 +102,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
             shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
                                                  spot_yxz(spot_details, t, r, c_imaging), 0, None,
                                                  config['neighb_dist_thresh'], shifts[r]['y'],
-                                                 shifts[r]['x'], shifts[r]['z'], None, z_scale)
+                                                 shifts[r]['x'], shifts[r]['z'], None, None, z_scale)
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"
                           f"{shift_outlier[t, r]} to {shift[t, r]}.")
 

@@ -76,7 +76,7 @@ class TestShift(unittest.TestCase):
         else:
             return y_search, x_search, np.arange(1)
     
-    def all_test(self, dimensions, remove=None, widen=0, z_scale=1):
+    def all_test(self, dimensions, remove=None, widen=0, z_scale=1, multiple_widen=False):
         """
 
         :param dimensions: 2 or 3 whether to have yx or yxz spot coordinates.
@@ -88,17 +88,25 @@ class TestShift(unittest.TestCase):
                 (equal number of both).
         :param widen: if shift not found in initial shift search, will extend shift range by this many values in each
             direction.
+        :param multiple_widen: if True, starting shift_range will be quite far off from including actual transform.
+            This is to test the while loop.
         :param z_scale: how much to scale z pixel values to make them same units as xy.
         """
         spot_yxz, transform_yxz, actual_transform = self.get_spots(self.max_noise, dimensions)
         y_search, x_search, z_search = self.get_random_shift_searches(actual_transform)
         z_widen = 0
+        max_shift_range = [500, 500, 0]
         if widen > 0:
+            # Set search range outside actual_transform so widen is tested.
             y_search = y_search[y_search > actual_transform[0] + widen/2 * self.shift_spacing_yx]
             x_search = x_search[x_search < actual_transform[1] - widen/2 * self.shift_spacing_yx]
+            if multiple_widen:
+                y_search = y_search + widen * self.shift_spacing_yx * np.random.randint(6)
+                x_search = x_search - widen * self.shift_spacing_yx * np.random.randint(6)
             if dimensions == 3:
                 z_search = z_search[z_search < actual_transform[2] - widen/2 * self.shift_spacing_z]
                 z_widen = widen
+                max_shift_range[2] = int(np.ptp(z_search) + 1)  # only allow one widening in z.
         if remove == 'base' or 'both':
             spot_yxz = remove_spots(spot_yxz, np.random.randint(spot_yxz.shape[0] / 8, spot_yxz.shape[0] / 2))
         if remove == 'transform' or 'both':
@@ -110,7 +118,7 @@ class TestShift(unittest.TestCase):
         found_transform, score, score_thresh = compute_shift(spot_yxz, transform_yxz, self.min_score,
                                                              self.min_score_auto_param, self.shift_score_thresh,
                                                              y_search, x_search, z_search, [widen, widen, z_widen],
-                                                             z_scale)
+                                                             max_shift_range, z_scale)
         diff = actual_transform.astype(int) - found_transform.astype(int)
         self.assertTrue(np.abs(diff).max() <= self.tol)
 
@@ -129,6 +137,9 @@ class TestShift(unittest.TestCase):
     def test_2d_widen(self):
         self.all_test(2, 'both', 5)
 
+    def test_2d_multiple_widen(self):
+        self.all_test(2, 'both', 5, multiple_widen=True)
+
     def test_3d(self):
         self.all_test(3)
 
@@ -146,3 +157,6 @@ class TestShift(unittest.TestCase):
 
     def test_3d_widen(self):
         self.all_test(3, 'both', 5, 1.005567259)
+
+    def test_3d_multiple_widen(self):
+        self.all_test(3, 'both', 5, 1.005567259, True)
