@@ -29,6 +29,8 @@ class TestConfig(unittest.TestCase):
                                       [[1, 2, 3], [1, 2, 3]]),
                          "list_number": (["1,2.3,4.5"],
                                          [[1, 2.3, 4.5]]),
+                         "list_str": (["a,b,c", "", "a , b , c  ", "1, 2,3"],
+                                      [["a", "b", "c"], [""], ["a", "b", "c"], ["1", "2", "3"]]),
                          "maybe_int": (["0", "100", ""],
                                        [0, 100, None]),
                          "maybe_number": (["0", "0.0", "3.141", "1", ""],
@@ -37,6 +39,12 @@ class TestConfig(unittest.TestCase):
                                             [[1, 2, 3], None]),
                          "maybe_str": (["0", "hello", ""],
                                        ["0", "hello", None]),
+                         "maybe_list_str": (["a,b,c", "", "a , b , c  ", "1, 2,3"],
+                                            [["a", "b", "c"], None, ["a", "b", "c"], ["1", "2", "3"]]),
+                         "maybe_list_number": (["1,2.3,4.5", ""],
+                                               [[1, 2.3, 4.5], None]),
+                         "maybe_file": ([__file__, ""],  # Easiest way to get any valid file I think?
+                                        [__file__, None]),
                          }
         # Emtpy config file
         self.fake_configs = [self._make_fake_config(0), self._make_fake_config(-1)]

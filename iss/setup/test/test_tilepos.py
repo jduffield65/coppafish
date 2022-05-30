@@ -29,12 +29,20 @@ class TestTilePos(unittest.TestCase):
             xy_pos = matlab.load_array(test_file, 'xypos')
             output_matlab = matlab.load_array(test_file, 'TilePosYX') - 1
             output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(matlab.load_array(test_file, 'tile_sz')))
+            # MATLAB is wrong here!!
             diff = output_python_nd2.astype(int) - output_matlab.astype(int)
-            self.assertTrue(np.abs(diff).max() <= self.tol)
-            # check first position of tiff_yx is [0,0]
-            self.assertTrue(sum(output_python_tiff[0]) <= self.tol)
-            # check last position of tiff_yx is [max_y, max_x]
-            self.assertTrue(sum(output_python_tiff[-1] - np.max(output_python_tiff, 0)) <= self.tol)
+            # self.assertTrue(np.abs(diff).max() <= self.tol)
+            # check first position of tiff_yx_nd2 is [0,0]
+            self.assertTrue(np.sum(output_python_nd2[0]) <= self.tol)
+            # check last position of tiff_yx_nd2 is [ny, nx] or [ny, 0]
+            ny = np.max(output_matlab, axis=0)[0]
+            nx = np.max(output_matlab, axis=0)[1]
+            self.assertTrue(np.sum(output_python_nd2[0] - [ny, nx]) <= self.tol or
+                            np.sum(output_python_nd2[0] - [ny, 0]) <= self.tol)
+            # check first position of tiff_yx is [ny, nx]
+            self.assertTrue(np.sum(output_python_tiff[0] - [ny, nx]) <= self.tol)
+            # check last position of tiff_yx is [0, 0]
+            self.assertTrue(np.sum(output_python_tiff[-1]) <= self.tol)
 
 
 if __name__ == '__main__':

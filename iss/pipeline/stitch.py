@@ -77,9 +77,9 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
     with tqdm(total=2 * len(nbp_basic.use_tiles)) as pbar:
         for t in nbp_basic.use_tiles:
             # align to south neighbour followed by west neighbour
-            t_neighb['south'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] - [1, 0],
+            t_neighb['south'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [1, 0],
                                                 axis=1) == 2)[0]
-            t_neighb['west'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] - [0, 1],
+            t_neighb['west'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [0, 1],
                                                axis=1) == 2)[0]
             for j in directions:
                 pbar.set_postfix({'tile': t, 'direction': j})

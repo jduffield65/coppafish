@@ -15,7 +15,6 @@ from line_profiler_pycharm import profile
 import jax.numpy as jnp
 
 
-@profile
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
                    transform: np.ndarray, ref_spots_intensity_thresh: float) -> NotebookPage:

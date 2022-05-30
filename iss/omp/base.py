@@ -196,6 +196,8 @@ def get_best_gene_first_iter(residual_pixel_color: jnp.ndarray, all_bled_codes: 
     return best_gene, pass_score_thresh, background_var
 
 
+# TODO: maybe use static arguments for values that do not change e.g. all_bled_codes, norm_shift, score_thresh etc.
+#  https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html#caching
 @jax.jit
 def get_best_gene_first_iter_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray,
                                         background_coefs: jnp.ndarray, norm_shift: float,
