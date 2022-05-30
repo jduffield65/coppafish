@@ -5,6 +5,7 @@ from .. import utils
 from typing import Union, List, Optional, Tuple
 from ..setup.notebook import NotebookPage
 from line_profiler_pycharm import profile
+from functools import partial
 import jax.numpy as jnp
 import jax
 
@@ -148,7 +149,7 @@ def dot_product_score_jax(spot_colors, bled_codes, norm_shift, weight_squared):
     return score
 
 
-@jax.jit
+@partial(jax.jit, static_argnums=2)
 def dot_product_score_jax_vectorised(spot_colors, bled_codes, norm_shift, weight_squared):
     score = jax.vmap(dot_product_score_jax, in_axes=(0, None, None, 0), out_axes=0)(spot_colors, bled_codes,
                                                                                     norm_shift, weight_squared)
@@ -355,7 +356,7 @@ def fit_background_jax(spot_color: jnp.ndarray, weight_shift: float) -> Tuple[jn
     return residual, coefs, background_vectors
 
 
-@jax.jit
+@partial(jax.jit, static_argnums=1)
 def fit_background_jax_vectorised(spot_colors: jnp.ndarray,
                                   weight_shift: float) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """

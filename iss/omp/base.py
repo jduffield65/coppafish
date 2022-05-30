@@ -5,6 +5,7 @@ from typing import Tuple
 from tqdm import tqdm
 import jax.numpy as jnp
 import jax
+from functools import partial
 from line_profiler_pycharm import profile
 
 
@@ -196,9 +197,10 @@ def get_best_gene_first_iter(residual_pixel_color: jnp.ndarray, all_bled_codes: 
     return best_gene, pass_score_thresh, background_var
 
 
-# TODO: maybe use static arguments for values that do not change e.g. all_bled_codes, norm_shift, score_thresh etc.
+# static_argnums refer to arguments which do not change.
+# arrays are not hashable hence all_bled_codes and background_genes not static.
 #  https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html#caching
-@jax.jit
+@partial(jax.jit, static_argnums=(3, 4, 5, 6))
 def get_best_gene_first_iter_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray,
                                         background_coefs: jnp.ndarray, norm_shift: float,
                                         score_thresh: float, alpha: float, beta: float,
@@ -294,7 +296,7 @@ def get_best_gene(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray
     return best_gene, pass_score_thresh, inverse_var
 
 
-@jax.jit
+@partial(jax.jit, static_argnums=(4, 5, 6))
 def get_best_gene_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
                              genes_added: jnp.array, norm_shift: float, score_thresh: float, alpha: float,
                              background_genes: jnp.ndarray,
