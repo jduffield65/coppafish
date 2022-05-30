@@ -3,6 +3,8 @@ from sklearn.neighbors import NearestNeighbors
 from .. import utils
 from tqdm import tqdm
 from typing import Optional, Tuple, Union, List
+import jax.numpy as jnp
+import jax
 
 
 def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndarray, z_scale: float) -> np.ndarray:
@@ -42,6 +44,21 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndar
     yxz_transform = np.matmul(yxz_pad, transform)
     yxz_transform = np.round((yxz_transform / [1, 1, z_scale]) + tile_centre).astype(int)
     return yxz_transform
+
+
+def apply_transform_jax_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
+                               z_scale: float) -> jnp.ndarray:
+    z_multiplier = jnp.array([1, 1, z_scale])
+    yxz_pad = jnp.pad((yxz - tile_centre) * z_multiplier, [(0, 1)], constant_values=1)
+    yxz_transform = jnp.matmul(yxz_pad, transform)
+    yxz_transform = jnp.round((yxz_transform / z_multiplier) + tile_centre).astype(int)
+    return yxz_transform
+
+
+def apply_transform_jax(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
+                        z_scale: float) -> jnp.ndarray:
+    return jax.vmap(apply_transform_jax_single, in_axes=(0, None, None, None), out_axes=0)(yxz, transform, tile_centre,
+                                                                                           z_scale)
 
 
 def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,

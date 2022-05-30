@@ -81,12 +81,13 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                   f" Z-plane {np.where(use_z==z)[0][0]+1}/{len(use_z)}")
             # While iterating through tiles, only save info for rounds/channels using - add all rounds/channels back in later
             # this returns colors in use_rounds/channels only and no nan.
-            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(int(t), transform, nbp_file, nbp_basic, int(z))
+            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(int(t), jnp.array(transform),
+                                                                 nbp_file, nbp_basic, int(z))
             if pixel_colors_tz.shape[0] == 0:
                 continue
             # save memory - colors max possible value is around 80000. yxz max possible value is around 2048.
-            pixel_colors_tz = jnp.array(pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind])
-            pixel_yxz_tz = pixel_yxz_tz.astype(np.int16)
+            pixel_colors_tz = pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind]
+            pixel_yxz_tz = pixel_yxz_tz.astype(jnp.int16)
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
@@ -109,7 +110,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
             if len(keep) == 0:
                 continue
-            pixel_yxz_t = np.append(pixel_yxz_t, pixel_yxz_tz[keep].astype(np.int16), axis=0)
+            pixel_yxz_t = np.append(pixel_yxz_t, np.asarray(pixel_yxz_tz[keep]), axis=0)
             del pixel_yxz_tz
             pixel_coefs_t = sparse.vstack((pixel_coefs_t, pixel_coefs_tz[keep]))
             del pixel_coefs_tz, keep
