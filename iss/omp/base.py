@@ -6,7 +6,6 @@ from tqdm import tqdm
 import jax.numpy as jnp
 import jax
 from functools import partial
-from line_profiler_pycharm import profile
 
 
 def fit_coefs(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,

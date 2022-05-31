@@ -4,7 +4,6 @@ import numpy as np
 from .. import utils
 from typing import Union, List, Optional, Tuple
 from ..setup.notebook import NotebookPage
-from line_profiler_pycharm import profile
 from functools import partial
 import jax.numpy as jnp
 import jax

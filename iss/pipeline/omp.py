@@ -11,7 +11,6 @@ from .. import omp
 from sklearn.neighbors import NearestNeighbors
 import os
 from scipy import sparse
-from line_profiler_pycharm import profile
 import jax.numpy as jnp
 
 
