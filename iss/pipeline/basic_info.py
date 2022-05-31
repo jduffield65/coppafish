@@ -5,6 +5,7 @@ import warnings
 from datetime import datetime
 from ..setup.notebook import NotebookPage
 from typing import Tuple
+import numpy_indexed
 
 
 def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage, NotebookPage]:
@@ -170,12 +171,21 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
 
     if not 0 <= nbp_basic.ref_channel <= n_channels - 1:
         raise utils.errors.OutOfBoundsError("ref_channel", nbp_basic.ref_channel, 0, n_channels-1)
+
+    if config_file['matlab_tile_names']:
+        # Find name of MATLAB tiff file for each tile. +1 is because MATLAB starts at 1 not 0.
+        tilepos_yx_tiff_matlab = setup.tile_pos_tiff_matlab_python_conversion(tilepos_yx)
+        t_tiff_file_conversion = numpy_indexed.indices(tilepos_yx_tiff_matlab, tilepos_yx) + 1
+        c_tiff_file_conversion = np.arange(n_channels) + 1  # Channel in MATLAB starts at 1 not 0.
+    else:
+        t_tiff_file_conversion = None
+        c_tiff_file_conversion = None
     if config_basic['is_3d']:
         tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles,
-                                               config_file['matlab_tile_names'], n_channels)
+                                               t_tiff_file_conversion, c_tiff_file_conversion, n_channels)
     else:
         tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles,
-                                               config_file['matlab_tile_names'])
+                                               t_tiff_file_conversion, c_tiff_file_conversion)
 
     nbp_file.tile = tile_names.tolist()  # tiff tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
     nbp_basic.n_rounds = n_rounds  # int, number of imaging rounds

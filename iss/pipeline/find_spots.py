@@ -78,7 +78,10 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                         # as only used for registration
                         keep = np.ones(spot_yxz.shape[0], dtype=bool)
                         for z in range(n_z):
-                            in_z = spot_yxz[:, 2] == z
+                            if nbp_basic.is_3d:
+                                in_z = spot_yxz[:, 2] == z
+                            else:
+                                in_z = np.ones(spot_yxz.shape[0], dtype=bool)
                             if sum(in_z) > max_spots:
                                 intensity_thresh = np.sort(spot_intensity[in_z])[-max_spots]
                                 keep[np.logical_and(in_z, spot_intensity < intensity_thresh)] = False

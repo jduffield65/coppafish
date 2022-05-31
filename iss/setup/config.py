@@ -195,7 +195,7 @@ _options = {
 _option_type_checkers = {
     'int': lambda x: re.match("-?[0-9]+", x) is not None,
     'number': lambda x: re.match("-?[0-9]+(\\.[0-9]+)?$", "-123") is not None,
-    'str': lambda x: True,
+    'str': lambda x: len(x) > 0,
     'bool': lambda x: re.match("True|true|False|false", x) is not None,
     'file': lambda x: os.path.isfile(x),
     'dir': lambda x: os.path.isdir(x),

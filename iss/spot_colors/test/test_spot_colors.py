@@ -61,7 +61,7 @@ def get_notebook_pages(tile_dir: str, is_3d: bool, tile_sz: np.ndarray, z_scale:
         n_channel_tiff = nbp_basic.n_channels
     else:
         n_channel_tiff = 0
-    nbp_file.tile = get_tile_file_names(tile_dir, nbp_file.round, nbp_basic.n_tiles, nbp_file.matlab_tile_names,
+    nbp_file.tile = get_tile_file_names(tile_dir, nbp_file.round, nbp_basic.n_tiles, None, None,
                                         n_channel_tiff)
     return nbp_file, nbp_basic, nbp_extract_debug
 

@@ -2,6 +2,7 @@ import numpy as np
 import os
 from typing import Tuple, Optional, List
 from .notebook import NotebookPage
+from ..utils import errors
 
 
 def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -46,6 +47,32 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
     return tilepos_yx_nd2, tilepos_yx_tiff
 
 
+def tile_pos_tiff_matlab_python_conversion(tilepos_yx_tiff_python):
+    """
+    In o.TileOrigin in Matlab, first index i.e. t=0 is top right i.e. max_y, max_x.
+    Second index, i.e. t=1 is max_y-1, max_x and so on.
+    Whereas in Python tile_origin, t=0 is top right i.e. max_y, max_x.
+    t=1 is max_y, max_x-1 and so on.
+
+    Examples
+        If      tilepos_yx_tiff_python[:, 0] = [2, 2, 1, 1, 0, 0],
+                tilepos_yx_tiff_python[:, 1] = [1, 0, 1, 0, 1, 0].
+        then    tilepos_yx_tiff_matlab[:, 0] = [2, 1, 0, 2, 1, 0],
+                tilepos_yx_tiff_matlab[:, 1] = [1, 1, 1, 0, 0, 0].
+    Args:
+        tilepos_yx_tiff_python:
+
+    Returns:
+
+    """
+    ny = np.max(tilepos_yx_tiff_python[:, 0]) + 1
+    nx = np.max(tilepos_yx_tiff_python[:, 1]) + 1
+    tilepos_yx_tiff_matlab = np.zeros_like(tilepos_yx_tiff_python)
+    tilepos_yx_tiff_matlab[:, 0] = np.tile(np.flip(np.arange(ny)), nx)
+    tilepos_yx_tiff_matlab[:, 1] = np.flip(np.arange(nx).repeat(ny))
+    return tilepos_yx_tiff_matlab
+
+
 def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: Optional[int] = None) -> str:
     """
     Finds the full path to tile, `t`, of particular round, `r`, and channel, `c`, in `tile_directory`.
@@ -68,7 +95,8 @@ def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: 
     return tile_name
 
 
-def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int, matlab_tile_names: bool,
+def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
+                        tile_file_numbers: Optional[List[int]] = None, channel_file_numbers: Optional[List[int]] = None,
                         n_channels: int = 0) -> np.ndarray:
     """
     Gets array of all tile file paths which will be saved in tile directory.
@@ -78,7 +106,14 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
         file_base: `str [n_rounds]`.
             `file_base[r]` is identifier for round `r`.
         n_tiles: Number of tiles in data set.
-        matlab_tile_names: If `True`, tile files will have `t` and `c` index starting at `1` else will start at `0`.
+        tile_file_numbers: `int [n_tiles]`.
+            tile with index t will refer to tiff file with tile value of tile_file_numbers[t].
+            If not given, will just make tile_file_numbers[t] = t.
+            Use if want to convert between Matlab.
+        channel_file_numbers: `int [n_channels]`.
+            tile with channel index c will refer to tiff file with channel value of channel_file_numbers[c].
+            If not given, will just make channel_file_numbers[c] = c.
+            Use if want to use MATLAB tiles.
         n_channels: Total number of imaging channels if using 3D.
             `0` if using 2D pipeline as all channels saved in same file.
 
@@ -92,23 +127,32 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
         tile `t`, round `r`, channel `c`.
     """
     n_rounds = len(file_base)
-    index_shift = int(matlab_tile_names)
+    if tile_file_numbers is None:
+        tile_file_numbers = np.arange(n_tiles)
+    if not errors.check_shape(np.array(tile_file_numbers), (n_tiles,)):
+        raise errors.ShapeError("tile_file_numbers", np.array(tile_file_numbers).shape, (n_tiles,))
+
     if n_channels == 0:
         # 2D
         tile_files = np.zeros((n_tiles, n_rounds), dtype=object)
         for r in range(n_rounds):
             for t in range(n_tiles):
                 tile_files[t, r] = \
-                    get_tile_name(tile_directory, file_base, r, t + index_shift)
+                    get_tile_name(tile_directory, file_base, r, tile_file_numbers[t])
     else:
         # 3D
+        if channel_file_numbers is None:
+            channel_file_numbers = np.arange(n_channels)
+        if not errors.check_shape(np.array(channel_file_numbers), (n_channels,)):
+            raise errors.ShapeError("tile_file_numbers", np.array(channel_file_numbers).shape, (n_channels,))
+
         tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
         for r in range(n_rounds):
             for t in range(n_tiles):
                 for c in range(n_channels):
                     tile_files[t, r, c] = \
-                        get_tile_name(tile_directory, file_base, r, t + index_shift,
-                                      c + index_shift)
+                        get_tile_name(tile_directory, file_base, r, tile_file_numbers[t],
+                                      channel_file_numbers[c])
     return tile_files
 # TODO: Make tile_pos work for non rectangular array of tiles in nd2 file
 
