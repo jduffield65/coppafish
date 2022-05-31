@@ -149,18 +149,89 @@ def get_all_pixel_colors(t: int, transforms: jnp.ndarray, nbp_file: NotebookPage
     return pixel_colors, pixel_yxz
 
 
-def read_spot_color(image, z0_plane, yxz_base, transform, tile_centre, z_scale, nan_value, tile_sz):
-    yxz_transform = pcr.apply_transform_jax_single(yxz_base, transform, tile_centre, z_scale) \
-                    - jnp.array([0, 0, z0_plane])
+def read_spot_color_single(image: jnp.ndarray, z0_plane: int, yxz_base: jnp.ndarray, transform: jnp.ndarray,
+                           tile_centre: jnp.ndarray, z_scale: float, nan_value: float, tile_sz: jnp.ndarray) -> int:
+    """
+    Reads in color of a single round/channel at desired coordinate.
+
+    Args:
+        image: `int [image_szY x image_szX x image_szZ]`.
+            image_szZ should be 1 if 2D.
+            Image to find colors on which is the round/channel which matches the `transform` given.
+        z0_plane: The first z-plane of image, `image[:, :, 0]`, is plane `z0_plane` in the tiff_file and in `yxz_base`.
+            I.e. spots with `yxz_base[:, 2] == z0_plane` will be looked for in `image[:, :, 0]`.
+        yxz_base: `int [3]`.
+            Local yxz coordinates of spot found in the reference round/reference channel of tile `t`
+            yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
+        transform: ```float [4 x 3]```.
+            Affine transform to apply to ```yxz```, once centered and z units changed to ```yx_pixels```.
+            ```transform[3, 2]``` is approximately the z shift in units of ```yx_pixels```.
+            E.g. this is one of the transforms stored in ```nb.register.transform```.
+        tile_centre: ```float [3]```.
+            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
+            ```yxz``` were found on.
+            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
+            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
+            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
+        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.
+            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.
+            typically, ```z_scale > 1``` because ```z_pixels``` are larger than the ```yx_pixels```.
+        nan_value: Value to set color if transformed yxz coordinate is out of range.
+            Typically set to `-nbp.basic_info.tile_pixel_value_shift - 1`.
+        tile_sz: `int [3]`
+            YXZ shape of tile_sz to determine whether transformed yxz coordinates are out of bounds.
+
+    Returns:
+        Pixel value in `image` at `yxz_transform` which is `yxz_base` transformed according to `transform`.
+    """
+    # subtract z0_plane so correct coordinates for image which is cropped n z.
+    yxz_transform = pcr.apply_transform_jax_single(yxz_base, transform, tile_centre, z_scale
+                                                   ) - jnp.array([0, 0, z0_plane])
     in_range = jnp.logical_and(jnp.min(yxz_transform >= jnp.array([0, 0, 0])),
                                jnp.min(yxz_transform < tile_sz))  # set color to nan if out range
     # Below is one line way to give nan if out of range else value read from image.
+    # Out of range is not flagged as an error in jax so need to be careful.
     return image[yxz_transform[0], yxz_transform[1], yxz_transform[2]] * in_range + jnp.invert(in_range) * nan_value
 
 
 @partial(jax.jit, static_argnums=(5, 6))
-def read_spot_color_vectorised(image, z0_plane, yxz_base, transform, tile_centre, z_scale, nan_value, tile_sz):
-    return jax.vmap(read_spot_color, in_axes=(None, None, 0, None, None, None, None, None),
+def read_spot_color(image: jnp.ndarray, z0_plane: int, yxz_base: jnp.ndarray, transform: jnp.ndarray,
+                    tile_centre: jnp.ndarray, z_scale: float, nan_value: float, tile_sz: jnp.ndarray) -> jnp.ndarray:
+    """
+    Reads in colors of a single round/channel at desired coordinates.
+
+    Args:
+        image: `int [image_szY x image_szX x image_szZ]`.
+            image_szZ should be 1 if 2D.
+            Image to find colors on which is the round/channel which matches the `transform` given.
+        z0_plane: The first z-plane of image, `image[:, :, 0]`, is plane `z0_plane` in the tiff_file and in `yxz_base`.
+            I.e. spots with `yxz_base[:, 2] == z0_plane` will be looked for in `image[:, :, 0]`.
+        yxz_base: `int [n_spots x 3]`.
+            Local yxz coordinates of spot found in the reference round/reference channel of tile `t`
+            yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
+        transform: ```float [4 x 3]```.
+            Affine transform to apply to ```yxz```, once centered and z units changed to ```yx_pixels```.
+            ```transform[3, 2]``` is approximately the z shift in units of ```yx_pixels```.
+            E.g. this is one of the transforms stored in ```nb.register.transform```.
+        tile_centre: ```float [3]```.
+            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
+            ```yxz``` were found on.
+            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
+            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
+            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
+        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.
+            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.
+            typically, ```z_scale > 1``` because ```z_pixels``` are larger than the ```yx_pixels```.
+        nan_value: Value to set color if transformed yxz coordinate is out of range.
+            Typically set to `-nbp.basic_info.tile_pixel_value_shift - 1`.
+        tile_sz: `int [3]`
+            YXZ shape of tile_sz to determine whether transformed yxz coordinates are out of bounds.
+
+    Returns:
+        `int [n_spots]`
+        Pixel value in `image` at `yxz_transform` which is `yxz_base` transformed according to `transform`.
+    """
+    return jax.vmap(read_spot_color_single, in_axes=(None, None, 0, None, None, None, None, None),
                     out_axes=0)(image, z0_plane, yxz_base, transform, tile_centre, z_scale, nan_value, tile_sz)
 
 
@@ -193,7 +264,7 @@ def get_spot_colors_jax(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nb
     Returns:
         `int [n_spots x n_rounds_use x n_channels_use]`.
 
-        `spot_colors[s, r, c]` is the spot color for spot `s` in round `r`, channel `c`.
+        `spot_colors[s, r, c]` is the spot color for spot `s` in round `use_rounds[r]`, channel `use_channels[c]`.
 
         nan_value = -nbp_basic.tile_pixel_value_shift - 1 is the lowest possible value saved in the tiff file minus 1,
         so it is impossible for spot_color to be this. Hence I use this as integer nan.
@@ -214,7 +285,7 @@ def get_spot_colors_jax(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nb
     # note using nan means can't use integer even though data is integer
     n_use_rounds = len(use_rounds)
     n_use_channels = len(use_channels)
-    spot_colors = jnp.ones((n_spots, n_use_rounds, n_use_channels), dtype=int) * nan_value
+    spot_colors = np.ones((n_spots, n_use_rounds, n_use_channels), dtype=int) * nan_value
     z_planes_base = jnp.unique(yxz_base[:, 2])  # all z-planes to consider.
     z_planes_base = jnp.arange(z_planes_base.min(), z_planes_base.max() + 1)  #
     tile_centre = jnp.array(nbp_basic.tile_centre)
@@ -232,6 +303,7 @@ def get_spot_colors_jax(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nb
                     raise ValueError(
                         f"Transform for tile {t}, round {use_rounds[r]}, channel {use_channels[c]} is zero:"
                         f"\n{transform_rc}")
+                # z_transform will always be [0] in 2D.
                 z_transform = jnp.round(z_planes_base + transform_rc[3, 2] / z_scale).astype(int)
                 # Only include possible z-planes in tiff file.
                 z_transform = z_transform[jnp.logical_and(z_transform >= 0, z_transform < nbp_basic.nz)]
@@ -246,8 +318,9 @@ def get_spot_colors_jax(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nb
                         image = image_all_channels[:, :, c]
                     if image.ndim == 2:
                         image = image[:, :, jnp.newaxis]
-                    spot_colors = spot_colors.at[:, r, c].set(
-                        read_spot_color_vectorised(image, z_transform.min(), yxz_base, transform_rc, tile_centre,
-                                                   z_scale, nan_value, tile_sz))
+                    # having spot_colors as np.array makes assignment quicker than at/set notation in jax.
+                    spot_colors[:, r, c] = np.asarray(
+                        read_spot_color(image, z_transform.min(), yxz_base, transform_rc, tile_centre,
+                                        z_scale, nan_value, tile_sz))
                 pbar.update(1)
-    return spot_colors
+    return jnp.array(spot_colors)
