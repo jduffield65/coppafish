@@ -171,10 +171,10 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     if not 0 <= nbp_basic.ref_channel <= n_channels - 1:
         raise utils.errors.OutOfBoundsError("ref_channel", nbp_basic.ref_channel, 0, n_channels-1)
     if config_basic['is_3d']:
-        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, tilepos_yx_nd2,
+        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles,
                                                config_file['matlab_tile_names'], n_channels)
     else:
-        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, tilepos_yx_nd2,
+        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles,
                                                config_file['matlab_tile_names'])
 
     nbp_file.tile = tile_names.tolist()  # tiff tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]

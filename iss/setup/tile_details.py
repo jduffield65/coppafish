@@ -68,7 +68,7 @@ def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: 
     return tile_name
 
 
-def get_tile_file_names(tile_directory: str, file_base: List[str], tilepos_yx_nd2: np.ndarray, matlab_tile_names: bool,
+def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int, matlab_tile_names: bool,
                         n_channels: int = 0) -> np.ndarray:
     """
     Gets array of all tile file paths which will be saved in tile directory.
@@ -77,9 +77,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], tilepos_yx_nd
         tile_directory: Path to folder where tiles tiff files saved.
         file_base: `str [n_rounds]`.
             `file_base[r]` is identifier for round `r`.
-        tilepos_yx_nd2: `int [n_tiles x 2]`.
-            `tilepos_yx_nd2[i, 0]` is y index of tile with fov index `i` in nd2 file.
-            `tilepos_yx_nd2[i, 1]` is x index of tile with fov index `i` in nd2 file.
+        n_tiles: Number of tiles in data set.
         matlab_tile_names: If `True`, tile files will have `t` and `c` index starting at `1` else will start at `0`.
         n_channels: Total number of imaging channels if using 3D.
             `0` if using 2D pipeline as all channels saved in same file.
@@ -93,8 +91,6 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], tilepos_yx_nd
         - If 3D so `n_channels > 0`, `tile_files[t, r]` is the full path to tiff file containing all z-planes of
         tile `t`, round `r`, channel `c`.
     """
-    # t_tiff = get_tile_file_indices(tilepos_yx_nd2)
-    n_tiles = np.shape(tilepos_yx_nd2)[0]
     n_rounds = len(file_base)
     index_shift = int(matlab_tile_names)
     if n_channels == 0:

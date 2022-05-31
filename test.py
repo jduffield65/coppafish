@@ -4,6 +4,7 @@ import iss.utils.test as utils
 import iss.stitch.test as stitch
 import iss.setup.test as setup
 import iss.pcr.test as pcr
+import iss.spot_colors.test as spot_colors
 import iss.call_spots.test as call_spots
 import iss.omp.test as omp
 import unittest
@@ -17,9 +18,9 @@ def suite_utils():
 
 def suite_setup():
     suite = unittest.TestSuite()
-    #suite.addTest(unittest.makeSuite(setup.TestConfig, 'test'))
+    suite.addTest(unittest.makeSuite(setup.TestConfig, 'test'))
     suite.addTest(unittest.makeSuite(setup.TestNotebook, 'test'))
-    #suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
+    suite.addTest(unittest.makeSuite(setup.TestTilePos, 'test'))
     return suite
 
 
@@ -52,25 +53,33 @@ def suite_pcr():
     return suite
 
 
+def suite_spot_colors():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(spot_colors.TestSpotColors, 'test'))
+    return suite
+
+
 def suite_call_spots():
     suite = unittest.TestSuite()
-    #suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestScaledKMeans, 'test'))
     suite.addTest(unittest.makeSuite(call_spots.TestGetBleedMatrix, 'test'))
-    #suite.addTest(unittest.makeSuite(call_spots.TestDotProductScore, 'test'))
-    #suite.addTest(unittest.makeSuite(call_spots.TestFitBackground, 'test'))
-    #suite.addTest(unittest.makeSuite(call_spots.TestGetGeneEfficiency, 'test'))
-    #suite.addTest(unittest.makeSuite(call_spots.TestGetDyeChannelIntensityGuess, 'test'))
-    #suite.addTest(unittest.makeSuite(call_spots.TestColorNormalisation, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestDotProductScore, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestFitBackground, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestGetGeneEfficiency, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestGetDyeChannelIntensityGuess, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestColorNormalisation, 'test'))
+    suite.addTest(unittest.makeSuite(call_spots.TestGetSpotIntensity, 'test'))
     return suite
 
 
 def suite_omp():
     suite = unittest.TestSuite()
-    #suite.addTest(unittest.makeSuite(omp.TestFittingStandardDeviation, 'test'))
-    #suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))
-    #suite.addTest(unittest.makeSuite(omp.TestGetAllCoefs, 'test'))
+    suite.addTest(unittest.makeSuite(omp.TestFittingStandardDeviation, 'test'))
+    suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))
+    suite.addTest(unittest.makeSuite(omp.TestGetAllCoefs, 'test'))
     suite.addTest(unittest.makeSuite(omp.TestCountSpotNeighbours, 'test'))
     return suite
+
 
 def suite_all():
     suite = suite_utils()
@@ -85,5 +94,5 @@ def suite_all():
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_omp', exit=True)
+    unittest.main(defaultTest='suite_spot_colors', exit=True)
     hi = 5
