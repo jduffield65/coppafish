@@ -69,6 +69,7 @@ def get_notebook_pages(tile_dir: str, is_3d: bool, tile_sz: np.ndarray, z_scale:
 def make_random_tiles(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract_debug: NotebookPage, t: int,
                       use_rounds: List[int], tile_sz: np.ndarray):
     """
+    Save random tiles to tile directory.
 
     Args:
         nbp_file: Contains tile
@@ -92,6 +93,18 @@ def make_random_tiles(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extra
 
 
 def get_random_transforms(nbp_basic: NotebookPage, tile_sz: np.ndarray, z_scale: float):
+    """
+    Get a random transform for each round, channel which is close to identity and with a shift which is less
+    than a third of the tile size.
+
+    Args:
+        nbp_basic:
+        tile_sz:
+        z_scale:
+
+    Returns:
+
+    """
     ndim = len(tile_sz)
     if ndim == 3 and tile_sz[2] == 1:
         ndim = 2
@@ -111,6 +124,9 @@ def get_random_transforms(nbp_basic: NotebookPage, tile_sz: np.ndarray, z_scale:
 
 
 class TestSpotColors(unittest.TestCase):
+    """
+    Test whether spot colors read in using jax is the same as with numpy.
+    """
     MinYX = 50
     MaxYX = 300
     MinZ = 3
@@ -119,7 +135,7 @@ class TestSpotColors(unittest.TestCase):
     MaxSpots = 1000
     MinRounds = 3
 
-    def all_test(self, is_3d):
+    def all_test(self, is_3d: bool, single_z: bool=False):
         tile_sz = np.zeros(3, dtype=int)
         tile_sz[:2] = np.random.randint(self.MinYX, self.MaxYX)
         if is_3d:
@@ -130,7 +146,10 @@ class TestSpotColors(unittest.TestCase):
         n_spots = np.random.randint(self.MinSpots, self.MaxSpots)
         spot_yxz = np.zeros((n_spots, 3), dtype=int)
         for i in np.where(tile_sz > 1)[0]:
-            spot_yxz[:, i] = np.random.randint(0, tile_sz[i] - 1, n_spots)
+            if single_z and i == 2:
+                spot_yxz[:, i] = np.random.randint(0, tile_sz[i] - 1)
+            else:
+                spot_yxz[:, i] = np.random.randint(0, tile_sz[i] - 1, n_spots)
 
         with tempfile.TemporaryDirectory() as tile_dir:
             nbp_file, nbp_basic, nbp_extract_debug = get_notebook_pages(tile_dir, is_3d, tile_sz, z_scale)
@@ -185,3 +204,7 @@ class TestSpotColors(unittest.TestCase):
 
     def test_3d(self):
         self.all_test(True)
+
+    def test_3d_single_z(self):
+        # Quite often run case of 3d pipeline but all spots on same z-plane. Check this works.
+        self.all_test(True, True)

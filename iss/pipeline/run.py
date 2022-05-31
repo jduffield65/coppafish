@@ -137,12 +137,12 @@ def run_stitch(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
         # save stitched dapi
         utils.tiff.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
-                                 nb.stitch_debug.tile_origin, nb.basic_info.anchor_round,
+                                 nb.stitch.tile_origin, nb.basic_info.anchor_round,
                                  nb.basic_info.dapi_channel)
     if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
         utils.tiff.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
-                                 nb.stitch_debug.tile_origin, nb.basic_info.ref_round,
+                                 nb.stitch.tile_origin, nb.basic_info.ref_round,
                                  nb.basic_info.ref_channel)
     return nb
 
@@ -195,7 +195,7 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.N
     If `Notebook` already contains these pages, it will just be returned.
 
     Args:
-        nb: `Notebook` containing `stitch_debug` and `register` pages.
+        nb: `Notebook` containing `stitch` and `register` pages.
         config: Path to config file or Dictionary obtained from config file containing key
             `'call_spots'` which is another dict.
 

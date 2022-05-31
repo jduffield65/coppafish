@@ -326,15 +326,16 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
                                          len(z_transform)])  # size of image passed to read_spot_color
                     if nbp_basic.is_3d:
                         try:
-                            image = jnp.moveaxis(jnp.array(tifffile.imread(
-                                nbp_file.tile[t][use_rounds[r]][use_channels[c]], key=z_transform
-                            ).astype(int)), 0, -1) - nbp_basic.tile_pixel_value_shift
+                            image = jnp.array(tifffile.imread(
+                                nbp_file.tile[t][use_rounds[r]][use_channels[c]], key=z_transform).astype(int)
+                                              ) - nbp_basic.tile_pixel_value_shift
+
                         except IndexError:
                             # Sometimes get index error when it will only load in all z-planes.
-                            image = tifffile.imread(nbp_file.tile[t][use_rounds[r]][use_channels[c]]).astype(int)
-                            image = jnp.moveaxis(jnp.array(image[z_transform].astype(int)), 0, -1
-                                                 ) - nbp_basic.tile_pixel_value_shift
-
+                            image = tifffile.imread(nbp_file.tile[t][use_rounds[r]][use_channels[c]])
+                            image = jnp.array(image[z_transform].astype(int)) - nbp_basic.tile_pixel_value_shift
+                        if len(z_transform) > 1:
+                            image = jnp.moveaxis(image, 0, 2)
                     else:
                         image = image_all_channels[:, :, c]
                     if image.ndim == 2:

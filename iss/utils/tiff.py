@@ -297,7 +297,7 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
-    yx_size = np.max(yx_origin, axis=0) + nbp_basic['tile_sz']
+    yx_size = np.max(yx_origin, axis=0) + nbp_basic.tile_sz
     if nbp_basic.is_3d:
         z_size = z_origin.max() + nbp_basic.nz
     else:
