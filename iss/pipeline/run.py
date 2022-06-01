@@ -211,6 +211,8 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]) -> setup.N
                                                   nb.extract.hist_values, nb.extract.hist_counts, nb.register.transform)
         nb += nbp_ref_spots
         nb += nbp
+        # only raise error after saving to notebook if spot_colors have nan in wrong places.
+        utils.errors.check_color_nan(nbp_ref_spots.colors, nb.basic_info)
     else:
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
@@ -224,6 +226,7 @@ def run_omp(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
                              nb.stitch.tile_origin, nb.register.transform, nb.ref_spots.intensity_thresh)
         nb += nbp
+        utils.errors.check_color_nan(nbp.colors, nb.basic_info)
     else:
         warnings.warn('omp', utils.warnings.NotebookPageWarning)
     return nb

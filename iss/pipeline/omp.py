@@ -5,7 +5,7 @@ import numpy as np
 import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_all_pixel_colors, get_spot_colors
+from ..spot_colors import get_all_pixel_colors, get_spot_colors_jax
 from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised
 from .. import omp
 from sklearn.neighbors import NearestNeighbors
@@ -27,6 +27,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     if np.abs(norm_bled_codes-1).max() > 1e-6:
         raise ValueError("nbp_call_spots.bled_codes_ge don't all have an L2 norm of 1 over "
                          "use_rounds and use_channels.")
+    bled_codes = jnp.asarray(bled_codes)
+    transform = jnp.asarray(transform)
+    color_norm_factor = jnp.asarray(nbp_call_spots.color_norm_factor[rc_ind])
     n_genes, n_rounds_use, n_channels_use = bled_codes.shape
     dp_norm_shift = nbp_call_spots.dp_norm_shift * np.sqrt(n_rounds_use)
 
@@ -80,12 +83,11 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                   f" Z-plane {np.where(use_z==z)[0][0]+1}/{len(use_z)}")
             # While iterating through tiles, only save info for rounds/channels using - add all rounds/channels back in later
             # this returns colors in use_rounds/channels only and no nan.
-            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(int(t), jnp.array(transform),
-                                                                 nbp_file, nbp_basic, int(z))
+            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(int(t), transform, nbp_file, nbp_basic, int(z))
             if pixel_colors_tz.shape[0] == 0:
                 continue
             # save memory - colors max possible value is around 80000. yxz max possible value is around 2048.
-            pixel_colors_tz = pixel_colors_tz / nbp_call_spots.color_norm_factor[rc_ind]
+            pixel_colors_tz = pixel_colors_tz / color_norm_factor
             pixel_yxz_tz = pixel_yxz_tz.astype(jnp.int16)
 
             # Only keep pixels with significant absolute intensity to save memory.
@@ -100,7 +102,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             del pixel_intensity_tz, keep
 
             pixel_coefs_tz = sparse.csr_matrix(
-                omp.get_all_coefs(pixel_colors_tz, jnp.array(bled_codes),
+                omp.get_all_coefs(pixel_colors_tz, bled_codes,
                                   nbp_call_spots.background_weight_shift,  dp_norm_shift, config['dp_thresh'],
                                   config['alpha'], config['beta'],  config['max_genes'], config['weight_coef_fit'])[0])
             # a = 1 / 0
@@ -167,24 +169,28 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     # Get colors, background_coef and intensity of final spots.
     n_spots = np.sum(not_duplicate)
     nan_value = -nbp_basic.tile_pixel_value_shift - 1
-    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
+    # Only read in used colors first for background/intensity calculation.
+    nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=int) * nan_value
     for t in use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            nd_spot_colors[in_tile] = get_spot_colors(nbp.local_yxz[in_tile], t, transform, nbp_file, nbp_basic)
-    utils.errors.check_color_nan(nd_spot_colors, nbp_basic)
-    nbp.colors = nd_spot_colors
+            nd_spot_colors_use[in_tile] = np.asarray(get_spot_colors_jax(jnp.asarray(nbp.local_yxz[in_tile]), t,
+                                                                         transform, nbp_file, nbp_basic))
 
     nd_background_coefs = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
-    spot_colors_norm = jnp.array(
-        nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)] /
-        nbp_call_spots.color_norm_factor[rc_ind])
+    spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
     nd_background_coefs[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = \
         np.asarray(fit_background_jax_vectorised(spot_colors_norm,
                                                  nbp_call_spots.background_weight_shift)[1])
     nbp.background_coef = nd_background_coefs
     nbp.intensity = np.asarray(get_spot_intensity_vectorised(spot_colors_norm))
     del spot_colors_norm
+
+    # When saving to notebook, include unused rounds/channels.
+    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
+    nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)] = nd_spot_colors_use
+    nbp.colors = nd_spot_colors
+    del nd_spot_colors_use
 
     nbp.coef = spot_coefs[not_duplicate].toarray()
     nbp.gene_no = spot_info[not_duplicate, 3]
