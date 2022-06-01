@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+from scipy.spatial import KDTree
 from scipy.stats import iqr
 from ..utils.base import setdiff2d
 from typing import Tuple, Optional, List
@@ -158,11 +158,12 @@ def get_best_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, neighb_dist_
     all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
     if ignore_shifts is not None:
         all_shifts = setdiff2d(all_shifts, ignore_shifts)
-    nbrs = NearestNeighbors(n_neighbors=1).fit(yxz_transform)
+    tree = KDTree(yxz_transform)
     score = np.zeros(all_shifts.shape[0])
+    dist_upper_bound = 3 * neighb_dist_thresh  # beyond this, score < exp(-4.5) and quicker to use this.
     for i in range(all_shifts.shape[0]):
-        yx_shifted = yxz_base + all_shifts[i]
-        distances, _ = nbrs.kneighbors(yx_shifted)
+        yxz_shifted = yxz_base + all_shifts[i]
+        distances = tree.query(yxz_shifted, distance_upper_bound=dist_upper_bound)[0]
         score[i] = shift_score(distances, neighb_dist_thresh)
     best_shift_ind = score.argmax()
     return all_shifts[best_shift_ind], score[best_shift_ind], np.median(score), iqr(score)
