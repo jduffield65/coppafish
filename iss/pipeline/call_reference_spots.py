@@ -60,7 +60,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     rcd_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels, nbp_basic.use_dyes)
     if nbp_basic.dye_names is not None:
         # if specify dyes, will initialize bleed matrix using prior data
-        dye_names_use = np.array(nbp_basic.channel_camera)[nbp_basic.use_dyes]
+        dye_names_use = np.array(nbp_basic.dye_names)[nbp_basic.use_dyes]
         camera_use = np.array(nbp_basic.channel_camera)[nbp_basic.use_channels]
         laser_use = np.array(nbp_basic.channel_laser)[nbp_basic.use_channels]
         initial_raw_bleed_matrix[rcd_ind] = get_dye_channel_intensity_guess(nbp_file.dye_camera_laser,
@@ -116,7 +116,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
     nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use)
     # Remove background first
-    background_coef = np.zeros((spot_colors_use.shape[0], nbp_basic.n_rounds))
+    background_coef = np.ones((spot_colors_use.shape[0], nbp_basic.n_channels)) * np.nan
     background_codes = np.ones((nbp_basic.n_channels, nbp_basic.n_rounds, nbp_basic.n_channels)) * np.nan
     crc_ind = np.ix_(nbp_basic.use_channels, nbp_basic.use_rounds, nbp_basic.use_channels)
     spot_colors_use, background_coef[:, nbp_basic.use_channels], background_codes[crc_ind] = \

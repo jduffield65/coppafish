@@ -7,8 +7,8 @@ cimport cython
 
 # https://stackoverflow.com/questions/29775700/image-convolution-at-specific-points
 @cython.boundscheck(False)
-def cy_convolve(cnp.ndarray[cnp.int8_t, ndim=3] im, cnp.ndarray[Py_ssize_t, ndim=3] kernel,
-                Py_ssize_t[:, ::1] coords, cnp.ndarray[cnp.int8_t, ndim=3] im2 = None):
+def cy_convolve(cnp.ndarray[cnp.int8_t, ndim=3] im, cnp.ndarray[long, ndim=3] kernel,
+                long[:, ::1] coords, cnp.ndarray[cnp.int8_t, ndim=3] im2 = None):
     """
     Finds result of convolution at specific locations indicated by `points`.
     I.e. instead of convolving whole `im`, just find result at these `points`.
@@ -35,9 +35,9 @@ def cy_convolve(cnp.ndarray[cnp.int8_t, ndim=3] im, cnp.ndarray[Py_ssize_t, ndim
             Result of filtering of `im2` at each point in `coords`. Only returned if `im2` provided.
     """
     cdef Py_ssize_t j, i, k, y, x, z, n, ks_y, ks_x, ks_z
-    cdef Py_ssize_t n_points = coords.shape[0]
-    cdef Py_ssize_t[::1] responses = np.zeros(n_points, dtype=int)
-    cdef Py_ssize_t[::1] responses2 = np.zeros(n_points, dtype=int)
+    cdef long n_points = coords.shape[0]
+    cdef long[::1] responses = np.zeros(n_points, dtype=int)
+    cdef long[::1] responses2 = np.zeros(n_points, dtype=int)
     cdef Py_ssize_t[::1] x_steps, y_steps, z_steps
 
     # TODO: maybe modify ranges to avoid 0 values in kernel.

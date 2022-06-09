@@ -138,7 +138,7 @@ def get_all_pixel_colors(t: int, transforms: jnp.ndarray, nbp_file: NotebookPage
         # IMPORTANT!! Rounding error as jnp is float32 not float64 causes some differences between get_spot_colors_jax
         # and get_spot_colors. I think all because transforms are 1 pixel apart.
         # TODO: unit test between get_spot_colors and get_spot_colors_jax.
-        pixel_colors_all = get_spot_colors_jax(jnp.array(pixel_yxz_all), t, transforms, nbp_file, nbp_basic)
+        pixel_colors_all = get_spot_colors_jax(pixel_yxz_all, t, transforms, nbp_file, nbp_basic)
         # pixel_colors_all = get_spot_colors(pixel_yxz_all, t, transforms, nbp_file, nbp_basic)
         # only keep used rounds/channels to save memory.
         # pixel_colors_all = pixel_colors_all[jnp.ix_(jnp.arange(pixel_colors_all.shape[0]), nbp_basic.use_rounds,
