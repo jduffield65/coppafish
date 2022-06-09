@@ -129,7 +129,7 @@ def get_all_pixel_colors(t: int, transforms: jnp.ndarray, nbp_file: NotebookPage
     nan_value = -nbp_basic.tile_pixel_value_shift - 1
     if isinstance(z_planes, int):
         z_planes = jnp.array([z_planes])
-    pixel_yxz_all = jnp.array(jnp.meshgrid(np.arange(nbp_basic.tile_sz),
+    pixel_yxz_all = jnp.array(jnp.meshgrid(jnp.arange(nbp_basic.tile_sz),
                                            jnp.arange(nbp_basic.tile_sz), jnp.arange(1))).T.reshape(-1, 3)
     pixel_colors = jnp.zeros((0, len(nbp_basic.use_rounds), len(nbp_basic.use_channels)), dtype=int)
     pixel_yxz = jnp.zeros((0, 3), dtype=int)
@@ -291,15 +291,20 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
     n_use_rounds = len(use_rounds)
     n_use_channels = len(use_channels)
     spot_colors = np.ones((n_spots, n_use_rounds, n_use_channels), dtype=int) * nan_value
+    tile_centre = jnp.array(nbp_basic.tile_centre)
     if nbp_basic.is_3d:
-        z_base_min_max = jnp.unique(yxz_base[:, 2])  # all z-planes to consider.
-        # add 0.25 as a security incase rotation or scaling pushes spot to another z-plane.
-        z_base_min_max = np.array([z_base_min_max[0]-0.25, z_base_min_max[-1]+0.25])
+        yxz_base_min_z_calc = jnp.min(yxz_base, axis=0)
+        # Ensure yx coordinates for min_z calculation are negative after centering
+        yxz_base_min_z_calc = jnp.clip(yxz_base_min_z_calc, 0, jnp.append(jnp.floor(tile_centre[:2]), jnp.inf)
+                                       ).astype(int)
+        yxz_base_max_z_calc = jnp.max(yxz_base, axis=0)
+        # Ensure yx coordinates for max_z calculation are positive after centering
+        yxz_base_max_z_calc = jnp.clip(yxz_base_max_z_calc, jnp.append(jnp.ceil(tile_centre[:2]), 0), jnp.inf
+                                       ).astype(int)
     else:
         # use numpy not jax.numpy as reading in tiff is done in numpy.
         z_transform = np.array([0])
     # Consider consecutive planes so can just subtract min_plane.
-    tile_centre = jnp.array(nbp_basic.tile_centre)
 
     with tqdm(total=n_use_rounds * n_use_channels, disable=no_verbose) as pbar:
         for r in range(n_use_rounds):
@@ -317,8 +322,17 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
                         f"\n{transform_rc}")
                 # z_transform will always be [0] in 2D.
                 if nbp_basic.is_3d:
-                    z_transform_min_max = np.round(z_base_min_max + transform_rc[3, 2] / z_scale).astype(int)
-                    z_transform = np.arange(z_transform_min_max[0], z_transform_min_max[1]+1)
+                    # use transform where rotation terms in zy and zx are positive to find most extreme z possible.
+                    # I.e. for z_transform_min, after centering yxz_base_min_z_calc will be negative so
+                    # positive rotation results in more negative z.
+                    # For z_transform_max, after centering yxz_base_min_z_calc will be positive so positive rotation
+                    # results in more positive z.
+                    transform_rc_minmax_z = transform_rc.at[:2, 2].set(jnp.abs(transform_rc[:2, 2]))
+                    z_transform_min = int(pcr.apply_transform_jax_single(yxz_base_min_z_calc, transform_rc_minmax_z,
+                                                                         tile_centre, z_scale)[2])
+                    z_transform_max = int(pcr.apply_transform_jax_single(yxz_base_max_z_calc, transform_rc_minmax_z,
+                                                                         tile_centre, z_scale)[2])
+                    z_transform = np.arange(z_transform_min, z_transform_max + 1)
                     # Only include possible z-planes in tiff file.
                     z_transform = z_transform[np.logical_and(z_transform >= 0, z_transform < nbp_basic.nz)]
                 if len(z_transform) > 0:
@@ -334,6 +348,14 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
                             # Sometimes get index error when it will only load in all z-planes.
                             image = tifffile.imread(nbp_file.tile[t][use_rounds[r]][use_channels[c]])
                             image = jnp.array(image[z_transform].astype(int)) - nbp_basic.tile_pixel_value_shift
+                            if len(z_transform) == 1:
+                                image = image.squeeze()
+
+                        if image.ndim == 3 and len(z_transform) == 1 and z_transform[0] == 0:
+                            # The above except won't catch the issue if only z needed is first plane.
+                            image = tifffile.imread(nbp_file.tile[t][use_rounds[r]][use_channels[c]])
+                            image = jnp.array(image[0].astype(int)) - nbp_basic.tile_pixel_value_shift
+
                         if len(z_transform) > 1:
                             image = jnp.moveaxis(image, 0, 2)
                     else:
