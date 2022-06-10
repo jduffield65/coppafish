@@ -292,16 +292,7 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
     n_use_channels = len(use_channels)
     spot_colors = np.ones((n_spots, n_use_rounds, n_use_channels), dtype=int) * nan_value
     tile_centre = jnp.array(nbp_basic.tile_centre)
-    if nbp_basic.is_3d:
-        yxz_base_min_z_calc = jnp.min(yxz_base, axis=0)
-        # Ensure yx coordinates for min_z calculation are negative after centering
-        yxz_base_min_z_calc = jnp.clip(yxz_base_min_z_calc, 0, jnp.append(jnp.floor(tile_centre[:2]), jnp.inf)
-                                       ).astype(int)
-        yxz_base_max_z_calc = jnp.max(yxz_base, axis=0)
-        # Ensure yx coordinates for max_z calculation are positive after centering
-        yxz_base_max_z_calc = jnp.clip(yxz_base_max_z_calc, jnp.append(jnp.ceil(tile_centre[:2]), 0), jnp.inf
-                                       ).astype(int)
-    else:
+    if not nbp_basic.is_3d:
         # use numpy not jax.numpy as reading in tiff is done in numpy.
         z_transform = np.array([0])
     # Consider consecutive planes so can just subtract min_plane.
@@ -322,19 +313,13 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
                         f"\n{transform_rc}")
                 # z_transform will always be [0] in 2D.
                 if nbp_basic.is_3d:
-                    # use transform where rotation terms in zy and zx are positive to find most extreme z possible.
-                    # I.e. for z_transform_min, after centering yxz_base_min_z_calc will be negative so
-                    # positive rotation results in more negative z.
-                    # For z_transform_max, after centering yxz_base_min_z_calc will be positive so positive rotation
-                    # results in more positive z.
-                    transform_rc_minmax_z = transform_rc.at[:2, 2].set(jnp.abs(transform_rc[:2, 2]))
-                    z_transform_min = int(pcr.apply_transform_jax_single(yxz_base_min_z_calc, transform_rc_minmax_z,
-                                                                         tile_centre, z_scale)[2])
-                    z_transform_max = int(pcr.apply_transform_jax_single(yxz_base_max_z_calc, transform_rc_minmax_z,
-                                                                         tile_centre, z_scale)[2])
-                    z_transform = np.arange(z_transform_min, z_transform_max + 1)
-                    # Only include possible z-planes in tiff file.
-                    z_transform = z_transform[np.logical_and(z_transform >= 0, z_transform < nbp_basic.nz)]
+                    if r == 0 and c == 0:
+                        z_transform, yxz_base_min_z_calc, yxz_base_max_z_calc = \
+                            get_z_transform(transform_rc, tile_centre, z_scale, nbp_basic.nz, yxz_base)
+                    else:
+                        # Only need to compute yxz_base_min/max once hence different call after first.
+                        z_transform = get_z_transform(transform_rc, tile_centre, z_scale, nbp_basic.nz, None,
+                                                      yxz_base_min_z_calc, yxz_base_max_z_calc)
                 if len(z_transform) > 0:
                     tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz,
                                          len(z_transform)])  # size of image passed to read_spot_color
@@ -368,3 +353,77 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
                                         z_scale, nan_value, tile_sz))
                 pbar.update(1)
     return jnp.array(spot_colors)
+
+
+def get_z_transform(transform: jnp.ndarray, tile_centre: jnp.ndarray, z_scale: float, nz: int,
+                    yxz_base: Optional[jnp.ndarray], yxz_base_min: Optional[jnp.ndarray] = None,
+                    yxz_base_max: Optional[jnp.ndarray] = None) -> Union[np.ndarray,
+                                                                         Tuple[np.ndarray, jnp.ndarray, jnp.ndarray]]:
+    """
+    If transform corresponds to tile `t`, round r, channel c; then this finds all z_planes of this tiff file that
+    need to be loaded in so that `yxz_base` transformed according to `transform` can be read off.
+    I.e. instead of loading in full tiff file, only subset needed.
+
+    Args:
+        transform: ```float [4 x 3]```.
+            Affine transform to apply to ```yxz```, once centered and z units changed to ```yx_pixels```.
+            ```transform[3, 2]``` is approximately the z shift in units of ```yx_pixels```.
+            E.g. this is one of the transforms stored in ```nb.register.transform```.
+        tile_centre: ```float [3]```.
+            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
+            ```yxz``` were found on.
+            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
+            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
+            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
+        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.
+            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.
+            typically, ```z_scale > 1``` because ```z_pixels``` are larger than the ```yx_pixels```.
+        nz: Number of z-planes in each tiff file.
+        yxz_base: `int [n_spots x 3]`.
+            Local yxz coordinates of spots found in the reference round/reference channel of tile `t`
+            yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
+            Only needed to compute `yxz_base_min` and `yxz_base_max`.
+        yxz_base_min: `float [3]`
+            `yxz_base` coordinates that when transformed will give the smallest z-plane required to load in.
+            If not given, will be computed from `yxz_base`.
+        yxz_base_max:`float [3]`
+            `yxz_base` coordinates that when transformed will give the largest z-plane required to load in.
+            If not given, will be computed from `yxz_base`.
+
+    Returns:
+        - ```z_transform``` - `int [nz_use]`.
+            z_planes of the tiff file that transform corresponds to that need to be read in,
+            in order for all transformed versions of yxz_base to be included.
+        - ```yxz_base_min``` - `float [3]`.
+            `yxz_base` coordinates that when transformed will give the smallest z-plane required to load in.
+            Only returned if `yxz_base` given.
+        - ```yxz_base_max``` - `float [3]`.
+            `yxz_base` coordinates that when transformed will give the largest z-plane required to load in.
+            Only returned if `yxz_base` given.
+
+    """
+    if yxz_base is not None:
+        yxz_base_min = jnp.min(yxz_base, axis=0)
+        # Ensure yx coordinates for min_z calculation are negative after centering
+        yxz_base_min = jnp.clip(yxz_base_min, 0, jnp.append(jnp.floor(tile_centre[:2]), nz-1)).astype(int)
+        yxz_base_max = jnp.max(yxz_base, axis=0)
+        # Ensure yx coordinates for max_z calculation are positive after centering
+        yxz_base_max = jnp.clip(yxz_base_max, jnp.append(jnp.ceil(tile_centre[:2]), 0), jnp.inf).astype(int)
+
+    # use transform where rotation terms in zy and zx are positive to find most extreme z possible.
+    # I.e. for z_transform_min, after centering yxz_base_min will be negative so
+    # positive rotation results in more negative z.
+    # For z_transform_max, after centering yxz_base_max will be positive so positive rotation
+    # results in more positive z.
+    transform_minmax_z = transform.at[:2, 2].set(jnp.abs(transform[:2, 2]))
+    z_transform_min = int(pcr.apply_transform_jax_single(yxz_base_min, transform_minmax_z,
+                                                         tile_centre, z_scale)[2])
+    z_transform_max = int(pcr.apply_transform_jax_single(yxz_base_max, transform_minmax_z,
+                                                         tile_centre, z_scale)[2])
+    z_transform = np.arange(z_transform_min, z_transform_max + 1)
+    # Only include possible z-planes in tiff file.
+    z_transform = z_transform[np.logical_and(z_transform >= 0, z_transform < nz)]
+    if yxz_base is None:
+        return z_transform
+    else:
+        return z_transform, yxz_base_min, yxz_base_max,

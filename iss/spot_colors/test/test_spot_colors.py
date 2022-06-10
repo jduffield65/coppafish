@@ -5,7 +5,7 @@ from ...utils.tiff import save_tile
 from ...setup.notebook import NotebookPage
 from ...setup.tile_details import get_tile_file_names
 from ...pcr.base import apply_transform, apply_transform_jax
-from ..base import get_spot_colors, get_spot_colors_jax
+from ..base import get_spot_colors, get_spot_colors_jax, get_z_transform
 from typing import List
 import jax.numpy as jnp
 
@@ -208,3 +208,59 @@ class TestSpotColors(unittest.TestCase):
     def test_3d_single_z(self):
         # Quite often run case of 3d pipeline but all spots on same z-plane. Check this works.
         self.all_test(True, True)
+
+
+class TestGetZTransform(unittest.TestCase):
+    MinYX = 1900
+    MaxYX = 2700
+    MinZ = 12
+    MaxZ = 150
+    MinSpots = 500
+    MaxSpots = 500000
+    MaxRot = 0.3
+
+    def all_test(self, single_z=False, multi_not_near_edge=False):
+        ndim = 3
+        tile_sz = np.zeros(ndim, dtype=int)
+        tile_sz[:2] = np.random.randint(self.MinYX, self.MaxYX)
+        tile_sz[2] = np.random.randint(self.MinZ, self.MaxZ)
+        tile_centre = jnp.asarray((tile_sz - 1) / 2)
+        z_scale = np.random.uniform(2.4, 7.7)
+        n_spots = np.random.randint(self.MinSpots, self.MaxSpots)
+        yxz_base = np.zeros((n_spots, ndim), dtype=int)
+        for i in range(ndim):
+            yxz_base[:, i] = np.random.randint(0, tile_sz[i] - 1, n_spots)
+        if single_z:
+            yxz_base[:, 2] = np.random.randint(0, tile_sz[2] - 1)
+        elif multi_not_near_edge:
+            yxz_base[:, 2] = np.random.randint(tile_sz[2]/3, tile_sz[2] - tile_sz[2]/3, n_spots)
+        transform = np.zeros((4, 3))
+        transform[:ndim, :ndim] = np.eye(ndim) + np.random.uniform(-self.MaxRot, self.MaxRot, (ndim, ndim))
+        for i in range(ndim):
+            transform[3, i] = np.random.uniform(-tile_sz[i] / 3, tile_sz[i] / 3)
+            if i == 2:
+                transform[3, i] = transform[3, i] * z_scale
+        yxz_base = jnp.asarray(yxz_base)
+        transform = jnp.asarray(transform)
+        yxz_transform = apply_transform_jax(yxz_base, transform, tile_centre, z_scale)
+        in_range = jnp.logical_and(yxz_transform[:, 2] >= 0, yxz_transform[:, 2] < tile_sz[2])
+        z_read_in = get_z_transform(transform, tile_centre, z_scale, tile_sz[2], yxz_base)[0]
+        if in_range.any():
+            min_z = jnp.min(yxz_transform[in_range, 2])
+            max_z = jnp.max(yxz_transform[in_range, 2])
+            self.assertTrue(z_read_in[0] <= min_z)
+            self.assertTrue(z_read_in[-1] >= max_z)
+        else:
+            self.assertTrue(len(z_read_in) == 0)
+
+    def test_10(self):
+        for i in range(10):
+            self.all_test()
+
+    def test_10_single(self):
+        for i in range(10):
+            self.all_test(single_z=True)
+
+    def test_10_not_near_edge(self):
+        for i in range(10):
+            self.all_test(multi_not_near_edge=True)

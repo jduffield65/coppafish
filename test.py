@@ -56,6 +56,7 @@ def suite_pcr():
 def suite_spot_colors():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(spot_colors.TestSpotColors, 'test'))
+    suite.addTest(unittest.makeSuite(spot_colors.TestGetZTransform, 'test'))
     return suite
 
 
@@ -94,5 +95,5 @@ def suite_all():
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_omp', exit=True)
+    unittest.main(defaultTest='suite_spot_colors', exit=True)
     hi = 5

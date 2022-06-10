@@ -1,1 +1,1 @@
-from .test_spot_colors import TestSpotColors
+from .test_spot_colors import TestSpotColors, TestGetZTransform
