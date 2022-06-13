@@ -151,6 +151,8 @@ _options = {
             'norm_shift_to_intensity_scale': 'number',
             'gene_efficiency_min_spots': 'int',
             'gene_efficiency_n_iter': 'int',
+            'gene_efficiency_score_thresh': 'number',
+            'gene_efficiency_score_diff_thresh': 'number',
             'score_thresh': 'number',
             'intensity_thresh': 'maybe_number'
         },
