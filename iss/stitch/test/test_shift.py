@@ -12,6 +12,7 @@ class TestShift(unittest.TestCase):
     min_score = None
     min_score_auto_param = 9  # this probably should be less for actual pipeline, about 5.
     max_noise = 3
+    nz_collapse = 30
     tol = 1
 
     @staticmethod
@@ -115,10 +116,14 @@ class TestShift(unittest.TestCase):
 
         if dimensions == 2:
             actual_transform = np.pad(actual_transform, (0, 1))
+            nz_collapse = None
+        else:
+            nz_collapse = self.nz_collapse
         found_transform, score, score_thresh = compute_shift(spot_yxz, transform_yxz, self.min_score,
                                                              self.min_score_auto_param, self.shift_score_thresh,
-                                                             y_search, x_search, z_search, [widen, widen, z_widen],
-                                                             max_shift_range, z_scale)
+                                                             y_search, x_search, None,
+                                                             [widen, widen, z_widen], max_shift_range, z_scale,
+                                                             nz_collapse, self.shift_spacing_z)
         diff = actual_transform.astype(int) - found_transform.astype(int)
         self.assertTrue(np.abs(diff).max() <= self.tol)
 

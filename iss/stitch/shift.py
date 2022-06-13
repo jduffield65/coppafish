@@ -122,17 +122,17 @@ def update_shifts(search_shifts: np.ndarray, prev_found_shifts: np.ndarray) -> n
     return search_shifts
 
 
-def get_best_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, neighb_dist_thresh: float, y_shifts: np.ndarray,
-                   x_shifts: np.ndarray, z_shifts: np.ndarray,
-                   ignore_shifts: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float, float, float]:
+def get_best_shift_3d(yxz_base: np.ndarray, yxz_transform_tree: KDTree, neighb_dist_thresh: float, y_shifts: np.ndarray,
+                      x_shifts: np.ndarray, z_shifts: np.ndarray,
+                      ignore_shifts: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
     """
     Finds the shift from those given that is best applied to `yx_base` to match `yx_transform`.
 
     Args:
         yxz_base: `float [n_spots_base x 3]`.
             Coordinates of spots on base image (yxz units must be same).
-        yxz_transform: `float [n_spots_transform x 3]`.
-            Coordinates of spots on transformed image (yxz units must be same).
+        yxz_transform_tree: KDTree built from coordinates of spots on transformed image
+            (`float [n_spots_transform x 3]`, yxz units must be same).
         neighb_dist_thresh: Basically the distance below which neighbours are a good match.
             Typical = `2`.
         y_shifts: `float [n_y_shifts]`.
@@ -150,29 +150,113 @@ def get_best_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, neighb_dist_
             Best shift found.
         - `best_score` - `float`.
             Score of best shift.
+    """
+    all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
+    if ignore_shifts is not None:
+        all_shifts = setdiff2d(all_shifts, ignore_shifts)
+    score = np.zeros(all_shifts.shape[0])
+    dist_upper_bound = 3 * neighb_dist_thresh  # beyond this, score < exp(-4.5) and quicker to use this.
+    for i in range(all_shifts.shape[0]):
+        yxz_shifted = yxz_base + all_shifts[i]
+        distances = yxz_transform_tree.query(yxz_shifted, distance_upper_bound=dist_upper_bound)[0]
+        score[i] = shift_score(distances, neighb_dist_thresh)
+    best_shift_ind = score.argmax()
+    return all_shifts[best_shift_ind], score[best_shift_ind]
+
+
+def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List[KDTree], neighb_dist_thresh: float,
+                      y_shifts: np.ndarray, x_shifts: np.ndarray, ignore_shifts: Optional[np.ndarray] = None):
+    """
+
+    Args:
+        yx_base_slices: List of n_slices arrays indicating yx_base coordinates of spots in that slice.
+        yx_transform_trees: List of n_slices KDTrees, each built from the yx_transform coordinates of spots in
+            that slice.
+        neighb_dist_thresh: Basically the distance below which neighbours are a good match.
+            Typical = `2`.
+        y_shifts: `float [n_y_shifts]`.
+            All possible shifts to test in y direction, probably made with `np.arange`.
+        x_shifts: `float [n_x_shifts]`.
+            All possible shifts to test in x direction, probably made with `np.arange`.
+        ignore_shifts: `float [n_ignore x 2]`.
+            Contains yx shifts to not search over.
+            If `None`, all permutations of `y_shifts`, `x_shifts` used.
+
+    Returns:
+        - `best_shift` - `float [shift_y, shift_x]`.
+            Best shift found.
+        - `best_score` - `float`.
+            Score of best shift.
         - `median_score` - `float`.
             Median of scores of all shifts.
         - `iqr_score` - `float`.
             Interquartile range of scores of all shifts.
     """
-    all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
+    all_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     if ignore_shifts is not None:
         all_shifts = setdiff2d(all_shifts, ignore_shifts)
-    tree = KDTree(yxz_transform)
     score = np.zeros(all_shifts.shape[0])
+    n_trees = len(yx_transform_trees)
     dist_upper_bound = 3 * neighb_dist_thresh  # beyond this, score < exp(-4.5) and quicker to use this.
     for i in range(all_shifts.shape[0]):
-        yxz_shifted = yxz_base + all_shifts[i]
-        distances = tree.query(yxz_shifted, distance_upper_bound=dist_upper_bound)[0]
-        score[i] = shift_score(distances, neighb_dist_thresh)
+        for j in range(n_trees):
+            yx_shifted = yx_base_slices[j] + all_shifts[i]
+            distances = yx_transform_trees[j].query(yx_shifted, distance_upper_bound=dist_upper_bound)[0]
+            score[i] += shift_score(distances, neighb_dist_thresh)
     best_shift_ind = score.argmax()
     return all_shifts[best_shift_ind], score[best_shift_ind], np.median(score), iqr(score)
 
 
+def get_2d_slices(yxz_base: np.ndarray, yxz_transform: np.ndarray,
+                  nz_collapse: Optional[int]) -> Tuple[List[np.ndarray], List[KDTree], int]:
+    """
+    This splits `yxz_base` and `yxz_transform` into `n_slices = nz / nz_collapse` 2D slices.
+    Then can do a 2D exhaustive search over multiple 2D slices instead of 3D exhaustive search.
+
+    Args:
+        yxz_base: `float [n_spots_base x 3]`.
+            Coordinates of spots on base image (yxz units must be same).
+        yxz_transform: `float [n_spots_transform x 3]`.
+            Coordinates of spots on transformed image (yxz units must be same).
+        nz_collapse: Maximum number of z-planes allowed to be flattened into a 2D slice.
+            If `None`, `n_slices`=1.
+
+    Returns:
+        - `yx_base_slices` - List of n_slices arrays indicating yx_base coordinates of spots in that slice.
+        - `yx_transform_trees` - List of n_slices KDTrees, each built from the yx_transform coordinates of spots in
+            that slice.
+        - transform_min_z - Guess of z shift from `yxz_base` to `yxz_transform` in units of `z_pixels`.
+    """
+    if nz_collapse is not None:
+        nz = yxz_base[:, 2].max() + 1
+        n_slices = int(np.ceil(nz / nz_collapse))
+        base_z_slices = np.split(np.arange(nz), n_slices)
+        transform_max_z = yxz_transform[:, 2].max() + 1
+        # transform_min_z provides an approx guess to the z shift.
+        transform_min_z = np.min([yxz_transform[:, 2].min(), transform_max_z - nz])
+        yx_base_slices = []
+        yx_transform_trees = []
+        for i in range(n_slices):
+            yx_base_slices.append(yxz_base[np.isin(yxz_base[:, 2], base_z_slices[i]), :2])
+            # transform z coords may have systematic z shift so start from min_z not 0.
+            if i == n_slices-1:
+                # For final slice, ensure all z planes in yxz_transform included.
+                transform_z_slice = np.arange(base_z_slices[i][0] + transform_min_z, transform_max_z+1)
+            else:
+                transform_z_slice = base_z_slices[i] + transform_min_z
+            yx_transform_trees.append(KDTree(yxz_transform[np.isin(yxz_transform[:, 2], transform_z_slice), :2]))
+    else:
+        transform_min_z = 0
+        yx_base_slices = [yxz_base[:, :2]]
+        yx_transform_trees = [KDTree(yxz_transform[:, :2])]
+    return yx_base_slices, yx_transform_trees, transform_min_z
+
+
 def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Optional[float],
                   min_score_auto_param: float, neighb_dist_thresh: float,
-                  y_shifts: np.ndarray, x_shifts: np.ndarray, z_shifts: np.ndarray, widen: Optional[List[int]] = None,
-                  max_range: Optional[List[int]] = None, z_scale: float = 1) -> Tuple[np.ndarray, float, float]:
+                  y_shifts: np.ndarray, x_shifts: np.ndarray, z_shifts: Optional[np.ndarray] = None,
+                  widen: Optional[List[int]] = None, max_range: Optional[List[int]] = None, z_scale: float = 1,
+                  nz_collapse: Optional[int] = None, z_step: int = 3) -> Tuple[np.ndarray, float, float]:
     """
     This finds the shift from those given that is best applied to `yxz_base` to match `yxz_transform`.
 
@@ -195,8 +279,9 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             All possible shifts to test in y direction, probably made with `np.arange`.
         x_shifts: `float [n_x_shifts]`.
             All possible shifts to test in x direction, probably made with `np.arange`.
-        z_shifts: `float [n_z_shifts]`.
+        z_step: `float [n_z_shifts]`.
             All possible shifts to test in z direction, probably made with `np.arange`.
+            If not given, will compute automatically from initial guess when making slices and `z_step`.
         widen: `int [3]`.
             By how many shifts to extend search in `[y, x, z]` direction if score below `min_score`.
             This many are added above and below current range.
@@ -209,6 +294,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             If None and widen supplied, range will only be widened once.
         z_scale: By what scale factor to multiply z coordinates to make them same units as xy.
             I.e. `z_pixel_size / xy_pixel_size`.
+        nz_collapse: Maximum number of z-planes allowed to be flattened into a 2D slice.
+            If `None`, `n_slices`=1. Should be `None` for 2D data.
+        z_step: `int`.
+            Step of shift search in z direction in uints of `z_pixels`.
+            `z_shifts` are computed automatically as 1 shift either side of an initial guess.
 
     Returns:
         - `best_shift` - `float [shift_y, shift_x, shift_z]`.
@@ -222,59 +312,100 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         widen = [0, 0, 0]
     yxz_base[:, 2] = yxz_base[:, 2] * z_scale
     yxz_transform[:, 2] = yxz_transform[:, 2] * z_scale
-    shift, score, score_median, score_iqr = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh,
-                                                           y_shifts, x_shifts, z_shifts * z_scale)
+    yxz_transform_tree = KDTree(yxz_transform)
+    yx_base_slices, yx_transform_trees, z_shift_guess = get_2d_slices(yxz_base, yxz_transform, nz_collapse)
+    shift_2d, score_2d, score_median, score_iqr = get_best_shift_2d(yx_base_slices, yx_transform_trees,
+                                                                    neighb_dist_thresh, y_shifts, x_shifts)
+
+    # Only look at 3 shifts in z to start with about guess from getting the 2d slices.
+    if z_shifts is None:
+        z_shifts = np.arange(z_shift_guess - z_step, z_shift_guess + z_step + 1, z_step)
+
     # save initial_shifts so don't look over same shifts twice
-    initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
+    initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     if min_score is None:
         # TODO: maybe make min_score equal to min_score_auto_param times 10th highest score.
         #  That way, it is independent of number of shifts searched
         min_score = score_median + min_score_auto_param * score_iqr
-    if score < min_score and np.max(widen) > 0:
-        shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts, z_shifts]])
+    if score_2d < min_score and np.max(widen[:2]) > 0:
+        shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
         if max_range is None:
             # If don't specify max_range, only widen once.
-            max_range = shift_ranges * (np.array(widen) > 0)
+            max_range = np.array([np.ptp(i) for i in [y_shifts, x_shifts, z_shifts]]) * (np.array(widen[:2]) > 0)
             max_range[max_range > 0] += 1
+            max_range_2d = max_range[:2]
         else:
-            max_range = np.asarray(max_range)
-        # keep extending range of shifts until good score reached or hit max shift_range.
-        while score < min_score:
-            if np.all(shift_ranges >= max_range):
-                warnings.warn(f"Shift search range exceeds max_range = {max_range} in yxz directions but \n"
-                              f"best score is only {round(score, 2)} which is below min_score = {round(min_score, 2)}."
-                              f"\nBest shift found was {shift}.")
+            max_range_2d = np.asarray(max_range[:2])
+        # keep extending range of shifts in yx until good score reached or hit max shift_range.
+        while score_2d < min_score:
+            if np.all(shift_ranges >= max_range_2d):
+                warnings.warn(f"Shift search range exceeds max_range = {max_range_2d} in yxz directions but \n"
+                              f"best score is only {round(score_2d, 2)} which is below "
+                              f"min_score = {round(min_score, 2)}."
+                              f"\nBest shift found was {shift_2d}.")
                 break
             else:
-                warnings.warn(f"Best shift found ({shift}) has score of {round(score, 2)} which is below min_score = "
-                              f"{round(min_score, 2)}.\nRunning again with extended shift search range.")
-            if shift_ranges[0] < max_range[0]:
+                warnings.warn(f"Best shift found ({shift_2d}) has score of {round(score_2d, 2)} which is below "
+                              f"min_score = {round(min_score, 2)}."
+                              f"\nRunning again with extended shift search range in yx.")
+            if shift_ranges[0] < max_range_2d[0]:
                 y_shifts = extend_array(y_shifts, widen[0])
-            if shift_ranges[1] < max_range[1]:
+            if shift_ranges[1] < max_range_2d[1]:
                 x_shifts = extend_array(x_shifts, widen[1])
-            if shift_ranges[2] < max_range[2]:
-                z_shifts = extend_array(z_shifts, widen[2])
-            shift, score, score_median2, score_iqr2 = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh,
-                                                                     y_shifts, x_shifts, z_shifts * z_scale,
-                                                                     initial_shifts)
+            shift_2d, score_2d = get_best_shift_2d(yx_base_slices, yx_transform_trees, neighb_dist_thresh, y_shifts,
+                                                   x_shifts, initial_shifts)[:2]
             # update initial_shifts so don't look over same shifts twice
-            initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
-            shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts, z_shifts]])
+            initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
+            shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
+
+    if nz_collapse is None:
+        # nz_collapse not provided for 2D data.
+        shift = np.append(shift_2d, 0)
+        score = score_2d
+    else:
+        y_shift_2d = np.array(shift_2d[0])
+        x_shift_2d = np.array(shift_2d[1])
+        shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
+                                         x_shift_2d, z_shifts * z_scale)
+        initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
+        if score < min_score and widen[2] > 0:
+            # keep extending range of shifts in z until good score reached or hit max shift_range.
+            # yx shift is kept as 2d shift found when using slices.
+            max_range_z = np.asarray(max_range[2])
+            z_shift_range = np.ptp(z_shifts)
+            while score < min_score:
+                if z_shift_range > max_range_z:
+                    warnings.warn(f"Shift search range exceeds max_range = {max_range_z} in z directions but \n"
+                                  f"best score is only {round(score, 2)} which is below "
+                                  f"min_score = {round(min_score, 2)}."
+                                  f"\nBest shift found was {shift}.")
+                    break
+                else:
+                    warnings.warn(f"Best shift found ({shift}) has score of {round(score, 2)} which is below "
+                                  f"min_score = {round(min_score, 2)}."
+                                  f"\nRunning again with extended shift search range in z.")
+                z_shifts = extend_array(z_shifts, widen[2])
+                shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
+                                                 x_shift_2d, z_shifts * z_scale, initial_shifts)
+                # update initial_shifts so don't look over same shifts twice
+                initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
+                z_shift_range = np.ptp(z_shifts)
+
     if score > min_score:
         # refined search near maxima with half the step
         y_shifts = refined_shifts(y_shifts, shift[0])
         x_shifts = refined_shifts(x_shifts, shift[1])
         z_shifts = refined_shifts(z_shifts, shift[2] / z_scale)
-        shift2, score2, _, _ = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh, y_shifts, x_shifts,
-                                              z_shifts * z_scale, initial_shifts)
+        shift2, score2 = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
+                                           z_shifts * z_scale, initial_shifts)
         if score2 > score:
             shift = shift2
         # final search with a step of 1
         y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
         x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
         z_shifts = refined_shifts(z_shifts, shift[2] / z_scale, refined_scale=1e-50, extend_scale=1)
-        shift, score, _, _ = get_best_shift(yxz_base, yxz_transform, neighb_dist_thresh, y_shifts, x_shifts,
-                                            z_shifts * z_scale, initial_shifts)
+        shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
+                                         z_shifts * z_scale, initial_shifts)
         shift[2] = shift[2] / z_scale
     return shift.astype(int), score, min_score
 

@@ -63,8 +63,9 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                 shift[t, r], shift_score[t, r], shift_score_thresh[t, r] = \
                     compute_shift(spot_yxz(spot_details, t, r_ref, c_ref), spot_yxz(spot_details, t, r, c_imaging),
                                   config['shift_score_thresh'], config['shift_score_auto_param'],
-                                  config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
-                                  config['shift_widen'], config['shift_max_range'], z_scale)
+                                  config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], None,
+                                  config['shift_widen'], config['shift_max_range'], z_scale,
+                                  config['nz_collapse'], config['shift_step'][2])
                 good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
                 if sum(good_shifts) >= 3:
                     # once found shifts, refine shifts to be searched around these
@@ -102,7 +103,8 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
             shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
                                                  spot_yxz(spot_details, t, r, c_imaging), 0, None,
                                                  config['neighb_dist_thresh'], shifts[r]['y'],
-                                                 shifts[r]['x'], shifts[r]['z'], None, None, z_scale)
+                                                 shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
+                                                 config['nz_collapse'], config['shift_step'][2])
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"
                           f"{shift_outlier[t, r]} to {shift[t, r]}.")
 

@@ -54,6 +54,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
                                                                                 config['shift_' + j + '_max'][i],
                                                                                 config['shift_step'][i]]
     if nbp_basic.is_3d is False:
+        config['nz_collapse'] = None
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
         config['shift_max_range'][2] = 0
         shifts['south']['z'] = np.array([0], dtype=int)
@@ -90,9 +91,9 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
                                                                config['shift_score_thresh'],
                                                                config['shift_score_auto_param'],
                                                                config['neighb_dist_thresh'], shifts[j]['y'],
-                                                               shifts[j]['x'], shifts[j]['z'],
+                                                               shifts[j]['x'], None,
                                                                config['shift_widen'], config['shift_max_range'],
-                                                               z_scale)
+                                                               z_scale, config['nz_collapse'], config['shift_step'][2])
                     shift_info[j]['pairs'] = np.append(shift_info[j]['pairs'],
                                                        np.array([t, t_neighb[j][0]]).reshape(1, 2), axis=0)
                     shift_info[j]['shifts'] = np.append(shift_info[j]['shifts'], np.array(shift).reshape(1, 3), axis=0)
@@ -134,7 +135,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
                 shift_info[j]['score'][i], _ = compute_shift(spot_yxz(spot_details, t, r, c),
                                                              spot_yxz(spot_details, t_neighb, r, c), 0, None,
                                                              config['neighb_dist_thresh'], shifts[j]['y'],
-                                                             shifts[j]['x'], shifts[j]['z'], None, None, z_scale)
+                                                             shifts[j]['x'], shifts[j]['z'], None, None,
+                                                             z_scale, config['nz_collapse'], config['shift_step'][2])
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
 
