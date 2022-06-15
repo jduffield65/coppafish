@@ -355,6 +355,6 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
             image2 = np.pad(image2, pad_size, padding).astype(np.int8)
     if isinstance(padding, numbers.Number):
         return cy_convolve(np.pad(image, pad_size, 'constant', constant_values=padding), kernel,
-                           pad_coords.astype(np.int32), image2)
+                           pad_coords.astype(np.int_), image2)
     else:
-        return cy_convolve(np.pad(image, pad_size, padding), kernel, pad_coords.astype(np.int32), image2)
+        return cy_convolve(np.pad(image, pad_size, padding), kernel, pad_coords.astype(np.int_), image2)

@@ -112,6 +112,8 @@ class TestGetDyeChannelIntensityGuess(unittest.TestCase):
     output: float array [n_dyes x n_channels] giving approximate intensity of each dye in each channel
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
+    csv_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname( __file__ )))),
+                            'dye_camera_laser_raw_intensity.csv')
     tol = 1e-10
 
     def test_get_dye_channel_intensity_guess(self):
@@ -126,6 +128,6 @@ class TestGetDyeChannelIntensityGuess(unittest.TestCase):
             dye_names = [dye_names[i][0][0] for i in range(dye_names.shape[0])]
             cameras = cameras.astype(int).flatten()
             lasers = lasers.astype(int).flatten()
-            output_python = get_dye_channel_intensity_guess(csv_file_name[0], dye_names, cameras, lasers)
+            output_python = get_dye_channel_intensity_guess(self.csv_file, dye_names, cameras, lasers)
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)

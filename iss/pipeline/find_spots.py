@@ -82,7 +82,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                                 in_z = spot_yxz[:, 2] == z
                             else:
                                 in_z = np.ones(spot_yxz.shape[0], dtype=bool)
-                            if sum(in_z) > max_spots:
+                            if np.sum(in_z) > max_spots:
                                 intensity_thresh = np.sort(spot_intensity[in_z])[-max_spots]
                                 keep[np.logical_and(in_z, spot_intensity < intensity_thresh)] = False
                         spot_yxz = spot_yxz[keep]

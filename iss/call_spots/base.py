@@ -75,11 +75,12 @@ def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
             raise ValueError(f"method given was {method} but should be either 'single' or 'separate'")
         for b in range(n_channels):
             hist_counts_rb = np.sum(hist_counts[:, r, b].reshape(hist_values.shape[0], -1), axis=1)
-            cum_sum_rb = np.cumsum(hist_counts_rb)
+            # if not np.int32, get error in windows when cumsum goes negative.
+            cum_sum_rb = np.cumsum(hist_counts_rb.astype(np.int64))
             n_pixels = cum_sum_rb[-1]
             norm_factor_rb = -np.inf
             for thresh_intensity, thresh_prob in zip(thresh_intensities, thresh_probs):
-                prob = sum(hist_counts_rb[hist_values >= thresh_intensity * norm_factor_rb]) / n_pixels
+                prob = np.sum(hist_counts_rb[hist_values >= thresh_intensity * norm_factor_rb]) / n_pixels
                 if prob > thresh_prob:
                     norm_factor_rb = hist_values[np.where(cum_sum_rb > (1 - thresh_prob) * n_pixels)[0][1]
                                      ] / thresh_intensity

@@ -74,7 +74,7 @@ class TestNeighbour(unittest.TestCase):
         else:
             transforms = self.transforms_2d
         n_fail_spots = np.random.randint(5, ceil(0.75 * n_spots))
-        fail_spot_index = np.random.randint(0, n_spots, n_fail_spots)
+        fail_spot_index = np.random.randint(0, n_spots-1, n_fail_spots)
         fail_transform_index = np.random.randint(0, transforms.shape[0], n_fail_spots)
         fail_mod_yx = spot_yx[fail_spot_index, :] + transforms[fail_transform_index, :]
 
