@@ -194,29 +194,6 @@ def dilate(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     # return morphology.dilation(image, kernel)
 
 
-def sparse_local_maxima(image: np.ndarray, kernel: np.ndarray, thresh: float) -> np.ndarray:
-    """
-    Finds local maxima in sparse images.
-    Args:
-        image: `float [image_sz1 x ... x image_szN]`.
-            Image to be find local maxima in.
-        kernel: `int [kernel_sz1 x ... x kernel_szN]`.
-            Dilation kernel containing only zeros or ones i.e. sets minimum distance between spots.
-        thresh: Local maxima must have value in `image` above this value.
-
-    Returns:
-        `int [n_local_maxima x image.ndims]`.
-            coordinates of local maxima.
-    """
-    kernel = ensure_odd_kernel(kernel, 'end')
-    # binary_dilation is so if non-zero pixels close but not connected then they will be given the same label.
-    # Otherwise, both pixels would be local maxima because no communication between parts of image with different label.
-    labels = skimage.measure.label(binary_dilation(image > 0, kernel), connectivity=2)
-    maxima_coords = skimage.feature.peak_local_max(image, threshold_abs=thresh, footprint=kernel, exclude_border=False,
-                                                   labels=labels)
-    return maxima_coords
-
-
 def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] = 0,
              corr_or_conv: str = 'corr') -> np.ndarray:
     """

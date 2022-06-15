@@ -1,7 +1,7 @@
 import unittest
 import os
 import numpy as np
-from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, sparse_local_maxima, imfilter_coords
+from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, imfilter_coords
 from ..strel import disk, disk_3d, annulus, fspecial
 from ...utils import matlab, errors
 
@@ -214,49 +214,6 @@ class TestMorphology(unittest.TestCase):
             output_python = dilate(image, kernel.astype(int))
             diff = output_python - output_matlab
             self.assertTrue(np.abs(diff).max() <= self.tol)  # check match MATLAB
-
-    def test_sparse_local_maxima(self):
-        """
-        Check that sparse_local_maxima function gives same results as if use dilation method.
-        Advantage of sparse method is that it is quicker with a sparse image.
-
-        """
-        small = 1e-6  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
-
-        for ndims in [2, 3]:
-            n_non_zero_pixels = np.random.randint(30, 500)
-            # sometimes use a rectangular kernel.
-            kernel = np.ones([np.random.choice(np.arange(3, 9, 1)) for i in range(ndims)], dtype=int)
-            if ndims == 2:
-                image = np.zeros((200, 233))
-                if bool(np.random.randint(2)):
-                    # sometimes use a disk kernel.
-                    kernel = disk(np.random.randint(2, 10))
-            elif ndims == 3:
-                image = np.zeros((133, 150, 30))
-                if bool(np.random.randint(2)):
-                    # sometimes use a disk kernel.
-                    kernel = disk_3d(np.random.randint(2, 10), np.random.randint(1, 10))
-            else:
-                raise ValueError('Wrong number of dimensions')
-
-            image[[np.random.randint(0, image.shape[i]-1, n_non_zero_pixels) for i in range(ndims)
-                   ]] = np.random.rand(n_non_zero_pixels)
-            thresh = np.median(image[image > 0])
-
-            dilate_im = dilate(image, kernel)
-            spots = np.logical_and(image + small > dilate_im, image > thresh)
-            peak_pos = np.where(spots)
-            dilate_yxz = np.concatenate([coord.reshape(-1, 1) for coord in peak_pos], axis=1)
-            sparse_yxz = sparse_local_maxima(image, kernel, thresh)
-            # sort so can compare
-            sort_ind = np.lexsort([dilate_yxz[:, i] for i in range(ndims)])
-            dilate_yxz = dilate_yxz[sort_ind]
-            sort_ind = np.lexsort([sparse_yxz[:, i] for i in range(ndims)])
-            sparse_yxz = sparse_yxz[sort_ind]
-
-            diff = dilate_yxz - sparse_yxz
-            self.assertTrue(np.abs(diff).max() <= 1e-10)  # check match MATLAB
 
     def test_imfilter(self):
         """
