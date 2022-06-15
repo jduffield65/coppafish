@@ -89,11 +89,12 @@ def suite_all():
     suite.addTest(suite_find_spots())
     suite.addTest(suite_stitch())
     suite.addTest(suite_pcr())
+    suite.addTest(suite_spot_colors())
     suite.addTest(suite_call_spots())
     suite.addTest(suite_omp())
     return suite
 
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite_spot_colors', exit=True)
+    unittest.main(defaultTest='suite_all', exit=True)
     hi = 5
