@@ -46,7 +46,7 @@ class TestNeighbour(unittest.TestCase):
         if array.ndim == 2:
             max_z = None
         else:
-            max_z = array.shape[2] - 3
+            max_z = array.shape[2] - 1
         spot_yx = random_spot_yx(n_spots, array.shape[0] - 3, array.shape[1] - 3, max_z, min_y=1, min_x=1, min_z=1)
         if edges:
             # make all spots be at one edge
