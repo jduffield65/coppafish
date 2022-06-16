@@ -224,7 +224,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 # only use image unaffected by strip_hack to get information from tile
-                                good_columns = np.setdiff1d(np.arange(nbp_basic['tile_sz']), bad_columns)
+                                good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
                                 nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
                                     nbp_debug.clip_extract_scale[t, r, c] = \
                                     extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
