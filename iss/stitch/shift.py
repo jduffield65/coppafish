@@ -230,7 +230,7 @@ def get_2d_slices(yxz_base: np.ndarray, yxz_transform: np.ndarray,
     if nz_collapse is not None:
         nz = yxz_base[:, 2].max() + 1
         n_slices = int(np.ceil(nz / nz_collapse))
-        base_z_slices = np.split(np.arange(nz), n_slices)
+        base_z_slices = np.array_split(np.arange(nz), n_slices)
         transform_max_z = yxz_transform[:, 2].max() + 1
         # transform_min_z provides an approx guess to the z shift.
         transform_min_z = np.min([yxz_transform[:, 2].min(), transform_max_z - nz])
