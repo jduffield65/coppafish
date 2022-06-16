@@ -10,7 +10,9 @@ class TestShift(unittest.TestCase):
     shift_spacing_z = 2
     shift_score_thresh = 2
     min_score = None
-    min_score_auto_param = 9  # this probably should be less for actual pipeline, about 5.
+    min_score_min_dist = 11
+    min_score_max_dist = 20
+    min_score_multiplier = 2  # this probably should be less for actual pipeline, about 5.
     max_noise = 3
     nz_collapse = 30
     tol = 1
@@ -120,7 +122,8 @@ class TestShift(unittest.TestCase):
         else:
             nz_collapse = self.nz_collapse
         found_transform, score, score_thresh = compute_shift(spot_yxz, transform_yxz, self.min_score,
-                                                             self.min_score_auto_param, self.shift_score_thresh,
+                                                             self.min_score_multiplier, self.min_score_min_dist,
+                                                             self.min_score_max_dist, self.shift_score_thresh,
                                                              y_search, x_search, None,
                                                              [widen, widen, z_widen], max_shift_range, z_scale,
                                                              nz_collapse, self.shift_spacing_z)

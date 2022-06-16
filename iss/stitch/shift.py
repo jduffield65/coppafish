@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.spatial import KDTree
 from scipy.stats import iqr
+from sklearn.metrics import pairwise_distances
 from ..utils.base import setdiff2d
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Union
 import warnings
 
 
@@ -165,7 +166,8 @@ def get_best_shift_3d(yxz_base: np.ndarray, yxz_transform_tree: KDTree, neighb_d
 
 
 def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List[KDTree], neighb_dist_thresh: float,
-                      y_shifts: np.ndarray, x_shifts: np.ndarray, ignore_shifts: Optional[np.ndarray] = None):
+                      y_shifts: np.ndarray, x_shifts: np.ndarray,
+                      ignore_shifts: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float, np.ndarray, np.ndarray]:
     """
 
     Args:
@@ -187,10 +189,10 @@ def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List
             Best shift found.
         - `best_score` - `float`.
             Score of best shift.
-        - `median_score` - `float`.
-            Median of scores of all shifts.
-        - `iqr_score` - `float`.
-            Interquartile range of scores of all shifts.
+        - `all_shifts` - `float [n_shifts x 2]`.
+            yx shifts searched over.
+        - `score` - `float [n_shifts]`.
+            Score of all shifts.
     """
     all_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     if ignore_shifts is not None:
@@ -204,7 +206,42 @@ def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List
             distances = yx_transform_trees[j].query(yx_shifted, distance_upper_bound=dist_upper_bound)[0]
             score[i] += shift_score(distances, neighb_dist_thresh)
     best_shift_ind = score.argmax()
-    return all_shifts[best_shift_ind], score[best_shift_ind], np.median(score), iqr(score)
+    return all_shifts[best_shift_ind], score[best_shift_ind], all_shifts, score
+
+
+def get_score_thresh(all_shifts: np.ndarray, all_scores: np.ndarray, best_shift: Union[np.ndarray, List], min_dist: float,
+                     max_dist: float, thresh_multiplier: float) -> float:
+    """
+    Score thresh is the max of all scores from transforms between a `distance=min_dist` and `distance=max_dist`
+    from the `best_shift`.
+    I.e. we expect just for actual shift, there will be sharp gradient in score near it,
+    so threshold is multiple of nearby score.
+    If not the actual shift, then expect scores in this annulus will also be quite large.
+
+    Args:
+        all_shifts: `float [n_shifts x 2]`.
+            yx shifts searched over.
+        all_scores: `float [n_shifts]`.
+            `all_scores[s]` is the score corresponding to `all_shifts[s]`.
+        best_shift: `float [2]`.
+            yx shift with the best score.
+        min_dist: `score_thresh` computed from `all_shifts` a distance between `min_shift` and `max_shift`
+            from `best_shifts`.
+        max_dist: `score_thresh` computed from `all_shifts` a distance between `min_shift` and `max_shift`
+            from `best_shifts`.
+        thresh_multiplier: `score_thresh` is `thresh_multiplier` * mean of scores of shifts the correct distance
+            from `best_shift`.
+
+    Returns:
+        Threshold used to determine if best_shift found is legitimate.
+    """
+    dist_to_best = pairwise_distances(np.array(all_shifts), np.array(best_shift)[np.newaxis]).squeeze()
+    use = np.where(np.logical_and(dist_to_best <= max_dist, dist_to_best >= min_dist))[0]
+    if len(use) > 0:
+        score_thresh = thresh_multiplier * np.max(all_scores[use])
+    else:
+        score_thresh = thresh_multiplier * np.median(all_scores)
+    return score_thresh
 
 
 def get_2d_slices(yxz_base: np.ndarray, yxz_transform: np.ndarray,
@@ -253,9 +290,11 @@ def get_2d_slices(yxz_base: np.ndarray, yxz_transform: np.ndarray,
 
 
 def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Optional[float],
-                  min_score_auto_param: float, neighb_dist_thresh: float,
-                  y_shifts: np.ndarray, x_shifts: np.ndarray, z_shifts: Optional[np.ndarray] = None,
-                  widen: Optional[List[int]] = None, max_range: Optional[List[int]] = None, z_scale: float = 1,
+                  min_score_multiplier: Optional[float], min_score_min_dist: Optional[float],
+                  min_score_max_dist: Optional[float],
+                  neighb_dist_thresh: float, y_shifts: np.ndarray, x_shifts: np.ndarray,
+                  z_shifts: Optional[np.ndarray] = None, widen: Optional[List[int]] = None,
+                  max_range: Optional[List[int]] = None, z_scale: float = 1,
                   nz_collapse: Optional[int] = None, z_step: int = 3) -> Tuple[np.ndarray, float, float]:
     """
     This finds the shift from those given that is best applied to `yxz_base` to match `yxz_transform`.
@@ -271,7 +310,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             Coordinates of spots on transformed image (yxz units must be same).
         min_score: If score of best shift is below this, will search among the widened shifts.
             If `None`, `min_score` will be set to `median(scores) + min_score_auto_param * iqr(scores)`.
-        min_score_auto_param: Parameter used to find `min_score` if `min_score` not given.
+        min_score_multiplier: Parameter used to find `min_score` if `min_score` not given.
             Typical = `5` (definitely more than `1`).
         neighb_dist_thresh: Basically the distance below which neighbours are a good match.
             Typical = `2`.
@@ -279,7 +318,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             All possible shifts to test in y direction, probably made with `np.arange`.
         x_shifts: `float [n_x_shifts]`.
             All possible shifts to test in x direction, probably made with `np.arange`.
-        z_step: `float [n_z_shifts]`.
+        z_shifts: `float [n_z_shifts]`.
             All possible shifts to test in z direction, probably made with `np.arange`.
             If not given, will compute automatically from initial guess when making slices and `z_step`.
         widen: `int [3]`.
@@ -314,7 +353,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
     yxz_transform[:, 2] = yxz_transform[:, 2] * z_scale
     yxz_transform_tree = KDTree(yxz_transform)
     yx_base_slices, yx_transform_trees, z_shift_guess = get_2d_slices(yxz_base, yxz_transform, nz_collapse)
-    shift_2d, score_2d, score_median, score_iqr = get_best_shift_2d(yx_base_slices, yx_transform_trees,
+    shift_2d, score_2d, initial_shifts, all_scores = get_best_shift_2d(yx_base_slices, yx_transform_trees,
                                                                     neighb_dist_thresh, y_shifts, x_shifts)
 
     # Only look at 3 shifts in z to start with about guess from getting the 2d slices.
@@ -322,11 +361,10 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         z_shifts = np.arange(z_shift_guess - z_step, z_shift_guess + z_step + 1, z_step)
 
     # save initial_shifts so don't look over same shifts twice
-    initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
+    # initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     if min_score is None:
-        # TODO: maybe make min_score equal to min_score_auto_param times 10th highest score.
-        #  That way, it is independent of number of shifts searched
-        min_score = score_median + min_score_auto_param * score_iqr
+        min_score = get_score_thresh(initial_shifts, all_scores, shift_2d, min_score_min_dist, min_score_max_dist,
+                                     min_score_multiplier)
     if score_2d < min_score and np.max(widen[:2]) > 0:
         shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
         if max_range is None:

@@ -109,7 +109,9 @@ _options = {
             'shift_max_range': 'list_int',
             'neighb_dist_thresh': 'number',
             'shift_score_thresh': 'maybe_number',
-            'shift_score_auto_param': 'maybe_number',
+            'shift_score_thresh_multiplier': 'number',
+            'shift_score_thresh_min_dist': 'number',
+            'shift_score_thresh_max_dist': 'number',
             'nz_collapse': 'int'
         },
     'register_initial':
@@ -122,7 +124,9 @@ _options = {
             'shift_max_range': 'list_int',
             'neighb_dist_thresh': 'number',
             'shift_score_thresh': 'maybe_number',
-            'shift_score_auto_param': 'maybe_number',
+            'shift_score_thresh_multiplier': 'number',
+            'shift_score_thresh_min_dist': 'number',
+            'shift_score_thresh_max_dist': 'number',
             'nz_collapse': 'int'
         },
     'register':

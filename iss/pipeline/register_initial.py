@@ -62,12 +62,13 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                 pbar.set_postfix({'round': r, 'tile': t})
                 shift[t, r], shift_score[t, r], shift_score_thresh[t, r] = \
                     compute_shift(spot_yxz(spot_details, t, r_ref, c_ref), spot_yxz(spot_details, t, r, c_imaging),
-                                  config['shift_score_thresh'], config['shift_score_auto_param'],
-                                  config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], None,
+                                  config['shift_score_thresh'], config['shift_score_thresh_multiplier'],
+                                  config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
+                                  config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
                                   config['shift_widen'], config['shift_max_range'], z_scale,
                                   config['nz_collapse'], config['shift_step'][2])
                 good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
-                if sum(good_shifts) >= 3:
+                if np.sum(good_shifts) >= 3:
                     # once found shifts, refine shifts to be searched around these
                     for i in range(len(coords)):
                         shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
@@ -82,7 +83,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     final_shift_search[:, :, 2] = start_shift_search[:, :, 2]  # spacing does not change
     for r in nbp_basic.use_rounds:
         good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
-        if sum(good_shifts) > 0:
+        if np.sum(good_shifts) > 0:
             for i in range(len(coords)):
                 # change shift search to be near good shifts found
                 # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
@@ -91,7 +92,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
         final_shift_search[r, :, 1] = [np.max(shifts[r][key]) for key in shifts[r].keys()]
         shift_outlier[good_shifts, r] = 0  # only keep outlier information for not good shifts
         shift_score_outlier[good_shifts, r] = 0
-        if (sum(good_shifts) < 2 and n_shifts > 4) or (sum(good_shifts) == 0 and n_shifts > 0):
+        if (np.sum(good_shifts) < 2 and n_shifts > 4) or (np.sum(good_shifts) == 0 and n_shifts > 0):
             raise ValueError(f"Round {r}: {n_shifts - sum(good_shifts)}/{n_shifts}"
                              f" of shifts fell below score threshold")
         for t in np.where(good_shifts == False)[0]:
@@ -101,7 +102,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
             # score set to 0 so will find do refined search no matter what.
             shift[t, r], \
             shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
-                                                 spot_yxz(spot_details, t, r, c_imaging), 0, None,
+                                                 spot_yxz(spot_details, t, r, c_imaging), 0, None, None, None,
                                                  config['neighb_dist_thresh'], shifts[r]['y'],
                                                  shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
                                                  config['nz_collapse'], config['shift_step'][2])
