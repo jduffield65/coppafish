@@ -311,7 +311,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         min_score: If score of best shift is below this, will search among the widened shifts.
             If `None`, `min_score` will be set to `median(scores) + min_score_auto_param * iqr(scores)`.
         min_score_multiplier: Parameter used to find `min_score` if `min_score` not given.
-            Typical = `5` (definitely more than `1`).
+            Typical = `1.5` (definitely more than `1`).
+        min_score_min_dist: `min_score` is set to max score of those scores for shifts a distance between `min_dist` and
+            `max_dist` from the best_shift.
+        min_score_max_dist: `min_score` is set to max score of those scores for shifts a distance between `min_dist` and
+            `max_dist` from the best_shift.
         neighb_dist_thresh: Basically the distance below which neighbours are a good match.
             Typical = `2`.
         y_shifts: `float [n_y_shifts]`.

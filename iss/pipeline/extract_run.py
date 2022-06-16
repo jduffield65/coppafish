@@ -81,7 +81,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                              f"hanning filter, {config['r2']}, making the filtering step redundant.")
 
         # smooth_kernel = utils.strel.fspecial(*tuple(config['r_smooth']))
-        smooth_kernel = np.ones(tuple(np.array(config['r_smooth'])*2-1))
+        smooth_kernel = np.ones(tuple(np.array(config['r_smooth'], dtype=int)*2-1))
         smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
 
         if np.max(config['r_smooth']) == 1:
