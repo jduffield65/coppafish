@@ -98,12 +98,14 @@ def update_shifts(search_shifts: np.ndarray, prev_found_shifts: np.ndarray) -> n
     """
     Returns a new array of `search_shifts` around the mean of `prev_found_shifts` if new array has fewer entries or if
     mean of `prev_found_shifts` is outside initial range of `search_shifts`.
+    If more than one `prev_found_shifts` is outside the `search_shifts` in the same way i.e. too high or too low,
+    `search_shifts` will be updated too.
 
     Args:
         search_shifts: `int [n_shifts]`.
             Indicates all shifts currently searched over.
         prev_found_shifts: `int [n_shifts_found]`.
-            Indicates shifts found on all previous runs of `compute_shift`.
+            Indicate shifts found on all previous runs of `compute_shift`.
 
     Returns:
         `int [n_new_shifts]`.
@@ -120,6 +122,10 @@ def update_shifts(search_shifts: np.ndarray, prev_found_shifts: np.ndarray) -> n
         if n_shifts_new < n_shifts or mean_shift <= search_shifts.min() or mean_shift >= search_shifts.max():
             # only update shifts if results in less to search over.
             search_shifts = refined_shifts(search_shifts, mean_shift, 1, ((n_shifts_new - 1) / 2).astype(int))
+        if np.sum(prev_found_shifts > search_shifts.max()) > 1:
+            search_shifts = np.arange(search_shifts.min(), prev_found_shifts.max() + step, step)
+        if np.sum(prev_found_shifts < search_shifts.min()) > 1:
+            search_shifts = np.arange(prev_found_shifts.min(), search_shifts.max() + step, step)
     return search_shifts
 
 
@@ -433,22 +439,21 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                 initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
                 z_shift_range = np.ptp(z_shifts)
 
-    if score > min_score:
-        # refined search near maxima with half the step
-        y_shifts = refined_shifts(y_shifts, shift[0])
-        x_shifts = refined_shifts(x_shifts, shift[1])
-        z_shifts = refined_shifts(z_shifts, shift[2] / z_scale)
-        shift2, score2 = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
-                                           z_shifts * z_scale, initial_shifts)
-        if score2 > score:
-            shift = shift2
-        # final search with a step of 1
-        y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
-        x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
-        z_shifts = refined_shifts(z_shifts, shift[2] / z_scale, refined_scale=1e-50, extend_scale=1)
-        shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
-                                         z_shifts * z_scale, initial_shifts)
-        shift[2] = shift[2] / z_scale
+    # refined search near maxima with half the step
+    y_shifts = refined_shifts(y_shifts, shift[0])
+    x_shifts = refined_shifts(x_shifts, shift[1])
+    z_shifts = refined_shifts(z_shifts, shift[2] / z_scale)
+    shift2, score2 = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
+                                       z_shifts * z_scale, initial_shifts)
+    if score2 > score:
+        shift = shift2
+    # final search with a step of 1
+    y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
+    x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
+    z_shifts = refined_shifts(z_shifts, shift[2] / z_scale, refined_scale=1e-50, extend_scale=1)
+    shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
+                                     z_shifts * z_scale, initial_shifts)
+    shift[2] = shift[2] / z_scale
     return shift.astype(int), score, min_score
 
 # TODO: Not sure what amend_shifts function was for. Does not seem to be used in anything.

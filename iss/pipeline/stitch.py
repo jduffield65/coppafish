@@ -114,20 +114,21 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
     # amend shifts for which score fell below score_thresh
     for j in directions:
         good_shifts = (shift_info[j]['score'] > shift_info[j]['score_thresh']).flatten()
-        if np.sum(good_shifts) > 0:
-            for i in range(len(coords)):
-                # change shift search to be near good shifts found
-                # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
-                shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]],
-                                                     shift_info[j]['shifts'][good_shifts, i])
+        for i in range(len(coords)):
+            # change shift search to be near good shifts found
+            # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
+            if np.sum(good_shifts) > 0:
+                shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][good_shifts, i])
+            else:
+                shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][:, i])
         # add outlier variable to shift_info to keep track of those shifts which are changed.
         shift_info[j]['outlier_shifts'] = shift_info[j]['shifts'].copy()
         shift_info[j]['outlier_score'] = shift_info[j]['score'].copy()
         shift_info[j]['outlier_shifts'][good_shifts, :] = 0
         shift_info[j]['outlier_score'][good_shifts, :] = 0
         if (np.sum(good_shifts) < 2 and len(good_shifts) > 4) or (np.sum(good_shifts) == 0 and len(good_shifts) > 0):
-            raise ValueError(f"{len(good_shifts) - np.sum(good_shifts)}/{len(good_shifts)}"
-                             f" of shifts fell below score threshold")
+            warnings.warn(f"{len(good_shifts) - np.sum(good_shifts)}/{len(good_shifts)}"
+                          f" of shifts fell below score threshold")
         for i in np.where(good_shifts == False)[0]:
             t = shift_info[j]['pairs'][i, 0]
             t_neighb = shift_info[j]['pairs'][i, 1]

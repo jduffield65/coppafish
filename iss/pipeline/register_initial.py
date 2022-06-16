@@ -83,29 +83,30 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     final_shift_search[:, :, 2] = start_shift_search[:, :, 2]  # spacing does not change
     for r in nbp_basic.use_rounds:
         good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
-        if np.sum(good_shifts) > 0:
-            for i in range(len(coords)):
-                # change shift search to be near good shifts found
-                # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
+        for i in range(len(coords)):
+            # change shift search to be near good shifts found
+            # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
+            if np.sum(good_shifts) > 0:
                 shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
+            else:
+                shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[:, r, i])
         final_shift_search[r, :, 0] = [np.min(shifts[r][key]) for key in shifts[r].keys()]
         final_shift_search[r, :, 1] = [np.max(shifts[r][key]) for key in shifts[r].keys()]
         shift_outlier[good_shifts, r] = 0  # only keep outlier information for not good shifts
         shift_score_outlier[good_shifts, r] = 0
         if (np.sum(good_shifts) < 2 and n_shifts > 4) or (np.sum(good_shifts) == 0 and n_shifts > 0):
-            raise ValueError(f"Round {r}: {n_shifts - sum(good_shifts)}/{n_shifts}"
-                             f" of shifts fell below score threshold")
+            warnings.warn(f"Round {r}: {n_shifts - np.sum(good_shifts)}/{n_shifts} "
+                          f"of shifts fell below score threshold")
         for t in np.where(good_shifts == False)[0]:
             if t not in nbp_basic.use_tiles:
                 continue
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
-            shift[t, r], \
-            shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
-                                                 spot_yxz(spot_details, t, r, c_imaging), 0, None, None, None,
-                                                 config['neighb_dist_thresh'], shifts[r]['y'],
-                                                 shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
-                                                 config['nz_collapse'], config['shift_step'][2])
+            shift[t, r], shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
+                                                              spot_yxz(spot_details, t, r, c_imaging), 0, None, None,
+                                                              None, config['neighb_dist_thresh'], shifts[r]['y'],
+                                                              shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
+                                                              config['nz_collapse'], config['shift_step'][2])
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"
                           f"{shift_outlier[t, r]} to {shift[t, r]}.")
 
