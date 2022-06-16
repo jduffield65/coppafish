@@ -65,22 +65,28 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     filter_kernel_dapi = utils.strel.disk(nbp_debug.r_dapi)
 
     if config['r_smooth'] is not None:
-        if len(config['r_smooth']) == 1:
+        if len(config['r_smooth']) == 2:
             if nbp_basic.is_3d:
                 warnings.warn(f"Running 3D pipeline but only 2D smoothing requested with r_smooth"
-                              f" = {config['r_smooth'][0]}.")
+                              f" = {config['r_smooth']}.")
         elif len(config['r_smooth']) == 3:
             if not nbp_basic.is_3d:
                 raise ValueError("Running 2D pipeline but 3D smoothing requested.")
         else:
             raise ValueError(f"r_smooth provided was {config['r_smooth']}.\n"
-                             f"But it needs to be a single radius for 2D smoothing or 3 radii for 3D smoothing.\n"
+                             f"But it needs to be a 2 radii for 2D smoothing or 3 radii for 3D smoothing.\n"
                              f"I.e. it is the wrong shape.")
         if config['r_smooth'][0] > config['r2']:
             raise ValueError(f"Smoothing radius, {config['r_smooth'][0]}, is larger than the outer radius of the\n"
                              f"hanning filter, {config['r2']}, making the filtering step redundant.")
 
-        smooth_kernel = utils.strel.fspecial(*tuple(config['r_smooth']))
+        # smooth_kernel = utils.strel.fspecial(*tuple(config['r_smooth']))
+        smooth_kernel = np.ones(tuple(np.array(config['r_smooth'])*2-1))
+        smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
+
+        if np.max(config['r_smooth']) == 1:
+            warnings.warn('Max radius of smooth filter was 1, so not using.')
+            config['r_smooth'] = None
 
     if config['deconvolve']:
         if not os.path.isfile(nbp_file.psf):
