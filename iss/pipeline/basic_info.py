@@ -115,7 +115,7 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     # get z info
     if config_basic['use_z'] is None:
         nbp_basic.use_z = list(np.arange(metadata['sizes']['z']))
-    if len(config_basic['use_z']) == 2:
+    elif len(config_basic['use_z']) == 2:
         # use consecutive values if only 2 given.
         nbp_basic.use_z[:] = list(np.arange(config_basic['use_z'][0], config_basic['use_z'][1] + 1))
     if config_basic['ignore_first_z_plane'] and 0 in nbp_basic.use_z:
