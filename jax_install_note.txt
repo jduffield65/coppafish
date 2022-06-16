@@ -1,0 +1,17 @@
+Jax installation on windows is not straightforward.
+See:
+https://www.reddit.com/r/learnmachinelearning/comments/qnqdy0/jax_on_windows/
+
+Basically download correct file (correct python / cuda version) of jaxlib. pip install this. Then pip install jax.
+
+Only works with jax version 0.3.2 on windows i.e.
+Download jaxlib-0.3.2-cp38-none-win_amd64.whl from here:
+https://whls.blob.core.windows.net/unstable/index.html
+Then save in ISS folder.
+
+Then in terminal, run:
+pip install jaxlib-0.3.2-cp38-none-win_amd64.whl
+pip install jax==0.3.2
+
+
+On Mac, just pip install jax
