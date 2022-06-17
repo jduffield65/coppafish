@@ -88,7 +88,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
             # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
             if np.sum(good_shifts) > 0:
                 shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
-            else:
+            elif good_shifts.size > 0:
                 shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[:, r, i])
         final_shift_search[r, :, 0] = [np.min(shifts[r][key]) for key in shifts[r].keys()]
         final_shift_search[r, :, 1] = [np.max(shifts[r][key]) for key in shifts[r].keys()]

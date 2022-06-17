@@ -103,7 +103,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
                     shift_info[j]['score_thresh'] = np.append(shift_info[j]['score_thresh'],
                                                               np.array(score_thresh).reshape(1, 1), axis=0)
                     good_shifts = (shift_info[j]['score'] > shift_info[j]['score_thresh']).flatten()
-                    if sum(good_shifts) >= 3:
+                    if np.sum(good_shifts) >= 3:
                         # once found shifts, refine shifts to be searched around these
                         for i in range(len(coords)):
                             shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]],
@@ -119,7 +119,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
             if np.sum(good_shifts) > 0:
                 shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][good_shifts, i])
-            else:
+            elif good_shifts.size > 0:
                 shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][:, i])
         # add outlier variable to shift_info to keep track of those shifts which are changed.
         shift_info[j]['outlier_shifts'] = shift_info[j]['shifts'].copy()

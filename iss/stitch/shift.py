@@ -115,10 +115,11 @@ def update_shifts(search_shifts: np.ndarray, prev_found_shifts: np.ndarray) -> n
         is outside range of `search_shifts`.
     """
     n_shifts = len(search_shifts)
-    if n_shifts > 1:
+    n_prev_shifts = len(prev_found_shifts)
+    if n_shifts > 1 and n_prev_shifts > 0:
         step = np.mean(np.ediff1d(search_shifts))
         mean_shift = np.mean(prev_found_shifts, dtype=int)
-        n_shifts_new = 2 * np.ceil((max(prev_found_shifts) - mean_shift) / step + 1).astype(int) + 1
+        n_shifts_new = 2 * np.ceil((np.max(prev_found_shifts) - mean_shift) / step + 1).astype(int) + 1
         if n_shifts_new < n_shifts or mean_shift <= search_shifts.min() or mean_shift >= search_shifts.max():
             # only update shifts if results in less to search over.
             search_shifts = refined_shifts(search_shifts, mean_shift, 1, ((n_shifts_new - 1) / 2).astype(int))
