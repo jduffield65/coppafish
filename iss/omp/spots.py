@@ -10,7 +10,7 @@ import numpy_indexed
 
 
 def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
-                          kernel: np.ndarray, cython: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                          kernel: np.ndarray) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Counts the number of positive (and negative) pixels in a neighbourhood about each spot.
     If `filter` contains only 1 and 0, then number of positive pixels returned near each spot.
@@ -25,7 +25,6 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
         kernel: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.
             Number of positive (and negative) pixels counted in this neighbourhood about each spot in image.
             Only contains values 0 and 1 (and -1).
-        cython: whether to use cython code.
 
     Returns:
         - n_pos_neighbours - `int [n_spots]` (Only if `filter` contains 1).
@@ -57,43 +56,15 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
 
     if np.isin([-1, 1], kernel_vals).all():
         # Return positive and negative counts
-        # change kernel so can count number of negatives by number of multiples of neg_spacing such that
-        # max_pos_pixels * pos_spacing = neg_spacing - 3 and min_neg_pixels * neg_spacing == neg_spacing
-        # which is less than max_pos_pixels hence can distinguish positive from negative.
-        neg_spacing = np.sum(kernel == 1) + 3
-        kernel_mod = kernel.copy().astype(int)  # Copy otherwise change original kernel.
-        kernel_mod[kernel_mod == -1] = neg_spacing
-        if cython:
-            n_pos, n_neg = utils.morphology.imfilter_coords((image > 0).astype(np.int8), kernel_mod, spot_yxz,
-                                                            image2=(image < 0).astype(np.int8))
-        else:
-            sign_im = np.append(np.expand_dims(image > 0, image.ndim),
-                                np.expand_dims(image < 0, image.ndim), -1)
-            sign_im_filt = utils.morphology.imfilter(sign_im.astype(np.float32), kernel_mod.astype(np.float32))
-            n_neighb = sign_im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
-            n_pos = n_neighb[:, 0]
-            n_neg = n_neighb[:, 1]
-        # Negative contribution will be multiple of neg_spacing so remove first.
-        n_pos = (n_pos - utils.round_any(n_pos, neg_spacing, 'floor')).astype(int)
-        # Negative contribution is multiple of neg_spacing at each point.
-        n_neg = np.round(utils.round_any(n_neg, neg_spacing, 'floor') / neg_spacing).astype(int)
+        n_pos = utils.morphology.imfilter_coords(image > 0, kernel > 0, spot_yxz)
+        n_neg = utils.morphology.imfilter_coords(image < 0, kernel < 0, spot_yxz)
         return n_pos, n_neg
     elif np.isin(-1, kernel_vals):
         # Return negative counts
-        if cython:
-            return utils.morphology.imfilter_coords((image < 0).astype(np.int8), (kernel < 0).astype(int),
-                                                    spot_yxz).astype(int)
-        else:
-            im_filt = utils.morphology.imfilter((image < 0).astype(np.float32), (kernel < 0).astype(np.float32))
-            return im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])].astype(int)
+        return utils.morphology.imfilter_coords(image < 0, kernel < 0, spot_yxz).astype(int)
     elif np.isin(1, kernel_vals):
         # Return positive counts
-        if cython:
-            return utils.morphology.imfilter_coords((image > 0).astype(np.int8), (kernel > 0).astype(int),
-                                                    spot_yxz).astype(int)
-        else:
-            im_filt = utils.morphology.imfilter((image > 0).astype(np.float32), (kernel > 0).astype(np.float32))
-            return im_filt[tuple([spot_yxz[:, j] for j in range(image.ndim)])].astype(int)
+        return utils.morphology.imfilter_coords(image > 0, kernel > 0, spot_yxz).astype(int)
     else:
         raise ValueError('filter contains only 0.')
 

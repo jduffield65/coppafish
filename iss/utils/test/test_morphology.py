@@ -1,9 +1,82 @@
 import unittest
 import os
 import numpy as np
-from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, imfilter_coords
+from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, imfilter_coords, ensure_odd_kernel
+from ..cython_morphology import cy_convolve_old
 from ..strel import disk, disk_3d, annulus, fspecial
 from ...utils import matlab, errors
+from typing import Optional, Union, Tuple
+import numbers
+
+
+def imfilter_coords_old(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, padding: Union[float, str] = 0,
+                    corr_or_conv: str = 'corr') -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    """
+    Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
+    Only finds result of filtering at specific locations.
+
+    !!! note
+        image and image2 need to be np.int8 and kernel needs to be int otherwise will get cython error.
+
+    Args:
+        image: `np.int8 [image_szY x image_szX (x image_szZ)]`.
+            Image to be filtered. Must be 2D or 3D.
+            np.int8 as designed to use on np.sign of an image i.e. only contains -1, 0, 1.
+        kernel: `int [kernel_szY x kernel_szX (x kernel_szZ)]`.
+            Multidimensional filter. Only works with dtype = int.
+        coords: `int [n_points x image.ndims]`.
+            Coordinates where result of filtering is desired.
+        padding: One of the following, indicated which padding to be used.
+            - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
+                When no padding option is specified, the default is `0`.
+            - `‘symmetric’` - Input array values outside the bounds of the array are computed by
+                mirror-reflecting the array across the array border.
+            - `‘edge’`- Input array values outside the bounds of the array are assumed to equal
+                the nearest array border value.
+            - `'wrap'` - Input array values outside the bounds of the array are computed by implicitly
+                assuming the input array is periodic.
+        corr_or_conv:
+            - `'corr'` - Performs multidimensional filtering using correlation.
+                This is the default when no option specified.
+            - `'conv'` - Performs multidimensional filtering using convolution.
+
+    Returns:
+        - `int [n_points]`.
+            Result of filtering of `image` at each point in `coords`.
+        - `int [n_points]`.
+            Result of filtering of `image2` at each point in `coords`. Only returned if `image2` provided.
+    """
+    if corr_or_conv == 'corr':
+        kernel = np.flip(kernel)
+    elif corr_or_conv != 'conv':
+        raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
+    kernel = ensure_odd_kernel(kernel, 'end')
+
+    # Ensure shape of image and kernel correct
+    if image.ndim != coords.shape[1]:
+        raise ValueError(f"Image has {image.ndim} dimensions but coords only have {coords.shape[1]} dimensions.")
+    if image.ndim == 2:
+        image = np.expand_dims(image, 2)
+    elif image.ndim != 3:
+        raise ValueError(f"image must have 2 or 3 dimensions but given image has {image.ndim}.")
+    if kernel.ndim == 2:
+        kernel = np.expand_dims(kernel, 2)
+    elif kernel.ndim != 3:
+        raise ValueError(f"kernel must have 2 or 3 dimensions but given image has {image.ndim}.")
+
+    if coords.shape[1] == 2:
+        # set all z coordinates to 0 if 2D.
+        coords = np.append(coords, np.zeros((coords.shape[0], 1), dtype=int), axis=1)
+    if (coords.max(axis=0) >= np.array(image.shape)).any():
+        raise ValueError(f"Max yxz coordinates provided are {coords.max(axis=0)} but image has shape {image.shape}.")
+
+    pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
+    pad_coords = coords + np.array([val[0] for val in pad_size])
+    if isinstance(padding, numbers.Number):
+        return cy_convolve_old(np.pad(image, pad_size, 'constant', constant_values=padding), kernel,
+                           pad_coords.astype(np.int_), None)
+    else:
+        return cy_convolve_old(np.pad(image, pad_size, padding), kernel, pad_coords.astype(np.int_), None)
 
 
 class TestMorphology(unittest.TestCase):
@@ -279,12 +352,20 @@ class TestMorphology(unittest.TestCase):
                 kernel_filt = np.expand_dims(kernel, 2)
             else:
                 kernel_filt = kernel.copy()
+
+            # cython code designed to work with binary kernel.
+            kernel_filt = kernel_filt / np.max(kernel)
+            kernel_filt = np.round(kernel_filt).astype(int)
+
             im_filt = imfilter(image, kernel_filt, padding, corr_or_conv)
             im_filt_result = im_filt[tuple([coords[:, j] for j in range(ndims)])]
 
-            cython_result = imfilter_coords(image, kernel, coords, padding, corr_or_conv)
-            diff = cython_result - im_filt_result
-            self.assertTrue(np.abs(diff).max() <= tol)  # check match MATLAB
+            cython_result = imfilter_coords(image, kernel_filt, coords, padding, corr_or_conv)
+            cython_result_old = imfilter_coords_old(image, kernel_filt, coords, padding, corr_or_conv)
+            diff = cython_result - np.round(im_filt_result).astype(int)
+            diff2 = cython_result - cython_result_old
+            self.assertTrue(np.abs(diff).max() <= tol)  # check match full image filtering
+            self.assertTrue(np.abs(diff2).max() <= tol)  # check match old method
 
 
 if __name__ == '__main__':

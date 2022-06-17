@@ -91,10 +91,14 @@ class TestBase(unittest.TestCase):
             else:
                 r_z = float(r_z)
             output_matlab = output_matlab.flatten().astype(int)
-            output_python = get_isolated(image, peak_yx.astype(int)-1, float(thresh),
+            output_python = get_isolated(image, np.ascontiguousarray(peak_yx.astype(int)-1), float(thresh),
                                          float(r0), float(r_xy), r_z).astype(int)
+            output_python_filter_image = get_isolated(image, peak_yx.astype(int)-1, float(thresh),
+                                         float(r0), float(r_xy), r_z, True).astype(int)
             diff = output_python - output_matlab
+            diff2 = output_python_filter_image - output_python
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
+            self.assertTrue(np.abs(diff2).max() <= 0)  # check against slower python method
 
 
 if __name__ == '__main__':

@@ -261,8 +261,7 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
 
 
 def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, padding: Union[float, str] = 0,
-                    corr_or_conv: str = 'corr',
-                    image2: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                    corr_or_conv: str = 'corr') -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
     Only finds result of filtering at specific locations.
@@ -271,11 +270,10 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
         image and image2 need to be np.int8 and kernel needs to be int otherwise will get cython error.
 
     Args:
-        image: `np.int8 [image_szY x image_szX (x image_szZ)]`.
+        image: `int [image_szY x image_szX (x image_szZ)]`.
             Image to be filtered. Must be 2D or 3D.
-            np.int8 as designed to use on np.sign of an image i.e. only contains -1, 0, 1.
-        kernel: `int [kernel_szY x kernel_szX (x kernel_szZ)]`.
-            Multidimensional filter. Only works with dtype = int.
+        kernel: `np.int8 [kernel_szY x kernel_szX (x kernel_szZ)]`.
+            Multidimensional filter. Only works with dtype = np.int8.
         coords: `int [n_points x image.ndims]`.
             Coordinates where result of filtering is desired.
         padding: One of the following, indicated which padding to be used.
@@ -291,9 +289,6 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
             - `'corr'` - Performs multidimensional filtering using correlation.
                 This is the default when no option specified.
             - `'conv'` - Performs multidimensional filtering using convolution.
-        image2: `np.int8 [image_szY x image_szX (x image_szZ)]`.
-            Can provide another image to find result of filtering with too.
-            Must be same size as image.
 
     Returns:
         - `int [n_points]`.
@@ -327,18 +322,9 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
 
     pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
     pad_coords = coords + np.array([val[0] for val in pad_size])
-    if image2 is not None:
-        if image2.ndim == 2:
-            image2 = np.expand_dims(image2, 2)
-        if image2.shape != image.shape:
-            raise ValueError(f"image2 has shape {image2.shape} but image has shape {image.shape}."
-                             f"They need to be the same.")
-        if isinstance(padding, numbers.Number):
-            image2 = np.pad(image2, pad_size, 'constant', constant_values=padding).astype(np.int8)
-        else:
-            image2 = np.pad(image2, pad_size, padding).astype(np.int8)
     if isinstance(padding, numbers.Number):
-        return cy_convolve(np.pad(image, pad_size, 'constant', constant_values=padding), kernel,
-                           pad_coords.astype(np.int_), image2)
+        return cy_convolve(np.pad(image, pad_size, 'constant', constant_values=padding).astype(int),
+                           kernel.astype(np.int8), pad_coords.astype(np.int_))
     else:
-        return cy_convolve(np.pad(image, pad_size, padding), kernel, pad_coords.astype(np.int_), image2)
+        return cy_convolve(np.pad(image, pad_size, padding).astype(int), kernel.astype(np.int8),
+                           pad_coords.astype(np.int_))

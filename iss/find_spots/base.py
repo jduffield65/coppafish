@@ -93,7 +93,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
 
 
 def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_inner: float, radius_xy: float,
-                 radius_z: Optional[float] = None) -> np.ndarray:
+                 radius_z: Optional[float] = None, filter_image: bool =False) -> np.ndarray:
     """
     Determines whether each spot in ```spot_yxz``` is isolated by getting the value of image after annular filtering
     at each location in ```spot_yxz```.
@@ -110,6 +110,7 @@ def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_
         radius_xy: Outer radius of annulus filtering kernel in xy direction.
         radius_z: Outer radius of annulus filtering kernel in z direction.
             If ```None```, 2D filter is used.
+        filter_image: Whether to get result via filtering whole image first. Will be slower.
 
     Returns:
         ```bool [n_peaks]```.
@@ -117,13 +118,17 @@ def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_
 
     """
     se = utils.strel.annulus(radius_inner, radius_xy, radius_z)
-    # This filtering takes around 40s for 50 z-planes.
-    # May get memory error here as uses oa_convolve.
-    # If use scipy.ndimage.convolve, same image took 8 minutes but less memory.
-    # TODO: maybe try and get isolated spots using kdtree and the point cloud.
-    annular_filtered = utils.morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
-    isolated = annular_filtered[tuple([spot_yxz[:, j] for j in range(image.ndim)])] < thresh
-    return isolated
+    # With just coords, takes about 3s for 50 z-planes.
+
+    if filter_image:
+        # This filtering takes around 40s for 50 z-planes.
+        # May get memory error here as uses oa_convolve.
+        # If use scipy.ndimage.convolve, same image took 8 minutes but less memory.
+        annular_filtered = utils.morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
+        isolated = annular_filtered[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
+    else:
+        isolated = utils.morphology.imfilter_coords(image, se, spot_yxz, padding=0, corr_or_conv='corr') / np.sum(se)
+    return isolated < thresh
 
 
 def check_neighbour_intensity(image: np.ndarray, spot_yxz: np.ndarray, thresh: float = 0) -> np.ndarray:

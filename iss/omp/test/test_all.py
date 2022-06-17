@@ -358,7 +358,16 @@ class TestCountSpotNeighbours(unittest.TestCase):
                 raise ValueError('Pos and Neg overlap')
             pos_neighb_python, neg_neighb_python = count_spot_neighbours(np.pad(image, pad_size, 'symmetric'),
                                                                          spot_yxz_pad, pos_filter-neg_filter)
-            diff1 = pos_neighb_python - pos_neighb_matlab.squeeze()
-            diff2 = neg_neighb_python - neg_neighb_matlab.squeeze()
-            self.assertTrue(np.abs(diff1).max() <= self.tol)
-            self.assertTrue(np.abs(diff2).max() <= self.tol)
+            diff_pos1 = pos_neighb_python - pos_neighb_matlab.squeeze()
+            diff_neg1 = neg_neighb_python - neg_neighb_matlab.squeeze()
+            # Check if matched MATLAB
+            self.assertTrue(np.abs(diff_pos1).max() <= self.tol)
+            self.assertTrue(np.abs(diff_neg1).max() <= self.tol)
+            # Check if matched with no cython
+            # pos_neighb_no_cython, neg_neighb_no_cython = count_spot_neighbours(np.pad(image, pad_size, 'symmetric'),
+            #                                                              spot_yxz_pad, pos_filter-neg_filter,
+            #                                                                    cython=False)
+            # diff_pos2 = pos_neighb_python - pos_neighb_no_cython
+            # diff_neg2 = neg_neighb_python - neg_neighb_no_cython
+            # self.assertTrue(np.abs(diff_pos2).max() <= self.tol)
+            # self.assertTrue(np.abs(diff_neg2).max() <= self.tol)
