@@ -220,7 +220,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             else:
                                 im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                                 if config['r_smooth'] is not None:
-                                    im = utils.morphology.imfilter(im, smooth_kernel)
+                                    # oa convolve uses lots of memory and much slower here.
+                                    im = utils.morphology.imfilter(im, smooth_kernel, oa=False)
                                 im[:, bad_columns] = 0
                                 im = np.round(im).astype(int)
                                 # only use image unaffected by strip_hack to get information from tile

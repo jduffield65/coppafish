@@ -2,6 +2,8 @@ import warnings
 from .. import utils
 import numpy as np
 from typing import Optional, Tuple, Union
+import jax.numpy as jnp
+import jax
 
 
 def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int,
@@ -115,6 +117,10 @@ def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_
 
     """
     se = utils.strel.annulus(radius_inner, radius_xy, radius_z)
+    # This filtering takes around 40s for 50 z-planes.
+    # May get memory error here as uses oa_convolve.
+    # If use scipy.ndimage.convolve, same image took 8 minutes but less memory.
+    # TODO: maybe try and get isolated spots using kdtree and the point cloud.
     annular_filtered = utils.morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
     isolated = annular_filtered[tuple([spot_yxz[:, j] for j in range(image.ndim)])] < thresh
     return isolated
@@ -151,3 +157,50 @@ def check_neighbour_intensity(image: np.ndarray, spot_yxz: np.ndarray, thresh: f
             mod_spot_yx[:, j] = np.clip(mod_spot_yx[:, j], 0, image.shape[j]-1)
         keep[:, i] = image[tuple([mod_spot_yx[:, j] for j in range(image.ndim)])] > thresh
     return keep.min(axis=1)
+
+
+def scan_func(carry, current_yxzi):
+    near_spot = (jnp.abs(carry - current_yxzi[:3]) <= 1).all(axis=1).any()
+    carry = jax.lax.cond(near_spot, lambda x, y: x, lambda x, y: x.at[y[3]].set(y[:3]), carry, current_yxzi)
+    return carry, near_spot
+
+
+@jax.jit
+def detect_spots_jax(image: jnp.ndarray, all_yxz: Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray], radius: int,
+                     max_spots: Optional[int] = None) -> jnp.ndarray:
+    # max_pixels = int((image.shape[0] * image.shape[1] * image.shape[2]) / 100)  # only consider at most 1% of pixels
+    # all_yxz = jnp.where(image > intensity_thresh, size=max_pixels, fill_value=-5)
+    # Only consider pixels with yxz not set to -1, will set to max_pixels if is no -1.
+    # n_pixels = jnp.where(all_yxz[0] == -1, size=1, fill_value=max_pixels - 1)[0][0] + 1
+    # ignore_pixels = jnp.where(all_yxz[0] == -1, size=max_pixels, fill_value=-1)[0]
+
+    n_pixels = all_yxz[0].shape[0]
+    all_intensity = image[all_yxz]
+    intensity_ind = jnp.argsort(all_intensity)[::-1]
+    all_yxz_sorted = jnp.vstack(all_yxz).transpose()[intensity_ind]
+    # all_intensity = all_intensity[intensity_ind]
+    n_pixels = 10000  # Takes a long time for more than 100,000 pixels.
+    all_yxz_sorted = all_yxz_sorted[:n_pixels]
+    spot_yxz = all_yxz_sorted.copy()
+    spot_yxz = spot_yxz.at[1:].set(-5)
+    all_yxzi = jnp.hstack((all_yxz_sorted[1:], jnp.arange(1, n_pixels)[:, jnp.newaxis]))
+    b = jax.lax.scan(scan_func, spot_yxz, all_yxzi)
+    # for i in range(1, n_pixels):
+    #     # only append to spot_yxz if no near pixel in spot_yxz already i.e. if is_near_spot==0.
+    #     is_near_spot = (jnp.abs(all_yxz_sorted[i] - spot_yxz) <= radius).all(axis=1).any().astype(int)
+    #     spot_yxz = jax.lax.cond(is_near_spot, lambda x, y: jnp.append(x, jnp.ones((1, 3), dtype=int) * -(radius+1), axis=0),
+    #                             lambda x, y: jnp.append(x, y, axis=0), spot_yxz,
+    #                             all_yxz_sorted[i: i+1])
+        # slice_ind = jnp.arange(i, i+1-is_near_spot)
+        # spot_yxz = jnp.append(spot_yxz, all_yxz_sorted[slice_ind], axis=0)
+    #
+    # # Only have at most max_spots on each z-plane
+    # z_planes = jnp.unique(spot_yxz)
+    # z_planes = z_planes[: z_planes.size - z_planes.size * (max_spots is None)]  # set empty if max_spots not provided
+    # keep = jnp.arange(spot_yxz.shape[0])
+    # for z in z_planes:
+    #     reject_spots = jnp.where(spot_yxz[:, 2] == z)[0]
+    #     reject_spots = reject_spots[max_spots:]
+    #     keep = jnp.setdiff1d(keep, reject_spots)
+    # spot_yxz = spot_yxz[keep]
+    return b

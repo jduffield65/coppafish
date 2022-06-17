@@ -245,8 +245,11 @@ class TestMorphology(unittest.TestCase):
                 pad = pad.flatten()[0]
             corr_or_conv = ''.join([chr(val) for val in corr_or_conv.flatten()])
             output_python = imfilter(image, kernel, pad, corr_or_conv)
+            output_python_no_oa = imfilter(image, kernel, pad, corr_or_conv, oa=False)
             diff = output_python - output_matlab
+            diff2 = output_python - output_python_no_oa
             self.assertTrue(np.abs(diff).max() <= tol)  # check match MATLAB
+            self.assertTrue(np.abs(diff2).max() <= tol)
 
     def test_imfilter_coords(self):
         """
