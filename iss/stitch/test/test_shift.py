@@ -12,7 +12,7 @@ class TestShift(unittest.TestCase):
     min_score = None
     min_score_min_dist = 11
     min_score_max_dist = 20
-    min_score_multiplier = 2  # this probably should be less for actual pipeline, about 5.
+    min_score_multiplier = 3  # this probably should be less for actual pipeline, about 1.5.
     max_noise = 3
     nz_collapse = 30
     tol = 1

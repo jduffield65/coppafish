@@ -400,8 +400,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                 y_shifts = extend_array(y_shifts, widen[0])
             if shift_ranges[1] < max_range_2d[1]:
                 x_shifts = extend_array(x_shifts, widen[1])
-            shift_2d, score_2d = get_best_shift_2d(yx_base_slices, yx_transform_trees, neighb_dist_thresh, y_shifts,
-                                                   x_shifts, initial_shifts)[:2]
+            shift_2d_new, score_2d_new = get_best_shift_2d(yx_base_slices, yx_transform_trees, neighb_dist_thresh,
+                                                           y_shifts, x_shifts, initial_shifts)[:2]
+            if score_2d_new > score_2d:
+                score_2d = score_2d_new
+                shift_2d = shift_2d_new
             # update initial_shifts so don't look over same shifts twice
             initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
             shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
@@ -411,6 +414,9 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         shift = np.append(shift_2d, 0)
         score = score_2d
     else:
+        if min_score_multiplier is not None:
+            # Lower threshold score in 3D as expect score to be smaller.
+            min_score = min_score / min_score_multiplier
         y_shift_2d = np.array(shift_2d[0])
         x_shift_2d = np.array(shift_2d[1])
         shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
@@ -433,8 +439,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                                   f"min_score = {round(min_score, 2)}."
                                   f"\nRunning again with extended shift search range in z.")
                 z_shifts = extend_array(z_shifts, widen[2])
-                shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
-                                                 x_shift_2d, z_shifts * z_scale, initial_shifts)
+                shift_new, score_new = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
+                                                         x_shift_2d, z_shifts * z_scale, initial_shifts)
+                if score_new > score:
+                    score = score_new
+                    shift = shift_new
                 # update initial_shifts so don't look over same shifts twice
                 initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
                 z_shift_range = np.ptp(z_shifts)
