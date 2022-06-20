@@ -9,7 +9,8 @@ from typing import Optional, Union, List, Tuple
 from ..setup import NotebookPage
 
 
-def save(image: np.ndarray, im_file: str, description: Optional[str] = None, append: bool = False):
+def save(image: np.ndarray, im_file: str, description: Optional[str] = None, append: bool = False,
+         bigtiff: bool = False):
     """
     Save image as tiff at path given by `im_file`.
 
@@ -26,6 +27,9 @@ def save(image: np.ndarray, im_file: str, description: Optional[str] = None, app
         description: Short description to save to metadata to describe image.
             Found after saving through `tifffile.TiffFile(im_file).pages[0].tags["ImageDescription"].value`.
         append: Whether to add to file if it exists or replace.
+        bigtiff: Whether to save as a bigtiff, should set this to True if get
+            `ValueError: data too large for standard TIFF file`.
+            This occurs when tiff file is larger than 4GB I think.
     """
     # truncate image so don't get aliased values
     image[image > np.iinfo(np.uint16).max] = np.iinfo(np.uint16).max
@@ -35,7 +39,7 @@ def save(image: np.ndarray, im_file: str, description: Optional[str] = None, app
         # put dimension that is not y or x as first dimension so easier to load in a single plane later
         # and match MATLAB method of saving
         image = np.moveaxis(image, 2, 0)
-    tifffile.imwrite(im_file, image, append=append, description=description)
+    tifffile.imwrite(im_file, image, append=append, description=description, bigtiff=bigtiff)
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract_debug: NotebookPage, image: np.ndarray,
@@ -302,6 +306,11 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
         z_size = z_origin.max() + nbp_basic.nz
     else:
         z_size = 1
+    if np.prod(yx_size) * z_size > 50 * 5000 * 5000:
+        # If very big image, need to save as bigtiff format.
+        bigtiff = True
+    else:
+        bigtiff = False
     with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for z in range(z_size):
             stitched_image = np.zeros(yx_size, dtype=np.uint16)  # any tiles not used will be kept as 0.
@@ -319,5 +328,5 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                 stitched_image[yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic.tile_sz,
                                yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = local_image
                 pbar.update(1)
-            save(stitched_image, im_file, append=True)
+            save(stitched_image, im_file, append=True, bigtiff=bigtiff)
     pbar.close()
