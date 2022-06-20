@@ -1,6 +1,4 @@
 from .. import utils, setup
-from .. import find_spots as fs
-from tqdm import tqdm
 import numpy as np
 import numpy_indexed
 from ..setup.notebook import NotebookPage

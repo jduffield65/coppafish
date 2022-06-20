@@ -426,4 +426,4 @@ def get_z_transform(transform: jnp.ndarray, tile_centre: jnp.ndarray, z_scale: f
     if yxz_base is None:
         return z_transform
     else:
-        return z_transform, yxz_base_min, yxz_base_max,
+        return z_transform, yxz_base_min, yxz_base_max

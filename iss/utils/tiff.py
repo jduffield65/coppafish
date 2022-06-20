@@ -306,7 +306,7 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
         z_size = z_origin.max() + nbp_basic.nz
     else:
         z_size = 1
-    if np.prod(yx_size) * z_size > 50 * 5000 * 5000:
+    if np.prod(yx_size) * z_size > 5000 * 5000 * 50:
         # If very big image, need to save as bigtiff format.
         bigtiff = True
     else:
@@ -328,5 +328,9 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                 stitched_image[yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic.tile_sz,
                                yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = local_image
                 pbar.update(1)
-            save(stitched_image, im_file, append=True, bigtiff=bigtiff)
+            try:
+                save(stitched_image, im_file, append=True, bigtiff=bigtiff)
+            except ValueError:
+                warnings.warn(f'Hit ValueError. Only {z/z_size} z-planes were saved.')
+                break
     pbar.close()
