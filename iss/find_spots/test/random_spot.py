@@ -1,10 +1,28 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from typing import Optional, Tuple
 
 
-def random_spot_yx(n_spots, max_y, max_x, max_z=None, min_y=0, min_x=0, min_z=0, min_spot_sep=0):
+def random_spot_yx(n_spots: int, max_y: int, max_x: int, max_z: Optional[int] = None, min_y: int =0, min_x: int =0,
+                   min_z: int = 0, min_spot_sep: float = 0) -> Tuple[np.ndarray, int]:
     """
-    produces yx(z) location of n_spots random spots with coordinates in given range.
+    Produces yx(z) location of approx n_spots random spots with coordinates in given range.
+
+    Args:
+        n_spots: approximate number of spots to create
+        max_y: max y coordinate.
+        max_x: max x coordinate.
+        max_z: max z coordinate. None means no z dimension.
+        min_y: min y coordinate.
+        min_x: min x coordinate.
+        min_z: min z coordinate.
+        min_spot_sep: min separation of spots (negative means can have repeats).
+
+    Returns:
+        - yxz: int [n_return_spots x (2 or 3)]
+        - n_return_spots: how many spots returned.
+    """
+    """
 
     :param n_spots: integer, approximate number of spots to create
     :param max_y: integer, max y coordinate.
@@ -24,7 +42,7 @@ def random_spot_yx(n_spots, max_y, max_x, max_z=None, min_y=0, min_x=0, min_z=0,
     else:
         spot_yx = np.concatenate((spot_y.reshape(-1, 1), spot_x.reshape(-1, 1)), axis=1)
     keep = find_isolated_spots(spot_yx, spot_yx, min_spot_sep)
-    return spot_yx[keep, :]
+    return spot_yx[keep, :], np.sum(keep)
 
 
 def find_isolated_spots(spot_yx, transformed_spot_yx, min_dist=3):

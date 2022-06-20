@@ -1,15 +1,12 @@
 import numpy as np
 import scipy.signal
-from scipy.ndimage.morphology import grey_dilation, binary_dilation
+from scipy.ndimage.morphology import grey_dilation
 from scipy.ndimage import convolve, correlate
 import numbers
 from . import errors
 import cv2
 from typing import Optional, Union, Tuple
 from scipy.signal import oaconvolve
-import skimage.measure
-import skimage.feature
-from .cython_morphology import cy_convolve, get_shifts_from_kernel
 import jax.numpy as jnp
 import jax
 
@@ -262,6 +259,27 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
             raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
 
 
+def get_shifts_from_kernel(kernel: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    """
+    Returns where kernel is positive as shifts in y, x and z.
+    I.e. `kernel=jnp.ones((3,3,3))` would return `y_shifts = x_shifts = z_shifts = -1, 0, 1`.
+    Args:
+        kernel: int [kernel_szY x kernel_szX x kernel_szY]
+
+    Returns:
+        - `int [n_shifts]`.
+            y_shifts.
+        - `int [n_shifts]`.
+            x_shifts.
+        - `int [n_shifts]`.
+            z_shifts.
+    """
+    shifts = list(jnp.where(kernel > 0))
+    for i in range(kernel.ndim):
+        shifts[i] = shifts[i] - (kernel.shape[i] - 1) / 2
+    return shifts[0].astype(int), shifts[1].astype(int), shifts[2].astype(int)
+
+
 def manual_convolve_single(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_shifts: jnp.asarray,
                            z_kernel_shifts: jnp.ndarray, coord: jnp.ndarray) -> float:
     return jnp.sum(image[coord[0] + y_kernel_shifts, coord[1] + x_kernel_shifts, coord[2] + z_kernel_shifts])
@@ -301,7 +319,7 @@ def manual_convolve(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_s
 
 
 def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, padding: Union[float, str] = 0,
-                    corr_or_conv: str = 'corr', method: str = 'cython') -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                    corr_or_conv: str = 'corr') -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
     Only finds result of filtering at specific locations.
@@ -312,8 +330,8 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
     Args:
         image: `int [image_szY x image_szX (x image_szZ)]`.
             Image to be filtered. Must be 2D or 3D.
-        kernel: `np.int8 [kernel_szY x kernel_szX (x kernel_szZ)]`.
-            Multidimensional filter. Only works with dtype = np.int8.
+        kernel: `int [kernel_szY x kernel_szX (x kernel_szZ)]`.
+            Multidimensional filter, expected to be binary i.e. only contains 0 and/or 1.
         coords: `int [n_points x image.ndims]`.
             Coordinates where result of filtering is desired.
         padding: One of the following, indicated which padding to be used.
@@ -331,10 +349,8 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
             - `'conv'` - Performs multidimensional filtering using convolution.
 
     Returns:
-        - `int [n_points]`.
+        `int [n_points]`.
             Result of filtering of `image` at each point in `coords`.
-        - `int [n_points]`.
-            Result of filtering of `image2` at each point in `coords`. Only returned if `image2` provided.
     """
     if corr_or_conv == 'corr':
         kernel = np.flip(kernel)
@@ -353,6 +369,8 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
         kernel = np.expand_dims(kernel, 2)
     elif kernel.ndim != 3:
         raise ValueError(f"kernel must have 2 or 3 dimensions but given image has {image.ndim}.")
+    if kernel.max() > 1:
+        raise ValueError(f'kernel is expected to be binary, only containing 0 or 1 but kernel.max = {kernel.max()}')
 
     if coords.shape[1] == 2:
         # set all z coordinates to 0 if 2D.
@@ -361,15 +379,10 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
         raise ValueError(f"Max yxz coordinates provided are {coords.max(axis=0)} but image has shape {image.shape}.")
 
     pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
-    pad_coords = coords + np.array([val[0] for val in pad_size])
+    pad_coords = jnp.asarray(coords) + jnp.array([val[0] for val in pad_size])
     if isinstance(padding, numbers.Number):
-        image_pad = np.pad(image, pad_size, 'constant', constant_values=padding).astype(int)
+        image_pad = jnp.pad(jnp.asarray(image), pad_size, 'constant', constant_values=padding).astype(int)
     else:
-        image_pad = np.pad(image, pad_size, padding).astype(int)
-    if method == 'cython':
-        return cy_convolve(image_pad, kernel.astype(np.int8), pad_coords.astype(np.int_))
-    else:
-        # Jax method is slightly slower, only a tiny bit though and negates any requirement for cython in the package.
-        y_shifts, x_shifts, z_shifts = get_shifts_from_kernel(np.flip(kernel))
-        return np.asarray(manual_convolve(jnp.asarray(image_pad), jnp.asarray(y_shifts), jnp.asarray(x_shifts),
-                                          jnp.asarray(z_shifts), jnp.asarray(pad_coords)))
+        image_pad = jnp.pad(jnp.asarray(image), pad_size, padding).astype(int)
+    y_shifts, x_shifts, z_shifts = get_shifts_from_kernel(jnp.asarray(np.flip(kernel)))
+    return np.asarray(manual_convolve(image_pad, y_shifts, x_shifts, z_shifts, pad_coords))

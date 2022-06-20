@@ -47,7 +47,7 @@ class TestNeighbour(unittest.TestCase):
             max_z = None
         else:
             max_z = array.shape[2] - 1
-        spot_yx = random_spot_yx(n_spots, array.shape[0] - 3, array.shape[1] - 3, max_z, min_y=1, min_x=1, min_z=1)
+        spot_yx, n_spots = random_spot_yx(n_spots, array.shape[0] - 3, array.shape[1] - 3, max_z, min_y=1, min_x=1, min_z=1)
         if edges:
             # make all spots be at one edge
             dim_to_make_edge = np.random.randint(0, array.ndim, n_spots)
@@ -57,18 +57,18 @@ class TestNeighbour(unittest.TestCase):
                 spot_yx[spot_yx[:, j] == -1, j] = array.shape[j]-1
         return spot_yx
 
-    def apply_shifted_spots(self, array, n_spots, spot_yx, thresh):
+    def apply_shifted_spots(self, array, spot_yx, thresh):
         """
         updates array with neighbouring pixels to some of spot_yx having value below thresh
         so should be flagged as negative by check_neighbour_intensity function.
 
         :param array:
-        :param n_spots:
         :param spot_yx:
         :param thresh:
         :return:
         """
         # get position of shifted spots to set below thresh
+        n_spots = spot_yx.shape[0]
         if array.ndim == 3:
             transforms = self.transforms_3d
         else:
@@ -103,7 +103,7 @@ class TestNeighbour(unittest.TestCase):
         """
         array, n_spots, thresh = self.get_initial_info(dimensions)
         spot_yx = self.get_spots(array, n_spots, edges)
-        array, expected_answer, fail_mod_yx = self.apply_shifted_spots(array, n_spots, spot_yx, thresh)
+        array, expected_answer, fail_mod_yx = self.apply_shifted_spots(array, spot_yx, thresh)
         actual_answer = check_neighbour_intensity(array, spot_yx, thresh)
         diff = actual_answer.astype(int) - expected_answer.astype(int)
         self.assertTrue(np.abs(diff).max() <= 0)

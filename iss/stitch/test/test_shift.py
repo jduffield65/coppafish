@@ -34,10 +34,10 @@ class TestShift(unittest.TestCase):
         # TODO: comment test functions better
         n_spots = np.random.randint(600, 2000)
         if dimensions == 2:
-            spot_yx = random_spot_yx(n_spots, 2047, 2047)
+            spot_yx, n_spots = random_spot_yx(n_spots, 2047, 2047)
             transform = np.random.choice(range(-100, 100), 2)
         elif dimensions == 3:
-            spot_yx = random_spot_yx(n_spots, 2047, 2047, 29)
+            spot_yx, n_spots = random_spot_yx(n_spots, 2047, 2047, 29)
             transform = np.random.choice(range(-100, 100), 3)
         else:
             raise ValueError(f"dimensions given was {dimensions} but should be 2 or 3")
