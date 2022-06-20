@@ -1,15 +1,20 @@
 function o = iss_object_from_python_3d(python_file_name, method)
 %Loads in nb info outputted by python and adds it to matlab o object so it
 %can be plotted.
-o = iss; %use iss-3D or iss-QuadCam3D branch
+o = iss; %use iss-QuadCam3D branch
 
 % Set variables from Python File
 load(python_file_name)
-o.BledCodes = permute(bled_codes, [1,3,2]); % from r,c to c,r
+o.BledCodes = permute(bled_codes_ge, [1,3,2]); % from r,c to c,r
 o.nRounds = size(o.BledCodes, 3);
 o.nBP = size(o.BledCodes, 2);
+o.UseChannels = find(~isnan(squeeze(bled_codes(1,1,:))))';
+o.UseRounds = find(~isnan(squeeze(bled_codes(1,:,1))));
+o.bpLabels = cellstr(num2str((0:o.nBP-1)'))';
 nCodes = size(o.BledCodes,1);
+% gene_efficiency bled codes are used for both dot product and omp method.
 o.BledCodes = o.BledCodes(:,:);
+o.NormBledCodes = o.BledCodes;
 o.BleedMatrix = permute(bleed_matrix, [2, 3, 1]); % from r,c,d to c,d,r.
 o.CharCodes = cell(nCodes,1);
 o.GeneNames = cell(nCodes,1);
@@ -46,6 +51,9 @@ o.SpotCombi = true(size(o.SpotScore));
 o.SpotScoreDev = ones(size(o.SpotScore));
 o.CombiDevThresh = 0;
 
+o.BledCodesPercentile = permute(color_norm_factor, [2, 1]);  % from r,c to c,r
+o.BledCodesPercentile = reshape(o.BledCodesPercentile, [1, o.nBP, o.nRounds]);
+o.cNormSpotColors = bsxfun(@rdivide, double(o.cSpotColors), o.BledCodesPercentile);
 nTiles = size(tile_origin, 1);
 o.nExtraRounds=1;
 o.ReferenceRound=8;
