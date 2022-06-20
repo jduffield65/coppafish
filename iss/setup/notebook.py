@@ -185,7 +185,10 @@ class Notebook:
     _CONFIGMETA = "CONFIGFILE"  # Key for config string
     _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
 
-    def __init__(self, notebook_file, config_file):
+    def __init__(self, notebook_file, config_file=None):
+        # Give option to load with config_file as None so can load in notebook on a different computer
+        # with no access to .ini file
+
         # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.
         # We do the same thing here.
@@ -199,17 +202,21 @@ class Notebook:
         # Read the config file, but don't assign anything yet.  Here, we just
         # save a copy of the config file.  This isn't the main place the config
         # file should be read from.
-        with open(config_file, 'r') as f:
-            read_config = f.read()
+        if config_file is not None:
+            with open(config_file, 'r') as f:
+                read_config = f.read()
         # If the file already exists, initialize the Notebook object from this
         # file.  Otherwise, initialize it empty.
         if os.path.isfile(self._file):
             pages, self._page_times, self._created_time, self._config = self.from_file(self._file)
             for page in pages:
                 object.__setattr__(self, page.name, page)  # don't want to set page_time hence use object setattr
-            if read_config != self._config:
-                raise SystemError("Passed config file is not the same as the saved config file")
+            if config_file is not None:
+                if read_config != self._config:
+                    raise SystemError("Passed config file is not the same as the saved config file")
         else:
+            if config_file is None:
+                raise SystemError("Have not passed a config_file.")
             self._created_time = time.time()
             self._config = read_config
 

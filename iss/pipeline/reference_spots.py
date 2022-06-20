@@ -1,5 +1,6 @@
 from .. import setup
 from ..spot_colors import get_spot_colors, get_spot_colors_jax
+from ..call_spots import get_non_duplicate
 from ..find_spots import spot_yxz
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
@@ -26,7 +27,7 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
         tile_origin: `float [n_tiles x 3]`.
             `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
             yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
-            This is saved in the `stitch_debug` notebook page i.e. `nb.stitch_debug.tile_origin`.
+            This is saved in the `stitch` notebook page i.e. `nb.stitch.tile_origin`.
         transform: `float [n_tiles x n_rounds x n_channels x 4 x 3]`.
             `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
             tile `t`, round `r`, channel `c`.
@@ -53,11 +54,8 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
             all_local_tile = np.append(all_local_tile, np.ones_like(t_isolated, dtype=int) * t)
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
-    # Do this in 2d as overlap is only 2d
-    tile_centres = tile_origin + nbp_basic.tile_centre
-    tree_tiles = NearestNeighbors(n_neighbors=1).fit(tile_centres[:, :2])
-    _, all_nearest_tile = tree_tiles.kneighbors(all_global_yxz[:, :2])
-    not_duplicate = all_nearest_tile.flatten() == all_local_tile
+    not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, all_global_yxz,
+                                      all_local_tile)
 
     # nd means all spots that are not duplicate
     nd_local_yxz = all_local_yxz[not_duplicate]
@@ -71,7 +69,7 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     transform = jnp.asarray(transform)
     for t in range(nbp_basic.n_tiles):
         in_tile = nd_local_tile == t
-        if sum(in_tile) > 0:
+        if np.sum(in_tile) > 0:
             print(f"Tile {t + 1}/{nbp_basic.n_tiles}")
             # this line will return nan_value for r/c outside use_rounds/channels
             nd_spot_colors_use[in_tile] = np.asarray(get_spot_colors_jax(jnp.asarray(nd_local_yxz[in_tile]), t,

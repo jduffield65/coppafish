@@ -6,7 +6,7 @@ import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
 from ..spot_colors import get_all_pixel_colors, get_spot_colors_jax
-from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised
+from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised, get_non_duplicate
 from .. import omp
 from sklearn.neighbors import NearestNeighbors
 import os
@@ -155,12 +155,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nbp.spot_shape = spot_shape
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
-    # Do this in 2d as overlap is only 2d
-    tile_centres = tile_origin + nbp_basic.tile_centre
-    tree_tiles = NearestNeighbors(n_neighbors=1).fit(tile_centres[:, :2])
-    spot_global_yxz = spot_info[:, :3] + tile_origin[spot_info[:, 6]]
-    _, all_nearest_tile = tree_tiles.kneighbors(spot_global_yxz[:, :2])
-    not_duplicate = all_nearest_tile.flatten() == spot_info[:, 6]
+    not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre,
+                                      spot_info[:, :3] + tile_origin[spot_info[:, 6]], spot_info[:, 6])
 
     # Add spot info to notebook page
     nbp.local_yxz = spot_info[not_duplicate, :3]

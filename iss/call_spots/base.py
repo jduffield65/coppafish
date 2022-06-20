@@ -1,5 +1,5 @@
 import warnings
-
+from scipy.spatial import KDTree
 import numpy as np
 from .. import utils
 from typing import Union, List, Optional, Tuple
@@ -7,6 +7,44 @@ from ..setup.notebook import NotebookPage
 from functools import partial
 import jax.numpy as jnp
 import jax
+
+
+def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.ndarray,
+                      spot_global_yxz: np.ndarray, spot_tile: np.ndarray) -> np.ndarray:
+    """
+    Find duplicate spots as those detected on a tile which is not tile centre they are closest to.
+
+    Args:
+        tile_origin: `float [n_tiles x 3]`.
+            `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
+            yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
+            This is saved in the `stitch` notebook page i.e. `nb.stitch.tile_origin`.
+        use_tiles: ```int [n_use_tiles]```.
+            Tiles used in the experiment.
+        tile_centre: ```float [3]```
+            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
+            ```yxz``` were found on.
+            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
+            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
+            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
+        spot_global_yxz: ```float [n_spots x 3]```.
+            Coordinates of a spot in the global coordinate system.
+            I.e. if spot s was found on tile t, global_yxz[s] = local_yxz[s] + tile_origin[t].
+            ```yxz[s, :2]``` are the yx coordinates in ```yx_pixels``` for spot ```s```.
+            ```yxz[s, 2]``` is the z coordinate in ```z_pixels``` for spot ```s```.
+        spot_tile: ```float [n_spots]```.
+            Tile each spot was found on.
+
+    Returns:
+        ```bool [n_spots]```.
+            Whether spot_tile[s] is the tile that spot_global_yxz[s] is closest to.
+    """
+    tile_centres = tile_origin[use_tiles] + tile_centre
+    # Do not_duplicate search in 2D as overlap is only 2D
+    tree_tiles = KDTree(tile_centres[:, :2])
+    _, all_nearest_tile_ind = tree_tiles.query(spot_global_yxz[:, :2])
+    not_duplicate = np.asarray(use_tiles)[all_nearest_tile_ind.flatten()] == spot_tile
+    return not_duplicate
 
 
 def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
