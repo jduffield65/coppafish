@@ -8,7 +8,6 @@ from ..extract import scale
 from ..spot_colors import get_all_pixel_colors, get_spot_colors_jax
 from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised, get_non_duplicate
 from .. import omp
-from sklearn.neighbors import NearestNeighbors
 import os
 from scipy import sparse
 import jax.numpy as jnp

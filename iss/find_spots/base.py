@@ -93,7 +93,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
 
 
 def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_inner: float, radius_xy: float,
-                 radius_z: Optional[float] = None, filter_image: bool =False) -> np.ndarray:
+                 radius_z: Optional[float] = None, filter_image: bool = False) -> np.ndarray:
     """
     Determines whether each spot in ```spot_yxz``` is isolated by getting the value of image after annular filtering
     at each location in ```spot_yxz```.

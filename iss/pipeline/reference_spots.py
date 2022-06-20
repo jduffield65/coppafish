@@ -2,7 +2,6 @@ from .. import setup
 from ..spot_colors import get_spot_colors, get_spot_colors_jax
 from ..call_spots import get_non_duplicate
 from ..find_spots import spot_yxz
-from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import jax.numpy as jnp
 from ..setup.notebook import NotebookPage

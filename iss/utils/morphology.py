@@ -9,7 +9,9 @@ from typing import Optional, Union, Tuple
 from scipy.signal import oaconvolve
 import skimage.measure
 import skimage.feature
-from .cython_morphology import cy_convolve
+from .cython_morphology import cy_convolve, get_shifts_from_kernel
+import jax.numpy as jnp
+import jax
 
 
 def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
@@ -260,8 +262,46 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
             raise ValueError(f"corr_or_conv should be either 'corr' or 'conv' but given value is {corr_or_conv}")
 
 
+def manual_convolve_single(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_shifts: jnp.asarray,
+                           z_kernel_shifts: jnp.ndarray, coord: jnp.ndarray) -> float:
+    return jnp.sum(image[coord[0] + y_kernel_shifts, coord[1] + x_kernel_shifts, coord[2] + z_kernel_shifts])
+
+
+@jax.jit
+def manual_convolve(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_shifts: jnp.asarray,
+                    z_kernel_shifts: jnp.ndarray, coords: jnp.ndarray) -> jnp.ndarray:
+    """
+    Finds result of convolution at specific locations indicated by `coords` with binary kernel.
+    I.e. instead of convolving whole `image`, just find result at these `points`.
+
+    !!! note
+        image needs to be padded before this function is called otherwise get an error when go out of bounds.
+
+    Args:
+        image: `int [image_szY x image_szX x image_szZ]`.
+            Image to be filtered. Must be 3D.
+        y_kernel_shifts: `int [n_nonzero_kernel]`
+            Shifts indicating where kernel equals 1.
+            I.e. if `kernel = np.ones((3,3))` then `y_shift = x_shift = z_shift = [-1, 0, 1]`.
+        x_kernel_shifts: `int [n_nonzero_kernel]`
+            Shifts indicating where kernel equals 1.
+            I.e. if `kernel = np.ones((3,3))` then `y_shift = x_shift = z_shift = [-1, 0, 1]`.
+        z_kernel_shifts: `int [n_nonzero_kernel]`
+            Shifts indicating where kernel equals 1.
+            I.e. if `kernel = np.ones((3,3))` then `y_shift = x_shift = z_shift = [-1, 0, 1]`.
+        coords: `int [n_points x 3]`.
+            yxz coordinates where result of filtering is desired.
+
+    Returns:
+        `int [n_points]`.
+            Result of filtering of `image` at each point in `coords`.
+    """
+    return jax.vmap(manual_convolve_single, in_axes=(None, None, None, None, 0),
+                    out_axes=0)(image, y_kernel_shifts, x_kernel_shifts,z_kernel_shifts, coords)
+
+
 def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, padding: Union[float, str] = 0,
-                    corr_or_conv: str = 'corr') -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                    corr_or_conv: str = 'corr', method: str = 'cython') -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Copy of MATLAB `imfilter` function with `'output_size'` equal to `'same'`.
     Only finds result of filtering at specific locations.
@@ -323,8 +363,13 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
     pad_size = [(int((ax_size-1)/2),)*2 for ax_size in kernel.shape]
     pad_coords = coords + np.array([val[0] for val in pad_size])
     if isinstance(padding, numbers.Number):
-        return cy_convolve(np.pad(image, pad_size, 'constant', constant_values=padding).astype(int),
-                           kernel.astype(np.int8), pad_coords.astype(np.int_))
+        image_pad = np.pad(image, pad_size, 'constant', constant_values=padding).astype(int)
     else:
-        return cy_convolve(np.pad(image, pad_size, padding).astype(int), kernel.astype(np.int8),
-                           pad_coords.astype(np.int_))
+        image_pad = np.pad(image, pad_size, padding).astype(int)
+    if method == 'cython':
+        return cy_convolve(image_pad, kernel.astype(np.int8), pad_coords.astype(np.int_))
+    else:
+        # Jax method is slightly slower, only a tiny bit though and negates any requirement for cython in the package.
+        y_shifts, x_shifts, z_shifts = get_shifts_from_kernel(np.flip(kernel))
+        return np.asarray(manual_convolve(jnp.asarray(image_pad), jnp.asarray(y_shifts), jnp.asarray(x_shifts),
+                                          jnp.asarray(z_shifts), jnp.asarray(pad_coords)))

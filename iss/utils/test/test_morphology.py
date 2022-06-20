@@ -362,10 +362,13 @@ class TestMorphology(unittest.TestCase):
 
             cython_result = imfilter_coords(image, kernel_filt, coords, padding, corr_or_conv)
             cython_result_old = imfilter_coords_old(image, kernel_filt, coords, padding, corr_or_conv)
+            jax_result = imfilter_coords(image, kernel_filt, coords, padding, corr_or_conv, 'jax')
             diff = cython_result - np.round(im_filt_result).astype(int)
             diff2 = cython_result - cython_result_old
+            diff3 = cython_result - jax_result
             self.assertTrue(np.abs(diff).max() <= tol)  # check match full image filtering
             self.assertTrue(np.abs(diff2).max() <= tol)  # check match old method
+            self.assertTrue(np.abs(diff3).max() <= tol)  # check match jax method
 
 
 if __name__ == '__main__':

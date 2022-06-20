@@ -102,7 +102,6 @@ def cy_convolve(cnp.ndarray[long, ndim=3] im, cnp.ndarray[cnp.int8_t, ndim=3] ke
     Args:
         im: `int [image_szY x image_szX x image_szZ]`.
             Image to be filtered. Must be 3D.
-            np.int8 as designed to use on np.sign of an image i.e. only contains -1, 0, 1.
         kernel: `np.int8 [kernel_szY x kernel_szX x kernel_szZ]`.
             Multidimensional filter. Must be odd in each dimension i.e. run ensure_odd_kernel before calling.
             Only contains 1 or 0.
@@ -110,10 +109,8 @@ def cy_convolve(cnp.ndarray[long, ndim=3] im, cnp.ndarray[cnp.int8_t, ndim=3] ke
             Coordinates where result of filtering is desired.
 
     Returns:
-        - `int [n_points]`.
+        `int [n_points]`.
             Result of filtering of `im` at each point in `coords`.
-        - `int [n_points]`.
-            Result of filtering of `im2` at each point in `coords`. Only returned if `im2` provided.
     """
     cdef Py_ssize_t i, y, x, z
     cdef long n_points = coords.shape[0]
