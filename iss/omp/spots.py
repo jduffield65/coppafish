@@ -187,8 +187,8 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
         max_size[max_size_odd_loc] += 1  # ensure shape is odd
 
     # get image centred on each spot.
-    # Big image shape which will be cropped later. Not int as will contain nans
-    spot_images = np.zeros((n_spots, *max_size), dtype=int)
+    # Big image shape which will be cropped later.
+    spot_images = np.zeros((0, *max_size), dtype=int)
     spots_used = np.zeros(n_spots, dtype=bool)
     for g in range(n_genes):
         use = spot_gene_no == g
@@ -205,14 +205,14 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
             if use.any():
                 # nan_to_num sets nan to zero i.e. if out of range of coef_sign_image, coef assumed zero.
                 # This is what we want as have cropped coef_sign_image to eclude zero coefficients.
-                spot_images[use] = np.nan_to_num(get_spot_images(coef_sign_image, g_spot_yxz[g_use], max_size)
-                                                 ).astype(int)
+                spot_images = np.append(
+                    spot_images, np.nan_to_num(get_spot_images(coef_sign_image, g_spot_yxz[g_use], max_size)
+                                               ).astype(int), axis=0)
                 spots_used[use] = True
 
     if not spots_used.any():
         raise ValueError("No spots found to make average spot image from.")
     # Compute average spot image from all isolated spots
-    spot_images = spot_images[spots_used]
     isolated = get_isolated_points(spot_yxz[spots_used] * [1, 1, z_scale], isolation_dist)
     # get_average below ignores the nan values.
     av_spot_image = get_average_spot_image(spot_images[isolated].astype(float), 'mean', 'annulus_3d')
