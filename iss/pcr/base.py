@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+from scipy.spatial import KDTree
 from .. import utils
 from tqdm import tqdm
 from typing import Optional, Tuple, Union, List
@@ -62,7 +62,7 @@ def apply_transform_jax(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: j
 
 
 def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,
-                  yxz_target_tree: Optional[NearestNeighbors] = None, reg_constant_rot: float = 30000,
+                  yxz_target_tree: Optional[KDTree] = None, reg_constant_rot: float = 30000,
                   reg_constant_shift: float = 9,
                   reg_transform: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray, int, float]:
     """
@@ -98,14 +98,14 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
             Average distance between ```neighbours``` below ```dist_thresh```.
     """
     if yxz_target_tree is None:
-        yxz_target_tree = NearestNeighbors(n_neighbors=1).fit(yxz_target)
+        yxz_target_tree = KDTree(yxz_target)
     yxz_base_pad = np.pad(yxz_base, [(0, 0), (0, 1)], constant_values=1)
     yxz_transform = np.matmul(yxz_base_pad, transform_old)
-    distances, neighbour = yxz_target_tree.kneighbors(yxz_transform)
+    distances, neighbour = yxz_target_tree.query(yxz_transform, distance_upper_bound=dist_thresh)
     neighbour = neighbour.flatten()
     distances = distances.flatten()
     use = distances < dist_thresh
-    n_matches = sum(use)
+    n_matches = np.sum(use)
     error = np.sqrt(np.mean(distances[use] ** 2))
     if reg_transform is None:
         transform = np.linalg.lstsq(yxz_base_pad[use, :], yxz_target[neighbour[use], :], rcond=None)[0]
@@ -114,7 +114,7 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
         yxz_base_regularised = np.concatenate((yxz_base_pad[use, :], np.eye(4) * scale), axis=0)
         yxz_target_regularised = np.concatenate((yxz_target[neighbour[use], :], reg_transform * scale), axis=0)
         transform = np.linalg.lstsq(yxz_base_regularised, yxz_target_regularised, rcond=None)[0]
-    if sum(transform[2, :] == 0) == 3:
+    if np.sum(transform[2, :] == 0) == 3:
         transform[2, 2] = 1  # if 2d transform, set scaling of z to 1 still
     return transform, neighbour, n_matches, error
 
@@ -339,12 +339,12 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
     """
     n_tiles, n_rounds, n_channels = yxz_target.shape
     if not utils.errors.check_shape(yxz_base, [n_tiles]):
-        raise utils.errors.ShapeError("yxz_base", yxz_base.shape, [n_tiles])
+        raise utils.errors.ShapeError("yxz_base", yxz_base.shape, (n_tiles,))
     tree_target = np.zeros_like(yxz_target)
     for t in range(n_tiles):
         for r in range(n_rounds):
             for c in range(n_channels):
-                tree_target[t, r, c] = NearestNeighbors(n_neighbors=1).fit(yxz_target[t, r, c])
+                tree_target[t, r, c] = KDTree(yxz_target[t, r, c])
 
     n_matches = np.zeros_like(yxz_target, dtype=int)
     error = np.zeros_like(yxz_target, dtype=float)
@@ -389,7 +389,7 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
                     is_converged[failed] = False
                     i_finished_good = i+1  # so don't end iteration on next one
                     finished_good_images = True
-                    pbar.update(-sum(failed.flatten()))
+                    pbar.update(-np.sum(failed.flatten()))
 
             if is_converged.all():
                 break

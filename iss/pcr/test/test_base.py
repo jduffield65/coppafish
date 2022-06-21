@@ -51,10 +51,12 @@ class TestGetTransform(unittest.TestCase):
                               reg_constant_shift=reg_constant_shift, reg_transform=reg_transform)
             diff_1 = transform_python - transform_matlab
             diff_2 = (neighbour_python+1) - neighbour_matlab
+            # Only consider neighbours where dist < dist_thresh.
+            diff_2 = diff_2[neighbour_python != yxz_target.shape[0]]
             diff_3 = n_matches_python - n_matches_matlab
             diff_4 = error_python - error_matlab
             self.assertTrue(np.abs(diff_1).max() <= self.tol_transform)
-            self.assertTrue(sum(diff_2 != 0) <= self.tol_neighb)
+            self.assertTrue(np.sum(diff_2 != 0) <= self.tol_neighb)
             self.assertTrue(np.abs(diff_3) <= self.tol_transform)
             self.assertTrue(np.abs(diff_4) <= self.tol_neighb)
 
@@ -158,7 +160,10 @@ class TestIterate(unittest.TestCase):
     error: [n_tiles x n_channels x n_rounds] mean distance between matches found by MATLAB
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples/iterate/')
-    tol = 1e-10
+    tol1 = 0.05
+    tol_matches = 5
+    tol2 = 5e-4
+    tol_fract = 0.08
 
     def test_get_transform(self):
         test_files = [s for s in os.listdir(self.folder) if "test" in s]
@@ -197,11 +202,16 @@ class TestIterate(unittest.TestCase):
             diff_3 = debug_python['error'] - error_matlab
             diff_4 = debug_python['failed'].astype(int) - failed_matlab
             diff_5 = debug_python['av_scaling'] - av_scaling_matlab
-            self.assertTrue(np.abs(diff_1).max() <= self.tol)
-            self.assertTrue(np.abs(diff_2).max() <= self.tol)
-            self.assertTrue(np.abs(diff_3).max() <= self.tol)
-            self.assertTrue(np.abs(diff_4).max() <= self.tol)
-            self.assertTrue(np.abs(diff_5).max() <= self.tol)
+            self.assertTrue(np.abs(diff_1).max() <= self.tol1 and
+                            np.sum(np.abs(diff_1) > self.tol2)/np.prod(np.shape(diff_1)) < self.tol_fract)
+            self.assertTrue(np.abs(diff_2).max() <= self.tol_matches and
+                            np.sum(np.abs(diff_2) > self.tol2)/np.prod(np.shape(diff_2)) < self.tol_fract)
+            self.assertTrue(np.abs(diff_3).max() <= self.tol1 and
+                            np.sum(np.abs(diff_3) > self.tol2)/np.prod(np.shape(diff_3)) < self.tol_fract)
+            self.assertTrue(np.abs(diff_4).max() <= self.tol1 and
+                            np.sum(np.abs(diff_4) > self.tol2)/np.prod(np.shape(diff_4)) < self.tol_fract)
+            self.assertTrue(np.abs(diff_5).max() <= self.tol1 and
+                            np.sum(np.abs(diff_5) > self.tol2)/np.prod(np.shape(diff_5)) < self.tol_fract)
 
 
 if __name__ == '__main__':

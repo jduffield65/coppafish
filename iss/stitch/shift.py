@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.spatial import KDTree
-from scipy.stats import iqr
 from sklearn.metrics import pairwise_distances
 from ..utils.base import setdiff2d
 from typing import Tuple, Optional, List, Union
