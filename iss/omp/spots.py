@@ -327,9 +327,7 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
             # Note size of image will be different for each gene.
             coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
             if spot_yxzg is None:
-                # TODO: try dilate with sparse_local_maxima with np.ones se.
                 spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
-                # spot_yxz = utils.morphology.sparse_local_maxima(coef_image, se, 0)
             else:
                 # spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.
                 spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g, :3] - coord_shift

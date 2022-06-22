@@ -37,7 +37,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     nbp_debug = setup.NotebookPage("extract_debug")
     # initialise output of this part of pipeline as 'vars' key
     nbp.auto_thresh = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
-                                nbp_basic.n_channels))
+                                nbp_basic.n_channels), dtype=int)
     nbp.hist_values = np.arange(-nbp_basic.tile_pixel_value_shift, np.iinfo(np.uint16).max -
                                 nbp_basic.tile_pixel_value_shift + 2, 1)
     nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int)

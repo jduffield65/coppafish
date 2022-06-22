@@ -3,6 +3,7 @@ from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
 from ..setup.notebook import NotebookPage
+import jax.numpy as jnp
 
 
 def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, auto_thresh: np.ndarray) -> NotebookPage:
@@ -63,7 +64,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c})
                     image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c)
                     spot_yxz, spot_intensity = fs.detect_spots(image, auto_thresh[t, r, c],
-                                                               config['radius_xy'], config['radius_z'])
+                                                               config['radius_xy'], config['radius_z'], True)
                     no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yxz, thresh=0)
                     spot_yxz = spot_yxz[no_negative_neighbour]
                     spot_intensity = spot_intensity[no_negative_neighbour]

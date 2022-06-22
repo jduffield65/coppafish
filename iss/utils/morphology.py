@@ -276,8 +276,8 @@ def get_shifts_from_kernel(kernel: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarra
     """
     shifts = list(jnp.where(kernel > 0))
     for i in range(kernel.ndim):
-        shifts[i] = shifts[i] - (kernel.shape[i] - 1) / 2
-    return shifts[0].astype(int), shifts[1].astype(int), shifts[2].astype(int)
+        shifts[i] = (shifts[i] - (kernel.shape[i] - 1) / 2).astype(int)
+    return tuple(shifts)
 
 
 def manual_convolve_single(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_shifts: jnp.asarray,

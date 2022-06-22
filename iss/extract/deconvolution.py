@@ -263,7 +263,7 @@ def get_psf_spots(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.
         elif intensity_thresh <= median_im or intensity_thresh >= np.iinfo(np.uint16).max:
             raise utils.errors.OutOfBoundsError("intensity_thresh", intensity_thresh, median_im,
                                                 np.iinfo(np.uint16).max)
-        spot_yxz, _ = detect_spots(im, intensity_thresh, radius_xy, radius_z)
+        spot_yxz, _ = detect_spots(im, intensity_thresh, radius_xy, radius_z, True)
         # check fall off in intensity not too large
         not_single_pixel = check_neighbour_intensity(im, spot_yxz, median_im)
         isolated = get_isolated_points(spot_yxz, isolation_dist)

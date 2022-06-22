@@ -128,7 +128,7 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
         z_info: z-plane to get `auto_thresh` and `hist_counts` from.
 
     Returns:
-        - ```auto_thresh``` - ```float``` Pixel values above ```auto_thresh``` in ```image``` are likely spots.
+        - ```auto_thresh``` - ```int``` Pixel values above ```auto_thresh``` in ```image``` are likely spots.
         - ```hist_counts``` - ```int [len(nbp['hist_values'])]```.
             ```hist_counts[i]``` is the number of pixels found in ```image``` with value equal to
             ```hist_values[i]```.
@@ -151,4 +151,4 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
         clip_scale = scale * max_pixel_value / image.max()
     else:
         clip_scale = 0
-    return auto_thresh, hist_counts, n_clip_pixels, clip_scale
+    return np.round(auto_thresh).astype(int), hist_counts, n_clip_pixels, clip_scale
