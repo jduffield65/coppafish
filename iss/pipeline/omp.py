@@ -9,6 +9,7 @@ from .. import omp
 import os
 from scipy import sparse
 import jax.numpy as jnp
+import warnings
 
 
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
@@ -70,8 +71,39 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         # -1 because saved as uint16 so convert 0, 1, 2 to -1, 0, 1.
         spot_shape = utils.tiff.load(nbp_file.omp_spot_shape).astype(int) - 1
 
-    spot_info = np.zeros((0, 7), dtype=np.int16)
-    spot_coefs = sparse.csr_matrix(np.zeros((0, n_genes)))
+    # Deal with case where algorithm has been run for some tiles and data saved
+    if os.path.isfile(nbp_file.omp_spot_info) and os.path.isfile(nbp_file.omp_spot_coef):
+        if spot_shape is None:
+            raise ValueError(f'OMP information already exists for some tiles but spot_shape tiff file does not:\n'
+                             f'{nbp_file.omp_spot_shape}\nEither add spot_shape tiff or delete the files:\n'
+                             f'{nbp_file.omp_spot_info} and {nbp_file.omp_spot_coef}.')
+        spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
+        spot_info = np.load(nbp_file.omp_spot_info)
+        if spot_coefs.shape[0] > spot_info.shape[0]:
+            # Case where bugged out after saving spot_coefs but before saving spot_info, delete all excess spot_coefs.
+            warnings.warn(f"Have spot_coefs for {spot_coefs.shape[0]} spots but only spot_info for {spot_info.shape[0]}"
+                          f" spots.\nSo deleting the excess spot_coefs and re-saving to {nbp_file.omp_spot_coef}.")
+            spot_coefs = spot_coefs[:spot_info.shape[0]]
+            sparse.save_npz(nbp_file.omp_spot_coef, spot_coefs)
+        elif spot_coefs.shape[0] < spot_info.shape[0]:
+            # If more spots in info than coefs then not a case we can handle.
+            raise ValueError(f"Have spot_info for {spot_info.shape[0]} spots but only spot_coefs for "
+                             f"{spot_coefs.shape[0]}\nNeed to delete both {nbp_file.omp_spot_coef} and "
+                             f"{nbp_file.omp_spot_info} to get past this error.")
+        else:
+            prev_found_tiles = np.unique(spot_info[:, -1])
+            use_tiles = np.setdiff1d(use_tiles, prev_found_tiles)
+            warnings.warn(f'Already have OMP results for tiles {prev_found_tiles} so now just running on tiles'
+                          f' {use_tiles}.')
+        del spot_coefs, spot_info
+    elif os.path.isfile(nbp_file.omp_spot_coef):
+        # If only have information only file but not the other, need to delete all files and start again.
+        raise ValueError(f'The file {nbp_file.omp_spot_coef} exists but the file {nbp_file.omp_spot_info} does not.\n'
+                         f'Delete or re-name the file {nbp_file.omp_spot_coef} to run omp part from scratch.')
+    elif os.path.isfile(nbp_file.omp_spot_info):
+        raise ValueError(f'The file {nbp_file.omp_spot_info} exists but the file {nbp_file.omp_spot_coef} does not.\n'
+                         f'Delete or re-name the file {nbp_file.omp_spot_info} to run omp part from scratch.')
+
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
@@ -144,13 +176,28 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         pixel_index = numpy_indexed.indices(pixel_yxz_t, spot_info_t[:, :3])
 
         # append this tile info to all tile info
-        spot_coefs = sparse.vstack((spot_coefs, pixel_coefs_t[pixel_index]))
-        del pixel_coefs_t, pixel_index
-        spot_info = np.append(spot_info, spot_info_t, axis=0)
-        del spot_info_t
+        if os.path.isfile(nbp_file.omp_spot_info) and os.path.isfile(nbp_file.omp_spot_coef):
+            # After ran on one tile, need to load in spot_coefs and spot_info, append and then save again.
+            spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
+            spot_coefs = sparse.vstack((spot_coefs, pixel_coefs_t[pixel_index]))
+            del pixel_coefs_t, pixel_index
+            sparse.save_npz(nbp_file.omp_spot_coef, spot_coefs)
+            del spot_coefs
+            spot_info = np.load(nbp_file.omp_spot_info)
+            spot_info = np.append(spot_info, spot_info_t, axis=0)
+            del spot_info_t
+            np.save(nbp_file.omp_spot_info, spot_info)
+            del spot_info
+        else:
+            # 1st tile, need to create files to save to
+            sparse.save_npz(nbp_file.omp_spot_coef, pixel_coefs_t[pixel_index])
+            del pixel_coefs_t, pixel_index
+            np.save(nbp_file.omp_spot_info, spot_info_t.astype(np.int16))
+            del spot_info_t
 
     nbp.spot_shape = spot_shape
 
+    spot_info = np.load(nbp_file.omp_spot_info)
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
     not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre,
                                       spot_info[:, :3] + tile_origin[spot_info[:, 6]], spot_info[:, 6])
@@ -185,6 +232,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nbp.colors = nd_spot_colors
     del nd_spot_colors_use
 
+    spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
     nbp.coef = spot_coefs[not_duplicate].toarray()
     nbp.gene_no = spot_info[not_duplicate, 3]
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]

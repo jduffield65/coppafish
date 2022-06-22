@@ -83,6 +83,16 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
             dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
             nbp_file.omp_spot_shape = os.path.join(config_file['output_dir'], 'omp_spot_shape_' + dt_string + '.tif')
 
+    # Add files so save omp results after each tile as security if hit any bugs
+    omp_spot_info_file = os.path.join(config_file['output_dir'], 'omp_spot_info.npy')
+    omp_spot_coef_file = os.path.join(config_file['output_dir'], 'omp_spot_coef.npz')
+    if os.path.isfile(omp_spot_info_file) or os.path.isfile(omp_spot_coef_file):
+        dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
+        nbp_file.omp_spot_info = os.path.join(config_file['output_dir'], 'omp_spot_info_' + dt_string + '.npy')
+        nbp_file.omp_spot_coef = os.path.join(config_file['output_dir'], 'omp_spot_coef_' + dt_string + '.npz')
+    else:
+        nbp_file.omp_spot_info = omp_spot_info_file
+        nbp_file.omp_spot_coef = omp_spot_coef_file
 
     # get round info from config file
     n_rounds = len(config_file['round'])

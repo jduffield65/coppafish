@@ -3,7 +3,6 @@ from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
 from ..setup.notebook import NotebookPage
-import jax.numpy as jnp
 
 
 def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, auto_thresh: np.ndarray) -> NotebookPage:

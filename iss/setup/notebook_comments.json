@@ -39,6 +39,12 @@
     "omp_spot_shape": ["File",
       "tiff file indicating average spot shape in omp coefficient sign images.",
       "Saved image is uint16 tiff so -1, 0, 1 saved as 0, 1, 2. When load in, subtract 1."],
+    "omp_spot_info": ["File",
+      "After each tile is finished in omp, information about spots found is saved as array to .npy file:",
+      "Numpy int16 array [n_spots x 7] containing y, x, z, gene_no, n_pos_neighb, n_neg_neighb, tile."],
+    "omp_spot_coef": ["File",
+      "After each tile is finished in omp, coefs for all spots found is saved as sparse csr_matrix to .npz file:",
+      "CSR_matrix float [n_spots x n_genes] giving coefficient found for each gene for each spot."],
     "big_dapi_image": [
       "File or None",
       "tiff file of stitched DAPI image. None if nb.basic_info.dapi_channel is None"],
