@@ -21,7 +21,7 @@ def save(image: np.ndarray, im_file: str, description: Optional[str] = None, app
         I.e. `<0` set to `0` and `>np.iinfo(np.uint16).max` set to `np.iinfo(np.uint16).max`.
 
     Args:
-        image: `int [ny x nx (x n_dim3)]`.
+        image: `np.int32 [ny x nx (x n_dim3)]`.
             2D or 3D image to be saved.
         im_file: Path to save file.
         description: Short description to save to metadata to describe image.
@@ -32,9 +32,7 @@ def save(image: np.ndarray, im_file: str, description: Optional[str] = None, app
             This occurs when tiff file is larger than 4GB I think.
     """
     # truncate image so don't get aliased values
-    image[image > np.iinfo(np.uint16).max] = np.iinfo(np.uint16).max
-    image[image < 0] = 0
-    image = np.round(image).astype(np.uint16)
+    image = np.clip(image, 0, np.iinfo(np.uint16).max, np.zeros_like(image, dtype=np.int16))
     if image.ndim == 3:
         # put dimension that is not y or x as first dimension so easier to load in a single plane later
         # and match MATLAB method of saving
@@ -51,7 +49,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract_debug
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
         nbp_extract_debug: `extract_debug` notebook page
-        image: `float [ny x nx (x nz)]`.
+        image: `int32 [ny x nx (x nz)]`.
             Image to save.
         t: tiff tile index considering
         r: Round considering

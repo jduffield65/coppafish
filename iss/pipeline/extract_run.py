@@ -209,8 +209,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                                      c, nbp_basic.use_z)
                             if not nbp_basic.is_3d:
                                 im = extract.focus_stack(im)
-                            else:
-                                im = im.astype(int)
                             im, bad_columns = extract.strip_hack(im)  # find faulty columns
                             if config['deconvolve']:
                                 im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
@@ -218,12 +216,14 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 im = utils.morphology.top_hat(im, filter_kernel_dapi)
                                 im[:, bad_columns] = 0
                             else:
+                                # im converted to float in convolve_2d so no point changing dtype before hand.
                                 im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                                 if config['r_smooth'] is not None:
                                     # oa convolve uses lots of memory and much slower here.
                                     im = utils.morphology.imfilter(im, smooth_kernel, oa=False)
                                 im[:, bad_columns] = 0
-                                im = np.round(im).astype(int)
+                                # get_info is quicker on int32 so do this conversion first.
+                                im = np.rint(im, np.zeros_like(im, dtype=np.int32), casting='unsafe')
                                 # only use image unaffected by strip_hack to get information from tile
                                 good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
                                 nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
