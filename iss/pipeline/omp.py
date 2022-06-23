@@ -211,7 +211,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nan_value = -nbp_basic.tile_pixel_value_shift - 1
     # Only read in used colors first for background/intensity calculation.
     nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=int) * nan_value
-    for t in use_tiles:
+    for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
             nd_spot_colors_use[in_tile] = np.asarray(get_spot_colors_jax(jnp.asarray(nbp.local_yxz[in_tile]), t,
