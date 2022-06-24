@@ -329,6 +329,6 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
             try:
                 save(stitched_image, im_file, append=True, bigtiff=bigtiff)
             except ValueError:
-                warnings.warn(f'Hit ValueError. Only {z/z_size} z-planes were saved.')
+                warnings.warn(f'Hit ValueError. Only {z}/{z_size} z-planes were saved.')
                 break
     pbar.close()
