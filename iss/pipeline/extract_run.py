@@ -59,7 +59,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
     nbp_debug.r1 = config['r1']
     nbp_debug.r2 = config['r2']
-    nbp_debug.r_dapi = config['r1']
+    nbp_debug.r_dapi = config['r_dapi']
 
     filter_kernel = utils.morphology.hanning_diff(nbp_debug.r1, nbp_debug.r2)
     filter_kernel_dapi = utils.strel.disk(nbp_debug.r_dapi)
