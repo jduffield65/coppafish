@@ -32,7 +32,7 @@ def save(image: np.ndarray, im_file: str, description: Optional[str] = None, app
             This occurs when tiff file is larger than 4GB I think.
     """
     # truncate image so don't get aliased values
-    image = np.clip(image, 0, np.iinfo(np.uint16).max, np.zeros_like(image, dtype=np.int16))
+    image = np.clip(image, 0, np.iinfo(np.uint16).max, np.zeros_like(image, dtype=np.uint16))
     if image.ndim == 3:
         # put dimension that is not y or x as first dimension so easier to load in a single plane later
         # and match MATLAB method of saving
