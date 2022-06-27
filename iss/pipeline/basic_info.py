@@ -5,7 +5,6 @@ import warnings
 from datetime import datetime
 from ..setup.notebook import NotebookPage
 from typing import Tuple
-import numpy_indexed
 
 
 def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage, NotebookPage]:
@@ -51,10 +50,10 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
         nbp_basic.dapi_channel = None
         nbp_file.big_dapi_image = None
     else:
-        nbp_file.big_dapi_image = os.path.join(config_file['output_dir'], 'dapi_image.tif')
+        nbp_file.big_dapi_image = os.path.join(config_file['output_dir'], 'dapi_image.npz')
     if config_basic['anchor_channel'] is None:
         nbp_basic.anchor_channel = None
-    nbp_file.big_anchor_image = os.path.join(config_file['output_dir'], 'anchor_image.tif')
+    nbp_file.big_anchor_image = os.path.join(config_file['output_dir'], 'anchor_image.npz')
 
     if config_file['dye_camera_laser'] is None:
         nbp_file.dye_camera_laser = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
@@ -63,25 +62,25 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     if config_file['psf'] is None:
         # where to save psf, indicating average spot shape in raw image
         if nbp_basic.is_3d:
-            psf_file = os.path.join(config_file['output_dir'], 'psf.tif')
+            psf_file = os.path.join(config_file['output_dir'], 'psf.npy')
             if not os.path.isfile(psf_file):
                 nbp_file.psf = psf_file
             else:
                 # if file already exists, specify file with different name based on current time
                 dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
-                nbp_file.psf = os.path.join(config_file['output_dir'], 'psf_' + dt_string + '.tif')
+                nbp_file.psf = os.path.join(config_file['output_dir'], 'psf_' + dt_string + '.npy')
         else:
             nbp_file.psf = None
 
     if config_file['omp_spot_shape'] is None:
         # where to save omp_spot_shape, indicating average spot shape in omp coefficient sign images.
-        omp_spot_shape_file = os.path.join(config_file['output_dir'], 'omp_spot_shape.tif')
+        omp_spot_shape_file = os.path.join(config_file['output_dir'], 'omp_spot_shape.npy')
         if not os.path.isfile(omp_spot_shape_file):
             nbp_file.omp_spot_shape = omp_spot_shape_file
         else:
             # if file already exists, specify file with different name based on current time
             dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M")
-            nbp_file.omp_spot_shape = os.path.join(config_file['output_dir'], 'omp_spot_shape_' + dt_string + '.tif')
+            nbp_file.omp_spot_shape = os.path.join(config_file['output_dir'], 'omp_spot_shape_' + dt_string + '.npy')
 
     # Add files so save omp results after each tile as security if hit any bugs
     omp_spot_info_file = os.path.join(config_file['output_dir'], 'omp_spot_info.npy')
@@ -131,7 +130,7 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     if config_basic['ignore_first_z_plane'] and 0 in nbp_basic.use_z:
         nbp_basic.use_z.remove(0)
     nbp_basic.use_z.sort()
-    nz = len(nbp_basic.use_z)  # number of z planes in tiff file (not necessarily the same as in nd2)
+    nz = len(nbp_basic.use_z)  # number of z planes in npy file (not necessarily the same as in nd2)
     use_z_oob = [val for val in nbp_basic.use_z if val < 0 or val >= metadata['sizes']['z']]
     if len(use_z_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, metadata['sizes']['z'] - 1)
@@ -185,34 +184,24 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     if not 0 <= nbp_basic.ref_channel <= n_channels - 1:
         raise utils.errors.OutOfBoundsError("ref_channel", nbp_basic.ref_channel, 0, n_channels-1)
 
-    if config_file['matlab_tile_names']:
-        # Find name of MATLAB tiff file for each tile. +1 is because MATLAB starts at 1 not 0.
-        tilepos_yx_tiff_matlab = setup.tile_pos_tiff_matlab_python_conversion(tilepos_yx)
-        t_tiff_file_conversion = numpy_indexed.indices(tilepos_yx_tiff_matlab, tilepos_yx) + 1
-        c_tiff_file_conversion = np.arange(n_channels) + 1  # Channel in MATLAB starts at 1 not 0.
-    else:
-        t_tiff_file_conversion = None
-        c_tiff_file_conversion = None
     if config_basic['is_3d']:
-        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles,
-                                               t_tiff_file_conversion, c_tiff_file_conversion, n_channels)
+        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles, n_channels)
     else:
-        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles,
-                                               t_tiff_file_conversion, c_tiff_file_conversion)
+        tile_names = setup.get_tile_file_names(config_file['tile_dir'], round_files, n_tiles)
 
-    nbp_file.tile = tile_names.tolist()  # tiff tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
+    nbp_file.tile = tile_names.tolist()  # npy tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
     nbp_basic.n_rounds = n_rounds  # int, number of imaging rounds
     nbp_basic.tile_sz = tile_sz  # xy dimension of tiles in pixels.
     nbp_basic.n_tiles = n_tiles  # int, number of tiles
     nbp_basic.n_channels = n_channels  # int, number of imaging channels
-    nbp_basic.nz = nz  # number of z-planes used to make tiff images
+    nbp_basic.nz = nz  # number of z-planes used to make npy images
     nbp_basic.n_dyes = n_dyes  # int, number of dyes
     # subtract tile_centre from local pixel coordinates to get centered local tile coordinates
     if not nbp_basic.is_3d:
         nz = 1
     nbp_basic.tile_centre = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
     nbp_basic.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
-    nbp_basic.tilepos_yx = tilepos_yx  # and with tiff index
+    nbp_basic.tilepos_yx = tilepos_yx  # and with npy index
     nbp_basic.pixel_size_xy = metadata['pixel_microns']  # pixel size in microns in xy
     nbp_basic.pixel_size_z = metadata['pixel_microns_z']  # and z directions.
     nbp_basic.use_anchor = use_anchor

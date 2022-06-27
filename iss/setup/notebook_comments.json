@@ -13,7 +13,7 @@
       "Where notebook is saved"],
     "tile_dir": [
       "Directory",
-      "Where tile tiff files saved"],
+      "Where tile npy files saved"],
     "round": [
       "List [n_rounds]",
       "Names of nd2 files for the imaging rounds"],
@@ -31,27 +31,31 @@
       "text file which contains the codes indicating which dye to expect on each round for each gene"],
     "psf": [
       "File or None",
-      "tiff file indicating average spot shape (before padding and scaled to fill uint16 range).",
-      "Will be None if 2d pipeline used. File won't exist/used if config['extract']['deconvolve'] is False."],
+      "npy file indicating average spot shape (before padding and scaled to fill uint16 range).",
+      "Will be None if 2d pipeline used. File won't exist/used if config['extract']['deconvolve'] is False.",
+      "If 3D, 1st axis in npy file is z."],
     "omp_spot_shape": ["File",
-      "tiff file indicating average spot shape in omp coefficient sign images.",
-      "Saved image is uint16 tiff so -1, 0, 1 saved as 0, 1, 2. When load in, subtract 1."],
+      "npy file indicating average spot shape in omp coefficient sign images.",
+      "Saved image is int8 npy with only values being -1, 0, 1."],
     "omp_spot_info": ["File",
       "After each tile is finished in omp, information about spots found is saved as array to .npy file:",
-      "Numpy int16 array [n_spots x 7] containing y, x, z, gene_no, n_pos_neighb, n_neg_neighb, tile."],
+      "Numpy int16 array [n_spots x 7] containing y, x, z, gene_no, n_pos_neighb, n_neg_neighb, tile.",
+      "If 3D, 1st axis in npy file is z."],
     "omp_spot_coef": ["File",
       "After each tile is finished in omp, coefs for all spots found is saved as sparse csr_matrix to .npz file:",
       "CSR_matrix float [n_spots x n_genes] giving coefficient found for each gene for each spot."],
     "big_dapi_image": [
       "File or None",
-      "tiff file of stitched DAPI image. None if nb.basic_info.dapi_channel is None"],
+      "npz file of stitched DAPI image. None if nb.basic_info.dapi_channel is None",
+      "If 3D, 1st axis in npz file is z."],
     "big_anchor_image": [
       "File",
-      "tiff file of stitched image of ref_round/ref_channel. Will be stitched anchor if anchor used."],
+      "npz file of stitched image of ref_round/ref_channel. Will be stitched anchor if anchor used.",
+      "If 3D, 1st axis in npz file is z."],
     "tile": [
       "List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
-      "2d: tile[t][r] is the tiff file containing all channels of tile t, round r.",
-      "3d: tile[t][r][c] is the tiff file containing all z planes for tile t, round r, channel c"]
+      "2d: tile[t][r] is the npy file containing all channels of tile t, round r.",
+      "3d: tile[t][r][c] is the npy file containing all z planes for tile t, round r, channel c"]
   },
 
   "basic_info":
@@ -79,7 +83,7 @@
     "use_rounds": ["Integer List [n_use_rounds]",
       "Imaging rounds to use throughout pipeline."],
     "use_z": ["Integer List [nz]",
-      "z planes used to make tile tiff files"],
+      "z planes used to make tile npy files"],
     "use_tiles": ["Integer List [n_use_tiles]",
       "Tiles to use throughout pipeline."],
     "use_dyes": ["Integer List [n_use_dyes]",
@@ -96,7 +100,7 @@
       "None if dye_names is None."],
     "tile_pixel_value_shift": ["Integer",
       "This is added onto every tile (except DAPI) when it is saved and removed from every tile when loaded.",
-      "Required so we can have negative pixel values when save to tiff as uint16. Typical=15000"],
+      "Required so we can have negative pixel values when save to npy as uint16. Typical=15000"],
     "ignore_first_z_plane": ["Boolean", "Previously had cases where first z plane in nd2 file was in wrong place and",
       "caused focus stacking to be weird or identify lots of spots on first plane",
       "hence safest to not load first plane which is done if this is True and 0 will be absent from use_z."],
@@ -111,7 +115,7 @@
     "n_channels": ["Integer",
       "Number of channels in the raw data"],
     "nz": ["Integer",
-      "Number of z-planes used to make the tiff tile images (Can be different from number in raw data)."],
+      "Number of z-planes used to make the npy tile images (Can be different from number in raw data)."],
     "n_dyes": ["Integer",
       "Number of dyes used"],
     "tile_centre": ["Numpy float array [3]",
@@ -120,7 +124,7 @@
     "tilepos_yx_nd2": ["Numpy integer array [n_tiles x 2]",
       "tilepos_yx_nd2[i, :] is the yx position of tile with fov index i in the nd2 file."],
     "tilepos_yx": ["Numpy integer array [n_tiles x 2]",
-      "tilepos_yx[i, :] is the yx position of tile with tile directory (tiff files) index i.",
+      "tilepos_yx[i, :] is the yx position of tile with tile directory (npy files) index i.",
       "Equally, tilepos_yx[use_tiles[i], :] is yx position of tile use_tiles[i]."],
     "pixel_size_xy": ["Float",
       "yx pixel size in microns"],
@@ -139,7 +143,7 @@
     "auto_thresh": ["Numpy float array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
       "auto_thresh[t, r, c] is the threshold spot intensity for tile t, round r, channel c."],
     "hist_values": ["Numpy integer array [n_pixel_values]",
-      "all possible pixel values in saved tiff images i.e. length is approx np.iinfo(np.uint16).max"],
+      "all possible pixel values in saved npy images i.e. length is approx np.iinfo(np.uint16).max"],
     "hist_counts": ["Numpy integer array [n_pixel_values x n_rounds x n_channels]",
       "hist_counts[i, r, c] is the number of pixels across all tiles in round r, channel c",
       "which had the value hist_values[i]."]
@@ -152,7 +156,7 @@
       "Page added to notebook in pipeline/extract_run.py"],
 
     "n_clip_pixels": ["Numpy integer array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
-      "n_clip_pixels[t, r, c] is the number of pixels in the saved tiff tile for tile t, round r, channel c",
+      "n_clip_pixels[t, r, c] is the number of pixels in the saved npy tile for tile t, round r, channel c",
       "which had intensity exceeding max uint16 value and so had to be clipped."],
     "clip_extract_scale": ["Numpy float array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
       "clip_extract_scale[t, r, c] is the recommended value for extract_scale such that for tile t, round r, channel c",
@@ -180,7 +184,7 @@
       "tiles where spots for psf calculation came from.",
       "None if config['deconvolve'] is False or psf provided without spot detection."],
     "scale": ["Float",
-      "Multiplier applied to filtered nd2 imaging round images before saving as tiff so full tiff uint16 occupied."],
+      "Multiplier applied to filtered nd2 imaging round images before saving as npy so full npy uint16 occupied."],
     "scale_tile": ["Integer or None",
       "Tile of image that scale was found from. None if config['scale'] provided."],
     "scale_channel": ["Integer or None",
@@ -188,7 +192,7 @@
     "scale_z": ["Integer or None",
       "z plane of image that scale was found from. None if config['scale'] provided."],
     "scale_anchor": ["Float or None",
-      "Multiplier applied to filtered nd2 anchor round images before saving as tiff so full tiff uint16 occupied.",
+      "Multiplier applied to filtered nd2 anchor round images before saving as npy so full npy uint16 occupied.",
       "None if use_anchor is False."],
     "scale_anchor_tile": ["Integer or None",
       "Tile of image in anchor round/channel that scale was found from.",
@@ -197,7 +201,7 @@
       "z plane of image in anchor round/channel that scale_anchor was found from.",
       "None if config['scale_anchor'] provided or use_anchor is False."],
     "z_info": ["Integer",
-      "z plane in tiff file from which auto_thresh and hist_counts were calculated. By default, this is the mid plane."]
+      "z plane in npy file from which auto_thresh and hist_counts were calculated. By default, this is the mid plane."]
   },
 
   "find_spots":

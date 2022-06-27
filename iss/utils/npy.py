@@ -8,7 +8,7 @@ import os
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,
-              t: int, r: int, c: int):
+              t: int, r: int, c: Optional[int] = None):
     """
     Wrapper function to save tiles as npy files with correct shift.
     Moves z-axis to start before saving as it is quicker to load in this order.
@@ -23,24 +23,40 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         r: Round considering
         c: Channel considering
     """
-    if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
-        # If dapi is given then image should already by uint16 so no clipping
-        image = image.astype(np.uint16)
-    else:
-        # need to shift and clip image so fits into uint16 dtype.
-        # clip at 1 not 0 because 0 (or -tile_pixel_value_shift)
-        # will be used as an invalid value when reading in spot_colors.
-        image = np.clip(image + nbp_basic.tile_pixel_value_shift, 1, np.iinfo(np.uint16).max,
-                        np.zeros_like(image, dtype=np.uint16))
     if nbp_basic.is_3d:
+        if c is None:
+            raise ValueError('3d image but channel not given.')
+        if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+            # If dapi is given then image should already by uint16 so no clipping
+            image = image.astype(np.uint16)
+        else:
+            # need to shift and clip image so fits into uint16 dtype.
+            # clip at 1 not 0 because 0 (or -tile_pixel_value_shift)
+            # will be used as an invalid value when reading in spot_colors.
+            image = np.clip(image + nbp_basic.tile_pixel_value_shift, 1, np.iinfo(np.uint16).max,
+                            np.zeros_like(image, dtype=np.uint16), casting="unsafe")
+        # In 3D, cannot possibly save any un-used channel hence no exception for this case.
         expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        np.save(nbp_file.tile[t][r][c], np.moveaxis(image, 0, 2))
+        np.save(nbp_file.tile[t][r][c], np.moveaxis(image, 2, 0))
     else:
+        if r == nbp_basic.anchor_round:
+            if nbp_basic.anchor_channel is not None:
+                # If anchor round, only shift and clip anchor channel, leave DAPI and un-used channels alone.
+                image[nbp_basic.anchor_channel] = \
+                    np.clip(image[nbp_basic.anchor_channel] + nbp_basic.tile_pixel_value_shift, 1,
+                            np.iinfo(np.uint16).max, image[nbp_basic.anchor_channel])
+            image = image.astype(np.uint16)
+            use_channels = [val for val in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if val is not None]
+        else:
+            image = np.clip(image + nbp_basic.tile_pixel_value_shift, 1, np.iinfo(np.uint16).max,
+                            np.zeros_like(image, dtype=np.uint16), casting="unsafe")
+            use_channels = nbp_basic.use_channels
+        # set un-used channels to be 0, not clipped to 1.
+        image[np.setdiff1d(np.arange(nbp_basic.n_channels), use_channels)] = 0
+
         expected_shape = (nbp_basic.n_channels, nbp_basic.tile_sz, nbp_basic.tile_sz)
-        # set unused channels to be 0, not clipped to 1.
-        image[np.setdiff1d(np.arange(nbp_basic.n_channels), nbp_basic.use_channels)] = 0
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
         np.save(nbp_file.tile[t][r], image)
@@ -62,6 +78,8 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
             - `int [2 or 3]`. List containing y,x,z coordinates of sub image to load in.
                 E.g. if `yxz = [np.array([5]), np.array([10,11,12]), np.array([8,9])]`
                 returned `image` will have shape `[1 x 3 x 2]`.
+                if `yxz = [None, None, z_planes]`, all pixels on given z_planes will be returned
+                i.e. shape of image will be `[tile_sz x tile_sz x n_z_planes]`.
             - `int [n_pixels x (2 or 3)]`. Array containing yxz coordinates for which the pixel value is desired.
                 E.g. if `yxz = np.ones((10,3))`,
                 returned `image` will have shape `[10,]` with all values indicating the pixel value at `[1,1,1]`.
@@ -81,14 +99,19 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
             if nbp_basic.is_3d:
                 if len(yxz) != 3:
                     raise ValueError(f'Loading in a 3D tile but dimension of coordinates given is {len(yxz)}.')
-                coord_index = np.ix_(yxz[0], yxz[1], yxz[2])
-                image = np.moveaxis(np.load(nbp_file.tile[t][r][c], mmap_mode='r'), 0, 2)[coord_index]
+                if yxz[0] is None and yxz[1] is None:
+                    image = np.load(nbp_file.tile[t][r][c], mmap_mode='r')[yxz[2]]
+                    if image.ndim == 3:
+                        image = np.moveaxis(image, 0, 2)
+                else:
+                    coord_index = np.ix_(yxz[0], yxz[1], yxz[2])
+                    image = np.moveaxis(np.load(nbp_file.tile[t][r][c], mmap_mode='r'), 0, 2)[coord_index]
             else:
                 if len(yxz) != 2:
                     raise ValueError(f'Loading in a 2D tile but dimension of coordinates given is {len(yxz)}.')
                 coord_index = np.ix_(np.array([c]), yxz[0], yxz[1])  # add channel as first coordinate in 2D.
                 # [0] below is to remove channel index of length 1.
-                image = np.load(nbp_file.tile[t][r][c], mmap_mode='r')[coord_index][0]
+                image = np.load(nbp_file.tile[t][r], mmap_mode='r')[coord_index][0]
         elif isinstance(yxz, (np.ndarray, jnp.ndarray)):
             if nbp_basic.is_3d:
                 if yxz.shape[1] != 3:
@@ -100,7 +123,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
                     raise ValueError(f'Loading in a 2D tile but dimension of coordinates given is {yxz.shape[1]}.')
                 coord_index = tuple(np.asarray(yxz[:, i]) for i in range(2))
                 coord_index = (np.full(yxz.shape[0], c, int),) + coord_index  # add channel as first coordinate in 2D.
-                image = np.load(nbp_file.tile[t][r][c], mmap_mode='r')[coord_index]
+                image = np.load(nbp_file.tile[t][r], mmap_mode='r')[coord_index]
         else:
             raise ValueError(f'yxz should either be an [n_spots x n_dim] array to return an n_spots array indicating '
                              f'the value of the image at these coordinates or \n'

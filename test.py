@@ -12,7 +12,8 @@ import unittest
 
 def suite_utils():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(utils.TestMorphology, 'test'))
+    # suite.addTest(unittest.makeSuite(utils.TestMorphology, 'test'))
+    suite.addTest(unittest.makeSuite(utils.TestNPY, 'test'))
     return suite
 
 

@@ -108,9 +108,9 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                       config['auto_thresh_multiplier'], config['psf_isolation_dist'],
                                       config['psf_shape'])
             psf = extract.get_psf(spot_images, config['psf_annulus_width'])
-            utils.tiff.save(psf*np.iinfo(np.uint16).max, nbp_file.psf)  # scale psf to fill uint16 range
+            np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))
         else:
-            psf = utils.tiff.load(nbp_file.psf).astype(float)
+            psf = np.moveaxis(np.load(nbp_file.psf), 0, 2)
             psf_tiles_used = None
         # normalise psf so min is 0 and max is 1.
         psf = psf - psf.min()
@@ -187,66 +187,76 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 if not nbp_basic.is_3d:
                     # for 2d all channels in same file
                     file_exists = os.path.isfile(nbp_file.tile[t][r])
-                for c in range(nbp_basic.n_channels):
+                    if file_exists:
+                        # mmap load in image for all channels if tiff exists
+                        im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode='r')
+                    else:
+                        # Only save 2d data when all channels collected
+                        # For channels not used, keep all pixels 0.
+                        im_all_channels_2d = np.zeros((nbp_basic.n_channels, nbp_basic.tile_pixel_value_shift,
+                                                       nbp_basic.tile_pixel_value_shift), dtype=np.int32)
+                for c in use_channels:
                     if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
                         # max value that can be saved and no shifting done for DAPI
                         max_tiff_pixel_value = np.iinfo(np.uint16).max
                     else:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
-                    if c in use_channels:
-                        if nbp_basic.is_3d:
-                            file_exists = os.path.isfile(nbp_file.tile[t][r][c])
-                        pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
-                        if file_exists:
-                            if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
-                                pass
-                            else:
-                                # Only need to load in mid-z plane if 3D.
-                                im = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c,
-                                                          z=nbp_debug.z_info, nbp_extract_debug=nbp_debug)
-                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                    nbp_debug.clip_extract_scale[t, r, c] = \
-                                    extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
-                                                             max_tiff_pixel_value, scale)
-                                if r != nbp_basic.anchor_round:
-                                    nbp.hist_counts[:, r, c] += hist_counts_trc
+                    if nbp_basic.is_3d:
+                        file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                    pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
+                    if file_exists:
+                        if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+                            pass
                         else:
-                            im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
-                                                                                      nbp_basic.tilepos_yx),
-                                                     c, nbp_basic.use_z)
-                            if not nbp_basic.is_3d:
-                                im = extract.focus_stack(im)
-                            im, bad_columns = extract.strip_hack(im)  # find faulty columns
-                            if config['deconvolve']:
-                                im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
-                            if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
-                                im = utils.morphology.top_hat(im, filter_kernel_dapi)
-                                im[:, bad_columns] = 0
+                            # Only need to load in mid-z plane if 3D.
+                            if nbp_basic.is_3d:
+                                im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
+                                                         yxz=[None, None, nbp_debug.z_info])
                             else:
-                                # im converted to float in convolve_2d so no point changing dtype before hand.
-                                im = utils.morphology.convolve_2d(im, filter_kernel) * scale
-                                if config['r_smooth'] is not None:
-                                    # oa convolve uses lots of memory and much slower here.
-                                    im = utils.morphology.imfilter(im, smooth_kernel, oa=False)
-                                im[:, bad_columns] = 0
-                                # get_info is quicker on int32 so do this conversion first.
-                                im = np.rint(im, np.zeros_like(im, dtype=np.int32), casting='unsafe')
-                                # only use image unaffected by strip_hack to get information from tile
-                                good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
-                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                    nbp_debug.clip_extract_scale[t, r, c] = \
-                                    extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
-                                                             hist_bin_edges, max_tiff_pixel_value, scale,
-                                                             nbp_debug.z_info)
-                                if r != nbp_basic.anchor_round:
-                                    nbp.hist_counts[:, r, c] += hist_counts_trc
-                            utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)
-                        pbar.update(1)
-                    elif not nbp_basic.is_3d and not file_exists:
-                        # if not including channel, just set to all zeros
-                        # only in 2D as all channels in same file - helps when loading in tiffs
-                        im = np.zeros((nbp_basic.tile_sz, nbp_basic.tile_sz), dtype=np.uint16)
-                        utils.tiff.save_tile(nbp_file, nbp_basic, nbp_debug, im, t, r, c)
+                                im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
+                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                nbp_debug.clip_extract_scale[t, r, c] = \
+                                extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
+                                                         max_tiff_pixel_value, scale)
+                            if r != nbp_basic.anchor_round:
+                                nbp.hist_counts[:, r, c] += hist_counts_trc
+                    else:
+                        im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
+                                                                                  nbp_basic.tilepos_yx),
+                                                 c, nbp_basic.use_z)
+                        if not nbp_basic.is_3d:
+                            im = extract.focus_stack(im)
+                        im, bad_columns = extract.strip_hack(im)  # find faulty columns
+                        if config['deconvolve']:
+                            im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
+                        if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+                            im = utils.morphology.top_hat(im, filter_kernel_dapi)
+                            im[:, bad_columns] = 0
+                        else:
+                            # im converted to float in convolve_2d so no point changing dtype before hand.
+                            im = utils.morphology.convolve_2d(im, filter_kernel) * scale
+                            if config['r_smooth'] is not None:
+                                # oa convolve uses lots of memory and much slower here.
+                                im = utils.morphology.imfilter(im, smooth_kernel, oa=False)
+                            im[:, bad_columns] = 0
+                            # get_info is quicker on int32 so do this conversion first.
+                            im = np.rint(im, np.zeros_like(im, dtype=np.int32), casting='unsafe')
+                            # only use image unaffected by strip_hack to get information from tile
+                            good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
+                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                nbp_debug.clip_extract_scale[t, r, c] = \
+                                extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
+                                                         hist_bin_edges, max_tiff_pixel_value, scale,
+                                                         nbp_debug.z_info)
+                            if r != nbp_basic.anchor_round:
+                                nbp.hist_counts[:, r, c] += hist_counts_trc
+                        if nbp_basic.is_3d:
+                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+                        else:
+                            im_all_channels_2d[c] = im
+                    pbar.update(1)
+                if not nbp_basic.is_3d:
+                    utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
     pbar.close()
     if not nbp_basic.use_anchor:
         nbp_debug.scale_anchor_tile = None
