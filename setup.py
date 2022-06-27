@@ -21,7 +21,7 @@ setup(
     python_requires='>=3.8',
     url='https://github.com/mwshinn/spatiotemporal',
     packages = ['iss', 'iss.setup', 'iss.utils', 'iss.extract', 'iss.stitch', 'iss.spot_colors', 'iss.plot', 'iss.pipeline', 'iss.pcr', 'iss.omp', 'iss.find_spots', 'iss.call_spots'],
-    install_requires = ['jax', 'jaxlib', 'numpy_indexed', 'tdqm', 'scipy', 'sklearn', 'tifffile', 'opencv-python', 'scikit-image', 'nd2', 'matplotlib', 'h5py'],
+    install_requires = ['jax', 'jaxlib', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'tifffile', 'opencv-python', 'scikit-image', 'nd2', 'matplotlib', 'h5py'],
     package_data={'iss.setup': ['settings.default.ini', 'notebook_comments.json']},
     classifiers = [
         'Development Status :: 4 - Beta',
