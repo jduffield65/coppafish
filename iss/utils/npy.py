@@ -1,9 +1,10 @@
 import numpy as np
 from ..setup import NotebookPage
-from ..utils import errors
+from .. import utils, extract
 import jax.numpy as jnp
 from typing import List, Tuple, Union, Optional
 from tqdm import tqdm
+import os
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,
@@ -33,15 +34,15 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
                         np.zeros_like(image, dtype=np.uint16))
     if nbp_basic.is_3d:
         expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
-        if not errors.check_shape(image, expected_shape):
-            raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
+        if not utils.errors.check_shape(image, expected_shape):
+            raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
         np.save(nbp_file.tile[t][r][c], np.moveaxis(image, 0, 2))
     else:
         expected_shape = (nbp_basic.n_channels, nbp_basic.tile_sz, nbp_basic.tile_sz)
         # set unused channels to be 0, not clipped to 1.
         image[np.setdiff1d(np.arange(nbp_basic.n_channels), nbp_basic.use_channels)] = 0
-        if not errors.check_shape(image, expected_shape):
-            raise errors.ShapeError("tile to be saved", image.shape, expected_shape)
+        if not utils.errors.check_shape(image, expected_shape):
+            raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
         np.save(nbp_file.tile[t][r], image)
 
 
@@ -117,7 +118,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
 
 
 def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
-                  r: int, c: int):
+                  r: int, c: int, from_nd2: bool = False):
     """
     Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed uint16 npz at `im_file`.
 
@@ -129,6 +130,8 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
             yxz origin of each tile on round `r`.
         r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
         c: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
+        from_nd2: If False, will stitch together tiles from saved npy files,
+            otherwise will load in raw un-filtered images from nd2 file.
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
@@ -139,10 +142,33 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
     else:
         z_size = 1
         stitched_image = np.zeros(yx_size, dtype=np.uint16)
+    if from_nd2:
+        if nbp_basic.use_anchor:
+            # always have anchor as first round after imaging rounds
+            round_files = nbp_file.round + [nbp_file.anchor]
+        else:
+            round_files = nbp_file.round
+        im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
+        nd2_all_images = utils.nd2.load(im_file)
     with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for t in nbp_basic.use_tiles:
-            if nbp_basic.is_3d:
-                image_t = np.load(nbp_file.tile[t][r][c], mmap_mode='r')
+            if from_nd2:
+                image_t = utils.nd2.get_image(nd2_all_images,
+                                              extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
+                                                                       nbp_basic.tilepos_yx),
+                                              c, nbp_basic.use_z)
+                # replicate non-filtering procedure in extract_and_filter
+                if not nbp_basic.is_3d:
+                    image_t = extract.focus_stack(image_t)
+                image_t, bad_columns = extract.strip_hack(image_t)  # find faulty columns
+                image_t[:, bad_columns] = 0
+                if nbp_basic.is_3d:
+                    image_t = np.moveaxis(image_t, 2, 0)  # put z-axis back to the start
+            else:
+                if nbp_basic.is_3d:
+                    image_t = np.load(nbp_file.tile[t][r][c], mmap_mode='r')
+                else:
+                    image_t = load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
             for z in range(z_size):
                 # any tiles not used will be kept as 0.
                 pbar.set_postfix({'tile': t, 'z': z})
@@ -156,9 +182,8 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                     stitched_image[z, yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic.tile_sz,
                                    yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = local_image
                 else:
-                    local_image = load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
                     stitched_image[yx_origin[t, 0]:yx_origin[t, 0]+nbp_basic.tile_sz,
-                                   yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = local_image
+                                   yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = image_t
                 pbar.update(1)
     pbar.close()
     np.savez_compressed(im_file, stitched_image)

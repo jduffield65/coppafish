@@ -136,14 +136,15 @@ def run_stitch(nb: setup.Notebook, config: Union[dict, str]) -> setup.Notebook:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
         # save stitched dapi
-        utils.tiff.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
-                                 nb.stitch.tile_origin, nb.basic_info.anchor_round,
-                                 nb.basic_info.dapi_channel)
+        # Will load in from nd2 file if nb.extract_debug.r_dapi is None i.e. if no DAPI filtering performed.
+        utils.npy.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
+                                nb.stitch.tile_origin, nb.basic_info.anchor_round,
+                                nb.basic_info.dapi_channel, nb.extract_debug.r_dapi is None)
     if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
-        utils.tiff.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
-                                 nb.stitch.tile_origin, nb.basic_info.ref_round,
-                                 nb.basic_info.ref_channel)
+        utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
+                                nb.stitch.tile_origin, nb.basic_info.ref_round,
+                                nb.basic_info.ref_channel)
     return nb
 
 

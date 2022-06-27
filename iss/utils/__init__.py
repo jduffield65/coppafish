@@ -1,8 +1,2 @@
-from . import nd2
-from . import errors
-from . import tiff
-from . import matlab
-from . import morphology
-from . import strel
-from . import warnings
+from . import nd2, errors, matlab, morphology, npy, strel, warnings
 from .base import round_any, setdiff2d
