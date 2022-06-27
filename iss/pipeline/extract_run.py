@@ -56,13 +56,17 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     if config['r2'] is None:
         config['r2'] = config['r1'] * 2
     if config['r_dapi'] is None:
-        config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
+        if config['r_dapi_auto_microns'] is not None:
+            config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
     nbp_debug.r1 = config['r1']
     nbp_debug.r2 = config['r2']
-    nbp_debug.r_dapi = config['r1']
+    nbp_debug.r_dapi = config['r_dapi']
 
     filter_kernel = utils.morphology.hanning_diff(nbp_debug.r1, nbp_debug.r2)
-    filter_kernel_dapi = utils.strel.disk(nbp_debug.r_dapi)
+    if nbp_debug.r_dapi is not None:
+        filter_kernel_dapi = utils.strel.disk(nbp_debug.r_dapi)
+    else:
+        filter_kernel_dapi = None
 
     if config['r_smooth'] is not None:
         if len(config['r_smooth']) == 2:
@@ -142,6 +146,9 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     '''get rounds to iterate over'''
     use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
     use_channels_anchor.sort()
+    if filter_kernel_dapi is None:
+        # If not filtering DAPI, skip over the DAPI channel.
+        use_channels_anchor = np.setdiff1d(use_channels_anchor, nbp_basic.dapi_channel)
     if nbp_basic.use_anchor:
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]

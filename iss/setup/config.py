@@ -56,7 +56,6 @@ _options = {
             'raw_extension': 'str',
             'dye_camera_laser': 'maybe_str',
             'code_book': 'str',
-            'matlab_tile_names': 'bool',
             'psf': 'maybe_file',
             'omp_spot_shape': 'maybe_file'
         },
@@ -67,7 +66,7 @@ _options = {
             'r2': 'maybe_int',
             'r_dapi': 'maybe_int',
             'r1_auto_microns': 'number',
-            'r_dapi_auto_microns': 'number',
+            'r_dapi_auto_microns': 'maybe_number',
             'scale': 'maybe_number',
             'scale_norm': 'maybe_int',
             'scale_anchor': 'maybe_number',

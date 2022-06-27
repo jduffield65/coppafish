@@ -29,9 +29,6 @@
     "code_book": [
       "File",
       "text file which contains the codes indicating which dye to expect on each round for each gene"],
-    "matlab_tile_names": [
-      "Boolean",
-      "If True, tile and channel index in tile tiff file names will start at 1 else start at 0."],
     "psf": [
       "File or None",
       "tiff file indicating average spot shape (before padding and scaled to fill uint16 range).",
@@ -168,10 +165,11 @@
       "Filtering is done with a 2d difference of hanning filter with inner radius r1 within which it is positive",
       "and outer radius r2 so annulus between r1 and r2 is negative.",
       "Units are yx_pixels and by default it will be twice r1. Typical: 6"],
-    "r_dapi": ["Integer",
+    "r_dapi": ["Integer or None",
       "Filtering for DAPI images is a tophat with r_dapi radius.",
       "Should be approx radius of object of interest.",
-      "By default this is 8 micron converted to yx_pixel units which is typically 48."],
+      "Typically this is 8 micron converted to yx_pixel units which is typically 48.",
+      "By default, it is None meaning DAPI not filtered at all and npy file not saved."],
     "psf": ["Numpy float array [psf_shape[0] x psf_shape[1] x psf_shape[2]] or None (psf_shape is in config file)",
       "Average shape of spot from individual raw spot images normalised so max is 1 and min is 0.",
       "None if config['deconvolve'] is False."],
