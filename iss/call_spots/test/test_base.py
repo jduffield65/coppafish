@@ -3,7 +3,7 @@ import os
 import numpy as np
 from ...utils import matlab, errors
 from ..base import color_normalisation, dot_product_score, fit_background, get_gene_efficiency, \
-    fit_background_jax_vectorised, get_spot_intensity, get_spot_intensity_vectorised
+    fit_background_jax_vectorised, get_spot_intensity, get_spot_intensity_jax
 import jax.numpy as jnp
 
 
@@ -219,6 +219,6 @@ class TestGetSpotIntensity(unittest.TestCase):
             n_channels = np.random.randint(1, 10)
             spot_colors = (np.random.rand(n_spots, n_rounds, n_channels) - 0.5) * 2
             intensity = get_spot_intensity(spot_colors)
-            intensity_jax = np.asarray(get_spot_intensity_vectorised(jnp.array(spot_colors)))
+            intensity_jax = np.asarray(get_spot_intensity_jax(jnp.array(spot_colors)))
             diff = intensity - intensity_jax
             self.assertTrue(np.abs(diff).max() <= self.tol)

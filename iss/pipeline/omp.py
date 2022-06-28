@@ -4,7 +4,7 @@ import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
 from ..spot_colors import get_spot_colors_jax
-from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised, get_non_duplicate
+from ..call_spots import get_spot_intensity_jax, fit_background_jax_vectorised, get_non_duplicate, all_pixel_yxz
 from .. import omp
 import os
 from scipy import sparse
@@ -69,7 +69,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         nbp.shape_spot_gene_no = None
         nbp.spot_shape_float = None
         # -1 because saved as uint16 so convert 0, 1, 2 to -1, 0, 1.
-        spot_shape = utils.tiff.load(nbp_file.omp_spot_shape).astype(int) - 1
+        spot_shape = np.load(nbp_file.omp_spot_shape) # Put z to last index
+        if spot_shape.ndim == 3:
+            spot_shape = np.moveaxis(spot_shape, 0, 2)  # Put z to last index
 
     # Deal with case where algorithm has been run for some tiles and data saved
     if os.path.isfile(nbp_file.omp_spot_info) and os.path.isfile(nbp_file.omp_spot_coef):
@@ -110,19 +112,19 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         for z in use_z:
             print(f"Tile {np.where(use_tiles==t)[0][0]+1}/{len(use_tiles)},"
                   f" Z-plane {np.where(use_z==z)[0][0]+1}/{len(use_z)}")
-            # While iterating through tiles, only save info for rounds/channels using - add all rounds/channels back in later
-            # this returns colors in use_rounds/channels only and no nan.
-            pixel_colors_tz, pixel_yxz_tz = get_all_pixel_colors(int(t), transform, nbp_file, nbp_basic, int(z))
+            # While iterating through tiles, only save info for rounds/channels using
+            # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
+            pixel_colors_tz, pixel_yxz_tz = get_spot_colors_jax(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
+                                                                              int(z)), int(t), transform,
+                                                                nbp_file, nbp_basic, return_in_bounds=True)
             if pixel_colors_tz.shape[0] == 0:
                 continue
-            # save memory - colors max possible value is around 80000. yxz max possible value is around 2048.
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
-            pixel_yxz_tz = pixel_yxz_tz.astype(jnp.int16)
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
             #pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
-            pixel_intensity_tz = get_spot_intensity_vectorised(jnp.abs(pixel_colors_tz))
+            pixel_intensity_tz = get_spot_intensity_jax(jnp.abs(pixel_colors_tz))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             if not keep.any():
                 continue
@@ -140,6 +142,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
             if len(keep) == 0:
                 continue
+            # TODO: check order of np.asarray and keep, which is quicker - think this is quickest though
             pixel_yxz_t = np.append(pixel_yxz_t, np.asarray(pixel_yxz_tz[keep]), axis=0)
             del pixel_yxz_tz
             pixel_coefs_t = sparse.vstack((pixel_coefs_t, pixel_coefs_tz[keep]))
@@ -156,7 +159,11 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
             nbp.shape_spot_local_yxz = spot_yxz[spots_used]
             nbp.shape_spot_gene_no = spot_gene_no[spots_used]
-            utils.tiff.save(spot_shape + 1, nbp_file.omp_spot_shape)  # add 1 so can be saved as uint16.
+            if spot_shape.ndim == 3:
+                # put z axis to front before saving if 3D
+                np.save(nbp_file.omp_spot_shape, np.moveaxis(spot_shape, 2, 0))
+            else:
+                np.save(nbp_file.omp_spot_shape, spot_shape)
             # already found spots so don't find again.
             spot_yxzg = np.append(spot_yxz, spot_gene_no.reshape(-1, 1), axis=1)
             del spot_yxz, spot_gene_no, spots_used
@@ -214,8 +221,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            nd_spot_colors_use[in_tile] = np.asarray(get_spot_colors_jax(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                                         transform, nbp_file, nbp_basic))
+            nd_spot_colors_use[in_tile] = get_spot_colors_jax(jnp.asarray(nbp.local_yxz[in_tile]), t,
+                                                              transform, nbp_file, nbp_basic)
 
     nd_background_coefs = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
@@ -223,7 +230,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         np.asarray(fit_background_jax_vectorised(spot_colors_norm,
                                                  nbp_call_spots.background_weight_shift)[1])
     nbp.background_coef = nd_background_coefs
-    nbp.intensity = np.asarray(get_spot_intensity_vectorised(spot_colors_norm))
+    nbp.intensity = np.asarray(get_spot_intensity_jax(spot_colors_norm))
     del spot_colors_norm
 
     # When saving to notebook, include unused rounds/channels.

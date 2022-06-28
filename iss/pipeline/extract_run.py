@@ -108,9 +108,10 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                       config['auto_thresh_multiplier'], config['psf_isolation_dist'],
                                       config['psf_shape'])
             psf = extract.get_psf(spot_images, config['psf_annulus_width'])
-            np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))
+            np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
         else:
-            psf = np.moveaxis(np.load(nbp_file.psf), 0, 2)
+            # Know psf only computed for 3D pipeline hence know ndim=3
+            psf = np.moveaxis(np.load(nbp_file.psf), 0, 2)  # Put z to last index
             psf_tiles_used = None
         # normalise psf so min is 0 and max is 1.
         psf = psf - psf.min()

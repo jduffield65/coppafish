@@ -144,7 +144,7 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
             we set the expected coefficient in av_spot_image to be 0.
 
     Returns:
-        - av_spot_image - `int [av_shape_y x av_shape_x x av_shape_z]`
+        - av_spot_image - `int8 [av_shape_y x av_shape_x x av_shape_z]`
             Expected sign of omp coefficient in neighbourhood centered on spot.
         - spot_indices_used - `int [n_spots_used]`.
             indices of spots in `spot_yxzg` used to make av_spot_image.
@@ -221,7 +221,7 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
 
     # Where mean sign is low, set to 0.
     av_spot_image[np.abs(av_spot_image) < mean_sign_thresh] = 0
-    av_spot_image = np.sign(av_spot_image).astype(int)
+    av_spot_image = np.sign(av_spot_image).astype(np.int8)
 
     # Crop image to remove zeros at extremities
     # may get issue here if there is a positive sign pixel further away than negative but think unlikely.

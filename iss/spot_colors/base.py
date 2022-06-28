@@ -93,70 +93,21 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     return spot_colors
 
 
-def get_all_pixel_colors(t: int, transforms: jnp.ndarray, nbp_file: NotebookPage,
-                         nbp_basic: NotebookPage,
-                         z_planes: Union[int, np.ndarray, List] = 0) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    """
-    Finds colors for every pixel in a tile.
-    Keeping only pixels within tile bounds on each round and channel in nbp_basic.use_rounds/channels.
-
-    !!! note
-        Returned pixel colors have dimension `n_pixels x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)` not
-        `n_pixels x nbp_basic.n_rounds x nbp_basic.n_channels`.
-
-    Args:
-        t: Tile that spots were found on.
-        transforms: `float [n_tiles x n_rounds x n_channels x 4 x 3]`.
-            `transforms[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
-            tile `t`, round `r`, channel `c`.
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
-        z_planes: z_planes to load all pixels for.
-
-    Returns:
-        - ```pixel_colors``` - `int [n_pixels x n_rounds_use x n_channels_use]`.
-            `pixel_colors[s, r, c]` is the color at `pixel_yxz[s]` in round `use_rounds[r]`, channel `use_channels[c]`.
-        - ```pixel_yxz``` - `float [n_pixels x 3]`.
-            Local yxz coordinates of pixels in the reference round/reference channel of tile `t`
-            yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
-    """
-    nan_value = -nbp_basic.tile_pixel_value_shift - 1
-    if isinstance(z_planes, int):
-        z_planes = jnp.array([z_planes])
-    pixel_yxz_all = jnp.array(jnp.meshgrid(jnp.arange(nbp_basic.tile_sz),
-                                           jnp.arange(nbp_basic.tile_sz), jnp.arange(1))).T.reshape(-1, 3)
-    pixel_colors = jnp.zeros((0, len(nbp_basic.use_rounds), len(nbp_basic.use_channels)), dtype=int)
-    pixel_yxz = jnp.zeros((0, 3), dtype=int)
-    for z in z_planes:
-        pixel_yxz_all = pixel_yxz_all * jnp.array([1, 1, 0]) + jnp.array([0, 0, z])
-        # IMPORTANT!! Rounding error as jnp is float32 not float64 causes some differences between get_spot_colors_jax
-        # and get_spot_colors. I think all because transforms are 1 pixel apart.
-        pixel_colors_all = get_spot_colors_jax(pixel_yxz_all, t, transforms, nbp_file, nbp_basic)
-        # pixel_colors_all = get_spot_colors(pixel_yxz_all, t, transforms, nbp_file, nbp_basic)
-        # only keep used rounds/channels to save memory.
-        # pixel_colors_all = pixel_colors_all[jnp.ix_(jnp.arange(pixel_colors_all.shape[0]), nbp_basic.use_rounds,
-        #                                            nbp_basic.use_channels)]
-        # only keep spots in all rounds/channels meaning no nan values
-        keep = ~jnp.any(pixel_colors_all == nan_value, axis=(1, 2))
-        if keep.any():
-            pixel_colors = jnp.append(pixel_colors, pixel_colors_all[keep].astype(int), axis=0)
-            pixel_yxz = jnp.append(pixel_yxz, pixel_yxz_all[keep], axis=0)
-    # # Don't include nan check as jnp to np conversion takes time.
-    # if pixel_colors.shape[0] > 0:
-    #     utils.errors.check_color_nan(pixel_colors, nbp_basic)
-    return pixel_colors, pixel_yxz
-
-
 def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_file: NotebookPage,
                         nbp_basic: NotebookPage, use_rounds: Optional[List[int]] = None,
-                        use_channels: Optional[List[int]] = None) -> np.ndarray:
+                        use_channels: Optional[List[int]] = None,
+                        return_in_bounds: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, jnp.ndarray]]:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
     By default, will run on `nbp_basic.use_rounds` and `nbp_basic.use_channels`.
 
+    !!! note
+        Returned spot colors have dimension `n_spots x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)` not
+        `n_pixels x nbp_basic.n_rounds x nbp_basic.n_channels`.
+
     Args:
-        yxz_base: `int [n_spots x 3]`.
+        yxz_base: `int16 [n_spots x 3]`.
             Local yxz coordinates of spots found in the reference round/reference channel of tile `t`
             yx coordinates are in units of `yx_pixels`. z coordinates are in units of `z_pixels`.
         t: Tile that spots were found on.
@@ -173,6 +124,13 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
             Channels you would like to find the `spot_color` for.
             Error will raise if transform is zero for particular channel.
             If `None`, all channels in `nbp_basic.use_channels` used.
+        return_in_bounds: if `True`, then only `spot_colors` which are within the tile bounds in all
+            `use_rounds` / `use_channels` will be returned.
+            The corresponding `yxz_base` coordinates will also be returned in this case.
+            Otherwise, `spot_colors` will be returned for all the given `yxz_base` but if spot `s` is out of bounds on
+            round `r`, channel `c`, then `spot_colors[s, r, c] = invalid_value = -nbp_basic.tile_pixel_value_shift`.
+            This is the only scenario for which `spot_colors = invalid_value` due to clipping in the extract step.
+
 
     Returns:
         `int32 [n_spots x n_rounds_use x n_channels_use]`.
@@ -184,8 +142,6 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
         Hence I use this as integer nan.
         It will be `invalid_value` if the registered coordinate of spot `s` is outside the tile in round `r`, channel
         `c`.
-
-        Note `n_rounds`/`n_channels` are total number of rounds/channels in raw nd2 file as saved in `nbp_basic`.
     """
     if use_rounds is None:
         use_rounds = nbp_basic.use_rounds
@@ -237,4 +193,9 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
     # Remove shift so now spots outside bounds have color equal to - nbp_basic.tile_pixel_shift_value.
     # It is impossible for any actual spot color to be this due to clipping at the extract stage.
     spot_colors = spot_colors - nbp_basic.tile_pixel_value_shift
-    return spot_colors
+    invalid_value = - nbp_basic.tile_pixel_value_shift
+    if return_in_bounds:
+        good = ~np.any(spot_colors == invalid_value, axis=(1, 2))
+        return spot_colors[good], yxz_base[good]
+    else:
+        return spot_colors

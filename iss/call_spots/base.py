@@ -47,6 +47,26 @@ def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.
     return not_duplicate
 
 
+def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarray]) -> jnp.ndarray:
+    """
+    Returns the yxz coordinates of all pixels on the indicated z-planes of an image.
+
+    Args:
+        y_size: number of pixels in y direction of image.
+        x_size: number of pixels in x direction of image.
+        z_planes: `int [n_z_planes]` z_planes, coordinates are desired for.
+
+    Returns:
+        `int16 [y_size * x_size * n_z_planes, 3]`
+            yxz coordinates of all pixels on `z_planes`.
+    """
+    if isinstance(z_planes, int):
+        z_planes = jnp.array([z_planes])
+    elif isinstance(z_planes, list):
+        z_planes = jnp.array(z_planes)
+    return jnp.array(jnp.meshgrid(jnp.arange(y_size), jnp.arange(x_size), z_planes), dtype=jnp.int16).T.reshape(-1, 3)
+
+
 def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
                         thresh_intensities: Union[float, List[float], np.ndarray],
                         thresh_probs: Union[float, List[float], np.ndarray], method: str) -> np.ndarray:
@@ -236,7 +256,6 @@ def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shif
                                           spot_colors.shape)
         spot_colors = spot_colors * weight_squared
 
-    # TODO: matmul replace by @
     score = spot_colors @ bled_codes.transpose()
 
     if weight_squared is not None:
@@ -261,16 +280,18 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
         ```float [n_spots]```.
             ```[s]``` is the intensity of spot ```s```.
     """
-    diff_to_int = np.round(spot_colors).astype(int) - spot_colors
+    check_spot = np.random.randint(spot_colors.shape[0])
+    diff_to_int = np.round(spot_colors[check_spot]).astype(int) - spot_colors[check_spot]
     if np.abs(diff_to_int).max() == 0:
-        raise ValueError("spot_intensities should be found using normalised spot_colors. "
-                         "\nBut all values in spot_colors given are integers indicating they are the raw intensities.")
+        raise ValueError(f"spot_intensities should be found using normalised spot_colors."
+                         f"\nBut for spot {check_spot}, spot_colors given are integers indicating they are "
+                         f"the raw intensities.")
     round_max_color = np.max(spot_colors, axis=2)
     return np.median(round_max_color, axis=1)
 
 
 @jax.jit
-def get_spot_intensity_vectorised(spot_colors: jnp.array) -> float:
+def get_spot_intensity_jax(spot_colors: jnp.ndarray) -> jnp.ndarray:
     """
     Finds the max intensity for each imaging round across all imaging channels for each spot.
     Then median of these max round intensities is returned.

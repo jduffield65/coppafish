@@ -1,6 +1,6 @@
 from .. import setup
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
-    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
+    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency, all_pixel_yxz
 import numpy as np
 import jax.numpy as jnp
 from ..setup.notebook import NotebookPage
@@ -89,8 +89,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
         else:
             nbp.norm_shift_z = 0
-        pixel_colors = np.asarray(get_all_pixel_colors(nbp.norm_shift_tile, jnp.asarray(transform), nbp_file,
-                                                       nbp_basic, nbp.norm_shift_z)[0])
+        pixel_colors = get_spot_colors_jax(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
+                                           nbp.norm_shift_tile, jnp.asarray(transform), nbp_file, nbp_basic,
+                                           return_in_bounds=True)[0]
         pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
         nbp.median_abs_intensity = float(np.median(pixel_intensity))
         if config['dp_norm_shift'] is None:
