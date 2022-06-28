@@ -141,9 +141,11 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
 
 
 def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
-                  r: int, c: int, from_nd2: bool = False):
+                  r: int, c: int, from_nd2: bool = False, zero_thresh: int = 0):
     """
-    Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed uint16 npz at `im_file`.
+    Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
+    Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
+    Otherwise, if from filtered npy files, will remove shift and re-scale to fill int16 range.
 
     Args:
         im_file: Path to save file.
@@ -153,8 +155,10 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
             yxz origin of each tile on round `r`.
         r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
         c: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
-        from_nd2: If False, will stitch together tiles from saved npy files,
+        from_nd2: If `False`, will stitch together tiles from saved npy files,
             otherwise will load in raw un-filtered images from nd2 file.
+        zero_thresh: All pixels with absolute value less than or equal to `zero_thresh` will be set to 0.
+            The larger it is, the smaller the compressed file will be.
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
@@ -173,6 +177,16 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
             round_files = nbp_file.round
         im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
         nd2_all_images = utils.nd2.load(im_file)
+        shift = 0  # if from nd2 file, data type is already un-shifted uint16
+    else:
+        if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+            shift = 0  # if filtered dapi, data type is already un-shifted uint16
+        else:
+            # if from filtered npy files, data type is shifted uint16, want to save stitched as un-shifted int16.
+            shift = nbp_basic.tile_pixel_value_shift
+    if shift != 0:
+        # change dtype to accommodate negative values and set base value to be zero in the shifted image.
+        stitched_image = stitched_image.astype(np.int32) + shift
     with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for t in nbp_basic.use_tiles:
             if from_nd2:
@@ -209,4 +223,11 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                                    yx_origin[t, 1]:yx_origin[t, 1]+nbp_basic.tile_sz] = image_t
                 pbar.update(1)
     pbar.close()
+    if shift != 0:
+        # remove shift and re-scale so fits the whole int16 range
+        stitched_image = stitched_image - shift
+        stitched_image = stitched_image * np.iinfo(np.int16).max / np.abs(stitched_image).max()
+        stitched_image = np.rint(stitched_image, np.zeros_like(stitched_image, dtype=np.int16), casting='unsafe')
+    if zero_thresh > 0:
+        stitched_image[np.abs(stitched_image) <= zero_thresh] = 0
     np.savez_compressed(im_file, stitched_image)

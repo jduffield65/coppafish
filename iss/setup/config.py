@@ -111,7 +111,8 @@ _options = {
             'shift_score_thresh_multiplier': 'number',
             'shift_score_thresh_min_dist': 'number',
             'shift_score_thresh_max_dist': 'number',
-            'nz_collapse': 'int'
+            'nz_collapse': 'int',
+            'save_image_zero_thresh': 'int'
         },
     'register_initial':
         {
