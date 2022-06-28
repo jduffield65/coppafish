@@ -3,7 +3,7 @@ import numpy as np
 import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_all_pixel_colors, get_spot_colors_jax
+from ..spot_colors import get_spot_colors_jax
 from ..call_spots import get_spot_intensity_vectorised, fit_background_jax_vectorised, get_non_duplicate
 from .. import omp
 import os

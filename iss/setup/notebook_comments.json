@@ -212,9 +212,9 @@
     "isolation_thresh": ["Numpy float array [n_tiles]",
       "Spots found on tile t, ref round, ref channel are isolated if annular filtered image",
       "is below isolation_thresh[t] at spot location. Typically around 0."],
-    "spot_no": ["Numpy integer array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
+    "spot_no": ["Numpy int32 array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
       "spot_no[t, r, c] is the number of spots found on tile t, round r, channel c"],
-    "spot_details": ["Numpy integer array [n_total_spots x 7]",
+    "spot_details": ["Numpy int16 array [n_total_spots x 7]",
       "spot_details[i,:] is [tile, round, channel, isolated, y, x, z] for spot i",
       "isolated is 0 for all non reference round/channel spots and is 1 for isolated reference spots.",
       "y, x gives the local tile coordinates in yx_pixels. z gives local tile coordinate in z_pixels (0 if 2d)"]

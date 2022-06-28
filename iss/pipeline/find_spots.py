@@ -43,9 +43,10 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
 
     # have to save spot_yxz and spot_isolated as table to stop pickle issues associated with numpy object arrays.
     # columns of spot_details are: tile, channel, round, isolated, y, x, z
-    spot_details = np.empty((0, 7), dtype=int)
+    # max value is y or x coordinate of around 2048 hence can use int16.
+    spot_details = np.empty((0, 7), dtype=np.int16)
     nbp.spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds+nbp_basic.n_extra_rounds,
-                               nbp_basic.n_channels), dtype=int)
+                               nbp_basic.n_channels), dtype=np.int32)
     use_rounds = nbp_basic.use_rounds
     n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     if nbp_basic.use_anchor:
@@ -61,14 +62,19 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             for t in nbp_basic.use_tiles:
                 for c in use_channels:
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c})
-                    image = utils.tiff.load_tile(nbp_file, nbp_basic, t, r, c)
-                    spot_yxz, spot_intensity = fs.detect_spots(image, auto_thresh[t, r, c],
+                    # Find local maxima on shifted uint16 images to save time avoiding conversion to int32.
+                    # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
+                    image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
+                    spot_yxz, spot_intensity = fs.detect_spots(image,
+                                                               auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
                                                                config['radius_xy'], config['radius_z'], True)
-                    no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yxz, thresh=0)
+                    no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yxz,
+                                                                         thresh=nbp_basic.tile_pixel_value_shift)
                     spot_yxz = spot_yxz[no_negative_neighbour]
                     spot_intensity = spot_intensity[no_negative_neighbour]
                     if r == nbp_basic.ref_round:
-                        spot_isolated = fs.get_isolated(image, spot_yxz, nbp.isolation_thresh[t],
+                        spot_isolated = fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
+                                                        spot_yxz, nbp.isolation_thresh[t],
                                                         config['isolation_radius_inner'],
                                                         config['isolation_radius_xy'],
                                                         config['isolation_radius_z'])
@@ -88,7 +94,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                         spot_yxz = spot_yxz[keep]
                         # don't care if these spots isolated so say they are not
                         spot_isolated = np.zeros(spot_yxz.shape[0], dtype=bool)
-                    spot_details_trc = np.zeros((spot_yxz.shape[0], spot_details.shape[1]), dtype=int)
+                    spot_details_trc = np.zeros((spot_yxz.shape[0], spot_details.shape[1]), dtype=np.int16)
                     spot_details_trc[:, :3] = [t, r, c]
                     spot_details_trc[:, 3] = spot_isolated
                     spot_details_trc[:, 4:4+spot_yxz.shape[1]] = spot_yxz  # if 2d pipeline, z coordinate set to 0.

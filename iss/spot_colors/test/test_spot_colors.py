@@ -5,7 +5,7 @@ from ...utils.npy import save_tile
 from ...setup.notebook import NotebookPage
 from ...setup.tile_details import get_tile_file_names
 from ...pcr.base import apply_transform, apply_transform_jax
-from ..base import get_spot_colors, get_spot_colors_jax, get_z_transform
+from ..base import get_spot_colors, get_spot_colors_jax
 from typing import List, Optional
 import jax.numpy as jnp
 
@@ -173,6 +173,7 @@ class TestSpotColors(unittest.TestCase):
     MinSpots = 100
     MaxSpots = 1000
     MinRounds = 3
+    Z_Scale = 5.6
 
     def all_test(self, is_3d: bool, single_z: bool=False):
         tile_sz = np.zeros(3, dtype=int)
@@ -181,7 +182,6 @@ class TestSpotColors(unittest.TestCase):
             tile_sz[2] = np.random.randint(self.MinZ, self.MaxZ)
         else:
             tile_sz[2] = 1
-        z_scale = np.random.uniform(3.4, 6.7)
         n_spots = np.random.randint(self.MinSpots, self.MaxSpots)
         spot_yxz = np.zeros((n_spots, 3), dtype=int)
         for i in np.where(tile_sz > 1)[0]:
@@ -191,22 +191,22 @@ class TestSpotColors(unittest.TestCase):
                 spot_yxz[:, i] = np.random.randint(0, tile_sz[i] - 1, n_spots)
 
         with tempfile.TemporaryDirectory() as tile_dir:
-            nbp_file, nbp_basic = get_notebook_pages(tile_dir, is_3d, tile_sz, z_scale)
-            nan_value = -nbp_basic.tile_pixel_value_shift - 1
+            nbp_file, nbp_basic = get_notebook_pages(tile_dir, is_3d, tile_sz, self.Z_Scale)
+            invalid_value = -nbp_basic.tile_pixel_value_shift
             n_use_rounds = np.random.randint(self.MinRounds, nbp_basic.n_rounds)
             n_use_channels = np.random.randint(self.MinRounds, nbp_basic.n_channels)
             use_rounds = np.sort(np.random.choice(np.arange(nbp_basic.n_rounds), n_use_rounds, False))
             use_channels = np.sort(np.random.choice(np.arange(nbp_basic.n_channels), n_use_channels, False))
-            transforms = get_random_transforms(nbp_basic, tile_sz, z_scale)
+            transforms = get_random_transforms(nbp_basic, tile_sz, self.Z_Scale)
             t = 0
             # spot_no, round, channel which have different yxz_transform between jax and python due to rounding.
             transform_src_diff = np.zeros((0, 3), dtype=int)
             for r in use_rounds:
                 for c in use_channels:
-                    yxz_transform = apply_transform(spot_yxz, transforms[t, r, c], nbp_basic.tile_centre, z_scale)
+                    yxz_transform = apply_transform(spot_yxz, transforms[t, r, c], nbp_basic.tile_centre, self.Z_Scale)
                     yxz_transform_jax = np.asarray(
                         apply_transform_jax(jnp.array(spot_yxz), jnp.array(transforms[t, r, c]),
-                                            jnp.array(nbp_basic.tile_centre), z_scale))
+                                            jnp.array(nbp_basic.tile_centre), self.Z_Scale, jnp.asarray(tile_sz))[0])
                     diff = yxz_transform_jax - yxz_transform
                     # tolerance of 1 as expect difference due to rounding error will be just 1.
                     # expect rounding error because jax is float32 while python is float64.
@@ -220,22 +220,23 @@ class TestSpotColors(unittest.TestCase):
                         transform_src_diff = np.append(transform_src_diff, src_wrong, axis=0)
             make_random_tiles(nbp_file, nbp_basic, t, use_rounds, tile_sz)
             spot_colors = get_spot_colors(spot_yxz, t, transforms, nbp_file, nbp_basic, use_rounds, use_channels)
-            spot_colors_jax = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
-            spot_colors_jax[np.ix_(np.arange(n_spots), use_rounds, use_channels)] = np.asarray(
+            spot_colors_jax = np.full((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), invalid_value,
+                                      dtype=np.int32)
+            spot_colors_jax[np.ix_(np.arange(n_spots), use_rounds, use_channels)] = \
                 get_spot_colors_jax(jnp.array(spot_yxz), t, jnp.array(transforms), nbp_file, nbp_basic, use_rounds,
-                                    use_channels))
+                                    use_channels)
             diff = spot_colors - spot_colors_jax
             n_wrong_colors = transform_src_diff.shape[0]
             if n_wrong_colors > 0:
                 # If some transforms differ by one pixel, colors will differ too.
                 expected_wrong_diff = diff[transform_src_diff[:, 0], transform_src_diff[:, 1], transform_src_diff[:, 2]]
-                # Can still get same color if transform was out of bounds so got nan. Correct for this.
-                non_nan = spot_colors_jax[transform_src_diff[:, 0], transform_src_diff[:, 1],
-                                          transform_src_diff[:, 2]] != nan_value
-                non_nan = np.logical_and(non_nan, spot_colors[transform_src_diff[:, 0], transform_src_diff[:, 1],
-                                                              transform_src_diff[:, 2]] != nan_value)
-                n_wrong_colors = np.sum(non_nan)
-                self.assertTrue(np.sum(expected_wrong_diff[non_nan] != 0) == n_wrong_colors)
+                # Can still get same color if transform was out of bounds so got invalid. Correct for this.
+                valid = spot_colors_jax[transform_src_diff[:, 0], transform_src_diff[:, 1],
+                                        transform_src_diff[:, 2]] != invalid_value
+                valid = np.logical_and(valid, spot_colors[transform_src_diff[:, 0], transform_src_diff[:, 1],
+                                                          transform_src_diff[:, 2]] != invalid_value)
+                n_wrong_colors = np.sum(valid)
+                self.assertTrue(np.sum(expected_wrong_diff[valid] != 0) == n_wrong_colors)
             self.assertTrue(np.sum(diff != 0) == n_wrong_colors)
 
     def test_2d(self):
@@ -247,59 +248,3 @@ class TestSpotColors(unittest.TestCase):
     def test_3d_single_z(self):
         # Quite often run case of 3d pipeline but all spots on same z-plane. Check this works.
         self.all_test(True, True)
-
-
-class TestGetZTransform(unittest.TestCase):
-    MinYX = 1900
-    MaxYX = 2700
-    MinZ = 12
-    MaxZ = 150
-    MinSpots = 500
-    MaxSpots = 500000
-    MaxRot = 0.3
-
-    def all_test(self, single_z=False, multi_not_near_edge=False):
-        ndim = 3
-        tile_sz = np.zeros(ndim, dtype=int)
-        tile_sz[:2] = np.random.randint(self.MinYX, self.MaxYX)
-        tile_sz[2] = np.random.randint(self.MinZ, self.MaxZ)
-        tile_centre = jnp.asarray((tile_sz - 1) / 2)
-        z_scale = np.random.uniform(2.4, 7.7)
-        n_spots = np.random.randint(self.MinSpots, self.MaxSpots)
-        yxz_base = np.zeros((n_spots, ndim), dtype=int)
-        for i in range(ndim):
-            yxz_base[:, i] = np.random.randint(0, tile_sz[i] - 1, n_spots)
-        if single_z:
-            yxz_base[:, 2] = np.random.randint(0, tile_sz[2] - 1)
-        elif multi_not_near_edge:
-            yxz_base[:, 2] = np.random.randint(tile_sz[2]/3, tile_sz[2] - tile_sz[2]/3, n_spots)
-        transform = np.zeros((4, 3))
-        transform[:ndim, :ndim] = np.eye(ndim) + np.random.uniform(-self.MaxRot, self.MaxRot, (ndim, ndim))
-        for i in range(ndim):
-            transform[3, i] = np.random.uniform(-tile_sz[i] / 3, tile_sz[i] / 3)
-            if i == 2:
-                transform[3, i] = transform[3, i] * z_scale
-        yxz_base = jnp.asarray(yxz_base)
-        transform = jnp.asarray(transform)
-        yxz_transform = apply_transform_jax(yxz_base, transform, tile_centre, z_scale)
-        in_range = jnp.logical_and(yxz_transform[:, 2] >= 0, yxz_transform[:, 2] < tile_sz[2])
-        z_read_in = get_z_transform(transform, tile_centre, z_scale, tile_sz[2], yxz_base)[0]
-        if in_range.any():
-            min_z = jnp.min(yxz_transform[in_range, 2])
-            max_z = jnp.max(yxz_transform[in_range, 2])
-            self.assertTrue(z_read_in[0] <= min_z)
-            self.assertTrue(z_read_in[-1] >= max_z)
-        else:
-            self.assertTrue(len(z_read_in) == 0)
-
-    def test_10(self):
-        for i in range(10):
-            self.all_test()
-
-    def test_10_single(self):
-        for i in range(10):
-            self.all_test(single_z=True)
-
-    def test_10_not_near_edge(self):
-        for i in range(10):
-            self.all_test(multi_not_near_edge=True)

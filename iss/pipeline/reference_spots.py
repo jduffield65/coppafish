@@ -5,7 +5,6 @@ from ..find_spots import spot_yxz
 import numpy as np
 import jax.numpy as jnp
 from ..setup.notebook import NotebookPage
-from .. import utils
 
 
 def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_details: np.ndarray,
@@ -40,17 +39,17 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     c = nbp_basic.ref_channel
 
     # all means all spots found on the reference round / channel
-    all_local_yxz = np.zeros((0, 3), dtype=int)
+    all_local_yxz = np.zeros((0, 3), dtype=np.int16)
     all_global_yxz = np.zeros((0, 3), dtype=float)
     all_isolated = np.zeros(0, dtype=bool)
-    all_local_tile = np.zeros(0, dtype=int)
+    all_local_tile = np.zeros(0, dtype=np.int16)
     for t in range(nbp_basic.n_tiles):
         t_local_yxz, t_isolated = spot_yxz(spot_details, t, r, c, return_isolated=True)
         if np.shape(t_local_yxz)[0] > 0:
             all_local_yxz = np.append(all_local_yxz, t_local_yxz, axis=0)
             all_global_yxz = np.append(all_global_yxz, t_local_yxz + tile_origin[t], axis=0)
             all_isolated = np.append(all_isolated, t_isolated.astype(bool), axis=0)
-            all_local_tile = np.append(all_local_tile, np.ones_like(t_isolated, dtype=int) * t)
+            all_local_tile = np.append(all_local_tile, np.ones_like(t_isolated, dtype=np.int16) * t)
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
     not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, all_global_yxz,
@@ -60,33 +59,32 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     nd_local_yxz = all_local_yxz[not_duplicate]
     nd_isolated = all_isolated[not_duplicate]
     nd_local_tile = all_local_tile[not_duplicate]
-    nan_value = -nbp_basic.tile_pixel_value_shift - 1
+    invalid_value = -nbp_basic.tile_pixel_value_shift
     # Only save used rounds/channels initially
     n_use_rounds = len(nbp_basic.use_rounds)
     n_use_channels = len(nbp_basic.use_channels)
-    nd_spot_colors_use = np.ones((nd_local_tile.shape[0], n_use_rounds, n_use_channels), dtype=int) * nan_value
+    nd_spot_colors_use = np.zeros((nd_local_tile.shape[0], n_use_rounds, n_use_channels), dtype=np.int32)
     transform = jnp.asarray(transform)
     for t in range(nbp_basic.n_tiles):
         in_tile = nd_local_tile == t
         if np.sum(in_tile) > 0:
             print(f"Tile {t + 1}/{nbp_basic.n_tiles}")
-            # this line will return nan_value for r/c outside use_rounds/channels
-            nd_spot_colors_use[in_tile] = np.asarray(get_spot_colors_jax(jnp.asarray(nd_local_yxz[in_tile]), t,
-                                                                         transform, nbp_file, nbp_basic))
-
+            # this line will return invalid_value for spots outside tile bounds on particular r/c.
+            nd_spot_colors_use[in_tile] = get_spot_colors_jax(jnp.asarray(nd_local_yxz[in_tile]), t,
+                                                              transform, nbp_file, nbp_basic)
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
     # nd_spot_colors_use = np.moveaxis(nd_spot_colors_use, 0, -1)
     # use_rc_index = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     # nd_spot_colors_use = np.moveaxis(nd_spot_colors_use[use_rc_index], -1, 0)
-    good = ~np.any(nd_spot_colors_use == nan_value, axis=(1, 2))
+    good = ~np.any(nd_spot_colors_use == invalid_value, axis=(1, 2))
 
     good_local_yxz = nd_local_yxz[good]
     good_isolated = nd_isolated[good]
     good_local_tile = nd_local_tile[good]
-    # add in un-used rounds with nan_value
+    # add in un-used rounds with invalid_value
     n_good = np.sum(good)
-    good_spot_colors = np.ones((n_good, nbp_basic.n_rounds,
-                                nbp_basic.n_channels), dtype=int) * nan_value
+    good_spot_colors = np.full((n_good, nbp_basic.n_rounds,
+                                nbp_basic.n_channels), invalid_value, dtype=np.int32)
     good_spot_colors[np.ix_(np.arange(n_good), nbp_basic.use_rounds, nbp_basic.use_channels)] = nd_spot_colors_use[good]
 
     # save spot info to notebook

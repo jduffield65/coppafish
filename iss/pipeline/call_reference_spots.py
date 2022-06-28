@@ -5,7 +5,7 @@ import numpy as np
 import jax.numpy as jnp
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_all_pixel_colors
+from ..spot_colors import get_spot_colors_jax
 from ..utils import round_any
 from typing import Tuple
 

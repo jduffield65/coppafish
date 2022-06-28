@@ -14,7 +14,7 @@ def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int,
     channel``` from ```spot_details``` in find_spots notebook page.
 
     Args:
-        spot_details: ```int [n_spots x 7]```.
+        spot_details: ```int16 [n_spots x 7]```.
             ```spot_details[s]``` is ```[tile, round, channel, isolated, y, x, z]``` of spot ```s```.
         tile: Tile of desired spots.
         round: Round of desired spots.
@@ -22,7 +22,7 @@ def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int,
         return_isolated: Whether to return isolated status of each spot.
 
     Returns:
-        - ```spot_yxz``` - ```int [n_trc_spots x 3]```.
+        - ```spot_yxz``` - ```int16 [n_trc_spots x 3]```.
             yxz coordinates of spots on chosen ```tile```, ```round``` and ```channel```.
         - ```spot_isolated``` - ```bool [n_trc_spots]``` (Only returned if ```return_isolated = True```).
             Isolated status (```1``` if isolated, ```0``` if not) of the spots.
