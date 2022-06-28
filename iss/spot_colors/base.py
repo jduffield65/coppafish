@@ -106,6 +106,12 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
         Returned spot colors have dimension `n_spots x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)` not
         `n_pixels x nbp_basic.n_rounds x nbp_basic.n_channels`.
 
+    !!! note
+        `invalid_value = -nbp_basic.tile_pixel_value_shift` is the lowest possible value saved in the npy file
+        minus 1 (due to clipping in extract step), so it is impossible for spot_color to be this.
+        Hence I use this as integer nan. It will be `invalid_value` if the registered coordinate of
+        spot `s` is outside the tile in round `r`, channel `c`.
+
     Args:
         yxz_base: `int16 [n_spots x 3]`.
             Local yxz coordinates of spots found in the reference round/reference channel of tile `t`
@@ -133,15 +139,12 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
 
 
     Returns:
-        `int32 [n_spots x n_rounds_use x n_channels_use]`.
-
-        `spot_colors[s, r, c]` is the spot color for spot `s` in round `use_rounds[r]`, channel `use_channels[c]`.
-
-        `invalid_value = -nbp_basic.tile_pixel_value_shift` is the lowest possible value saved in the npy file minus 1
-        (due to clipping in extract step), so it is impossible for spot_color to be this.
-        Hence I use this as integer nan.
-        It will be `invalid_value` if the registered coordinate of spot `s` is outside the tile in round `r`, channel
-        `c`.
+        - `spot_colors` - `int32 [n_spots x n_rounds_use x n_channels_use]` or
+            `int32 [n_spots_in_bounds x n_rounds_use x n_channels_use]`.
+            `spot_colors[s, r, c]` is the spot color for spot `s` in round `use_rounds[r]`, channel `use_channels[c]`.
+        - `yxz_base` - `int16 [n_spots_in_bounds x 3]`.
+            If `return_in_bounds`, the `yxz_base` corresponding to spots in bounds for all `use_rounds` / `use_channels`
+            will be returned. It is likely that `n_spots_in_bounds` won't be the same as `n_spots`.
     """
     if use_rounds is None:
         use_rounds = nbp_basic.use_rounds
