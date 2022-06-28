@@ -53,7 +53,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             nbp_debug.__getattribute__(j + '_' + 'start_shift_search')[i, :] = [config['shift_' + j + '_min'][i],
                                                                                 config['shift_' + j + '_max'][i],
                                                                                 config['shift_step'][i]]
-    if nbp_basic.is_3d is False:
+    if not nbp_basic.is_3d:
         config['nz_collapse'] = None
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
         config['shift_max_range'][2] = 0

@@ -175,8 +175,8 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
             round_files = nbp_file.round + [nbp_file.anchor]
         else:
             round_files = nbp_file.round
-        im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
-        nd2_all_images = utils.nd2.load(im_file)
+        nd2_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
+        nd2_all_images = utils.nd2.load(nd2_file)
         shift = 0  # if from nd2 file, data type is already un-shifted uint16
     else:
         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:

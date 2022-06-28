@@ -102,12 +102,12 @@ class TiffError(Exception):
 
 def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage):
     """
-    `colors` should only contain the `nan_value` in rounds/channels not in use_rounds/channels.
+    `colors` should only contain the `invalid_value` in rounds/channels not in use_rounds/channels.
     This raises an error if this is not the case or if a round/channel not in use_rounds/channels
-    contains a value other than `nan_value`.
-    `nan_value = -nbp_basic.tile_pixel_value_shift - 1` if colors is integer i.e. the non-normalised colors,
+    contains a value other than `invalid_value`.
+    `invalid_value = -nbp_basic.tile_pixel_value_shift - 1` if colors is integer i.e. the non-normalised colors,
     usually spot_colors.
-    `nan_value = -np.nan` if colors is float i.e. the normalised colors or most likely the bled_codes.
+    `invalid_value = -np.nan` if colors is float i.e. the normalised colors or most likely the bled_codes.
 
 
     Args:
@@ -118,13 +118,13 @@ def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage):
     """
     diff_to_int = np.round(colors).astype(int) - colors
     if np.abs(diff_to_int).max() == 0:
-        # if not normalised, then nan_value is an integer value that is impossible for a spot_color to be
-        nan_value = -nbp_basic.tile_pixel_value_shift - 1
+        # if not normalised, then invalid_value is an integer value that is impossible for a spot_color to be
+        invalid_value = -nbp_basic.tile_pixel_value_shift
     else:
         # if is normalised then expect nan value to be normal np.nan.
-        nan_value = np.nan
+        invalid_value = np.nan
 
-    # decide which rounds/channels should be ignored i.e. only contain nan_value.
+    # decide which rounds/channels should be ignored i.e. only contain invalid_value.
     n_spots, n_rounds, n_channels = colors.shape
     if n_rounds == nbp_basic.n_rounds and n_channels == nbp_basic.n_channels:
         use_rounds = nbp_basic.use_rounds
@@ -133,69 +133,69 @@ def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage):
         use_rounds = np.arange(n_rounds)
         use_channels = np.arange(n_channels)
     else:
-        raise ColorNanError(colors, nbp_basic, nan_value)
+        raise ColorInvalidError(colors, nbp_basic, invalid_value)
 
     ignore_rounds = np.setdiff1d(np.arange(n_rounds), use_rounds)
     for r in ignore_rounds:
         unique_vals = np.unique(colors[:, r, :])
         for val in unique_vals:
-            if not nan_value in unique_vals:
-                raise ColorNanError(colors, nbp_basic, nan_value, round_no=r)
-            if not np.array_equal(val, nan_value, equal_nan=True):
-                raise ColorNanError(colors, nbp_basic, nan_value, round_no=r)
+            if not invalid_value in unique_vals:
+                raise ColorInvalidError(colors, nbp_basic, invalid_value, round_no=r)
+            if not np.array_equal(val, invalid_value, equal_nan=True):
+                raise ColorInvalidError(colors, nbp_basic, invalid_value, round_no=r)
 
     ignore_channels = np.setdiff1d(np.arange(n_channels), use_channels)
     for c in ignore_channels:
         unique_vals = np.unique(colors[:, :, c])
         for val in unique_vals:
-            if not nan_value in unique_vals:
-                raise ColorNanError(colors, nbp_basic, nan_value, channel_no=c)
-            if not np.array_equal(val, nan_value, equal_nan=True):
-                raise ColorNanError(colors, nbp_basic, nan_value, channel_no=c)
+            if not invalid_value in unique_vals:
+                raise ColorInvalidError(colors, nbp_basic, invalid_value, channel_no=c)
+            if not np.array_equal(val, invalid_value, equal_nan=True):
+                raise ColorInvalidError(colors, nbp_basic, invalid_value, channel_no=c)
 
-    # see if any spots contain nan_values.
+    # see if any spots contain invalid_values.
     use_colors = colors[np.ix_(np.arange(n_spots), use_rounds, use_channels)]
-    if np.array_equal(nan_value, np.nan, equal_nan=True):
+    if np.array_equal(invalid_value, np.nan, equal_nan=True):
         nan_codes = np.where(np.isnan(use_colors))
     else:
-        nan_codes = np.where(use_colors == nan_value)
+        nan_codes = np.where(use_colors == invalid_value)
     n_nan_spots = nan_codes[0].size
     if n_nan_spots > 0:
         s = nan_codes[0][0]
         # round, channel number in spot_colors different from in use_spot_colors.
         r = np.arange(n_rounds)[nan_codes[1][0]]
         c = np.arange(n_channels)[nan_codes[2][0]]
-        raise ColorNanError(colors, nbp_basic, nan_value, round_no=r, channel_no=c, code_no=s)
+        raise ColorInvalidError(colors, nbp_basic, invalid_value, round_no=r, channel_no=c, code_no=s)
 
 
-class ColorNanError(Exception):
-    def __init__(self, colors: np.ndarray, nbp_basic: NotebookPage, nan_value: float, round_no: Optional[int] = None,
+class ColorInvalidError(Exception):
+    def __init__(self, colors: np.ndarray, nbp_basic: NotebookPage, invalid_value: float, round_no: Optional[int] = None,
                  channel_no: Optional[int] = None, code_no: Optional[int] = None):
         """
-        Error raised because `spot_colors` contains a `nan_value` where it should not.
+        Error raised because `spot_colors` contains a `invalid_value` where it should not.
 
         Args:
             colors: `int or float [n_codes x n_rounds x n_channels]`
                 `colors[s, r, c]` is the color for code `s` in round `r`, channel `c`.
                 This is likely to be `spot_colors` if `int` or `bled_codes` if `float`.
             nbp_basic: basic_info NotebookPage
-            nan_value: This is the value that colors should only be in rounds/channels not used.
-                Likely to be np.nan if colors is float or -nbp_basic.tile_pixel_value_shift - 1 if integer.
+            invalid_value: This is the value that colors should only be in rounds/channels not used.
+                Likely to be np.nan if colors is float or -nbp_basic.tile_pixel_value_shift if integer.
             round_no: round to flag error for.
             channel_no: channel to flag error for.
             code_no: Spot or gene index to flag error for.
         """
         n_spots, n_rounds, n_channels = colors.shape
         if round_no is not None and code_no is None:
-            self.message = f"colors contains a value other than nan_value={nan_value} in round {round_no}\n" \
+            self.message = f"colors contains a value other than invalid_value={invalid_value} in round {round_no}\n" \
                            f"which is not in use_rounds = {nbp_basic.use_rounds}."
         elif channel_no is not None and code_no is None:
-            self.message = f"colors contains a value other than nan_value={nan_value} in channel {channel_no}\n" \
+            self.message = f"colors contains a value other than invalid_value={invalid_value} in channel {channel_no}\n" \
                            f"which is not in use_channels = {nbp_basic.use_channels}."
         elif round_no is not None and channel_no is not None and code_no is not None:
-            self.message = f"colors contains a nan_value={nan_value} for code {code_no}, round {round_no}, " \
+            self.message = f"colors contains a invalid_value={invalid_value} for code {code_no}, round {round_no}, " \
                            f"channel {channel_no}.\n" \
-                           f"There should be no nan_values in this round and channel."
+                           f"There should be no invalid_values in this round and channel."
         else:
             self.message = f"colors has n_rounds = {n_rounds} and n_channels = {n_channels}.\n" \
                            f"This is neither matches the total_rounds = {nbp_basic.n_rounds} and " \

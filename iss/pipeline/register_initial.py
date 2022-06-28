@@ -29,6 +29,9 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     nbp_debug = setup.NotebookPage("register_initial_debug")
     if config['shift_channel'] is None:
         config['shift_channel'] = nbp_basic.ref_channel
+    if not np.isin(config['shift_channel'], nbp_basic.use_channels):
+        raise ValueError(f"config['shift_channel'] should be in nb.basic_info.use_channels, but value given is\n"
+                         f"{config['shift_channel']} which is not in use_channels = {nbp_basic.use_channels}.")
     nbp_debug.shift_channel = config['shift_channel']
 
     coords = ['y', 'x', 'z']

@@ -194,8 +194,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     else:
                         # Only save 2d data when all channels collected
                         # For channels not used, keep all pixels 0.
-                        im_all_channels_2d = np.zeros((nbp_basic.n_channels, nbp_basic.tile_pixel_value_shift,
-                                                       nbp_basic.tile_pixel_value_shift), dtype=np.int32)
+                        im_all_channels_2d = np.zeros((nbp_basic.n_channels, nbp_basic.tile_sz,
+                                                       nbp_basic.tile_sz), dtype=np.int32)
                 for c in use_channels:
                     if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
                         # max value that can be saved and no shifting done for DAPI

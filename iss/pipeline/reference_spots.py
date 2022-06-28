@@ -63,12 +63,14 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     # Only save used rounds/channels initially
     n_use_rounds = len(nbp_basic.use_rounds)
     n_use_channels = len(nbp_basic.use_channels)
+    use_tiles = np.array(nbp_basic.use_tiles.copy())
+    n_use_tiles = len(use_tiles)
     nd_spot_colors_use = np.zeros((nd_local_tile.shape[0], n_use_rounds, n_use_channels), dtype=np.int32)
     transform = jnp.asarray(transform)
-    for t in range(nbp_basic.n_tiles):
+    for t in nbp_basic.use_tiles:
         in_tile = nd_local_tile == t
         if np.sum(in_tile) > 0:
-            print(f"Tile {t + 1}/{nbp_basic.n_tiles}")
+            print(f"Tile {np.where(use_tiles==t)[0][0]+1}/{n_use_tiles}")
             # this line will return invalid_value for spots outside tile bounds on particular r/c.
             nd_spot_colors_use[in_tile] = get_spot_colors_jax(jnp.asarray(nd_local_yxz[in_tile]), t,
                                                               transform, nbp_file, nbp_basic)

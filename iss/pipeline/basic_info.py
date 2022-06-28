@@ -143,7 +143,10 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     else:
         n_dyes = len(config_basic['dye_names'])
     if config_basic['use_dyes'] is None:
-        nbp_basic.use_dyes = list(np.arange(n_dyes))
+        if config_basic['dye_names'] is None:
+            nbp_basic.use_dyes = nbp_basic.use_channels
+        else:
+            nbp_basic.use_dyes = list(np.arange(n_dyes))
     if config_basic['channel_camera'] is None:
         nbp_basic.channel_camera = None
     if config_basic['channel_laser'] is None:
