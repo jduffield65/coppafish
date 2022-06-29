@@ -67,6 +67,7 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     n_use_tiles = len(use_tiles)
     nd_spot_colors_use = np.zeros((nd_local_tile.shape[0], n_use_rounds, n_use_channels), dtype=np.int32)
     transform = jnp.asarray(transform)
+    print('Reading in spot_colors for ref_round spots')
     for t in nbp_basic.use_tiles:
         in_tile = nd_local_tile == t
         if np.sum(in_tile) > 0:

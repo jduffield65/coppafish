@@ -77,6 +77,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
     # to convert z coordinate units to xy pixels when calculating distance to nearest neighbours
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
     with tqdm(total=2 * len(nbp_basic.use_tiles)) as pbar:
+        pbar.set_description(f"Finding overlap between tiles in round {r} (ref_round)")
         for t in nbp_basic.use_tiles:
             # align to south neighbour followed by west neighbour
             t_neighb['south'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [1, 0],

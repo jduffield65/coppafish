@@ -174,6 +174,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
 
     with tqdm(total=n_images) as pbar:
+        pbar.set_description('Loading in tiles from nd2, filtering and saving as npy')
         for r in use_rounds:
             # set scale and channels to use
             im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)

@@ -95,8 +95,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         else:
             prev_found_tiles = np.unique(spot_info[:, -1])
             use_tiles = np.setdiff1d(use_tiles, prev_found_tiles)
-            warnings.warn(f'Already have OMP results for tiles {prev_found_tiles} so now just running on tiles'
-                          f' {use_tiles}.')
+            warnings.warn(f'Already have OMP results for tiles {prev_found_tiles} so now just running on tiles '
+                          f'{use_tiles}.')
         del spot_coefs, spot_info
     elif os.path.isfile(nbp_file.omp_spot_coef):
         # If only have information only file but not the other, need to delete all files and start again.
@@ -106,6 +106,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         raise ValueError(f'The file {nbp_file.omp_spot_info} exists but the file {nbp_file.omp_spot_coef} does not.\n'
                          f'Delete or re-name the file {nbp_file.omp_spot_info} to run omp part from scratch.')
 
+    print(f'Finding OMP coefficients for all pixels on tiles {use_tiles}:')
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))

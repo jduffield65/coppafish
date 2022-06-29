@@ -61,9 +61,9 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * invalid_value
     n_images = len(use_rounds) * len(nbp_basic.use_channels)
     with tqdm(total=n_images, disable=no_verbose) as pbar:
+        pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from npy files.")
         for r in use_rounds:
             for c in use_channels:
-                pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from tiff files.")
                 pbar.set_postfix({'round': r, 'channel': c})
                 if transforms[t, r, c, 0, 0] == 0:
                     raise ValueError(f"Transform for tile {t}, round {r}, channel {c} is zero:"
@@ -167,13 +167,13 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
         tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz], dtype=jnp.int16)
 
     with tqdm(total=n_use_rounds * n_use_channels, disable=no_verbose) as pbar:
+        pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from npy files.")
         for r in range(n_use_rounds):
             if not nbp_basic.is_3d:
                 # If 2D, load in all channels first
                 image_all_channels = np.load(nbp_file.tile[t][use_rounds[r]], mmap_mode='r')
             for c in range(n_use_channels):
                 transform_rc = transforms[t, use_rounds[r], use_channels[c]]
-                pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from tiff files.")
                 pbar.set_postfix({'round': use_rounds[r], 'channel': use_channels[c]})
                 if transform_rc[0, 0] == 0:
                     raise ValueError(

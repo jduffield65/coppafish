@@ -60,6 +60,8 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     # to convert z coordinate units to xy pixels when calculating distance to nearest neighbours
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
     with tqdm(total=len(nbp_basic.use_rounds) * len(nbp_basic.use_tiles)) as pbar:
+        pbar.set_description(f"Finding shift from ref_round({r_ref})/ref_channel({c_ref}) to channel {c_imaging} "
+                             f"of all imaging rounds")
         for r in nbp_basic.use_rounds:
             for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'round': r, 'tile': t})

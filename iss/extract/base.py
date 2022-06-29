@@ -5,7 +5,7 @@ import time
 
 from tqdm import tqdm
 from .. import utils
-from typing import Tuple, Union, Iterable, Optional
+from typing import Tuple, Optional
 
 
 def wait_for_data(file_path: str, wait_time: int):

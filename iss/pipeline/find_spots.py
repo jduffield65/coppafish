@@ -54,6 +54,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         n_images = n_images + len(nbp_basic.use_tiles)
     n_z = np.max([1, nbp_basic.is_3d * nbp_basic.nz])
     with tqdm(total=n_images) as pbar:
+        pbar.set_description(f"Detecting spots on filtered images saved as npy")
         for r in use_rounds:
             if r == nbp_basic.anchor_round:
                 use_channels = [nbp_basic.anchor_channel]

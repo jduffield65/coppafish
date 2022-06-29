@@ -392,8 +392,9 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
     av_transforms = None
     i_finished_good = 0
     with tqdm(total=n_tiles * n_rounds * n_channels) as pbar:
+        pbar.set_description(f"Iterative Closest Point to find affine transforms")
         for i in range(n_iter):
-            pbar.set_postfix({'iter': i, 'regularized': str(finished_good_images)})
+            pbar.set_postfix({'iter': f'{i+1}/{n_iter}', 'regularized': str(finished_good_images)})
             neighbour_last = neighbour.copy()
             for t in range(n_tiles):
                 for r in range(n_rounds):

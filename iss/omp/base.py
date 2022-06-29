@@ -383,13 +383,16 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
         - background_coefs - `float [n_pixels x n_channels]`.
             coefficient value for each background vector found for each pixel.
     """
-    diff_to_int = np.round(pixel_colors).astype(int) - pixel_colors
-    if np.abs(diff_to_int).max() == 0:
-        raise ValueError("spot_intensities should be found using normalised spot_colors. "
-                         "\nBut all values in spot_colors given are integers indicating they are the raw intensities.")
-    del diff_to_int
-    n_genes, n_rounds, n_channels = bled_codes.shape
     n_pixels = pixel_colors.shape[0]
+
+    check_spot = np.random.randint(n_pixels)
+    diff_to_int = jnp.round(pixel_colors[check_spot]).astype(int) - pixel_colors[check_spot]
+    if jnp.abs(diff_to_int).max() == 0:
+        raise ValueError(f"pixel_coefs should be found using normalised pixel_colors."
+                         f"\nBut for pixel {check_spot}, pixel_colors given are integers indicating they are "
+                         f"the raw intensities.")
+
+    n_genes, n_rounds, n_channels = bled_codes.shape
     if not utils.errors.check_shape(pixel_colors, [n_pixels, n_rounds, n_channels]):
         raise utils.errors.ShapeError('pixel_colors', pixel_colors.shape, (n_pixels, n_rounds, n_channels))
     no_verbose = n_pixels < 1000  # show progress bar with more than 1000 pixels.
