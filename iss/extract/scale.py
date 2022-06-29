@@ -1,7 +1,7 @@
 import numpy as np
 from .base import get_nd2_tile_ind
 from .. import utils
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import nd2
 
 
@@ -72,7 +72,7 @@ def get_z_plane(images: nd2.ND2File, fov: int, use_channels: List[int], use_z: L
 
 def get_scale(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndarray, use_tiles: List[int],
               use_channels: List[int], use_z: List[int], scale_norm: int,
-              filter_kernel: np.ndarray) -> Tuple[int, int, int, float]:
+              filter_kernel: np.ndarray, smooth_kernel: Optional[np.ndarray] = None) -> Tuple[int, int, int, float]:
     """
     Convolves the image for tile ```t```, channel ```c```, z-plane ```z``` with ```filter_kernel```
     then gets the multiplier to apply to filtered nd2 images by dividing ```scale_norm``` by the max value of this
@@ -90,9 +90,12 @@ def get_scale(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndar
             Channels to consider when finding channel.
         use_z: ```int [n_z]```.
             Z-planes to consider when finding z_plane.
-        scale_norm: Desired maximum pixel value of tiff images. Typical: ```40000```.
-        filter_kernel: ```float```.
-            Kernel to convolve nd2 data with to produce tiff tiles. Typical shape: ```[13 x 13]```.
+        scale_norm: Desired maximum pixel value of npy images. Typical: ```40000```.
+        filter_kernel: ```float [ny_kernel x nx_kernel]```.
+            Kernel to convolve nd2 data with to produce npy tiles. Typical shape: ```[13 x 13]```.
+        smooth_kernel: ```float [ny_smooth x nx_smooth]```.
+            2D kernel to smooth filtered image with npy with. Typical shape: ```[3 x 3]```.
+            If None, no smoothing is applied
 
     Returns:
         - ```t``` - ```int```.
@@ -111,5 +114,7 @@ def get_scale(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndar
     c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_tiff), use_channels, use_z)
     # convolve_2d image in same way we convolve_2d before saving tiff files
     im_filtered = utils.morphology.convolve_2d(image, filter_kernel)
+    if smooth_kernel is not None:
+        im_filtered = utils.morphology.imfilter(im_filtered, smooth_kernel, oa=False)
     scale = scale_norm / im_filtered.max()
     return t, c, z, float(scale)

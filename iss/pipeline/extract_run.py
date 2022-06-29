@@ -134,10 +134,21 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         if not scale_norm_min <= config['scale_norm'] <= scale_norm_max:
             raise utils.errors.OutOfBoundsError("scale_norm", config['scale_norm'], scale_norm_min, scale_norm_max)
         im_file = os.path.join(nbp_file.input_dir, nbp_file.round[0] + nbp_file.raw_extension)
+        # If using smoothing, apply this as well before scal
+        if config['r_smooth'] is None:
+            smooth_kernel_2d = None
+        else:
+            if smooth_kernel.ndim == 3:
+                # take central plane of smooth filter if 3D as scale is found from a single z-plane.
+                smooth_kernel_2d = smooth_kernel[:, :, config['r_smooth'][2]-1]
+            else:
+                smooth_kernel_2d = smooth_kernel.copy()
+            # smoothing is averaging so to average in 2D, need to re normalise filter
+            smooth_kernel_2d = smooth_kernel_2d / np.sum(smooth_kernel_2d)
         nbp_debug.scale_tile, nbp_debug.scale_channel, nbp_debug.scale_z, config['scale'] = \
             extract.get_scale(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
                               nbp_basic.use_tiles, nbp_basic.use_channels, nbp_basic.use_z,
-                              config['scale_norm'], filter_kernel)
+                              config['scale_norm'], filter_kernel, smooth_kernel_2d)
     else:
         nbp_debug.scale_tile = None
         nbp_debug.scale_channel = None

@@ -202,9 +202,11 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
             n_pos_neighb = count_spot_neighbours(coef_sign_image, g_spot_yxz, pos_filter)
             g_use = n_pos_neighb == pos_filter.sum()
             use[np.where(use)[0][np.invert(g_use)]] = False
+            if coef_sign_image.ndim == 2:
+                coef_sign_image = coef_sign_image[:, :, np.newaxis]
             if use.any():
                 # nan_to_num sets nan to zero i.e. if out of range of coef_sign_image, coef assumed zero.
-                # This is what we want as have cropped coef_sign_image to eclude zero coefficients.
+                # This is what we want as have cropped coef_sign_image to exclude zero coefficients.
                 spot_images = np.append(
                     spot_images, np.nan_to_num(get_spot_images(coef_sign_image, g_spot_yxz[g_use], max_size)
                                                ).astype(int), axis=0)
@@ -327,10 +329,10 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
             # Note size of image will be different for each gene.
             coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
             if spot_yxzg is None:
-                spot_yxz, _ = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)
+                spot_yxz = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)[0]
             else:
                 # spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.
-                spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g, :3] - coord_shift
+                spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g, :coef_image.ndim] - coord_shift[:coef_image.ndim]
             if spot_yxz.shape[0] > 0:
                 if spot_shape is None:
                     keep = np.ones(spot_yxz.shape[0], dtype=bool)
