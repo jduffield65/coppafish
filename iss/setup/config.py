@@ -81,7 +81,10 @@ _options = {
             'psf_annulus_width': 'number',
             'wiener_constant': 'number',
             'wiener_pad_shape': 'list_int',
-            'r_smooth': 'maybe_list_int'
+            'r_smooth': 'maybe_list_int',
+            'n_clip_warn': 'int',
+            'n_clip_error': 'maybe_int',
+            'n_clip_error_images_thresh': 'int'
         },
     'find_spots':
         {
