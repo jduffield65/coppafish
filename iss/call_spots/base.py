@@ -47,26 +47,6 @@ def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.
     return not_duplicate
 
 
-def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarray]) -> jnp.ndarray:
-    """
-    Returns the yxz coordinates of all pixels on the indicated z-planes of an image.
-
-    Args:
-        y_size: number of pixels in y direction of image.
-        x_size: number of pixels in x direction of image.
-        z_planes: `int [n_z_planes]` z_planes, coordinates are desired for.
-
-    Returns:
-        `int16 [y_size * x_size * n_z_planes, 3]`
-            yxz coordinates of all pixels on `z_planes`.
-    """
-    if isinstance(z_planes, int):
-        z_planes = jnp.array([z_planes])
-    elif isinstance(z_planes, list):
-        z_planes = jnp.array(z_planes)
-    return jnp.array(jnp.meshgrid(jnp.arange(y_size), jnp.arange(x_size), z_planes), dtype=jnp.int16).T.reshape(-1, 3)
-
-
 def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
                         thresh_intensities: Union[float, List[float], np.ndarray],
                         thresh_probs: Union[float, List[float], np.ndarray], method: str) -> np.ndarray:

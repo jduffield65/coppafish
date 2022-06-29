@@ -1,11 +1,11 @@
 from .. import setup
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
-    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency, all_pixel_yxz
+    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
 import numpy as np
 import jax.numpy as jnp
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_spot_colors_jax
+from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
 from ..utils import round_any
 from typing import Tuple
 

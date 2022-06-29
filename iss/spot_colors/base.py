@@ -202,3 +202,23 @@ def get_spot_colors_jax(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, 
         return spot_colors[good], yxz_base[good]
     else:
         return spot_colors
+
+
+def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarray]) -> jnp.ndarray:
+    """
+    Returns the yxz coordinates of all pixels on the indicated z-planes of an image.
+
+    Args:
+        y_size: number of pixels in y direction of image.
+        x_size: number of pixels in x direction of image.
+        z_planes: `int [n_z_planes]` z_planes, coordinates are desired for.
+
+    Returns:
+        `int16 [y_size * x_size * n_z_planes, 3]`
+            yxz coordinates of all pixels on `z_planes`.
+    """
+    if isinstance(z_planes, int):
+        z_planes = jnp.array([z_planes])
+    elif isinstance(z_planes, list):
+        z_planes = jnp.array(z_planes)
+    return jnp.array(jnp.meshgrid(jnp.arange(y_size), jnp.arange(x_size), z_planes), dtype=jnp.int16).T.reshape(-1, 3)

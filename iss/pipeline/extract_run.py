@@ -153,6 +153,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_tile = None
         nbp_debug.scale_channel = None
         nbp_debug.scale_z = None
+        smooth_kernel_2d = None
     nbp_debug.scale = config['scale']
 
     '''get rounds to iterate over'''
@@ -183,7 +184,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     nbp_debug.scale_anchor_tile, _, nbp_debug.scale_anchor_z, config['scale_anchor'] = \
                         extract.get_scale(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
                                           nbp_basic.use_tiles, [nbp_basic.anchor_channel], nbp_basic.use_z,
-                                          config['scale_norm'], filter_kernel)
+                                          config['scale_norm'], filter_kernel, smooth_kernel_2d)
                 else:
                     nbp_debug.scale_anchor_tile = None
                     nbp_debug.scale_anchor_z = None
