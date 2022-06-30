@@ -48,10 +48,11 @@ _options = {
         },
     'file_names':
         {
+            'notebook_name': 'str',
             'input_dir': 'str',  # all these directories used to be of type 'dir' but you may want to load the notebook
             'output_dir': 'str',  # while not being connected to server where data is
             'tile_dir': 'str',
-            'round': 'list',
+            'round': 'maybe_list_str',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
             'dye_camera_laser': 'maybe_str',

@@ -1,31 +1,12 @@
 import numpy as np
 from .. import utils
-from ..find_spots.base import detect_spots, check_neighbour_intensity
-from sklearn.neighbors import NearestNeighbors
+from ..find_spots.base import detect_spots, check_neighbour_intensity, get_isolated_points
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from . import scale
 from .base import get_nd2_tile_ind
 from typing import List, Union, Optional, Tuple
 import warnings
-
-
-def get_isolated_points(spot_yxz: np.ndarray, isolation_dist: float) -> np.ndarray:
-    """
-    Get the isolated points in a point cloud as those whose neighbour is far.
-
-    Args:
-        spot_yxz: ```int [n_peaks x image.ndim]```.
-            yx or yxz location of spots found in image.
-        isolation_dist: Spots are isolated if nearest neighbour is further away than this.
-
-    Returns:
-        ```bool [n_peaks]```. ```True``` for points far from any other point in ```spot_yx```.
-
-    """
-    nbrs = NearestNeighbors(n_neighbors=2).fit(spot_yxz)
-    distances, _ = nbrs.kneighbors(spot_yxz)
-    return distances[:, 1] > isolation_dist
 
 
 def get_spot_images(image: np.ndarray, spot_yxz: np.ndarray, shape: Union[np.ndarray, List[int]]) -> np.ndarray:

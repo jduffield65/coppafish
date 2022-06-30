@@ -208,7 +208,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     spot_info = np.load(nbp_file.omp_spot_info)
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
     not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre,
-                                      spot_info[:, :3] + tile_origin[spot_info[:, 6]], spot_info[:, 6])
+                                      spot_info[:, :3], spot_info[:, 6])
 
     # Add spot info to notebook page
     nbp.local_yxz = spot_info[not_duplicate, :3]

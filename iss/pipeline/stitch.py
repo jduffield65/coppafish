@@ -11,7 +11,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
     """
     This gets the origin of each tile such that a global coordinate system can be built.
 
-    See `'stitch_debug'` section of `notebook_comments.json` file
+    See `'stitch'` section of `notebook_comments.json` file
     for description of the variables in the page.
 
     Args:
@@ -22,7 +22,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
 
     Returns:
-        `NotebookPage[stitch_debug]` - Page contains information about how tiles were stitched together to give
+        `NotebookPage[stitch]` - Page contains information about how tiles were stitched together to give
             global coordinates.
     """
     nbp_debug = setup.NotebookPage("stitch")

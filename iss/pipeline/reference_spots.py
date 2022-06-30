@@ -40,19 +40,17 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
 
     # all means all spots found on the reference round / channel
     all_local_yxz = np.zeros((0, 3), dtype=np.int16)
-    all_global_yxz = np.zeros((0, 3), dtype=float)
     all_isolated = np.zeros(0, dtype=bool)
     all_local_tile = np.zeros(0, dtype=np.int16)
     for t in range(nbp_basic.n_tiles):
         t_local_yxz, t_isolated = spot_yxz(spot_details, t, r, c, return_isolated=True)
         if np.shape(t_local_yxz)[0] > 0:
             all_local_yxz = np.append(all_local_yxz, t_local_yxz, axis=0)
-            all_global_yxz = np.append(all_global_yxz, t_local_yxz + tile_origin[t], axis=0)
             all_isolated = np.append(all_isolated, t_isolated.astype(bool), axis=0)
             all_local_tile = np.append(all_local_tile, np.ones_like(t_isolated, dtype=np.int16) * t)
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
-    not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, all_global_yxz,
+    not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, all_local_yxz,
                                       all_local_tile)
 
     # nd means all spots that are not duplicate

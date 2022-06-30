@@ -1,4 +1,5 @@
 import warnings
+from scipy.spatial import KDTree
 from .. import utils
 import numpy as np
 from typing import Optional, Tuple, Union, List
@@ -282,48 +283,20 @@ def check_neighbour_intensity(image: np.ndarray, spot_yxz: np.ndarray, thresh: f
     return keep.min(axis=1)
 
 
-def scan_func(carry, current_yxzi):
-    near_spot = (jnp.abs(carry - current_yxzi[:3]) <= 1).all(axis=1).any()
-    carry = jax.lax.cond(near_spot, lambda x, y: x, lambda x, y: x.at[y[3]].set(y[:3]), carry, current_yxzi)
-    return carry, near_spot
+def get_isolated_points(spot_yxz: np.ndarray, isolation_dist: float) -> np.ndarray:
+    """
+    Get the isolated points in a point cloud as those whose neighbour is far.
 
+    Args:
+        spot_yxz: ```int [n_peaks x image.ndim]```.
+            yx or yxz location of spots found in image.
+        isolation_dist: Spots are isolated if nearest neighbour is further away than this.
 
-@jax.jit
-def detect_spots_jax(image: jnp.ndarray, all_yxz: Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray], radius: int,
-                     max_spots: Optional[int] = None) -> jnp.ndarray:
-    # max_pixels = int((image.shape[0] * image.shape[1] * image.shape[2]) / 100)  # only consider at most 1% of pixels
-    # all_yxz = jnp.where(image > intensity_thresh, size=max_pixels, fill_value=-5)
-    # Only consider pixels with yxz not set to -1, will set to max_pixels if is no -1.
-    # n_pixels = jnp.where(all_yxz[0] == -1, size=1, fill_value=max_pixels - 1)[0][0] + 1
-    # ignore_pixels = jnp.where(all_yxz[0] == -1, size=max_pixels, fill_value=-1)[0]
+    Returns:
+        ```bool [n_peaks]```. ```True``` for points far from any other point in ```spot_yx```.
 
-    n_pixels = all_yxz[0].shape[0]
-    all_intensity = image[all_yxz]
-    intensity_ind = jnp.argsort(all_intensity)[::-1]
-    all_yxz_sorted = jnp.vstack(all_yxz).transpose()[intensity_ind]
-    # all_intensity = all_intensity[intensity_ind]
-    n_pixels = 10000  # Takes a long time for more than 100,000 pixels.
-    all_yxz_sorted = all_yxz_sorted[:n_pixels]
-    spot_yxz = all_yxz_sorted.copy()
-    spot_yxz = spot_yxz.at[1:].set(-5)
-    all_yxzi = jnp.hstack((all_yxz_sorted[1:], jnp.arange(1, n_pixels)[:, jnp.newaxis]))
-    b = jax.lax.scan(scan_func, spot_yxz, all_yxzi)
-    # for i in range(1, n_pixels):
-    #     # only append to spot_yxz if no near pixel in spot_yxz already i.e. if is_near_spot==0.
-    #     is_near_spot = (jnp.abs(all_yxz_sorted[i] - spot_yxz) <= radius).all(axis=1).any().astype(int)
-    #     spot_yxz = jax.lax.cond(is_near_spot, lambda x, y: jnp.append(x, jnp.ones((1, 3), dtype=int) * -(radius+1), axis=0),
-    #                             lambda x, y: jnp.append(x, y, axis=0), spot_yxz,
-    #                             all_yxz_sorted[i: i+1])
-        # slice_ind = jnp.arange(i, i+1-is_near_spot)
-        # spot_yxz = jnp.append(spot_yxz, all_yxz_sorted[slice_ind], axis=0)
-    #
-    # # Only have at most max_spots on each z-plane
-    # z_planes = jnp.unique(spot_yxz)
-    # z_planes = z_planes[: z_planes.size - z_planes.size * (max_spots is None)]  # set empty if max_spots not provided
-    # keep = jnp.arange(spot_yxz.shape[0])
-    # for z in z_planes:
-    #     reject_spots = jnp.where(spot_yxz[:, 2] == z)[0]
-    #     reject_spots = reject_spots[max_spots:]
-    #     keep = jnp.setdiff1d(keep, reject_spots)
-    # spot_yxz = spot_yxz[keep]
-    return b
+    """
+    tree = KDTree(spot_yxz)
+    # for distances more than isolation_dist, distances will be set to infinity i.e. will be > isolation_dist.
+    distances, _ = tree.query(spot_yxz, k=[2], distance_upper_bound=isolation_dist)[0].squeeze()
+    return distances > isolation_dist

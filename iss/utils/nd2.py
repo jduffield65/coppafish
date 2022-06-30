@@ -7,8 +7,6 @@ from typing import Optional, List
 # bioformats ssl certificate error solution:
 # https://stackoverflow.com/questions/35569042/ssl-certificate-verify-failed-with-python3
 
-# TODO: nd2 does not work on new macboook
-
 
 def load(file_path: str) -> np.ndarray:
     """
@@ -81,6 +79,7 @@ def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[i
 
 
 '''with nd2reader'''
+# #Does not work with QuadCam data hence the switch to nd2 package
 # from nd2reader import ND2Reader
 #
 #
@@ -123,11 +122,13 @@ def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[i
 #     :param use_z: integer list, optional
 #         which z-planes of image to load
 #         default: will load all z-planes
-#     :return: 3D numpy array
+#     :return: 3D uint16 numpy array
 #     """
 #     if use_z is None:
 #         use_z = np.arange(images.sizes['z'])
-#     image = np.zeros((images.sizes['x'], images.sizes['y'], len(np.array(np.array(use_z).flatten()))), dtype=np.uint16)
+#     else:
+#         use_z = np.array(np.array(use_z).flatten())
+#     image = np.zeros((images.sizes['x'], images.sizes['y'], len(use_z)), dtype=np.uint16)
 #     start_index = fov * images.sizes['c'] * images.sizes['z'] + channel * images.sizes['z']
 #     for i in range(len(use_z)):
 #         image[:, :, i] = images[start_index + use_z[i]]

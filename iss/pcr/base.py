@@ -304,7 +304,8 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
             shift_dev_thresh: np.ndarray, reg_constant_rot: Optional[float] = None,
             reg_constant_shift: Optional[float] = None) -> Tuple[np.ndarray, dict]:
     """
-    This gets the transforms using iterative closest point until all iterations used or convergence.
+    This gets the affine `transforms` from `yxz_base` to `yxz_target` using iterative closest point until
+    all iterations used or convergence.
     For `transforms` that have matches below `matches_thresh` or are anomalous compared to `av_transform`,
     the `transforms` are recomputed using regularized least squares to ensure they are close to the `av_transform`.
     If either `reg_constant_rot = None` or `reg_constant_shift = None` then this is not done.
@@ -360,7 +361,7 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
                 Average distance between neighbours below `dist_thresh`.
             - `failed` - `bool [n_tiles x n_rounds x n_channels]`.
                 Indicates tiles/rounds/channels to which transform had too few matches or transform was
-                anomalous compared to median. These were not included when calculating a`v_scalings` or `av_shifts`.
+                anomalous compared to median. These were not included when calculating `av_scalings` or `av_shifts`.
             - `is_converged` - `bool [n_tiles x n_rounds x n_channels]`.
                 `False` if max iterations reached before transform converged.
             - `av_scaling` - `float [n_channels x n_dim]`.

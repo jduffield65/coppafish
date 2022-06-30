@@ -300,7 +300,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                   min_score_max_dist: Optional[float],
                   neighb_dist_thresh: float, y_shifts: np.ndarray, x_shifts: np.ndarray,
                   z_shifts: Optional[np.ndarray] = None, widen: Optional[List[int]] = None,
-                  max_range: Optional[List[int]] = None, z_scale: float = 1,
+                  max_range: Optional[List[int]] = None, z_scale: Union[float, List] = 1,
                   nz_collapse: Optional[int] = None, z_step: int = 3) -> Tuple[np.ndarray, float, float]:
     """
     This finds the shift from those given that is best applied to `yxz_base` to match `yxz_transform`.
@@ -343,6 +343,8 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             If None and widen supplied, range will only be widened once.
         z_scale: By what scale factor to multiply z coordinates to make them same units as xy.
             I.e. `z_pixel_size / xy_pixel_size`.
+            If one value, given same scale used for yxz_base and yxz_transform.
+            Otherwise, first value used for yxz_base and second for yxz_transform.
         nz_collapse: Maximum number of z-planes allowed to be flattened into a 2D slice.
             If `None`, `n_slices`=1. Should be `None` for 2D data.
         z_step: `int`.
@@ -359,8 +361,12 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
     """
     if widen is None:
         widen = [0, 0, 0]
-    yxz_base[:, 2] = yxz_base[:, 2] * z_scale
-    yxz_transform[:, 2] = yxz_transform[:, 2] * z_scale
+    if np.asarray(z_scale).size == 1:
+        z_scale = [z_scale, z_scale]
+    if len(z_scale) > 2:
+        raise ValueError(f'Only 2 z_scale values should be provided but z_scale given was {z_scale}.')
+    yxz_base[:, 2] = yxz_base[:, 2] * z_scale[0]
+    yxz_transform[:, 2] = yxz_transform[:, 2] * z_scale[1]
     yxz_transform_tree = KDTree(yxz_transform)
     yx_base_slices, yx_transform_trees, z_shift_guess = get_2d_slices(yxz_base, yxz_transform, nz_collapse)
     shift_2d, score_2d, initial_shifts, all_scores = get_best_shift_2d(yx_base_slices, yx_transform_trees,

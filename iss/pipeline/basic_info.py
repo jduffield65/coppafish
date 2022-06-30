@@ -31,6 +31,10 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
         - `NotebookPage[basic_info]` - Page contains information that is used at all stages of the pipeline.
     """
     # remove file extension from round and anchor file names if it is present
+    if config_file['round'] is None:
+        if config_file['anchor'] is None:
+            raise ValueError(f'Neither imaging rounds nor anchor_round provided')
+        config_file['round'] = []  # Sometimes the case where just want to run the anchor round.
     config_file['round'] = [r.replace(config_file['raw_extension'], '') for r in config_file['round']]
     if config_file['anchor'] is not None:
         config_file['anchor'] = config_file['anchor'].replace(config_file['raw_extension'], '')

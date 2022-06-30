@@ -1,8 +1,8 @@
 from .. import utils, setup
 from .. import pcr
-from ..find_spots import spot_yxz
+from ..find_spots import spot_yxz, get_isolated_points
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+from scipy.spatial import KDTree
 from ..setup.notebook import NotebookPage
 from typing import Tuple
 
@@ -57,9 +57,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
                 spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - nbp_basic.tile_centre) * z_scale
                 if neighb_dist_thresh < 50:
                     # only keep isolated spots, those whose second neighbour is far away
-                    tree = NearestNeighbors(n_neighbors=2).fit(spot_yxz_imaging[t, r, c])
-                    distances, _ = tree.kneighbors(spot_yxz_imaging[t, r, c])
-                    isolated = distances[:, 1] > 2 * neighb_dist_thresh
+                    isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
                     spot_yxz_imaging[t, r, c] = spot_yxz_imaging[t, r, c][isolated, :]
                 n_matches_thresh[t, r, c] = (config['matches_thresh_fract'] *
                                              np.min([spot_yxz_ref[t].shape[0], spot_yxz_imaging[t, r, c].shape[0]]))

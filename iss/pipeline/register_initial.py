@@ -43,7 +43,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                                          config['shift_step'][i] / 2, config['shift_step'][i]).astype(int)
         start_shift_search[nbp_basic.use_rounds, i, :] = [config['shift_min'][i], config['shift_max'][i],
                                                           config['shift_step'][i]]
-    if nbp_basic.is_3d is False:
+    if not nbp_basic.is_3d:
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
         config['shift_max_range'][2] = 0
         shifts[0]['z'] = np.array([0], dtype=int)

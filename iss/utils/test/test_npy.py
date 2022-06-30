@@ -8,7 +8,7 @@ from ...spot_colors.test.test_spot_colors import get_notebook_pages, single_rand
 class TestNPY(unittest.TestCase):
     MinYX = 50
     MaxYX = 300
-    MinZ = 3
+    MinZ = 5
     MaxZ = 12
     MinSpots = 100
     MaxSpots = 1000

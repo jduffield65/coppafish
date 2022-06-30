@@ -12,7 +12,7 @@ import unittest
 
 def suite_utils():
     suite = unittest.TestSuite()
-    # suite.addTest(unittest.makeSuite(utils.TestMorphology, 'test'))
+    suite.addTest(unittest.makeSuite(utils.TestMorphology, 'test'))
     suite.addTest(unittest.makeSuite(utils.TestNPY, 'test'))
     return suite
 
@@ -57,7 +57,6 @@ def suite_pcr():
 def suite_spot_colors():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(spot_colors.TestSpotColors, 'test'))
-    suite.addTest(unittest.makeSuite(spot_colors.TestGetZTransform, 'test'))
     return suite
 
 

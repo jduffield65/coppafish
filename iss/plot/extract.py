@@ -1,11 +1,9 @@
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox, Button, RangeSlider
 from ..pipeline.basic_info import set_basic_info
 from .. import setup, extract, utils
 import os
-matplotlib.use('TkAgg')
 
 
 class plot_3d:
