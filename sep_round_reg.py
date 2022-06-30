@@ -1,11 +1,11 @@
 from typing import List, Tuple
-from .run import initialize_nb, run_extract, run_find_spots
-from .. import setup, utils
-from ..call_spots import get_non_duplicate
-from ..stitch import compute_shift
-from ..find_spots import get_isolated_points
-from .. import pcr
-from . import stitch
+from iss.pipeline.run import initialize_nb, run_extract, run_find_spots
+from iss import setup, utils
+from iss.call_spots import get_non_duplicate
+from iss.stitch import compute_shift
+from iss.find_spots import get_isolated_points
+from iss import pcr
+from iss.pipeline import stitch
 import numpy as np
 import os
 import warnings
