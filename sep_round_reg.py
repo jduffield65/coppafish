@@ -182,3 +182,12 @@ def get_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_trans
                     None, None)
     return final_transform.squeeze(), int(pcr_debug['n_matches']), float(pcr_debug['error']
                                                                          ), bool(pcr_debug['is_converged'])
+
+
+if __name__ == "__main__":
+
+    channels = [0, 18]
+
+    run_sep_round_reg(config_file='sep_round_settings_example.ini',
+                      config_file_full='experiment_settings_example.ini',
+                      channels_to_save=channels)

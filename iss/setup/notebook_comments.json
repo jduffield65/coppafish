@@ -4,7 +4,9 @@
     "DESCRIPTION": ["file_names page contains all files that are used throughout the pipeline.",
       "'tile' is the only variable not included in the config file and is worked out automatically.",
       "Page added to notebook in pipeline/basic_info.py"],
-
+    "notebook_name": [
+      "String",
+      "Name of notebook"],
     "input_dir": [
       "Directory",
       "Where raw nd2 files are"],
