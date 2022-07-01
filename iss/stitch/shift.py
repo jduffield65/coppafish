@@ -426,8 +426,8 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         y_shift_2d = np.array(shift_2d[0])
         x_shift_2d = np.array(shift_2d[1])
         shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
-                                         x_shift_2d, z_shifts * z_scale)
-        initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
+                                         x_shift_2d, z_shifts * z_scale[0])
+        initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale[0])).T.reshape(-1, 3)
         if score < min_score and widen[2] > 0:
             # keep extending range of shifts in z until good score reached or hit max shift_range.
             # yx shift is kept as 2d shift found when using slices.
@@ -446,29 +446,29 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                                   f"\nRunning again with extended shift search range in z.")
                 z_shifts = extend_array(z_shifts, widen[2])
                 shift_new, score_new = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
-                                                         x_shift_2d, z_shifts * z_scale, initial_shifts)
+                                                         x_shift_2d, z_shifts * z_scale[0], initial_shifts)
                 if score_new > score:
                     score = score_new
                     shift = shift_new
                 # update initial_shifts so don't look over same shifts twice
-                initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale)).T.reshape(-1, 3)
+                initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale[0])).T.reshape(-1, 3)
                 z_shift_range = np.ptp(z_shifts)
 
     # refined search near maxima with half the step
     y_shifts = refined_shifts(y_shifts, shift[0])
     x_shifts = refined_shifts(x_shifts, shift[1])
-    z_shifts = refined_shifts(z_shifts, shift[2] / z_scale)
+    z_shifts = refined_shifts(z_shifts, shift[2] / z_scale[0])
     shift2, score2 = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
-                                       z_shifts * z_scale, initial_shifts)
+                                       z_shifts * z_scale[0], initial_shifts)
     if score2 > score:
         shift = shift2
     # final search with a step of 1
     y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
     x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
-    z_shifts = refined_shifts(z_shifts, shift[2] / z_scale, refined_scale=1e-50, extend_scale=1)
+    z_shifts = refined_shifts(z_shifts, shift[2] / z_scale[0], refined_scale=1e-50, extend_scale=1)
     shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
-                                     z_shifts * z_scale, initial_shifts)
-    shift[2] = shift[2] / z_scale
+                                     z_shifts * z_scale[0], initial_shifts)
+    shift[2] = shift[2] / z_scale[0]
     return shift.astype(int), score, min_score
 
 # TODO: Not sure what amend_shifts function was for. Does not seem to be used in anything.
