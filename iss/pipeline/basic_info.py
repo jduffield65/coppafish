@@ -108,7 +108,7 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     # load in metadata of nd2 file corresponding to first round
     # Test for number of rounds in case of separate round registration and load metadata
     # from anchor round in that case
-    if len(config_file['round']) > 1:
+    if len(config_file['round']) > 0:
         first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0]+config_file['raw_extension'])
     else:
         first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'] + config_file['raw_extension'])

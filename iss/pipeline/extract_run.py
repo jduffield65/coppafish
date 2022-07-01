@@ -127,7 +127,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.psf_intensity_thresh = None
         nbp_debug.psf_tiles_used = None
 
-    if config['scale'] is None:
+    if config['scale'] is None and len(nbp_file.round) > 0:
         # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
         scale_norm_min = (np.iinfo('uint16').max - nbp_basic.tile_pixel_value_shift) / 5
         scale_norm_max = np.iinfo('uint16').max - nbp_basic.tile_pixel_value_shift
