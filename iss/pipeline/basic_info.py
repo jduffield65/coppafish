@@ -106,7 +106,13 @@ def set_basic_info(config_file: dict, config_basic: dict) -> Tuple[NotebookPage,
     if len(use_rounds_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_rounds", use_rounds_oob[0], 0, n_rounds-1)
     # load in metadata of nd2 file corresponding to first round
-    first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0]+config_file['raw_extension'])
+    # Test for number of rounds in case of separate round registration and load metadata
+    # from anchor round in that case
+    if len(config_file['round']) > 1:
+        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0]+config_file['raw_extension'])
+    else:
+        first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'] + config_file['raw_extension'])
+
     metadata = utils.nd2.get_metadata(first_round_raw)
     # get tile info
     tile_sz = metadata['sizes']['x']
