@@ -298,5 +298,5 @@ def get_isolated_points(spot_yxz: np.ndarray, isolation_dist: float) -> np.ndarr
     """
     tree = KDTree(spot_yxz)
     # for distances more than isolation_dist, distances will be set to infinity i.e. will be > isolation_dist.
-    distances, _ = tree.query(spot_yxz, k=[2], distance_upper_bound=isolation_dist)[0].squeeze()
+    distances = tree.query(spot_yxz, k=[2], distance_upper_bound=isolation_dist)[0].squeeze()
     return distances > isolation_dist
