@@ -47,7 +47,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
         spot_local_yxz = nb.find_spots.spot_details[:, -3:]
         spot_tile = nb.find_spots.spot_details[:, 0]
         not_duplicate = get_non_duplicate(nb.stitch.tile_origin, nb.basic_info.use_tiles,
-                                          nb.basic_info.tile_centrespot_local_yxz, spot_tile)
+                                          nb.basic_info.tile_centre, spot_local_yxz, spot_tile)
         global_yxz = spot_local_yxz[not_duplicate] + nb.stitch.tile_origin[spot_tile[not_duplicate]]
 
         # Only keep isolated points far from neighbour
@@ -59,8 +59,8 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
         z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
         isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
         isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
-        global_yxz = global_yxz[:, isolated]
-        global_yxz_full = global_yxz_full[:, isolated_full]
+        global_yxz = global_yxz[isolated, :]
+        global_yxz_full = global_yxz_full[isolated_full, :]
 
         # Because applying transform to image, we don't do z-pixel conversion as would make final transform more
         # complicated. NOT SURE IF THIS IS BEST WAY!!
@@ -69,14 +69,14 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
 
         # get initial shift from separate round to the full anchor image
         nbp = setup.NotebookPage('reg_to_anchor_info')
-        nbp.shift, nbp.shift_score, nbp.shift_score_thresh = get_shift(nb.basic_info, config['register_initial'],
+        nbp.shift, nbp.shift_score, nbp.shift_score_thresh = get_shift(config['register_initial'],
                                                                        global_yxz, global_yxz_full, z_scale, z_scale_full,
                                                                        nb.basic_info.is_3d)
 
         # Get affine transform from separate round to full anchor image
         nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
             get_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
-                                 nb.shift, neighb_dist_thresh)
+                                 nbp.shift, neighb_dist_thresh)
         nb += nbp  # save results of transform found
     else:
         nbp = nb.reg_to_anchor_info
@@ -138,7 +138,7 @@ def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.nd
                       config['neighb_dist_thresh'], shifts['y'], shifts['x'], shifts['z'],
                       config['shift_widen'], config['shift_max_range'], [z_scale_base, z_scale_transform],
                       config['nz_collapse'], config['shift_step'][2])
-    return shift, shift_score, shift_score_thresh
+    return shift, np.asarray(shift_score), np.asarray(shift_score_thresh)
 
 
 def get_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,
