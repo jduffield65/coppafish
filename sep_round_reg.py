@@ -70,7 +70,8 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
         # get initial shift from separate round to the full anchor image
         nbp = setup.NotebookPage('reg_to_anchor_info')
         nbp.shift, nbp.shift_score, nbp.shift_score_thresh = get_shift(config['register_initial'],
-                                                                       global_yxz, global_yxz_full, z_scale, z_scale_full,
+                                                                       global_yxz, global_yxz_full, z_scale,
+                                                                       z_scale_full,
                                                                        nb.basic_info.is_3d)
 
         # Get affine transform from separate round to full anchor image
@@ -85,7 +86,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     if nb.basic_info.is_3d:
         transform = nbp.transform
     else:
-        transform = nbp.transform[[0,1,3], :-1]  # Need 2D 3 x 2 transform if 2D to save images.
+        transform = nbp.transform[[0, 1, 3], :-1]  # Need 2D 3 x 2 transform if 2D to save images.
     # save all the images
     for c in channels_to_save:
         im_file = os.path.join(nb.file_names.output_dir, f'sep_round_channel{c}_transformed.npz')
@@ -175,8 +176,12 @@ def get_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_trans
     n_matches_thresh = n_matches_thresh.astype(int)
     initial_shift = initial_shift * [1, 1, z_scale_base]
     start_transform = pcr.transform_from_scale_shift(np.ones((n_channels, 3)), initial_shift)
+    spot_yxz_base_array = np.zeros(n_tiles, dtype=object)
+    spot_yxz_base_array[0] = spot_yxz_base * [1, 1, z_scale_base]
+    spot_yxz_transform_array = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
+    spot_yxz_transform_array[0, 0, 0] = spot_yxz_transform * [1, 1, z_scale_transform]
     final_transform, pcr_debug = \
-        pcr.iterate(spot_yxz_base * [1, 1, z_scale_base], spot_yxz_transform * [1, 1, z_scale_transform],
+        pcr.iterate(spot_yxz_base_array, spot_yxz_transform_array,
                     start_transform, config['n_iter'], neighb_dist_thresh,
                     n_matches_thresh, config['scale_dev_thresh'], config['shift_dev_thresh'],
                     None, None)
@@ -185,7 +190,6 @@ def get_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_trans
 
 
 if __name__ == "__main__":
-
     channels = [0, 18]
 
     run_sep_round_reg(config_file='sep_round_settings_example.ini',

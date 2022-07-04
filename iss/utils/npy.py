@@ -239,5 +239,10 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
         # of the shift. Not entirely sure of this.
         matrix = np.linalg.inv(transform[:-1])
         offset = -transform[-1]
+        if nbp_basic.is_3d:
+            # transform is in order y, x, z so make image match this.
+            stitched_image = np.moveaxis(stitched_image, 0, 2)
         stitched_image = scipy.ndimage.affine_transform(stitched_image, matrix, offset)
+        if nbp_basic.is_3d:
+            stitched_image = np.moveaxis(stitched_image, 2, 0)  # for saving, want z-axis first.
     np.savez_compressed(im_file, stitched_image)

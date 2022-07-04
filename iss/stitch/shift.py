@@ -315,7 +315,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         yxz_transform: `float [n_spots_transform x 3]`.
             Coordinates of spots on transformed image (yxz units must be same).
         min_score: If score of best shift is below this, will search among the widened shifts.
-            If `None`, `min_score` will be set to `median(scores) + min_score_auto_param * iqr(scores)`.
+            If `None`, `min_score` will be computed using `get_score_thresh`.
         min_score_multiplier: Parameter used to find `min_score` if `min_score` not given.
             Typical = `1.5` (definitely more than `1`).
         min_score_min_dist: `min_score` is set to max score of those scores for shifts a distance between `min_dist` and
@@ -425,6 +425,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             min_score = min_score / min_score_multiplier
         y_shift_2d = np.array(shift_2d[0])
         x_shift_2d = np.array(shift_2d[1])
+        # z_scale for yxz_base used from now on as we are finding the shift from yxz_base to yxz_transform.
         shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
                                          x_shift_2d, z_shifts * z_scale[0])
         initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale[0])).T.reshape(-1, 3)
