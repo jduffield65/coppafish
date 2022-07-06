@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from ...call_spots.base import quality_threshold
 from .legend import iss_legend
-from ..call_spots import view_codes, view_bleed_matrix
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes
 import napari
 from napari.qt import thread_worker
 import time
@@ -46,6 +46,10 @@ def iss_plot(nb, method):
     @viewer.bind_key('b')
     def call_to_view_bm(viewer):
         view_bleed_matrix(nb)
+
+    @viewer.bind_key('g')
+    def call_to_view_bm(viewer):
+        view_bled_codes(nb)
 
     gene_color_dict = dict()
     for g in gene_color.index:
