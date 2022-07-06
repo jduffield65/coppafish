@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from ...call_spots.base import quality_threshold
 from .legend import iss_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot
 import napari
 from napari.qt import thread_worker
 import time
@@ -34,12 +34,19 @@ def iss_plot(nb, method):
     viewer.add_points(spot_zyx, name='GeneSpots', face_color='w', size=point_size+2, opacity=0, shown=qual_ok)
     all_gene_layer_ind = 0
 
-    @viewer.bind_key('h')
-    def call_to_view_spots(viewer):
+    @viewer.bind_key('c')
+    def call_to_view_codes(viewer):
         # on key press
         # TODO: make function for different letters to view_code / view_spot / view_omp of selected spot
         if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
             view_codes(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
+        else:
+            viewer.status = 'No spot selected :('
+
+    @viewer.bind_key('s')
+    def call_to_view_spot(viewer):
+        if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
+            view_spot(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
         else:
             viewer.status = 'No spot selected :('
 

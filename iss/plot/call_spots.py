@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button, RangeSlider
-from iss.call_spots import omp_spot_score
-from iss.setup import Notebook
+from ..call_spots import omp_spot_score
+from ..setup import Notebook
+from ..spot_colors import get_spot_colors
 import matplotlib
 from typing import List, Optional, Tuple, Union
 
@@ -246,3 +247,59 @@ class view_bled_codes(ColorPlotBase):
         self.main_title.set_text(f'Gene {self.gene_no}, {self.gene_names[self.gene_no]} Bled Code')
         self.ax[1].set_xticklabels(['{:.0f} ({:.2f})'.format(r, self.gene_efficiency[self.gene_no, r])
                                     for r in self.use_rounds])
+
+
+class view_spot(ColorPlotBase):
+    def __init__(self, nb: Notebook, spot_no: int, im_size: int = 8):
+        gene_no = nb.omp.gene_no[spot_no]
+        gene_name = nb.call_spots.gene_names[gene_no]
+        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                            nb.basic_info.use_channels)].transpose()
+        n_use_channels, n_use_rounds = color_norm.shape
+        color_norm = [val for val in color_norm.flatten()]
+        t = nb.omp.tile[spot_no]
+        spot_yxz = nb.omp.local_yxz[spot_no]
+        spot_yxz_global = spot_yxz + nb.stitch.tile_origin[t]
+        im_size = [im_size, im_size]  # Useful for debugging to have different im_size_y, im_size_x.
+        # note im_yxz[1] refers to point at min_y, min_x+1, z. So when reshape, should be correct.
+        im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0]-im_size[0], spot_yxz[0]+im_size[0]+1),
+                                      np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
+                          dtype=np.int16).T.reshape(-1, 3)
+        im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
+        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info)
+        spot_colors = spot_colors[np.ix_(np.arange(im_yxz.shape[0]),
+                                         nb.basic_info.use_rounds, nb.basic_info.use_channels)]
+        spot_colors = np.moveaxis(spot_colors, 1, 2)  # put round as the last axis to match color_norm
+        spot_colors = spot_colors.reshape(im_yxz.shape[0], -1)
+        # reshape
+        cr_images = [spot_colors[:, i].reshape(im_diameter[0], im_diameter[1]) / color_norm[i]
+                     for i in range(spot_colors.shape[1])]
+        subplot_adjust = [0.07, 0.775, 0.075, 0.92]
+        super().__init__(cr_images, color_norm, subplot_row_columns=[n_use_channels, n_use_rounds],
+                         subplot_adjust=subplot_adjust, fig_size=(13, 8))
+        # set x, y coordinates to be those of the global coordinate system
+        plot_extent = [im_yxz[:, 1].min()-0.5+nb.stitch.tile_origin[t, 1],
+                       im_yxz[:, 1].max()+0.5+nb.stitch.tile_origin[t, 1],
+                       im_yxz[:, 0].min()-0.5+nb.stitch.tile_origin[t, 0],
+                       im_yxz[:, 0].max()+0.5+nb.stitch.tile_origin[t, 0]]
+        for i in range(self.n_images):
+            self.ax[i].axes.plot([spot_yxz_global[1], spot_yxz_global[1]], [plot_extent[2], plot_extent[3]],
+                                 'k', linestyle=":", lw=1)
+            self.ax[i].axes.plot([plot_extent[0], plot_extent[1]], [spot_yxz_global[0], spot_yxz_global[0]],
+                                 'k', linestyle=":", lw=1)
+            self.im[i].set_extent(plot_extent)
+            self.ax[i].tick_params(labelbottom=False, labelleft=False)
+            if i % n_use_rounds == 0:
+                self.ax[i].set_ylabel(f'{nb.basic_info.use_channels[int(i/n_use_rounds)]}')
+            if i >= self.n_images - n_use_rounds:
+                self.ax[i].set_xlabel(f'{nb.basic_info.use_rounds[i-(self.n_images - n_use_rounds)]}')
+
+
+        self.ax[0].set_xticks([spot_yxz_global[1]])
+        self.ax[0].set_yticks([spot_yxz_global[0]])
+        self.fig.supylabel('Color Channel', size=14)
+        self.fig.supxlabel('Round', size=14, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
+        plt.suptitle(f'Spot {spot_no}: match {np.round(omp_spot_score(nb.omp, spot_no), decimals=2)} '
+                     f'to {gene_name}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
+        self.change_norm()
+        plt.show()
