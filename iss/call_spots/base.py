@@ -495,6 +495,25 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
     return gene_efficiency
 
 
+def omp_spot_score(nbp: NotebookPage,
+                   spot_no: Optional[Union[int, List, np.ndarray]] = None) -> Union[float, np.ndarray]:
+    """
+    Score for omp gene assignment
+    Args:
+        nbp: OMP Notebook page
+        spot_no: Which spots to get score for. If None, all scores will be found.
+
+    Returns:
+        Score for each spot in spot_no if given, otherwise all spot scores.
+    """
+    max_score = nbp.score_multiplier * np.sum(nbp.spot_shape == 1) + np.sum(nbp.spot_shape == -1)
+    if spot_no is None:
+        score = (nbp.score_multiplier * nbp.n_neighbours_pos + nbp.n_neighbours_neg) / max_score
+    else:
+        score = (nbp.score_multiplier * nbp.n_neighbours_pos[spot_no] + nbp.n_neighbours_neg[spot_no]) / max_score
+    return score
+
+
 def quality_threshold(nbp: NotebookPage) -> np.ndarray:
     """
 
@@ -507,8 +526,7 @@ def quality_threshold(nbp: NotebookPage) -> np.ndarray:
     if nbp.name == 'ref_spots':
         score = nbp.score
     elif nbp.name == 'omp':
-        max_score = nbp.score_multiplier * np.sum(nbp.spot_shape == 1) + np.sum(nbp.spot_shape == -1)
-        score = (nbp.score_multiplier * nbp.n_neighbours_pos + nbp.n_neighbours_neg) / max_score
+        score = omp_spot_score(nbp)
     else:
         raise ValueError(f"Notebook page has name {nbp.name} but needs to be 'ref_spots' or 'omp'.")
     qual_ok = np.array([score > nbp.score_thresh, nbp.intensity > nbp.intensity_thresh]).all(axis=0)

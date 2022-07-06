@@ -250,7 +250,10 @@ class Notebook:
             first_page = self.__getattribute__(page_names[0])
             with open(first_page._comments_file) as f:
                 json_comments = json.load(f)
-            config = get_config(self._config_file)
+            if os.path.isfile(str(self._config_file)):
+                config = get_config(self._config_file)
+            else:
+                config = None
             n_times_appeared = 0
             for page_name in page_names:
                 # if in comments file, then print the comment
@@ -259,16 +262,18 @@ class Notebook:
                     self.__getattribute__(page_name).describe(key)
                     print("")
                     n_times_appeared += 1
-                # if in config file, then print the comment
-                # find sections in config file with matching name to current page
-                config_sections_with_name = [page_name.find(list(config.keys())[i]) for i in
-                                             range(len(config.keys()))]
-                config_sections = np.array(list(config.keys()))[np.array(config_sections_with_name) != -1]
-                for section in config_sections:
-                    if key in config[section]:
-                        print(f"{key} in {page_name}:")
-                        self.__getattribute__(page_name).describe(key)
-                        print("")
+
+                elif config is not None:
+                    # if in config file, then print the comment
+                    # find sections in config file with matching name to current page
+                    config_sections_with_name = [page_name.find(list(config.keys())[i]) for i in
+                                                 range(len(config.keys()))]
+                    config_sections = np.array(list(config.keys()))[np.array(config_sections_with_name) != -1]
+                    for section in config_sections:
+                        if key in config[section]:
+                            print(f"{key} in {page_name}:")
+                            self.__getattribute__(page_name).describe(key)
+                            print("")
             if n_times_appeared == 0:
                 print(f"{key} is not in any of the pages in this notebook.")
 

@@ -1,6 +1,6 @@
 import numpy as np
 from .. import utils
-from ..call_spots.base import fit_background, dot_product_score_jax, fit_background_jax_vectorised
+from ..call_spots.base import dot_product_score_jax, fit_background_jax_vectorised
 from typing import Tuple
 from tqdm import tqdm
 import jax.numpy as jnp
