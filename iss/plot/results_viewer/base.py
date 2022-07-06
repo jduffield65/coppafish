@@ -4,6 +4,7 @@ import numpy as np
 from ...call_spots.base import quality_threshold
 from .legend import iss_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot
+from ..omp import view_omp
 import napari
 from napari.qt import thread_worker
 import time
@@ -47,6 +48,16 @@ def iss_plot(nb, method):
     def call_to_view_spot(viewer):
         if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
             view_spot(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
+        else:
+            viewer.status = 'No spot selected :('
+
+    @viewer.bind_key('o')
+    def call_to_view_omp(viewer):
+        if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
+            if os.path.isfile(str(nb._config_file)):
+                view_omp(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
+            else:
+                viewer.status = 'Notebook config file not valid :('
         else:
             viewer.status = 'No spot selected :('
 

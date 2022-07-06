@@ -34,12 +34,18 @@ class ColorPlotBase:
             button_pos = [0.85, 0.02, 0.1, 0.05]
         if not isinstance(norm_factor, list):
             # allow for different norm for each image
-            self.color_norm = [norm_factor, ] * self.n_images
+            if norm_factor is None:
+                self.color_norm = None
+            else:
+                self.color_norm = [norm_factor, ] * self.n_images
         else:
             self.color_norm = norm_factor
         self.im_data = [val for val in images]  # put in order channels, rounds
-        self.method = 'raw'
-        self.caxis_info = {'norm': {}, 'raw': {}}
+        self.method = 'raw' if self.color_norm is not None else 'norm'
+        if self.color_norm is None:
+            self.caxis_info = {'norm': {}}
+        else:
+            self.caxis_info = {'norm': {}, 'raw': {}}
         for key in self.caxis_info:
             if key == 'norm':
                 im_data = self.im_data
@@ -76,8 +82,9 @@ class ColorPlotBase:
             # For 3D data, start by showing just the first plane
             self.im_data_3d = self.im_data.copy()
             self.im_data = [val[:, :, 0] for val in self.im_data_3d]
-            self.color_norm_3d = self.color_norm.copy()
-            self.color_norm = [val[:, :, 0] for val in self.color_norm_3d]
+            if self.color_norm is not None:
+                self.color_norm_3d = self.color_norm.copy()
+                self.color_norm = [val[:, :, 0] for val in self.color_norm_3d]
         else:
             self.im_data_3d = None
             self.color_norm_3d = None
@@ -90,9 +97,10 @@ class ColorPlotBase:
 
         self.slider_ax = self.fig.add_axes(self.slider_pos)
         self.color_slider = None
-        self.norm_button_ax = self.fig.add_axes(button_pos)
-        self.norm_button = Button(self.norm_button_ax, 'Norm', hovercolor='0.275')
-        self.norm_button.on_clicked(self.change_norm)
+        if self.color_norm is not None:
+            self.norm_button_ax = self.fig.add_axes(button_pos)
+            self.norm_button = Button(self.norm_button_ax, 'Norm', hovercolor='0.275')
+            self.norm_button.on_clicked(self.change_norm)
 
     def change_clim(self, val):
         if val[0] >= 0:
@@ -110,7 +118,8 @@ class ColorPlotBase:
         # need to make new slider at each button press because min/max will change
         self.slider_ax.remove()
         self.slider_ax = self.fig.add_axes(self.slider_pos)
-        self.method = 'norm' if self.method == 'raw' else 'raw'  # change to the other method
+        if self.color_norm is not None:
+            self.method = 'norm' if self.method == 'raw' else 'raw'  # change to the other method
 
         for i in range(self.n_images):
             # change image to different normalisation and change clim
@@ -253,6 +262,8 @@ class view_spot(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int, im_size: int = 8):
         gene_no = nb.omp.gene_no[spot_no]
         gene_name = nb.call_spots.gene_names[gene_no]
+        gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
+                                                                 nb.basic_info.use_channels)].transpose().flatten()
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)].transpose()
         n_use_channels, n_use_rounds = color_norm.shape
@@ -283,12 +294,20 @@ class view_spot(ColorPlotBase):
                        im_yxz[:, 0].min()-0.5+nb.stitch.tile_origin[t, 0],
                        im_yxz[:, 0].max()+0.5+nb.stitch.tile_origin[t, 0]]
         for i in range(self.n_images):
+            # Add cross-hair
+            if gene_color[i] > 0.2:
+                cross_hair_color = 'g'  # different color if expected large intensity
+                linestyle = '--'
+            else:
+                cross_hair_color = 'k'
+                linestyle = ':'
             self.ax[i].axes.plot([spot_yxz_global[1], spot_yxz_global[1]], [plot_extent[2], plot_extent[3]],
-                                 'k', linestyle=":", lw=1)
+                                 cross_hair_color, linestyle=linestyle, lw=1)
             self.ax[i].axes.plot([plot_extent[0], plot_extent[1]], [spot_yxz_global[0], spot_yxz_global[0]],
-                                 'k', linestyle=":", lw=1)
+                                 cross_hair_color, linestyle=linestyle, lw=1)
             self.im[i].set_extent(plot_extent)
             self.ax[i].tick_params(labelbottom=False, labelleft=False)
+            # Add axis labels to subplots of far left column or bottom row
             if i % n_use_rounds == 0:
                 self.ax[i].set_ylabel(f'{nb.basic_info.use_channels[int(i/n_use_rounds)]}')
             if i >= self.n_images - n_use_rounds:
