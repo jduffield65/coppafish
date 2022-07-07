@@ -16,6 +16,41 @@ class ColorPlotBase:
                  fig_size: Optional[Tuple] = None, subplot_adjust: Optional[List] = None,
                  cbar_pos: Optional[List] = None, slider_pos: Optional[List] = None,
                  button_pos: Optional[List] = None):
+        """
+        This is the base class for plots with multiple subplots and with a slider to change the color axis and a button
+        to change the normalisation.
+        After initialising, the function `change_norm()` should be run to plot normalised images.
+        This will change `self.method` from `'raw'` to `'norm'`.
+
+        Args:
+            images: `float [n_images]`
+                Each image is `n_y x n_x (x n_z)`. This is the normalised image.
+                There will be a subplot for each image and if it is 3D, the first z-plane will be set as the
+                starting data, `self.im_data` while the full 3d data will be saved as `self.im_data_3d`.
+            norm_factor: `float [n_images]`
+                `norm_factor[i]` is the value to multiply `images[i]` to give raw image.
+                `norm_factor[i]` is either an integer or an array of same dimensions as `image[i]`.
+                If a single `norm_factor` given, assume same for each image.
+            subplot_row_columns: `[n_rows, n_columns]`
+                The subplots will be arranged into `n_rows` and `n_columns`.
+                If not given, `n_columns` will be 1.
+            fig_size: `[width, height]`
+                Size of figure to plot in inches.
+                If not given, will be set to `(9, 5)`.
+            subplot_adjust: `[left, right, bottom, top]`
+                The position of the sides of the subplots in the figure.
+                I.e., we don't want subplot to overlap with cbar, slider or buttom and this ensures that.
+                If not given, will be set to `[0.07, 0.775, 0.095, 0.94]`.
+            cbar_pos: `[left, bottom, width, height]`
+                Position of color axis.
+                If not given, will be set to `[0.9, 0.15, 0.03, 0.8]`.
+            slider_pos: `[left, bottom, width, height]`
+                Position of slider that controls color axis.
+                If not given, will be set to `[0.85, 0.15, 0.01, 0.8]`.
+            button_pos: `[left, bottom, width, height]`
+                Position of button which triggers change of normalisation.
+                If not given, will be set to `[0.85, 0.02, 0.1, 0.05]`.
+        """
         # When bled code of a gene more than this, that particular round/channel will be highlighted in plots
         self.intense_gene_thresh = 0.2
         self.n_images = len(images)
@@ -104,7 +139,14 @@ class ColorPlotBase:
             self.norm_button = Button(self.norm_button_ax, 'Norm', hovercolor='0.275')
             self.norm_button.on_clicked(self.change_norm)
 
-    def change_clim(self, val):
+    def change_clim(self, val: List):
+        """
+        Function triggered on change of color axis slider.
+
+        Args:
+            val: `[min_caxis, max_caxis]`
+                Color axis of plots will be changed to these values.
+        """
         if val[0] >= 0:
             # cannot have positive lower bound with diverging colormap
             val[0] = -1e-20
@@ -117,6 +159,10 @@ class ColorPlotBase:
         self.im[-1].axes.figure.canvas.draw()
 
     def change_norm(self, event=None):
+        """
+        Function triggered on press of normalisation button.
+        Will either multiply or divide each image by the relevant `color_norm`.
+        """
         # need to make new slider at each button press because min/max will change
         self.slider_ax.remove()
         self.slider_ax = self.fig.add_axes(self.slider_pos)
@@ -140,6 +186,13 @@ class ColorPlotBase:
 
 class view_codes(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int):
+        """
+        Diagnostic to compare `spot_color` to `bled_code` of predicted gene.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+            spot_no: Spot of interest to be plotted.
+        """
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)].transpose()
         spot_color = nb.omp.colors[spot_no][np.ix_(nb.basic_info.use_rounds,
@@ -171,6 +224,13 @@ class view_codes(ColorPlotBase):
 
 class view_bleed_matrix(ColorPlotBase):
     def __init__(self, nb: Notebook):
+        """
+        Diagnostic to plot `bleed_matrix`. If `config['call_spots']['bleed_matrix_method']` is `'single'`,
+        a single `bleed_matrix` will be plotted. If it is `'separate'`, one will be shown for each round.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+        """
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)]
         n_use_rounds, n_use_channels = color_norm.shape
@@ -222,6 +282,13 @@ class view_bleed_matrix(ColorPlotBase):
 
 class view_bled_codes(ColorPlotBase):
     def __init__(self, nb: Notebook):
+        """
+        Diagnostic to show `bled_codes` with and without `gene_efficiency` applied for all genes.
+        Change gene by scrolling with mouse.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+        """
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)].transpose()[:, :, np.newaxis]
         self.n_genes = nb.call_spots.bled_codes_ge.shape[0]
@@ -279,6 +346,15 @@ class view_bled_codes(ColorPlotBase):
 
 class view_spot(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int, im_size: int = 8):
+        """
+        Diagnostic to show intensity of each color channel / round in neighbourhood of spot.
+        Will show a grid of `n_use_channels x n_use_rounds` subplots.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+            spot_no: Spot of interest to be plotted.
+            im_size: Radius of image to be plotted for each channel/round.
+        """
         gene_no = nb.omp.gene_no[spot_no]
         gene_name = nb.call_spots.gene_names[gene_no]
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
@@ -291,8 +367,11 @@ class view_spot(ColorPlotBase):
         spot_yxz = nb.omp.local_yxz[spot_no]
         spot_yxz_global = spot_yxz + nb.stitch.tile_origin[t]
         im_size = [im_size, im_size]  # Useful for debugging to have different im_size_y, im_size_x.
-        # note im_yxz[1] refers to point at min_y, min_x+1, z. So when reshape, should be correct.
-        im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0]-im_size[0], spot_yxz[0]+im_size[0]+1),
+        # Subtlety here, may have y-axis flipped, but I think it is correct:
+        # note im_yxz[1] refers to point at max_y, min_x+1, z. So when reshape and set plot_extent, should be correct.
+        # I.e. im = np.zeros(49); im[1] = 1; im = im.reshape(7,7); plt.imshow(im, extent=[-0.5, 6.5, -0.5, 6.5])
+        # will show the value 1 at max_y, min_x+1.
+        im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0]-im_size[0], spot_yxz[0]+im_size[0]+1)[::-1],
                                       np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]

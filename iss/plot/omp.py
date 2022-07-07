@@ -11,6 +11,15 @@ import os
 
 class view_omp(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int, im_size: int = 8):
+        """
+        Diagnostic to show omp coefficients of all genes in neighbourhood of spot.
+        Only genes for which a significant number of pixels are non-zero will be plotted.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `omp`.
+            spot_no: Spot of interest to be plotted.
+            im_size: Radius of image to be plotted for each gene.
+        """
         if not os.path.isfile(str(nb._config_file)):
             raise ValueError(f'Need access to config_file to run this diagnostic.\n'
                              f'But nb._config_file = {str(nb._config_file)} does not exist.')
@@ -24,8 +33,11 @@ class view_omp(ColorPlotBase):
         spot_yxz = nb.omp.local_yxz[spot_no]
         spot_yxz_global = spot_yxz + nb.stitch.tile_origin[t]
         im_size = [im_size, im_size]  # Useful for debugging to have different im_size_y, im_size_x.
-        # note im_yxz[1] refers to point at min_y, min_x+1, z. So when reshape, should be correct.
-        im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0]-im_size[0], spot_yxz[0]+im_size[0]+1),
+        # Subtlety here, may have y-axis flipped, but I think it is correct:
+        # note im_yxz[1] refers to point at max_y, min_x+1, z. So when reshape and set plot_extent, should be correct.
+        # I.e. im = np.zeros(49); im[1] = 1; im = im.reshape(7,7); plt.imshow(im, extent=[-0.5, 6.5, -0.5, 6.5])
+        # will show the value 1 at max_y, min_x+1.
+        im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0]-im_size[0], spot_yxz[0]+im_size[0]+1)[::-1],
                                       np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
@@ -89,7 +101,7 @@ class view_omp(ColorPlotBase):
             elif plot_genes[i] == gene_no:
                 text_color = 'g'
             else:
-                text_color = 'w' # TODO: maybe make color same as used in plot for each gene
+                text_color = 'w'  # TODO: maybe make color same as used in plot for each gene
             self.ax[i].set_title(title_text, color=text_color)
         plt.subplots_adjust(hspace=0.32)
         plt.suptitle(f'OMP gene coefficients for spot {spot_no} (match'

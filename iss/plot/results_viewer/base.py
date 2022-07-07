@@ -38,26 +38,34 @@ def iss_plot(nb, method):
     @viewer.bind_key('c')
     def call_to_view_codes(viewer):
         # on key press
-        # TODO: make function for different letters to view_code / view_spot / view_omp of selected spot
-        if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
+        n_selected = len(viewer.layers[all_gene_layer_ind].selected_data)
+        if n_selected == 1:
             view_codes(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
+        elif n_selected > 1:
+            viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
         else:
             viewer.status = 'No spot selected :('
 
     @viewer.bind_key('s')
     def call_to_view_spot(viewer):
-        if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
+        n_selected = len(viewer.layers[all_gene_layer_ind].selected_data)
+        if n_selected == 1:
             view_spot(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
+        elif n_selected > 1:
+            viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
         else:
             viewer.status = 'No spot selected :('
 
     @viewer.bind_key('o')
     def call_to_view_omp(viewer):
-        if len(viewer.layers[all_gene_layer_ind].selected_data) == 1:
+        n_selected = len(viewer.layers[all_gene_layer_ind].selected_data)
+        if n_selected == 1:
             if os.path.isfile(str(nb._config_file)):
                 view_omp(nb, list(viewer.layers[all_gene_layer_ind].selected_data)[0])
             else:
                 viewer.status = 'Notebook config file not valid :('
+        elif n_selected > 1:
+            viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
         else:
             viewer.status = 'No spot selected :('
 
