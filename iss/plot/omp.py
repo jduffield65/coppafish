@@ -66,7 +66,8 @@ class view_omp(ColorPlotBase):
         subplot_row_columns = [int(np.ceil(n_plot / n_cols)), n_cols]
         fig_size = np.clip([n_cols+5, subplot_row_columns[0]+4], 3, 12)
         subplot_adjust = [0.05, 0.775, 0.05, 0.91]
-        super().__init__(coef_images, None, subplot_row_columns, subplot_adjust=subplot_adjust, fig_size=fig_size)
+        super().__init__(coef_images, None, subplot_row_columns, subplot_adjust=subplot_adjust, fig_size=fig_size,
+                         cbar_pos=[0.9, 0.05, 0.03, 0.86], slider_pos=[0.85, 0.05, 0.01, 0.86])
         # set x, y coordinates to be those of the global coordinate system
         plot_extent = [im_yxz[:, 1].min()-0.5+nb.stitch.tile_origin[t, 1],
                        im_yxz[:, 1].max()+0.5+nb.stitch.tile_origin[t, 1],
@@ -81,13 +82,15 @@ class view_omp(ColorPlotBase):
             self.im[i].set_extent(plot_extent)
             self.ax[i].tick_params(labelbottom=False, labelleft=False)
             # Add title
+            title_text = f'{plot_genes[i]}: {all_gene_names[plot_genes[i]]}'
             if plot_genes[i] >= n_genes:
                 text_color = (0.7, 0.7, 0.7)  # If background, make grey
+                title_text = all_gene_names[plot_genes[i]]
             elif plot_genes[i] == gene_no:
                 text_color = 'g'
             else:
                 text_color = 'w' # TODO: maybe make color same as used in plot for each gene
-            self.ax[i].set_title(all_gene_names[plot_genes[i]], color=text_color)
+            self.ax[i].set_title(title_text, color=text_color)
         plt.subplots_adjust(hspace=0.32)
         plt.suptitle(f'OMP gene coefficients for spot {spot_no} (match'
                      f' {np.round(omp_spot_score(nb.omp, spot_no), decimals=2)} to {gene_name})',

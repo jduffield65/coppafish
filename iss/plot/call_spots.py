@@ -16,6 +16,8 @@ class ColorPlotBase:
                  fig_size: Optional[Tuple] = None, subplot_adjust: Optional[List] = None,
                  cbar_pos: Optional[List] = None, slider_pos: Optional[List] = None,
                  button_pos: Optional[List] = None):
+        # When bled code of a gene more than this, that particular round/channel will be highlighted in plots
+        self.intense_gene_thresh = 0.2
         self.n_images = len(images)
         if subplot_row_columns is None:
             subplot_row_columns = [self.n_images, 1]
@@ -151,9 +153,18 @@ class view_codes(ColorPlotBase):
                              f'to {gene_name}')
         self.ax[1].set_title(f'Predicted code for {gene_name}')
         self.ax[0].set_yticks(ticks=np.arange(self.im_data[0].shape[0]), labels=nb.basic_info.use_channels)
-        self.ax[1].set_xticks(ticks=np.arange(self.im_data[0].shape[1]), labels=nb.basic_info.use_rounds)
-        self.ax[1].set_xlabel('Round')
+        self.ax[1].set_xticks(ticks=np.arange(self.im_data[0].shape[1]))
+        self.ax[1].set_xticklabels(['{:.0f} ({:.2f})'.format(r, nb.call_spots.gene_efficiency[gene_no, r])
+                                    for r in nb.basic_info.use_rounds])
+        self.ax[1].set_xlabel('Round (Gene Efficiency)')
         self.fig.supylabel('Color Channel')
+        intense_gene_cr = np.where(gene_color > self.intense_gene_thresh)
+        for i in range(len(intense_gene_cr[0])):
+            for j in range(2):
+                # can't add rectangle to multiple axes hence second for loop
+                rectangle = plt.Rectangle((intense_gene_cr[1][i]-0.5, intense_gene_cr[0][i]-0.5), 1, 1,
+                                          fill=False, ec="g", linestyle=':', lw=2)
+                self.ax[j].add_patch(rectangle)
         self.change_norm()  # initialise with method = 'norm'
         plt.show()
 
@@ -238,17 +249,25 @@ class view_bled_codes(ColorPlotBase):
         self.update_title()
         self.fig.canvas.mpl_connect('scroll_event', self.change_gene)
         self.change_norm()
+        self.change_gene()  # plot rectangles
         plt.show()
 
-    def change_gene(self, event):
-        if event.button == 'up':
-            self.gene_no = (self.gene_no + 1) % self.n_genes
-        else:
-            self.gene_no = (self.gene_no - 1) % self.n_genes
+    def change_gene(self, event=None):
+        if event is not None:
+            if event.button == 'up':
+                self.gene_no = (self.gene_no + 1) % self.n_genes
+            else:
+                self.gene_no = (self.gene_no - 1) % self.n_genes
         self.im_data = [val[:, :, self.gene_no] for val in self.im_data_3d]
         for i in range(self.n_images):
             # change image to different normalisation and change clim
             self.im[i].set_data(self.im_data[i] * self.color_norm[i] if self.method == 'raw' else self.im_data[i])
+            intense_gene_cr = np.where(self.im_data[i] > self.intense_gene_thresh)
+            [p.remove() for p in reversed(self.ax[i].patches)]  # remove current rectangles
+            for j in range(len(intense_gene_cr[0])):
+                rectangle = plt.Rectangle((intense_gene_cr[1][j] - 0.5, intense_gene_cr[0][j] - 0.5), 1, 1,
+                                          fill=False, ec="g", linestyle=':', lw=2)
+                self.ax[i].add_patch(rectangle)
         self.update_title()
         self.im[-1].axes.figure.canvas.draw()
 
@@ -295,9 +314,12 @@ class view_spot(ColorPlotBase):
                        im_yxz[:, 0].max()+0.5+nb.stitch.tile_origin[t, 0]]
         for i in range(self.n_images):
             # Add cross-hair
-            if gene_color[i] > 0.2:
+            if gene_color[i] > self.intense_gene_thresh:
                 cross_hair_color = 'g'  # different color if expected large intensity
                 linestyle = '--'
+                self.ax[i].tick_params(color='g', labelcolor='g')
+                for spine in self.ax[i].spines.values():
+                    spine.set_edgecolor('g')
             else:
                 cross_hair_color = 'k'
                 linestyle = ':'
@@ -311,13 +333,14 @@ class view_spot(ColorPlotBase):
             if i % n_use_rounds == 0:
                 self.ax[i].set_ylabel(f'{nb.basic_info.use_channels[int(i/n_use_rounds)]}')
             if i >= self.n_images - n_use_rounds:
-                self.ax[i].set_xlabel(f'{nb.basic_info.use_rounds[i-(self.n_images - n_use_rounds)]}')
+                r = nb.basic_info.use_rounds[i-(self.n_images - n_use_rounds)]
+                self.ax[i].set_xlabel('{:.0f} ({:.2f})'.format(r, nb.call_spots.gene_efficiency[gene_no, r]))
 
 
         self.ax[0].set_xticks([spot_yxz_global[1]])
         self.ax[0].set_yticks([spot_yxz_global[0]])
         self.fig.supylabel('Color Channel', size=14)
-        self.fig.supxlabel('Round', size=14, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
+        self.fig.supxlabel('Round (Gene Efficiency)', size=14, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
         plt.suptitle(f'Spot {spot_no}: match {np.round(omp_spot_score(nb.omp, spot_no), decimals=2)} '
                      f'to {gene_name}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
         self.change_norm()
