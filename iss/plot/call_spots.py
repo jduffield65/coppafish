@@ -185,24 +185,33 @@ class ColorPlotBase:
 
 
 class view_codes(ColorPlotBase):
-    def __init__(self, nb: Notebook, spot_no: int):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor'):
         """
         Diagnostic to compare `spot_color` to `bled_code` of predicted gene.
 
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.
+            method: `'anchor'` or `'omp'`.
+                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
         """
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)].transpose()
-        spot_color = nb.omp.colors[spot_no][np.ix_(nb.basic_info.use_rounds,
-                                                   nb.basic_info.use_channels)].transpose() / color_norm
-        gene_no = nb.omp.gene_no[spot_no]
+        if method.lower() == 'omp':
+            page_name = 'omp'
+            spot_score = omp_spot_score(nb.omp, spot_no)
+        else:
+            page_name = 'ref_spots'
+            spot_score = nb.ref_spots.score[spot_no]
+        spot_color = nb.__getattribute__(page_name).colors[spot_no][
+                         np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose() / color_norm
+        gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
+
         gene_name = nb.call_spots.gene_names[gene_no]
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
                                                                  nb.basic_info.use_channels)].transpose()
         super().__init__([spot_color, gene_color], color_norm)
-        self.ax[0].set_title(f'Spot {spot_no}: match {np.round(omp_spot_score(nb.omp, spot_no), decimals=2)} '
+        self.ax[0].set_title(f'Spot {spot_no}: match {np.round(spot_score, decimals=2)} '
                              f'to {gene_name}')
         self.ax[1].set_title(f'Predicted code for {gene_name}')
         self.ax[0].set_yticks(ticks=np.arange(self.im_data[0].shape[0]), labels=nb.basic_info.use_channels)
@@ -345,7 +354,7 @@ class view_bled_codes(ColorPlotBase):
 
 
 class view_spot(ColorPlotBase):
-    def __init__(self, nb: Notebook, spot_no: int, im_size: int = 8):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor', im_size: int = 8):
         """
         Diagnostic to show intensity of each color channel / round in neighbourhood of spot.
         Will show a grid of `n_use_channels x n_use_rounds` subplots.
@@ -353,18 +362,27 @@ class view_spot(ColorPlotBase):
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.
+            method: `'anchor'` or `'omp'`.
+                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
             im_size: Radius of image to be plotted for each channel/round.
         """
-        gene_no = nb.omp.gene_no[spot_no]
+        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                            nb.basic_info.use_channels)].transpose()
+        if method.lower() == 'omp':
+            page_name = 'omp'
+            spot_score = omp_spot_score(nb.omp, spot_no)
+        else:
+            page_name = 'ref_spots'
+            spot_score = nb.ref_spots.score[spot_no]
+        gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
+        t = nb.__getattribute__(page_name).tile[spot_no]
+        spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
+
         gene_name = nb.call_spots.gene_names[gene_no]
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
                                                                  nb.basic_info.use_channels)].transpose().flatten()
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)].transpose()
         n_use_channels, n_use_rounds = color_norm.shape
         color_norm = [val for val in color_norm.flatten()]
-        t = nb.omp.tile[spot_no]
-        spot_yxz = nb.omp.local_yxz[spot_no]
         spot_yxz_global = spot_yxz + nb.stitch.tile_origin[t]
         im_size = [im_size, im_size]  # Useful for debugging to have different im_size_y, im_size_x.
         # Subtlety here, may have y-axis flipped, but I think it is correct:
@@ -420,7 +438,7 @@ class view_spot(ColorPlotBase):
         self.ax[0].set_yticks([spot_yxz_global[0]])
         self.fig.supylabel('Color Channel', size=14)
         self.fig.supxlabel('Round (Gene Efficiency)', size=14, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
-        plt.suptitle(f'Spot {spot_no}: match {np.round(omp_spot_score(nb.omp, spot_no), decimals=2)} '
+        plt.suptitle(f'Spot {spot_no}: match {np.round(spot_score, decimals=2)} '
                      f'to {gene_name}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
         self.change_norm()
         plt.show()

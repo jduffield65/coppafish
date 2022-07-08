@@ -10,7 +10,7 @@ import os
 
 
 class view_omp(ColorPlotBase):
-    def __init__(self, nb: Notebook, spot_no: int, im_size: int = 8):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', im_size: int = 8):
         """
         Diagnostic to show omp coefficients of all genes in neighbourhood of spot.
         Only genes for which a significant number of pixels are non-zero will be plotted.
@@ -18,19 +18,30 @@ class view_omp(ColorPlotBase):
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `omp`.
             spot_no: Spot of interest to be plotted.
+            method: `'anchor'` or `'omp'`.
+                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
             im_size: Radius of image to be plotted for each gene.
         """
         if not os.path.isfile(str(nb._config_file)):
             raise ValueError(f'Need access to config_file to run this diagnostic.\n'
                              f'But nb._config_file = {str(nb._config_file)} does not exist.')
-        gene_no = nb.omp.gene_no[spot_no]
-        gene_name = nb.call_spots.gene_names[gene_no]
-        all_gene_names = list(nb.call_spots.gene_names) + [f'BG{i}' for i in range(nb.basic_info.n_channels)]
+
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)]
+
+        if method.lower() == 'omp':
+            page_name = 'omp'
+            spot_score = omp_spot_score(nb.omp, spot_no)
+        else:
+            page_name = 'ref_spots'
+            spot_score = nb.ref_spots.score[spot_no]
+        gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
+        t = nb.__getattribute__(page_name).tile[spot_no]
+        spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
+
+        gene_name = nb.call_spots.gene_names[gene_no]
+        all_gene_names = list(nb.call_spots.gene_names) + [f'BG{i}' for i in range(nb.basic_info.n_channels)]
         n_use_channels, n_use_rounds = color_norm.shape
-        t = nb.omp.tile[spot_no]
-        spot_yxz = nb.omp.local_yxz[spot_no]
         spot_yxz_global = spot_yxz + nb.stitch.tile_origin[t]
         im_size = [im_size, im_size]  # Useful for debugging to have different im_size_y, im_size_x.
         # Subtlety here, may have y-axis flipped, but I think it is correct:
@@ -105,7 +116,7 @@ class view_omp(ColorPlotBase):
             self.ax[i].set_title(title_text, color=text_color)
         plt.subplots_adjust(hspace=0.32)
         plt.suptitle(f'OMP gene coefficients for spot {spot_no} (match'
-                     f' {np.round(omp_spot_score(nb.omp, spot_no), decimals=2)} to {gene_name})',
+                     f' {np.round(spot_score, decimals=2)} to {gene_name})',
                      x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=13)
         self.change_norm()
         plt.show()
