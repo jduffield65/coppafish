@@ -6,6 +6,7 @@ from iss.stitch import compute_shift
 from iss.find_spots import get_isolated_points
 from iss import pcr
 from iss.pipeline import stitch
+from iss.plot.stitch import view_shifts
 import numpy as np
 import os
 import warnings
@@ -57,22 +58,25 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             neighb_dist_thresh = config['register']['neighb_dist_thresh_2d']
         # scale z coordinate so in units of xy pixels as other 2 coordinates are.
         z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
-        isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
-        isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
-        global_yxz = global_yxz[isolated, :]
-        global_yxz_full = global_yxz_full[isolated_full, :]
 
         # Because applying transform to image, we don't do z-pixel conversion as would make final transform more
         # complicated. NOT SURE IF THIS IS BEST WAY!!
         z_scale = 1
         z_scale_full = 1
 
+        isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
+        isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
+        global_yxz = global_yxz[isolated, :]
+        global_yxz_full = global_yxz_full[isolated_full, :]
+
         # get initial shift from separate round to the full anchor image
         nbp = setup.NotebookPage('reg_to_anchor_info')
-        nbp.shift, nbp.shift_score, nbp.shift_score_thresh = get_shift(config['register_initial'],
-                                                                       global_yxz, global_yxz_full, z_scale,
-                                                                       z_scale_full,
-                                                                       nb.basic_info.is_3d)
+        nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info = \
+            get_shift(config['register_initial'], global_yxz, global_yxz_full,
+                      z_scale, z_scale_full, nb.basic_info.is_3d)
+
+        # view_shifts(nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info['shifts_2d'],
+        #             debug_info['scores_2d'], debug_info['shifts_3d'], debug_info['scores_3d'])
 
         # Get affine transform from separate round to full anchor image
         nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
@@ -99,7 +103,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
 
 
 def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,
-              z_scale_transform: float, is_3d: bool) -> Tuple[np.ndarray, float, float]:
+              z_scale_transform: float, is_3d: bool) -> Tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
     """
     Find shift from base to transform.
 
@@ -132,14 +136,14 @@ def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.nd
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
         config['shift_max_range'][2] = 0
         shifts['z'] = np.array([0], dtype=int)
-    shift, shift_score, shift_score_thresh = \
+    shift, shift_score, shift_score_thresh, debug_info = \
         compute_shift(spot_yxz_base, spot_yxz_transform,
                       config['shift_score_thresh'], config['shift_score_thresh_multiplier'],
                       config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
                       config['neighb_dist_thresh'], shifts['y'], shifts['x'], shifts['z'],
                       config['shift_widen'], config['shift_max_range'], [z_scale_base, z_scale_transform],
                       config['nz_collapse'], config['shift_step'][2])
-    return shift, np.asarray(shift_score), np.asarray(shift_score_thresh)
+    return shift, np.asarray(shift_score), np.asarray(shift_score_thresh), debug_info
 
 
 def get_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,

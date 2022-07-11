@@ -71,7 +71,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                                   config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
                                   config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
                                   config['shift_widen'], config['shift_max_range'], z_scale,
-                                  config['nz_collapse'], config['shift_step'][2])
+                                  config['nz_collapse'], config['shift_step'][2])[:3]
                 good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
                 if np.sum(good_shifts) >= 3:
                     # once found shifts, refine shifts to be searched around these
@@ -107,11 +107,11 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                 continue
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
-            shift[t, r], shift_score[t, r], _ = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
-                                                              spot_yxz(spot_details, t, r, c_imaging), 0, None, None,
-                                                              None, config['neighb_dist_thresh'], shifts[r]['y'],
-                                                              shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
-                                                              config['nz_collapse'], config['shift_step'][2])
+            shift[t, r], shift_score[t, r] = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
+                                                           spot_yxz(spot_details, t, r, c_imaging), 0, None, None,
+                                                           None, config['neighb_dist_thresh'], shifts[r]['y'],
+                                                           shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
+                                                           config['nz_collapse'], config['shift_step'][2])[:2]
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"
                           f"{shift_outlier[t, r]} to {shift[t, r]}.")
 

@@ -131,7 +131,7 @@ def update_shifts(search_shifts: np.ndarray, prev_found_shifts: np.ndarray) -> n
 
 def get_best_shift_3d(yxz_base: np.ndarray, yxz_transform_tree: KDTree, neighb_dist_thresh: float, y_shifts: np.ndarray,
                       x_shifts: np.ndarray, z_shifts: np.ndarray,
-                      ignore_shifts: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
+                      ignore_shifts: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float, np.ndarray, np.ndarray]:
     """
     Finds the shift from those given that is best applied to `yx_base` to match `yx_transform`.
 
@@ -157,6 +157,10 @@ def get_best_shift_3d(yxz_base: np.ndarray, yxz_transform_tree: KDTree, neighb_d
             Best shift found.
         - `best_score` - `float`.
             Score of best shift.
+        - `all_shifts` - `float [n_shifts x 3]`.
+            yxz shifts searched over.
+        - `score` - `float [n_shifts]`.
+            Score of all shifts.
     """
     all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
     if ignore_shifts is not None:
@@ -168,7 +172,7 @@ def get_best_shift_3d(yxz_base: np.ndarray, yxz_transform_tree: KDTree, neighb_d
         distances = yxz_transform_tree.query(yxz_shifted, distance_upper_bound=dist_upper_bound)[0]
         score[i] = shift_score(distances, neighb_dist_thresh)
     best_shift_ind = score.argmax()
-    return all_shifts[best_shift_ind], score[best_shift_ind]
+    return all_shifts[best_shift_ind], score[best_shift_ind], all_shifts, score
 
 
 def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List[KDTree], neighb_dist_thresh: float,
@@ -310,8 +314,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                   neighb_dist_thresh: float, y_shifts: np.ndarray, x_shifts: np.ndarray,
                   z_shifts: Optional[np.ndarray] = None, widen: Optional[List[int]] = None,
                   max_range: Optional[List[int]] = None, z_scale: Union[float, List] = 1,
-                  nz_collapse: Optional[int] = None, z_step: int = 3,
-                  debug: bool = False) -> Tuple[np.ndarray, float, float]:
+                  nz_collapse: Optional[int] = None, z_step: int = 3) -> Tuple[np.ndarray, float, float, dict]:
     """
     This finds the shift from those given that is best applied to `yxz_base` to match `yxz_transform`.
 
@@ -368,6 +371,16 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             Score of best shift.
         - `min_score` - `float`.
             Same as input, unless input was `None` in which case this is the calculated value.
+        - `debug_info` - dict containing debugging information:
+            - `shifts_2d`: `int [n_shifts_2d x 2]`
+                All yx shifts searched to get best `yx_shift`.
+            - `scores_2d`: `float [n_shifts_2d]`
+                Score corresponding to each 2d shift.
+            - `shifts_3d`: `int [n_shifts_3d x 3]`
+                All yxz shifts searched to get best `yxz_shift`. `None` if `nz_collapse is None` i.e. 2D point cloud.
+            - `scores_3d`: `float [n_shifts_3d]`
+                Score corresponding to each 3d shift. `None` if `nz_collapse is None` i.e. 2D point cloud.
+
     """
     if widen is None:
         widen = [0, 0, 0]
@@ -381,7 +394,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         yxz_base = yxz_base * [1, 1, z_scale[0]]
         yxz_transform = yxz_transform * [1, 1, z_scale[1]]
     yxz_transform_tree = KDTree(yxz_transform)
-    shift_2d, score_2d, initial_shifts, all_scores = get_best_shift_2d(yx_base_slices, yx_transform_trees,
+    shift_2d, score_2d, all_shifts_2d, all_scores_2d = get_best_shift_2d(yx_base_slices, yx_transform_trees,
                                                                        neighb_dist_thresh, y_shifts, x_shifts)
 
     # Only look at 3 shifts in z to start with about guess from getting the 2d slices.
@@ -391,7 +404,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
     # save initial_shifts so don't look over same shifts twice
     # initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     if min_score is None:
-        min_score = get_score_thresh(initial_shifts, all_scores, shift_2d, min_score_min_dist, min_score_max_dist,
+        min_score = get_score_thresh(all_shifts_2d, all_scores_2d, shift_2d, min_score_min_dist, min_score_max_dist,
                                      min_score_multiplier)
     if score_2d <= min_score and np.max(widen[:2]) > 0:
         shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
@@ -418,15 +431,15 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                 y_shifts = extend_array(y_shifts, widen[0])
             if shift_ranges[1] < max_range_2d[1]:
                 x_shifts = extend_array(x_shifts, widen[1])
-            shift_2d_new, score_2d_new, initial_shifts_new, all_scores_new = \
+            shift_2d_new, score_2d_new, all_shifts_new, all_scores_new = \
                 get_best_shift_2d(yx_base_slices, yx_transform_trees, neighb_dist_thresh, y_shifts, x_shifts,
-                                  initial_shifts)
+                                  all_shifts_2d)
             if score_2d_new > score_2d:
                 score_2d = score_2d_new
                 shift_2d = shift_2d_new
             # update initial_shifts so don't look over same shifts twice
-            initial_shifts = np.append(initial_shifts, initial_shifts_new, axis=0)
-            all_scores = np.append(all_scores, all_scores_new, axis=0)
+            all_shifts_2d = np.append(all_shifts_2d, all_shifts_new, axis=0)
+            all_scores_2d = np.append(all_scores_2d, all_scores_new, axis=0)
             # initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
             shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
 
@@ -434,16 +447,17 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         # nz_collapse not provided for 2D data.
         shift = np.append(shift_2d, 0)
         score = score_2d
+        all_shifts_3d = None
+        all_scores_3d = None
     else:
-        if min_score_multiplier is not None:
-            # Lower threshold score in 3D as expect score to be smaller.
+        if min_score_multiplier is not None and score_2d >= min_score:
+            # Lower threshold score in 3D if passed 2d threshold as expect score to be smaller.
             min_score = min_score / min_score_multiplier
         y_shift_2d = np.array(shift_2d[0])
         x_shift_2d = np.array(shift_2d[1])
         # z_scale for yxz_base used from now on as we are finding the shift from yxz_base to yxz_transform.
-        shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
-                                         x_shift_2d, z_shifts * z_scale[0])
-        initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale[0])).T.reshape(-1, 3)
+        shift, score, all_shifts_3d, all_scores_3d = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh,
+                                                                       y_shift_2d, x_shift_2d, z_shifts * z_scale[0])
         if score < min_score and widen[2] > 0:
             # keep extending range of shifts in z until good score reached or hit max shift_range.
             # yx shift is kept as 2d shift found when using slices.
@@ -461,31 +475,50 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                                   f"min_score = {round(min_score, 2)}."
                                   f"\nRunning again with extended shift search range in z.")
                 z_shifts = extend_array(z_shifts, widen[2])
-                shift_new, score_new = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
-                                                         x_shift_2d, z_shifts * z_scale[0], initial_shifts)
+                shift_new, score_new, all_shifts_new, all_scores_new = \
+                    get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shift_2d,
+                                      x_shift_2d, z_shifts * z_scale[0], all_shifts_3d)
                 if score_new > score:
                     score = score_new
                     shift = shift_new
                 # update initial_shifts so don't look over same shifts twice
-                initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts * z_scale[0])).T.reshape(-1, 3)
+                all_shifts_3d = np.append(all_shifts_3d, all_shifts_new, axis=0)
+                all_scores_3d = np.append(all_scores_3d, all_scores_new, axis=0)
                 z_shift_range = np.ptp(z_shifts)
 
     # refined search near maxima with half the step
     y_shifts = refined_shifts(y_shifts, shift[0])
     x_shifts = refined_shifts(x_shifts, shift[1])
     z_shifts = refined_shifts(z_shifts, shift[2] / z_scale[0])
-    shift2, score2 = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
-                                       z_shifts * z_scale[0], initial_shifts)
+    shift2, score2, all_shifts_new, all_scores_new = \
+        get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
+                          z_shifts * z_scale[0], all_shifts_3d)
     if score2 > score:
         shift = shift2
+    if nz_collapse is None:
+        all_shifts_2d = np.append(all_shifts_2d, all_shifts_new[:, :2], axis=0)
+        all_scores_2d = np.append(all_scores_2d, all_scores_new, axis=0)
+    else:
+        all_shifts_3d = np.append(all_shifts_3d, all_shifts_new, axis=0)
+        all_scores_3d = np.append(all_scores_3d, all_scores_new, axis=0)
     # final search with a step of 1
     y_shifts = refined_shifts(y_shifts, shift[0], refined_scale=1e-50, extend_scale=1)
     x_shifts = refined_shifts(x_shifts, shift[1], refined_scale=1e-50, extend_scale=1)
     z_shifts = refined_shifts(z_shifts, shift[2] / z_scale[0], refined_scale=1e-50, extend_scale=1)
-    shift, score = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
-                                     z_shifts * z_scale[0], initial_shifts)
+    shift, score, all_shifts_new, all_scores_new = \
+        get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh, y_shifts, x_shifts,
+                          z_shifts * z_scale[0], all_shifts_3d)
+    if nz_collapse is None:
+        all_shifts_2d = np.append(all_shifts_2d, all_shifts_new[:, :2], axis=0)
+        all_scores_2d = np.append(all_scores_2d, all_scores_new, axis=0)
+    else:
+        all_shifts_3d = np.append(all_shifts_3d, all_shifts_new, axis=0)
+        all_scores_3d = np.append(all_scores_3d, all_scores_new, axis=0)
+        all_shifts_3d[:, 2] = all_shifts_3d[:, 2] / z_scale[0]
+        all_shifts_3d = all_shifts_3d.astype(np.int16)
     shift[2] = shift[2] / z_scale[0]
-    return shift.astype(int), score, min_score
+    return shift.astype(int), score, min_score, {'shifts_2d': all_shifts_2d, 'scores_2d': all_scores_2d,
+                                                 'shifts_3d': all_shifts_3d, 'scores_3d': all_scores_3d}
 
 # TODO: Not sure what amend_shifts function was for. Does not seem to be used in anything.
 # def amend_shifts(shift_info, shifts, spot_details, c, r, neighb_dist_thresh, z_scale):

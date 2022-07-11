@@ -121,12 +121,10 @@ class TestShift(unittest.TestCase):
             nz_collapse = None
         else:
             nz_collapse = self.nz_collapse
-        found_transform, score, score_thresh = compute_shift(spot_yxz, transform_yxz, self.min_score,
-                                                             self.min_score_multiplier, self.min_score_min_dist,
-                                                             self.min_score_max_dist, self.shift_score_thresh,
-                                                             y_search, x_search, None,
-                                                             [widen, widen, z_widen], max_shift_range, z_scale,
-                                                             nz_collapse, self.shift_spacing_z)
+        found_transform, score, score_thresh, debug_info = \
+            compute_shift(spot_yxz, transform_yxz, self.min_score, self.min_score_multiplier, self.min_score_min_dist,
+                          self.min_score_max_dist, self.shift_score_thresh, y_search, x_search, None,
+                          [widen, widen, z_widen], max_shift_range, z_scale, nz_collapse, self.shift_spacing_z)
         diff = actual_transform.astype(int) - found_transform.astype(int)
         self.assertTrue(np.abs(diff).max() <= self.tol)
 

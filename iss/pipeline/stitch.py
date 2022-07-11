@@ -96,7 +96,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
                                                                config['neighb_dist_thresh'], shifts[j]['y'],
                                                                shifts[j]['x'], shifts[j]['z'],
                                                                config['shift_widen'], config['shift_max_range'],
-                                                               z_scale, config['nz_collapse'], config['shift_step'][2])
+                                                               z_scale, config['nz_collapse'],
+                                                               config['shift_step'][2])[:3]
                     shift_info[j]['pairs'] = np.append(shift_info[j]['pairs'],
                                                        np.array([t, t_neighb[j][0]]).reshape(1, 2), axis=0)
                     shift_info[j]['shifts'] = np.append(shift_info[j]['shifts'], np.array(shift).reshape(1, 3), axis=0)
@@ -135,12 +136,10 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             t_neighb = shift_info[j]['pairs'][i, 1]
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
-            shift_info[j]['shifts'][i], \
-                shift_info[j]['score'][i], _ = compute_shift(spot_yxz(spot_details, t, r, c),
-                                                             spot_yxz(spot_details, t_neighb, r, c), 0, None, None,
-                                                             None, config['neighb_dist_thresh'], shifts[j]['y'],
-                                                             shifts[j]['x'], shifts[j]['z'], None, None,
-                                                             z_scale, config['nz_collapse'], config['shift_step'][2])
+            shift_info[j]['shifts'][i], shift_info[j]['score'][i] = \
+                compute_shift(spot_yxz(spot_details, t, r, c), spot_yxz(spot_details, t_neighb, r, c), 0, None, None,
+                              None, config['neighb_dist_thresh'], shifts[j]['y'], shifts[j]['x'], shifts[j]['z'],
+                              None, None, z_scale, config['nz_collapse'], config['shift_step'][2])[:2]
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
 
@@ -153,7 +152,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
                                   shift_info['west']['pairs'], shift_info['west']['shifts'],
                                   nbp_basic.n_tiles, centre_tile)
     if nbp_basic.is_3d is False:
-        tile_origin[:, 2] = 0   # set z coordinate to 0 for all tiles if 2d
+        tile_origin[:, 2] = 0  # set z coordinate to 0 for all tiles if 2d
 
     # add tile origin to debugging notebook so don't have whole page for one variable,
     # and need to add other rounds to it in registration stage anyway.
@@ -163,9 +162,10 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
         nbp_debug.__setattr__(j + '_' + 'final_shift_search', np.zeros((3, 3), dtype=int))
         nbp_debug.__getattribute__(j + '_' + 'final_shift_search')[:, 0] = \
             [np.min(shifts[j][key]) for key in shifts[j].keys()]
-        nbp_debug.__getattribute__(j + '_' + 'final_shift_search')[:, 1] = [np.max(shifts[j][key]) for key in shifts[j].keys()]
+        nbp_debug.__getattribute__(j + '_' + 'final_shift_search')[:, 1] = [np.max(shifts[j][key]) for key in
+                                                                            shifts[j].keys()]
         nbp_debug.__getattribute__(j + '_' + 'final_shift_search')[:, 2] = \
             nbp_debug.__getattribute__(j + '_' + 'start_shift_search')[:, 2]
         for var in shift_info[j].keys():
-            nbp_debug.__setattr__(j+'_'+var, shift_info[j][var])
+            nbp_debug.__setattr__(j + '_' + var, shift_info[j][var])
     return nbp_debug
