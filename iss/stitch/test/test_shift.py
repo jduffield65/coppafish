@@ -164,7 +164,7 @@ class TestShift(unittest.TestCase):
         self.all_test(3, 'both')
 
     def test_3d_widen(self):
-        self.all_test(3, 'both', 5, 1.005567259)
+        self.all_test(3, 'both', 5, 3.6)
 
     def test_3d_multiple_widen(self):
         self.all_test(3, 'both', 5, 1.005567259, True)
