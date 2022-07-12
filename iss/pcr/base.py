@@ -41,7 +41,7 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndar
     """
     if (utils.round_any(tile_centre, 0.5) == tile_centre).min() == False:
         raise ValueError(f"tile_centre given, {tile_centre}, is not a multiple of 0.5 in each dimension.")
-    yxz_pad = np.pad((yxz-tile_centre) * [1, 1, z_scale], [(0, 0), (0, 1)], constant_values=1)
+    yxz_pad = np.pad((yxz - tile_centre) * [1, 1, z_scale], [(0, 0), (0, 1)], constant_values=1)
     yxz_transform = np.matmul(yxz_pad, transform)
     yxz_transform = np.round((yxz_transform / [1, 1, z_scale]) + tile_centre).astype(np.int16)
     return yxz_transform
@@ -54,7 +54,7 @@ def apply_transform_jax_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_ce
     yxz_transform = jnp.matmul(yxz_pad, transform)
     yxz_transform = jnp.round((yxz_transform / z_multiplier) + tile_centre).astype(jnp.int16)
     in_range = jnp.logical_and((yxz_transform >= jnp.array([0, 0, 0])).all(),
-                              (yxz_transform < tile_sz).all())  # set color to nan if out range
+                               (yxz_transform < tile_sz).all())  # set color to nan if out range
     return yxz_transform, in_range
 
 
@@ -94,7 +94,7 @@ def apply_transform_jax(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: j
             Whether spot s was in the bounds of the tile when transformed to round `r`, channel `c`.
     """
     return jax.vmap(apply_transform_jax_single, in_axes=(0, None, None, None, None),
-                    out_axes=(0,0))(yxz, transform, tile_centre, z_scale, tile_sz)
+                    out_axes=(0, 0))(yxz, transform, tile_centre, z_scale, tile_sz)
 
 
 def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,
@@ -395,7 +395,7 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
     with tqdm(total=n_tiles * n_rounds * n_channels) as pbar:
         pbar.set_description(f"Iterative Closest Point to find affine transforms")
         for i in range(n_iter):
-            pbar.set_postfix({'iter': f'{i+1}/{n_iter}', 'regularized': str(finished_good_images)})
+            pbar.set_postfix({'iter': f'{i + 1}/{n_iter}', 'regularized': str(finished_good_images)})
             neighbour_last = neighbour.copy()
             for t in range(n_tiles):
                 for r in range(n_rounds):
@@ -413,19 +413,19 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
                             is_converged[t, r, c] = np.abs(neighbour[t, r, c] - neighbour_last[t, r, c]).max() == 0
                             if is_converged[t, r, c]:
                                 pbar.update(1)
-            if (is_converged.all() and finished_good_images == False) or i == n_iter-1:
+            if (is_converged.all() and finished_good_images == False) or i == n_iter - 1:
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
                 # TODO: included failed_non_matches with idea that if failed on matches but not on anomalous transform,
                 #  then find transform again with regularization and keep transform for which matches higher.
                 #  Unit testing would then not work because this is not done in MATLAB.
-                if reg_constant_rot is not None and reg_constant_shift is not None and i < n_iter-1:
+                if reg_constant_rot is not None and reg_constant_shift is not None and i < n_iter - 1:
                     # reset transforms of those that failed to average transform as starting point for
                     # regularised fitting
                     transforms_outlier[failed, :, :] = transforms[failed, :, :].copy()
                     transforms[failed, :, :] = av_transforms[failed, :, :]
                     is_converged[failed] = False
-                    i_finished_good = i+1  # so don't end iteration on next one
+                    i_finished_good = i + 1  # so don't end iteration on next one
                     finished_good_images = True
                     pbar.update(-np.sum(failed.flatten()))
 
@@ -436,3 +436,52 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
     debug_info = {'n_matches': n_matches, 'error': error, 'failed': failed, 'is_converged': is_converged,
                   'av_scaling': av_scaling, 'av_shifts': av_shifts, 'transforms_outlier': transforms_outlier}
     return transforms, debug_info
+
+
+def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray,
+                                z_scale_base: float,
+                                z_scale_transform: float, initial_shift: np.ndarray,
+                                neighb_dist_thresh: float) -> Tuple[np.ndarray, int, float, bool]:
+    """
+    Finds the affine transform taking spot_yxz_base to spot_yxz_transform.
+
+    Args:
+        config: register section of config file corresponding to spot_yxz_base.
+        spot_yxz_base: Point cloud want to find the shift from.
+            spot_yxz_base[:, 2] is the z coordinate in units of z-pixels.
+        spot_yxz_transform: Point cloud want to find the shift to.
+            spot_yxz_transform[:, 2] is the z coordinate in units of z-pixels.
+        z_scale_base: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.
+        z_scale_transform: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.
+        initial_shift: yxz shift to be used as starting point to find affine transfom.
+            yx shift is in units of yx-pixels. z shift is in units of z-pixels.
+        neighb_dist_thresh: Distance between 2 points must be less than this to be constituted a match.
+
+    Returns:
+        - `transform` - `float [4 x 3]`.
+            `transform` is the final affine transform found.
+        - `n_matches` - Number of matches found for each transform.
+        - `error` - Average distance between neighbours below `neighb_dist_thresh`.
+        - `is_converged` - `False` if max iterations reached before transform converged.
+    """
+    n_tiles = 1
+    n_channels = 1
+    n_rounds = 1
+    initial_shift = np.asarray(initial_shift).reshape(n_tiles, n_rounds, -1)
+    n_matches_thresh = config['matches_thresh_fract'] * np.min(
+        [spot_yxz_base.shape[0], spot_yxz_transform.shape[0]])
+    n_matches_thresh = np.clip(n_matches_thresh, config['matches_thresh_min'], config['matches_thresh_max'])
+    n_matches_thresh = n_matches_thresh.astype(int)
+    initial_shift = initial_shift * [1, 1, z_scale_base]
+    start_transform = transform_from_scale_shift(np.ones((n_channels, 3)), initial_shift)
+    spot_yxz_base_array = np.zeros(n_tiles, dtype=object)
+    spot_yxz_base_array[0] = spot_yxz_base * [1, 1, z_scale_base]
+    spot_yxz_transform_array = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
+    spot_yxz_transform_array[0, 0, 0] = spot_yxz_transform * [1, 1, z_scale_transform]
+    final_transform, pcr_debug = \
+        iterate(spot_yxz_base_array, spot_yxz_transform_array,
+                start_transform, config['n_iter'], neighb_dist_thresh,
+                n_matches_thresh, config['scale_dev_thresh'], config['shift_dev_thresh'],
+                None, None)
+    return final_transform.squeeze(), int(pcr_debug['n_matches']), float(pcr_debug['error']
+                                                                         ), bool(pcr_debug['is_converged'])

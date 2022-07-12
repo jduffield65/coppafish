@@ -1,10 +1,10 @@
 from typing import List, Tuple
+from iss.pcr import get_single_affine_transform
 from iss.pipeline.run import initialize_nb, run_extract, run_find_spots
 from iss import setup, utils
 from iss.call_spots import get_non_duplicate
 from iss.stitch import compute_shift
 from iss.find_spots import get_isolated_points
-from iss import pcr
 from iss.pipeline import stitch
 from iss.plot.stitch import view_shifts
 import numpy as np
@@ -75,13 +75,13 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             get_shift(config['register_initial'], global_yxz, global_yxz_full,
                       z_scale, z_scale_full, nb.basic_info.is_3d)
 
-        # view_shifts(nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info['shifts_2d'],
-        #             debug_info['scores_2d'], debug_info['shifts_3d'], debug_info['scores_3d'])
+        # view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
+        #             debug_info['scores_3d'], nbp.shift, nbp.shift_score_thresh)
 
         # Get affine transform from separate round to full anchor image
         nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
-            get_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
-                                 nbp.shift, neighb_dist_thresh)
+            get_single_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
+                                        nbp.shift, neighb_dist_thresh)
         nb += nbp  # save results of transform found
     else:
         nbp = nb.reg_to_anchor_info
@@ -144,53 +144,6 @@ def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.nd
                       config['shift_widen'], config['shift_max_range'], [z_scale_base, z_scale_transform],
                       config['nz_collapse'], config['shift_step'][2])
     return shift, np.asarray(shift_score), np.asarray(shift_score_thresh), debug_info
-
-
-def get_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,
-                         z_scale_transform: float, initial_shift: np.ndarray,
-                         neighb_dist_thresh: float) -> Tuple[np.ndarray, int, float, bool]:
-    """
-    Finds the affine transform taking spot_yxz_base to spot_yxz_transform.
-
-    Args:
-        config: register section of config file corresponding to spot_yxz_base.
-        spot_yxz_base: Point cloud want to find the shift from.
-            spot_yxz_base[:, 2] is the z coordinate in units of z-pixels.
-        spot_yxz_transform: Point cloud want to find the shift to.
-            spot_yxz_transform[:, 2] is the z coordinate in units of z-pixels.
-        z_scale_base: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.
-        z_scale_transform: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.
-        initial_shift: Shift to be used as starting point to find affine transfom.
-        neighb_dist_thresh: Distance between 2 points must be less than this to be constituted a match.
-
-    Returns:
-        - `transform` - `float [4 x 3]`.
-            `transform` is the final affine transform found.
-        - `n_matches` - Number of matches found for each transform.
-        - `error` - Average distance between neighbours below `neighb_dist_thresh`.
-        - `is_converged` - `False` if max iterations reached before transform converged.
-    """
-    n_tiles = 1
-    n_channels = 1
-    n_rounds = 1
-    initial_shift = np.asarray(initial_shift).reshape(n_tiles, n_rounds, -1)
-    n_matches_thresh = config['matches_thresh_fract'] * np.min(
-        [spot_yxz_base.shape[0], spot_yxz_transform.shape[0]])
-    n_matches_thresh = np.clip(n_matches_thresh, config['matches_thresh_min'], config['matches_thresh_max'])
-    n_matches_thresh = n_matches_thresh.astype(int)
-    initial_shift = initial_shift * [1, 1, z_scale_base]
-    start_transform = pcr.transform_from_scale_shift(np.ones((n_channels, 3)), initial_shift)
-    spot_yxz_base_array = np.zeros(n_tiles, dtype=object)
-    spot_yxz_base_array[0] = spot_yxz_base * [1, 1, z_scale_base]
-    spot_yxz_transform_array = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
-    spot_yxz_transform_array[0, 0, 0] = spot_yxz_transform * [1, 1, z_scale_transform]
-    final_transform, pcr_debug = \
-        pcr.iterate(spot_yxz_base_array, spot_yxz_transform_array,
-                    start_transform, config['n_iter'], neighb_dist_thresh,
-                    n_matches_thresh, config['scale_dev_thresh'], config['shift_dev_thresh'],
-                    None, None)
-    return final_transform.squeeze(), int(pcr_debug['n_matches']), float(pcr_debug['error']
-                                                                         ), bool(pcr_debug['is_converged'])
 
 
 if __name__ == "__main__":
