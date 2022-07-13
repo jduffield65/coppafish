@@ -9,7 +9,7 @@ import napari
 from napari.qt import thread_worker
 import time
 from qtpy.QtCore import Qt
-from superqt import QDoubleRangeSlider
+from superqt import QDoubleRangeSlider, QDoubleSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow
 
 
@@ -44,7 +44,7 @@ class iss_plot:
         show_spots[self.omp_0_ind:] = quality_threshold(self.nb.omp)  # initially show omp spots which passed threshold
 
         # color to plot for all genes in the notebook
-        gene_color = np.ones((len(nb.call_spots.gene_names), 3))
+        gene_color = np.ones((len(self.nb.call_spots.gene_names), 3))
         for i in range(n_legend_genes):
             if self.legend_gene_no[i] != -1:
                 gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
@@ -62,7 +62,7 @@ class iss_plot:
         self.diagnostic_layer_ind = 0
 
         # Add gene spots with ISS color code - different layer for each symbol
-        self.spot_gene_no = np.hstack((nb.ref_spots.gene_no, nb.omp.gene_no))
+        self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
         self.label_prefix = 'Gene Symbol'  # prefix of label for layers showing spots
         for s in np.unique(self.legend_gene_symbol):
             # TODO: set transparency based on spot score
@@ -83,15 +83,24 @@ class iss_plot:
         # Scores for anchor/omp are different so reset score range when change method
         self.score_range = {'anchor': [self.nb.ref_spots.score_thresh, 1], 'omp': [self.nb.omp.score_thresh, 1]}
         self.score_thresh_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
-        self.score_thresh_slider.setSingleStep(0.01)
         self.score_thresh_slider.setValue(self.score_range['omp'])
         self.score_thresh_slider.setRange(0, 1)
-        self.score_thresh_slider.setMaximum(1)
         # When dragging, status will show thresh.
         self.score_thresh_slider.valueChanged.connect(lambda x: self.show_score_thresh(x[0], x[1]))
         # On release of slider, genes shown will change
         self.score_thresh_slider.sliderReleased.connect(self.update_plot)
         self.viewer.window.add_dock_widget(self.score_thresh_slider, area="left", name='Score Range')
+
+        # intensity is calculated same way for anchor / omp method so do not reset intensity threshold
+        # when change method.
+        self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
+        self.intensity_thresh_slider.setRange(0, 1)
+        self.intensity_thresh_slider.setValue(self.nb.omp.intensity_thresh)
+        # When dragging, status will show thresh.
+        self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
+        # On release of slider, genes shown will change
+        self.intensity_thresh_slider.sliderReleased.connect(self.update_plot)
+        self.viewer.window.add_dock_widget(self.intensity_thresh_slider, area="left", name='Intensity Threshold')
 
         self.method_buttons = ButtonMethodWindow()  # Buttons to change between Anchor and OMP spots showing.
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
@@ -141,11 +150,11 @@ class iss_plot:
         if self.method_buttons.method == 'OMP':
             score = omp_spot_score(self.nb.omp)
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
-            intensity_ok = self.nb.omp.intensity > self.nb.omp.intensity_thresh
+            intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
             score = self.nb.ref_spots.score
             method_ind = np.arange(self.omp_0_ind)
-            intensity_ok = self.nb.ref_spots.intensity > self.nb.ref_spots.intensity_thresh
+            intensity_ok = self.nb.ref_spots.intensity > self.intensity_thresh_slider.value()
         # Keep record of last score range set for each method
         self.score_range[self.method_buttons.method.lower()] = self.score_thresh_slider.value()
         qual_ok = np.array([score > self.score_thresh_slider.value()[0], score <= self.score_thresh_slider.value()[1],
@@ -164,6 +173,9 @@ class iss_plot:
     def show_score_thresh(self, low_value, high_value):
         self.viewer.status = self.method_buttons.method + ': Score Range = [{:.2f}, {:.2f}]'.format(low_value,
                                                                                                     high_value)
+
+    def show_intensity_thresh(self, value):
+        self.viewer.status = 'Intensity Threshold = {:.3f}'.format(value)
 
     def button_anchor_clicked(self):
         # Only allow one button pressed
