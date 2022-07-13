@@ -58,7 +58,12 @@ class view_omp(ColorPlotBase):
         spot_colors = jnp.asarray(spot_colors)
         # Only look at pixels with high enough intensity - same as in full pipeline
         spot_intensity = get_spot_intensity_jax(jnp.abs(spot_colors))
-        keep = spot_intensity > nb.omp.initial_intensity_thresh
+        if nb.has_page('omp'):
+            initial_intensity_thresh =  nb.omp.initial_intensity_thresh
+        else:
+            # TODO: can calculate initial_intensity_thresh here from call_spots page and config info
+            initial_intensity_thresh = 0
+        keep = spot_intensity > initial_intensity_thresh
         bled_codes = nb.call_spots.bled_codes_ge
         n_genes = bled_codes.shape[0]
         bled_codes = jnp.asarray(bled_codes[np.ix_(np.arange(n_genes),
@@ -66,6 +71,7 @@ class view_omp(ColorPlotBase):
         dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
         # Note, variables below are read from the config file below so
         # will not work without config file hence initial error.
+        # TODO: read these in from config when config can be loaded from nb
         dp_thresh = nb.omp.dp_thresh
         alpha = nb.omp.alpha
         beta = nb.omp.beta

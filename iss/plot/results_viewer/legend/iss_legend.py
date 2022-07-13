@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import pandas as pd
 import os
+import numpy as np
+from typing import Optional
 
 # MPL background
 plt.style.use('dark_background')
@@ -15,6 +17,8 @@ right = 0.95
 bottom = 0.05
 top = 0.95
 hspace = 0.05
+n_labels_per_column = 26
+
 
 
 def cell_type_ax(ax, cells):
@@ -40,34 +44,66 @@ def cell_type_ax(ax, cells):
     return ax
 
 
-def gene_ax(ax, genes):
+def gene_ax(ax: plt.Axes, gene_legend_info: pd.DataFrame, genes: np.ndarray):
 
     ax.set_title('Gene legend')
 
-    for g in genes.index:
+    added_ind = 0
+    n_columns = int(np.ceil(genes.size/n_labels_per_column))
+    n_genes_per_column = int(np.ceil(genes.size/n_columns))
+    for g in gene_legend_info.index:
+        if np.isin(gene_legend_info['GeneNames'][g], genes):
+            gene_color = (gene_legend_info.loc[g, 'ColorR'], gene_legend_info.loc[g, 'ColorG'],
+                          gene_legend_info.loc[g, 'ColorB'])
 
-        gene_color = (genes.loc[g, 'ColorR'], genes.loc[g, 'ColorG'], genes.loc[g, 'ColorB'])
+            x = 0.05 + (added_ind // n_genes_per_column)/n_columns * 2.5
+            y = n_genes_per_column - (added_ind - (n_genes_per_column * (added_ind // n_genes_per_column)))
 
-        x = 0.05 + (g // 26) * .5
-        y = 26 - (g - (26 * (g // 26)))
+            m = gene_legend_info.loc[g, 'mpl_symbol']
 
-        m = genes.loc[g, 'mpl_symbol']
-
-        ax.scatter(x=x, y=y, marker=m, facecolor=gene_color, s=50)
-        ax.text(x=x + .05, y=y - .3, s=genes.loc[g, 'GeneNames'][:6], c=gene_color)
+            ax.scatter(x=x, y=y, marker=m, facecolor=gene_color, s=50)
+            ax.text(x=x + .05, y=y - .3, s=gene_legend_info.loc[g, 'GeneNames'][:6], c=gene_color)
+            added_ind += 1
 
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_xlim((-.05, 2.6))
+    ax.set_xlim((-.05, x+0.5))  # last x value is the maximum
 
     return ax
 
 
-def add_legend(viewer, genes, cells, celltype=True, gene=True):
+def add_legend(viewer: napari.Viewer, gene_legend_info: Optional[pd.DataFrame],
+               genes: Optional[np.ndarray] = None, cell_legend_info: Optional[pd.DataFrame] = None):
+    """
+    This adds a legend to the viewer which displays the genes and/or cell types present.
 
-    mpl_widget = FigureCanvas(Figure(figsize=(4, 12)))
-
-    if celltype and gene:
+    Args:
+        viewer: Napari viewer for current experiment.
+        gene_legend_info: [n_legend_genes x 8] pandas data frame containing the following information for each gene
+            - GeneNames - str, name of gene with first letter capital
+            - ColorR - float, Rgb color for plotting
+            - ColorG - float, rGb color for plotting
+            - ColorB - float, rgB color for plotting
+            - Symbols - str, symbol used to plot in MATLAB
+            - napari_symbol - str, symbol used to plot in napari
+            - mpl_symbol - str, equivalent of napari symbol in matplotlib.
+        genes: str [n_genes]
+            Genes in current experiment.
+        cell_legend_info: [n_legend_cell_types x 3] pandas data frame containing the following information for each
+            cell type
+            - className
+            - IdentifiedType
+            - color
+    """
+    if genes is None and gene_legend_info is not None:
+        genes = np.asarray(gene_legend_info['GeneNames'])  # show all genes in legend if not given
+    if genes is not None:
+        # make x dimension of figure equal to number of columns in legend
+        fig_size = [int(np.ceil(genes.size/n_labels_per_column)), 4]
+    else:
+        fig_size = [5, 4]
+    mpl_widget = FigureCanvas(Figure(figsize=fig_size))
+    if cell_legend_info is not None and gene_legend_info is not None:
 
         ax = mpl_widget.figure.subplots(2, 1, gridspec_kw={'height_ratios': [1, 1],
                                                            'hspace': hspace,
@@ -75,29 +111,29 @@ def add_legend(viewer, genes, cells, celltype=True, gene=True):
                                                            'bottom': bottom,
                                                            'left': left,
                                                            'right': right})
-        ax[0] = cell_type_ax(ax[0], cells=cells)
-        ax[1] = gene_ax(ax[1], genes=genes)
+        ax[0] = cell_type_ax(ax[0], cells=cell_legend_info)
+        ax[1] = gene_ax(ax[1], gene_legend_info, genes)
 
-    elif celltype and not gene:
-
-        ax = mpl_widget.figure.subplots(gridspec_kw={'top': top,
-                                                     'bottom': bottom,
-                                                     'left': left,
-                                                     'right': right})
-
-        cell_type_ax(ax, cells=cells)
-
-    elif not celltype and gene:
+    elif cell_legend_info is not None and gene_legend_info is None:
 
         ax = mpl_widget.figure.subplots(gridspec_kw={'top': top,
                                                      'bottom': bottom,
                                                      'left': left,
                                                      'right': right})
 
-        gene_ax(ax, genes=genes)
+        cell_type_ax(ax, cells=cell_legend_info)
+
+    elif cell_legend_info is None and gene_legend_info is not None:
+
+        ax = mpl_widget.figure.subplots(gridspec_kw={'top': top,
+                                                     'bottom': bottom,
+                                                     'left': left,
+                                                     'right': right})
+
+        gene_ax(ax, gene_legend_info, genes)
 
     else:
-        print('You need to select either celltype or gene')
+        print('Both gene_legend_info and cell_legend_info are None so no legend added.')
 
     viewer.window.add_dock_widget(mpl_widget)
 
@@ -110,5 +146,5 @@ if __name__ == "__main__":
     cells = pd.read_csv(os.path.join(legend_folder, 'cell_color.csv'))
 
     viewer = napari.Viewer()
-    add_legend(viewer, celltype=True, gene=False, genes=genes, cells=cells)
+    add_legend(viewer, gene_legend_info=genes, cell_legend_info=cells)
     napari.run()

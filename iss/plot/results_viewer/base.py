@@ -61,8 +61,7 @@ class iss_plot:
                                                       gene_legend_info.loc[i, 'ColorB']]
 
         self.viewer = napari.Viewer()
-        iss_legend.add_legend(self.viewer, genes=gene_legend_info, cells=cell_legend_info, celltype=False,
-                              gene=True)
+        iss_legend.add_legend(self.viewer, gene_legend_info=gene_legend_info, genes=nb.call_spots.gene_names)
 
         # Add all spots in layer as transparent white spots.
         point_size = 10  # with size=4, spots are too small to see
