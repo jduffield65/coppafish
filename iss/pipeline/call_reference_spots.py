@@ -115,7 +115,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # get bleed matrix
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
-    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use)
+    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use).astype(np.float32)
     # Remove background first
     background_coef = np.ones((spot_colors_use.shape[0], nbp_basic.n_channels)) * np.nan
     background_codes = np.ones((nbp_basic.n_channels, nbp_basic.n_rounds, nbp_basic.n_channels)) * np.nan
@@ -209,13 +209,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
 
     # save score using latest gene efficiency and diff to second best gene
-    nbp_ref_spots.background_coef = background_coef
-    nbp_ref_spots.score = spot_score
-    nbp_ref_spots.gene_no = spot_gene_no
+    nbp_ref_spots.background_coef = background_coef.astype(np.float16)
+    nbp_ref_spots.score = spot_score.astype(np.float32)
+    nbp_ref_spots.gene_no = spot_gene_no.astype(np.int16)
     sort_gene_inds = np.argsort(scores, axis=1)
     gene_no_second_best = sort_gene_inds[:, -2]
     score_second_best = scores[np.arange(np.shape(scores)[0]), gene_no_second_best]
-    nbp_ref_spots.score_diff = nbp_ref_spots.score - score_second_best
+    nbp_ref_spots.score_diff = (nbp_ref_spots.score - score_second_best).astype(np.float16)
 
     # save gene_efficiency[g,r] with nan when r outside use_rounds and 1 when gene_codes[g,r] outside use_dyes.
     gene_efficiency = np.ones((n_genes, nbp_basic.n_rounds)) * np.nan

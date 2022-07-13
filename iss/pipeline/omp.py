@@ -170,7 +170,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             del spot_yxz, spot_gene_no, spots_used
         else:
             spot_yxzg = None
-
+        # TODO: make config['initial_pos_neighbour_thresh'] larger, maybe a fraction of n_pos in spot_shape.
+        #  At least 10 in 3D, maybe 4 in 2D - check by comparing n_pos_neighb[qual_ok] vs n_pos_neighb[!qual_ok]
         spot_info_t = \
             omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z, 0, spot_shape,
                           config['initial_pos_neighbour_thresh'], spot_yxzg)
@@ -218,7 +219,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     n_spots = np.sum(not_duplicate)
     nan_value = -nbp_basic.tile_pixel_value_shift - 1
     # Only read in used colors first for background/intensity calculation.
-    nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=int) * nan_value
+    nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.int32) * nan_value
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
@@ -230,18 +231,20 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nd_background_coefs[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = \
         np.asarray(fit_background_jax_vectorised(spot_colors_norm,
                                                  nbp_call_spots.background_weight_shift)[1])
-    nbp.background_coef = nd_background_coefs
+    # save background_coef as low memory as just debugging, specific value not important
+    nbp.background_coef = nd_background_coefs.astype(np.float16)
     nbp.intensity = np.asarray(get_spot_intensity_jax(spot_colors_norm))
     del spot_colors_norm
 
     # When saving to notebook, include unused rounds/channels.
-    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int) * nan_value
+    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=np.int32) * nan_value
     nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)] = nd_spot_colors_use
     nbp.colors = nd_spot_colors
     del nd_spot_colors_use
 
     spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
-    nbp.coef = spot_coefs[not_duplicate].toarray()
+    # save coef as low memory as just debugging, specific value not important
+    nbp.coef = spot_coefs[not_duplicate].toarray().astype(np.float16)
     nbp.gene_no = spot_info[not_duplicate, 3]
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]
     nbp.n_neighbours_neg = spot_info[not_duplicate, 5]
