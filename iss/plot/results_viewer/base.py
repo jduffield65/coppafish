@@ -32,16 +32,25 @@ class iss_plot:
 
         # concatenate anchor and omp spots so can use button to switch between them.
         self.omp_0_ind = self.nb.ref_spots.tile.size  # number of anchor spots
-        self.n_spots = self.omp_0_ind + self.nb.omp.tile.size  # number of anchor + number of omp spots
+        if self.nb.has_page('omp'):
+            self.n_spots = self.omp_0_ind + self.nb.omp.tile.size  # number of anchor + number of omp spots
+        else:
+            self.n_spots = self.omp_0_ind
         spot_zyx = np.zeros((self.n_spots, 3))
         spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + self.nb.stitch.tile_origin[self.nb.ref_spots.tile]
                                      )[:, [2, 0, 1]]
-        spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + self.nb.stitch.tile_origin[self.nb.omp.tile])[:, [2, 0, 1]]
+        if self.nb.has_page('omp'):
+            spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + self.nb.stitch.tile_origin[self.nb.omp.tile]
+                                         )[:, [2, 0, 1]]
         if not self.nb.basic_info.is_3d:
             spot_zyx = spot_zyx[:, 1:]
 
-        show_spots = np.zeros(self.n_spots, dtype=bool)  # indicates spots shown when plot first opened
-        show_spots[self.omp_0_ind:] = quality_threshold(self.nb.omp)  # initially show omp spots which passed threshold
+        # indicate spots shown when plot first opened - omp if exists, else anchor
+        if self.nb.has_page('omp'):
+            show_spots = np.zeros(self.n_spots, dtype=bool)
+            show_spots[self.omp_0_ind:] = quality_threshold(self.nb.omp)
+        else:
+            show_spots = quality_threshold(self.nb.ref_spots)
 
         # color to plot for all genes in the notebook
         gene_color = np.ones((len(self.nb.call_spots.gene_names), 3))
@@ -62,7 +71,10 @@ class iss_plot:
         self.diagnostic_layer_ind = 0
 
         # Add gene spots with ISS color code - different layer for each symbol
-        self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
+        if self.nb.has_page('omp'):
+            self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
+        else:
+            self.spot_gene_no = self.nb.ref_spots.gene_no
         self.label_prefix = 'Gene Symbol'  # prefix of label for layers showing spots
         for s in np.unique(self.legend_gene_symbol):
             # TODO: set transparency based on spot score
@@ -80,10 +92,14 @@ class iss_plot:
         # It is needed because layer is transparent so can't see when select spot.
         self.viewer_status_on_select()
 
-        # Scores for anchor/omp are different so reset score range when change method
-        self.score_range = {'anchor': [self.nb.ref_spots.score_thresh, 1], 'omp': [self.nb.omp.score_thresh, 1]}
         self.score_thresh_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
-        self.score_thresh_slider.setValue(self.score_range['omp'])
+        # Scores for anchor/omp are different so reset score range when change method
+        self.score_range = {'anchor': [self.nb.ref_spots.score_thresh, 1]}
+        if self.nb.has_page('omp'):
+            self.score_range['omp'] = [self.nb.omp.score_thresh, 1]
+            self.score_thresh_slider.setValue(self.score_range['omp'])
+        else:
+            self.score_thresh_slider.setValue(self.score_range['anchor'])
         self.score_thresh_slider.setRange(0, 1)
         # When dragging, status will show thresh.
         self.score_thresh_slider.valueChanged.connect(lambda x: self.show_score_thresh(x[0], x[1]))
@@ -95,17 +111,25 @@ class iss_plot:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        self.intensity_thresh_slider.setValue(self.nb.omp.intensity_thresh)
+        if self.nb.has_page('omp'):
+            self.intensity_thresh_slider.setValue(self.nb.omp.intensity_thresh)
+        else:
+            self.intensity_thresh_slider.setValue(self.nb.ref_spots.intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
         # On release of slider, genes shown will change
         self.intensity_thresh_slider.sliderReleased.connect(self.update_plot)
         self.viewer.window.add_dock_widget(self.intensity_thresh_slider, area="left", name='Intensity Threshold')
 
-        self.method_buttons = ButtonMethodWindow()  # Buttons to change between Anchor and OMP spots showing.
+        if self.nb.has_page('omp'):
+            self.method_buttons = ButtonMethodWindow('OMP')  # Buttons to change between Anchor and OMP spots showing.
+        else:
+            self.method_buttons = ButtonMethodWindow('Anchor')
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
-        self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
+        if self.nb.has_page('omp'):
+            # Only have button to change method if have omp page too.
+            self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
         self.key_call_functions()
         napari.run()
@@ -257,7 +281,7 @@ class iss_plot:
 
 
 class ButtonMethodWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, active_button: str = 'OMP'):
         super().__init__()
         self.button_anchor = QPushButton('Anchor', self)
         self.button_anchor.setCheckable(True)
@@ -266,7 +290,13 @@ class ButtonMethodWindow(QMainWindow):
         self.button_omp = QPushButton('OMP', self)
         self.button_omp.setCheckable(True)
         self.button_omp.setGeometry(140, 2, 50, 28)  # left, top, width, height
-        # Initially, show OMP spots
-        self.button_omp.setChecked(True)
-        self.method = 'OMP'
-
+        if active_button.lower() == 'omp':
+            # Initially, show OMP spots
+            self.button_omp.setChecked(True)
+            self.method = 'OMP'
+        elif active_button.lower() == 'anchor':
+            # Initially, show Anchor spots
+            self.button_anchor.setChecked(True)
+            self.method = 'Anchor'
+        else:
+            raise ValueError(f"active_button should be 'Anchor' or 'OMP' but {active_button} was given.")
