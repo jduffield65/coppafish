@@ -22,7 +22,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     bled_codes = np.moveaxis(np.moveaxis(nbp_call_spots.bled_codes_ge, 0, -1)[rc_ind], -1, 0)
     utils.errors.check_color_nan(bled_codes, nbp_basic)
     norm_bled_codes = np.linalg.norm(bled_codes, axis=(1, 2))
-    if np.abs(norm_bled_codes-1).max() > 1e-6:
+    if np.abs(norm_bled_codes - 1).max() > 1e-6:
         raise ValueError("nbp_call_spots.bled_codes_ge don't all have an L2 norm of 1 over "
                          "use_rounds and use_channels.")
     bled_codes = jnp.asarray(bled_codes)
@@ -69,11 +69,11 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         nbp.shape_spot_gene_no = None
         nbp.spot_shape_float = None
         # -1 because saved as uint16 so convert 0, 1, 2 to -1, 0, 1.
-        spot_shape = np.load(nbp_file.omp_spot_shape) # Put z to last index
+        spot_shape = np.load(nbp_file.omp_spot_shape)  # Put z to last index
         if spot_shape.ndim == 3:
             spot_shape = np.moveaxis(spot_shape, 0, 2)  # Put z to last index
 
-    # Deal with case where algorithm has been run for some tiles and data saved
+        # Deal with case where algorithm has been run for some tiles and data saved
     if os.path.isfile(nbp_file.omp_spot_info) and os.path.isfile(nbp_file.omp_spot_coef):
         if spot_shape is None:
             raise ValueError(f'OMP information already exists for some tiles but spot_shape tiff file does not:\n'
@@ -107,12 +107,13 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                          f'Delete or re-name the file {nbp_file.omp_spot_info} to run omp part from scratch.')
 
     print(f'Finding OMP coefficients for all pixels on tiles {use_tiles}:')
+    initial_pos_neighbour_thresh = config['initial_pos_neighbour_thresh']
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
         for z in use_z:
-            print(f"Tile {np.where(use_tiles==t)[0][0]+1}/{len(use_tiles)},"
-                  f" Z-plane {np.where(use_z==z)[0][0]+1}/{len(use_z)}")
+            print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)},"
+                  f" Z-plane {np.where(use_z == z)[0][0] + 1}/{len(use_z)}")
             # While iterating through tiles, only save info for rounds/channels using
             # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
             pixel_colors_tz, pixel_yxz_tz = get_spot_colors_jax(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
@@ -124,7 +125,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
-            #pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
+            # pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
             pixel_intensity_tz = get_spot_intensity_jax(jnp.abs(pixel_colors_tz))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             if not keep.any():
@@ -135,8 +136,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
             pixel_coefs_tz = sparse.csr_matrix(
                 omp.get_all_coefs(pixel_colors_tz, bled_codes,
-                                  nbp_call_spots.background_weight_shift,  dp_norm_shift, config['dp_thresh'],
-                                  config['alpha'], config['beta'],  config['max_genes'], config['weight_coef_fit'])[0])
+                                  nbp_call_spots.background_weight_shift, dp_norm_shift, config['dp_thresh'],
+                                  config['alpha'], config['beta'], config['max_genes'], config['weight_coef_fit'])[0])
             # a = 1 / 0
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.
@@ -170,11 +171,17 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             del spot_yxz, spot_gene_no, spots_used
         else:
             spot_yxzg = None
-        # TODO: make config['initial_pos_neighbour_thresh'] larger, maybe a fraction of n_pos in spot_shape.
-        #  At least 10 in 3D, maybe 4 in 2D - check by comparing n_pos_neighb[qual_ok] vs n_pos_neighb[!qual_ok]
+
+        if initial_pos_neighbour_thresh is None:
+            # Only save spots which have 10% of max possible number of positive neighbours
+            initial_pos_neighbour_thresh = config['initial_pos_neighbour_thresh_param'] * np.sum(spot_shape > 0)
+            initial_pos_neighbour_thresh = np.floor(initial_pos_neighbour_thresh)
+            initial_pos_neighbour_thresh = int(np.clip(initial_pos_neighbour_thresh,
+                                                       config['initial_pos_neighbour_thresh_min'],
+                                                       config['initial_pos_neighbour_thresh_max']))
         spot_info_t = \
             omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z, 0, spot_shape,
-                          config['initial_pos_neighbour_thresh'], spot_yxzg)
+                          initial_pos_neighbour_thresh, spot_yxzg)
         del spot_yxzg
         n_spots = spot_info_t[0].shape[0]
         spot_info_t = np.concatenate([spot_var.reshape(n_spots, -1).astype(np.int16) for spot_var in spot_info_t],
@@ -205,6 +212,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             del spot_info_t
 
     nbp.spot_shape = spot_shape
+    nbp.initial_pos_neighbour_thresh = initial_pos_neighbour_thresh
 
     spot_info = np.load(nbp_file.omp_spot_info)
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
