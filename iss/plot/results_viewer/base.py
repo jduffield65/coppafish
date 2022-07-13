@@ -9,244 +9,242 @@ import napari
 from napari.qt import thread_worker
 import time
 from qtpy.QtCore import Qt
-from superqt import QLabeledDoubleRangeSlider, QDoubleRangeSlider
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMainWindow
+from superqt import QDoubleRangeSlider
+from PyQt5.QtWidgets import QPushButton, QMainWindow
 
 
-def iss_plot(nb):
-    # TODO: get rid of button if is no omp page
-    legend_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend')
-    gene_color = pd.read_csv(os.path.join(legend_folder, 'gene_color.csv'))
-    gene_color['GeneNo'] = np.ones((len(gene_color['GeneNames']), 1), dtype=int) * -1
+class iss_plot:
+    def __init__(self, nb):
+        self.nb = nb
+        legend_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend')
+        gene_legend_info = pd.read_csv(os.path.join(legend_folder, 'gene_color.csv'))
+        cell_legend_info = pd.read_csv(os.path.join(legend_folder, 'cell_color.csv'))
 
-    # Add indices of genes in notebook to gene_color data - quicker to look up integers than names in change_threshold
-    gene_no = np.ones((len(gene_color['GeneNames']), 1), dtype=int) * -1
-    for i in range(len(gene_color['GeneNames'])):
-        gene_ind = np.where(nb.call_spots.gene_names == gene_color['GeneNames'][i])[0]
-        if len(gene_ind) > 0:
-            gene_no[i] = gene_ind[0]
-    gene_color['GeneNo'] = gene_no
+        # indices of genes in notebook to gene_color data - quicker to look up integers than names
+        # in change_threshold
+        n_legend_genes = len(gene_legend_info['GeneNames'])
+        self.legend_gene_symbol = np.asarray(gene_legend_info['Symbols'])
+        self.legend_gene_no = np.ones(n_legend_genes, dtype=int) * -1
+        for i in range(n_legend_genes):
+            gene_ind = np.where(self.nb.call_spots.gene_names == gene_legend_info['GeneNames'][i])[0]
+            if len(gene_ind) > 0:
+                self.legend_gene_no[i] = gene_ind[0]
 
-    cell_color = pd.read_csv(os.path.join(legend_folder, 'cell_color.csv'))
-    # combine anchor and omp spots so can use button to switch between them.
-    n_anchor_spots = nb.ref_spots.tile.size
-    n_spots = nb.ref_spots.tile.size + nb.omp.tile.size
-    omp_0_ind = n_anchor_spots
-    qual_ok = np.zeros(n_spots, dtype=bool)
-    # initially show omp spots
-    qual_ok[omp_0_ind:] = quality_threshold(nb.omp)
-    spot_zyx = np.zeros((n_spots, 3))
-    spot_zyx[:omp_0_ind] = (nb.ref_spots.local_yxz + nb.stitch.tile_origin[nb.ref_spots.tile])[:, [2, 0, 1]]
-    spot_zyx[omp_0_ind:] = (nb.omp.local_yxz + nb.stitch.tile_origin[nb.omp.tile])[:, [2, 0, 1]]
-    if not nb.basic_info.is_3d:
-        spot_zyx = spot_zyx[:, 1:]
+        # concatenate anchor and omp spots so can use button to switch between them.
+        self.omp_0_ind = self.nb.ref_spots.tile.size  # number of anchor spots
+        self.n_spots = self.omp_0_ind + self.nb.omp.tile.size  # number of anchor + number of omp spots
+        spot_zyx = np.zeros((self.n_spots, 3))
+        spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + self.nb.stitch.tile_origin[self.nb.ref_spots.tile]
+                                     )[:, [2, 0, 1]]
+        spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + self.nb.stitch.tile_origin[self.nb.omp.tile])[:, [2, 0, 1]]
+        if not self.nb.basic_info.is_3d:
+            spot_zyx = spot_zyx[:, 1:]
 
-    im_dims = np.rint(spot_zyx.max(axis=0)).astype(int)
-    background_image = np.zeros(im_dims, dtype=np.int8)
-    # viewer = napari.view_image(background_image)
-    viewer = napari.Viewer()
-    iss_legend.add_legend(viewer, genes=gene_color, cells=cell_color, celltype=False, gene=True)
+        show_spots = np.zeros(self.n_spots, dtype=bool)  # indicates spots shown when plot first opened
+        show_spots[self.omp_0_ind:] = quality_threshold(self.nb.omp)  # initially show omp spots which passed threshold
 
-    # Add all points as white dots
-    point_size = 10  # with size=4, spots are too small to see
-    viewer.add_points(spot_zyx, name='Diagnostic', face_color='w', size=point_size+2, opacity=0, shown=qual_ok)
-    all_gene_layer_ind = 0
+        # color to plot for all genes in the notebook
+        gene_color = np.ones((len(nb.call_spots.gene_names), 3))
+        for i in range(n_legend_genes):
+            if self.legend_gene_no[i] != -1:
+                gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
+                                                      gene_legend_info.loc[i, 'ColorG'],
+                                                      gene_legend_info.loc[i, 'ColorB']]
 
-    gene_color_dict = dict()
-    for g in gene_color.index:
-        gene_color_dict[gene_color.loc[g, 'GeneNames']] = (
-        gene_color.loc[g, 'ColorR'], gene_color.loc[g, 'ColorG'], gene_color.loc[g, 'ColorB'])
-    # color of all genes in the notebook
-    gene_rgb_nb = np.ones((len(nb.call_spots.gene_names), 3))
-    for i in gene_color.index:
-        if gene_color.loc[i, 'GeneNo'] != -1:
-            gene_rgb_nb[gene_color.loc[i, 'GeneNo']] = [gene_color.loc[i, 'ColorR'], gene_color.loc[i, 'ColorG'],
-                                                          gene_color.loc[i, 'ColorB']]
+        self.viewer = napari.Viewer()
+        iss_legend.add_legend(self.viewer, genes=gene_legend_info, cells=cell_legend_info, celltype=False,
+                              gene=True)
 
-    # Add gene spots with ISS color code
-    all_gene_no = np.hstack((nb.ref_spots.gene_no, nb.omp.gene_no))
-    for s in np.unique(gene_color['Symbols']):
-        # TODO: set transparency based on spot score
-        spots_to_plot = np.isin(all_gene_no, gene_color[gene_color['Symbols'] == s]['GeneNo'])
-        if spots_to_plot.any():
-            coords_to_plot = spot_zyx[spots_to_plot]
-            spotcolor_to_plot = gene_rgb_nb[all_gene_no[spots_to_plot]]
-            symb_to_plot = np.unique(gene_color[gene_color['Symbols'] == s]['napari_symbol'])[0]
-            viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
-                              name=f'Gene Symbol: {s}', size=point_size, shown=qual_ok[spots_to_plot])
+        # Add all spots in layer as transparent white spots.
+        point_size = 10  # with size=4, spots are too small to see
+        self.viewer.add_points(spot_zyx, name='Diagnostic', face_color='w', size=point_size + 2, opacity=0,
+                               shown=show_spots)
+        self.diagnostic_layer_ind = 0
 
-    my_buttons = Window()
-    viewer_status_on_select(viewer.layers[all_gene_layer_ind], nb, viewer, omp_0_ind)  # so indicates when a spot is selected
-    viewer.layers.selection.active = viewer.layers[all_gene_layer_ind]
+        # Add gene spots with ISS color code - different layer for each symbol
+        self.spot_gene_no = np.hstack((nb.ref_spots.gene_no, nb.omp.gene_no))
+        self.label_prefix = 'Gene Symbol'  # prefix of label for layers showing spots
+        for s in np.unique(self.legend_gene_symbol):
+            # TODO: set transparency based on spot score
+            spots_correct_gene = np.isin(self.spot_gene_no, self.legend_gene_no[self.legend_gene_symbol == s])
+            if spots_correct_gene.any():
+                coords_to_plot = spot_zyx[spots_correct_gene]
+                spotcolor_to_plot = gene_color[self.spot_gene_no[spots_correct_gene]]
+                symb_to_plot = np.unique(gene_legend_info[self.legend_gene_symbol == s]['napari_symbol'])[0]
+                self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
+                                       name=f'{self.label_prefix}: {s}', size=point_size,
+                                       shown=show_spots[spots_correct_gene])
 
-    my_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)
-    my_slider.setSingleStep(0.01)
-    my_slider.setValue((nb.omp.score_thresh, 1))
-    my_slider.setRange(0, 1)
-    my_slider.setMaximum(1)
-    # # Below is if used QLabeledDoubleRangeSlider, but issue is that widget does not fill entire range so looks weird.
-    # my_slider.setDecimals(2)
-    # # set width of labels so shows all decimal places
-    # for label in [my_slider._min_label, my_slider._max_label, my_slider._handle_labels[0], my_slider._handle_labels[1]]:
-    #     label.setFixedWidth(55)
+        self.viewer.layers.selection.active = self.viewer.layers[self.diagnostic_layer_ind]
+        # so indicates when a spot is selected in viewer status
+        # It is needed because layer is transparent so can't see when select spot.
+        self.viewer_status_on_select()
 
-    def show_score_thresh(low_value, high_value):
-        viewer.status = 'Score Range = [{:.2f}, {:.2f}]'.format(low_value, high_value)
+        # Scores for anchor/omp are different so reset score range when change method
+        self.score_range = {'anchor': [self.nb.ref_spots.score_thresh, 1], 'omp': [self.nb.omp.score_thresh, 1]}
+        self.score_thresh_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
+        self.score_thresh_slider.setSingleStep(0.01)
+        self.score_thresh_slider.setValue(self.score_range['omp'])
+        self.score_thresh_slider.setRange(0, 1)
+        self.score_thresh_slider.setMaximum(1)
+        # When dragging, status will show thresh.
+        self.score_thresh_slider.valueChanged.connect(lambda x: self.show_score_thresh(x[0], x[1]))
+        # On release of slider, genes shown will change
+        self.score_thresh_slider.sliderReleased.connect(self.update_plot)
+        self.viewer.window.add_dock_widget(self.score_thresh_slider, area="left", name='Score Range')
 
-    def update_plot_no_args():
-        if my_buttons.method == 'OMP':
-            update_plot(viewer, nb.omp, gene_color, all_gene_no, omp_0_ind, all_gene_layer_ind,
-                        my_slider.value()[0], my_slider.value()[1])
+        self.method_buttons = ButtonMethodWindow()  # Buttons to change between Anchor and OMP spots showing.
+        self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
+        self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
+        self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
+
+        self.key_call_functions()
+        napari.run()
+
+    def viewer_status_on_select(self):
+        """
+           indicate selected data in viewer status.
+        """
+
+        def indicate_selected(selectedData):
+            if selectedData is not None:
+                n_selected = len(selectedData)
+                if n_selected == 1:
+                    spot_no = list(selectedData)[0]
+                    if self.method_buttons.method == 'OMP':
+                        spot_no = spot_no - self.omp_0_ind
+                        spot_gene = self.nb.call_spots.gene_names[self.nb.omp.gene_no[spot_no]]
+                    else:
+                        spot_gene = self.nb.call_spots.gene_names[self.nb.ref_spots.gene_no[spot_no]]
+                    self.viewer.status = f'Spot {spot_no}, {spot_gene} Selected'
+                elif n_selected > 1:
+                    self.viewer.status = f'{n_selected} spots selected'
+
+        """
+        Listen to selected data changes
+        """
+
+        @thread_worker(connect={'yielded': indicate_selected})
+        def _watchSelectedData(pointsLayer):
+            selectedData = None
+            while True:
+                time.sleep(1 / 10)
+                oldSelectedData = selectedData
+                selectedData = pointsLayer.selected_data
+                if oldSelectedData != selectedData:
+                    yield selectedData
+                yield None
+
+        return (_watchSelectedData(self.viewer.layers[self.diagnostic_layer_ind]))
+
+    def update_plot(self):
+        if self.method_buttons.method == 'OMP':
+            score = omp_spot_score(self.nb.omp)
+            method_ind = np.arange(self.omp_0_ind, self.n_spots)
+            intensity_ok = self.nb.omp.intensity > self.nb.omp.intensity_thresh
         else:
-            update_plot(viewer, nb.ref_spots, gene_color, all_gene_no, omp_0_ind, all_gene_layer_ind,
-                        my_slider.value()[0], my_slider.value()[1])
+            score = self.nb.ref_spots.score
+            method_ind = np.arange(self.omp_0_ind)
+            intensity_ok = self.nb.ref_spots.intensity > self.nb.ref_spots.intensity_thresh
+        # Keep record of last score range set for each method
+        self.score_range[self.method_buttons.method.lower()] = self.score_thresh_slider.value()
+        qual_ok = np.array([score > self.score_thresh_slider.value()[0], score <= self.score_thresh_slider.value()[1],
+                            intensity_ok]).all(axis=0)
+        spots_shown = np.zeros(self.n_spots, dtype=bool)
+        spots_shown[method_ind] = qual_ok
+        for i in range(len(self.viewer.layers)):
+            if i == self.diagnostic_layer_ind:
+                self.viewer.layers[i].shown = spots_shown
+            elif self.label_prefix in self.viewer.layers[i].name:
+                s = self.viewer.layers[i].name[-1]
+                spots_correct_gene = np.isin(self.spot_gene_no,
+                                             self.legend_gene_no[self.legend_gene_symbol == s])
+                self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
 
-    def button_anchor_clicked():
+    def show_score_thresh(self, low_value, high_value):
+        self.viewer.status = self.method_buttons.method + ': Score Range = [{:.2f}, {:.2f}]'.format(low_value,
+                                                                                                    high_value)
+
+    def button_anchor_clicked(self):
         # Only allow one button pressed
-        if my_buttons.method == 'Anchor':
-            my_buttons.button_anchor.setChecked(True)
-            my_buttons.button_omp.setChecked(False)
+        if self.method_buttons.method == 'Anchor':
+            self.method_buttons.button_anchor.setChecked(True)
+            self.method_buttons.button_omp.setChecked(False)
         else:
-            viewer.status = 'Now showing anchor spots'
-            my_buttons.button_anchor.setChecked(True)
-            my_buttons.button_omp.setChecked(False)
-            my_buttons.method = 'Anchor'
-            update_plot_no_args()
+            self.method_buttons.button_anchor.setChecked(True)
+            self.method_buttons.button_omp.setChecked(False)
+            self.method_buttons.method = 'Anchor'
+            # Because method has changed, also need to change score range
+            self.score_thresh_slider.setValue(self.score_range['anchor'])
+            self.update_plot()
 
-    def button_omp_clicked():
+    def button_omp_clicked(self):
         # Only allow one button pressed
-        if my_buttons.method == 'OMP':
-            my_buttons.button_omp.setChecked(True)
-            my_buttons.button_anchor.setChecked(False)
+        if self.method_buttons.method == 'OMP':
+            self.method_buttons.button_omp.setChecked(True)
+            self.method_buttons.button_anchor.setChecked(False)
         else:
-            viewer.status = 'Now showing omp spots'
-            my_buttons.button_omp.setChecked(True)
-            my_buttons.button_anchor.setChecked(False)
-            my_buttons.method = 'OMP'
-            update_plot_no_args()
+            self.method_buttons.button_omp.setChecked(True)
+            self.method_buttons.button_anchor.setChecked(False)
+            self.method_buttons.method = 'OMP'
+            # Because method has changed, also need to change score range
+            self.score_thresh_slider.setValue(self.score_range['omp'])
+            self.update_plot()
 
-    my_buttons.button_anchor.clicked.connect(button_anchor_clicked)
-    my_buttons.button_omp.clicked.connect(button_omp_clicked)
-    my_slider.valueChanged.connect(lambda x: show_score_thresh(x[0], x[1]))  # When dragging, status will show thresh.
-    my_slider.sliderReleased.connect(update_plot_no_args)  # On release of slider, genes shown will change
-    viewer.window.add_dock_widget(my_slider, area="left", name='Score Range')
-    viewer.window.add_dock_widget(my_buttons, area="left", name='Method')
-
-    @viewer.bind_key('c')
-    def call_to_view_codes(viewer):
-        # on key press
-        n_selected = len(viewer.layers[all_gene_layer_ind].selected_data)
+    def get_selected_spot(self):
+        """
+        Returns spot_no selected if only one selected (this is the spot_no relavent to the Notebook i.e.
+        if omp, the index of the spot in nb.omp is returned).
+        Otherwise, returns None and indicates why in viewer status.
+        """
+        n_selected = len(self.viewer.layers[self.diagnostic_layer_ind].selected_data)
         if n_selected == 1:
-            spot_no = list(viewer.layers[all_gene_layer_ind].selected_data)[0]
-            if my_buttons.method == 'OMP':
-                spot_no = spot_no - omp_0_ind
-            view_codes(nb, spot_no, my_buttons.method)
+            spot_no = list(self.viewer.layers[self.diagnostic_layer_ind].selected_data)[0]
+            if self.method_buttons.method == 'OMP':
+                spot_no = spot_no - self.omp_0_ind  # return spot_no as saved in self.nb for current method.
         elif n_selected > 1:
-            viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
+            self.viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
+            spot_no = None
         else:
-            viewer.status = 'No spot selected :('
+            self.viewer.status = 'No spot selected :('
+            spot_no = None
+        return spot_no
 
-    @viewer.bind_key('s')
-    def call_to_view_spot(viewer):
-        n_selected = len(viewer.layers[all_gene_layer_ind].selected_data)
-        if n_selected == 1:
-            spot_no = list(viewer.layers[all_gene_layer_ind].selected_data)[0]
-            if my_buttons.method == 'OMP':
-                spot_no = spot_no - omp_0_ind
-            view_spot(nb, spot_no, my_buttons.method)
-        elif n_selected > 1:
-            viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
-        else:
-            viewer.status = 'No spot selected :('
+    def key_call_functions(self):
+        """
+        Contains all functions which can be called by pressing a key with napari viewer open
+        """
+        @self.viewer.bind_key('b')
+        def call_to_view_bm(viewer):
+            view_bleed_matrix(self.nb)
 
-    @viewer.bind_key('o')
-    def call_to_view_omp(viewer):
-        n_selected = len(viewer.layers[all_gene_layer_ind].selected_data)
-        if n_selected == 1:
-            spot_no = list(viewer.layers[all_gene_layer_ind].selected_data)[0]
-            if my_buttons.method == 'OMP':
-                spot_no = spot_no - omp_0_ind
-            if os.path.isfile(str(nb._config_file)):
-                # Need to access properties in omp section of config file
-                view_omp(nb, spot_no, my_buttons.method)
-            else:
-                viewer.status = 'Notebook config file not valid :('
-        elif n_selected > 1:
-            viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
-        else:
-            viewer.status = 'No spot selected :('
+        @self.viewer.bind_key('g')
+        def call_to_view_bm(viewer):
+            view_bled_codes(self.nb)
 
-    @viewer.bind_key('b')
-    def call_to_view_bm(viewer):
-        view_bleed_matrix(nb)
+        @self.viewer.bind_key('c')
+        def call_to_view_codes(viewer):
+            spot_no = self.get_selected_spot()
+            if spot_no is not None:
+                view_codes(self.nb, spot_no, self.method_buttons.method)
 
-    @viewer.bind_key('g')
-    def call_to_view_bm(viewer):
-        view_bled_codes(nb)
+        @self.viewer.bind_key('s')
+        def call_to_view_spot(viewer):
+            spot_no = self.get_selected_spot()
+            if spot_no is not None:
+                view_spot(self.nb, spot_no, self.method_buttons.method)
 
-    # TODO: widget when press key, window pops up which allows you to select genes to plot
-    napari.run()
-
-
-def viewer_status_on_select(pointsLayer, nb, viewer, omp_0_ind):
-    """
-       indicate selected data in viewer status.
-    """
-
-    def indicate_selected(selectedData):
-        if selectedData is not None:
-            if len(selectedData) == 1:
-                spot_no = list(selectedData)[0]
-                if spot_no >= omp_0_ind:
-                    method = 'omp'
+        @self.viewer.bind_key('o')
+        def call_to_view_omp(viewer):
+            spot_no = self.get_selected_spot()
+            if spot_no is not None:
+                if os.path.isfile(str(self.nb._config_file)):
+                    view_omp(self.nb, spot_no, self.method_buttons.method)
                 else:
-                    method = 'anchor'
-                if method == 'omp':
-                    spot_no = spot_no - omp_0_ind
-                    spot_gene = nb.call_spots.gene_names[nb.omp.gene_no[spot_no]]
-                else:
-                    spot_gene = nb.call_spots.gene_names[nb.ref_spots.gene_no[spot_no]]
-                viewer.status = f'Spot {spot_no}, {spot_gene} Selected'
-
-    """
-    Listen to selected data changes
-    """
-
-    @thread_worker(connect={'yielded': indicate_selected})
-    def _watchSelectedData(pointsLayer):
-        selectedData = None
-        while True:
-            time.sleep(1/10)
-            oldSelectedData = selectedData
-            selectedData = pointsLayer.selected_data
-            if oldSelectedData != selectedData:
-                yield selectedData
-            yield None
-
-    return (_watchSelectedData(pointsLayer))
+                    self.viewer.status = 'Notebook config file not valid :('
 
 
-def update_plot(viewer, nbp, gene_color, all_gene_no, omp_0_ind, all_gene_layer_ind, min_score, max_score):
-    n_spots = viewer.layers[all_gene_layer_ind].shown.size
-    if nbp.name == 'omp':
-        score = omp_spot_score(nbp)
-        array_ind = np.arange(omp_0_ind, n_spots)
-    else:
-        score = nbp.score
-        array_ind = np.arange(omp_0_ind)
-    qual_ok_crop = np.array([score > min_score, score <= max_score, nbp.intensity > nbp.intensity_thresh]).all(axis=0)
-    qual_ok = np.zeros(n_spots, dtype=bool)
-    qual_ok[array_ind] = qual_ok_crop
-    for i in range(len(viewer.layers)):
-        if 'Gene Symbol' in viewer.layers[i].name:
-            s = viewer.layers[i].name[-1]
-            spots_to_plot = np.isin(all_gene_no, gene_color[gene_color['Symbols'] == s]['GeneNo'])
-            viewer.layers[i].shown = qual_ok[spots_to_plot]
-        elif viewer.layers[i].name == 'Diagnostic':
-            viewer.layers[i].shown = qual_ok
-
-
-class Window(QMainWindow):
+class ButtonMethodWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.button_anchor = QPushButton('Anchor', self)

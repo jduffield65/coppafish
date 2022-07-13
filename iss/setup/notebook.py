@@ -213,6 +213,10 @@ class Notebook:
                 object.__setattr__(self, page.name, page)  # don't want to set page_time hence use object setattr
             if config_file is not None:
                 if read_config != self._config:
+                    # TODO: Parse read_config and self._config as if brand new file.
+                    # Compare to make sure all keys same except if from file_names
+                    # If are different, update self._config to be new one
+                    # get_config() returns ini file as dictionary
                     raise SystemError("Passed config file is not the same as the saved config file")
         else:
             if config_file is None:
