@@ -104,6 +104,10 @@ class iss_plot:
                 self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
                                        name=f'{self.label_prefix}: {s}', size=point_size,
                                        shown=show_spots[spots_correct_gene])
+                # TODO: showing multiple z-planes at once is possible using out_of_slice_display=True,
+                #  but at the moment cannot use at same time as show.
+                #  When this works, can change n_z shown by changing z-dimension of point_size i.e.
+                #  point_size = [z_size, 10, 10] and z_size changes.
 
         self.viewer.layers.selection.active = self.viewer.layers[self.diagnostic_layer_ind]
         # so indicates when a spot is selected in viewer status

@@ -18,7 +18,7 @@ bottom = 0.05
 top = 0.95
 hspace = 0.05
 n_labels_per_column = 26
-n_gene_label_letters = 6
+n_gene_label_letters = 6   # max number of letters in gene label legend
 
 
 def cell_type_ax(ax, cells):

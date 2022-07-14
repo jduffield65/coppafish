@@ -42,10 +42,10 @@ def initialize_nb(config_file: str) -> setup.Notebook:
         `Notebook` containing `file_names` and `basic_info` pages.
     """
     config = setup.get_config(config_file)
-    if config['file_names']['notebook_name'][:-4] == '.npz':
-        # remove .npz suffix if in name
-        config['file_names']['notebook_name'] = config['file_names']['notebook_name'][:-4]
-    nb_path = os.path.join(config['file_names']['output_dir'], config['file_names']['notebook_name'] + '.npz')
+    if not config['file_names']['notebook_name'].endswith('.npz'):
+        # add .npz suffix if not in name
+        config['file_names']['notebook_name'] = config['file_names']['notebook_name'] + '.npz'
+    nb_path = os.path.join(config['file_names']['output_dir'], config['file_names']['notebook_name'])
     nb = setup.Notebook(nb_path, config_file)
     if not all(nb.has_page(["file_names", "basic_info"])):
         nbp_file, nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
