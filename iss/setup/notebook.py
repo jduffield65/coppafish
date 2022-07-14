@@ -184,6 +184,7 @@ class Notebook:
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
     _CONFIGMETA = "CONFIGFILE"  # Key for config string
     _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
+    _no_compare_config_sections = ['file_names']
 
     def __init__(self, notebook_file, config_file=None):
         # Give option to load with config_file as None so don't have to supply ini_file location every time if
@@ -218,9 +219,7 @@ class Notebook:
             for page in pages:
                 object.__setattr__(self, page.name, page)  # don't want to set page_time hence use object setattr
             if read_config is not None:
-                if read_config != self._config:
-                    # TODO: Change equality so does not look at file_names key and
-                    #  only looks at sections not yet got page for
+                if not self.compare_config(get_config(read_config)):
                     raise SystemError("Passed config file is not the same as the saved config file")
                 self._config = read_config  # update config to new one - only difference will be in file_names section
         else:
@@ -252,6 +251,38 @@ class Notebook:
             return get_config(self._config)
         else:
             raise ValueError('Notebook does not contain config parameter.')
+
+    def compare_config(self, config_2: dict) -> bool:
+        """
+        Compares whether config_2 is equal to the config file saved in the notebook.
+        Only sections not in _no_compare_config_sections and that there is a corresponding page saved to the notebook
+        will be checked.
+
+        Args:
+            config_2: Dictionary with keys corresponding to sections where a section
+                is also a dictionary containing parameters.
+                E.g. `config_2['basic_info]['param1'] = 5`.
+
+        Returns: True if config dictionaries are equal in required sections.
+
+        """
+        # TODO: issue here that if default settings file changed, the equality here would still be true.
+        config = self.get_config()
+        is_equal = True
+        if config.keys() != config_2.keys():
+            warnings.warn('The config files have different sections.')
+            is_equal = False
+        else:
+            sort_page_names = sorted(self._page_times.items(), key=lambda x: x[1])  # sort by time added to notebook
+            # page names are either same as config sections or with _debug suffix
+            page_names = [name[0].removesuffix('_debug') for name in sort_page_names]
+            for section in config.keys():
+                # Only compare sections for which there is a corresponding page in the notebook.
+                if section not in self._no_compare_config_sections and section in page_names:
+                    if config[section] != config_2[section]:
+                        warnings.warn(f"The {section} section of the two config files differ.")
+                        is_equal = False
+        return is_equal
 
     def describe(self, key=None):
         """
