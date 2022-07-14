@@ -61,7 +61,26 @@ class iss_plot:
                                                       gene_legend_info.loc[i, 'ColorB']]
 
         self.viewer = napari.Viewer()
-        iss_legend.add_legend(self.viewer, gene_legend_info=gene_legend_info, genes=nb.call_spots.gene_names)
+
+        # Add legend indicating genes plotted
+        self.legend = {'fig': None, 'ax': None}
+        self.legend['fig'], self.legend['ax'], n_gene_label_letters = \
+            iss_legend.add_legend(gene_legend_info=gene_legend_info, genes=nb.call_spots.gene_names)
+        # xy is position of each symbol in legend, need to see which gene clicked on.
+        self.legend['xy'] = np.zeros((len(self.legend['ax'].collections), 2), dtype=float)
+        self.legend['gene_no'] = np.zeros(len(self.legend['ax'].collections), dtype=int)
+        # In legend, each gene name label has at most n_gene_label_letters letters so need to crop
+        # gene_names in notebook when looking for corresponding gene in legend.
+        gene_names_crop = np.asarray([gene_name[:n_gene_label_letters] for gene_name in nb.call_spots.gene_names])
+        for i in range(self.legend['xy'].shape[0]):
+            # Position of label for each gene in legend window
+            self.legend['xy'][i] = np.asarray(self.legend['ax'].collections[i].get_offsets())
+            # gene no in notebook that each position in the legend corresponds to
+            self.legend['gene_no'][i] = \
+                np.where(gene_names_crop == self.legend['ax'].texts[i].get_text())[0][0]
+        self.legend['fig'].mpl_connect('button_press_event', self.update_genes)
+        self.viewer.window.add_dock_widget(self.legend['fig'], area='right', name='Genes')
+        self.active_genes = np.arange(len(nb.call_spots.gene_names))  # start with all genes shown
 
         # Add all spots in layer as transparent white spots.
         point_size = 10  # with size=4, spots are too small to see
@@ -170,6 +189,10 @@ class iss_plot:
         return (_watchSelectedData(self.viewer.layers[self.diagnostic_layer_ind]))
 
     def update_plot(self):
+        """
+        This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
+        method selected by button and genes selected through clicking on the legend.
+        """
         if self.method_buttons.method == 'OMP':
             score = omp_spot_score(self.nb.omp)
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
@@ -183,7 +206,9 @@ class iss_plot:
         qual_ok = np.array([score > self.score_thresh_slider.value()[0], score <= self.score_thresh_slider.value()[1],
                             intensity_ok]).all(axis=0)
         spots_shown = np.zeros(self.n_spots, dtype=bool)
-        spots_shown[method_ind] = qual_ok
+        # Only show spots which belong to a gene that is active and that passes quality threshold
+        genes_shown = np.isin(self.spot_gene_no[method_ind], self.active_genes)
+        spots_shown[method_ind[genes_shown]] = qual_ok[genes_shown]
         for i in range(len(self.viewer.layers)):
             if i == self.diagnostic_layer_ind:
                 self.viewer.layers[i].shown = spots_shown
@@ -192,6 +217,55 @@ class iss_plot:
                 spots_correct_gene = np.isin(self.spot_gene_no,
                                              self.legend_gene_no[self.legend_gene_symbol == s])
                 self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
+
+    def update_genes(self, event):
+        """
+        When click on a gene in the legend will remove/add that gene to plot.
+        When right-click on a gene, it will only show that gene.
+        When click on a gene which is the only selected gene, it will return to showing all genes.
+        """
+        xy_clicked = np.array([event.xdata, event.ydata])
+        xy_gene = np.zeros(2)
+        for i in range(2):
+            xy_gene[i] = self.legend['xy'][np.abs(xy_clicked[i] - self.legend['xy'][:, i]).argmin(), i]
+        gene_clicked = np.where((self.legend['xy'] == xy_gene).all(axis=1))[0][0]
+        gene_no = self.legend['gene_no'][gene_clicked]
+        n_active = self.active_genes.size
+        is_active = np.isin(gene_no, self.active_genes)
+        active_genes_last = self.active_genes.copy()
+        if is_active and n_active == 1:
+            # If gene is only one selected, any click on it will return to all genes
+            self.active_genes = np.sort(self.legend['gene_no'])
+            # 1st argument in setdiff1d is always the larger array
+            changed_genes = np.setdiff1d(self.active_genes, active_genes_last)
+        elif event.button.name == 'RIGHT':
+            # If right-click on a gene, will select only that gene
+            self.active_genes = np.asarray([gene_no])
+            # 1st argument in setdiff1d is always the larger array
+            changed_genes = np.setdiff1d(active_genes_last, self.active_genes)
+            if not is_active:
+                # also need to changed clicked gene if was not already active
+                changed_genes = np.append(changed_genes, gene_no)
+        elif is_active:
+            # If single-click on a gene which is selected, will remove that gene
+            self.active_genes = np.setdiff1d(self.active_genes, gene_no)
+            changed_genes = np.asarray([gene_no])
+        elif not is_active:
+            # If single-click on a gene which is not selected, it will be removed
+            self.active_genes = np.append(self.active_genes, gene_no)
+            changed_genes = np.asarray([gene_no])
+
+        # Change formatting
+        for g in changed_genes:
+            i = np.where(self.legend['gene_no'] == g)[0][0]
+            if np.isin(g, self.active_genes):
+                alpha = 1
+            else:
+                alpha = 0.5  # If not selected, make transparent
+            self.legend['ax'].collections[i].set_alpha(alpha)
+            self.legend['ax'].texts[i].set_alpha(alpha)
+        self.legend['fig'].draw()
+        self.update_plot()
 
     def show_score_thresh(self, low_value, high_value):
         self.viewer.status = self.method_buttons.method + ': Score Range = [{:.2f}, {:.2f}]'.format(low_value,

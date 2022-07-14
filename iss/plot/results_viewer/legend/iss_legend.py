@@ -18,7 +18,7 @@ bottom = 0.05
 top = 0.95
 hspace = 0.05
 n_labels_per_column = 26
-
+n_gene_label_letters = 6
 
 
 def cell_type_ax(ax, cells):
@@ -62,7 +62,7 @@ def gene_ax(ax: plt.Axes, gene_legend_info: pd.DataFrame, genes: np.ndarray):
             m = gene_legend_info.loc[g, 'mpl_symbol']
 
             ax.scatter(x=x, y=y, marker=m, facecolor=gene_color, s=50)
-            ax.text(x=x + .05, y=y - .3, s=gene_legend_info.loc[g, 'GeneNames'][:6], c=gene_color)
+            ax.text(x=x + .05, y=y - .3, s=gene_legend_info.loc[g, 'GeneNames'][:n_gene_label_letters], c=gene_color)
             added_ind += 1
 
     ax.set_xticks([])
@@ -72,19 +72,20 @@ def gene_ax(ax: plt.Axes, gene_legend_info: pd.DataFrame, genes: np.ndarray):
     return ax
 
 
-def add_legend(viewer: napari.Viewer, gene_legend_info: Optional[pd.DataFrame],
-               genes: Optional[np.ndarray] = None, cell_legend_info: Optional[pd.DataFrame] = None):
+def add_legend(gene_legend_info: Optional[pd.DataFrame],
+               genes: Optional[np.ndarray] = None,
+               cell_legend_info: Optional[pd.DataFrame] = None) -> [FigureCanvas, plt.Axes, int]:
     """
-    This adds a legend to the viewer which displays the genes and/or cell types present.
+    This returns a legend which displays the genes and/or cell types present.
 
     Args:
-        viewer: Napari viewer for current experiment.
-        gene_legend_info: [n_legend_genes x 8] pandas data frame containing the following information for each gene
+        gene_legend_info: `[n_legend_genes x 8]` pandas data frame containing the following information for each gene
             - GeneNames - str, name of gene with first letter capital
             - ColorR - float, Rgb color for plotting
             - ColorG - float, rGb color for plotting
             - ColorB - float, rgB color for plotting
-            - Symbols - str, symbol used to plot in MATLAB
+            - Symbols - str, symbol used to plot in MATLAB.
+                each symbol needs to be of length=1 for selecting genes in napari e.g. `*`, `o`, `|`, `+` etc.
             - napari_symbol - str, symbol used to plot in napari
             - mpl_symbol - str, equivalent of napari symbol in matplotlib.
         genes: str [n_genes]
@@ -94,6 +95,11 @@ def add_legend(viewer: napari.Viewer, gene_legend_info: Optional[pd.DataFrame],
             - className
             - IdentifiedType
             - color
+
+    Returns:
+        - mpl_widget - figure of legend.
+        - ax - axes containing info about gene symbols in `ax.collections` and gene labels in `ax.texts`.
+        - n_gene_label_letters - max number of letters in each gene label in the legend.
     """
     if genes is None and gene_legend_info is not None:
         genes = np.asarray(gene_legend_info['GeneNames'])  # show all genes in legend if not given
@@ -134,8 +140,9 @@ def add_legend(viewer: napari.Viewer, gene_legend_info: Optional[pd.DataFrame],
 
     else:
         print('Both gene_legend_info and cell_legend_info are None so no legend added.')
+        return None
 
-    viewer.window.add_dock_widget(mpl_widget)
+    return mpl_widget, ax, n_gene_label_letters
 
 
 if __name__ == "__main__":
@@ -146,5 +153,6 @@ if __name__ == "__main__":
     cells = pd.read_csv(os.path.join(legend_folder, 'cell_color.csv'))
 
     viewer = napari.Viewer()
-    add_legend(viewer, gene_legend_info=genes, cell_legend_info=cells)
+    fig, ax, _ = add_legend(gene_legend_info=genes, cell_legend_info=cells)
+    viewer.window.add_dock_widget(fig, area='right', name='Genes')
     napari.run()
