@@ -138,7 +138,6 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                 omp.get_all_coefs(pixel_colors_tz, bled_codes,
                                   nbp_call_spots.background_weight_shift, dp_norm_shift, config['dp_thresh'],
                                   config['alpha'], config['beta'], config['max_genes'], config['weight_coef_fit'])[0])
-            # a = 1 / 0
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.
             keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.

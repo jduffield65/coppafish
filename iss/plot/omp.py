@@ -2,7 +2,7 @@ from .call_spots import ColorPlotBase
 from ..spot_colors import get_spot_colors
 from ..call_spots import get_spot_intensity_jax, omp_spot_score
 from ..setup import Notebook
-from .. import omp
+from .. import omp, utils
 import matplotlib.pyplot as plt
 import numpy as np
 import jax.numpy as jnp
@@ -56,27 +56,35 @@ class view_omp(ColorPlotBase):
         spot_colors = spot_colors[np.ix_(np.arange(im_yxz.shape[0]),
                                          nb.basic_info.use_rounds, nb.basic_info.use_channels)] / color_norm
         spot_colors = jnp.asarray(spot_colors)
+
         # Only look at pixels with high enough intensity - same as in full pipeline
         spot_intensity = get_spot_intensity_jax(jnp.abs(spot_colors))
+        config = nb.get_config()['omp']
         if nb.has_page('omp'):
-            initial_intensity_thresh =  nb.omp.initial_intensity_thresh
+            initial_intensity_thresh = nb.omp.initial_intensity_thresh
         else:
-            # TODO: can calculate initial_intensity_thresh here from call_spots page and config info
-            initial_intensity_thresh = 0
+            initial_intensity_thresh = config['initial_intensity_thresh']
+            if initial_intensity_thresh is None:
+                initial_intensity_thresh = \
+                    utils.round_any(nb.call_spots.median_abs_intensity * config['initial_intensity_thresh_auto_param'],
+                                    config['initial_intensity_precision'])
+            initial_intensity_thresh = \
+                float(np.clip(initial_intensity_thresh, config['initial_intensity_thresh_min'],
+                              config['initial_intensity_thresh_max']))
+
         keep = spot_intensity > initial_intensity_thresh
         bled_codes = nb.call_spots.bled_codes_ge
         n_genes = bled_codes.shape[0]
         bled_codes = jnp.asarray(bled_codes[np.ix_(np.arange(n_genes),
                                                    nb.basic_info.use_rounds, nb.basic_info.use_channels)])
         dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
-        # Note, variables below are read from the config file below so
-        # will not work without config file hence initial error.
-        # TODO: read these in from config when config can be loaded from nb
-        dp_thresh = nb.omp.dp_thresh
-        alpha = nb.omp.alpha
-        beta = nb.omp.beta
-        max_genes = nb.omp.max_genes
-        weight_coef_fit = nb.omp.weight_coef_fit
+
+        dp_thresh = config['dp_thresh']
+        alpha = config['alpha']
+        beta = config['beta']
+        max_genes = config['max_genes']
+        weight_coef_fit = config['weight_coef_fit']
+
         all_coefs = np.zeros((spot_colors.shape[0], n_genes+nb.basic_info.n_channels))
         all_coefs[np.ix_(keep, np.arange(n_genes))], \
         all_coefs[np.ix_(keep, np.array(nb.basic_info.use_channels) + n_genes)] = \

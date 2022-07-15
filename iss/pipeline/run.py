@@ -3,7 +3,6 @@ from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
     call_reference_spots, call_spots_omp
 import warnings
-from typing import Union
 import numpy as np
 
 
@@ -18,13 +17,12 @@ def run_pipeline(config_file: str) -> setup.Notebook:
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
-    config = setup.get_config(config_file)
-    run_extract(nb, config)
-    run_find_spots(nb, config)
-    run_stitch(nb, config)
-    run_register(nb, config)
-    run_reference_spots(nb, config)
-    run_omp(nb, config)
+    run_extract(nb)
+    run_find_spots(nb)
+    run_stitch(nb)
+    run_register(nb)
+    run_reference_spots(nb)
+    run_omp(nb)
     return nb
 
 
@@ -55,7 +53,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     return nb
 
 
-def run_extract(nb: setup.Notebook, config: Union[dict, str]):
+def run_extract(nb: setup.Notebook):
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -65,16 +63,12 @@ def run_extract(nb: setup.Notebook, config: Union[dict, str]):
 
     Args:
         nb: `Notebook` containing `file_names` and `basic_info` pages.
-        config: Path to config file or Dictionary obtained from config file containing key
-            `'extract'` which is another dict.
 
     Returns:
         `Notebook` with `extract` and `extract_debug` pages added.
     """
-    if isinstance(config, str):
-        # sometimes I guess it will be easier to pass the config file name so deal with that case here too
-        config = setup.get_config(config)
     if not all(nb.has_page(["extract", "extract_debug"])):
+        config = nb.get_config()
         nbp, nbp_debug = extract_and_filter(config['extract'], nb.file_names, nb.basic_info)
         nb += nbp
         nb += nbp_debug
@@ -83,7 +77,7 @@ def run_extract(nb: setup.Notebook, config: Union[dict, str]):
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_find_spots(nb: setup.Notebook, config: Union[dict, str]):
+def run_find_spots(nb: setup.Notebook):
     """
     This runs the `find_spots` step of the pipeline to produce point cloud from each tiff file in the tile directory.
 
@@ -93,22 +87,19 @@ def run_find_spots(nb: setup.Notebook, config: Union[dict, str]):
 
     Args:
         nb: `Notebook` containing `extract` page.
-        config: Path to config file or Dictionary obtained from config file containing key
-            `'find_spots'` which is another dict.
 
     Returns:
         `Notebook` with `find_spots` page added.
     """
-    if isinstance(config, str):
-        config = setup.get_config(config)
     if not nb.has_page("find_spots"):
+        config = nb.get_config()
         nbp = find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract.auto_thresh)
         nb += nbp
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
 
 
-def run_stitch(nb: setup.Notebook, config: Union[dict, str]):
+def run_stitch(nb: setup.Notebook):
     """
     This runs the `stitch` step of the pipeline to produce origin of each tile
     such that a global coordinate system can be built. Also saves stitched DAPI and reference channel images.
@@ -120,14 +111,11 @@ def run_stitch(nb: setup.Notebook, config: Union[dict, str]):
 
     Args:
         nb: `Notebook` containing `find_spots` page.
-        config: Path to config file or Dictionary obtained from config file containing key
-            `'stitch'` which is another dict.
 
     Returns:
         `Notebook` with `stitch` page added.
     """
-    if isinstance(config, str):
-        config = setup.get_config(config)
+    config = nb.get_config()
     if not nb.has_page("stitch"):
         nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
         nb += nbp_debug
@@ -147,7 +135,7 @@ def run_stitch(nb: setup.Notebook, config: Union[dict, str]):
                                 nb.basic_info.ref_channel, False, config['stitch']['save_image_zero_thresh'])
 
 
-def run_register(nb: setup.Notebook, config: Union[dict, str]):
+def run_register(nb: setup.Notebook):
     """
     This runs the `register_initial` step of the pipeline to find shift between ref round/channel to each imaging round
     for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
@@ -159,14 +147,11 @@ def run_register(nb: setup.Notebook, config: Union[dict, str]):
 
     Args:
         nb: `Notebook` containing `extract` page.
-        config: Path to config file or Dictionary obtained from config file containing keys
-            `'register_initial'` and `'register'` which each are also dictionaries.
 
     Returns:
         `Notebook` with `register_initial_debug`,`register` and `register_debug` pages added.
     """
-    if isinstance(config, str):
-        config = setup.get_config(config)
+    config = nb.get_config()
     if not nb.has_page("register_initial_debug"):
         nbp_initial_debug = register_initial(config['register_initial'], nb.basic_info,
                                              nb.find_spots.spot_details)
@@ -183,7 +168,7 @@ def run_register(nb: setup.Notebook, config: Union[dict, str]):
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]):
+def run_reference_spots(nb: setup.Notebook):
     """
     This runs the `reference_spots` step of the pipeline to get the intensity of each spot on the reference
     round/channel in each imaging round/channel. The `call_spots` step of the pipeline is then run to produce the
@@ -201,9 +186,8 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]):
     Returns:
         `Notebook` with `ref_spots` and `call_spots` pages added.
     """
-    if isinstance(config, str):
-        config = setup.get_config(config)
     if not all(nb.has_page(["ref_spots", "call_spots"])):
+        config = nb.get_config()
         nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
                                         nb.stitch.tile_origin, nb.register.transform)
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nbp_ref_spots,
@@ -217,10 +201,9 @@ def run_reference_spots(nb: setup.Notebook, config: Union[dict, str]):
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
 
 
-def run_omp(nb: setup.Notebook, config: Union[dict, str]):
-    if isinstance(config, str):
-        config = setup.get_config(config)
+def run_omp(nb: setup.Notebook):
     if not nb.has_page("omp"):
+        config = nb.get_config()
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
                              nb.stitch.tile_origin, nb.register.transform, nb.ref_spots.intensity_thresh)
         nb += nbp

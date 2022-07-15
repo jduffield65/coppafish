@@ -6,7 +6,6 @@ from iss.call_spots import get_non_duplicate
 from iss.stitch import compute_shift
 from iss.find_spots import get_isolated_points
 from iss.pipeline import stitch
-from iss.plot.stitch import view_shifts
 import numpy as np
 import os
 import warnings
@@ -34,9 +33,9 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
 
     # run pipeline to get as far as a set of global coordinates for the separate round anchor.
     nb = initialize_nb(config_file)
-    config = setup.get_config(config_file)
-    run_extract(nb, config)
-    run_find_spots(nb, config)
+    config = nb.get_config()
+    run_extract(nb)
+    run_find_spots(nb)
     if not nb.has_page("stitch"):
         nbp_stitch = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
         nb += nbp_stitch

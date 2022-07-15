@@ -351,10 +351,7 @@ class iss_plot:
         def call_to_view_omp(viewer):
             spot_no = self.get_selected_spot()
             if spot_no is not None:
-                if os.path.isfile(str(self.nb._config_file)):
-                    view_omp(self.nb, spot_no, self.method_buttons.method)
-                else:
-                    self.viewer.status = 'Notebook config file not valid :('
+                view_omp(self.nb, spot_no, self.method_buttons.method)
 
 
 class ButtonMethodWindow(QMainWindow):
