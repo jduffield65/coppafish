@@ -33,8 +33,8 @@ _options = {
             'is_3d': 'bool',
             'anchor_channel': 'maybe_int',
             'dapi_channel': 'maybe_int',
-            'ref_round': 'int',
-            'ref_channel': 'int',
+            'ref_round': 'maybe_int',
+            'ref_channel': 'maybe_int',
             'use_channels': 'maybe_list_int',
             'use_rounds': 'maybe_list_int',
             'use_z': 'maybe_list_int',
@@ -55,10 +55,14 @@ _options = {
             'round': 'maybe_list_str',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
-            'dye_camera_laser': 'maybe_str',
+            'dye_camera_laser': 'maybe_file',
             'code_book': 'str',
-            'psf': 'maybe_file',
-            'omp_spot_shape': 'maybe_file'
+            'psf': 'str',
+            'omp_spot_shape': 'str',
+            'omp_spot_info': 'str',
+            'omp_spot_coef': 'str',
+            'big_dapi_image': 'str',
+            'big_anchor_image': 'str'
         },
     'extract':
         {

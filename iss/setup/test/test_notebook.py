@@ -7,7 +7,7 @@ import json
 
 
 class TestNotebook(unittest.TestCase):
-    CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'settings.default.ini')
+    CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples/simplest_settings.ini')
 
     def test_create_Notebook(self):
         with tempfile.TemporaryDirectory() as d:
@@ -87,6 +87,17 @@ class TestNotebook(unittest.TestCase):
         nbp3.nan_val = np.nan
         self.assertEqual(nbp3, nbp3)
 
+    def test_load_diff_config(self):
+        config_file2 = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples/simplest_settings2.ini')
+        with tempfile.TemporaryDirectory() as d:
+            nb = notebook.Notebook(os.path.join(d, "file"), self.CONFIG_FILE)
+            nb += notebook.NotebookPage("pagename")
+            nb_reloaded = notebook.Notebook(os.path.join(d, "file"), config_file2)
+            self.assertNotEqual(nb_reloaded, nb)  # Different because config are different
+            self.assertNotEqual(nb_reloaded._config, nb._config)  # Different because configs are different
+            # True because configs only different in section for which page not added and in file_names section
+            # which can be different.
+            self.assertTrue(nb.compare_config(nb_reloaded.get_config()))
 
     @unittest.expectedFailure
     def test_NotebookPage_writeonce(self):

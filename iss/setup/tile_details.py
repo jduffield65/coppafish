@@ -1,7 +1,6 @@
 import numpy as np
 import os
 from typing import Tuple, Optional, List
-from .notebook import NotebookPage
 
 
 def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -109,7 +108,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
 # TODO: Make tile_pos work for non rectangular array of tiles in nd2 file
 
 
-def change_tile_dir(nbp: NotebookPage, tile_dir_new: str):
+def change_tile_dir(nbp, tile_dir_new: str):
     """
     Changes names of all tile_files in nbp object to new tile directory.
 

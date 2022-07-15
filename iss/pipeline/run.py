@@ -47,13 +47,11 @@ def initialize_nb(config_file: str) -> setup.Notebook:
         config['file_names']['notebook_name'] = config['file_names']['notebook_name'] + '.npz'
     nb_path = os.path.join(config['file_names']['output_dir'], config['file_names']['notebook_name'])
     nb = setup.Notebook(nb_path, config_file)
-    if not all(nb.has_page(["file_names", "basic_info"])):
-        nbp_file, nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
-        nb += nbp_file
+    if not nb.has_page("basic_info"):
+        nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
         nb += nbp_basic
     else:
         warnings.warn('basic_info', utils.warnings.NotebookPageWarning)
-        warnings.warn('file_names', utils.warnings.NotebookPageWarning)
     return nb
 
 

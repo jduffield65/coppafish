@@ -39,6 +39,91 @@ import time
 import json
 import warnings
 from .config import get_config
+from .tile_details import get_tile_file_names
+
+
+# Functions in Notebook._no_save_pages need defined here
+def set_file_names(nb, page_name: str):
+    """
+    Function to set add `file_names` page to notebook. It requires notebook to be able to access a
+    config file containing a `file_names` section and also the notebook to contain a 'basic_info' page.
+
+    !!! note
+        This will be called every time the notebook is loaded to deal will case when file_names section of
+        config file changed.
+
+    Args:
+        nb: Notebook containing at least a `basic_info` page.
+        page_name: name of page that will be added. This will be `'file_names'`.
+
+    """
+    config = nb.get_config()['file_names']
+    nbp = NotebookPage(page_name)
+    # Copy some variables that are in config to page.
+    nbp.input_dir = config['input_dir']
+    nbp.output_dir = config['output_dir']
+    nbp.tile_dir = config['tile_dir']
+
+    # remove file extension from round and anchor file names if it is present
+    if config['round'] is None:
+        if config['anchor'] is None:
+            raise ValueError(f'Neither imaging rounds nor anchor_round provided')
+        config['round'] = []  # Sometimes the case where just want to run the anchor round.
+    config['round'] = [r.replace(config['raw_extension'], '') for r in config['round']]
+    nbp.round = config['round']
+
+    if config['anchor'] is not None:
+        config['anchor'] = config['anchor'].replace(config['raw_extension'], '')
+    nbp.anchor = config['anchor']
+    nbp.raw_extension = config['raw_extension']
+
+    if config['dye_camera_laser'] is None:
+        # Default information is project
+        config['dye_camera_laser'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                                                  'dye_camera_laser_raw_intensity.csv')
+    nbp.dye_camera_laser = config['dye_camera_laser']
+    nbp.code_book = config['code_book']
+    # where to save psf, indicating average spot shape in raw image. Only ever needed in 3D.
+    if nb.basic_info.is_3d:
+        config['psf'] = config['psf'].replace('.npy', '')
+        nbp.psf = os.path.join(config['output_dir'], config['psf'] + '.npy')
+    else:
+        nbp.psf = None
+
+    # where to save omp_spot_shape, indicating average spot shape in omp coefficient sign images.
+    config['omp_spot_shape'] = config['omp_spot_shape'].replace('.npy', '')
+    omp_spot_shape_file = os.path.join(config['output_dir'], config['omp_spot_shape'] + 'npy')
+    nbp.omp_spot_shape = omp_spot_shape_file
+
+    # Add files so save omp results after each tile as security if hit any bugs
+    config['omp_spot_info'] = config['omp_spot_info'].replace('.npy', '')
+    nbp.omp_spot_info = os.path.join(config['output_dir'], config['omp_spot_info'] + '.npy')
+    config['omp_spot_coef'] = config['omp_spot_coef'].replace('.npz', '')
+    nbp.omp_spot_coef = os.path.join(config['output_dir'], config['omp_spot_coef'] + '.npz')
+
+    # add dapi channel and anchor channel to notebook even if set to None.
+    config['big_dapi_image'] = config['big_dapi_image'].replace('.npz', '')
+    if nb.basic_info.dapi_channel is None:
+        nbp.big_dapi_image = None
+    else:
+        nbp.big_dapi_image = os.path.join(config['output_dir'], config['big_dapi_image'] + '.npz')
+    config['big_anchor_image'] = config['big_anchor_image'].replace('.npz', '')
+    nbp.big_anchor_image = os.path.join(config['output_dir'], config['big_anchor_image'] + '.npz')
+
+    if config['anchor'] is not None:
+        round_files = config['round'] + [config['anchor']]
+    else:
+        round_files = config['round']
+
+    if nb.basic_info.is_3d:
+        tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
+                                         nb.basic_info.n_channels)
+    else:
+        tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles)
+
+    nbp.tile = tile_names.tolist()  # npy tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
+    nb += nbp
+
 
 # The variable TYPES defines strategies for saving and loading different kinds
 # of variables.  Each type is defined by a length-three tuple: first is the
@@ -184,7 +269,16 @@ class Notebook:
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
     _CONFIGMETA = "CONFIGFILE"  # Key for config string
     _NBMETA = "NOTEBOOKMETA"  # Key for metadata about the entire notebook
+    # If these sections of config files are different, will not raise error.
     _no_compare_config_sections = ['file_names']
+
+    # When the pages corresponding to the keys are added, a save will not be triggered.
+    # When save does happen, these pages won't be saved, but made on loading using
+    # the corresponding function, load_func, if the notebook contains the pages indicated by
+    # load_func_req.
+    # load_func must only take notebook and page_name as input and has no output but page will be added to notebook.
+    # When last of pages in load_func_req have been added, the page will automatically be added.
+    _no_save_pages = {'file_names': {'load_func': set_file_names, 'load_func_req': ['basic_info']}}
 
     def __init__(self, notebook_file, config_file=None):
         # Give option to load with config_file as None so don't have to supply ini_file location every time if
@@ -222,6 +316,7 @@ class Notebook:
                 if not self.compare_config(get_config(read_config)):
                     raise SystemError("Passed config file is not the same as the saved config file")
                 self._config = read_config  # update config to new one - only difference will be in file_names section
+            self.add_no_save_pages()  # add file_names page with new config
         else:
             if read_config is None:
                 warnings.warn("Have not passed a config_file so Notebook.get_config() won't work.")
@@ -384,7 +479,9 @@ class Notebook:
             value.finalized = True
             object.__setattr__(self, key, value)
             self._page_times[key] = time.time()
-            self.save()
+            if value.name not in self._no_save_pages.keys():
+                self.save()
+            self.add_no_save_pages()
         elif key in self._page_times.keys():
             raise ValueError(f"Page with name {key} in notebook so can't add variable with this name.")
         else:
@@ -425,6 +522,14 @@ class Notebook:
         self.add_page(other)
         return self
 
+    def add_no_save_pages(self):
+        for page_name in self._no_save_pages.keys():
+            if self.has_page(page_name):
+                continue
+            if all(self.has_page(self._no_save_pages[page_name]['load_func_req'])):
+                # If contains all required pages to run load_func, then add the page
+                self._no_save_pages[page_name]['load_func'](self, page_name)
+
     def version_hash(self):
         """A short string representing the file version.
 
@@ -452,6 +557,8 @@ class Notebook:
         # module.
         save_start_time = time.time()
         for p_name in self._page_times.keys():
+            if p_name in self._no_save_pages.keys():
+                continue
             p = getattr(self, p_name)
             pd = p.to_serial_dict()
             for k, v in pd.items():
@@ -494,6 +601,10 @@ class Notebook:
         config_str = None  # If no config saved, will stay as None. Otherwise, will be the config in str form.
         for pk in keys:
             p, k = pk.split(self._SEP, 1)
+            if p in self._no_save_pages.keys():
+                # This is to deal with the legacy case from old code where a no_save_page has been saved.
+                # If this is the case, don't load in this page.
+                continue
             if p == self._NBMETA:
                 if k == self._ADDEDMETA:
                     created_time = float(f[pk])

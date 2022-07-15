@@ -4,9 +4,6 @@
     "DESCRIPTION": ["file_names page contains all files that are used throughout the pipeline.",
       "'tile' is the only variable not included in the config file and is worked out automatically.",
       "Page added to notebook in pipeline/basic_info.py"],
-    "notebook_name": [
-      "String",
-      "Name of notebook"],
     "input_dir": [
       "Directory",
       "Where raw nd2 files are"],
@@ -18,7 +15,7 @@
       "Where tile npy files saved"],
     "round": [
       "List [n_rounds]",
-      "Names of nd2 files for the imaging rounds"],
+      "Names of nd2 files for the imaging rounds. If not using, will be an empty list."],
     "anchor": [
       "String or None",
       "Name of nd2 file for the anchor round. None if anchor not used"],
@@ -103,9 +100,6 @@
     "tile_pixel_value_shift": ["Integer",
       "This is added onto every tile (except DAPI) when it is saved and removed from every tile when loaded.",
       "Required so we can have negative pixel values when save to npy as uint16. Typical=15000"],
-    "ignore_first_z_plane": ["Boolean", "Previously had cases where first z plane in nd2 file was in wrong place and",
-      "caused focus stacking to be weird or identify lots of spots on first plane",
-      "hence safest to not load first plane which is done if this is True and 0 will be absent from use_z."],
     "n_extra_rounds": ["Integer",
       "Number of non-imaging rounds, typically 1 if using anchor and 0 if not."],
     "n_rounds": ["Integer",
