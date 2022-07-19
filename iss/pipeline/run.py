@@ -2,8 +2,10 @@ import os
 from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
     call_reference_spots, call_spots_omp
+from ..call_spots import get_non_duplicate
 import warnings
 import numpy as np
+from scipy import sparse
 
 
 def run_pipeline(config_file: str) -> setup.Notebook:
@@ -207,6 +209,20 @@ def run_omp(nb: setup.Notebook):
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
                              nb.stitch.tile_origin, nb.register.transform)
         nb += nbp
+
+        # Update omp_info files after omp notebook page saved into notebook
+        # Save only non-duplicates - important spot_coefs saved first for exception at start of call_spots_omp
+        # which can deal with case where duplicates removed from spot_coefs but not spot_info.
+        # After re-saving here, spot_coefs[s] should be the coefficients for gene at nb.omp.local_yxz[s]
+        # i.e. indices should match up.
+        spot_info = np.load(nb.file_names.omp_spot_info)
+        not_duplicate = get_non_duplicate(nb.stitch.tile_origin, nb.basic_info.use_tiles, nb.basic_info.tile_centre,
+                                          spot_info[:, :3], spot_info[:, 6])
+        spot_coefs = sparse.load_npz(nb.file_names.omp_spot_coef)
+        sparse.save_npz(nb.file_names.omp_spot_coef, spot_coefs[not_duplicate])
+        np.save(nb.file_names.omp_spot_info, spot_info[not_duplicate])
+
+        # only raise error after saving to notebook if spot_colors have nan in wrong places.
         utils.errors.check_color_nan(nbp.colors, nb.basic_info)
     else:
         warnings.warn('omp', utils.warnings.NotebookPageWarning)

@@ -256,12 +256,4 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]
     nbp.n_neighbours_neg = spot_info[not_duplicate, 5]
 
-    # Keep only non-duplicates - important spot_coefs saved first for exception at start which can deal with case
-    # where duplicates removed from spot_coefs but not spot_info.
-    # After re-saving here, spot_coefs[s] should be the coefficients for gene at nb.omp.local_yxz[s] i.e. indices should
-    # match up.
-    spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
-    sparse.save_npz(nbp_file.omp_spot_coef, spot_coefs[not_duplicate])
-    np.save(nbp_file.omp_spot_info, spot_info[not_duplicate])
-
     return nbp
