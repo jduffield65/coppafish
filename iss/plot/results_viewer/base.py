@@ -9,14 +9,22 @@ import napari
 from napari.qt import thread_worker
 import time
 from qtpy.QtCore import Qt
-from superqt import QDoubleRangeSlider, QDoubleSlider
+from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow
 from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
+import warnings
+from typing import Optional, Union
 
 
 class iss_plot:
-    def __init__(self, nb):
+    def __init__(self, nb, background_image: Optional[Union[str, np.ndarray]] = 'dapi'):
+        """
+
+        Args:
+            nb: Notebook containing at least the ref_spots page.
+            background_image: Optional file_name or image that will be plotted as the background image.
+        """
         self.nb = nb
         legend_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend')
         gene_legend_info = pd.read_csv(os.path.join(legend_folder, 'gene_color.csv'))
@@ -66,6 +74,44 @@ class iss_plot:
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
         self.viewer.window.qt_viewer.dockLayerControls.setVisible(False)
 
+        # Add background image if given
+        self.diagnostic_layer_ind = 0
+        self.image_layer_ind = None
+        if background_image is not None:
+            if isinstance(background_image, str):
+                if background_image.lower() == 'dapi':
+                    file_name = nb.file_names.big_dapi_image
+                elif background_image.lower() == 'anchor':
+                    file_name = nb.file_names.big_anchor_image
+                else:
+                    file_name = background_image
+                if os.path.isfile(file_name):
+                    background_image = np.load(file_name)
+                    if file_name.endswith('.npz'):
+                        # Assume image is first array if .npz file
+                        background_image = background_image[background_image._files[0]]
+                else:
+                    background_image = None
+                    warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
+            if background_image is not None:
+                self.viewer.add_image(background_image)
+                self.diagnostic_layer_ind = 1
+                self.image_layer_ind = 0
+                self.viewer.layers[self.image_layer_ind].contrast_limits_range = [background_image.min(),
+                                                                                  background_image.max()]
+                self.image_contrast_slider = QRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
+                self.image_contrast_slider.setRange(background_image.min(), background_image.max())
+                # Make starting lower bound contrast the 95th percentile value so most appears black
+                # Use mid_z to quicken up calculation
+                mid_z = int(background_image.shape[0]/2)
+                start_contrast = np.percentile(background_image[mid_z], [95, 99.99]).astype(int).tolist()
+                self.image_contrast_slider.setValue(start_contrast)
+                self.change_image_contrast()
+                # When dragging, status will show contrast values.
+                self.image_contrast_slider.valueChanged.connect(lambda x: self.show_image_contrast(x[0], x[1]))
+                # On release of slider, genes shown will change
+                self.image_contrast_slider.sliderReleased.connect(self.change_image_contrast)
+
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
         self.legend['fig'], self.legend['ax'], n_gene_label_letters = \
@@ -86,11 +132,14 @@ class iss_plot:
         self.viewer.window.add_dock_widget(self.legend['fig'], area='left', name='Genes')
         self.active_genes = np.arange(len(nb.call_spots.gene_names))  # start with all genes shown
 
+        if background_image is not None:
+            # Slider to change background image contrast
+            self.viewer.window.add_dock_widget(self.image_contrast_slider, area="left", name='Image Contrast')
+
         # Add all spots in layer as transparent white spots.
         point_size = 10  # with size=4, spots are too small to see
         self.viewer.add_points(spot_zyx, name='Diagnostic', face_color='w', size=point_size + 2, opacity=0,
                                shown=show_spots)
-        self.diagnostic_layer_ind = 0
 
         # Add gene spots with ISS color code - different layer for each symbol
         if self.nb.has_page('omp'):
@@ -286,6 +335,15 @@ class iss_plot:
     def show_intensity_thresh(self, value):
         self.viewer.status = 'Intensity Threshold = {:.3f}'.format(value)
 
+    def show_image_contrast(self, low_value, high_value):
+        # Show contrast of background image while dragging
+        self.viewer.status = 'Image Contrast Limits: [{:.0f}, {:.0f}]'.format(low_value, high_value)
+
+    def change_image_contrast(self):
+        # Change contrast of background image
+        self.viewer.layers[self.image_layer_ind].contrast_limits = [self.image_contrast_slider.value()[0],
+                                                                    self.image_contrast_slider.value()[1]]
+
     def button_anchor_clicked(self):
         # Only allow one button pressed
         if self.method_buttons.method == 'Anchor':
@@ -343,12 +401,15 @@ class iss_plot:
             elif layer.mode == Mode.SELECT:
                 layer.mode = Mode.PAN_ZOOM
                 self.viewer.help = 'Mode: Pan/Zoom'
-            # # Use space bar to change mode
-            # mode = self.viewer.layers[self.diagnostic_layer_ind].mode
-            # if mode == 'select':
-            #     self.viewer.layers[self.diagnostic_layer_ind].mode = 'pan_zoom'
-            # elif mode == 'pan_zoom':
-            #     self.viewer.layers[self.diagnostic_layer_ind].mode = 'select'
+
+        @self.viewer.bind_key('i')
+        def remove_background_image(viewer):
+            # Make background image visible / remove it
+            if self.image_layer_ind is not None:
+                if viewer.layers[self.image_layer_ind].visible:
+                    viewer.layers[self.image_layer_ind].visible = False
+                else:
+                    viewer.layers[self.image_layer_ind].visible = True
 
         @self.viewer.bind_key('b')
         def call_to_view_bm(viewer):
