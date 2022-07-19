@@ -370,7 +370,7 @@ class Notebook:
         else:
             sort_page_names = sorted(self._page_times.items(), key=lambda x: x[1])  # sort by time added to notebook
             # page names are either same as config sections or with _debug suffix
-            page_names = [name[0].removesuffix('_debug') for name in sort_page_names]
+            page_names = [name[0].replace('_debug', '') for name in sort_page_names]
             for section in config.keys():
                 # Only compare sections for which there is a corresponding page in the notebook.
                 if section not in self._no_compare_config_sections and section in page_names:

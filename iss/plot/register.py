@@ -10,7 +10,7 @@ from matplotlib.widgets import TextBox, RadioButtons
 from scipy.spatial import KDTree
 
 
-def view_initial_shift(nb: Notebook, config: dict, t: int, r: int, c: Optional[int] = None,
+def view_initial_shift(nb: Notebook, t: int, r: int, c: Optional[int] = None,
                        return_shift: bool = False) -> Optional[np.ndarray]:
     """
     Function to plot results of exhaustive search to find shift between `ref_round/ref_channel` and
@@ -20,7 +20,6 @@ def view_initial_shift(nb: Notebook, config: dict, t: int, r: int, c: Optional[i
 
     Args:
         nb: Notebook containing results of the experiment. Must contain `find_spots` page.
-        config: Dictionary obtained from `'register_initial'` section of config file.
         t: tile interested in.
         r: Want to find the shift between the reference round and this round.
         c: Want to find the shift between the reference channel and this channel. If `None`, `config['shift_channel']`
@@ -31,6 +30,7 @@ def view_initial_shift(nb: Notebook, config: dict, t: int, r: int, c: Optional[i
         `best_shift` - `float [shift_y, shift_x, shift_z]`.
             Best shift found. `shift_z` is in units of z-pixels.
     """
+    config = nb.get_config()['register_initial']
     if c is None:
         c = config['shift_channel']
         if c is None:
@@ -226,7 +226,7 @@ class view_point_clouds:
         self.ax.figure.canvas.draw()
 
 
-def view_pcr(nb: Notebook, config: dict, t: int, r: int, c: int):
+def view_pcr(nb: Notebook, t: int, r: int, c: int):
     """
     Function to plot results of point cloud registration to find affine transform between `ref_round/ref_channel` and
     round `r`, channel `c` for tile `t`.
@@ -235,11 +235,13 @@ def view_pcr(nb: Notebook, config: dict, t: int, r: int, c: int):
     Args:
         nb: Notebook containing results of the experiment. Must contain `find_spots` page.
             If contains register_initial_debug and/or register pages, then transform from these will be used.
-        config: Dictionary obtained from entire config file.
         t: tile interested in.
         r: Want to find the transform between the reference round and this round.
         c: Want to find the transform between the reference channel and this channel.
     """
+    # TODO: if used regularisation i.e. if transform_outlier non-zero, add another transform which is the non-regularised
+    #  i.e. transform_outlier
+    config = nb.get_config()
     if nb.basic_info.is_3d:
         neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
     else:
@@ -260,7 +262,7 @@ def view_pcr(nb: Notebook, config: dict, t: int, r: int, c: int):
     if nb.has_page('register_initial_debug'):
         shift = nb.register_initial_debug.shift[t, r]
     else:
-        shift = view_initial_shift(nb, config['register_initial'], t, r, return_shift=True)
+        shift = view_initial_shift(nb, t, r, return_shift=True)
     point_clouds = point_clouds + [point_clouds[1] + shift]
 
     # Add reference point cloud transformed by an affine transform
