@@ -88,10 +88,19 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             spot_coefs = spot_coefs[:spot_info.shape[0]]
             sparse.save_npz(nbp_file.omp_spot_coef, spot_coefs)
         elif spot_coefs.shape[0] < spot_info.shape[0]:
-            # If more spots in info than coefs then not a case we can handle.
-            raise ValueError(f"Have spot_info for {spot_info.shape[0]} spots but only spot_coefs for "
-                             f"{spot_coefs.shape[0]}\nNeed to delete both {nbp_file.omp_spot_coef} and "
-                             f"{nbp_file.omp_spot_info} to get past this error.")
+            # If more spots in info than coefs then likely because duplicates removed from coefs but not spot_info.
+            not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre,
+                                              spot_info[:, :3], spot_info[:, 6])
+            if not_duplicate.size == spot_info.shape[0]:
+                warnings.warn(f'There were less spots in\n{nbp_file.omp_spot_info}\nthan\n{nbp_file.omp_spot_coef} '
+                              f'because duplicates were deleted for spot_coefs but not for spot_info.\n'
+                              f'Now, spot_info duplicates have also been deleted.')
+                spot_info = spot_info[not_duplicate]
+                np.save(nbp_file.omp_spot_info, spot_info)
+            else:
+                raise ValueError(f"Have spot_info for {spot_info.shape[0]} spots but only spot_coefs for "
+                                 f"{spot_coefs.shape[0]}\nNeed to delete both {nbp_file.omp_spot_coef} and "
+                                 f"{nbp_file.omp_spot_info} to get past this error.")
         else:
             prev_found_tiles = np.unique(spot_info[:, -1])
             use_tiles = np.setdiff1d(use_tiles, prev_found_tiles)
@@ -110,7 +119,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     initial_pos_neighbour_thresh = config['initial_pos_neighbour_thresh']
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
-        pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes)))
+        pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
         for z in use_z:
             print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)},"
                   f" Z-plane {np.where(use_z == z)[0][0] + 1}/{len(use_z)}")
@@ -233,13 +242,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             nd_spot_colors_use[in_tile] = get_spot_colors_jax(jnp.asarray(nbp.local_yxz[in_tile]), t,
                                                               transform, nbp_file, nbp_basic)
 
-    nd_background_coefs = np.ones((n_spots, nbp_basic.n_channels)) * np.nan
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
-    nd_background_coefs[np.ix_(np.arange(n_spots), nbp_basic.use_channels)] = \
-        np.asarray(fit_background_jax_vectorised(spot_colors_norm,
-                                                 nbp_call_spots.background_weight_shift)[1])
-    # save background_coef as low memory as just debugging, specific value not important
-    nbp.background_coef = nd_background_coefs.astype(np.float16)
     nbp.intensity = np.asarray(get_spot_intensity_jax(spot_colors_norm))
     del spot_colors_norm
 
@@ -249,11 +252,16 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nbp.colors = nd_spot_colors
     del nd_spot_colors_use
 
-    spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
-    # save coef as low memory as just debugging, specific value not important
-    nbp.coef = spot_coefs[not_duplicate].toarray().astype(np.float16)
     nbp.gene_no = spot_info[not_duplicate, 3]
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]
     nbp.n_neighbours_neg = spot_info[not_duplicate, 5]
+
+    # Keep only non-duplicates - important spot_coefs saved first for exception at start which can deal with case
+    # where duplicates removed from spot_coefs but not spot_info.
+    # After re-saving here, spot_coefs[s] should be the coefficients for gene at nb.omp.local_yxz[s] i.e. indices should
+    # match up.
+    spot_coefs = sparse.load_npz(nbp_file.omp_spot_coef)
+    sparse.save_npz(nbp_file.omp_spot_coef, spot_coefs[not_duplicate])
+    np.save(nbp_file.omp_spot_info, spot_info[not_duplicate])
 
     return nbp

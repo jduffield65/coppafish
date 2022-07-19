@@ -378,9 +378,9 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
             If True, coefs are found through weighted least squares fitting using 1/sigma as the weight factor.
 
     Returns:
-        - gene_coefs - `float [n_pixels x n_genes]`.
+        - gene_coefs - `float32 [n_pixels x n_genes]`.
             `gene_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm. Most are zero.
-        - background_coefs - `float [n_pixels x n_channels]`.
+        - background_coefs - `float32 [n_pixels x n_channels]`.
             coefficient value for each background vector found for each pixel.
     """
     n_pixels = pixel_colors.shape[0]
@@ -398,7 +398,7 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
     no_verbose = n_pixels < 1000  # show progress bar with more than 1000 pixels.
 
     # Fit background and override initial pixel_colors
-    gene_coefs = np.zeros((n_pixels, n_genes))  # coefs of all genes and background
+    gene_coefs = np.zeros((n_pixels, n_genes), dtype=np.float32)  # coefs of all genes and background
     pixel_colors, background_coefs, background_codes = fit_background_jax_vectorised(pixel_colors,
                                                                                      background_shift)
 
@@ -465,4 +465,4 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
             pbar.update(1)
     pbar.close()
 
-    return gene_coefs, np.asarray(background_coefs)
+    return gene_coefs.astype(np.float32), np.asarray(background_coefs).astype(np.float32)

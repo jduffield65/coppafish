@@ -209,7 +209,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
 
     # save score using latest gene efficiency and diff to second best gene
-    nbp_ref_spots.background_coef = background_coef.astype(np.float16)
     nbp_ref_spots.score = spot_score.astype(np.float32)
     nbp_ref_spots.gene_no = spot_gene_no.astype(np.int16)
     sort_gene_inds = np.argsort(scores, axis=1)
