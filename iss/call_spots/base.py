@@ -3,7 +3,7 @@ from scipy.spatial import KDTree
 import numpy as np
 from .. import utils
 from typing import Union, List, Optional, Tuple
-from ..setup.notebook import NotebookPage
+from ..setup.notebook import NotebookPage, Notebook
 from functools import partial
 import jax.numpy as jnp
 import jax
@@ -495,26 +495,29 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
     return gene_efficiency
 
 
-def omp_spot_score(nbp: NotebookPage,
+def omp_spot_score(nbp: NotebookPage, score_multiplier: float,
                    spot_no: Optional[Union[int, List, np.ndarray]] = None) -> Union[float, np.ndarray]:
     """
     Score for omp gene assignment
+
     Args:
         nbp: OMP Notebook page
+        score_multiplier: score = score_multiplier * n_pos_neighb + n_neg_neighb.
+            So this influences the importance of positive coefficient neighbours vs negative.
         spot_no: Which spots to get score for. If None, all scores will be found.
 
     Returns:
         Score for each spot in spot_no if given, otherwise all spot scores.
     """
-    max_score = nbp.score_multiplier * np.sum(nbp.spot_shape == 1) + np.sum(nbp.spot_shape == -1)
+    max_score = score_multiplier * np.sum(nbp.spot_shape == 1) + np.sum(nbp.spot_shape == -1)
     if spot_no is None:
-        score = (nbp.score_multiplier * nbp.n_neighbours_pos + nbp.n_neighbours_neg) / max_score
+        score = (score_multiplier * nbp.n_neighbours_pos + nbp.n_neighbours_neg) / max_score
     else:
-        score = (nbp.score_multiplier * nbp.n_neighbours_pos[spot_no] + nbp.n_neighbours_neg[spot_no]) / max_score
+        score = (score_multiplier * nbp.n_neighbours_pos[spot_no] + nbp.n_neighbours_neg[spot_no]) / max_score
     return score
 
 
-def quality_threshold(nbp: NotebookPage) -> np.ndarray:
+def quality_threshold(nb: Notebook, method='omp') -> np.ndarray:
     """
 
     Args:
@@ -523,11 +526,30 @@ def quality_threshold(nbp: NotebookPage) -> np.ndarray:
     Returns:
 
     """
-    if nbp.name == 'ref_spots':
-        score = nbp.score
-    elif nbp.name == 'omp':
-        score = omp_spot_score(nbp)
+    if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
+        raise ValueError(f"method must be 'omp' or 'anchor but {method} given.")
+    if nb.has_page('thresholds'):
+        intensity_thresh = nb.thresholds.intensity
+        if method.lower() == 'omp':
+            score_thresh = nb.thresholds.score_omp
+            score_multiplier = nb.thresholds.score_omp_multiplier
+        else:
+            score_thresh = nb.thresholds.score_ref
     else:
-        raise ValueError(f"Notebook page has name {nbp.name} but needs to be 'ref_spots' or 'omp'.")
-    qual_ok = np.array([score > nbp.score_thresh, nbp.intensity > nbp.intensity_thresh]).all(axis=0)
+        config = nb.get_config()['thresholds']
+        intensity_thresh = config['intensity']
+        if intensity_thresh is None:
+            intensity_thresh = nb.call_spots.gene_efficiency_intensity_thresh
+        if method.lower() == 'omp':
+            score_thresh = config['score_omp']
+            score_multiplier = config['score_omp_multiplier']
+        else:
+            score_thresh = config['score_ref']
+    if method.lower() == 'omp':
+        intensity = nb.omp.intensity
+        score = omp_spot_score(nb.omp, score_multiplier)
+    else:
+        intensity = nb.ref_spots.intensity
+        score = nb.ref_spots.score
+    qual_ok = np.array([score > score_thresh, intensity > intensity_thresh]).all(axis=0)
     return qual_ok

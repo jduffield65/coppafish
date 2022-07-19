@@ -14,7 +14,7 @@ import warnings
 
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
-                   transform: np.ndarray, ref_spots_intensity_thresh: float) -> NotebookPage:
+                   transform: np.ndarray) -> NotebookPage:
     nbp = setup.NotebookPage("omp")
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
@@ -255,13 +255,5 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     nbp.gene_no = spot_info[not_duplicate, 3]
     nbp.n_neighbours_pos = spot_info[not_duplicate, 4]
     nbp.n_neighbours_neg = spot_info[not_duplicate, 5]
-
-    # Add quality thresholds to notebook page
-    nbp.score_multiplier = config['score_multiplier']
-    nbp.score_thresh = config['score_thresh']
-    if config['intensity_thresh'] is None:
-        nbp.intensity_thresh = ref_spots_intensity_thresh
-    else:
-        nbp.intensity_thresh = config['intensity_thresh']
 
     return nbp

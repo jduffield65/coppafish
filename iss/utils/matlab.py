@@ -81,11 +81,12 @@ def load_cell(file_name: str, var_name: str) -> list:
     return data
 
 
-def update_dict(nbp, dict, score_thresh):
+def update_dict(nbp, nb, dict, score_thresh):
     """
     Used in save_nb_results to reduced amount of data saved. Only data with score > score_thresh kept.
     Args:
         nbp:
+        nb:
         dict:
         score_thresh:
 
@@ -99,7 +100,10 @@ def update_dict(nbp, dict, score_thresh):
     score_thresh_old = nbp.score_thresh
     del nbp.score_thresh
     nbp.score_thresh = score_thresh
-    keep = quality_threshold(nbp)
+    if pf == 'omp_':
+        keep = quality_threshold(nb, 'omp')
+    else:
+        keep = quality_threshold(nb, 'ref')
     del nbp.score_thresh
     nbp.score_thresh = score_thresh_old
     nbp.finalized = True
@@ -145,14 +149,14 @@ def save_nb_results(nb: Notebook, file_name: str, score_thresh_ref_spots = 0.15,
         # Give 'ref_spots' prefix to key names as same variables in omp page.
         ref_spots_dict = {ref_spots_dict['PAGEINFO'] + '_' + k: v for k, v in ref_spots_dict.items() if not '___' in k}
         del ref_spots_dict['ref_spots_PAGEINFO']
-        ref_spots_dict = update_dict(nb.ref_spots, ref_spots_dict, score_thresh_ref_spots)
+        ref_spots_dict = update_dict(nb.ref_spots, nb, ref_spots_dict, score_thresh_ref_spots)
         mdic.update(ref_spots_dict)
 
     if nb.has_page('omp'):
         omp_dict = nb.omp.to_serial_dict()
         omp_dict = {omp_dict['PAGEINFO'] + '_' + k:v for k,v in omp_dict.items() if not '___' in k}
         del omp_dict['omp_PAGEINFO']
-        omp_dict = update_dict(nb.omp, omp_dict, score_thresh_omp)
+        omp_dict = update_dict(nb.omp, nb, omp_dict, score_thresh_omp)
         mdic.update(omp_dict)
     for k, v in mdic.items():
         if v is None:

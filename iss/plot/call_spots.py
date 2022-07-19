@@ -199,7 +199,8 @@ class view_codes(ColorPlotBase):
                                                             nb.basic_info.use_channels)].transpose()
         if method.lower() == 'omp':
             page_name = 'omp'
-            spot_score = omp_spot_score(nb.omp, spot_no)
+            config = nb.get_config()['thresholds']
+            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
         else:
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]
@@ -369,8 +370,9 @@ class view_spot(ColorPlotBase):
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)].transpose()
         if method.lower() == 'omp':
+            config = nb.get_config()['thresholds']
             page_name = 'omp'
-            spot_score = omp_spot_score(nb.omp, spot_no)
+            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
         else:
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]

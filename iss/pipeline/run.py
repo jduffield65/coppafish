@@ -205,7 +205,7 @@ def run_omp(nb: setup.Notebook):
     if not nb.has_page("omp"):
         config = nb.get_config()
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
-                             nb.stitch.tile_origin, nb.register.transform, nb.ref_spots.intensity_thresh)
+                             nb.stitch.tile_origin, nb.register.transform)
         nb += nbp
         utils.errors.check_color_nan(nbp.colors, nb.basic_info)
     else:

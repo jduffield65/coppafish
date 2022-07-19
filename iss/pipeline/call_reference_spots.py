@@ -28,7 +28,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
         nbp_ref_spots: `ref_spots` notebook page containing all variables produced in `pipeline/reference_spots.py` i.e.
-            `global_yxz`, `isolated`, `tile`, `colors`.
+            `local_yxz`, `isolated`, `tile`, `colors`.
         hist_values: `int [n_pixel_values]`.
             All possible pixel values in saved tiff images i.e. `n_pixel_values` is approximately
             `np.iinfo(np.uint16).max` because tiffs saved as `uint16` images.
@@ -45,6 +45,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     Returns:
         - `NotebookPage[call_spots]` - Page contains bleed matrix and expected code for each gene.
         - `NotebookPage[ref_spots]` - Page contains gene assignments and info for spots found on reference round.
+            Parameters added are: intensity, score, gene_no, score_diff
     """
     nbp = setup.NotebookPage("call_spots")
 
@@ -83,7 +84,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # This is because these variables are all a small fraction of a spot_color L2 norm in one round.
     # Hence use average pixel as example of low intensity spot.
     if any([config['dp_norm_shift'] is None, config['background_weight_shift'] is None,
-            config['intensity_thresh'] is None]):
+            config['gene_efficiency_intensity_thresh'] is None]):
+        # get central tile
         nbp.norm_shift_tile = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
         if nbp_basic.is_3d:
             nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
@@ -98,8 +100,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             config['dp_norm_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
         if config['background_weight_shift'] is None:
             config['background_weight_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
-        if config['intensity_thresh'] is None:
-            config['intensity_thresh'] = \
+        if config['gene_efficiency_intensity_thresh'] is None:
+            config['gene_efficiency_intensity_thresh'] = \
                 float(round_any(nbp.median_abs_intensity / config['norm_shift_to_intensity_scale'],
                                 config['norm_shift_precision']/config['norm_shift_to_intensity_scale'], 'ceil'))
     else:
@@ -109,9 +111,10 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.dp_norm_shift = float(np.clip(config['dp_norm_shift'], config['norm_shift_min'], config['norm_shift_max']))
     nbp.background_weight_shift = float(np.clip(config['background_weight_shift'],
                                                 config['norm_shift_min'], config['norm_shift_max']))
-    nbp_ref_spots.intensity_thresh = float(np.clip(config['intensity_thresh'],
-                                                   config['norm_shift_min']/config['norm_shift_to_intensity_scale'],
-                                                   config['norm_shift_max']/config['norm_shift_to_intensity_scale']))
+    nbp.gene_efficiency_intensity_thresh = \
+        float(np.clip(config['gene_efficiency_intensity_thresh'],
+                      config['norm_shift_min']/config['norm_shift_to_intensity_scale'],
+                      config['norm_shift_max']/config['norm_shift_to_intensity_scale']))
 
     # get bleed matrix
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
@@ -155,16 +158,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.bled_codes = bled_codes
     nbp.background_codes = background_codes
 
-    # get gene assignment and score
-    nbp_ref_spots.score_thresh = config['score_thresh']
-
     # shift in config file is just for one round.
     n_spots, n_rounds_use, n_channels_use = spot_colors_use.shape
     dp_norm_shift = nbp.dp_norm_shift * np.sqrt(n_rounds_use)
 
     # find spot assignments to genes and gene efficiency
     n_iter = config['gene_efficiency_n_iter'] + 1
-    pass_intensity_thresh = nbp_ref_spots.intensity > nbp_ref_spots.intensity_thresh
+    pass_intensity_thresh = nbp_ref_spots.intensity > nbp.gene_efficiency_intensity_thresh
     use_ge_last = np.zeros(n_spots).astype(bool)
     bled_codes_ge_use = bled_codes_use.copy()
     for i in range(n_iter):

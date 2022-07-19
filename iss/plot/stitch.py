@@ -167,14 +167,13 @@ def view_shifts(shifts_2d: np.ndarray, scores_2d: np.ndarray, shifts_3d: Optiona
         return fig
 
 
-def view_stitch(nb: Notebook, config: dict, t: int, direction: Optional[str] = None):
+def view_stitch(nb: Notebook, t: int, direction: Optional[str] = None):
     """
     Function to plot results of exhaustive search to find overlap between tile `t` and its neighbours.
     Useful for debugging the stitch section of the pipeline.
 
     Args:
         nb: Notebook containing results of the experiment. Must contain `find_spots` page.
-        config: Dictionary obtained from `'stitch'` section of config file.
         t: Want to look at overlap between tile `t` and its south/west neighbour.
         direction: Direction of overlap interested in - either `'south'` or `'west'`.
             If `None`, then will look at both directions.
@@ -186,6 +185,7 @@ def view_stitch(nb: Notebook, config: dict, t: int, direction: Optional[str] = N
     else:
         raise ValueError(f"direction must be either 'south' or 'west' but {direction} given.")
 
+    config = nb.get_config()['stitch']
     # determine shifts to search over
     shifts = get_shifts_to_search(config, nb.basic_info)
     if not nb.basic_info.is_3d:

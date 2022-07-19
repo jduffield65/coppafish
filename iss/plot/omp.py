@@ -31,7 +31,8 @@ class view_omp(ColorPlotBase):
 
         if method.lower() == 'omp':
             page_name = 'omp'
-            spot_score = omp_spot_score(nb.omp, spot_no)
+            config = nb.get_config()['thresholds']
+            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
         else:
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]

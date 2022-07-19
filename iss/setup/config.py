@@ -167,8 +167,7 @@ _options = {
             'gene_efficiency_n_iter': 'int',
             'gene_efficiency_score_thresh': 'number',
             'gene_efficiency_score_diff_thresh': 'number',
-            'score_thresh': 'number',
-            'intensity_thresh': 'maybe_number'
+            'gene_efficiency_intensity_thresh': 'maybe_number'
         },
     'omp':
         {
@@ -192,10 +191,14 @@ _options = {
             'shape_max_size': 'list_int',
             'shape_pos_neighbour_thresh': 'int',
             'shape_isolation_dist': 'number',
-            'shape_sign_thresh': 'number',
-            'intensity_thresh': 'maybe_number',
-            'score_thresh': 'number',
-            'score_multiplier': 'number'
+            'shape_sign_thresh': 'number'
+        },
+    'thresholds':
+        {
+            'intensity': 'maybe_number',
+            'score_ref': 'number',
+            'score_omp': 'number',
+            'score_omp_multiplier': 'number'
         }
 }
 

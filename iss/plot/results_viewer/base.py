@@ -50,9 +50,9 @@ class iss_plot:
         # indicate spots shown when plot first opened - omp if exists, else anchor
         if self.nb.has_page('omp'):
             show_spots = np.zeros(self.n_spots, dtype=bool)
-            show_spots[self.omp_0_ind:] = quality_threshold(self.nb.omp)
+            show_spots[self.omp_0_ind:] = quality_threshold(self.nb, 'omp')
         else:
-            show_spots = quality_threshold(self.nb.ref_spots)
+            show_spots = quality_threshold(self.nb, 'anchor')
 
         # color to plot for all genes in the notebook
         gene_color = np.ones((len(self.nb.call_spots.gene_names), 3))
@@ -118,11 +118,13 @@ class iss_plot:
         # It is needed because layer is transparent so can't see when select spot.
         self.viewer_status_on_select()
 
+        config = self.nb.get_config()['thresholds']
+        self.score_omp_multiplier = config['score_omp_multiplier']
         self.score_thresh_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
         # Scores for anchor/omp are different so reset score range when change method
-        self.score_range = {'anchor': [self.nb.ref_spots.score_thresh, 1]}
+        self.score_range = {'anchor': [config['score_ref'], 1]}
         if self.nb.has_page('omp'):
-            self.score_range['omp'] = [self.nb.omp.score_thresh, 1]
+            self.score_range['omp'] = [config['score_omp'], 1]
             self.score_thresh_slider.setValue(self.score_range['omp'])
         else:
             self.score_thresh_slider.setValue(self.score_range['anchor'])
@@ -137,10 +139,9 @@ class iss_plot:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        if self.nb.has_page('omp'):
-            self.intensity_thresh_slider.setValue(self.nb.omp.intensity_thresh)
-        else:
-            self.intensity_thresh_slider.setValue(self.nb.ref_spots.intensity_thresh)
+        if config['intensity'] is None:
+            config['intensity'] = nb.call_spots.gene_efficiency_intensity_thresh
+        self.intensity_thresh_slider.setValue(config['intensity'])
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
         # On release of slider, genes shown will change
@@ -205,7 +206,7 @@ class iss_plot:
         method selected by button and genes selected through clicking on the legend.
         """
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp)
+            score = omp_spot_score(self.nb.omp, self.score_omp_multiplier)
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:

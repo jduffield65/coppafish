@@ -380,15 +380,7 @@
       "score_diff[s] is score[s] minus the score for the second best gene assignement for spot s."],
     "intensity": ["Numpy float32 array [n_spots]",
       "if max_intensity[s, r] is the maximum value of colors[s, r]/color_norm_factor[r]:",
-      "intensity[s] = median(max_intensity[s]) i.e. the average across rounds."],
-    "score_thresh": ["Float",
-      "Final accepted spots are those which pass quality_threshold which is:",
-      "score > score_thresh and intensity > intensity_thresh. This is copied from config[call_spots].",
-      "Max score is 1 so score_thresh should be less than this."],
-    "intensity_thresh": ["Float",
-      "Final accepted spots are those which pass quality_threshold which is:",
-      "score > score_thresh and intensity > intensity_thresh. This is copied from config[call_spots].",
-      "intensity for a really intense spot is about 1 so intensity_thresh should be less than this."]
+      "intensity[s] = median(max_intensity[s]) i.e. the average across rounds."]
   },
 
   "call_spots":
@@ -424,7 +416,8 @@
       "All codes have L2 norm = 1 when summed across all use_rounds and use_channels."],
     "gene_efficiency": ["Numpy float array [n_genes x n_rounds]",
       "gene_efficiency[g,r] gives the expected intensity of gene g in round r compared to that expected by the bleed_matrix.",
-      "It is computed based on the average of isolated spot_colors assigned to that gene.",
+      "It is computed based on the average of isolated spot_colors assigned to that gene",
+      "which exceed score, score_diff and intensity thresholds given in config file.",
       "For all g, there is a ref_round[g] such that gene_efficiency[g, ref_round[g]] = 1.",
       "nan if r outside use_rounds and 1 if gene_codes[g,r] outside use_dyes."],
     "bled_codes_ge": ["Numpy float array [n_genes x n_rounds x n_channels]",
@@ -448,7 +441,10 @@
       "and intensity_thresh are computed. None if all these variables given in config file."],
     "norm_shift_z": ["Integer or None",
       "z-plane that is used to compute median_abs_intensity from which dp_norm_shift, background_weight_shift ",
-      "and intensity_thresh are computed. None if all these variables given in config file."]
+      "and intensity_thresh are computed. None if all these variables given in config file."],
+    "gene_efficiency_intensity_thresh": ["Float",
+      "gene_efficiency is computed from spots with intensity greater than this.",
+      "By default, it is set to median_abs_intensity / config['call_spots']['norm_shift_to_intensity_scale']."]
   },
 
   "omp":
@@ -508,26 +504,37 @@
       "Max is sum(spot_shape==-1)."],
     "intensity": ["Numpy float32 array [n_spots]",
       "if max_intensity[s, r] is the maximum value of colors[s, r]/color_norm_factor[r]:",
-      "intensity[s] = median(max_intensity[s]) i.e. the average across rounds."],
-    "score_multiplier": ["Float",
-      "Final accepted spots are those which pass quality_threshold which is:",
-      "score > score_thresh and intensity > intensity_thresh. score is given by:",
-      "score = (score_multiplier * n_neighbours_pos + n_neighbours_neg) / ",
-      "(score_multiplier * n_neighbours_pos_max + n_neighbours_neg_max).",
-      "This is copied from config[omp]."],
-    "score_thresh": ["Float",
-      "Final accepted spots are those which pass quality_threshold which is:",
-      "score > score_thresh and intensity > intensity_thresh. score is given by:",
-      "score = (score_multiplier * n_neighbours_pos + n_neighbours_neg) / ",
-      "(score_multiplier * n_neighbours_pos_max + n_neighbours_neg_max).",
-      "This is copied from config[omp].",
+      "intensity[s] = median(max_intensity[s]) i.e. the average across rounds."]
+  },
+
+  "thresholds":
+  {
+    "DESCRIPTION": ["thresholds page contains quality thresholds which affect which spots plotted",
+      "and which are exported to pciseq.",
+      "Page added to notebook when utils/export_to_pciseq/export is run."],
+    "intensity": ["Float",
+      "Final accepted reference and OMP spots require intensity > thresholds[intensity].",
+      "This is copied from config[thresholds] and if not given there, will be set to ",
+      "nb.call_spots.gene_efficiency_intensity_thresh.",
+      "intensity for a really intense spot is about 1 so intensity_thresh should be less than this."],
+    "score_ref": ["Float",
+      "Final accepted reference spots are those which pass quality_threshold which is:",
+      "nb.ref_spots.score > thresholds[score_ref] and intensity > thresholds[intensity].",
+      "This is copied from config[thresholds].",
+      "Max score is 1 so score_ref should be less than this."],
+    "score_omp": ["Float",
+      "Final accepted OMP spots are those which pass quality_threshold which is:",
+      "score > thresholds[score_omp] and intensity > thresholds[intensity]. score is given by:",
+      "score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) / ",
+      "(score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max).",
+      "This is copied from config[thresholds].",
       "Max score is 1 so score_thresh should be less than this."],
-    "intensity_thresh": ["Float",
-      "Final accepted spots are those which pass quality_threshold which is:",
-      "score > score_thresh and intensity > intensity_thresh. score is given by:",
-      "score = (score_multiplier * n_neighbours_pos + n_neighbours_neg) / ",
-      "(score_multiplier * n_neighbours_pos_max + n_neighbours_neg_max).",
-      "This is copied from config[omp].",
-      "intensity for a really intense spot is about 1 so intensity_thresh should be less than this."]
+    "score_omp_multiplier": ["Float",
+      "Final accepted OMP spots are those which pass quality_threshold which is:",
+      "score > thresholds[score_omp] and intensity > thresholds[intensity]. score is given by:",
+      "score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) / ",
+      "(score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max).",
+      "This is copied from config[thresholds]."
+    ]
   }
 }
