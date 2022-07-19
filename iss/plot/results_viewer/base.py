@@ -11,6 +11,8 @@ import time
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow
+from napari.layers.points import Points
+from napari.layers.points._points_constants import Mode
 
 
 class iss_plot:
@@ -61,6 +63,8 @@ class iss_plot:
                                                       gene_legend_info.loc[i, 'ColorB']]
 
         self.viewer = napari.Viewer()
+        self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
+        self.viewer.window.qt_viewer.dockLayerControls.setVisible(False)
 
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
@@ -79,7 +83,7 @@ class iss_plot:
             self.legend['gene_no'][i] = \
                 np.where(gene_names_crop == self.legend['ax'].texts[i].get_text())[0][0]
         self.legend['fig'].mpl_connect('button_press_event', self.update_genes)
-        self.viewer.window.add_dock_widget(self.legend['fig'], area='right', name='Genes')
+        self.viewer.window.add_dock_widget(self.legend['fig'], area='left', name='Genes')
         self.active_genes = np.arange(len(nb.call_spots.gene_names))  # start with all genes shown
 
         # Add all spots in layer as transparent white spots.
@@ -154,6 +158,9 @@ class iss_plot:
             self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
         self.key_call_functions()
+        # TODO: on next napari, release should be able to change thickness of spots in z-direction i.e. control what
+        #  number of z-planes can be seen at any one time:
+        #  https://github.com/napari/napari/issues/4816#issuecomment-1186600574.
         napari.run()
 
     def viewer_status_on_select(self):
@@ -327,6 +334,21 @@ class iss_plot:
         """
         Contains all functions which can be called by pressing a key with napari viewer open
         """
+        @Points.bind_key('Space', overwrite=True)
+        def change_zoom_select_mode(layer):
+            if layer.mode == Mode.PAN_ZOOM:
+                layer.mode = Mode.SELECT
+                self.viewer.help = 'Mode: Select'
+            elif layer.mode == Mode.SELECT:
+                layer.mode = Mode.PAN_ZOOM
+                self.viewer.help = 'Mode: Pan/Zoom'
+            # # Use space bar to change mode
+            # mode = self.viewer.layers[self.diagnostic_layer_ind].mode
+            # if mode == 'select':
+            #     self.viewer.layers[self.diagnostic_layer_ind].mode = 'pan_zoom'
+            # elif mode == 'pan_zoom':
+            #     self.viewer.layers[self.diagnostic_layer_ind].mode = 'select'
+
         @self.viewer.bind_key('b')
         def call_to_view_bm(viewer):
             view_bleed_matrix(self.nb)
