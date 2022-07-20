@@ -4,7 +4,7 @@ import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
 from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
-from ..call_spots import get_spot_intensity_jax, fit_background_jax_vectorised, get_non_duplicate
+from ..call_spots import get_spot_intensity_jax, get_non_duplicate
 from .. import omp
 import os
 from scipy import sparse
