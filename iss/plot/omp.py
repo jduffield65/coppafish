@@ -1,5 +1,5 @@
 from .call_spots import ColorPlotBase
-from ..spot_colors import get_spot_colors
+from ..no_jax.spot_colors import get_spot_colors
 from ..call_spots import get_spot_intensity_jax, omp_spot_score
 from ..setup import Notebook
 from .. import omp, utils

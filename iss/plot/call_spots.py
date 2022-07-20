@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib.widgets import Button, RangeSlider
 from ..call_spots import omp_spot_score
 from ..setup import Notebook
-from ..spot_colors import get_spot_colors
+from ..no_jax.spot_colors import get_spot_colors
 import matplotlib
 from typing import List, Optional, Tuple, Union
 

@@ -5,9 +5,7 @@ from ...utils import matlab, errors
 from ..base import get_all_coefs, fit_coefs_vectorised,\
     fit_coefs_weight_vectorised, get_best_gene_first_iter_vectorised, get_best_gene_vectorised
 from ..spots import count_spot_neighbours
-from scipy.linalg.lapack import dgels
-from scipy.linalg.blas import dgemv
-from typing import Optional, Tuple
+from ...no_jax import omp as no_jax
 import jax.numpy as jnp
 
 
@@ -110,48 +108,6 @@ class TestFittingStandardDeviation(unittest.TestCase):
             self.assertTrue(np.abs(diff2).max() <= self.tol)
 
 
-def fit_coefs_python(bled_codes: np.ndarray, pixel_colors: np.ndarray,
-                     weight: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Old method before Jax.
-    This finds the least squared solution for how the `n_genes` `bled_codes` can best explain each `pixel_color`.
-    Can also find weighted least squared solution if `weight` provided.
-
-    Args:
-        bled_codes: `float [(n_rounds x n_channels) x n_genes]`.
-            Flattened then transposed bled codes which usually has the shape `[n_genes x n_rounds x n_channels]`.
-        pixel_colors: `float [(n_rounds x n_channels) x n_pixels]` if `n_genes==1`
-            otherwise  `float [(n_rounds x n_channels)]`.
-            Flattened then transposed pixel colors which usually has the shape `[n_pixels x n_rounds x n_channels]`.
-        weight: `float [(n_rounds x n_channels)]`.
-            Only provided for n_genes > 1 and n_pixels == 1.
-            Weight to be applied to each data value when computing coefficient of each `bled_code` for each pixel.
-
-    Returns:
-        - residual - `float [n_pixels x (n_rounds x n_channels)]` or float [(n_rounds x n_channels)] .
-            Residual pixel_colors after removing bled_codes with coefficients specified by coef.
-        - coefs - `float [n_pixels]` if n_genes == 1 otherwise `float [n_genes]` if n_pixels == 1.
-            coefficient found through least squares fitting for each gene.
-
-    """
-    if weight is not None:
-        pixel_colors = pixel_colors * weight
-        bled_codes = bled_codes * weight[:, np.newaxis]
-    n_genes = bled_codes.shape[1]
-    if n_genes == 1:
-        # can do many pixels at once if just one gene and is quicker this way.
-        coefs = np.sum(bled_codes * pixel_colors, axis=0) / np.sum(bled_codes ** 2)
-        residual = (pixel_colors - coefs * bled_codes).transpose()
-    else:
-        # coefs = np.linalg.lstsq(bled_codes, pixel_colors, rcond=None)[0]
-        # residual = pixel_colors - bled_codes @ coefs
-        coefs = dgels(bled_codes, pixel_colors)[1][:n_genes]
-        residual = pixel_colors - dgemv(1, bled_codes, coefs)
-    if weight is not None:
-        residual = residual / weight
-    return residual, coefs
-
-
 class TestFitCoefs(unittest.TestCase):
     """
     Check whether fit_coefs works the same as MATLAB function:
@@ -195,47 +151,124 @@ class TestFitCoefs(unittest.TestCase):
 
             bc_use = bled_codes.reshape(n_genes, -1).transpose()
             sc_use = spot_colors.reshape(n_spots, -1).transpose()
-            if n_spots == 1:
-                sc_use_python = sc_use.flatten()
-            else:
-                sc_use_python = sc_use
+
             genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
-            # if n_spots > 1:
-            #     residual_python, coefs_python = fit_coefs_single_gene(bc_use, sc_use_python, genes_used.flatten())
-            # else:
-            #     residual_python, coefs_python = fit_coefs_multi_genes(bc_use, sc_use, genes_used)
-            residual_python, coefs_python = fit_coefs_python(bc_use, sc_use_python)
-            if n_spots > 1:
-                residual_python = residual_python.reshape(n_spots, n_rounds, n_channels)
-            else:
-                residual_python = residual_python.transpose().reshape(n_spots, n_rounds, n_channels)
-            #genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
+            residual_python, coefs_python = no_jax.fit_coefs(bc_use, sc_use, genes_used)
             residual_jax, coefs_jax = fit_coefs_vectorised(bc_use, sc_use, genes_used)
+            diff1_jax = np.asarray(residual_jax) - residual_python
+            diff2_jax = np.asarray(coefs_jax) - coefs_python
             residual_jax = np.asarray(residual_jax).reshape(n_spots, n_rounds, n_channels)
             coefs_jax = np.asarray(coefs_jax).flatten()
-            diff1 = residual_python - residual_matlab
-            diff2 = coefs_python - coefs_matlab
-            diff1_jax = residual_python - residual_jax
-            diff2_jax = coefs_python - coefs_jax
+            diff1 = residual_jax - residual_matlab
+            diff2 = coefs_jax - coefs_matlab
             self.assertTrue(np.abs(diff1).max() <= self.tol)
             self.assertTrue(np.abs(diff2).max() <= self.tol)
             self.assertTrue(np.abs(diff1_jax).max() <= self.tol)
             self.assertTrue(np.abs(diff2_jax).max() <= self.tol)
-        if n_spots == 1:
-            # Check weighted least squares works if only 1 spot. If more than 1 spot, fit_coefs won't work.
-            weight = np.random.rand(n_channels*n_rounds)
-            residual_python_weight, coefs_python_weight = fit_coefs_python(bc_use, sc_use_python, weight)
-            residual_python_weight = residual_python_weight.transpose().reshape(n_spots, n_rounds, n_channels)
+
+            # Check weighted least squares works too.
+            weight = np.random.rand(n_spots, n_channels*n_rounds)
+            residual_python_weight, coefs_python_weight = \
+                no_jax.fit_coefs(bled_codes.reshape(n_genes, -1).transpose(),
+                                 spot_colors.reshape(n_spots, -1).transpose(), genes_used, weight)
             residual_jax_weight, coefs_jax_weight = \
                 fit_coefs_weight_vectorised(bled_codes.reshape(n_genes, -1).transpose(),
                                             spot_colors.reshape(n_spots, -1).transpose(), genes_used,
-                                            weight[np.newaxis])
-            residual_jax_weight = np.asarray(residual_jax_weight).transpose().reshape(n_spots, n_rounds, n_channels)
+                                            weight)
+            residual_jax_weight = np.asarray(residual_jax_weight)
             coefs_jax_weight = np.asarray(coefs_jax_weight)
             diff1_weight = residual_python_weight - residual_jax_weight
             diff2_weight = coefs_python_weight - coefs_jax_weight
             self.assertTrue(np.abs(diff1_weight).max() <= self.tol)
             self.assertTrue(np.abs(diff2_weight).max() <= self.tol)
+
+
+class TestGetBestGene(unittest.TestCase):
+    """
+    Check whether jax and non-jax get_best_gene functions give the same results
+    """
+    N_Tests = 5
+    tol = 1e-4
+    MinPixels = 5
+    MaxPixels = 100
+    MinChannels = 2
+    MaxChannels = 9
+    MinRounds = 2
+    MaxRounds = 9
+    MinGenes = MaxChannels * 2
+    MaxGenes = MaxChannels * 5
+    MinGenesAdded = 1
+    MaxGenesAdded = MaxChannels
+    Beta = 1
+    MinAlpha = 70
+    MaxAlpha = 200
+    MinNormShift = 0.001
+    MaxNormShift = 0.1
+    MinScoreThresh = 0.1
+    MaxScoreThresh = 0.3
+
+    def get_params(self):
+        n_pixels = np.random.randint(self.MinPixels, self.MaxPixels)
+        n_channels = np.random.randint(self.MinChannels, self.MaxChannels)
+        n_rounds = np.random.randint(self.MinRounds, self.MaxRounds)
+        n_genes = np.random.randint(self.MinGenes, self.MaxGenes)
+        pixel_colors = np.random.uniform(-1, 1, (n_pixels, n_rounds * n_channels))
+        pixel_colors = pixel_colors / np.linalg.norm(pixel_colors, axis=1, keepdims=True)  # L2 norm of 1
+        bled_codes = np.random.uniform(-1, 1, (n_genes, n_rounds * n_channels))
+        bled_codes = bled_codes / np.linalg.norm(bled_codes, axis=1, keepdims=True)  # L2 norm of 1
+        background_coefs = np.random.uniform(-1, 1, (n_pixels, n_channels))
+        norm_shift = np.random.uniform(self.MinNormShift, self.MaxNormShift)
+        score_thresh = np.random.uniform(self.MinScoreThresh, self.MaxScoreThresh)
+        alpha = np.random.uniform(self.MinAlpha, self.MaxAlpha)
+        beta = self.Beta
+        background_genes = np.arange(n_genes-n_channels, n_genes)
+
+        # Stuff for not 1st iter
+        n_genes_added = np.random.randint(self.MinGenesAdded, self.MaxGenesAdded)
+        genes_added = np.zeros((n_pixels, n_genes_added), dtype=int)
+        for i in range(n_pixels):
+            # Must have no duplicate genes for each pixel and must not include background genes
+            genes_added[i] = np.random.choice(n_genes - n_channels, n_genes_added, replace=False)
+        gene_coefs = np.random.uniform(-1, 1, (n_pixels, n_genes_added))
+        return pixel_colors, bled_codes, background_coefs, norm_shift, score_thresh, alpha, beta, background_genes, \
+               genes_added, gene_coefs
+
+    def test_first_iter(self):
+        for i in range(self.N_Tests):
+            pixel_colors, bled_codes, background_coefs, norm_shift, score_thresh, alpha, beta, \
+                background_genes, _, _ = self.get_params()
+            best_gene_jax, pass_score_thresh_jax, background_var_jax = \
+                get_best_gene_first_iter_vectorised(pixel_colors, bled_codes, background_coefs, norm_shift,
+                                                    score_thresh, alpha, beta, background_genes)
+            best_gene, pass_score_thresh, background_var = \
+                no_jax.get_best_gene_first_iter(pixel_colors, bled_codes, background_coefs, norm_shift,
+                                                score_thresh, alpha, beta, background_genes)
+            diff1 = best_gene - np.asarray(best_gene_jax)
+            diff2 = pass_score_thresh.astype(int) - np.asarray(pass_score_thresh_jax).astype(int)
+            diff3 = background_var - np.asarray(background_var_jax)
+            self.assertTrue(np.abs(diff1).max() <= self.tol)
+            self.assertTrue(np.abs(diff2).max() <= self.tol)
+            self.assertTrue(np.abs(diff3).max() <= self.tol)
+
+    def test_get_best_gene(self):
+        for i in range(self.N_Tests):
+            pixel_colors, bled_codes, background_coefs, norm_shift, score_thresh, alpha, beta, \
+                background_genes, genes_added, gene_coefs = self.get_params()
+            background_var = \
+                no_jax.get_best_gene_first_iter(pixel_colors, bled_codes, background_coefs, norm_shift,
+                                                score_thresh, alpha, beta, background_genes)[2]
+            best_gene_jax, pass_score_thresh_jax, inverse_var_jax = \
+                get_best_gene_vectorised(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
+                                         score_thresh, alpha, background_genes, background_var)
+            best_gene, pass_score_thresh, inverse_var = \
+                no_jax.get_best_gene(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
+                                         score_thresh, alpha, background_genes, background_var)
+            diff1 = best_gene - np.asarray(best_gene_jax)
+            diff2 = pass_score_thresh.astype(int) - np.asarray(pass_score_thresh_jax).astype(int)
+            diff3 = inverse_var - np.asarray(inverse_var_jax)
+            self.assertTrue(np.abs(diff1).max() <= self.tol)
+            self.assertTrue(np.abs(diff2).max() <= self.tol)
+            self.assertTrue(np.abs(diff3).max() <= self.tol)
 
 
 class TestGetAllCoefs(unittest.TestCase):
@@ -272,7 +305,8 @@ class TestGetAllCoefs(unittest.TestCase):
         Coefficient found for each background vector for each pixel.
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    tol = 1e-3
+    tol_matlab = 1e-3
+    tol_python = 1e-5
 
     def test_get_all_coefs(self):
         folder = os.path.join(self.folder, 'get_all_coefs')
@@ -302,15 +336,22 @@ class TestGetAllCoefs(unittest.TestCase):
             alpha = float(alpha)
             beta = float(beta)
             weight_coef_fit = bool(weight_coef_fit)
-            coefs_python, background_coefs_python = get_all_coefs(spot_colors, bled_codes, background_shift, dp_shift,
-                                                                  dp_thresh, alpha, beta, max_genes, weight_coef_fit)
-            diff1 = coefs_python - coefs_matlab
-            diff2 = background_coefs_python - background_coefs_matlab
+            coefs_jax, background_coefs_jax = get_all_coefs(spot_colors, bled_codes, background_shift, dp_shift,
+                                                            dp_thresh, alpha, beta, max_genes, weight_coef_fit)
+            coefs_python, background_coefs_python = \
+                no_jax.get_all_coefs(np.asarray(spot_colors), np.asarray(bled_codes), background_shift, dp_shift,
+                                     dp_thresh, alpha, beta, max_genes, weight_coef_fit)
+            diff1_python = coefs_jax - coefs_python
+            diff2_python = background_coefs_jax - background_coefs_python
+            diff1 = coefs_jax - coefs_matlab
+            diff2 = background_coefs_jax - background_coefs_matlab
             # make sure same coefficients non-zero for both methods.
-            diff_nnz_coefs = np.abs(np.sum((coefs_python != 0) != (coefs_matlab !=0), axis=1))
+            diff_nnz_coefs = np.abs(np.sum((coefs_jax != 0) != (coefs_matlab !=0), axis=1))
+            self.assertTrue(np.abs(diff1_python).max() <= self.tol_python)
+            self.assertTrue(np.abs(diff2_python).max() <= self.tol_python)
             self.assertTrue((diff_nnz_coefs > 0).sum() / diff_nnz_coefs.size < 0.01)
-            self.assertTrue(np.abs(diff1[diff_nnz_coefs == 0]).max() <= self.tol)
-            self.assertTrue(np.abs(diff2).max() <= self.tol)
+            self.assertTrue(np.abs(diff1[diff_nnz_coefs == 0]).max() <= self.tol_matlab)
+            self.assertTrue(np.abs(diff2).max() <= self.tol_matlab)
 
 
 class TestCountSpotNeighbours(unittest.TestCase):

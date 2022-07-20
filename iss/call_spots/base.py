@@ -521,7 +521,7 @@ def quality_threshold(nb: Notebook, method='omp') -> np.ndarray:
     """
 
     Args:
-        nbp:
+        nb:
 
     Returns:
 

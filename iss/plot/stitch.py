@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import scipy.ndimage
-from ..stitch import compute_shift
+from ..stitch import compute_shift, get_shifts_to_search
 from ..find_spots import spot_yxz
-from ..pipeline.stitch import get_shifts_to_search
 from ..setup import Notebook
 import warnings
 from typing import Tuple, List, Optional

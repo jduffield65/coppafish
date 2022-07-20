@@ -29,7 +29,6 @@ def fit_coefs(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
             Coefficients found through least squares fitting for each gene.
     """
     coefs = jnp.linalg.lstsq(bled_codes[:, genes], pixel_color)[0]
-    # TODO: see if jnp.matmul and @ have same speed.
     residual = pixel_color - jnp.matmul(bled_codes[:, genes], coefs)
     return residual, coefs
 

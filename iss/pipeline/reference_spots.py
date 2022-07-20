@@ -1,5 +1,6 @@
 from .. import setup
-from ..spot_colors import get_spot_colors, get_spot_colors_jax
+from ..spot_colors import get_spot_colors_jax
+from ..no_jax.spot_colors import get_spot_colors
 from ..call_spots import get_non_duplicate
 from ..find_spots import spot_yxz
 import numpy as np

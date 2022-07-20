@@ -4,8 +4,8 @@ import numpy as np
 from ...utils.npy import save_tile
 from ...setup.notebook import NotebookPage
 from ...setup.tile_details import get_tile_file_names
-from ...pcr.base import apply_transform, apply_transform_jax
-from ..base import get_spot_colors, get_spot_colors_jax
+from ...no_jax.spot_colors import apply_transform, get_spot_colors
+from ..base import get_spot_colors_jax, apply_transform_jax
 from typing import List, Optional
 import jax.numpy as jnp
 

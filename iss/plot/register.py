@@ -1,7 +1,9 @@
 import numpy as np
 from ..stitch import compute_shift
+# TODO: find_spots/base uses jax but not for functions of interest - what to do??
 from ..find_spots import spot_yxz, get_isolated_points
-from ..pcr import apply_transform, get_single_affine_transform
+from ..pcr import get_single_affine_transform
+from ..no_jax.spot_colors import apply_transform
 from .stitch import view_shifts
 from ..setup import Notebook
 from typing import Optional, List
