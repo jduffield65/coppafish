@@ -1,11 +1,11 @@
 from .call_spots import ColorPlotBase
 from ..no_jax.spot_colors import get_spot_colors
-from ..call_spots import get_spot_intensity_jax, omp_spot_score
+from ..call_spots import omp_spot_score, get_spot_intensity
 from ..setup import Notebook
-from .. import omp, utils
+from .. import utils
+from ..no_jax.omp import get_all_coefs
 import matplotlib.pyplot as plt
 import numpy as np
-import jax.numpy as jnp
 import os
 
 
@@ -56,10 +56,9 @@ class view_omp(ColorPlotBase):
         spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info)
         spot_colors = spot_colors[np.ix_(np.arange(im_yxz.shape[0]),
                                          nb.basic_info.use_rounds, nb.basic_info.use_channels)] / color_norm
-        spot_colors = jnp.asarray(spot_colors)
 
         # Only look at pixels with high enough intensity - same as in full pipeline
-        spot_intensity = get_spot_intensity_jax(jnp.abs(spot_colors))
+        spot_intensity = get_spot_intensity(np.abs(spot_colors))
         config = nb.get_config()['omp']
         if nb.has_page('omp'):
             initial_intensity_thresh = nb.omp.initial_intensity_thresh
@@ -76,8 +75,8 @@ class view_omp(ColorPlotBase):
         keep = spot_intensity > initial_intensity_thresh
         bled_codes = nb.call_spots.bled_codes_ge
         n_genes = bled_codes.shape[0]
-        bled_codes = jnp.asarray(bled_codes[np.ix_(np.arange(n_genes),
-                                                   nb.basic_info.use_rounds, nb.basic_info.use_channels)])
+        bled_codes = np.asarray(bled_codes[np.ix_(np.arange(n_genes),
+                                                  nb.basic_info.use_rounds, nb.basic_info.use_channels)])
         dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
 
         dp_thresh = config['dp_thresh']
@@ -89,8 +88,8 @@ class view_omp(ColorPlotBase):
         all_coefs = np.zeros((spot_colors.shape[0], n_genes+nb.basic_info.n_channels))
         all_coefs[np.ix_(keep, np.arange(n_genes))], \
         all_coefs[np.ix_(keep, np.array(nb.basic_info.use_channels) + n_genes)] = \
-            omp.get_all_coefs(spot_colors[keep], bled_codes, nb.call_spots.background_weight_shift, dp_norm_shift,
-                              dp_thresh, alpha, beta, max_genes, weight_coef_fit)
+            get_all_coefs(spot_colors[keep], bled_codes, nb.call_spots.background_weight_shift, dp_norm_shift,
+                          dp_thresh, alpha, beta, max_genes, weight_coef_fit)
         n_nonzero_pixels_thresh = np.min([im_size[0], 5])  # If 5 pixels non-zero, plot that gene
         plot_genes = np.where(np.sum(all_coefs != 0, axis=0) > n_nonzero_pixels_thresh)[0]
         coef_images = [all_coefs[:, g].reshape(im_diameter[0], im_diameter[1]) for g in plot_genes]

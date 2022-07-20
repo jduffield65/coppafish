@@ -7,6 +7,7 @@ from ..setup.notebook import NotebookPage, Notebook
 from functools import partial
 import jax.numpy as jnp
 import jax
+# TODO: move non-jax stuff to no_jax/call_spots.py
 
 
 def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.ndarray,
