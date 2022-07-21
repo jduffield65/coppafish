@@ -99,6 +99,7 @@ def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = 
             raise ValueError(f"use_channels contains {len(use_channels)} channels but there "
                              f"are only {metadata['sizes']['c']} channels in the nd2 metadata.")
         metadata['sizes']['c'] = len(use_channels)
+        metadata['use_channels'] = use_channels
     json.dump(metadata, open(json_file, 'w'))
 
 # '''with nd2reader'''
@@ -123,7 +124,7 @@ def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = 
 # def get_metadata(file_name):
 #     """
 #     returns dictionary containing (at the bare minimum) the keys
-#         xy_pos: xy position of tiles in pixels. ([nTiles x 2] list)
+#         xy_pos: xy position of tiles in pixels. ([nTiles x 2] List)
 #         pixel_microns: xy pixel size in microns (float)
 #         pixel_microns_z: z pixel size in microns (float)
 #         sizes: dictionary with fov (t), channels (c), y, x, z-planes (z) dimensions
