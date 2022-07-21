@@ -12,3 +12,7 @@ Then run main.py.
 
 An example experiment .ini file is given as experiment_settings_example.ini. 
 This is for a 9 rounds x 9 channels QuadCam3D experiment.
+
+To run the software with config file "config_file.ini" from the command line, do:
+
+> python -m iss config_file.ini
