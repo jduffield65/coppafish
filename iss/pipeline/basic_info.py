@@ -161,7 +161,7 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
         nz = nbp.nz
     nbp.tile_centre = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
 
-    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(metadata['xy_pos'], tile_sz)
+    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(np.asarray(metadata['xy_pos']), tile_sz)
     nbp.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
     nbp.tilepos_yx = tilepos_yx  # and with npy index
 

@@ -3,11 +3,13 @@ import nd2
 import os
 from . import errors
 from typing import Optional, List
+import json
+
 
 # bioformats ssl certificate error solution:
 # https://stackoverflow.com/questions/35569042/ssl-certificate-verify-failed-with-python3
 
-
+# nd2 library Does not work with Mac M1
 def load(file_path: str) -> np.ndarray:
     """
     Returns dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
@@ -38,7 +40,7 @@ def get_metadata(file_path: str) -> dict:
     Returns:
         Dictionary containing -
 
-        - `xy_pos` - `np.ndarray [n_tiles x 2]`. xy position of tiles in pixels.
+        - `xy_pos` - `List [n_tiles x 2]`. xy position of tiles in pixels.
         - `pixel_microns` - `float`. xy pixel size in microns.
         - `pixel_microns_z` - `float`. z pixel size in microns.
         - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions.
@@ -53,6 +55,7 @@ def get_metadata(file_path: str) -> dict:
     xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
                        for i in range(images.sizes['P'])])
     metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
+    metadata['xy_pos'] = metadata['xy_pos'].tolist()
     return metadata
 
 
@@ -77,8 +80,28 @@ def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[i
     return np.asarray(images[fov, channel, :, :, use_z])
 
 
+def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = None):
+    """
+    Saves the required metadata as a json file.
 
-'''with nd2reader'''
+    Args:
+        json_file: Where to save json file
+        nd2_file: Path to nd2 file
+        use_channels: The channels which have been extracted from the nd2 file.
+            If None, assume all channels in nd2 file used
+
+    Returns:
+
+    """
+    metadata = get_metadata(nd2_file)
+    if use_channels is not None:
+        if len(use_channels) > metadata['sizes']['c']:
+            raise ValueError(f"use_channels contains {len(use_channels)} channels but there "
+                             f"are only {metadata['sizes']['c']} channels in the nd2 metadata.")
+        metadata['sizes']['c'] = len(use_channels)
+    json.dump(metadata, open(json_file, 'w'))
+
+# '''with nd2reader'''
 # #Does not work with QuadCam data hence the switch to nd2 package
 # from nd2reader import ND2Reader
 #
@@ -100,7 +123,7 @@ def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[i
 # def get_metadata(file_name):
 #     """
 #     returns dictionary containing (at the bare minimum) the keys
-#         xy_pos: xy position of tiles in pixels. ([nTiles x 2] numpy array)
+#         xy_pos: xy position of tiles in pixels. ([nTiles x 2] list)
 #         pixel_microns: xy pixel size in microns (float)
 #         pixel_microns_z: z pixel size in microns (float)
 #         sizes: dictionary with fov (t), channels (c), y, x, z-planes (z) dimensions
@@ -109,7 +132,12 @@ def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[i
 #     """
 #     images = load(file_name)
 #     images = update_metadata(images)
-#     return images.metadata
+#     full_metadata = images.metadata
+#     metadata = {'sizes': full_metadata['sizes'],
+#                 'pixel_microns': full_metadata['pixel_microns'],
+#                 'pixel_microns_z': full_metadata['pixel_microns_z'],
+#                 'xy_pos': full_metadata['xy_pos'].tolist()}
+#     return metadata
 #
 #
 # def get_image(images, fov, channel, use_z=None):
