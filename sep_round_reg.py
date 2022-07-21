@@ -6,9 +6,15 @@ from iss.call_spots import get_non_duplicate
 from iss.stitch import compute_shift
 from iss.find_spots import get_isolated_points
 from iss.pipeline import stitch
+from iss.spot_colors import apply_transform_jax
+from iss.plot.register import view_shifts
 import numpy as np
+import jax.numpy as jnp
 import os
 import warnings
+import matplotlib
+matplotlib.use('Qt5Agg')
+matplotlib.pyplot.style.use('dark_background')
 
 
 def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save: List):
@@ -28,7 +34,6 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     """
     # Get all information from full pipeline results - global spot positions and z scaling
     nb_full = initialize_nb(config_file_full)
-    z_scale_full = nb_full.basic_info.pixel_size_z / nb_full.basic_info.pixel_size_xy
     global_yxz_full = nb_full.ref_spots.local_yxz + nb_full.stitch.tile_origin[nb_full.ref_spots.tile]
 
     # run pipeline to get as far as a set of global coordinates for the separate round anchor.
@@ -41,6 +46,23 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
         nb += nbp_stitch
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
+
+    # scale z coordinate so in units of xy pixels as other 2 coordinates are.
+    z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
+    # z_scale_full = nb_full.basic_info.pixel_size_z / nb_full.basic_info.pixel_size_xy
+    # need both z_scales to be the same for final transform_image to work. Does not always seem to be the case though
+    z_scale_full = z_scale
+
+
+    # Compute centre of stitched image, as when running PCR, coordinates are centred first.
+    yx_origin = np.round(nb.stitch.tile_origin[:, :2]).astype(int)
+    z_origin = np.round(nb.stitch.tile_origin[:, 2]).astype(int).flatten()
+    yx_size = np.max(yx_origin, axis=0) + nb.basic_info.tile_sz
+    if nb.basic_info.is_3d:
+        z_size = z_origin.max() + nb.basic_info.nz
+        image_centre = np.floor(np.append(yx_size, z_size)/2).astype(int)
+    else:
+        image_centre = np.append(np.floor(yx_size/2).astype(int), 0)
 
     if not nb.has_page('reg_to_anchor_info'):
         # remove duplicate spots
@@ -55,13 +77,6 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
         else:
             neighb_dist_thresh = config['register']['neighb_dist_thresh_2d']
-        # scale z coordinate so in units of xy pixels as other 2 coordinates are.
-        z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
-
-        # Because applying transform to image, we don't do z-pixel conversion as would make final transform more
-        # complicated. NOT SURE IF THIS IS BEST WAY!!
-        z_scale = 1
-        z_scale_full = 1
 
         isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
         isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
@@ -80,16 +95,11 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
         # Get affine transform from separate round to full anchor image
         nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
             get_single_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
-                                        nbp.shift, neighb_dist_thresh)
+                                        nbp.shift, neighb_dist_thresh, image_centre)
         nb += nbp  # save results of transform found
     else:
         nbp = nb.reg_to_anchor_info
 
-    # save stitched images
-    if nb.basic_info.is_3d:
-        transform = nbp.transform
-    else:
-        transform = nbp.transform[[0, 1, 3], :-1]  # Need 2D 3 x 2 transform if 2D to save images.
     # save all the images
     for c in channels_to_save:
         im_file = os.path.join(nb.file_names.output_dir, f'sep_round_channel{c}_transformed.npz')
@@ -97,8 +107,15 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             from_nd2 = False
         else:
             from_nd2 = True
-        utils.npy.save_stitched(im_file, nb.file_names, nb.basic_info, nb.stitch.tile_origin, nb.basic_info.ref_round,
-                                c, from_nd2, config['stitch']['save_image_zero_thresh'], transform)
+        image_stitch = utils.npy.save_stitched(None, nb.file_names, nb.basic_info, nb.stitch.tile_origin,
+                                               nb.basic_info.ref_round, c, from_nd2,
+                                               config['stitch']['save_image_zero_thresh'])
+
+        image_transform = transform_image(image_stitch, nbp.transform, image_centre[:image_stitch.ndim], z_scale)
+        if nb.basic_info.is_3d:
+            # Put z axis first for saving
+            image_transform = np.moveaxis(image_transform, -1, 0)
+        np.savez_compressed(im_file, image_transform)
 
 
 def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,
@@ -143,6 +160,43 @@ def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.nd
                       config['shift_widen'], config['shift_max_range'], [z_scale_base, z_scale_transform],
                       config['nz_collapse'], config['shift_step'][2])
     return shift, np.asarray(shift_score), np.asarray(shift_score_thresh), debug_info
+
+
+def transform_image(image: np.ndarray, transform: np.ndarray, image_centre: np.ndarray, z_scale: int) -> np.ndarray:
+    """
+    This transforms `image` to a new coordinate system by applying `transform` to every pixel in `image`.
+
+    Args:
+        image: `int [n_y x n_x (x n_z)]`.
+            image which is to be transformed.
+        transform: `float [4 x 3]`.
+            Affine transform which transforms image which is applied to every pixel in image to form a
+            new transformed image.
+        image_centre: `int [image.ndim]`.
+            Pixel coordinates were centred by subtracting this first when computing affine transform.
+            So when applying affine transform, pixels will also be shifted by this amount.
+            z centre i.e. `image_centre[2]` is in units of z-pixels.
+        z_scale: Scaling to put z coordinates in same units as yx coordinates.
+
+    Returns: `int [n_y x n_x (x n_z)]`.
+        `image` transformed according to `transform`.
+
+    """
+    im_transformed = np.zeros_like(image)
+    yxz = jnp.asarray(np.where(image != 0)).T.reshape(-1, image.ndim)
+    image_values = image[tuple([yxz[:, i] for i in range(image.ndim)])]
+    tile_size = jnp.asarray(im_transformed.shape)
+    if image.ndim == 2:
+        tile_size = jnp.append(tile_size, 1)
+        image_centre = np.append(image_centre, 0)
+        yxz = np.hstack((yxz, np.zeros((yxz.shape[0], 1))))
+
+    yxz_transform, in_range = apply_transform_jax(yxz, jnp.asarray(transform), jnp.asarray(image_centre), z_scale,
+                                                  tile_size)
+    yxz_transform = np.asarray(yxz_transform[in_range])
+    image_values = image_values[np.asarray(in_range)]
+    im_transformed[tuple([yxz_transform[:, i] for i in range(image.ndim)])] = image_values
+    return im_transformed
 
 
 if __name__ == "__main__":

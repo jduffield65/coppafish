@@ -349,7 +349,7 @@ def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np
 def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray,
                                 z_scale_base: float,
                                 z_scale_transform: float, initial_shift: np.ndarray,
-                                neighb_dist_thresh: float) -> Tuple[np.ndarray, int, float, bool]:
+                                neighb_dist_thresh: float, tile_centre: np.ndarray) -> Tuple[np.ndarray, int, float, bool]:
     """
     Finds the affine transform taking spot_yxz_base to spot_yxz_transform.
 
@@ -364,6 +364,8 @@ def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yx
         initial_shift: yxz shift to be used as starting point to find affine transfom.
             yx shift is in units of yx-pixels. z shift is in units of z-pixels.
         neighb_dist_thresh: Distance between 2 points must be less than this to be constituted a match.
+        tile_centre: int [3].
+            yxz coordinates of centre of image where spot_yxz found on.
 
     Returns:
         - `transform` - `float [4 x 3]`.
@@ -383,9 +385,9 @@ def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yx
     initial_shift = initial_shift * [1, 1, z_scale_base]
     start_transform = transform_from_scale_shift(np.ones((n_channels, 3)), initial_shift)
     spot_yxz_base_array = np.zeros(n_tiles, dtype=object)
-    spot_yxz_base_array[0] = spot_yxz_base * [1, 1, z_scale_base]
+    spot_yxz_base_array[0] = (spot_yxz_base - tile_centre) * [1, 1, z_scale_base]
     spot_yxz_transform_array = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
-    spot_yxz_transform_array[0, 0, 0] = spot_yxz_transform * [1, 1, z_scale_transform]
+    spot_yxz_transform_array[0, 0, 0] = (spot_yxz_transform - tile_centre) * [1, 1, z_scale_transform]
     final_transform, pcr_debug = \
         iterate(spot_yxz_base_array, spot_yxz_transform_array,
                 start_transform, config['n_iter'], neighb_dist_thresh,

@@ -141,8 +141,8 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
     return image
 
 
-def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
-                  r: int, c: int, from_nd2: bool = False, zero_thresh: int = 0, transform: Optional[np.ndarray] = None):
+def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
+                  r: int, c: int, from_nd2: bool = False, zero_thresh: int = 0):
     """
     Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
     Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
@@ -150,6 +150,7 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
 
     Args:
         im_file: Path to save file.
+            If `None`, stitched `image` is returned (with z axis last) instead of saved.
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
         tile_origin: `float [n_tiles x 3]`.
@@ -160,9 +161,7 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
             otherwise will load in raw un-filtered images from nd2 file.
         zero_thresh: All pixels with absolute value less than or equal to `zero_thresh` will be set to 0.
             The larger it is, the smaller the compressed file will be.\
-        transform: `float [n_dim+1 x n_dim]`
-            Affine `transform` to transform final `stitched_image` from an input space to an output space.
-            `transform[-1]` is the shift while `transform[:-1]` is the matrix which deals with rotation/scaling.
+        save: If True, saves image as im_file, otherwise returns image
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
@@ -234,15 +233,10 @@ def save_stitched(im_file: str, nbp_file: NotebookPage, nbp_basic: NotebookPage,
         stitched_image = np.rint(stitched_image, np.zeros_like(stitched_image, dtype=np.int16), casting='unsafe')
     if zero_thresh > 0:
         stitched_image[np.abs(stitched_image) <= zero_thresh] = 0
-    if transform is not None:
-        # scipy algorithm requires transform from output space to input. Hence the inversion of the matrix and negative
-        # of the shift. Not entirely sure of this.
-        matrix = np.linalg.inv(transform[:-1])
-        offset = -transform[-1]
-        if nbp_basic.is_3d:
-            # transform is in order y, x, z so make image match this.
-            stitched_image = np.moveaxis(stitched_image, 0, 2)
-        stitched_image = scipy.ndimage.affine_transform(stitched_image, matrix, offset)
-        if nbp_basic.is_3d:
-            stitched_image = np.moveaxis(stitched_image, 2, 0)  # for saving, want z-axis first.
-    np.savez_compressed(im_file, stitched_image)
+
+    if im_file is None:
+        if z_size > 1:
+            stitched_image = np.moveaxis(stitched_image, 0, -1)
+        return stitched_image
+    else:
+        np.savez_compressed(im_file, stitched_image)

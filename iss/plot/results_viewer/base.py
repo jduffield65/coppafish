@@ -22,8 +22,9 @@ class iss_plot:
         """
 
         Args:
-            nb: Notebook containing at least the ref_spots page.
+            nb: Notebook containing at least the `ref_spots` page.
             background_image: Optional file_name or image that will be plotted as the background image.
+                If image, z dimension needs to be first i.e. `n_z x n_y x n_x` if 3D or `n_y x n_x` if 2D.
         """
         self.nb = nb
         legend_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend')

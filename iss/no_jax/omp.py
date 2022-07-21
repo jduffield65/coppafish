@@ -1,7 +1,8 @@
 import numpy as np
 from ..call_spots.base import dot_product_score, fit_background
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from tqdm import tqdm
+import warnings
 
 
 def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarray,
@@ -24,7 +25,7 @@ def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarra
             `bled_code` for pixel `s`.
 
     Returns:
-        - residual - `float [n_pixels x (n_rounds x n_channels)]` or float [(n_rounds x n_channels)] .
+        - residual - `float [n_pixels x (n_rounds x n_channels)]`.
             Residual pixel_colors after removing bled_codes with coefficients specified by coef.
         - coefs - `float [n_pixels x n_genes_add]` if n_genes == 1 otherwise `float [n_genes]` if n_pixels == 1.
             coefficient found through least squares fitting for each gene.
@@ -49,7 +50,7 @@ def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarra
 
 def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
                        norm_shift: float, score_thresh: float, inverse_var: np.ndarray,
-                       ignore_genes: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+                       ignore_genes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Computes the `dot_product_score` between `residual_pixel_color` and each code in `all_bled_codes`.
     If `best_score` is less than `score_thresh` or if the corresponding `best_gene` is in `ignore_genes`,
@@ -76,6 +77,8 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
             `best_gene[s]` is the best gene to add to pixel `s` next.
         - pass_score_thresh - `bool [n_pixels]`.
             `True` if `best_score[s] > score_thresh` and `best_gene[s]` not in `ignore_genes`.
+        - best_score - `float [n_pixels]`.
+            `dot_product_score` for spot `s` with gene `best_gene[s]`.
 
     """
     # calculate score including background genes as if best gene is background, then stop iteration.
@@ -85,13 +88,13 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
     is_ignore_gene = (best_gene[:, np.newaxis] == ignore_genes).any(axis=1)
     best_score = all_scores[(np.arange(best_gene.shape[0]), best_gene)] * np.invert(is_ignore_gene)
     pass_score_thresh = np.abs(best_score) > score_thresh
-    return best_gene, pass_score_thresh
+    return best_gene, pass_score_thresh, best_score
 
 
 def get_best_gene_first_iter(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
                              background_coefs: np.ndarray, norm_shift: float,
                              score_thresh: float, alpha: float, beta: float,
-                             background_genes: np.ndarray) -> Tuple[int, bool, np.ndarray]:
+                             background_genes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Finds the `best_gene` to add next based on the dot product score with each `bled_code`.
     If `best_gene` is in `background_genes` or `best_score < score_thresh` then `pass_score_thresh = False`.
@@ -118,23 +121,28 @@ def get_best_gene_first_iter(residual_pixel_colors: np.ndarray, all_bled_codes: 
             If the best gene for pixel `s` is set to one of `background_genes`, `pass_score_thresh[s]` will be False.
 
     Returns:
-        - best_gene - The best gene to add next.
-        - pass_score_thresh - `True` if `best_score > score_thresh`.
+        - best_gene - `int [n_pixels]`.
+            `best_gene[s]` is the best gene to add to pixel `s` next.
+        - pass_score_thresh - `bool [n_pixels]`.
+            `True` if `best_score > score_thresh`.
         - background_var - `float [n_pixels x (n_rounds x n_channels)]`.
             Variance in each round/channel based on just the background.
+        - best_score - `float [n_pixels]`.
+            `dot_product_score` for spot `s` with gene `best_gene[s]`.
 
     """
     background_var = np.square(background_coefs) @ np.square(all_bled_codes[background_genes]) * alpha + beta ** 2
     ignore_genes = np.tile(background_genes, [background_var.shape[0], 1])
-    best_gene, pass_score_thresh = get_best_gene_base(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh,
-                                                      1 / background_var, ignore_genes)
-    return best_gene, pass_score_thresh, background_var
+    best_gene, pass_score_thresh, best_score = \
+        get_best_gene_base(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh, 1 / background_var,
+                           ignore_genes)
+    return best_gene, pass_score_thresh, background_var, best_score
 
 
 def get_best_gene(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray, coefs: np.ndarray,
                   genes_added: np.array, norm_shift: float, score_thresh: float, alpha: float,
                   background_genes: np.ndarray,
-                  background_var: np.array) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                  background_var: np.array) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Finds the `best_gene` to add next to each pixel based on the dot product score with each `bled_code`.
     If `best_gene[s]` is in `background_genes`, already in `genes_added[s]` or `best_score[s] < score_thresh`,
@@ -178,6 +186,8 @@ def get_best_gene(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
         - inverse_var - `float [n_pixels x (n_rounds x n_channels)]`.
             Inverse of variance of each pixel in each round/channel based on genes fit on previous iteration.
             Includes both background and gene contribution.
+        - best_score - `float [n_pixels]`.
+            `dot_product_score` for spot `s` with gene `best_gene[s]`.
     """
 
     n_pixels, n_genes_added = genes_added.shape
@@ -188,15 +198,16 @@ def get_best_gene(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
 
     inverse_var = 1 / (coefs_all ** 2 @ all_bled_codes ** 2 * alpha + background_var)
     ignore_genes = np.concatenate((genes_added, np.tile(background_genes, [n_pixels, 1])), axis=1)
-    best_gene, pass_score_thresh = get_best_gene_base(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh,
-                                                      inverse_var, ignore_genes)
+    best_gene, pass_score_thresh, best_score = \
+        get_best_gene_base(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh, inverse_var, ignore_genes)
 
-    return best_gene, pass_score_thresh, inverse_var
+    return best_gene, pass_score_thresh, inverse_var, best_score
 
 
 def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_shift: float,
                   dp_shift: float, dp_thresh: float, alpha: float, beta: float, max_genes: int,
-                  weight_coef_fit: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+                  weight_coef_fit: bool = False,
+                  track: bool = False) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, dict]]:
     """
     This performs omp on every pixel, the stopping criterion is that the dot_product_score
     when selecting the next gene to add exceeds dp_thresh or the number of genes added to the pixel exceeds max_genes.
@@ -221,21 +232,66 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
         max_genes: Maximum number of genes that can be added to a pixel i.e. number of iterations of OMP.
         weight_coef_fit: If False, coefs are found through normal least squares fitting.
             If True, coefs are found through weighted least squares fitting using 1/sigma as the weight factor.
+        track: If `True` and one pixel, info about genes added at each step returned.
 
     Returns:
         - gene_coefs - `float32 [n_pixels x n_genes]`.
             `gene_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm. Most are zero.
         - background_coefs - `float32 [n_pixels x n_channels]`.
             coefficient value for each background vector found for each pixel.
+        - track_info - dictionary containing info about genes added at each step returned if `track == True` -
+            - `background_codes` - `float [n_channels x n_rounds x n_channels]`.
+                `background_codes[c]` is the background vector for channel `c` with L2 norm of 1.
+            - `background_coefs` - `float [n_channels]`.
+                `background_coefs[c]` is the coefficient value for `background_codes[c]`.
+            - `gene_added` - `int [n_genes_added + 2]`.
+                `gene_added[0]` and `gene_added[1]` are -1.
+                `gene_added[2+i]` is the `ith` gene that was added.
+            - `residual` - `float [(n_genes_added + 2) x n_rounds x n_channels]`.
+                `residual[0]` is the initial `pixel_color`.
+                `residual[1]` is the post background `pixel_color`.
+                `residual[2+i]` is the `pixel_color` after removing gene `gene_added[2+i]`.
+            - `coef` - `float [(n_genes_added + 2) x n_genes]`.
+                `coef[0]` and `coef[1]` are all 0.
+                `coef[2+i]` are the coefficients for all genes after the ith gene has been added.
+            - `dot_product` - `float [n_genes_added + 2]`.
+                `dot_product[0]` and `dot_product[1]` are 0.
+                `dot_product[2+i]` is the dot product for the gene `gene_added[2+i]`.
+            - `inverse_var` - `float [(n_genes_added + 2) x n_rounds x n_channels]`.
+                `inverse_var[0]` and `inverse_var[1]` are all 0.
+                `inverse_var[2+i]` is the weighting used to compute `dot_product[2+i]`,
+                 which down-weights rounds/channels for which a gene has already been fitted.
+
     """
     n_pixels = pixel_colors.shape[0]
     n_genes, n_rounds, n_channels = bled_codes.shape
 
     no_verbose = n_pixels < 1000  # show progress bar with more than 1000 pixels.
+    if track:
+        return_track = True
+        if n_pixels == 1:
+            track_info = {'residual': np.zeros((max_genes+3, n_rounds, n_channels)),
+                          'background_codes': None, 'background_coefs': None,
+                          'inverse_var': np.zeros((max_genes+3, n_rounds, n_channels)),
+                          'coef': np.zeros((max_genes+3, n_genes)), 'dot_product': np.zeros(max_genes+3),
+                          'gene_added': np.ones(max_genes+3) * -1}
+            track_info['residual'][0] = pixel_colors[0]
+        else:
+            warnings.warn(f'Can only get track info if running on one pixel, but there are {n_pixels} pixels '
+                          f'so not getting track info.')
+            track = False
+            track_info = None
+    else:
+        return_track = False
 
     # Fit background and override initial pixel_colors
     gene_coefs = np.zeros((n_pixels, n_genes), dtype=np.float32)  # coefs of all genes and background
     pixel_colors, background_coefs, background_codes = fit_background(pixel_colors, background_shift)
+
+    if track:
+        track_info['residual'][1] = pixel_colors[0]
+        track_info['background_codes'] = background_codes
+        track_info['background_coefs'] = background_coefs[0]
 
     background_genes = np.arange(n_genes, n_genes + n_channels)
 
@@ -256,20 +312,19 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
         for i in range(max_genes):
             if i == 0:
                 # Background coefs don't change, hence contribution to variance won't either.
-                added_genes, pass_score_thresh, background_variance = \
+                added_genes, pass_score_thresh, background_variance, best_score = \
                     get_best_gene_first_iter(pixel_colors, all_codes, background_coefs, dp_shift,
                                              dp_thresh, alpha, beta, background_genes)
                 inverse_var = 1 / background_variance
                 pixel_colors = pixel_colors.transpose()
             else:
                 # only continue with pixels for which dot product score exceeds threshold
-                i_added_genes, pass_score_thresh, inverse_var = \
+                i_added_genes, pass_score_thresh, inverse_var, best_score = \
                     get_best_gene(residual_pixel_colors, all_codes, i_coefs, added_genes, dp_shift,
                                   dp_thresh, alpha, background_genes, background_variance)
 
                 # For pixels with at least one non-zero coef, add to final gene_coefs when fail the thresholding.
                 fail_score_thresh = np.invert(pass_score_thresh)
-                # gene_coefs[np.asarray(continue_pixels[fail_score_thresh])] = np.asarray(i_coefs[fail_score_thresh])
                 gene_coefs[np.asarray(continue_pixels[fail_score_thresh])[:, np.newaxis],
                            np.asarray(added_genes[fail_score_thresh])] = i_coefs[fail_score_thresh]
 
@@ -277,7 +332,24 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
             n_continue = np.size(continue_pixels)
             pbar.set_postfix({'n_pixels': n_continue})
             if n_continue == 0:
+                if track:
+                    track_info['inverse_var'][i + 2] = inverse_var.reshape(n_rounds, n_channels)
+                    track_info['dot_product'][i + 2] = best_score[0]
+                    if i == 0:
+                        track_info['gene_added'][i + 2] = added_genes
+                    else:
+                        track_info['gene_added'][i + 2] = i_added_genes
+                    added_genes_fail = np.hstack((added_genes, i_added_genes[:, np.newaxis]))
+                    residual_pixel_colors_fail, i_coefs_fail = fit_coefs(bled_codes, pixel_colors, added_genes_fail,
+                                                                         weight)
+                    track_info['residual'][i + 2] = residual_pixel_colors_fail.reshape(n_rounds, n_channels)
+                    track_info['coef'][i + 2][added_genes_fail] = i_coefs_fail
+                    # Only save info where gene is actually added or for final case where not added.
+                    for key in track_info.keys():
+                        if 'background' not in key:
+                            track_info[key] = track_info[key][:i+3]
                 break
+
             if i == 0:
                 added_genes = added_genes[pass_score_thresh, np.newaxis]
             else:
@@ -294,8 +366,24 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
 
             if i == max_genes-1:
                 # Add pixels to final gene_coefs when reach end of iteration.
-                gene_coefs[np.asarray(continue_pixels)[:, np.newaxis], np.asarray(added_genes)] = np.asarray(i_coefs)
+                gene_coefs[continue_pixels[:, np.newaxis], added_genes] = i_coefs
+
+            if track:
+                track_info['residual'][i + 2] = residual_pixel_colors.reshape(n_rounds, n_channels)
+                track_info['inverse_var'][i + 2] = inverse_var.reshape(n_rounds, n_channels)
+                track_info['coef'][i + 2][added_genes] = i_coefs
+                track_info['dot_product'][i + 2] = best_score[0]
+                track_info['gene_added'][i + 2] = added_genes[0][-1]
 
             pbar.update(1)
     pbar.close()
-    return gene_coefs.astype(np.float32), background_coefs.astype(np.float32)
+    if track:
+        # Only return
+        no_gene_add_ind = np.where(track_info['gene_added'] == -1)[0]
+        no_gene_add_ind = no_gene_add_ind[no_gene_add_ind >= 2]
+        if len(no_gene_add_ind) > 0:
+            final_ind = no_gene_add_ind.min()
+    if return_track:
+        return gene_coefs.astype(np.float32), background_coefs.astype(np.float32), track_info
+    else:
+        return gene_coefs.astype(np.float32), background_coefs.astype(np.float32)

@@ -272,7 +272,7 @@ def view_pcr(nb: Notebook, t: int, r: int, c: int):
         transform = nb.register.transform[t, r, c]
     else:
         transform = get_single_affine_transform(config['register'], point_clouds[1], point_clouds[0], z_scale, z_scale,
-                                                shift, neighb_dist_thresh)[0]
+                                                shift, neighb_dist_thresh, nb.basic_info.tile_centre)[0]
     point_clouds = point_clouds + [apply_transform(point_clouds[1], transform, nb.basic_info.tile_centre, z_scale)]
     pc_labels = [f'Imaging: r{r}, c{c}', f'Reference: r{r_ref}, c{c_ref}', f'Reference: r{r_ref}, c{c_ref} - Shift',
                  f'Reference: r{r_ref}, c{c_ref} - Affine']

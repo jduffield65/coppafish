@@ -240,7 +240,7 @@ class TestGetBestGene(unittest.TestCase):
             best_gene_jax, pass_score_thresh_jax, background_var_jax = \
                 get_best_gene_first_iter_vectorised(pixel_colors, bled_codes, background_coefs, norm_shift,
                                                     score_thresh, alpha, beta, background_genes)
-            best_gene, pass_score_thresh, background_var = \
+            best_gene, pass_score_thresh, background_var, best_score = \
                 no_jax.get_best_gene_first_iter(pixel_colors, bled_codes, background_coefs, norm_shift,
                                                 score_thresh, alpha, beta, background_genes)
             diff1 = best_gene - np.asarray(best_gene_jax)
@@ -260,7 +260,7 @@ class TestGetBestGene(unittest.TestCase):
             best_gene_jax, pass_score_thresh_jax, inverse_var_jax = \
                 get_best_gene_vectorised(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
                                          score_thresh, alpha, background_genes, background_var)
-            best_gene, pass_score_thresh, inverse_var = \
+            best_gene, pass_score_thresh, inverse_var, best_score = \
                 no_jax.get_best_gene(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
                                          score_thresh, alpha, background_genes, background_var)
             diff1 = best_gene - np.asarray(best_gene_jax)
