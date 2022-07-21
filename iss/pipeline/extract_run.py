@@ -10,7 +10,7 @@ import warnings
 def extract_and_filter(config: dict, nbp_file: NotebookPage,
                        nbp_basic: NotebookPage) -> Tuple[NotebookPage, NotebookPage]:
     """
-    This reads in images from the raw `nd2` files, filters them and then saves them as tiff files in the tile directory.
+    This reads in images from the raw `nd2` files, filters them and then saves them as npy files in the tile directory.
     Also gets `auto_thresh` for use in turning images to point clouds and `hist_values`, `hist_counts` required for
     normalisation between channels.
 
@@ -156,7 +156,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         smooth_kernel_2d = None
     nbp_debug.scale = config['scale']
 
-    '''get rounds to iterate over'''
+    # get rounds to iterate over
     use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
     use_channels_anchor.sort()
     if filter_kernel_dapi is None:
@@ -279,7 +279,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 if n_clip_error_images >= config['n_clip_error_images_thresh']:
                                     # create new Notebook to save info obtained so far
                                     nb_fail_name = os.path.join(nbp_file.output_dir, 'notebook_extract_error.npz')
-                                    nb_fail = Notebook(nb_fail_name, nbp_file._config_file)
+                                    nb_fail = Notebook(nb_fail_name, None)
                                     # change names of pages so can add extra properties not in json file.
                                     nbp.name = 'extract_fail'
                                     nbp_debug.name = 'extract_debug_fail'

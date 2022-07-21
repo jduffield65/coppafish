@@ -62,21 +62,25 @@ def get_pixel_length(length_microns, pixel_size) -> int:
 
 
 def get_nd2_tile_ind(tile_ind_tiff: int, tile_pos_yx_nd2: np.ndarray,
-                     tile_pos_yx_tiff: np.ndarray) -> int:
+                     tile_pos_yx_npy: np.ndarray) -> int:
     """
     Gets index of tile in nd2 file from tile index of tiff file.
 
     Args:
         tile_ind_tiff: Index of tiff file
         tile_pos_yx_nd2: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [0, 0]```.
-        tile_pos_yx_tiff: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with tiff index ```i```. index 0 refers to ```YX = [MaxY, MaxX]```.
+            ```[i,:]``` contains YX position of tile with nd2 index ```i```.
+            Index 0 refers to ```YX = [0, 0]```.
+            Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
+        tile_pos_yx_npy: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with npy index ```i```.
+            Index 0 refers to ```YX = [MaxY, MaxX]```.
+            Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
 
     Returns:
         Corresponding index in nd2 file
     """
-    return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_tiff[tile_ind_tiff], 1) == 2)[0][0]
+    return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_npy[tile_ind_tiff], 1) == 2)[0][0]
 
 
 def strip_hack(image: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

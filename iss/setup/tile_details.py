@@ -16,11 +16,13 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
 
     Returns:
         - `tilepos_yx_nd2` - `int [n_tiles x 2]`.
-            `tilepos_yx_nd2[i, 0]` is y index of tile with fov index `i` in nd2 file.
-            `tilepos_yx_nd2[i, 1]` is x index of tile with fov index `i` in nd2 file.
+            `tilepos_yx_nd2[i]` is yx index of tile with fov index `i` in nd2 file.
+            Index 0 refers to ```YX = [0, 0]```.
+            Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
         - `tilepos_yx_npy` - `int [n_tiles x 2]`.
-            `tilepos_yx_npy[i, 0]` is y index of tile with tile directory (npy files) index `i`.
-            `tilepos_yx_npy[i, 1]` is x index of tile with tile directory (npy files) index `i`.
+            `tilepos_yx_npy[i, 0]` is yx index of tile with tile directory (npy files) index `i`.
+            Index 0 refers to ```YX = [MaxY, MaxX]```.
+            Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
     """
     tilepos_yx_nd2 = np.zeros_like(xy_pos, dtype=int)
     tilepos_yx_npy = np.zeros_like(xy_pos, dtype=int)

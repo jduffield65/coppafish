@@ -70,7 +70,7 @@ def get_z_plane(images: nd2.ND2File, fov: int, use_channels: List[int], use_z: L
     return max_channel, max_z, utils.nd2.get_image(images, fov, max_channel, max_z)
 
 
-def get_scale(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndarray, use_tiles: List[int],
+def get_scale(im_file: str, tilepos_yx_npy: np.ndarray, tilepos_yx_nd2: np.ndarray, use_tiles: List[int],
               use_channels: List[int], use_z: List[int], scale_norm: int,
               filter_kernel: np.ndarray, smooth_kernel: Optional[np.ndarray] = None) -> Tuple[int, int, int, float]:
     """
@@ -80,10 +80,10 @@ def get_scale(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndar
 
     Args:
         im_file: File path of nd2 file
-        tilepos_yx_tiff: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with tiff index ```i```. index 0 refers to ```YX = [0,0]```.
+        tilepos_yx_npy: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with npy index ```i```. index 0 refers to ```YX = [MaxY,MaxX]```.
         tilepos_yx_nd2: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [MaxY,MaxX]```.
+            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [0,0]```.
         use_tiles: ```int [n_use_tiles]```.
             tiff tile indices to consider when finding tile.
         use_channels: ```int [n_use_channels]```.
@@ -99,19 +99,19 @@ def get_scale(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndar
 
     Returns:
         - ```t``` - ```int```.
-            tiff tile index (index ```0``` refers to ```tilepos_yx['tiff']=[0,0]```) scale found from.
+            npy tile index (index ```0``` refers to ```tilepos_yx_npy=[MaxY, MaxX]```) scale found from.
         - ```c``` - ```int```.
             Channel scale found from.
         - ```z``` - ```int```.
             Z-plane scale found from.
         - ```scale``` - ```float```.
-            Multiplier to apply to filtered nd2 images before saving as tiff so full tiff ```uint16``` range occupied.
+            Multiplier to apply to filtered nd2 images before saving as npy so full npy ```uint16``` range occupied.
     """
     # tile to get scale from is central tile
-    t = select_tile(tilepos_yx_tiff, use_tiles)
+    t = select_tile(tilepos_yx_npy, use_tiles)
     images = utils.nd2.load(im_file)
     # find z-plane with max pixel across all channels of tile t
-    c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_tiff), use_channels, use_z)
+    c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_npy), use_channels, use_z)
     # convolve_2d image in same way we convolve_2d before saving tiff files
     im_filtered = utils.morphology.convolve_2d(image, filter_kernel)
     if smooth_kernel is not None:

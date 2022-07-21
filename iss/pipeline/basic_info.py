@@ -7,18 +7,14 @@ from ..setup.notebook import NotebookPage
 
 def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
     """
-    Adds info from `'file_names'` and `'basic_info'` sections of config file
-    to notebook pages of the same name.
-
-    To `file_names` page, the following is also added:
-    `tile`, `big_dapi_image`, `big_anchor_image`
+    Adds info from `'basic_info'` section of config file to notebook page.
 
     To `basic_info` page, the following is also added:
     `anchor_round`, `n_rounds`, `n_extra_rounds`, `n_tiles`, `n_channels`, `nz`, `tile_sz`, `tilepos_yx`,
     `tilepos_yx_nd2`, `pixel_size_xy`, `pixel_size_z`, `tile_centre`, `use_anchor`.
 
-    See `'file_names'` and `'basic_info'` sections of `notebook_comments.json` file
-    for description of the variables in each page.
+    See `'basic_info'` sections of `notebook_comments.json` file
+    for description of the variables.
 
     Args:
         config_file: Dictionary obtained from `'file_names'` section of config file.

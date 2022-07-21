@@ -20,7 +20,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         nbp_extract_debug: `extract_debug` notebook page
         image: `int32 [ny x nx x nz]` or `int32 [n_channels x ny x nx]`.
             Image to save.
-        t: tiff tile index considering
+        t: npy tile index considering
         r: Round considering
         c: Channel considering
     """
@@ -72,7 +72,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
     Args:
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
-        t: tiff tile index considering
+        t: npy tile index considering
         r: Round considering
         c: Channel considering
         yxz: If None, whole image is loaded otherwise there are two choices:
