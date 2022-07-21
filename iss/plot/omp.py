@@ -7,6 +7,7 @@ from ..no_jax.omp import get_all_coefs
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from typing import Optional
 
 
 class view_omp(ColorPlotBase):
@@ -132,5 +133,116 @@ class view_omp(ColorPlotBase):
         plt.suptitle(f'OMP gene coefficients for spot {spot_no} (match'
                      f' {np.round(spot_score, decimals=2)} to {gene_name})',
                      x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=13)
+        self.change_norm()
+        plt.show()
+
+
+class view_omp_fit(ColorPlotBase):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', dp_thresh: Optional[float] = None,
+                 max_genes: Optional[int] = None):
+        """
+
+        Args:
+            nb:
+            spot_no:
+            method:
+            dp_thresh: If None, will use value in omp section of config file.
+            max_genes: If None, will use value in omp section of config file.
+        """
+        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                            nb.basic_info.use_channels)]
+        n_use_rounds, n_use_channels = color_norm.shape
+        if method.lower() == 'omp':
+            page_name = 'omp'
+        else:
+            page_name = 'ref_spots'
+        spot_color = nb.__getattribute__(page_name).colors[spot_no][
+                         np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)] / color_norm
+        n_genes = nb.call_spots.bled_codes_ge.shape[0]
+        bled_codes = np.asarray(
+            nb.call_spots.bled_codes_ge[np.ix_(np.arange(n_genes),
+                                               nb.basic_info.use_rounds, nb.basic_info.use_channels)])
+
+        # Get info to run omp
+        dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
+        config = nb.get_config()['omp']
+        if dp_thresh is None:
+            dp_thresh = config['dp_thresh']
+        alpha = config['alpha']
+        beta = config['beta']
+        if max_genes is None:
+            max_genes = config['max_genes']
+        weight_coef_fit = config['weight_coef_fit']
+
+        # Run omp with track to get residual at each stage
+        track_info = get_all_coefs(spot_color[np.newaxis], bled_codes, nb.call_spots.background_weight_shift,
+                                   dp_norm_shift, dp_thresh, alpha, beta, max_genes, weight_coef_fit, True)[2]
+
+        n_residual_images = track_info['residual'].shape[0]
+        residual_images = [track_info['residual'][i].transpose() for i in range(n_residual_images)]
+        background_image = np.zeros((n_use_rounds, n_use_channels))
+        for c in range(n_use_channels):
+            background_image += track_info['background_codes'][c] * track_info['background_coefs'][c]
+        background_image = background_image.transpose()
+
+        # allow for possibly adding background vector
+        # TODO: Think may get index error if best gene ever was background_vector.
+        bled_codes = np.append(bled_codes, track_info['background_codes'], axis=0)
+        all_gene_names = list(nb.call_spots.gene_names) + [f'BG{i}' for i in nb.basic_info.use_channels]
+        gene_images = [bled_codes[track_info['gene_added'][i]].transpose() *
+                       track_info['coef'][i][track_info['gene_added'][i]] for i in range(2, n_residual_images)]
+        all_images = residual_images + [background_image] + gene_images
+
+        # Plot all images
+        subplot_adjust = [0.06, 0.82, 0.075, 0.9]
+        super().__init__(all_images, None, [2, n_residual_images], subplot_adjust=subplot_adjust, fig_size=(15, 7))
+
+        # label axis
+        self.ax[0].set_yticks(ticks=np.arange(self.im_data[0].shape[0]), labels=nb.basic_info.use_channels)
+        self.ax[0].set_xticks(ticks=np.arange(self.im_data[0].shape[1]), labels=nb.basic_info.use_rounds)
+        self.fig.supxlabel('Round', size=12, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
+        self.fig.supylabel('Color Channel', size=12)
+        plt.suptitle(f'Residual at each iteration of OMP for Spot {spot_no}. DP Threshold = {dp_thresh}',
+                     x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
+
+        # Add titles for each subplot
+        titles = ['Initial', 'Post Background']
+        for g in track_info['gene_added'][2:]:
+            titles = titles + ['Post ' + all_gene_names[g]]
+        for i in range(n_residual_images):
+            titles[i] = titles[i] + '\nRes = {:.2f}'.format(np.linalg.norm(residual_images[i]))
+        titles = titles + ['Background']
+        for i in range(2, n_residual_images):
+            g = track_info['gene_added'][i]
+            titles = titles + [f'{g}: {all_gene_names[g]}']
+            titles[-1] = titles[-1] + '\nDP = {:.2f}'.format(track_info['dot_product'][i])
+
+        # Make title red if dot product fell below dp_thresh or if best gene background
+        is_fail_thresh = False
+        for i in range(self.n_images):
+            if np.isin(i, np.arange(2, n_residual_images)):
+                if np.abs(track_info['dot_product'][i]) < dp_thresh or track_info['gene_added'][i] >= n_genes:
+                    # Really should add condition that if gene added for second time, should be red here
+                    text_color = 'r'
+                    is_fail_thresh = True
+                else:
+                    text_color = 'w'
+            elif i == self.n_images - 1 and is_fail_thresh:
+                text_color = 'r'
+            else:
+                text_color = 'w'
+            self.ax[i].set_title(titles[i], size=8, color=text_color)
+
+        # Add rectangles where added gene is intense
+        for i in range(len(gene_images)):
+            gene_coef = track_info['coef'][i+2][track_info['gene_added'][i+2]]
+            intense_gene_cr = np.where(np.abs(gene_images[i] / gene_coef) > self.intense_gene_thresh)
+            for j in range(len(intense_gene_cr[0])):
+                for k in [i+1, i+1+n_residual_images]:
+                    # can't add rectangle to multiple axes hence second for loop
+                    rectangle = plt.Rectangle((intense_gene_cr[1][j]-0.5, intense_gene_cr[0][j]-0.5), 1, 1,
+                                              fill=False, ec="g", linestyle=':', lw=2)
+                    self.ax[k].add_patch(rectangle)
+
         self.change_norm()
         plt.show()

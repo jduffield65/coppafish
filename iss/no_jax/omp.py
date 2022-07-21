@@ -274,7 +274,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
                           'background_codes': None, 'background_coefs': None,
                           'inverse_var': np.zeros((max_genes+3, n_rounds, n_channels)),
                           'coef': np.zeros((max_genes+3, n_genes)), 'dot_product': np.zeros(max_genes+3),
-                          'gene_added': np.ones(max_genes+3) * -1}
+                          'gene_added': np.ones(max_genes+3, dtype=int) * -1}
             track_info['residual'][0] = pixel_colors[0]
         else:
             warnings.warn(f'Can only get track info if running on one pixel, but there are {n_pixels} pixels '
