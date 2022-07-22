@@ -4,7 +4,8 @@ from ..find_spots.base import detect_spots, check_neighbour_intensity, get_isola
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from . import scale
-from .base import get_nd2_tile_ind
+from ..utils.nd2 import get_nd2_tile_ind
+from ..setup import NotebookPage
 from typing import List, Union, Optional, Tuple
 import warnings
 
@@ -198,19 +199,18 @@ def psf_pad(psf: np.ndarray, image_shape: Union[np.ndarray, List[int]]) -> np.nd
     return np.pad(psf, [(pre_pad[i], post_pad[i]) for i in range(len(pre_pad))])
 
 
-def get_psf_spots(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.ndarray, use_tiles: List[int],
-                  channel: int, use_z: List[int], radius_xy: int, radius_z: int, min_spots: int,
+def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
+                  use_tiles: List[int], channel: int, use_z: List[int], radius_xy: int, radius_z: int, min_spots: int,
                   intensity_thresh: Optional[float], intensity_auto_param: float, isolation_dist: float,
                   shape: List[int]) -> Tuple[np.ndarray, float, List[int]]:
     """
     Finds spot_shapes about spots found in raw data, average of these then used for psf.
 
     Args:
-        im_file: File path of reference round nd2 file
-        tilepos_yx_tiff: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with tiff index ```i```. index 0 refers to ```YX = [0,0]```.
-        tilepos_yx_nd2: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [MaxY, MaxX]```.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        round: Reference round to get spots from to determine psf.
+            This should be the anchor round (last round) if using.
         use_tiles: ```int [n_use_tiles]```.
             tiff tile indices used in experiment.
         channel: Reference channel to get spots from to determine psf.
@@ -231,12 +231,11 @@ def get_psf_spots(im_file: str, tilepos_yx_tiff: np.ndarray, tilepos_yx_nd2: np.
         - ```tiles_used``` - ```int [n_tiles_used]```. Tiles the spots were found on.
     """
     n_spots = 0
-    images = utils.nd2.load(im_file)
     spot_images = np.zeros((0, shape[0], shape[1], shape[2]), dtype=int)
     tiles_used = []
     while n_spots < min_spots:
-        t = scale.select_tile(tilepos_yx_tiff, use_tiles)  # choose tile closet to centre
-        im = utils.nd2.get_image(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_tiff), channel, use_z)
+        t = scale.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
+        im = utils.raw.load(nbp_file, nbp_basic, None, round, channel, use_z)
         mid_z = np.ceil(im.shape[2] / 2).astype(int)
         median_im = np.median(im[:, :, mid_z])
         if intensity_thresh is None:

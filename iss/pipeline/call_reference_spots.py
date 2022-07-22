@@ -86,7 +86,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     if any([config['dp_norm_shift'] is None, config['background_weight_shift'] is None,
             config['gene_efficiency_intensity_thresh'] is None]):
         # get central tile
-        nbp.norm_shift_tile = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+        nbp.norm_shift_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
         if nbp_basic.is_3d:
             nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
         else:

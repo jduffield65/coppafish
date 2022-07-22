@@ -1,3 +1,4 @@
+import iss.utils.nd2
 from .. import utils, extract, setup
 import numpy as np
 import os
@@ -94,14 +95,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
     if config['deconvolve']:
         if not os.path.isfile(nbp_file.psf):
-            if nbp_basic.ref_round == nbp_basic.anchor_round:
-                im_file = os.path.join(nbp_file.input_dir, nbp_file.anchor + nbp_file.raw_extension)
-            else:
-                im_file = os.path.join(nbp_file.input_dir,
-                                       nbp_file.round[nbp_basic.ref_round] + nbp_file.raw_extension)
-
             spot_images, config['psf_intensity_thresh'], psf_tiles_used = \
-                extract.get_psf_spots(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
+                extract.get_psf_spots(nbp_file, nbp_basic, nbp_basic.ref_round,
                                       nbp_basic.use_tiles, nbp_basic.ref_channel, nbp_basic.use_z,
                                       config['psf_detect_radius_xy'], config['psf_detect_radius_z'],
                                       config['psf_min_spots'], config['psf_intensity_thresh'],
@@ -133,7 +128,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         scale_norm_max = np.iinfo('uint16').max - nbp_basic.tile_pixel_value_shift
         if not scale_norm_min <= config['scale_norm'] <= scale_norm_max:
             raise utils.errors.OutOfBoundsError("scale_norm", config['scale_norm'], scale_norm_min, scale_norm_max)
-        im_file = os.path.join(nbp_file.input_dir, nbp_file.round[0] + nbp_file.raw_extension)
         # If using smoothing, apply this as well before scal
         if config['r_smooth'] is None:
             smooth_kernel_2d = None
@@ -146,8 +140,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
             # smoothing is averaging so to average in 2D, need to re normalise filter
             smooth_kernel_2d = smooth_kernel_2d / np.sum(smooth_kernel_2d)
         nbp_debug.scale_tile, nbp_debug.scale_channel, nbp_debug.scale_z, config['scale'] = \
-            extract.get_scale(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
-                              nbp_basic.use_tiles, nbp_basic.use_channels, nbp_basic.use_z,
+            extract.get_scale(nbp_file, nbp_basic, 0, nbp_basic.use_tiles, nbp_basic.use_channels, nbp_basic.use_z,
                               config['scale_norm'], filter_kernel, smooth_kernel_2d)
     else:
         nbp_debug.scale_tile = None
@@ -179,18 +172,21 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         config['n_clip_error'] = int(nbp_basic.tile_sz * nbp_basic.tile_sz / 100)
 
     with tqdm(total=n_images) as pbar:
-        pbar.set_description('Loading in tiles from nd2, filtering and saving as npy')
+        pbar.set_description(f'Loading in tiles from {nbp_file.raw_extension}, filtering and saving as .npy')
         for r in use_rounds:
             # set scale and channels to use
-            im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
-            extract.wait_for_data(im_file, config['wait_time'])
-            images = utils.nd2.load(im_file)
+            im_file = os.path.join(nbp_file.input_dir, round_files[r])
+            if nbp_file.raw_extension == '.npy':
+                extract.wait_for_data(im_file, config['wait_time'], dir=True)
+            else:
+                extract.wait_for_data(im_file + nbp_file.raw_extension, config['wait_time'])
+            round_dask_array = utils.raw.load(nbp_file, nbp_basic, r=r)
             if r == nbp_basic.anchor_round:
                 n_clip_error_images = 0  # reset for anchor as different scale used.
                 if config['scale_anchor'] is None:
                     nbp_debug.scale_anchor_tile, _, nbp_debug.scale_anchor_z, config['scale_anchor'] = \
-                        extract.get_scale(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
-                                          nbp_basic.use_tiles, [nbp_basic.anchor_channel], nbp_basic.use_z,
+                        extract.get_scale(nbp_file, nbp_basic, nbp_basic.anchor_round, nbp_basic.use_tiles,
+                                          [nbp_basic.anchor_channel], nbp_basic.use_z,
                                           config['scale_norm'], filter_kernel, smooth_kernel_2d)
                 else:
                     nbp_debug.scale_anchor_tile = None
@@ -241,9 +237,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     else:
-                        im = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
-                                                                                  nbp_basic.tilepos_yx),
-                                                 c, nbp_basic.use_z)
+                        im = utils.raw.load(nbp_file, nbp_basic, round_dask_array, r, t, c, nbp_basic.use_z)
                         if not nbp_basic.is_3d:
                             im = extract.focus_stack(im)
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns

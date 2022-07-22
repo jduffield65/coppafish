@@ -59,7 +59,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     use_tiles = np.array(nbp_basic.use_tiles.copy())
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do central tile first because better to compute spot_shape from central tile.
-        t_centre = scale.select_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+        t_centre = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
         t_centre_ind = np.where(np.array(nbp_basic.use_tiles) == t_centre)[0][0]
         use_tiles[0], use_tiles[t_centre_ind] = use_tiles[t_centre_ind], use_tiles[0]
         spot_shape = None

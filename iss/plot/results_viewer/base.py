@@ -26,6 +26,7 @@ class iss_plot:
             background_image: Optional file_name or image that will be plotted as the background image.
                 If image, z dimension needs to be first i.e. `n_z x n_y x n_x` if 3D or `n_y x n_x` if 2D.
         """
+        # TODO: flip y axis so origin bottom left
         self.nb = nb
         legend_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend')
         gene_legend_info = pd.read_csv(os.path.join(legend_folder, 'gene_color.csv'))

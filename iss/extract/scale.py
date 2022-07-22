@@ -1,13 +1,14 @@
 import numpy as np
-from .base import get_nd2_tile_ind
+from ..utils.nd2 import get_nd2_tile_ind
 from .. import utils
+from ..setup import NotebookPage
 from typing import List, Tuple, Optional
 import nd2
 
 
-def select_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:
+def central_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:
     """
-    Selects tile in use_tiles closest to centre.
+    returns tile in use_tiles closest to centre.
 
     Args:
         tilepos_yx: ```int [n_tiles x 2]```.
@@ -23,31 +24,16 @@ def select_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:
     return use_tiles[nearest_t]
 
 
-def get_nd2_index(images: nd2.ND2File, fov: int, channel: int, z: int) -> int:
+def get_z_plane(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, t: int, use_channels: List[int],
+                use_z: List[int]) -> Tuple[int, int, np.ndarray]:
     """
-    Gets index of desired plane in nd2 file.
+    Finds z plane and channel that has maximum pixel value for given round and tile.
 
     Args:
-        images: ND2Reader object with ```fov```, ```channel```, ```z``` as index order.
-        fov: nd2 tile index, index ```-1``` refers to tile at ```yx = [0,0]```.
-        channel: Channel index.
-        z: Z-plane index.
-
-    Returns:
-        Index of desired plane in nd2 file.
-    """
-    start_index = fov * images.sizes['c'] * images.sizes['z'] + channel * images.sizes['z']
-    return start_index + z
-
-
-def get_z_plane(images: nd2.ND2File, fov: int, use_channels: List[int], use_z: List[int]) -> \
-        Tuple[int, int, np.ndarray]:
-    """
-    Finds z plane and channel that has maximum pixel value for given tile.
-
-    Args:
-        images: ND2Reader object with ```fov```, ```channel```, ```z``` as index order.
-        fov: nd2 tile index, index ```-1``` refers to tile at ```yx = [0,0]```.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        r: Round to consider.
+        t: npy tile index (index ```0``` refers to ```tilepos_yx_npy=[MaxY, MaxX]```) to find z-plane from.
         use_channels: ```int [n_use_channels]```.
             Channels to consider.
         use_z: ```int [n_z]```.
@@ -61,16 +47,17 @@ def get_z_plane(images: nd2.ND2File, fov: int, use_channels: List[int], use_z: L
         - ```image``` - ```int [tile_sz x tile_sz]```.
             Corresponding image.
     """
+    round_dask_array = utils.raw.load(nbp_file, nbp_basic, r=r)
     image_max = np.zeros((len(use_channels), len(use_z)))
     for i in range(len(use_channels)):
-        image_max[i, :] = np.max(np.max(utils.nd2.get_image(images, fov, use_channels[i], use_z), axis=0), axis=0)
-        # images[get_nd2_index(images, fov, use_channels[j], use_z[i])].max()
+        image_max[i, :] = np.max(np.max(utils.raw.load(nbp_file, nbp_basic, round_dask_array, r,
+                                                       t, use_channels[i], use_z), axis=0), axis=0)
     max_channel = use_channels[np.max(image_max, axis=1).argmax()]
     max_z = use_z[np.max(image_max, axis=0).argmax()]
-    return max_channel, max_z, utils.nd2.get_image(images, fov, max_channel, max_z)
+    return max_channel, max_z, utils.raw.load(nbp_file, nbp_basic, round_dask_array, r, t, max_channel, max_z)
 
 
-def get_scale(im_file: str, tilepos_yx_npy: np.ndarray, tilepos_yx_nd2: np.ndarray, use_tiles: List[int],
+def get_scale(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, use_tiles: List[int],
               use_channels: List[int], use_z: List[int], scale_norm: int,
               filter_kernel: np.ndarray, smooth_kernel: Optional[np.ndarray] = None) -> Tuple[int, int, int, float]:
     """
@@ -79,11 +66,10 @@ def get_scale(im_file: str, tilepos_yx_npy: np.ndarray, tilepos_yx_nd2: np.ndarr
     filtered image.
 
     Args:
-        im_file: File path of nd2 file
-        tilepos_yx_npy: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with npy index ```i```. index 0 refers to ```YX = [MaxY,MaxX]```.
-        tilepos_yx_nd2: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with nd2 index ```i```. index 0 refers to ```YX = [0,0]```.
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        r: Round to get `scale` from.
+            Should be 0 to determine `scale` and the anchor round (last round) to determine `scale_anchor`.
         use_tiles: ```int [n_use_tiles]```.
             tiff tile indices to consider when finding tile.
         use_channels: ```int [n_use_channels]```.
@@ -108,10 +94,9 @@ def get_scale(im_file: str, tilepos_yx_npy: np.ndarray, tilepos_yx_nd2: np.ndarr
             Multiplier to apply to filtered nd2 images before saving as npy so full npy ```uint16``` range occupied.
     """
     # tile to get scale from is central tile
-    t = select_tile(tilepos_yx_npy, use_tiles)
-    images = utils.nd2.load(im_file)
+    t = central_tile(nbp_basic.tilepos_yx, use_tiles)
     # find z-plane with max pixel across all channels of tile t
-    c, z, image = get_z_plane(images, get_nd2_tile_ind(t, tilepos_yx_nd2, tilepos_yx_npy), use_channels, use_z)
+    c, z, image = get_z_plane(nbp_file, nbp_basic, r, t, use_channels, use_z)
     # convolve_2d image in same way we convolve_2d before saving tiff files
     im_filtered = utils.morphology.convolve_2d(image, filter_kernel)
     if smooth_kernel is not None:

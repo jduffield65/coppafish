@@ -15,3 +15,4 @@ iss_plot(nb, 'dapi')  # Stitched dapi as background
 # Spot Color and Bled Code Matched to: Select spot of interest in select_points mode then press c key
 # Spot intensity in all rounds/channels: Select spot of interest in select_points mode then press s key
 # OMP coefficients in neighbourhood of spot: Select spot of interest in select_points mode then press o key
+# OMP fitting of single pixel: Select spot of interest in select_points mode then press Shift-o key

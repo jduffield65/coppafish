@@ -55,6 +55,7 @@ _options = {
             'round': 'maybe_list_str',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
+            'raw_metadata': 'maybe_str',
             'dye_camera_laser': 'maybe_file',
             'code_book': 'str',
             'psf': 'str',

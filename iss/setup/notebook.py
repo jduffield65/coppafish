@@ -76,6 +76,7 @@ def set_file_names(nb, page_name: str):
         config['anchor'] = config['anchor'].replace(config['raw_extension'], '')
     nbp.anchor = config['anchor']
     nbp.raw_extension = config['raw_extension']
+    nbp.raw_metadata = config['raw_metadata']
 
     if config['dye_camera_laser'] is None:
         # Default information is project

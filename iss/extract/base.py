@@ -8,15 +8,20 @@ from .. import utils
 from typing import Tuple, Optional
 
 
-def wait_for_data(file_path: str, wait_time: int):
+def wait_for_data(data_path: str, wait_time: int, dir: bool = False):
     """
-    Waits for wait_time seconds to see if file at file_path becomes available in that time.
+    Waits for wait_time seconds to see if file/directory at data_path becomes available in that time.
 
     Args:
-        file_path: Path to file of interest
+        data_path: Path to file or directory of interest
         wait_time: Time to wait in seconds for file to become available.
+        dir: If True, assumes data_path points to a directory, otherwise assumes points to a file.
     """
-    if not os.path.isfile(file_path):
+    if dir:
+        check_data_func = lambda x: os.path.isdir(x)
+    else:
+        check_data_func = lambda x: os.path.isfile(x)
+    if not check_data_func(data_path):
         # wait for file to become available
         if wait_time > 60 ** 2:
             wait_time_print = round(wait_time / 60 ** 2, 1)
@@ -24,17 +29,17 @@ def wait_for_data(file_path: str, wait_time: int):
         else:
             wait_time_print = round(wait_time, 1)
             wait_time_unit = 'seconds'
-        warnings.warn(f'\nNo file named\n{file_path}\nexists. Waiting for {wait_time_print} {wait_time_unit}...')
+        warnings.warn(f'\nNo file named\n{data_path}\nexists. Waiting for {wait_time_print} {wait_time_unit}...')
         with tqdm(total=wait_time, position=0) as pbar:
-            pbar.set_description(f"Waiting for {file_path}")
+            pbar.set_description(f"Waiting for {data_path}")
             for i in range(wait_time):
                 time.sleep(1)
-                if os.path.isfile(file_path):
+                if check_data_func(data_path):
                     break
                 pbar.update(1)
         pbar.close()
-        if not os.path.isfile(file_path):
-            raise utils.errors.NoFileError(file_path)
+        if not check_data_func(data_path):
+            raise utils.errors.NoFileError(data_path)
         print("file found!\nWaiting for file to fully load...")
         # wait for file to stop loading
         old_bytes = 0
@@ -42,7 +47,7 @@ def wait_for_data(file_path: str, wait_time: int):
         while new_bytes > old_bytes:
             time.sleep(5)
             old_bytes = new_bytes
-            new_bytes = os.path.getsize(file_path)
+            new_bytes = os.path.getsize(data_path)
         print("file loaded!")
 
 
@@ -59,28 +64,6 @@ def get_pixel_length(length_microns, pixel_size) -> int:
 
     """
     return int(round(length_microns / pixel_size))
-
-
-def get_nd2_tile_ind(tile_ind_tiff: int, tile_pos_yx_nd2: np.ndarray,
-                     tile_pos_yx_npy: np.ndarray) -> int:
-    """
-    Gets index of tile in nd2 file from tile index of tiff file.
-
-    Args:
-        tile_ind_tiff: Index of tiff file
-        tile_pos_yx_nd2: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with nd2 index ```i```.
-            Index 0 refers to ```YX = [0, 0]```.
-            Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
-        tile_pos_yx_npy: ```int [n_tiles x 2]```.
-            ```[i,:]``` contains YX position of tile with npy index ```i```.
-            Index 0 refers to ```YX = [MaxY, MaxX]```.
-            Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
-
-    Returns:
-        Corresponding index in nd2 file
-    """
-    return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_npy[tile_ind_tiff], 1) == 2)[0][0]
 
 
 def strip_hack(image: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

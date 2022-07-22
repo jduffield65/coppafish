@@ -3,6 +3,7 @@ import os
 from .. import utils, setup
 import warnings
 from ..setup.notebook import NotebookPage
+import json
 
 
 def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
@@ -71,15 +72,27 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
     if len(use_rounds_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_rounds", use_rounds_oob[0], 0, n_rounds - 1)
 
-    # load in metadata of nd2 file corresponding to first round
-    # Test for number of rounds in case of separate round registration and load metadata
-    # from anchor round in that case
     if len(config_file['round']) > 0:
-        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0] + config_file['raw_extension'])
+        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
     else:
-        first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'] + config_file['raw_extension'])
+        first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'])
+    if config_file['raw_extension'] == '.nd2':
+        # load in metadata of nd2 file corresponding to first round
+        # Test for number of rounds in case of separate round registration and load metadata
+        # from anchor round in that case
+        metadata = utils.nd2.get_metadata(first_round_raw + config_file['raw_extension'])
+    elif config_file['raw_extension'] == '.npy':
+        # Load in metadata as dictionary from a json file
+        config_file['raw_metadata'] = config_file['raw_metadata'].replace('.json', '')
+        metadata_file = os.path.join(config_file['input_dir'], config_file['raw_metadata'] + '.json')
+        metadata = json.load(open(metadata_file))
+        # Check metadata info matches that in first round npy file.
+        use_tiles_nd2 = utils.raw.metadata_sanity_check(metadata, first_round_raw)
+    else:
+        raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
+                         f"{config_file['raw_extension']}.")
 
-    metadata = utils.nd2.get_metadata(first_round_raw)
+
 
     # get channel info
     n_channels = metadata['sizes']['c']
@@ -108,6 +121,18 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
     # get tile info
     tile_sz = metadata['sizes']['x']
     n_tiles = metadata['sizes']['t']
+    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(np.asarray(metadata['xy_pos']), tile_sz)
+    nbp.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
+    nbp.tilepos_yx = tilepos_yx  # and with npy index
+
+    if config_file['raw_extension'] == '.npy':
+        # Read tile indices from raw data folder and set to use_tiles if not specified already.
+        use_tiles_folder = utils.npy.get_npy_tile_ind(use_tiles_nd2, tilepos_yx_nd2, tilepos_yx)
+        if config_basic['use_tiles'] is None:
+            config_basic['use_tiles'] = use_tiles_folder
+        elif np.setdiff1d(config_basic['use_tiles'], use_tiles_folder).size > 0:
+            raise ValueError(f"config_basic['use_tiles'] = {config_basic['use_tiles']}\n"
+                             f"But in the folder:\n{first_round_raw}\nTiles Available are {use_tiles_folder}.")
     if config_basic['use_tiles'] is None:
         config_basic['use_tiles'] = list(np.arange(n_tiles))
     nbp.use_tiles = config_basic['use_tiles']
@@ -160,11 +185,6 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
     else:
         nz = nbp.nz
     nbp.tile_centre = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
-
-    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(np.asarray(metadata['xy_pos']), tile_sz)
-    nbp.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
-    nbp.tilepos_yx = tilepos_yx  # and with npy index
-
     nbp.pixel_size_xy = metadata['pixel_microns']  # pixel size in microns in xy
     nbp.pixel_size_z = metadata['pixel_microns_z']  # and z directions.
 

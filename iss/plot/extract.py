@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox, Button, RangeSlider
+
+import iss.utils.nd2
 from ..pipeline.basic_info import set_basic_info
 from .. import setup, extract, utils
 import os
@@ -119,8 +121,8 @@ class plot_filter:
         print(f'Loading in tile {t}, round {r}, channel {c} from nd2 file...')
         im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
         images = utils.nd2.load(im_file)
-        self.base_image = utils.nd2.get_image(images, extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
-                                                                               nbp_basic.tilepos_yx),
+        self.base_image = utils.nd2.get_image(images, iss.utils.nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
+                                                                                     nbp_basic.tilepos_yx),
                                               c, nbp_basic.use_z)
         print('Done.')
 

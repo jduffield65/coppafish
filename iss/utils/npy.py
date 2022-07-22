@@ -1,10 +1,11 @@
 import numpy as np
-import scipy.ndimage
 from ..setup import NotebookPage
 from .. import utils, extract
 import jax.numpy as jnp
 from typing import List, Tuple, Union, Optional
 from tqdm import tqdm
+import numpy_indexed
+import numbers
 import os
 
 
@@ -141,6 +142,35 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
     return image
 
 
+def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.ndarray,
+                     tile_pos_yx_npy: np.ndarray) -> Union[int, List[int]]:
+    """
+    Gets index of tile in npy file from tile index of nd2 file.
+
+    Args:
+        tile_ind_nd2: Index of tile in nd2 file
+        tile_pos_yx_nd2: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with nd2 index ```i```.
+            Index 0 refers to ```YX = [0, 0]```.
+            Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
+        tile_pos_yx_npy: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with npy index ```i```.
+            Index 0 refers to ```YX = [MaxY, MaxX]```.
+            Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
+
+    Returns:
+        Corresponding indices in npy file
+    """
+    if isinstance(tile_ind_nd2, numbers.Number):
+        tile_ind_nd2 = [tile_ind_nd2]
+    npy_index = numpy_indexed.indices(tile_pos_yx_npy, tile_pos_yx_nd2[tile_ind_nd2]).tolist()
+    if len(npy_index) == 1:
+        return npy_index[0]
+    else:
+        return npy_index
+
+
+
 def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
                   r: int, c: int, from_nd2: bool = False, zero_thresh: int = 0):
     """
@@ -194,8 +224,8 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
         for t in nbp_basic.use_tiles:
             if from_nd2:
                 image_t = utils.nd2.get_image(nd2_all_images,
-                                              extract.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
-                                                                       nbp_basic.tilepos_yx),
+                                              utils.nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
+                                                                             nbp_basic.tilepos_yx),
                                               c, nbp_basic.use_z)
                 # replicate non-filtering procedure in extract_and_filter
                 if not nbp_basic.is_3d:

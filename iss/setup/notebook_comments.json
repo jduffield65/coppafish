@@ -22,6 +22,10 @@
     "raw_extension": [
       "String",
       "Extension of files containing raw data. Code assumes this is '.nd2'"],
+    "raw_metadata": ["String or None",
+      "If .npy raw_extension, this is the name of the .json file in input_dir which contains the required metadata ",
+      "extracted from the initial .nd2 files.",
+      "I.e. it is the output of iss/utils/nd2/save_metadata"],
     "dye_camera_laser": [
       "File",
       "csv file giving the approximate raw intensity for each dye with each camera/laser combination"],

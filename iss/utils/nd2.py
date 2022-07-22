@@ -2,8 +2,10 @@ import numpy as np
 import nd2
 import os
 from . import errors
-from typing import Optional, List
+from typing import Optional, List, Union
 import json
+import numpy_indexed
+import numbers
 
 
 # bioformats ssl certificate error solution:
@@ -99,8 +101,38 @@ def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = 
             raise ValueError(f"use_channels contains {len(use_channels)} channels but there "
                              f"are only {metadata['sizes']['c']} channels in the nd2 metadata.")
         metadata['sizes']['c'] = len(use_channels)
-        metadata['use_channels'] = use_channels
+        metadata['use_channels'] = use_channels   # channels extracted from nd2 file
     json.dump(metadata, open(json_file, 'w'))
+
+
+def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.ndarray,
+                     tile_pos_yx_npy: np.ndarray) -> Union[int, List[int]]:
+    """
+    Gets index of tiles in nd2 file from tile index of npy file.
+
+    Args:
+        tile_ind_npy: Indices of tiles in npy file
+        tile_pos_yx_nd2: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with nd2 index ```i```.
+            Index 0 refers to ```YX = [0, 0]```.
+            Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
+        tile_pos_yx_npy: ```int [n_tiles x 2]```.
+            ```[i,:]``` contains YX position of tile with npy index ```i```.
+            Index 0 refers to ```YX = [MaxY, MaxX]```.
+            Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
+
+    Returns:
+        Corresponding indices in nd2 file
+    """
+    if isinstance(tile_ind_npy, numbers.Number):
+        tile_ind_npy = [tile_ind_npy]
+    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, tile_pos_yx_npy[tile_ind_npy]).tolist()
+    if len(nd2_index) == 1:
+        return nd2_index[0]
+    else:
+        return nd2_index
+    # return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_npy[tile_ind_npy], 1) == 2)[0][0]
+
 
 # '''with nd2reader'''
 # #Does not work with QuadCam data hence the switch to nd2 package
