@@ -319,6 +319,7 @@ class Notebook:
                 self._config = read_config  # update config to new one - only difference will be in file_names section
             self.add_no_save_pages()  # add file_names page with new config
         else:
+            warnings.warn("Notebook file not found, creating a new notebook.")
             if read_config is None:
                 warnings.warn("Have not passed a config_file so Notebook.get_config() won't work.")
             self._created_time = time.time()

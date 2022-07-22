@@ -22,7 +22,7 @@ setup(
     packages=['iss', 'iss.setup', 'iss.utils', 'iss.extract', 'iss.stitch', 'iss.spot_colors', 'iss.plot',
               'iss.pipeline', 'iss.pcr', 'iss.omp', 'iss.find_spots', 'iss.call_spots'],
     install_requires=['jax', 'jaxlib', 'numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python',
-                      'scikit-image', 'nd2', 'matplotlib', 'h5py'],
+                      'scikit-image', 'nd2', 'matplotlib', 'h5py', 'ipympl'],
     package_data={'iss.setup': ['settings.default.ini', 'notebook_comments.json']},
     data_files=['dye_camera_laser_raw_intensity.csv'],
     classifiers=[
