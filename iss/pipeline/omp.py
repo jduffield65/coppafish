@@ -1,9 +1,9 @@
-from .. import utils, setup
+from .. import utils
 import numpy as np
 import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
+from ..spot_colors import get_spot_colors, all_pixel_yxz
 from ..call_spots import get_spot_intensity, get_non_duplicate
 from .. import omp
 import os
@@ -18,7 +18,7 @@ except ImportError:
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
                    transform: np.ndarray) -> NotebookPage:
-    nbp = setup.NotebookPage("omp")
+    nbp = NotebookPage("omp")
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
@@ -128,9 +128,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                   f" Z-plane {np.where(use_z == z)[0][0] + 1}/{len(use_z)}")
             # While iterating through tiles, only save info for rounds/channels using
             # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
-            pixel_colors_tz, pixel_yxz_tz = get_spot_colors_jax(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
-                                                                              int(z)), int(t), transform,
-                                                                nbp_file, nbp_basic, return_in_bounds=True)
+            pixel_colors_tz, pixel_yxz_tz = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
+                                                                          int(z)), int(t), transform,
+                                                            nbp_file, nbp_basic, return_in_bounds=True)
             if pixel_colors_tz.shape[0] == 0:
                 continue
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
@@ -242,8 +242,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            nd_spot_colors_use[in_tile] = get_spot_colors_jax(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                              transform, nbp_file, nbp_basic)
+            nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
+                                                          transform, nbp_file, nbp_basic)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
     nbp.intensity = np.asarray(get_spot_intensity(spot_colors_norm))

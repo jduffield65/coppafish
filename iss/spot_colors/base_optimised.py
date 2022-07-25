@@ -1,18 +1,32 @@
-from typing import Optional, List, Union, Tuple
+from functools import partial
 import numpy as np
-from tqdm import tqdm
 from .. import utils
-from ..setup import NotebookPage
+from ..setup.notebook import NotebookPage
+from typing import List, Optional, Tuple, Union
+from tqdm import tqdm
+import jax.numpy as jnp
+import jax
 
 
-def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndarray, z_scale: float,
-                    tile_sz: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
+                           z_scale: float, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, bool]:
+    z_multiplier = jnp.array([1, 1, z_scale])
+    yxz_pad = jnp.pad((yxz - tile_centre) * z_multiplier, [(0, 1)], constant_values=1)
+    yxz_transform = jnp.matmul(yxz_pad, transform)
+    yxz_transform = jnp.round((yxz_transform / z_multiplier) + tile_centre).astype(jnp.int16)
+    in_range = jnp.logical_and((yxz_transform >= jnp.array([0, 0, 0])).all(),
+                               (yxz_transform < tile_sz).all())  # set color to nan if out range
+    return yxz_transform, in_range
+
+
+@partial(jax.jit, static_argnums=3)
+def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
+                    z_scale: float, tile_sz) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This transforms the coordinates yxz based on an affine transform.
     E.g. to find coordinates of spots on the same tile but on a different round and channel.
-
     Args:
-        yxz: ```int [n_spots x 3]```.
+        yxz: ```int16 [n_spots x 3]```.
             ```yxz[i, :2]``` are the non-centered yx coordinates in ```yx_pixels``` for spot ```i```.
             ```yxz[i, 2]``` is the non-centered z coordinate in ```z_pixels``` for spot ```i```.
             E.g. these are the coordinates stored in ```nb['find_spots']['spot_details']```.
@@ -33,7 +47,7 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndar
             YXZ dimensions of tile
 
     Returns:
-        ```int [n_spots x 3]```.
+        - `yxz_transform` - ```int [n_spots x 3]```.
             ```yxz_transform``` such that
             ```yxz_transform[i, [1,2]]``` are the transformed non-centered yx coordinates in ```yx_pixels```
             for spot ```i```.
@@ -41,20 +55,14 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndar
         - ```in_range``` - ```bool [n_spots]```.
             Whether spot s was in the bounds of the tile when transformed to round `r`, channel `c`.
     """
-    if (utils.round_any(tile_centre, 0.5) == tile_centre).min() == False:
-        raise ValueError(f"tile_centre given, {tile_centre}, is not a multiple of 0.5 in each dimension.")
-    yxz_pad = np.pad((yxz - tile_centre) * [1, 1, z_scale], [(0, 0), (0, 1)], constant_values=1)
-    yxz_transform = np.matmul(yxz_pad, transform)
-    yxz_transform = np.round((yxz_transform / [1, 1, z_scale]) + tile_centre).astype(np.int16)
-    in_range = np.logical_and((yxz_transform >= np.array([0, 0, 0])).all(axis=1),
-                              (yxz_transform < tile_sz).all(axis=1))  # set color to nan if out range
-    return yxz_transform, in_range
+    return jax.vmap(apply_transform_single, in_axes=(0, None, None, None, None),
+                    out_axes=(0, 0))(yxz, transform, tile_centre, z_scale, tile_sz)
 
 
-def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_file: NotebookPage,
+def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_file: NotebookPage,
                     nbp_basic: NotebookPage, use_rounds: Optional[List[int]] = None,
                     use_channels: Optional[List[int]] = None,
-                    return_in_bounds: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                    return_in_bounds: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, jnp.ndarray]]:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
@@ -117,12 +125,12 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     n_use_channels = len(use_channels)
     # spots outside tile bounds on particular r/c will initially be set to 0.
     spot_colors = np.zeros((n_spots, n_use_rounds, n_use_channels), dtype=np.int32)
-    tile_centre = np.array(nbp_basic.tile_centre)
+    tile_centre = jnp.array(nbp_basic.tile_centre)
     if not nbp_basic.is_3d:
         # use numpy not jax.numpy as reading in tiff is done in numpy.
-        tile_sz = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, 1], dtype=np.int16)
+        tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz, 1], dtype=jnp.int16)
     else:
-        tile_sz = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz], dtype=np.int16)
+        tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz], dtype=jnp.int16)
 
     with tqdm(total=n_use_rounds * n_use_channels, disable=no_verbose) as pbar:
         pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from npy files.")
@@ -138,6 +146,8 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
                         f"Transform for tile {t}, round {use_rounds[r]}, channel {use_channels[c]} is zero:"
                         f"\n{transform_rc}")
                 yxz_transform, in_range = apply_transform(yxz_base, transform_rc, tile_centre, z_scale, tile_sz)
+                yxz_transform = np.asarray(yxz_transform)
+                in_range = np.asarray(in_range)
                 yxz_transform = yxz_transform[in_range]
                 if yxz_transform.shape[0] > 0:
                     # Read in the shifted uint16 colors here, and remove shift later.
@@ -160,7 +170,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         return spot_colors
 
 
-def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarray]) -> np.ndarray:
+def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarray]) -> jnp.ndarray:
     """
     Returns the yxz coordinates of all pixels on the indicated z-planes of an image.
 
@@ -174,7 +184,7 @@ def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarra
             yxz coordinates of all pixels on `z_planes`.
     """
     if isinstance(z_planes, int):
-        z_planes = np.array([z_planes])
+        z_planes = jnp.array([z_planes])
     elif isinstance(z_planes, list):
-        z_planes = np.array(z_planes)
-    return np.array(np.meshgrid(np.arange(y_size), np.arange(x_size), z_planes), dtype=np.int16).T.reshape(-1, 3)
+        z_planes = jnp.array(z_planes)
+    return jnp.array(jnp.meshgrid(jnp.arange(y_size), jnp.arange(x_size), z_planes), dtype=jnp.int16).T.reshape(-1, 3)

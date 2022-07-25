@@ -6,13 +6,16 @@ from iss.call_spots import get_non_duplicate
 from iss.stitch import compute_shift
 from iss.find_spots import get_isolated_points
 from iss.pipeline import stitch
-from iss.spot_colors import apply_transform_jax
+from iss.spot_colors import apply_transform
 from iss.plot.register import view_shifts
 import numpy as np
-import jax.numpy as jnp
 import os
 import warnings
 import matplotlib
+try:
+    import jax.numpy as jnp
+except ImportError:
+    import numpy as jnp
 matplotlib.use('Qt5Agg')
 matplotlib.pyplot.style.use('dark_background')
 
@@ -191,8 +194,8 @@ def transform_image(image: np.ndarray, transform: np.ndarray, image_centre: np.n
         image_centre = np.append(image_centre, 0)
         yxz = np.hstack((yxz, np.zeros((yxz.shape[0], 1))))
 
-    yxz_transform, in_range = apply_transform_jax(yxz, jnp.asarray(transform), jnp.asarray(image_centre), z_scale,
-                                                  tile_size)
+    yxz_transform, in_range = apply_transform(yxz, jnp.asarray(transform), jnp.asarray(image_centre), z_scale,
+                                              tile_size)
     yxz_transform = np.asarray(yxz_transform[in_range])
     image_values = image_values[np.asarray(in_range)]
     im_transformed[tuple([yxz_transform[:, i] for i in range(image.ndim)])] = image_values

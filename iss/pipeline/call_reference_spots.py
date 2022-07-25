@@ -1,10 +1,9 @@
-from .. import setup
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
     dot_product_score_no_weight, get_spot_intensity, fit_background, get_gene_efficiency
 import numpy as np
 from ..setup.notebook import NotebookPage
 from ..extract import scale
-from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
+from ..spot_colors import get_spot_colors, all_pixel_yxz
 from ..utils import round_any
 from typing import Tuple
 
@@ -46,7 +45,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         - `NotebookPage[ref_spots]` - Page contains gene assignments and info for spots found on reference round.
             Parameters added are: intensity, score, gene_no, score_diff
     """
-    nbp = setup.NotebookPage("call_spots")
+    nbp = NotebookPage("call_spots")
 
     # get color norm factor
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
@@ -90,9 +89,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
         else:
             nbp.norm_shift_z = 0
-        pixel_colors = get_spot_colors_jax(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
-                                           nbp.norm_shift_tile, transform, nbp_file, nbp_basic,
-                                           return_in_bounds=True)[0]
+        pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
+                                       nbp.norm_shift_tile, transform, nbp_file, nbp_basic, return_in_bounds=True)[0]
         pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
         nbp.median_abs_intensity = float(np.median(pixel_intensity))
         if config['dp_norm_shift'] is None:

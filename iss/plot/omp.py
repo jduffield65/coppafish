@@ -1,5 +1,5 @@
 from .call_spots import ColorPlotBase
-from ..no_jax.spot_colors import get_spot_colors
+from ..spot_colors.base import get_spot_colors
 from ..call_spots import omp_spot_score, get_spot_intensity
 from ..setup import Notebook
 from .. import utils
@@ -54,9 +54,7 @@ class view_omp(ColorPlotBase):
                                       np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
-        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info)
-        spot_colors = spot_colors[np.ix_(np.arange(im_yxz.shape[0]),
-                                         nb.basic_info.use_rounds, nb.basic_info.use_channels)] / color_norm
+        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info) / color_norm
 
         # Only look at pixels with high enough intensity - same as in full pipeline
         spot_intensity = get_spot_intensity(np.abs(spot_colors))

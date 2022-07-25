@@ -1,4 +1,3 @@
-from .. import utils, setup
 import numpy as np
 from tqdm import tqdm
 from ..stitch import compute_shift, update_shifts
@@ -26,7 +25,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
         `NotebookPage[register_initial_debug]` - Page contains information about how shift between ref round/channel
             to each imaging round for each tile was found.
     """
-    nbp_debug = setup.NotebookPage("register_initial_debug")
+    nbp_debug = NotebookPage("register_initial_debug")
     if config['shift_channel'] is None:
         config['shift_channel'] = nbp_basic.ref_channel
     if not np.isin(config['shift_channel'], nbp_basic.use_channels):

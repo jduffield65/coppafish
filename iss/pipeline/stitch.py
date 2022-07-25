@@ -1,4 +1,3 @@
-from .. import setup
 from ..stitch import compute_shift, update_shifts, get_tile_origin, get_shifts_to_search
 from tqdm import tqdm
 from ..find_spots import spot_yxz
@@ -25,7 +24,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
         `NotebookPage[stitch]` - Page contains information about how tiles were stitched together to give
             global coordinates.
     """
-    nbp_debug = setup.NotebookPage("stitch")
+    nbp_debug = NotebookPage("stitch")
     directions = ['south', 'west']
     coords = ['y', 'x', 'z']
     shifts = get_shifts_to_search(config, nbp_basic, nbp_debug)

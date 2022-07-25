@@ -1,4 +1,4 @@
-from .. import utils, extract, setup
+from .. import utils, extract
 import numpy as np
 import os
 from tqdm import tqdm
@@ -33,8 +33,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config['deconvolve'] = False  # only deconvolve if 3d pipeline
-    nbp = setup.NotebookPage("extract")
-    nbp_debug = setup.NotebookPage("extract_debug")
+    nbp = NotebookPage("extract")
+    nbp_debug = NotebookPage("extract_debug")
     # initialise output of this part of pipeline as 'vars' key
     nbp.auto_thresh = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
                                 nbp_basic.n_channels), dtype=int)

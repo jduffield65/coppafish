@@ -3,7 +3,7 @@ from ..stitch import compute_shift
 # TODO: find_spots/base uses jax but not for functions of interest - what to do??
 from ..find_spots import spot_yxz, get_isolated_points
 from ..pcr import get_single_affine_transform
-from ..no_jax.spot_colors import apply_transform
+from ..spot_colors.base import apply_transform
 from .stitch import view_shifts
 from ..setup import Notebook
 from typing import Optional, List
@@ -273,7 +273,15 @@ def view_pcr(nb: Notebook, t: int, r: int, c: int):
     else:
         transform = get_single_affine_transform(config['register'], point_clouds[1], point_clouds[0], z_scale, z_scale,
                                                 shift, neighb_dist_thresh, nb.basic_info.tile_centre)[0]
-    point_clouds = point_clouds + [apply_transform(point_clouds[1], transform, nb.basic_info.tile_centre, z_scale)]
+
+    if not nb.basic_info.is_3d:
+        # use numpy not jax.numpy as reading in tiff is done in numpy.
+        tile_sz = np.array([nb.basic_info.tile_sz, nb.basic_info.tile_sz, 1], dtype=np.int16)
+    else:
+        tile_sz = np.array([nb.basic_info.tile_sz, nb.basic_info.tile_sz, nb.basic_info.nz], dtype=np.int16)
+
+    point_clouds = point_clouds + [apply_transform(point_clouds[1], transform, nb.basic_info.tile_centre, z_scale,
+                                                   tile_sz)[0]]
     pc_labels = [f'Imaging: r{r}, c{c}', f'Reference: r{r_ref}, c{c_ref}', f'Reference: r{r_ref}, c{c_ref} - Shift',
                  f'Reference: r{r_ref}, c{c_ref} - Affine']
     view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,

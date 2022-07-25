@@ -1,10 +1,11 @@
-from .. import setup
-from ..spot_colors import get_spot_colors_jax
-from ..no_jax.spot_colors import get_spot_colors
+from ..spot_colors import get_spot_colors
 from ..call_spots import get_non_duplicate
 from ..find_spots import spot_yxz
 import numpy as np
-import jax.numpy as jnp
+try:
+    import jax.numpy as jnp
+except ImportError:
+    import numpy as np
 from ..setup.notebook import NotebookPage
 
 
@@ -35,7 +36,7 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
     Returns:
         `NotebookPage[ref_spots]` - Page containing intensity of each reference spot on each imaging round/channel.
     """
-    nbp = setup.NotebookPage("ref_spots")
+    nbp = NotebookPage("ref_spots")
     r = nbp_basic.ref_round
     c = nbp_basic.ref_channel
 
@@ -72,8 +73,8 @@ def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_detail
         if np.sum(in_tile) > 0:
             print(f"Tile {np.where(use_tiles==t)[0][0]+1}/{n_use_tiles}")
             # this line will return invalid_value for spots outside tile bounds on particular r/c.
-            nd_spot_colors_use[in_tile] = get_spot_colors_jax(jnp.asarray(nd_local_yxz[in_tile]), t,
-                                                              transform, nbp_file, nbp_basic)
+            nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t,
+                                                          transform, nbp_file, nbp_basic)
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
     # nd_spot_colors_use = np.moveaxis(nd_spot_colors_use, 0, -1)
     # use_rc_index = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)

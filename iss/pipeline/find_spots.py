@@ -1,4 +1,4 @@
-from .. import utils, setup
+from .. import utils
 from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
@@ -24,7 +24,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     Returns:
         `NotebookPage[find_spots]` - Page containing point cloud of all tiles, rounds and channels.
     """
-    nbp = setup.NotebookPage("find_spots")
+    nbp = NotebookPage("find_spots")
     if nbp_basic.is_3d is False:
         # set z details to None if using 2d pipeline
         config['radius_z'] = None

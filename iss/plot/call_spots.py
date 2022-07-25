@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib.widgets import Button, RangeSlider
 from ..call_spots import omp_spot_score
 from ..setup import Notebook
-from ..no_jax.spot_colors import get_spot_colors
+from ..spot_colors.base import get_spot_colors
 import matplotlib
 from typing import List, Optional, Tuple, Union
 
@@ -396,8 +396,6 @@ class view_spot(ColorPlotBase):
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
         spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info)
-        spot_colors = spot_colors[np.ix_(np.arange(im_yxz.shape[0]),
-                                         nb.basic_info.use_rounds, nb.basic_info.use_channels)]
         spot_colors = np.moveaxis(spot_colors, 1, 2)  # put round as the last axis to match color_norm
         spot_colors = spot_colors.reshape(im_yxz.shape[0], -1)
         # reshape

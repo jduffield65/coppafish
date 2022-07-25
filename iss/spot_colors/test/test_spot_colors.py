@@ -4,8 +4,8 @@ import numpy as np
 from ...utils.npy import save_tile
 from ...setup.notebook import NotebookPage
 from ...setup.tile_details import get_tile_file_names
-from ...no_jax.spot_colors import apply_transform, get_spot_colors
-from ..base import get_spot_colors_jax, apply_transform_jax
+from ..base import apply_transform, get_spot_colors
+from .. import base_optimised as optimised
 from typing import List, Optional
 import jax.numpy as jnp
 
@@ -203,10 +203,11 @@ class TestSpotColors(unittest.TestCase):
             transform_src_diff = np.zeros((0, 3), dtype=int)
             for r in use_rounds:
                 for c in use_channels:
-                    yxz_transform = apply_transform(spot_yxz, transforms[t, r, c], nbp_basic.tile_centre, self.Z_Scale)
+                    yxz_transform = apply_transform(spot_yxz, transforms[t, r, c], nbp_basic.tile_centre, self.Z_Scale,
+                                                    tile_sz)[0]
                     yxz_transform_jax = np.asarray(
-                        apply_transform_jax(jnp.array(spot_yxz), jnp.array(transforms[t, r, c]),
-                                            jnp.array(nbp_basic.tile_centre), self.Z_Scale, jnp.asarray(tile_sz))[0])
+                        optimised.apply_transform(jnp.array(spot_yxz), jnp.array(transforms[t, r, c]),
+                                                  jnp.array(nbp_basic.tile_centre), self.Z_Scale, jnp.asarray(tile_sz))[0])
                     diff = yxz_transform_jax - yxz_transform
                     # tolerance of 1 as expect difference due to rounding error will be just 1.
                     # expect rounding error because jax is float32 while python is float64.
@@ -219,12 +220,14 @@ class TestSpotColors(unittest.TestCase):
                                               axis=1)
                         transform_src_diff = np.append(transform_src_diff, src_wrong, axis=0)
             make_random_tiles(nbp_file, nbp_basic, t, use_rounds, tile_sz)
-            spot_colors = get_spot_colors(spot_yxz, t, transforms, nbp_file, nbp_basic, use_rounds, use_channels)
+            spot_colors = np.full((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), invalid_value, dtype=np.int32)
+            spot_colors[np.ix_(np.arange(n_spots), use_rounds, use_channels)] = \
+                get_spot_colors(spot_yxz, t, transforms, nbp_file, nbp_basic, use_rounds, use_channels)
             spot_colors_jax = np.full((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), invalid_value,
                                       dtype=np.int32)
             spot_colors_jax[np.ix_(np.arange(n_spots), use_rounds, use_channels)] = \
-                get_spot_colors_jax(jnp.array(spot_yxz), t, jnp.array(transforms), nbp_file, nbp_basic, use_rounds,
-                                    use_channels)
+                optimised.get_spot_colors(jnp.array(spot_yxz), t, jnp.array(transforms), nbp_file, nbp_basic,
+                                          use_rounds, use_channels)
             diff = spot_colors - spot_colors_jax
             n_wrong_colors = transform_src_diff.shape[0]
             if n_wrong_colors > 0:

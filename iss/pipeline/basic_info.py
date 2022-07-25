@@ -24,7 +24,7 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
     Returns:
         - `NotebookPage[basic_info]` - Page contains information that is used at all stages of the pipeline.
     """
-    nbp = setup.NotebookPage('basic_info')
+    nbp = NotebookPage('basic_info')
     nbp.is_3d = config_basic['is_3d']
 
     # Deal with case where no imaging rounds, just want to run anchor round.

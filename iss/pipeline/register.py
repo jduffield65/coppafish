@@ -1,8 +1,6 @@
-from .. import utils, setup
 from .. import pcr
 from ..find_spots import spot_yxz, get_isolated_points
 import numpy as np
-from scipy.spatial import KDTree
 from ..setup.notebook import NotebookPage
 from typing import Tuple
 
@@ -32,8 +30,8 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
             each imaging round/channel for every tile.
         - `NotebookPage[register_debug]` - Page contains information on how the affine transforms were calculated.
     """
-    nbp = setup.NotebookPage("register")
-    nbp_debug = setup.NotebookPage("register_debug")
+    nbp = NotebookPage("register")
+    nbp_debug = NotebookPage("register_debug")
     nbp.initial_shift = initial_shift.copy()
 
     if nbp_basic.is_3d:
