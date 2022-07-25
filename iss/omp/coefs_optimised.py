@@ -9,8 +9,8 @@ import jax
 from functools import partial
 
 
-def fit_coefs(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
-              genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
+                     genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This finds the least squared solution for how the `n_genes_add` `bled_codes` indicated by `genes`
     can best explain `pixel_color`.
@@ -35,8 +35,8 @@ def fit_coefs(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
 
 
 @jax.jit
-def fit_coefs_vectorised(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray,
-                         genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def fit_coefs(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray,
+              genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This finds the least squared solution for how the `n_genes_add` `bled_codes` indicated by `genes[s]`
     can best explain `pixel_colors[:, s]` for each pixel s.
@@ -55,11 +55,11 @@ def fit_coefs_vectorised(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray,
         - coefs - `float [n_pixels x n_genes_add]`.
             Coefficients found through least squares fitting for each gene.
     """
-    return jax.vmap(fit_coefs, in_axes=(None, 1, 0), out_axes=(0, 0))(bled_codes, pixel_colors, genes)
+    return jax.vmap(fit_coefs_single, in_axes=(None, 1, 0), out_axes=(0, 0))(bled_codes, pixel_colors, genes)
 
 
-def fit_coefs_weight(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, genes: jnp.ndarray,
-                     weight: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def fit_coefs_weight_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, genes: jnp.ndarray,
+                            weight: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This finds the weighted least squared solution for how the `n_genes_add` `bled_codes` indicated by `genes`
     can best explain `pixel_color`. The `weight` indicates which rounds/channels should have more influence when finding
@@ -88,8 +88,8 @@ def fit_coefs_weight(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, genes: j
 
 
 @jax.jit
-def fit_coefs_weight_vectorised(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray, genes: jnp.ndarray,
-                                weight: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def fit_coefs_weight(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray, genes: jnp.ndarray,
+                     weight: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This finds the weighted least squared solution for how the `n_genes_add` `bled_codes` indicated by `genes[s]`
     can best explain `pixel_colors[:, s]` for each pixel s. The `weight` indicates which rounds/channels should
@@ -112,8 +112,8 @@ def fit_coefs_weight_vectorised(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarr
         - coefs - `float [n_pixels x n_genes_add]`.
             Coefficients found through least squares fitting for each gene.
     """
-    return jax.vmap(fit_coefs_weight, in_axes=(None, 1, 0, 0), out_axes=(0, 0))(bled_codes, pixel_colors, genes,
-                                                                                weight)
+    return jax.vmap(fit_coefs_weight_single, in_axes=(None, 1, 0, 0), out_axes=(0, 0))(bled_codes, pixel_colors, genes,
+                                                                                       weight)
 
 
 def get_best_gene_base(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray,
@@ -154,10 +154,10 @@ def get_best_gene_base(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.nd
     return best_gene, pass_score_thresh
 
 
-def get_best_gene_first_iter(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray,
-                             background_coefs: jnp.ndarray, norm_shift: float,
-                             score_thresh: float, alpha: float, beta: float,
-                             background_genes: jnp.ndarray) -> Tuple[int, bool, jnp.ndarray]:
+def get_best_gene_first_iter_single(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray,
+                                    background_coefs: jnp.ndarray, norm_shift: float,
+                                    score_thresh: float, alpha: float, beta: float,
+                                    background_genes: jnp.ndarray) -> Tuple[int, bool, jnp.ndarray]:
     """
     Finds the `best_gene` to add next based on the dot product score with each `bled_code`.
     If `best_gene` is in `background_genes` or `best_score < score_thresh` then `pass_score_thresh = False`.
@@ -200,10 +200,10 @@ def get_best_gene_first_iter(residual_pixel_color: jnp.ndarray, all_bled_codes: 
 # arrays are not hashable hence all_bled_codes and background_genes not static.
 #  https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html#caching
 @partial(jax.jit, static_argnums=(3, 4, 5, 6))
-def get_best_gene_first_iter_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray,
-                                        background_coefs: jnp.ndarray, norm_shift: float,
-                                        score_thresh: float, alpha: float, beta: float,
-                                        background_genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def get_best_gene_first_iter(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray,
+                             background_coefs: jnp.ndarray, norm_shift: float,
+                             score_thresh: float, alpha: float, beta: float,
+                             background_genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """
     Finds the `best_gene` to add next to each pixel based on the dot product score with each `bled_code`.
     If `best_gene[s]` is in `background_genes` or `best_score[s] < score_thresh` then `pass_score_thresh[s] = False`.
@@ -238,14 +238,14 @@ def get_best_gene_first_iter_vectorised(residual_pixel_colors: jnp.ndarray, all_
             Variance of each pixel in each round/channel based on just the background.
 
     """
-    return jax.vmap(get_best_gene_first_iter, in_axes=(0, None, 0, None, None, None, None, None),
+    return jax.vmap(get_best_gene_first_iter_single, in_axes=(0, None, 0, None, None, None, None, None),
                     out_axes=(0, 0, 0))(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift,
                                            score_thresh, alpha, beta, background_genes)
 
 
-def get_best_gene(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
-                  genes_added: jnp.array, norm_shift: float, score_thresh: float, alpha: float,
-                  background_genes: jnp.ndarray, background_var: jnp.array) -> Tuple[int, bool, jnp.ndarray]:
+def get_best_gene_single(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
+                         genes_added: jnp.array, norm_shift: float, score_thresh: float, alpha: float,
+                         background_genes: jnp.ndarray, background_var: jnp.array) -> Tuple[int, bool, jnp.ndarray]:
     """
     Finds the `best_gene` to add next to each pixel based on the dot product score with each `bled_code`.
     If `best_gene` is in `background_genes`, already in `genes_added` or `best_score < score_thresh`,
@@ -296,10 +296,10 @@ def get_best_gene(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray
 
 
 @partial(jax.jit, static_argnums=(4, 5, 6))
-def get_best_gene_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
-                             genes_added: jnp.array, norm_shift: float, score_thresh: float, alpha: float,
-                             background_genes: jnp.ndarray,
-                             background_var: jnp.array) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def get_best_gene(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
+                  genes_added: jnp.array, norm_shift: float, score_thresh: float, alpha: float,
+                  background_genes: jnp.ndarray,
+                  background_var: jnp.array) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """
     Finds the `best_gene` to add next to each pixel based on the dot product score with each `bled_code`.
     If `best_gene[s]` is in `background_genes`, already in `genes_added[s]` or `best_score[s] < score_thresh`,
@@ -344,7 +344,7 @@ def get_best_gene_vectorised(residual_pixel_colors: jnp.ndarray, all_bled_codes:
             Inverse of variance of each pixel in each round/channel based on genes fit on previous iteration.
             Includes both background and gene contribution.
     """
-    return jax.vmap(get_best_gene, in_axes=(0, None, 0, 0, None, None, None, None, 0),
+    return jax.vmap(get_best_gene_single, in_axes=(0, None, 0, 0, None, None, None, None, 0),
                     out_axes=(0, 0, 0))(residual_pixel_colors, all_bled_codes, coefs, genes_added, norm_shift,
                                         score_thresh, alpha, background_genes, background_var)
 
@@ -422,15 +422,15 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
             if i == 0:
                 # Background coefs don't change, hence contribution to variance won't either.
                 added_genes, pass_score_thresh, background_variance = \
-                    get_best_gene_first_iter_vectorised(pixel_colors, all_codes, background_coefs, dp_shift,
-                                                        dp_thresh, alpha, beta, background_genes)
+                    get_best_gene_first_iter(pixel_colors, all_codes, background_coefs, dp_shift,
+                                             dp_thresh, alpha, beta, background_genes)
                 inverse_var = 1 / background_variance
                 pixel_colors = pixel_colors.transpose()
             else:
                 # only continue with pixels for which dot product score exceeds threshold
                 i_added_genes, pass_score_thresh, inverse_var = \
-                    get_best_gene_vectorised(residual_pixel_colors, all_codes, i_coefs, added_genes, dp_shift,
-                                             dp_thresh, alpha, background_genes, background_variance)
+                    get_best_gene(residual_pixel_colors, all_codes, i_coefs, added_genes, dp_shift,
+                                  dp_thresh, alpha, background_genes, background_variance)
 
                 # For pixels with at least one non-zero coef, add to final gene_coefs when fail the thresholding.
                 fail_score_thresh = jnp.invert(pass_score_thresh)
@@ -453,10 +453,10 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
 
             # Maybe add different fit_coefs for i==0 i.e. can do multiple pixels at once for same gene added.
             if weight_coef_fit:
-                residual_pixel_colors, i_coefs = fit_coefs_weight_vectorised(bled_codes, pixel_colors, added_genes,
-                                                                             jnp.sqrt(inverse_var))
+                residual_pixel_colors, i_coefs = fit_coefs_weight(bled_codes, pixel_colors, added_genes,
+                                                                  jnp.sqrt(inverse_var))
             else:
-                residual_pixel_colors, i_coefs = fit_coefs_vectorised(bled_codes, pixel_colors, added_genes)
+                residual_pixel_colors, i_coefs = fit_coefs(bled_codes, pixel_colors, added_genes)
 
             if i == max_genes-1:
                 # Add pixels to final gene_coefs when reach end of iteration.

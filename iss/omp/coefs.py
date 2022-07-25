@@ -1,12 +1,43 @@
 import numpy as np
-from ..call_spots import fit_background, dot_product_score
-from typing import Tuple, Optional, Union
+from iss.call_spots import fit_background, dot_product_score
+from typing import Tuple, Union
 from tqdm import tqdm
 import warnings
 
 
-def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarray,
-              weight: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Old method before Jax.
+    This finds the least squared solution for how the `n_genes` `bled_codes` can best explain each `pixel_color`.
+    Can also find weighted least squared solution if `weight` provided.
+
+    Args:
+        bled_codes: `float [(n_rounds x n_channels) x n_genes]`.
+            Flattened then transposed bled codes which usually has the shape `[n_genes x n_rounds x n_channels]`.
+        pixel_colors: `float [(n_rounds x n_channels) x n_pixels]` if `n_genes==1`
+            otherwise  `float [(n_rounds x n_channels)]`.
+            Flattened then transposed pixel colors which usually has the shape `[n_pixels x n_rounds x n_channels]`.
+        genes: `int [n_pixels x n_genes_add]`.
+            Indices of codes in bled_codes to find coefficients for which best explain each pixel_color.
+
+    Returns:
+        - residual - `float [n_pixels x (n_rounds x n_channels)]`.
+            Residual pixel_colors after removing bled_codes with coefficients specified by coef.
+        - coefs - `float [n_pixels x n_genes_add]` if n_genes == 1 otherwise `float [n_genes]` if n_pixels == 1.
+            coefficient found through least squares fitting for each gene.
+
+    """
+    n_pixels = pixel_colors.shape[1]
+    residual = np.zeros((n_pixels, pixel_colors.shape[0]))
+    coefs = np.zeros_like(genes, dtype=float)
+    for s in range(n_pixels):
+        coefs[s] = np.linalg.lstsq(bled_codes[:, genes[s]], pixel_colors[:, s], rcond=None)[0]
+        residual[s] = pixel_colors[:, s] - bled_codes[:, genes[s]] @ coefs[s]
+    return residual, coefs
+
+
+def fit_coefs_weight(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarray,
+                     weight: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Old method before Jax.
     This finds the least squared solution for how the `n_genes` `bled_codes` can best explain each `pixel_color`.
@@ -34,17 +65,12 @@ def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarra
     n_pixels = pixel_colors.shape[1]
     residual = np.zeros((n_pixels, pixel_colors.shape[0]))
     coefs = np.zeros_like(genes, dtype=float)
-    if weight is None:
-        for s in range(n_pixels):
-            coefs[s] = np.linalg.lstsq(bled_codes[:, genes[s]], pixel_colors[:, s], rcond=None)[0]
-            residual[s] = pixel_colors[:, s] - bled_codes[:, genes[s]] @ coefs[s]
-    else:
-        pixel_colors = pixel_colors * weight.transpose()
-        for s in range(n_pixels):
-            bled_codes_s = bled_codes[:, genes[s]] * weight[s][:, np.newaxis]
-            coefs[s] = np.linalg.lstsq(bled_codes_s, pixel_colors[:, s], rcond=None)[0]
-            residual[s] = pixel_colors[:, s] - bled_codes_s @ coefs[s]
-        residual = residual / weight
+    pixel_colors = pixel_colors * weight.transpose()
+    for s in range(n_pixels):
+        bled_codes_s = bled_codes[:, genes[s]] * weight[s][:, np.newaxis]
+        coefs[s] = np.linalg.lstsq(bled_codes_s, pixel_colors[:, s], rcond=None)[0]
+        residual[s] = pixel_colors[:, s] - bled_codes_s @ coefs[s]
+    residual = residual / weight
     return residual, coefs
 
 
@@ -340,8 +366,11 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
                     else:
                         track_info['gene_added'][i + 2] = i_added_genes
                     added_genes_fail = np.hstack((added_genes, i_added_genes[:, np.newaxis]))
-                    residual_pixel_colors_fail, i_coefs_fail = fit_coefs(bled_codes, pixel_colors, added_genes_fail,
-                                                                         weight)
+                    if weight_coef_fit:
+                        residual_pixel_colors_fail, i_coefs_fail = \
+                            fit_coefs_weight(bled_codes, pixel_colors, added_genes_fail, np.sqrt(inverse_var))
+                    else:
+                        residual_pixel_colors_fail, i_coefs_fail = fit_coefs(bled_codes, pixel_colors, added_genes_fail)
                     track_info['residual'][i + 2] = residual_pixel_colors_fail.reshape(n_rounds, n_channels)
                     track_info['coef'][i + 2][added_genes_fail] = i_coefs_fail
                     # Only save info where gene is actually added or for final case where not added.
@@ -359,10 +388,10 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
             inverse_var = inverse_var[pass_score_thresh]
 
             if weight_coef_fit:
-                weight = np.sqrt(inverse_var)
+                residual_pixel_colors, i_coefs = fit_coefs_weight(bled_codes, pixel_colors, added_genes,
+                                                                  np.sqrt(inverse_var))
             else:
-                weight = None
-            residual_pixel_colors, i_coefs = fit_coefs(bled_codes, pixel_colors, added_genes, weight)
+                residual_pixel_colors, i_coefs = fit_coefs(bled_codes, pixel_colors, added_genes)
 
             if i == max_genes-1:
                 # Add pixels to final gene_coefs when reach end of iteration.

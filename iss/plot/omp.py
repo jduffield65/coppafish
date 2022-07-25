@@ -3,7 +3,7 @@ from ..no_jax.spot_colors import get_spot_colors
 from ..call_spots import omp_spot_score, get_spot_intensity
 from ..setup import Notebook
 from .. import utils
-from ..no_jax.omp import get_all_coefs
+from ..omp.coefs import get_all_coefs
 import matplotlib.pyplot as plt
 import numpy as np
 import os

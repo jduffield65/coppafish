@@ -2,10 +2,10 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import get_all_coefs, fit_coefs_vectorised,\
-    fit_coefs_weight_vectorised, get_best_gene_first_iter_vectorised, get_best_gene_vectorised
+from ..coefs_optimised import get_all_coefs, fit_coefs,\
+    fit_coefs_weight, get_best_gene_first_iter, get_best_gene
 from ..spots import count_spot_neighbours
-from ...no_jax import omp as no_jax
+from .. import coefs as no_jax
 import jax.numpy as jnp
 
 
@@ -85,7 +85,7 @@ class TestFittingStandardDeviation(unittest.TestCase):
             columns_all_genes_same = np.all(genes_added == genes_added[0, :], axis=0)
             background_genes = genes_added[0, columns_all_genes_same]
             # Compute background contribution to variance first as background_coefs do not change.
-            _, _, background_var = get_best_gene_first_iter_vectorised(
+            _, _, background_var = get_best_gene_first_iter(
                 spot_colors, bled_codes, coef[:, background_genes], 0, 0,
                 float(alpha), float(beta), background_genes)
 
@@ -93,10 +93,10 @@ class TestFittingStandardDeviation(unittest.TestCase):
                 # all background, computation ends here.
                 output_python = np.sqrt(background_var)
             else:
-                # If genes other than background, then add this cotribution.
+                # If genes other than background, then add this contribution.
                 actual_genes = genes_added[:, np.invert(columns_all_genes_same)]
                 gene_coefs = coef[np.arange(n_pixels)[:, np.newaxis], actual_genes]
-                _, _, inverse_var = get_best_gene_vectorised(
+                _, _, inverse_var = get_best_gene(
                     spot_colors, bled_codes, gene_coefs, actual_genes, 0, 0,
                     float(alpha), background_genes, background_var)
                 output_python = np.sqrt(1/inverse_var)
@@ -154,7 +154,7 @@ class TestFitCoefs(unittest.TestCase):
 
             genes_used = np.tile(np.expand_dims(np.arange(n_genes), 0), (n_spots, 1))
             residual_python, coefs_python = no_jax.fit_coefs(bc_use, sc_use, genes_used)
-            residual_jax, coefs_jax = fit_coefs_vectorised(bc_use, sc_use, genes_used)
+            residual_jax, coefs_jax = fit_coefs(bc_use, sc_use, genes_used)
             diff1_jax = np.asarray(residual_jax) - residual_python
             diff2_jax = np.asarray(coefs_jax) - coefs_python
             residual_jax = np.asarray(residual_jax).reshape(n_spots, n_rounds, n_channels)
@@ -169,12 +169,12 @@ class TestFitCoefs(unittest.TestCase):
             # Check weighted least squares works too.
             weight = np.random.rand(n_spots, n_channels*n_rounds)
             residual_python_weight, coefs_python_weight = \
-                no_jax.fit_coefs(bled_codes.reshape(n_genes, -1).transpose(),
-                                 spot_colors.reshape(n_spots, -1).transpose(), genes_used, weight)
+                no_jax.fit_coefs_weight(bled_codes.reshape(n_genes, -1).transpose(),
+                                        spot_colors.reshape(n_spots, -1).transpose(), genes_used, weight)
             residual_jax_weight, coefs_jax_weight = \
-                fit_coefs_weight_vectorised(bled_codes.reshape(n_genes, -1).transpose(),
-                                            spot_colors.reshape(n_spots, -1).transpose(), genes_used,
-                                            weight)
+                fit_coefs_weight(bled_codes.reshape(n_genes, -1).transpose(),
+                                 spot_colors.reshape(n_spots, -1).transpose(), genes_used,
+                                 weight)
             residual_jax_weight = np.asarray(residual_jax_weight)
             coefs_jax_weight = np.asarray(coefs_jax_weight)
             diff1_weight = residual_python_weight - residual_jax_weight
@@ -238,8 +238,8 @@ class TestGetBestGene(unittest.TestCase):
             pixel_colors, bled_codes, background_coefs, norm_shift, score_thresh, alpha, beta, \
                 background_genes, _, _ = self.get_params()
             best_gene_jax, pass_score_thresh_jax, background_var_jax = \
-                get_best_gene_first_iter_vectorised(pixel_colors, bled_codes, background_coefs, norm_shift,
-                                                    score_thresh, alpha, beta, background_genes)
+                get_best_gene_first_iter(pixel_colors, bled_codes, background_coefs, norm_shift,
+                                         score_thresh, alpha, beta, background_genes)
             best_gene, pass_score_thresh, background_var, best_score = \
                 no_jax.get_best_gene_first_iter(pixel_colors, bled_codes, background_coefs, norm_shift,
                                                 score_thresh, alpha, beta, background_genes)
@@ -258,11 +258,11 @@ class TestGetBestGene(unittest.TestCase):
                 no_jax.get_best_gene_first_iter(pixel_colors, bled_codes, background_coefs, norm_shift,
                                                 score_thresh, alpha, beta, background_genes)[2]
             best_gene_jax, pass_score_thresh_jax, inverse_var_jax = \
-                get_best_gene_vectorised(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
-                                         score_thresh, alpha, background_genes, background_var)
+                get_best_gene(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
+                              score_thresh, alpha, background_genes, background_var)
             best_gene, pass_score_thresh, inverse_var, best_score = \
                 no_jax.get_best_gene(pixel_colors, bled_codes, gene_coefs, genes_added, norm_shift,
-                                         score_thresh, alpha, background_genes, background_var)
+                                     score_thresh, alpha, background_genes, background_var)
             diff1 = best_gene - np.asarray(best_gene_jax)
             diff2 = pass_score_thresh.astype(int) - np.asarray(pass_score_thresh_jax).astype(int)
             diff3 = inverse_var - np.asarray(inverse_var_jax)
@@ -404,11 +404,3 @@ class TestCountSpotNeighbours(unittest.TestCase):
             # Check if matched MATLAB
             self.assertTrue(np.abs(diff_pos1).max() <= self.tol)
             self.assertTrue(np.abs(diff_neg1).max() <= self.tol)
-            # Check if matched with no cython
-            # pos_neighb_no_cython, neg_neighb_no_cython = count_spot_neighbours(np.pad(image, pad_size, 'symmetric'),
-            #                                                              spot_yxz_pad, pos_filter-neg_filter,
-            #                                                                    cython=False)
-            # diff_pos2 = pos_neighb_python - pos_neighb_no_cython
-            # diff_neg2 = neg_neighb_python - neg_neighb_no_cython
-            # self.assertTrue(np.abs(diff_pos2).max() <= self.tol)
-            # self.assertTrue(np.abs(diff_neg2).max() <= self.tol)

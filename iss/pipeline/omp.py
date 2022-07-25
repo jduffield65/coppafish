@@ -7,9 +7,12 @@ from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
 from ..call_spots import get_spot_intensity, get_non_duplicate
 from .. import omp
 import os
-from scipy import sparse
-import jax.numpy as jnp
 import warnings
+from scipy import sparse
+try:
+    import jax.numpy as jnp
+except ImportError:
+    import numpy as jnp
 
 
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
