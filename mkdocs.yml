@@ -64,6 +64,14 @@ theme:
 
   # Default values, taken from mkdocs_theme.yml
   language: en
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.expand
+  palette:
+    primary: indigo
+    accent: purple
   font:
       text: Roboto
       code: Roboto Mono
