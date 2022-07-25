@@ -19,7 +19,7 @@ def central_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:
     """
     mean_yx = np.round(np.mean(tilepos_yx, 0))
     nearest_t = np.linalg.norm(tilepos_yx[use_tiles] - mean_yx, axis=1).argmin()
-    return use_tiles[nearest_t]
+    return int(use_tiles[nearest_t])
 
 
 def get_z_plane(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, t: int, use_channels: List[int],
