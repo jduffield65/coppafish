@@ -13,8 +13,10 @@ nav:
             - Scale: code/extract/scale.md
         - Find Spots:
             - Base: code/find_spots/base.md
+            - Detect: code/find_spots/detect.md
         - Stitch:
             - Shift: code/stitch/shift.md
+            - Starting Shifts: code/stitch/starting_shifts.md
             - Tile Origin: code/stitch/tile_origin.md
         - Point Cloud Registration:
             - Base: code/pcr/base.md
@@ -22,7 +24,13 @@ nav:
             - Base: code/spot_colors/base.md
         - Call Spots:
             - Base: code/call_spots/base.md
+            - Background: code/call_spots/background.md
             - Bleed Matrix: code/call_spots/bleed_matrix.md
+            - Dot Product: code/call_spots/dot_product.md
+            - Quality Check: code/call_spots/qual_check.md
+        - OMP:
+            - Coefficients: code/omp/coefs.md
+            - Spots: code/omp/spots.md
         - Pipeline:
             - Run: code/pipeline/run.md
             - Basic Info: code/pipeline/basic_info.md
@@ -33,21 +41,28 @@ nav:
             - Register: code/pipeline/register.md
             - Reference Spots: code/pipeline/reference_spots.md
             - Call Reference Spots: code/pipeline/call_reference_spots.md
+            - OMP: code/pipeline/omp.md
         - Utils:
             - Base: code/utils/base.md
             - Errors: code/utils/errors.md
+            - Export To pciseq: code/utils/export_to_pciseq.md
             - Matlab: code/utils/matlab.md
             - Morphology: code/utils/morphology.md
-            - ND2: code/utils/nd2.md
+            - nd2: code/utils/nd2.md
+            - npy: code/utils/npy.md
             - Strel: code/utils/strel.md
-            - Tiff: code/utils/tiff.md
 
 theme:
   name: "material"
 
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+        default_handler: python
+        handlers:
+            python:
+                rendering:
+                    show_root_toc_entry: false # stops extra heading in contents of Code pages
 
 markdown_extensions:
   - admonition
