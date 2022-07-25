@@ -149,7 +149,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
 
     # set central pixel to 0
     se[np.ix_(*[(np.floor((se.shape[i] - 1) / 2).astype(int),) for i in range(se.ndim)])] = 0
-    se_shifts = utils.morphology.get_shifts_from_kernel(se)
+    se_shifts = utils.morphology.filter_optimised.get_shifts_from_kernel(se)
 
     consider_yxz = np.where(image > intensity_thresh)
     n_consider = consider_yxz[0].shape[0]
@@ -243,7 +243,7 @@ def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_
         # This filtering takes around 40s for 50 z-planes.
         # May get memory error here as uses oa_convolve.
         # If use scipy.ndimage.convolve, same image took 8 minutes but less memory.
-        annular_filtered = utils.morphology.imfilter(image, se/se.sum(), padding=0, corr_or_conv='corr')
+        annular_filtered = utils.morphology.imfilter(image, se / se.sum(), padding=0, corr_or_conv='corr')
         isolated = annular_filtered[tuple([spot_yxz[:, j] for j in range(image.ndim)])]
     else:
         isolated = utils.morphology.imfilter_coords(image, se, spot_yxz, padding=0, corr_or_conv='corr') / np.sum(se)

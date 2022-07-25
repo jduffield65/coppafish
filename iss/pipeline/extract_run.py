@@ -1,4 +1,3 @@
-import iss.utils.nd2
 from .. import utils, extract, setup
 import numpy as np
 import os
@@ -86,7 +85,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                              f"hanning filter, {config['r2']}, making the filtering step redundant.")
 
         # smooth_kernel = utils.strel.fspecial(*tuple(config['r_smooth']))
-        smooth_kernel = np.ones(tuple(np.array(config['r_smooth'], dtype=int)*2-1))
+        smooth_kernel = np.ones(tuple(np.array(config['r_smooth'], dtype=int) * 2 - 1))
         smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
 
         if np.max(config['r_smooth']) == 1:
@@ -134,7 +133,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         else:
             if smooth_kernel.ndim == 3:
                 # take central plane of smooth filter if 3D as scale is found from a single z-plane.
-                smooth_kernel_2d = smooth_kernel[:, :, config['r_smooth'][2]-1]
+                smooth_kernel_2d = smooth_kernel[:, :, config['r_smooth'][2] - 1]
             else:
                 smooth_kernel_2d = smooth_kernel.copy()
             # smoothing is averaging so to average in 2D, need to re normalise filter
@@ -160,7 +159,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         round_files = nbp_file.round + [nbp_file.anchor]
         use_rounds = nbp_basic.use_rounds + [nbp_basic.n_rounds]
         n_images = (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels) + \
-                        len(nbp_basic.use_tiles) * len(use_channels_anchor)
+                   len(nbp_basic.use_tiles) * len(use_channels_anchor)
     else:
         round_files = nbp_file.round
         use_rounds = nbp_basic.use_rounds
@@ -231,7 +230,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                nbp_debug.clip_extract_scale[t, r, c] = \
+                            nbp_debug.clip_extract_scale[t, r, c] = \
                                 extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
                                                          max_tiff_pixel_value, scale)
                             if r != nbp_basic.anchor_round:
@@ -258,7 +257,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             # only use image unaffected by strip_hack to get information from tile
                             good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
                             nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                nbp_debug.clip_extract_scale[t, r, c] = \
+                            nbp_debug.clip_extract_scale[t, r, c] = \
                                 extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
                                                          hist_bin_edges, max_tiff_pixel_value, scale,
                                                          nbp_debug.z_info)

@@ -72,7 +72,7 @@ class plot_filter:
             r1 = extract.get_pixel_length(config_extract['r1_auto_microns'], nbp_basic.pixel_size_xy)
         if r2 is None:
             r2 = r1 * 2
-        self.filter_kernel = utils.morphology.hanning_diff(r1, r2)
+        self.filter_kernel = iss.utils.morphology.morphology.hanning_diff(r1, r2)
 
         # Get deconvolution info - uses anchor round
         if os.path.isfile(nbp_file.psf):
@@ -235,11 +235,11 @@ class plot_filter:
         self.wiener_filter = extract.get_wiener_filter(self.psf, self.pad_im_shape, self.wiener_constant)
         self.wiener_image = extract.wiener_deconvolve(im, self.wiener_pad_shape, self.wiener_filter)
         print('Doing Filtering...')
-        self.filtered_wiener_image = utils.morphology.convolve_2d(self.wiener_image, self.filter_kernel)
+        self.filtered_wiener_image = iss.utils.morphology.morphology.convolve_2d(self.wiener_image, self.filter_kernel)
         scale = self.filt_clims[1] / self.filtered_wiener_image.max()
         self.filtered_wiener_image = self.filtered_wiener_image * scale
         print('Doing Filtering...')
-        self.filtered_image = utils.morphology.convolve_2d(im, self.filter_kernel)
+        self.filtered_image = iss.utils.morphology.morphology.convolve_2d(im, self.filter_kernel)
         scale = self.filt_clims[1] / self.filtered_image.max()
         self.filtered_image = self.filtered_image * scale
         self.wiener_image[:, bad_columns] = 0

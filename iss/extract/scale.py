@@ -1,9 +1,7 @@
 import numpy as np
-from ..utils.nd2 import get_nd2_tile_ind
 from .. import utils
 from ..setup import NotebookPage
 from typing import List, Tuple, Optional
-import nd2
 
 
 def central_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:

@@ -1,7 +1,9 @@
 import unittest
 import os
 import numpy as np
-from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, imfilter, imfilter_coords, ensure_odd_kernel
+from ..morphology import hanning_diff, convolve_2d, top_hat, dilate, ensure_odd_kernel, imfilter
+from ..morphology.filter import imfilter_coords
+from ..morphology.filter_optimised import imfilter_coords as imfilter_coords_optimised
 from ..strel import disk, disk_3d, annulus, fspecial
 from ...utils import matlab, errors
 
@@ -253,7 +255,7 @@ class TestMorphology(unittest.TestCase):
 
     def test_imfilter_coords(self):
         """
-
+        See whether manual convolution at just a few locations produces same result as filtering entire image.
         """
         tol = 1e-2  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
 
@@ -284,10 +286,8 @@ class TestMorphology(unittest.TestCase):
             kernel_filt = kernel_filt / np.max(kernel)
             kernel_filt = np.round(kernel_filt).astype(int)
 
-            im_filt = imfilter(image, kernel_filt, padding, corr_or_conv)
-            im_filt_result = im_filt[tuple([coords[:, j] for j in range(ndims)])]
-
-            jax_result = imfilter_coords(image, kernel_filt, coords, padding, corr_or_conv)
+            im_filt_result = imfilter_coords(image, kernel_filt, coords, padding, corr_or_conv)
+            jax_result = imfilter_coords_optimised(image, kernel_filt, coords, padding, corr_or_conv)
             diff = jax_result - np.round(im_filt_result).astype(int)
             self.assertTrue(np.abs(diff).max() <= tol)  # check match full image filtering
 
