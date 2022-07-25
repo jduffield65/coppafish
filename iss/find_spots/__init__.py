@@ -1,2 +1,5 @@
-from .base import detect_spots_dilate, get_isolated, check_neighbour_intensity, spot_yxz, detect_spots, \
-    get_isolated_points
+from .base import get_isolated, check_neighbour_intensity, spot_yxz, get_isolated_points
+try:
+    from .detect_optimised import detect_spots
+except ImportError:
+    from .detect import detect_spots

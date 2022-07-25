@@ -1,10 +1,9 @@
 import numpy as np
 from .. import utils
-from ..find_spots.base import detect_spots, check_neighbour_intensity, get_isolated_points
+from ..find_spots import detect_spots, check_neighbour_intensity, get_isolated_points
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from . import scale
-from ..utils.nd2 import get_nd2_tile_ind
 from ..setup import NotebookPage
 from typing import List, Union, Optional, Tuple
 import warnings

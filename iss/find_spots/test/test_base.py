@@ -1,7 +1,9 @@
 import unittest
 import os
 import numpy as np
-from ..base import detect_spots_dilate, get_isolated, detect_spots
+from ..base import get_isolated
+from ..detect import detect_spots
+from ..detect_optimised import detect_spots as detect_spots_optimised
 from ...utils import matlab, errors, strel
 
 
@@ -40,8 +42,8 @@ class TestBase(unittest.TestCase):
             else:
                 se = strel.disk_3d(int(r_xy), int(r_z))
             remove_duplicates = int(remove_duplicates) == 1
-            peak_yx_python, peak_intensity_python = detect_spots_dilate(image, float(thresh), None,
-                                                                        None, remove_duplicates, se)
+            peak_yx_python, peak_intensity_python = detect_spots(image, float(thresh), None,
+                                                                 None, remove_duplicates, se)
 
             # Sort both data sets same way to compare (by intensity and then by y).
             # need to make intensity integer for sort to deal with random shift.
@@ -65,8 +67,8 @@ class TestBase(unittest.TestCase):
             self.assertTrue(peak_intensity_python.min() > float(thresh))
             if np.sum(se) < 300:
                 # Only test detect_spots with small structuring element case as slow with larger one.
-                peak_yx_python2, peak_intensity_python2 = detect_spots(image, float(thresh), None,
-                                                                       None, remove_duplicates, se)
+                peak_yx_python2, peak_intensity_python2 = detect_spots_optimised(image, float(thresh), None,
+                                                                                 None, remove_duplicates, se)
                 sorted_arg_python2 = np.lexsort((peak_yx_python2[:, 0], peak_intensity_python2.astype(int)))
                 peak_yx_python2 = peak_yx_python2[sorted_arg_python2, :]
                 peak_intensity_python2 = peak_intensity_python2[sorted_arg_python2]
@@ -105,12 +107,8 @@ class TestBase(unittest.TestCase):
             output_matlab = output_matlab.flatten().astype(int)
             output_python = get_isolated(image, np.ascontiguousarray(peak_yx.astype(int)-1), float(thresh),
                                          float(r0), float(r_xy), r_z).astype(int)
-            output_python_filter_image = get_isolated(image, peak_yx.astype(int)-1, float(thresh),
-                                         float(r0), float(r_xy), r_z, True).astype(int)
             diff = output_python - output_matlab
-            diff2 = output_python_filter_image - output_python
             self.assertTrue(np.abs(diff).max() <= 0)  # check match MATLAB
-            self.assertTrue(np.abs(diff2).max() <= 0)  # check against slower python method
 
 
 if __name__ == '__main__':
