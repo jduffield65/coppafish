@@ -5,7 +5,7 @@ import numpy as np
 try:
     import jax.numpy as jnp
 except ImportError:
-    import numpy as np
+    import numpy as jnp
 from ..setup.notebook import NotebookPage
 
 

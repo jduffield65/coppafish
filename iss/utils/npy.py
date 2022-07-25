@@ -1,12 +1,14 @@
 import numpy as np
 from ..setup import NotebookPage
 from .. import utils, extract
-import jax.numpy as jnp
+try:
+    import jax.numpy as jnp
+except ImportError:
+    import numpy as jnp
 from typing import List, Tuple, Union, Optional
 from tqdm import tqdm
 import numpy_indexed
 import numbers
-import os
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,

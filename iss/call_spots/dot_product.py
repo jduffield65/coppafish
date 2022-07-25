@@ -1,6 +1,6 @@
 from typing import Optional
 import numpy as np
-from iss import utils
+from .. import utils
 
 
 def dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, norm_shift: float = 0,
