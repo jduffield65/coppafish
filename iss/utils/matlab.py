@@ -3,7 +3,7 @@ import numpy as np
 from scipy import io
 from typing import Union, List
 from ..setup.notebook import Notebook
-from ..call_spots.base import quality_threshold
+from ..call_spots.qual_check import quality_threshold
 
 
 def load_v_less_7_3(file_name: str, var_names: Union[str, List[str]]) -> Union[tuple, np.ndarray]:

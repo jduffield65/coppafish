@@ -1,8 +1,7 @@
 from .. import setup
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
-    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
+    dot_product_score_no_weight, get_spot_intensity, fit_background, get_gene_efficiency
 import numpy as np
-import jax.numpy as jnp
 from ..setup.notebook import NotebookPage
 from ..extract import scale
 from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
@@ -92,7 +91,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         else:
             nbp.norm_shift_z = 0
         pixel_colors = get_spot_colors_jax(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
-                                           nbp.norm_shift_tile, jnp.asarray(transform), nbp_file, nbp_basic,
+                                           nbp.norm_shift_tile, transform, nbp_file, nbp_basic,
                                            return_in_bounds=True)[0]
         pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
         nbp.median_abs_intensity = float(np.median(pixel_intensity))
@@ -118,13 +117,14 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # get bleed matrix
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
-    nbp_ref_spots.intensity = get_spot_intensity(spot_colors_use).astype(np.float32)
+    nbp_ref_spots.intensity = np.asarray(get_spot_intensity(spot_colors_use).astype(np.float32))
     # Remove background first
     background_coef = np.ones((spot_colors_use.shape[0], nbp_basic.n_channels)) * np.nan
     background_codes = np.ones((nbp_basic.n_channels, nbp_basic.n_rounds, nbp_basic.n_channels)) * np.nan
     crc_ind = np.ix_(nbp_basic.use_channels, nbp_basic.use_rounds, nbp_basic.use_channels)
     spot_colors_use, background_coef[:, nbp_basic.use_channels], background_codes[crc_ind] = \
         fit_background(spot_colors_use, nbp.background_weight_shift)
+    spot_colors_use = np.asarray(spot_colors_use)  # in case using jax
     bleed_matrix = initial_raw_bleed_matrix.copy()
     bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
                                              config['bleed_matrix_method'], config['bleed_matrix_score_thresh'])
@@ -168,8 +168,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     use_ge_last = np.zeros(n_spots).astype(bool)
     bled_codes_ge_use = bled_codes_use.copy()
     for i in range(n_iter):
-        scores = dot_product_score(spot_colors_use.reshape(n_spots, -1), bled_codes_ge_use.reshape(n_genes, -1),
-                                   dp_norm_shift)
+        scores = np.asarray(dot_product_score_no_weight(spot_colors_use.reshape(n_spots, -1),
+                                                        bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift))
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
         pass_score_thresh = spot_score > config['gene_efficiency_score_thresh']
@@ -203,8 +203,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     if config['gene_efficiency_n_iter'] > 0:
         # Compute score with final gene efficiency
-        scores = dot_product_score(spot_colors_use.reshape(n_spots, -1), bled_codes_ge_use.reshape(n_genes, -1),
-                                   dp_norm_shift)
+        scores = np.asarray(dot_product_score_no_weight(spot_colors_use.reshape(n_spots, -1),
+                                                        bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift))
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
 

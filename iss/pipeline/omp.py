@@ -4,7 +4,7 @@ import numpy_indexed
 from ..setup.notebook import NotebookPage
 from ..extract import scale
 from ..spot_colors import get_spot_colors_jax, all_pixel_yxz
-from ..call_spots import get_spot_intensity_jax, get_non_duplicate
+from ..call_spots import get_spot_intensity, get_non_duplicate
 from .. import omp
 import os
 from scipy import sparse
@@ -135,7 +135,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
             # pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
-            pixel_intensity_tz = get_spot_intensity_jax(jnp.abs(pixel_colors_tz))
+            pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             if not keep.any():
                 continue
@@ -243,7 +243,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                                                               transform, nbp_file, nbp_basic)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
-    nbp.intensity = np.asarray(get_spot_intensity_jax(spot_colors_norm))
+    nbp.intensity = np.asarray(get_spot_intensity(spot_colors_norm))
     del spot_colors_norm
 
     # When saving to notebook, include unused rounds/channels.

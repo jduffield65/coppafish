@@ -1,6 +1,7 @@
 import numpy as np
 from .. import utils
-from ..call_spots.base import dot_product_score_jax, fit_background_jax_vectorised
+from ..call_spots.dot_product_optimised import dot_product_score_single
+from ..call_spots import fit_background
 from typing import Tuple
 from tqdm import tqdm
 import jax.numpy as jnp
@@ -145,7 +146,7 @@ def get_best_gene_base(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.nd
 
     """
     # calculate score including background genes as if best gene is background, then stop iteration.
-    all_scores = dot_product_score_jax(residual_pixel_color, all_bled_codes, norm_shift, inverse_var)
+    all_scores = dot_product_score_single(residual_pixel_color, all_bled_codes, norm_shift, inverse_var)
     best_gene = jnp.argmax(jnp.abs(all_scores))
     # if best_gene is background, set score below score_thresh.
     best_score = all_scores[best_gene] * jnp.isin(best_gene, ignore_genes, invert=True)
@@ -398,8 +399,8 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
 
     # Fit background and override initial pixel_colors
     gene_coefs = np.zeros((n_pixels, n_genes), dtype=np.float32)  # coefs of all genes and background
-    pixel_colors, background_coefs, background_codes = fit_background_jax_vectorised(pixel_colors,
-                                                                                     background_shift)
+    pixel_colors, background_coefs, background_codes = fit_background(pixel_colors,
+                                                                      background_shift)
 
     background_genes = jnp.arange(n_genes, n_genes + n_channels)
 

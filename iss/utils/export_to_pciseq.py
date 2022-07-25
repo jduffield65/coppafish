@@ -1,6 +1,6 @@
 import pandas as pd
 from ..pipeline.run import initialize_nb
-from ..call_spots.base import quality_threshold
+from ..call_spots.qual_check import quality_threshold
 from ..setup import NotebookPage, Notebook
 
 

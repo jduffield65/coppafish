@@ -2,8 +2,14 @@ import unittest
 import os
 import numpy as np
 from ...utils import matlab, errors
-from ..base import color_normalisation, dot_product_score, fit_background, get_gene_efficiency, \
-    fit_background_jax_vectorised, get_spot_intensity, get_spot_intensity_jax
+from ..base import color_normalisation, get_gene_efficiency
+from ..dot_product import dot_product_score, dot_product_score_no_weight
+from ..dot_product_optimised import dot_product_score as dot_product_score_optimised
+from ..dot_product_optimised import dot_product_score_no_weight as dot_product_score_no_weight_optimised
+from ..background import fit_background
+from ..background_optimised import fit_background as fit_background_optimised
+from ..qual_check import get_spot_intensity
+from ..qual_check_optimised import get_spot_intensity as get_spot_intensity_optimised
 import jax.numpy as jnp
 
 
@@ -76,7 +82,7 @@ class TestDotProductScore(unittest.TestCase):
         dot product score for each spot/gene contribution. Max value is approx 1.
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    tol = 1e-10
+    tol = 1e-6
 
     def test_dot_product(self):
         folder = os.path.join(self.folder, 'dot_product_score')
@@ -90,17 +96,23 @@ class TestDotProductScore(unittest.TestCase):
             spot_colors = np.moveaxis(spot_colors, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             bled_codes = np.moveaxis(bled_codes, 1, 2).astype(float)  # change to r,c from MATLAB c,r
             norm_shift = float(norm_shift)
-            n_rounds, n_channels = spot_colors[0].shape
+            n_spots, n_rounds, n_channels = spot_colors.shape
+            spot_colors = spot_colors.reshape(-1, n_rounds * n_channels)
+            bled_codes = bled_codes.reshape(-1, n_rounds * n_channels)
             if weight.max() == 0:
-                # empty array in Matlab loaded as [0, 0].
-                weight_squared = None
+                # empty array in Matlab loaded as [0, 0] - this refers to weight_squared = None case.
+                output_python = dot_product_score_no_weight(spot_colors, bled_codes, norm_shift)
+                output_jax = np.asarray(dot_product_score_no_weight_optimised(spot_colors, bled_codes, norm_shift))
             else:
                 weight_squared = np.moveaxis(weight, 1, 2).astype(float) ** 2 # change to r,c from MATLAB c,r
                 weight_squared = weight_squared.reshape(-1, n_rounds * n_channels)
-            output_python = dot_product_score(spot_colors.reshape(-1, n_rounds * n_channels),
-                                              bled_codes.reshape(-1, n_rounds * n_channels), norm_shift, weight_squared)
+                output_python = dot_product_score(spot_colors, bled_codes, norm_shift, weight_squared)
+                output_jax = np.asarray(dot_product_score_optimised(spot_colors, bled_codes, norm_shift,
+                                                                    weight_squared))
             diff = output_python - output_matlab
+            diff_jax = output_python - output_jax
             self.assertTrue(np.abs(diff).max() <= self.tol)
+            self.assertTrue(np.abs(diff_jax).max() <= self.tol)
 
 
 class TestFitBackground(unittest.TestCase):
@@ -141,7 +153,7 @@ class TestFitBackground(unittest.TestCase):
             coef_matlab = coef_matlab * matlab_norm_factor
 
             residual_python, coef_python, background_vectors = fit_background(spot_colors, weight_shift)
-            residual_jax, coef_jax, background_vectors_jax = fit_background_jax_vectorised(spot_colors, weight_shift)
+            residual_jax, coef_jax, background_vectors_jax = fit_background_optimised(spot_colors, weight_shift)
             diff1 = residual_python - residual_matlab
             diff2 = coef_python - coef_matlab
             diff1_jax = np.asarray(residual_jax) - residual_python
@@ -219,6 +231,6 @@ class TestGetSpotIntensity(unittest.TestCase):
             n_channels = np.random.randint(1, 10)
             spot_colors = (np.random.rand(n_spots, n_rounds, n_channels) - 0.5) * 2
             intensity = get_spot_intensity(spot_colors)
-            intensity_jax = np.asarray(get_spot_intensity_jax(jnp.array(spot_colors)))
+            intensity_jax = np.asarray(get_spot_intensity_optimised(jnp.array(spot_colors)))
             diff = intensity - intensity_jax
             self.assertTrue(np.abs(diff).max() <= self.tol)

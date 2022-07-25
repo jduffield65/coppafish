@@ -1,5 +1,5 @@
 import numpy as np
-from ..call_spots.base import dot_product_score, fit_background
+from ..call_spots import fit_background, dot_product_score
 from typing import Tuple, Optional, Union
 from tqdm import tqdm
 import warnings

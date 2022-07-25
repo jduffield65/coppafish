@@ -1,9 +1,10 @@
 import os
 import pandas as pd
 import numpy as np
-from ...call_spots.base import quality_threshold
+from ...call_spots.qual_check import quality_threshold
 from .legend import iss_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, omp_spot_score
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot
+from ...call_spots import omp_spot_score
 from ..omp import view_omp, view_omp_fit
 import napari
 from napari.qt import thread_worker
