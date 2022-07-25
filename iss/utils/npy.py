@@ -172,7 +172,7 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
 
 
 def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
-                  r: int, c: int, from_nd2: bool = False, zero_thresh: int = 0):
+                  r: int, c: int, from_raw: bool = False, zero_thresh: int = 0):
     """
     Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
     Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
@@ -187,8 +187,8 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
             yxz origin of each tile on round `r`.
         r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
         c: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
-        from_nd2: If `False`, will stitch together tiles from saved npy files,
-            otherwise will load in raw un-filtered images from nd2 file.
+        from_raw: If `False`, will stitch together tiles from saved npy files,
+            otherwise will load in raw un-filtered images from nd2/npy file.
         zero_thresh: All pixels with absolute value less than or equal to `zero_thresh` will be set to 0.
             The larger it is, the smaller the compressed file will be.\
         save: If True, saves image as im_file, otherwise returns image
@@ -202,14 +202,8 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     else:
         z_size = 1
         stitched_image = np.zeros(yx_size, dtype=np.uint16)
-    if from_nd2:
-        if nbp_basic.use_anchor:
-            # always have anchor as first round after imaging rounds
-            round_files = nbp_file.round + [nbp_file.anchor]
-        else:
-            round_files = nbp_file.round
-        nd2_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
-        nd2_all_images = utils.nd2.load(nd2_file)
+    if from_raw:
+        round_dask_array = utils.raw.load(nbp_file, nbp_basic, r=r)
         shift = 0  # if from nd2 file, data type is already un-shifted uint16
     else:
         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
@@ -222,11 +216,8 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
         stitched_image = stitched_image.astype(np.int32) + shift
     with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for t in nbp_basic.use_tiles:
-            if from_nd2:
-                image_t = utils.nd2.get_image(nd2_all_images,
-                                              utils.nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
-                                                                             nbp_basic.tilepos_yx),
-                                              c, nbp_basic.use_z)
+            if from_raw:
+                image_t = utils.raw.load(nbp_file, nbp_basic, round_dask_array, r, t, c, nbp_basic.use_z)
                 # replicate non-filtering procedure in extract_and_filter
                 if not nbp_basic.is_3d:
                     image_t = extract.focus_stack(image_t)

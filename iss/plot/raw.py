@@ -49,6 +49,8 @@ def view_raw(config_file: str, rounds: Union[int, List[int]], tiles: Union[int, 
         pbar.set_description(f'Loading in raw data')
         for r in rounds:
             round_dask_array = raw.load(nb.file_names, nb.basic_info, r=r)
+            # TODO: Can get rid of these two for loops, when round_dask_array is always a dask array.
+            #  At the moment though, is not dask array when using nd2_reader (On Mac M1).
             for t in tiles:
                 all_channel_image = np.zeros((nb.basic_info.n_channels, nb.basic_info.nz, nb.basic_info.tile_sz,
                                               nb.basic_info.tile_sz), dtype=np.uint16)
