@@ -1,4 +1,4 @@
-# Welcome to MkDocs
+# Welcome to MkDocs!
 
 For full documentation visit [mkdocs.org](https://www.mkdocs.org).
 
@@ -16,3 +16,7 @@ For full documentation visit [mkdocs.org](https://www.mkdocs.org).
     docs/
         index.md  # The documentation homepage.
         ...       # Other markdown pages, images and other files.
+
+[Link_to_NotebookPage](code/setup/notebook.md#notebook-page)
+
+[Link_to_optimised-get_local_maxima_jax](code/find_spots/detect.md#iss.find_spots.detect_optimised.get_local_maxima_jax)

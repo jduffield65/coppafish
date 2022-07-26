@@ -1,7 +1,64 @@
 site_name: In Situ Sequencing
+repo_url: https://github.com/jduffield65/iss_python
+repo_name: jduffield65/iss_python
+
+theme:
+  name: material
+  # 404 page
+  static_templates:
+      - 404.html
+  palette:
+    primary: black
+  # Necessary for search to work properly
+  include_search_page: false
+  search_index_only: true
+
+  # Default values, taken from mkdocs_theme.yml
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.expand
+    - content.tabs.link
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+  font:
+      text: Roboto
+      code: Roboto Mono
+  favicon: images/logo.png
+  logo: images/logo.png
+  icon:
+      logo: logo
+
+plugins:
+  - search
+  - mkdocstrings:
+        default_handler: python
+        handlers:
+            python:
+                rendering:
+                    show_root_toc_entry: false # stops extra heading in contents of Code pages
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jduffield65/iss_python
+      name: Github Repository
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 nav:
     - Home: index.md
+    - Getting Started:
+        - Notebook Comments: notebook_comments.md
     - Code:
         - Setup:
             - Notebook: code/setup/notebook.md
@@ -51,50 +108,3 @@ nav:
             - nd2: code/utils/nd2.md
             - npy: code/utils/npy.md
             - Strel: code/utils/strel.md
-
-theme:
-  name: material
-  # 404 page
-  static_templates:
-      - 404.html
-  palette:
-    primary: black
-  # Necessary for search to work properly
-  include_search_page: false
-  search_index_only: true
-
-  # Default values, taken from mkdocs_theme.yml
-  language: en
-  features:
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.indexes
-    - navigation.expand
-    - content.tabs.link
-    - navigation.sections
-    - toc.integrate
-    - navigation.top
-  font:
-      text: Roboto
-      code: Roboto Mono
-  favicon: images/logo.png
-  logo: images/logo.png
-  icon:
-      logo: logo
-
-plugins:
-  - search
-  - mkdocstrings:
-        default_handler: python
-        handlers:
-            python:
-                rendering:
-                    show_root_toc_entry: false # stops extra heading in contents of Code pages
-
-
-markdown_extensions:
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
