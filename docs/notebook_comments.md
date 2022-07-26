@@ -147,7 +147,7 @@ find_spots page contains information about spots found on all tiles, rounds and 
 * **spot_details**: *Numpy int16 array [n_total_spots x 7]*. spot_details[i,:] is [tile, round, channel, isolated, y, x, z] for spot i isolated is 0 for all non reference round/channel spots and is 1 for isolated reference spots. y, x gives the local tile coordinates in yx_pixels. z gives local tile coordinate in z_pixels (0 if 2d)
 
 ## stitch
-stitch page contains information about how tiles were stitched together to give global coordinates. Only 'tile_origin' is used in later stages of the pipeline. Page added to notebook in pipeline/stitch.py
+stitch page contains information about how tiles were stitched together to give global coordinates. Only 'tile_origin' is used in later stages of the pipeline. Note that references to south here should really be north and west should be east. Page added to notebook in pipeline/stitch.py
 
 * **tile_origin**: *Numpy float array [n_tiles x 3]*. tile_origin[t,:] is the bottom left yxz coordinate of tile t. yx coordinates in yx_pixels and z coordinate in z_pixels.
 

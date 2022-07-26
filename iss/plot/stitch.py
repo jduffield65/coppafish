@@ -174,15 +174,21 @@ def view_stitch(nb: Notebook, t: int, direction: Optional[str] = None):
     Args:
         nb: Notebook containing results of the experiment. Must contain `find_spots` page.
         t: Want to look at overlap between tile `t` and its south/west neighbour.
-        direction: Direction of overlap interested in - either `'south'` or `'west'`.
+        direction: Direction of overlap interested in - either `'south'`/`'north'` or `'west'`/`'east'`.
             If `None`, then will look at both directions.
     """
+    # NOTE that directions should actually be 'north' and 'east'
     if direction is None:
         directions = ['south', 'west']
     elif direction.lower() == 'south' or direction.lower() == 'west':
         directions = [direction.lower()]
+    elif direction.lower() == 'north':
+        directions = ['south']
+    elif direction.lower() == 'east':
+        directions = ['west']
     else:
         raise ValueError(f"direction must be either 'south' or 'west' but {direction} given.")
+    direction_label = {'south': 'north', 'west': 'east'}  # label refers to actual direction
 
     config = nb.get_config()['stitch']
     # determine shifts to search over
@@ -206,7 +212,7 @@ def view_stitch(nb: Notebook, t: int, direction: Optional[str] = None):
     fig = []
     for j in directions:
         if t_neighb[j] in nb.basic_info.use_tiles:
-            print(f'Finding shift between tiles {t} and {t_neighb[j][0]} ({j} overlap)')
+            print(f'Finding shift between tiles {t} and {t_neighb[j][0]} ({direction_label[j]} overlap)')
             shift, score, score_thresh, debug_info = \
                 compute_shift(spot_yxz(nb.find_spots.spot_details, t, r, c),
                               spot_yxz(nb.find_spots.spot_details, t_neighb[j][0], r, c),
@@ -219,7 +225,8 @@ def view_stitch(nb: Notebook, t: int, direction: Optional[str] = None):
                               config['shift_widen'], config['shift_max_range'],
                               z_scale, config['nz_collapse'],
                               config['shift_step'][2])
-            title = f'Overlap between t={t} and neighbor in {j} (t={t_neighb[j][0]}). YXZ Shift = {shift}.'
+            title = f'Overlap between t={t} and neighbor in {direction_label[j]} (t={t_neighb[j][0]}). ' \
+                    f'YXZ Shift = {shift}.'
             fig = fig + [view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
                                      debug_info['scores_3d'], shift, score_thresh, title, False)]
     if len(fig) > 0:

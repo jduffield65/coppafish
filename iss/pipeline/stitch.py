@@ -25,6 +25,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             global coordinates.
     """
     nbp_debug = NotebookPage("stitch")
+    # NOTE that directions should actually be 'north' and 'east'
     directions = ['south', 'west']
     coords = ['y', 'x', 'z']
     shifts = get_shifts_to_search(config, nbp_basic, nbp_debug)
