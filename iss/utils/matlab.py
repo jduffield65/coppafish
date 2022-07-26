@@ -91,7 +91,8 @@ def update_dict(nbp: NotebookPage, nb: Notebook, spots_info_dict: dict, score_th
         spots_info_dict: Dictionary produced in `save_nb_results` containing information to save about each spot.
         score_thresh: All spots with a score above this threshold will be returned.
 
-    Returns: `spots_info_dict` is returned, just including spots for which `score > score_thresh`.
+    Returns:
+        `spots_info_dict` is returned, just including spots for which `score > score_thresh`.
 
     """
     pf = nbp.name + '_'
@@ -132,6 +133,7 @@ def save_nb_results(nb: Notebook, file_name: str, score_thresh_ref_spots: float 
         file_name: Path to save matlab version of Notebook.
         score_thresh_ref_spots: Only `ref_round` spots with score exceeding this will be saved.
         score_thresh_omp: Only `omp` spots with score exceeding this will be saved.
+
     """
     mdic = {}
     if nb.has_page('file_names'):

@@ -38,6 +38,7 @@ import os
 import time
 import json
 import warnings
+from typing import Tuple, List, Optional
 from .config import get_config
 from .tile_details import get_tile_file_names
 
@@ -239,33 +240,50 @@ class Notebook:
 
     The `Notebook` object stores all of the outputs of the script.  Almost all
     information saved in the `Notebook` is encapsulated within `"pages"`, from the
-    NotebookPage object.  To add a `NotebookPage` object to a `Notebook`, use the
-    `"add_page"` method.  You can add pages, but you cannot remove them.  Pages
-    can be referenced by their name using the square bracket (subscript)
-    notation.  In addition to saving pages, it also saves the contents of the
+    `NotebookPage` object.  To add a `NotebookPage` object to a `Notebook`, use the
+    `"add_page"` method.
+    In addition to saving pages, it also saves the contents of the
     config file, and the time at which the notebook and each page was created.
 
     To create a `Notebook`, pass it the path to the file where the `Notebook` is to
-    be stored (`notebook_file`), and the path to the configuration file
+    be stored (`notebook_file`), and optionally, the path to the configuration file
     (`config_file`).  If `notebook_file` already exists, the notebook located
     at this path will be loaded.  If not, a new file will be created as soon as
     the first data is written to the `Notebook`.
 
-    Example:
-    ```python
-        nb = Notebook("nbfile.npz")
-        nbp = NotebookPage("pagename")
-        nbp.var = 1
-        nb.add_page(nbp) or nb += nbp or nb.pagename = nbp
-        assert nb.pagename.var == 1
-    ```
+    !!!example
+        === "With config_file"
+
+            ``` python
+            nb = Notebook("nbfile.npz", "config_file.ini")
+            nbp = NotebookPage("pagename")
+            nbp.var = 1
+            nb.add_page(nbp) or nb += nbp or nb.pagename = nbp
+            assert nb.pagename.var == 1
+            ```
+
+        === "No config_file"
+
+            ``` python
+            nb = Notebook("nbfile.npz")
+            nbp = NotebookPage("pagename")
+            nbp.var = 1
+            nb.add_page(nbp) or nb += nbp or nb.pagename = nbp
+            assert nb.pagename.var == 1
+            ```
 
     Because it is automatically saved to the disk, you can close Python, reopen
-    it, and do the following:
+    it, and do the following (Once `config_file`, added to notebook there is no need to load it again unless it has
+    been changed):
     ```python
-        nb2 = Notebook("nbfile.npz")
-        assert nb2.pagename.var == 1
+    nb2 = Notebook("nbfile.npz")
+    assert nb2.pagename.var == 1
     ```
+
+    !!!note "On using config_file"
+        When running the ISS pipeline, the `Notebook` requires a `config_file` to access information required for
+        the different stages of the pipeline through `nb.get_config()`.
+        But if using the `Notebook` to store information not in ISS pipeline, it is not needed.
     """
     _SEP = "_-_"  # Separator between notebook page name and item name when saving to file
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
@@ -327,10 +345,8 @@ class Notebook:
             self._config = read_config
 
     def __repr__(self):
-        """
-        This means that print(nb) gives file location of notebook and
-        pages in the notebook sorted by time added to the notebook.
-        """
+        # This means that print(nb) gives file location of notebook and
+        # pages in the notebook sorted by time added to the notebook.
         sort_page_names = sorted(self._page_times.items(), key=lambda x: x[1])  # sort by time added to notebook
         page_names = [name[0] for name in sort_page_names]
         n_names_per_line = 4
@@ -361,7 +377,8 @@ class Notebook:
                 is also a dictionary containing parameters.
                 E.g. `config_2['basic_info]['param1'] = 5`.
 
-        Returns: `True` if config dictionaries are equal in required sections.
+        Returns:
+            `True` if config dictionaries are equal in required sections.
 
         """
         # TODO: issue here that if default settings file changed, the equality here would still be true.
@@ -384,7 +401,7 @@ class Notebook:
 
     def describe(self, key=None):
         """
-        describe(var) will print comments for variables called var in each page.
+        `describe(var)` will print comments for variables called `var` in each `NotebookPage`.
         """
         if key is None:
             print(self.__repr__())
@@ -424,12 +441,12 @@ class Notebook:
                 print(f"{key} is not in any of the pages in this notebook.")
 
     def __eq__(self, other):
-        """Test if two Notebooks are identical
+        # Test if two `Notebooks` are identical
+        #
+        # For two `Notebooks` to be identical, all aspects must be the same,
+        # excluding the ordering of the pages, and the filename.  All timestamps
+        # must also be identical.
 
-        For two `Notebooks` to be identical, all aspects must be the same,
-        excluding the ordering of the pages, and the filename.  All timestamps
-        must also be identical.
-        """
         if self._created_time != other._created_time:
             return False
         if self._config != other._config:
@@ -448,15 +465,13 @@ class Notebook:
         return True
 
     def __len__(self):
-        """Return the number of pages in the Notebook"""
+        # Return the number of pages in the Notebook
         return len(self._page_times)
 
     def __setattr__(self, key, value):
-        """
-        Deals with the syntax `nb.key = value`
-        automatically triggers save if `NotebookPage` is added.
-        If adding something other than a `NotebookPage`, this syntax does exactly as it is for other classes.
-        """
+        # Deals with the syntax `nb.key = value`
+        # automatically triggers save if `NotebookPage` is added.
+        # If adding something other than a `NotebookPage`, this syntax does exactly as it is for other classes.
         if isinstance(value, NotebookPage):
             if self._SEP in key:
                 raise NameError(f"The separator {self._SEP} may not be in the page's name")
@@ -491,9 +506,7 @@ class Notebook:
             object.__setattr__(self, key, value)
 
     def __delattr__(self, name):
-        """
-        Method to delete a page or attribute. Deals with del nb.name
-        """
+        # Method to delete a page or attribute. Deals with del nb.name.
         object.__delattr__(self, name)
         if name in self._page_times:
             # extra bit if page
@@ -521,7 +534,7 @@ class Notebook:
         return output
 
     def __iadd__(self, other):
-        """Syntactic sugar for the add_page method"""
+        # Syntactic sugar for the add_page method
         self.add_page(other)
         return self
 
@@ -534,17 +547,17 @@ class Notebook:
                 self._no_save_pages[page_name]['load_func'](self, page_name)
 
     def version_hash(self):
-        """A short string representing the file version.
+        # A short string representing the file version.
+        #
+        # Since there are many possible page names and entry names within those
+        # pages, that means there are many, many possible file versions based on
+        # different versions of the code.  Rather than try to keep track of these
+        # versions and appropriately increment some centralized counter, we
+        # generate a short string which is a hash of the page names and the names
+        # of the entries in that page.  This way, it is possible to see if two
+        # notebooks were generated using the same version of the software.  (Of
+        # course, it assumes that no fields are ever set conditionally.)
 
-        Since there are many possible page names and entry names within those
-        pages, that means there are many, many possible file versions based on
-        different versions of the code.  Rather than try to keep track of these
-        versions and appropriately increment some centralized counter, we
-        generate a short string which is a hash of the page names and the names
-        of the entries in that page.  This way, it is possible to see if two
-        notebooks were generated using the same version of the software.  (Of
-        course, it assumes that no fields are ever set conditionally.)
-        """
         s = ""
         for p_name in self._page_times:
             s += p_name + "\n\n"
@@ -577,17 +590,19 @@ class Notebook:
         # Finishing the diagnostics described above
         print(f"Notebook saved: took {time.time() - save_start_time} seconds")
 
-    def from_file(self, fn):
-        """Read a `Notebook` from a file
+    def from_file(self, fn: str) -> Tuple[List, dict, float, str]:
+        """
+        Read a `Notebook` from a file
 
-        The only argument is `fn`, the filename of the saved `Notebook` to load.
+        Args:
+            fn: Filename of the saved `Notebook` to load.
 
-        This returns a tuple of four objects:
-
-        - A list of `NotebookPage` objects
-        - A dictionary of timestamps, of identical length to the list of `NotebookPage` objects and keys are `page.name`
-        - A timestamp for the time the `Notebook` was created.
-        - A string of the config file
+        Returns:
+            A list of `NotebookPage` objects
+            A dictionary of timestamps, of identical length to the list of `NotebookPage` objects and
+                keys are `page.name`
+            A timestamp for the time the `Notebook` was created.
+            A string of the config file
         """
         # Right now we won't use lazy loading.  One problem with lazy loading
         # is that we must keep the file handle open.  We would rather not do
@@ -641,13 +656,13 @@ class NotebookPage:
     for each of the results as well.  Then, at the end, the pipeline step should return
     a `NotebookPage`, which can then be added to the `Notebook`.
 
-    Example:
-    ```python
-        nbp = NotebookPage("extract_and_filter")
-        nbp.scale_factor = 10
-        ...
-        return nbp
-    ```
+    !!!example
+        ```python
+            nbp = NotebookPage("extract_and_filter")
+            nbp.scale_factor = 10
+            ...
+            return nbp
+        ```
     """
     _PAGEMETA = "PAGEINFO"  # Filename for metadata about the page
     _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
@@ -664,11 +679,9 @@ class NotebookPage:
             self.from_dict(input_dict)
 
     def __eq__(self, other):
-        """Test for equality using the == syntax.
-
-        To be honest, I don't know why you would ever need this, but it is very
-        useful for writing unit tests, so here it is.
-        """
+        # Test for equality using the == syntax.
+        # To be honest, I don't know why you would ever need this, but it is very
+        # useful for writing unit tests, so here it is.
         if not isinstance(other, self.__class__):
             return False
         if self.name != other.name:
@@ -693,19 +706,18 @@ class NotebookPage:
         return True
 
     def __len__(self):
-        """Return the number of results in the NotebookPage"""
+        # Return the number of results in the NotebookPage
         return len(self._times)
 
     def _is_result_key(self, key):
+        # Whether key is a result variable or part of the metadata
         if key in self._NON_RESULT_KEYS or key[0] == '_':
             return False
         else:
             return True
 
     def __repr__(self):
-        """
-        This means that print(nbp) gives description of page if available or name and time created if not.
-        """
+        # This means that print(nbp) gives description of page if available or name and time created if not.
         json_comments = json.load(open(self._comments_file))
         if self.name in json_comments:
             return "\n".join(json_comments[self.name]['DESCRIPTION'])
@@ -713,12 +725,14 @@ class NotebookPage:
             time_created = time.strftime('%d-%m-%Y- %H:%M:%S', time.localtime(self._time_created))
             return f"{self.name} page created at {time_created}"
 
-    def describe(self, key=None):
+    def describe(self, key: Optional[str] = None):
         """
-        prints a description of the variable indicated.
+        Prints a description of the variable indicated by `key`.
 
-        :param key: string, key name of variable to describe that must be in self._times.keys(), optional.
-            If not specified, will describe the whole page.
+        Args:
+            key: name of variable to describe that must be in `self._times.keys()`.
+                If not specified, will describe the whole page.
+
         """
         if key is None:
             print(self.__repr__())  # describe whole page if no key given
@@ -733,12 +747,11 @@ class NotebookPage:
                     print(f"No comments available for page called {self.name}.")
 
     def __setattr__(self, key, value):
-        """Add an item to the notebook page.
-
-        For a `NotebookPage` object `nbp`, this handles the syntax `nbp.key = value`.
-        It checks the key and value for validity, and then adds them to the
-        notebook.  Specifically, it implements a write-once mechanism.
-        """
+        # Add an item to the notebook page.
+        #
+        # For a `NotebookPage` object `nbp`, this handles the syntax `nbp.key = value`.
+        # It checks the key and value for validity, and then adds them to the
+        # notebook.  Specifically, it implements a write-once mechanism.
         if self._is_result_key(key):
             if self.finalized:
                 raise ValueError("This NotebookPage has already been added to a Notebook, no more values can be added.")
@@ -757,9 +770,8 @@ class NotebookPage:
         object.__setattr__(self, key, value)
 
     def __delattr__(self, name):
-        """
-        Method to delete a result or attribute. Deals with del nbp.name.
-        """
+        # Method to delete a result or attribute. Deals with del nbp.name.
+        # Can only delete attribute if page has not been finalized.
         if self.finalized:
             raise ValueError("This NotebookPage has already been added to a Notebook, no values can be deleted.")
         object.__delattr__(self, name)
@@ -768,6 +780,7 @@ class NotebookPage:
             del self._times[name]
 
     def has_item(self, key):
+        """Check to see whether page has attribute `key`"""
         return key in self._times.keys()
 
     def from_dict(self, d):
