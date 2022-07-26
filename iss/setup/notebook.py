@@ -352,8 +352,8 @@ class Notebook:
 
     def compare_config(self, config_2: dict) -> bool:
         """
-        Compares whether config_2 is equal to the config file saved in the notebook.
-        Only sections not in _no_compare_config_sections and that there is a corresponding page saved to the notebook
+        Compares whether `config_2` is equal to the config file saved in the notebook.
+        Only sections not in `_no_compare_config_sections` and that there is a corresponding page saved to the notebook
         will be checked.
 
         Args:
@@ -361,7 +361,7 @@ class Notebook:
                 is also a dictionary containing parameters.
                 E.g. `config_2['basic_info]['param1'] = 5`.
 
-        Returns: True if config dictionaries are equal in required sections.
+        Returns: `True` if config dictionaries are equal in required sections.
 
         """
         # TODO: issue here that if default settings file changed, the equality here would still be true.
@@ -426,7 +426,7 @@ class Notebook:
     def __eq__(self, other):
         """Test if two Notebooks are identical
 
-        For two Notebooks to be identical, all aspects must be the same,
+        For two `Notebooks` to be identical, all aspects must be the same,
         excluding the ordering of the pages, and the filename.  All timestamps
         must also be identical.
         """

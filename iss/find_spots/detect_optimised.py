@@ -8,7 +8,7 @@ from .. import utils
 
 
 def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int], radius_z: Optional[int] = None,
-                 remove_duplicates: bool = False, se: Optional[np.ndarray] = None):
+                 remove_duplicates: bool = False, se: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds local maxima in image exceeding ```intensity_thresh```.
     This is achieved by looking at neighbours of pixels above intensity_thresh.

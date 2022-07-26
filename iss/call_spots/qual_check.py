@@ -50,7 +50,7 @@ def omp_spot_score(nbp: NotebookPage, score_multiplier: float,
     return score
 
 
-def quality_threshold(nb: Notebook, method='omp') -> np.ndarray:
+def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
     """
     Indicates which spots pass both the score and intensity quality thresholding.
 

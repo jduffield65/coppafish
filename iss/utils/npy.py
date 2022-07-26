@@ -20,7 +20,6 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
     Args:
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
-        nbp_extract_debug: `extract_debug` notebook page
         image: `int32 [ny x nx x nz]` or `int32 [n_channels x ny x nx]`.
             Image to save.
         t: npy tile index considering

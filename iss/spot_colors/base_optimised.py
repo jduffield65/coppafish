@@ -21,7 +21,7 @@ def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre
 
 @partial(jax.jit, static_argnums=3)
 def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
-                    z_scale: float, tile_sz) -> Tuple[jnp.ndarray, jnp.ndarray]:
+                    z_scale: float, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This transforms the coordinates yxz based on an affine transform.
     E.g. to find coordinates of spots on the same tile but on a different round and channel.

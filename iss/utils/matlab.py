@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 from scipy import io
 from typing import Union, List
-from ..setup.notebook import Notebook
+from ..setup.notebook import Notebook, NotebookPage
 from ..call_spots.qual_check import quality_threshold
 
 
@@ -81,16 +81,17 @@ def load_cell(file_name: str, var_name: str) -> list:
     return data
 
 
-def update_dict(nbp, nb, dict, score_thresh):
+def update_dict(nbp: NotebookPage, nb: Notebook, spots_info_dict: dict, score_thresh: float) -> dict:
     """
-    Used in save_nb_results to reduced amount of data saved. Only data with score > score_thresh kept.
-    Args:
-        nbp:
-        nb:
-        dict:
-        score_thresh:
+    Used in `save_nb_results` to reduced amount of spots saved. Only spots with `score > score_thresh` kept.
 
-    Returns:
+    Args:
+        nbp: Either `omp` or `ref_spots` NotebookPage.
+        nb: Full notebook
+        spots_info_dict: Dictionary produced in `save_nb_results` containing information to save about each spot.
+        score_thresh: All spots with a score above this threshold will be returned.
+
+    Returns: `spots_info_dict` is returned, just including spots for which `score > score_thresh`.
 
     """
     pf = nbp.name + '_'
@@ -108,27 +109,29 @@ def update_dict(nbp, nb, dict, score_thresh):
     nbp.score_thresh = score_thresh_old
     nbp.finalized = True
     for var in ['local_yxz', 'tile', 'colors', 'intensity', 'background_coef', 'gene_no']:
-        dict[pf + var] = dict[pf + var][keep]
+        spots_info_dict[pf + var] = spots_info_dict[pf + var][keep]
     if pf == 'ref_spots_':
-        del dict[pf + 'background_coef']
+        del spots_info_dict[pf + 'background_coef']
         for var in ['isolated', 'score', 'score_diff']:
-            dict[pf + var] = dict[pf + var][keep]
+            spots_info_dict[pf + var] = spots_info_dict[pf + var][keep]
     if pf == 'omp_':
         for var in ['shape_spot_local_yxz', 'shape_spot_gene_no', 'spot_shape_float']:
-            del dict[pf + var]
+            del spots_info_dict[pf + var]
         for var in ['coef', 'n_neighbours_pos', 'n_neighbours_neg']:
-            dict[pf + var] = dict[pf + var][keep]
-    return dict
+            spots_info_dict[pf + var] = spots_info_dict[pf + var][keep]
+    return spots_info_dict
 
 
-def save_nb_results(nb: Notebook, file_name: str, score_thresh_ref_spots = 0.15, score_thresh_omp=0.15):
+def save_nb_results(nb: Notebook, file_name: str, score_thresh_ref_spots: float = 0.15, score_thresh_omp: float = 0.15):
     """
     Saves important information in notebook as a .mat file so can load in MATLAB and plot
     using python_testing/iss_object_from_python.m scripts
 
     Args:
-        nb:
-        file_name:
+        nb: Notebook containing at least `call_spots` page.
+        file_name: Path to save matlab version of Notebook.
+        score_thresh_ref_spots: Only `ref_round` spots with score exceeding this will be saved.
+        score_thresh_omp: Only `omp` spots with score exceeding this will be saved.
     """
     mdic = {}
     if nb.has_page('file_names'):

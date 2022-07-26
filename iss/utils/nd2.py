@@ -90,9 +90,7 @@ def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = 
         json_file: Where to save json file
         nd2_file: Path to nd2 file
         use_channels: The channels which have been extracted from the nd2 file.
-            If None, assume all channels in nd2 file used
-
-    Returns:
+            If `None`, assume all channels in nd2 file used
 
     """
     metadata = get_metadata(nd2_file)

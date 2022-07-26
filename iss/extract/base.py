@@ -50,7 +50,7 @@ def wait_for_data(data_path: str, wait_time: int, dir: bool = False):
         print("file loaded!")
 
 
-def get_pixel_length(length_microns, pixel_size) -> int:
+def get_pixel_length(length_microns: float, pixel_size: float) -> int:
     """
     Converts a length in units of microns into a length in units of pixels
 

@@ -34,8 +34,6 @@ def export(config_file_path: str, method: str = 'omp'):
         config_file_path: Path to config .ini file used to make notebook.
         method: 'omp' or 'anchor, which gene calling method to save
 
-    Returns:
-
     """
     if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
         raise ValueError(f"method must be 'omp' or 'anchor but {method} given.")

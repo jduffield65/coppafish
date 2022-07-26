@@ -173,8 +173,6 @@ def run_reference_spots(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `stitch` and `register` pages.
-        config: Path to config file or Dictionary obtained from config file containing key
-            `'call_spots'` which is another dict.
 
     """
     if not all(nb.has_page(["ref_spots", "call_spots"])):
