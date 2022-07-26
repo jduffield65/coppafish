@@ -30,9 +30,8 @@ def run_pipeline(config_file: str) -> setup.Notebook:
 
 def initialize_nb(config_file: str) -> setup.Notebook:
     """
-    Quick function which creates a `Notebook` and adds `file_names` and `basic_info` pages
-    before saving.
-
+    Quick function which creates a `Notebook` and adds `basic_info` page before saving.
+    `file_names` page will be added automatically as soon as `basic_info` page is added.
     If `Notebook` already exists and contains these pages, it will just be returned.
 
     Args:
@@ -66,8 +65,6 @@ def run_extract(nb: setup.Notebook):
     Args:
         nb: `Notebook` containing `file_names` and `basic_info` pages.
 
-    Returns:
-        `Notebook` with `extract` and `extract_debug` pages added.
     """
     if not all(nb.has_page(["extract", "extract_debug"])):
         config = nb.get_config()
@@ -90,8 +87,6 @@ def run_find_spots(nb: setup.Notebook):
     Args:
         nb: `Notebook` containing `extract` page.
 
-    Returns:
-        `Notebook` with `find_spots` page added.
     """
     if not nb.has_page("find_spots"):
         config = nb.get_config()
@@ -114,8 +109,6 @@ def run_stitch(nb: setup.Notebook):
     Args:
         nb: `Notebook` containing `find_spots` page.
 
-    Returns:
-        `Notebook` with `stitch` page added.
     """
     config = nb.get_config()
     if not nb.has_page("stitch"):
@@ -150,8 +143,6 @@ def run_register(nb: setup.Notebook):
     Args:
         nb: `Notebook` containing `extract` page.
 
-    Returns:
-        `Notebook` with `register_initial_debug`,`register` and `register_debug` pages added.
     """
     config = nb.get_config()
     if not nb.has_page("register_initial_debug"):
@@ -185,10 +176,12 @@ def run_reference_spots(nb: setup.Notebook):
         config: Path to config file or Dictionary obtained from config file containing key
             `'call_spots'` which is another dict.
 
-    Returns:
-        `Notebook` with `ref_spots` and `call_spots` pages added.
     """
     if not all(nb.has_page(["ref_spots", "call_spots"])):
+        if not os.path.isfile(nb.file_names.code_book):
+            # Raise error here if code_book file does not exist as will be needed in call_reference_spots
+            raise ValueError(f"The code_book file:\n{nb.file_names.code_book}\ndoes not exist. "
+                             f"Change it in the config file and re-run.")
         config = nb.get_config()
         nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
                                         nb.stitch.tile_origin, nb.register.transform)
@@ -204,6 +197,18 @@ def run_reference_spots(nb: setup.Notebook):
 
 
 def run_omp(nb: setup.Notebook):
+    """
+    This runs the orthogonal matching pursuit section of the pipeline as an alternate method to determine location of
+    spots and their gene identity.
+    It achieves this by fitting multiple gene bled codes to each pixel to find a coefficient for every gene at
+    every pixel. Spots are then local maxima in these gene coefficient images.
+
+    `omp` page is added to the Notebook before saving.
+
+    Args:
+        nb: `Notebook` containing `call_spots` page.
+
+    """
     if not nb.has_page("omp"):
         config = nb.get_config()
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,

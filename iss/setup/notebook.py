@@ -46,10 +46,10 @@ from .tile_details import get_tile_file_names
 def set_file_names(nb, page_name: str):
     """
     Function to set add `file_names` page to notebook. It requires notebook to be able to access a
-    config file containing a `file_names` section and also the notebook to contain a 'basic_info' page.
+    config file containing a `file_names` section and also the notebook to contain a `basic_info` page.
 
     !!! note
-        This will be called every time the notebook is loaded to deal will case when file_names section of
+        This will be called every time the notebook is loaded to deal will case when `file_names` section of
         config file changed.
 
     Args:
@@ -83,7 +83,8 @@ def set_file_names(nb, page_name: str):
         config['dye_camera_laser'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                                                   'dye_camera_laser_raw_intensity.csv')
     nbp.dye_camera_laser = config['dye_camera_laser']
-    nbp.code_book = config['code_book']
+    config['code_book'] = config['code_book'].replace('.txt', '')
+    nbp.code_book = config['code_book'] + '.txt'
     # where to save psf, indicating average spot shape in raw image. Only ever needed in 3D.
     if nb.basic_info.is_3d:
         config['psf'] = config['psf'].replace('.npy', '')

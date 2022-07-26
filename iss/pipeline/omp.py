@@ -12,6 +12,7 @@ from scipy import sparse
 try:
     import jax.numpy as jnp
 except ImportError:
+    warnings.warn('Jax is not installed so call_spots_omp will be slow')
     import numpy as jnp
 
 
