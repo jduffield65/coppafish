@@ -57,7 +57,8 @@ theme:
   # 404 page
   static_templates:
       - 404.html
-
+  palette:
+    primary: black
   # Necessary for search to work properly
   include_search_page: false
   search_index_only: true
@@ -70,10 +71,14 @@ theme:
     - navigation.indexes
     - navigation.expand
     - content.tabs.link
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
   font:
       text: Roboto
       code: Roboto Mono
-  favicon: assets/favicon.png
+  favicon: images/logo.png
+  logo: images/logo.png
   icon:
       logo: logo
 
@@ -85,6 +90,7 @@ plugins:
             python:
                 rendering:
                     show_root_toc_entry: false # stops extra heading in contents of Code pages
+
 
 markdown_extensions:
   - admonition
