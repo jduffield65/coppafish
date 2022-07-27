@@ -12,19 +12,19 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 	Directory where the raw .nd2 files or .npy stacks are 
 
-	Default: `NEED TO SPECIFY`
+	Default: `MUST BE SPECIFIED`
 
 * **output_dir**: *str*.
 
 	Directory where notebook is saved 
 
-	Default: `NEED TO SPECIFY`
+	Default: `MUST BE SPECIFIED`
 
 * **tile_dir**: *str*.
 
 	Directory where tile .npy files saved 
 
-	Default: `NEED TO SPECIFY`
+	Default: `MUST BE SPECIFIED`
 
 * **round**: *maybe_list_str*.
 
@@ -60,7 +60,7 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 	Text file which contains the codes indicating which dye to expect on each round for each gene. 
 
-	Default: `NEED TO SPECIFY`
+	Default: `MUST BE SPECIFIED`
 
 * **psf**: *str*.
 
@@ -105,7 +105,7 @@ The *basic_info* section indicates information required throughout the pipeline.
 
 	Whether to use the 3d pipeline. 
 
-	Default: `NEED TO SPECIFY`
+	Default: `MUST BE SPECIFIED`
 
 * **anchor_channel**: *maybe_int*.
 
