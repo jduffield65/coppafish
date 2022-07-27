@@ -60,7 +60,7 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **dye_camera_laser**: *maybe_file*.
 
-	csv file giving the approximate raw intensity for each dye with each camera/laser combination. if not set, the *dye_camera_laser_raw_intensity.csv* file in the project will be used. 
+	csv file giving the approximate raw intensity for each dye with each camera/laser combination. If not set, the file *iss/setup/dye_camera_laser_raw_intensity.csv* file will be used. 
 
 	Default: `None`
 

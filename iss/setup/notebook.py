@@ -81,8 +81,7 @@ def set_file_names(nb, page_name: str):
 
     if config['dye_camera_laser'] is None:
         # Default information is project
-        config['dye_camera_laser'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                                                  'dye_camera_laser_raw_intensity.csv')
+        config['dye_camera_laser'] = os.path.join(os.path.dirname(__file__), 'dye_camera_laser_raw_intensity.csv')
     nbp.dye_camera_laser = config['dye_camera_laser']
     config['code_book'] = config['code_book'].replace('.txt', '')
     nbp.code_book = config['code_book'] + '.txt'

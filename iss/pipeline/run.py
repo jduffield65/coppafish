@@ -6,6 +6,7 @@ from ..call_spots import get_non_duplicate
 import warnings
 import numpy as np
 from scipy import sparse
+from ..plot.results_viewer.base import iss_plot
 
 
 def run_pipeline(config_file: str) -> setup.Notebook:
@@ -19,6 +20,7 @@ def run_pipeline(config_file: str) -> setup.Notebook:
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
+    # iss_plot(nb)
     run_extract(nb)
     run_find_spots(nb)
     run_stitch(nb)

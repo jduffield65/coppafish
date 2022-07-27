@@ -179,3 +179,74 @@ An example of what the tile directory looks like at the end of the experiment is
 
 
 ### code_book
+This is the path to the file containing the code for each gene. 
+The file should be a text file containing two columns, the first being the gene name. 
+The second is the code specifying which dye that gene should appear in each round. 
+Thus it is of length `n_rounds`, containing numbers in the range from `0` to `n_dyes-1` inclusive. 
+
+???+ example
+
+    An example is given [here](images/config/codebook.txt) so that if
+
+    `basic_info[dye_names] = DY405, CF405L, AF488, DY520XL, AF532, AF594, ATTO425`
+
+    the gene *Sst* with the code *6200265* will
+    be expected to appear with the following dyes in each round:
+
+    - Round 0: `ATTO425`
+    - Round 1: `AF488`
+    - Round 2: `DY405`
+    - Round 3: `DY405`
+    - Round 4: `AF488`
+    - Round 5: `ATTO425`
+    - Round 6: `AF594`
+
+
+## basic_info
+### anchor_channel
+The `anchor_channel` is the channel in the `anchor_round` which contains spots corresponding to all genes. 
+These spots are used for registration to the imaging rounds and to determine the expected `bled_code` for each gene.
+
+### ref_round
+If there is no `anchor_round`, `ref_round` must be specified instead and it should be a round which contains a lot 
+of spots in each channel. Spots in `ref_round` / `ref_channel` will then be used as reference spots for registration
+and to determine the expected `bled_code` for each gene. 
+
+If the `anchor_round` is used and `ref_round` is specified, `ref_round` will be set to `anchor_round` (last round) 
+[in the notebook](code/pipeline/basic_info.md#iss.pipeline.basic_info.set_basic_info).
+
+???+warning "Problem in not using anchor"
+    With no anchor, the registration is likely to be worse because an imaging round is used as a reference.
+    Thus, not all genes will appear in `ref_round` / `ref_channel`, but only those which appear with a dye
+    in the `ref_round` which have high intensity in the `ref_channel`.
+    Also, we would expect the final spots saved in nb.ref_spots to only correspond to genes appearing in 
+    `ref_round` / `ref_channel` and thus lots of genes will be missing.
+
+    With an anchor though, we expect all genes to show up in `anchor_round` / `anchor_channel`.
+
+### ref_channel
+If there is no `anchor_round`, `ref_channel` must be specified instead and it should be the channel in `ref_round` 
+which contains the most spots. If the `anchor_round` is used and both `anchor_channel` and `ref_channel` are specified,
+`ref_channel` will be set to `anchor_channel` 
+[in the notebook](code/pipeline/basic_info.md#iss.pipeline.basic_info.set_basic_info).
+
+### dapi_channel
+This is the channel in the `anchor_round` that contains the DAPI images. 
+The tiles of this channel will be stitched together and saved in the `file_names[output_dir]` with a name 
+`file_names[big_dapi_image]`. 
+
+To tophat filter the raw DAPI images first, either 
+[`extract[r_dapi]` or `extract[r_dapi_auto_microns]`](config.md#extract) must be specified.
+
+### Specifying Dyes
+It is expected that each gene will appear with a single dye in a given round as indicated by `file_names[code_book]`.
+If `dye_names` is not specified, it is assumed as a starting point for the 
+[`bleed_matrix` calculation](code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_bleed_matrix) 
+that the number of dyes is equal to the number of channels and dye 0 will only appear in channel 0,
+dye 1 will only appear in channel 1 etc. 
+
+If `dye_names` is specified, both `channel_camera` and `channel_laser` must also be specified. This is so that
+a starting point for the `bleed_matrix` calculation can be obtained by 
+[reading off](code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_dye_channel_intensity_guess) 
+the expected intensity of each dye in each channel using the file `file_names[dye_camera_laser]`. 
+
