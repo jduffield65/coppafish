@@ -84,7 +84,12 @@ def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[i
 
 def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = None):
     """
-    Saves the required metadata as a json file.
+    Saves the required metadata as a json file which will contain
+
+    - `xy_pos` - `List [n_tiles x 2]`. xy position of tiles in pixels.
+    - `pixel_microns` - `float`. xy pixel size in microns.
+    - `pixel_microns_z` - `float`. z pixel size in microns.
+    - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions.
 
     Args:
         json_file: Where to save json file
@@ -133,7 +138,7 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
 
 
 # '''with nd2reader'''
-# #Does not work with QuadCam data hence the switch to nd2 package
+# # Does not work with QuadCam data hence the switch to nd2 package
 # from nd2reader import ND2Reader
 #
 #

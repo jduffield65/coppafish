@@ -46,7 +46,15 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **raw_metadata**: *maybe_str*.
 
-	If .npy raw_extension, this is the name of the .json file in *input_dir* which contains the metadata required extracted from the initial .nd2 files. I.e. the output of *iss/utils/nd2/save_metadata*. 
+	If .npy raw_extension, this is the name of the .json file in *input_dir* which contains the metadata required extracted from the initial .nd2 files. I.e. it contains the output of *iss/utils/nd2/save_metadata*: 
+
+	 - `xy_pos` - `List [n_tiles x 2]`. xy position of tiles in pixels. 
+
+	 - `pixel_microns` - `float`. xy pixel size in microns. 
+
+	 - `pixel_microns_z` - `float`. z pixel size in microns. 
+
+	 - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions. 
 
 	Default: `None`
 

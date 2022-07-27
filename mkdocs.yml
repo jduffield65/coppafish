@@ -53,12 +53,16 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.superfences
   - tables
+  - attr_list
+  - md_in_html
+  - def_list
   - pymdownx.tabbed:
       alternate_style: true
 
 nav:
     - Home: index.md
     - Getting Started:
+        - running.md
         - Config Default Settings: config.md
         - Notebook Comments: notebook_comments.md
     - Code:
