@@ -1,6 +1,5 @@
 import numpy as np
 from ..stitch import compute_shift
-# TODO: find_spots/base uses jax but not for functions of interest - what to do??
 from ..find_spots import spot_yxz, get_isolated_points
 from ..pcr import get_single_affine_transform
 from ..spot_colors.base import apply_transform
@@ -80,18 +79,18 @@ class view_point_clouds:
     def __init__(self, point_clouds: List, pc_labels: List, neighb_dist_thresh: float = 5, z_scale: float = 1,
                  super_title: Optional[str] = None):
         """
-        Plots two point clouds. point_clouds[0] always plotted but you can change the second point cloud using
+        Plots two point clouds. `point_clouds[0]` always plotted but you can change the second point cloud using
         radio buttons.
 
         Args:
-            point_clouds: List of point clouds, each of which is yxz coordinates float [n_points x 3].
-                point_clouds[0] is always plotted.
+            point_clouds: List of point clouds, each of which is yxz coordinates `float [n_points x 3]`.
+                `point_clouds[0]` is always plotted.
                 YX coordinates are in units of yx pixels. Z coordinates are in units of z pixels.
                 Radio buttons used to select other point_cloud plotted.
             pc_labels: List of labels to appear in legend/radio-buttons for each point cloud.
-                Must provide one for each point_cloud.
+                Must provide one for each `point_cloud`.
             neighb_dist_thresh: If distance between neighbours is less than this, a white line will connect them.
-            z_scale: pixel_size_z / pixel_size_y i.e. used to convert z coordinates from z-pixels to yx pixels.
+            z_scale: `pixel_size_z / pixel_size_y` i.e. used to convert z coordinates from z-pixels to yx pixels.
             super_title: Optional title for plot
         """
         n_point_clouds = len(point_clouds)

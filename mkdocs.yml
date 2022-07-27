@@ -62,7 +62,7 @@ markdown_extensions:
 nav:
     - Home: index.md
     - Getting Started:
-        - running.md
+        - config_setup.md
         - Config Default Settings: config.md
         - Notebook Comments: notebook_comments.md
     - Code:
@@ -114,3 +114,12 @@ nav:
             - nd2: code/utils/nd2.md
             - npy: code/utils/npy.md
             - Strel: code/utils/strel.md
+        - Plot:
+            - Viewer: code/plot/viewer.md
+            - Raw: code/plot/raw.md
+            - Stitch: code/plot/stitch.md
+            - Register: code/plot/register.md
+            - Call Spots: code/plot/call_spots.md
+            - OMP: code/plot/omp.md
+        - Separate Round Registration:
+            - code/sep_round_reg.md

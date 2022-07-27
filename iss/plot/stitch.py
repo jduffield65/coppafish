@@ -41,9 +41,9 @@ def get_plot_images_from_shifts(shifts: np.ndarray, scores: np.ndarray) -> Tuple
             between the two point clouds after the shift was applied.
 
     Returns:
-        - `image` - `float [(extent[2]-extent[3]) x (extent[1]-extent[0]) x (extent[5]-extent[4])]`.
+        `image` - `float [(extent[2]-extent[3]) x (extent[1]-extent[0]) x (extent[5]-extent[4])]`.
             Imaging containing the scores at coordinates indicated by shifts.
-        - `extent` - `float [min_x_shift-0.5, max_x_shift, max_y_shift, min_y_shift-0.5, min_z_shift-0.5, max_z_shift]`.
+        `extent` - `float [min_x_shift-0.5, max_x_shift, max_y_shift, min_y_shift-0.5, min_z_shift-0.5, max_z_shift]`.
             Indicates the shifts corresponding to the extremities of image.
             (Note the -0.5 added to min_shift is so value appears at centre of pixel).
     """

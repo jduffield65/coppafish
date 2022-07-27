@@ -76,22 +76,6 @@ Some example config files for typical experiments are listed below.
     ref_channel = 4
     ```
 
-=== "Separate Round"
-
-    ``` ini
-    [file_names]
-    notebook_name = sep_round_notebook
-    input_dir = /Users/.../experiment1/raw
-    output_dir = /Users/.../experiment1/output
-    tile_dir = /Users/.../experiment1/tiles
-    anchor = Exp1_sep_round
-    code_book = /Users/.../experiment1/codebook.txt
-
-    [basic_info]
-    is_3d = True
-    anchor_channel = 4
-    ```
-
 === "QuadCam"
 
     ``` ini
@@ -111,6 +95,33 @@ Some example config files for typical experiments are listed below.
     channel_camera = 405, 555, 470, 470, 555, 640, 555, 640, 640
     channel_laser = 405, 405, 445, 470, 520, 520, 555, 640, 730
     ```
+
+=== "Separate Round"
+
+    ``` ini
+    [file_names]
+    notebook_name = sep_round_notebook
+    input_dir = /Users/.../experiment1/raw
+    output_dir = /Users/.../experiment1/output
+    tile_dir = /Users/.../experiment1/tiles
+    anchor = Exp1_sep_round
+    code_book = /Users/.../experiment1/codebook.txt
+
+    [basic_info]
+    is_3d = True
+    anchor_channel = 4
+    ```
+
+
+??? note "Note on *Separate Round* Config File"
+
+    The *Separate Round* config file above is used for registering an additional round to an experiment already run to 
+    completion (using a config file like the *3D* one indicated above). The pipeline for the *Separate Round* case 
+    cannot be run further that the stitching section.
+
+    The [`run_sep_reg`](code/sep_round_reg.md#sep_round_reg.run_sep_round_reg) function runs the pipeline for the 
+    *Separate Round* case and then registers the `anchor_round`/`anchor_channel` to the `anchor_round`/`anchor_channel`
+    of the full experiment.
 
 These variables are explained below and [here](config.md). 
 
@@ -250,3 +261,43 @@ a starting point for the `bleed_matrix` calculation can be obtained by
 [reading off](code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_dye_channel_intensity_guess) 
 the expected intensity of each dye in each channel using the file `file_names[dye_camera_laser]`. 
 
+The default `file_names[dye_camera_laser]` is given 
+[here](https://github.com/jduffield65/iss_python/blob/main/iss/setup/dye_camera_laser_raw_intensity.csv) 
+but if a dye, camera or laser not indicated in this file are used in an experiment, a new version must be made.
+
+## Common Additional Parameters
+There are a few other parameters that may often need to be different to those given in the 
+[default config file](config.md).
+
+### `extract[r_smooth]`
+The parameter `r_smooth` in the extract section specifies whether to smooth with an averaging kernel after
+the raw images have been convolved with a 
+[difference of hanning kernel](code/utils/morphology.md#iss.utils.morphology.base.hanning_diff).
+This will make the extract section of the pipeline slower but will reduce the influence
+of anomalously high or low intensity pixels.
+
+By default, this is not specified meaning no smoothing is done. If smoothing is needed, typical values are:
+
+- 2D: `r_smooth = 2, 2`
+- 3D: `r_smooth = 2, 2, 2`
+
+The kernel which the image is correlated with is then 
+`np.ones(2 * r_smooth - 1) / np.sum(np.ones(2 * r_smooth - 1))` so for r_smooth = 2, 2 it will be:
+
+``` python
+array([[0.11111111, 0.11111111, 0.11111111],
+       [0.11111111, 0.11111111, 0.11111111],
+       [0.11111111, 0.11111111, 0.11111111]])
+```
+
+### `stitch[expected_overlap]`
+This is the expected fractional overlap between neighbouring tiles. 
+By default, it is 0.1 meaning a 10% overlap is expected.
+
+### thresholds
+The parameters in the [thresholds](config.md#thresholds) section of the config file contains the thresholds 
+used to determine which spots pass a quality thresholding process such that we consider their 
+gene assignments legitimate.
+
+The default values are based on an experiment run with ground truth data, but they will likely need adjusting 
+after investigating the effect of the thresholds using [iss_plot](code/plot/viewer.md).

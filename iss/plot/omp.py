@@ -17,7 +17,7 @@ class view_omp(ColorPlotBase):
         Only genes for which a significant number of pixels are non-zero will be plotted.
 
         Args:
-            nb: Notebook containing experiment details. Must have run at least as far as `omp`.
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
@@ -139,11 +139,13 @@ class view_omp_fit(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', dp_thresh: Optional[float] = None,
                  max_genes: Optional[int] = None):
         """
+        Diagnostic to run omp on a single pixel and see which genes fitted at which iteration.
 
         Args:
-            nb:
-            spot_no:
-            method:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+            spot_no: Spot of interest to be plotted.
+            method: `'anchor'` or `'omp'`.
+                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
             dp_thresh: If None, will use value in omp section of config file.
             max_genes: If None, will use value in omp section of config file.
         """

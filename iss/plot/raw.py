@@ -17,7 +17,17 @@ def view_raw(config_file: str, rounds: Union[int, List[int]], tiles: Union[int, 
     Args:
         config_file: path to config file for experiment
         rounds: rounds to view
-        tiles: npy (as opposed to nd2 fov) tile indices to view
+        tiles: npy (as opposed to nd2 fov) tile indices to view.
+            For an experiment where the tiles are arranged in a 4 x 3 (ny x nx) grid, tile indices are indicated as
+            below:
+
+            | 2  | 1  | 0  |
+
+            | 5  | 4  | 3  |
+
+            | 8  | 7  | 6  |
+
+            | 11 | 10 | 9  |
         channels: channels to view
     """
     config = setup.get_config(config_file)

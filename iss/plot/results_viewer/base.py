@@ -6,6 +6,7 @@ from .legend import iss_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot
 from ...call_spots import omp_spot_score
 from ..omp import view_omp, view_omp_fit
+from ...setup import Notebook
 import napari
 from napari.qt import thread_worker
 import time
@@ -19,8 +20,10 @@ from typing import Optional, Union
 
 
 class iss_plot:
-    def __init__(self, nb, background_image: Optional[Union[str, np.ndarray]] = 'dapi'):
+    def __init__(self, nb: Notebook, background_image: Optional[Union[str, np.ndarray]] = 'dapi'):
         """
+        This is the function to view the results of the pipeline
+        i.e. the spots found and which genes they were assigned to.
 
         Args:
             nb: Notebook containing at least the `ref_spots` page.
@@ -217,9 +220,7 @@ class iss_plot:
         napari.run()
 
     def viewer_status_on_select(self):
-        """
-           indicate selected data in viewer status.
-        """
+        # indicate selected data in viewer status.
 
         def indicate_selected(selectedData):
             if selectedData is not None:
@@ -253,10 +254,8 @@ class iss_plot:
         return (_watchSelectedData(self.viewer.layers[self.diagnostic_layer_ind]))
 
     def update_plot(self):
-        """
-        This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
-        method selected by button and genes selected through clicking on the legend.
-        """
+        # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
+        # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
             score = omp_spot_score(self.nb.omp, self.score_omp_multiplier)
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
@@ -283,11 +282,9 @@ class iss_plot:
                 self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
 
     def update_genes(self, event):
-        """
-        When click on a gene in the legend will remove/add that gene to plot.
-        When right-click on a gene, it will only show that gene.
-        When click on a gene which is the only selected gene, it will return to showing all genes.
-        """
+        # When click on a gene in the legend will remove/add that gene to plot.
+        # When right-click on a gene, it will only show that gene.
+        # When click on a gene which is the only selected gene, it will return to showing all genes.
         xy_clicked = np.array([event.xdata, event.ydata])
         xy_gene = np.zeros(2)
         for i in range(2):
@@ -374,11 +371,9 @@ class iss_plot:
             self.update_plot()
 
     def get_selected_spot(self):
-        """
-        Returns spot_no selected if only one selected (this is the spot_no relavent to the Notebook i.e.
-        if omp, the index of the spot in nb.omp is returned).
-        Otherwise, returns None and indicates why in viewer status.
-        """
+        # Returns spot_no selected if only one selected (this is the spot_no relavent to the Notebook i.e.
+        # if omp, the index of the spot in nb.omp is returned).
+        # Otherwise, returns None and indicates why in viewer status.
         n_selected = len(self.viewer.layers[self.diagnostic_layer_ind].selected_data)
         if n_selected == 1:
             spot_no = list(self.viewer.layers[self.diagnostic_layer_ind].selected_data)[0]
@@ -393,9 +388,7 @@ class iss_plot:
         return spot_no
 
     def key_call_functions(self):
-        """
-        Contains all functions which can be called by pressing a key with napari viewer open
-        """
+        # Contains all functions which can be called by pressing a key with napari viewer open
         @Points.bind_key('Space', overwrite=True)
         def change_zoom_select_mode(layer):
             if layer.mode == Mode.PAN_ZOOM:
