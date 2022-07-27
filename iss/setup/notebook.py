@@ -742,7 +742,10 @@ class NotebookPage:
             else:
                 json_comments = json.load(open(self._comments_file))
                 if self.name in json_comments:
-                    print("\n".join(json_comments[self.name][key]))
+                    # Remove empty lines
+                    while '' in json_comments[self.name][key]: json_comments[self.name][key].remove('')
+                    # replace below removes markdown code indicators
+                    print("\n".join(json_comments[self.name][key]).replace('`', ''))
                 else:
                     print(f"No comments available for page called {self.name}.")
 

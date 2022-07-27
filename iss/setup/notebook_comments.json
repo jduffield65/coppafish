@@ -3,7 +3,7 @@
   {
     "DESCRIPTION": ["file_names page contains all files that are used throughout the pipeline.",
       "'tile' is the only variable not included in the config file and is worked out automatically.",
-      "Page added to notebook in pipeline/basic_info.py"],
+      "Page added to notebook automatically as soon as basic_info page added."],
     "input_dir": [
       "Directory",
       "Where raw nd2 files are"],
@@ -88,9 +88,11 @@
     "use_z": ["Integer List [nz]",
       "z planes used to make tile npy files"],
     "use_tiles": ["Integer List [n_use_tiles]",
-      "Tiles to use throughout pipeline."],
+      "Tiles to use throughout pipeline.",
+      "For an experiment where the tiles are arranged in a 4 x 3 (ny x nx) grid, tile indices are indicated as below:",
+      "","| 2  | 1  | 0  |","", "| 5  | 4  | 3  |","", "| 8  | 7  | 6  |", "","| 11 | 10 | 9  |"],
     "use_dyes": ["Integer List [n_use_dyes]",
-      "Dyes to use when when assigning spots to genes."],
+      "Dyes to use when assigning spots to genes."],
     "dye_names": ["String List [n_dyes] or None",
       "Names of all dyes so for gene with code 360...,",
       "gene appears with dye_names[3] in round 0, dye_names[6] in round 1, dye_names[0] in round 2 etc.",
@@ -228,7 +230,7 @@
   {
     "DESCRIPTION": ["stitch page contains information about how tiles were stitched together to give global coordinates.",
       "Only 'tile_origin' is used in later stages of the pipeline.",
-      "Note that references to south here should really be north and west should be east.",
+      "Note that references to south in this section should really be north and west should be east.",
       "Page added to notebook in pipeline/stitch.py"],
 
     "tile_origin": ["Numpy float array [n_tiles x 3]",

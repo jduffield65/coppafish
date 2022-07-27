@@ -47,6 +47,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         use_z_oob = [val for val in config['use_z'] if val < 0 or val >= n_z]
         if len(use_z_oob) > 0:
             raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, n_z - 1)
+        if len(config['use_z']) == 2:
+            # use consecutive values if only 2 given.
+            config['use_z'] = list(np.arange(config['use_z'][0], config['use_z'][1] + 1))
         use_z = np.array(config['use_z'])
     else:
         use_z = np.arange(n_z)

@@ -96,7 +96,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         if config['dp_norm_shift'] is None:
             config['dp_norm_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
         if config['background_weight_shift'] is None:
-            config['background_weight_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
+            config['background_weight_shift'] = float(round_any(nbp.median_abs_intensity,
+                                                                config['norm_shift_precision'], 'ceil'))
         if config['gene_efficiency_intensity_thresh'] is None:
             config['gene_efficiency_intensity_thresh'] = \
                 float(round_any(nbp.median_abs_intensity / config['norm_shift_to_intensity_scale'],

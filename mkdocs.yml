@@ -52,12 +52,14 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
+  - tables
   - pymdownx.tabbed:
       alternate_style: true
 
 nav:
     - Home: index.md
     - Getting Started:
+        - Config Default Settings: config.md
         - Notebook Comments: notebook_comments.md
     - Code:
         - Setup:
