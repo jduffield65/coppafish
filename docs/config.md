@@ -102,9 +102,15 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **big_anchor_image**: *str*.
 
-	npz file in *output_dir* where stitched image of ref_round/ref_channel is saved. If it does not exist, it will be saved. 
+	npz file in *output_dir* where stitched image of `ref_round`/`ref_channel` is saved. If it does not exist, it will be saved. 
 
 	Default: `anchor_image`
+
+* **pciseq**: *list_str*.
+
+	csv files in *output_dir* where plotting information for pciSeq will be saved. First file is name where omp method output will be saved. Second file is name where ref_spots method output will be saved. If files don't exist, they will be created when the function *iss/export_to_pciseq* is run. 
+
+	Default: `pciseq_omp, pciseq_anchor`
 
 ## basic_info
 The *basic_info* section indicates information required throughout the pipeline.

@@ -301,4 +301,4 @@ used to determine which spots pass a quality thresholding process such that we c
 gene assignments legitimate.
 
 The default values are based on an experiment run with ground truth data, but they will likely need adjusting 
-after investigating the effect of the thresholds using [iss_plot](code/plot/viewer.md).
+after investigating the effect of the thresholds using [`iss_plot`](code/plot/viewer.md).

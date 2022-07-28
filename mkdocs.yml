@@ -110,7 +110,7 @@ nav:
         - Utils:
             - Base: code/utils/base.md
             - Errors: code/utils/errors.md
-            - Export To pciseq: code/utils/export_to_pciseq.md
+            - pciSeq: code/utils/pciseq.md
             - Matlab: code/utils/matlab.md
             - Morphology: code/utils/morphology.md
             - nd2: code/utils/nd2.md

@@ -103,6 +103,10 @@ def set_file_names(nb, page_name: str):
     config['omp_spot_coef'] = config['omp_spot_coef'].replace('.npz', '')
     nbp.omp_spot_coef = os.path.join(config['output_dir'], config['omp_spot_coef'] + '.npz')
 
+    # Add files so save plotting information for pciseq
+    config['pciseq'] = [val.replace('.csv', '') for val in config['pciseq']]
+    nbp.pciseq = [os.path.join(config['output_dir'], val + '.csv') for val in config['pciseq']]
+
     # add dapi channel and anchor channel to notebook even if set to None.
     config['big_dapi_image'] = config['big_dapi_image'].replace('.npz', '')
     if nb.basic_info.dapi_channel is None:

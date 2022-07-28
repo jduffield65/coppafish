@@ -214,9 +214,14 @@ class iss_plot:
             self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
         self.key_call_functions()
+        if self.nb.basic_info.is_3d:
+            self.viewer.dims.axis_labels = ['z', 'y', 'x']
+        else:
+            self.viewer.dims.axis_labels = ['y', 'x']
         # TODO: on next napari, release should be able to change thickness of spots in z-direction i.e. control what
         #  number of z-planes can be seen at any one time:
         #  https://github.com/napari/napari/issues/4816#issuecomment-1186600574.
+
         napari.run()
 
     def viewer_status_on_select(self):

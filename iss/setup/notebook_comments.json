@@ -55,6 +55,12 @@
       "File",
       "npz file of stitched image of ref_round/ref_channel. Will be stitched anchor if anchor used.",
       "If 3D, 1st axis in npz file is z."],
+    "pciseq": [
+      "List of 2 files",
+      "csv files where plotting information for pciSeq is saved.","",
+      "`pciseq[0]` is the path where the *omp* method output will be saved.","",
+      "`pciseq[1]` is the path where the *ref_spots* method output will be saved.","",
+      "If files don't exist, they will be created when the function *iss/export_to_pciseq* is run."],
     "tile": [
       "List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
       "2d: tile[t][r] is the npy file containing all channels of tile t, round r.",

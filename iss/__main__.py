@@ -3,15 +3,14 @@
 #
 #     python3 -m iss inifile.ini
 
-from iss import run_pipeline, iss_plot
-from iss.setup import Notebook
+from iss import run_pipeline, iss_plot, Notebook, export_to_pciseq
 import sys
 import os
 import textwrap
 import numpy as np
 
 
-def print_usage(message = None):
+def print_usage(message=None):
     if message:
         message = f"\n\n    ERROR: {message}"
     else:
@@ -44,8 +43,11 @@ if not os.path.isfile(sys.argv[1]):
 if len(sys.argv) == 2:
     run_pipeline(sys.argv[1])
 if len(sys.argv) == 3:
-    if not np.isin(sys.argv[2], ['view', '-view', '-plot', 'plot']):
-        print_usage(f"To plot results, second argument should be -view but {sys.argv[2]} given")
+    if not np.isin(sys.argv[2], ['view', '-view', '-plot', 'plot', 'export', '-export']):
+        print_usage(f"To plot results, second argument should be -view or -export but {sys.argv[2]} given")
     else:
         nb = Notebook(config_file=sys.argv[1])
-        iss_plot(nb)
+        if np.isin(sys.argv[2], ['export', '-export']):
+            export_to_pciseq(nb)
+        else:
+            iss_plot(nb)

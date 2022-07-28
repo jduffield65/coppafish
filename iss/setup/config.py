@@ -63,7 +63,8 @@ _options = {
             'omp_spot_info': 'str',
             'omp_spot_coef': 'str',
             'big_dapi_image': 'str',
-            'big_anchor_image': 'str'
+            'big_anchor_image': 'str',
+            'pciseq': 'list_str'
         },
     'extract':
         {

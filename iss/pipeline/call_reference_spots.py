@@ -41,8 +41,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             This is saved in the register notebook page i.e. `nb.register.transform`.
 
     Returns:
-        - `NotebookPage[call_spots]` - Page contains bleed matrix and expected code for each gene.
-        - `NotebookPage[ref_spots]` - Page contains gene assignments and info for spots found on reference round.
+        `NotebookPage[call_spots]` - Page contains bleed matrix and expected code for each gene.
+        `NotebookPage[ref_spots]` - Page contains gene assignments and info for spots found on reference round.
             Parameters added are: intensity, score, gene_no, score_diff
     """
     nbp = NotebookPage("call_spots")
