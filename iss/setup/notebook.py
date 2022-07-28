@@ -554,6 +554,14 @@ class Notebook:
         return self
 
     def add_no_save_pages(self):
+        """
+        This adds the page `page_name` listed in `nb._no_save_pages` to the notebook if
+        the notebook already contains the pages listed in `nb._no_save_pages['page_name']['load_func_req']`
+        by running the function `nb._no_save_pages['page_name']['load_func'](nb, 'page_name')`.
+
+        At the moment, this is only used to add the `file_names` page to the notebook as soon as the `basic_info` page
+        has been added.
+        """
         for page_name in self._no_save_pages.keys():
             if self.has_page(page_name):
                 continue

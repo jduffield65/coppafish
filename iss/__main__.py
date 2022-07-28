@@ -8,9 +8,11 @@ import sys
 import os
 import textwrap
 
-def print_usage(message):
+def print_usage(message = None):
     if message:
         message = f"\n\n    ERROR: {message}"
+    else:
+        message = ''
     USAGE = f"""
     === ISS processing software ===
 
