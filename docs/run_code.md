@@ -1,24 +1,24 @@
 # Running the code
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Once the config file has been [set up](config_setup.md) with the path */Users/user/iss/experiment/settings.ini*, 
+the [code](code/pipeline/run.md#iss.pipeline.run.run_pipeline) can be run via the command line or using a python script:
 
-## Commands
+=== "Command Line"
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+    ``` bash
+    python -m iss /Users/user/iss/experiment/settings.ini
+    ```
 
+=== "Python Script"
+    ``` python
+    from iss import run_pipeline
+    ini_file = '/Users/user/iss/experiment/settings.ini'
+    nb = run_pipeline(ini_file)
+    ```
 
-
-## Project layout
-### Hello
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
-
-[Link_to_NotebookPage](code/setup/notebook.md#notebook-page)
-
-[Link_to_optimised-get_local_maxima_jax](code/find_spots/detect.md#iss.find_spots.detect_optimised.get_local_maxima_jax)
+If the pipeline has already been partially run and the notebook .npz file exists in the output directory, 
+the above will pick up the pipeline from the last stage it finished. So for a notebook that contains the pages 
+[*file_names*](notebook_comments.md#file_names), [*basic_info*](notebook_comments.md#basic_info),
+[*extract*](notebook_comments.md#extract), [*extract_debug*](notebook_comments.md#extract_debug) and 
+[*find_spots*](notebook_comments.md#find_spots), running the above code will start the pipeline at
+the [stitch stage](code/pipeline/run.md#iss.pipeline.run.run_stitch).
