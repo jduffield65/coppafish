@@ -279,6 +279,12 @@ class Notebook:
     assert nb2.pagename.var == 1
     ```
 
+    If you create a notebook without specifying `notebook_file`, i.e.
+    ```nb = Notebook(config_file="config_file.ini")```, the `notebook_file` will be set to:
+    ```python
+    notebook_file = config['file_names']['output_dir'] + config['file_names']['notebook_name'])
+    ```
+
     !!!note "On using config_file"
         When running the ISS pipeline, the `Notebook` requires a `config_file` to access information required for
         the different stages of the pipeline through `nb.get_config()`.
@@ -299,15 +305,25 @@ class Notebook:
     # When last of pages in load_func_req have been added, the page will automatically be added.
     _no_save_pages = {'file_names': {'load_func': set_file_names, 'load_func_req': ['basic_info']}}
 
-    def __init__(self, notebook_file, config_file=None):
+    def __init__(self, notebook_file: Optional[str] = None, config_file: Optional[str] = None):
         # Give option to load with config_file as None so don't have to supply ini_file location every time if
         # already initialised.
         # Also, can provide config_file if file_names section changed.
+        # Don't need to provide notebook_file as can determine this from config_file.
 
         # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.
         # We do the same thing here.
         object.__setattr__(self, '_page_times', {})
+        if notebook_file is None:
+            if config_file is None:
+                raise ValueError('Both notebook_file and config_file are None')
+            else:
+                config_file_names = get_config(config_file)['file_names']
+                notebook_file = os.path.join(config_file_names['output_dir'], config_file_names['notebook_name'])
+                if not os.path.isdir(config_file_names['output_dir']):
+                    raise ValueError(f"\nconfig['file_names']['output_dir'] = {config_file_names['output_dir']}\n"
+                                     f"is not a valid directory.")
         if not notebook_file.endswith(".npz"):
             notebook_file = notebook_file + ".npz"
         # Note that the ordering of _pages may change across saves and loads,

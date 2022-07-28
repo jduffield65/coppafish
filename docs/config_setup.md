@@ -2,7 +2,8 @@
 
 A config (.ini) file needs to be created for each experiment to run the pipeline. 
 All parameters not specified in this file will inherit the [default values](config.md).
-The parameters with Default = `MUST BE SPECIFIED` are the bare minimum parameters which must be specified.
+The parameters with Default = `MUST BE SPECIFIED` are the bare minimum parameters which need to be set in the experiment
+config file.
 Some example config files for typical experiments are listed below.
 
 ## Example Config Files
@@ -151,7 +152,7 @@ directory looks like for the config files *3D* and *.npy Raw Data* listed above)
     Also, each name listed in the `round` parameter indicates a folder not a file. 
     It is assumed these folders were produced using 
     [`dask.array.to_npy_stack`](https://docs.dask.org/en/stable/generated/dask.array.to_npy_stack.html)
-    so the contents of each file should contain a file named *info* and a .npy file for each tile, with the name 
+    so the contents of each folder should contain a file named *info* and a .npy file for each tile, with the name 
     being the index of the tile in the initial .nd2 file. An example showing the folder for the first round of a 
     three tile experiment is given below:
 
@@ -226,7 +227,7 @@ and to determine the expected `bled_code` for each gene.
 If the `anchor_round` is used and `ref_round` is specified, `ref_round` will be set to `anchor_round` (last round) 
 [in the notebook](code/pipeline/basic_info.md#iss.pipeline.basic_info.set_basic_info).
 
-???+warning "Problem in not using anchor"
+???+warning "Problem with not using anchor"
     With no anchor, the registration is likely to be worse because an imaging round is used as a reference.
     Thus, not all genes will appear in `ref_round` / `ref_channel`, but only those which appear with a dye
     in the `ref_round` which have high intensity in the `ref_channel`.
@@ -282,7 +283,7 @@ By default, this is not specified meaning no smoothing is done. If smoothing is 
 - 3D: `r_smooth = 2, 2, 2`
 
 The kernel which the image is correlated with is then 
-`np.ones(2 * r_smooth - 1) / np.sum(np.ones(2 * r_smooth - 1))` so for r_smooth = 2, 2 it will be:
+`np.ones(2 * r_smooth - 1) / np.sum(np.ones(2 * r_smooth - 1))` so for `r_smooth = 2, 2` it will be:
 
 ``` python
 array([[0.11111111, 0.11111111, 0.11111111],

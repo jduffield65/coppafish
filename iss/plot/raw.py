@@ -9,6 +9,22 @@ import os
 from tqdm import tqdm
 
 
+def add_basic_info_no_save(nb: setup.Notebook):
+    """
+    This adds the `basic_info` page to the notebook without saving the notebook.
+
+    Args:
+        nb: Notebook with no `basic_info` page.
+
+    """
+    if not nb.has_page("basic_info"):
+        nb._no_save_pages['basic_info'] = {}  # don't save if add basic_info page
+        config = nb.get_config()
+        nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
+        nb += nbp_basic
+
+
+
 def view_raw(config_file: str, rounds: Union[int, List[int]], tiles: Union[int, List[int]],
              channels: Optional[Union[int, List[int]]] = None):
     """
@@ -28,21 +44,12 @@ def view_raw(config_file: str, rounds: Union[int, List[int]], tiles: Union[int, 
             | 8  | 7  | 6  |
 
             | 11 | 10 | 9  |
-        channels: channels to view
+        channels: Channels to view. If `None`, will load all channels.
+            Channels not included here will just be shown as all zeros.
     """
-    config = setup.get_config(config_file)
-    if not config['file_names']['notebook_name'].endswith('.npz'):
-        # add .npz suffix if not in name
-        config['file_names']['notebook_name'] = config['file_names']['notebook_name'] + '.npz'
-    nb_path = os.path.join(config['file_names']['output_dir'], config['file_names']['notebook_name'])
-    if os.path.isfile(nb_path):
-        nb = setup.Notebook(nb_path, config_file)
-    else:
-        nb = setup.Notebook('empty', config_file)
+    nb = setup.Notebook(config_file=config_file)
     if not nb.has_page("basic_info"):
-        nb._no_save_pages['basic_info'] = {}  # don't save if add basic_info page
-        nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
-        nb += nbp_basic
+        add_basic_info_no_save(nb)
 
     if isinstance(rounds, numbers.Number):
         rounds = [rounds]

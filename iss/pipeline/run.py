@@ -6,7 +6,6 @@ from ..call_spots import get_non_duplicate
 import warnings
 import numpy as np
 from scipy import sparse
-from ..plot.results_viewer.base import iss_plot
 
 
 def run_pipeline(config_file: str) -> setup.Notebook:
@@ -20,7 +19,6 @@ def run_pipeline(config_file: str) -> setup.Notebook:
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
-    # iss_plot(nb)
     run_extract(nb)
     run_find_spots(nb)
     run_stitch(nb)
@@ -42,12 +40,8 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     Returns:
         `Notebook` containing `file_names` and `basic_info` pages.
     """
-    config = setup.get_config(config_file)
-    if not config['file_names']['notebook_name'].endswith('.npz'):
-        # add .npz suffix if not in name
-        config['file_names']['notebook_name'] = config['file_names']['notebook_name'] + '.npz'
-    nb_path = os.path.join(config['file_names']['output_dir'], config['file_names']['notebook_name'])
-    nb = setup.Notebook(nb_path, config_file)
+    nb = setup.Notebook('blah', config_file=config_file)
+    config = nb.get_config()
     if not nb.has_page("basic_info"):
         nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
         nb += nbp_basic
