@@ -22,3 +22,6 @@ the above will pick up the pipeline from the last stage it finished. So for a no
 [*extract*](notebook_comments.md#extract), [*extract_debug*](notebook_comments.md#extract_debug) and 
 [*find_spots*](notebook_comments.md#find_spots), running the above code will start the pipeline at
 the [stitch stage](code/pipeline/run.md#iss.pipeline.run.run_stitch).
+
+
+## Exporting to pciseq
