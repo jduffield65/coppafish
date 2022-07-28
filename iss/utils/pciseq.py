@@ -43,7 +43,7 @@ def export_to_pciseq(nb: Notebook):
     One .csv file is saved for each method: *omp* and *ref_spots* if the notebook contains
     both pages.
     Also adds the *thresholds* page to the notebook and re-saves.
-    This is so the *thresholds* in the config file cannot be further changed.
+    This is so the *thresholds* section in the config file cannot be further changed.
 
     Args:
         nb: Notebook for the experiment containing at least the *ref_spots* page.
