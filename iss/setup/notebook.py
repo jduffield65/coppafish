@@ -313,7 +313,8 @@ class Notebook:
         # Give option to load with config_file as None so don't have to supply ini_file location every time if
         # already initialised.
         # Also, can provide config_file if file_names section changed.
-        # Don't need to provide notebook_file as can determine this from config_file.
+        # Don't need to provide notebook_file as can determine this from config_file as:
+        # config['file_names']['output_dir'] + config['file_names']['notebook_name']
 
         # numpy isn't compatible with npz files which do not end in the suffix
         # .npz.  If one isn't there, it will add the extension automatically.
@@ -388,7 +389,7 @@ class Notebook:
     def compare_config(self, config_2: dict) -> bool:
         """
         Compares whether `config_2` is equal to the config file saved in the notebook.
-        Only sections not in `_no_compare_config_sections` and that there is a corresponding page saved to the notebook
+        Only sections not in `_no_compare_config_sections` and with a corresponding page saved to the notebook
         will be checked.
 
         Args:

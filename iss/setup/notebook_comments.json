@@ -518,8 +518,8 @@
   "thresholds":
   {
     "DESCRIPTION": ["thresholds page contains quality thresholds which affect which spots plotted",
-      "and which are exported to pciseq.",
-      "Page added to notebook when utils/export_to_pciseq/export is run."],
+      "and which are exported to *pciSeq*.",
+      "Page added to notebook when utils/pciseq/export_to_pciseq is run."],
     "intensity": ["Float",
       "Final accepted reference and OMP spots require `intensity > thresholds[intensity]`.",
       "This is copied from `config[thresholds]` and if not given there, will be set to ",

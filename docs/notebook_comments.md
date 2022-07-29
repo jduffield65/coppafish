@@ -610,7 +610,7 @@ omp page contains gene assignments and info for  spots located at the local maxi
 	if `max_intensity[s, r]` is the maximum value of `colors[s, r]/color_norm_factor[r]`: `intensity[s] = median(max_intensity[s])` i.e. the average across rounds.
 
 ## thresholds
-thresholds page contains quality thresholds which affect which spots plotted and which are exported to pciseq. Page added to notebook when utils/export_to_pciseq/export is run.
+thresholds page contains quality thresholds which affect which spots plotted and which are exported to *pciSeq*. Page added to notebook when utils/pciseq/export_to_pciseq is run.
 
 * **intensity**: *Float*.
 

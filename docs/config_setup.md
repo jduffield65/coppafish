@@ -4,6 +4,8 @@ A config (.ini) file needs to be created for each experiment to run the pipeline
 All parameters not specified in this file will inherit the [default values](config.md).
 The parameters with Default = `MUST BE SPECIFIED` are the bare minimum parameters which need to be set in the experiment
 config file.
+If any section or parameter within a section is added to the config file 
+which is not included in the [default file](config.md), an error will be raised when it is loaded in.
 Some example config files for typical experiments are listed below.
 
 ## Example Config Files
@@ -124,7 +126,7 @@ Some example config files for typical experiments are listed below.
     *Separate Round* case and then registers the `anchor_round`/`anchor_channel` to the `anchor_round`/`anchor_channel`
     of the full experiment.
 
-These variables are explained below and [here](config.md). 
+These parameters are explained below and [here](config.md). 
 
 ## file_names
 ### input_dir

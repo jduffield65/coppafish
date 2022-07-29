@@ -72,6 +72,7 @@ nav:
         - Setting up the Config File: config_setup.md
         - Running the code: run_code.md
         - Viewing the results: view_results.md
+        - Notebook: notebook.md
         - Config Default Settings: config.md
         - Notebook Comments: notebook_comments.md
     - Code:

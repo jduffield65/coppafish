@@ -4,7 +4,7 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **notebook_name**: *str*.
 
-	Name of notebook file in output directory will be [notebook_name].npz 
+	Name of notebook file in output directory will be *notebook_name*.npz 
 
 	Default: `notebook`
 
