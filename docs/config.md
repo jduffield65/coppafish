@@ -224,7 +224,11 @@ The *extract* section contains parameters which specify how to filter the raw mi
 
 * **r1**: *maybe_int*.
 
-	Filtering is done with a 2D difference of hanning filter with inner radius `r1` within which it is positive and outer radius `r2` so annulus between `r1` and `r2` is negative. Should be approx radius of spot. Typical = 3. Leave blank to auto detect using `r1_auto_microns micron`. 
+	Filtering is done with a 2D difference of hanning filter with inner radius `r1` within which it is positive and outer radius `r2` so annulus between `r1` and `r2` is negative. Should be approx radius of spot. Typical = 3. 
+
+	 For `r1 = 3` and `r2 = 6`, a `2048 x 2048 x 50` image took 4.1s. For `2 <= r1 <= 5` and `r2` double this, the time taken seemed to be constant. 
+
+	 Leave blank to auto detect using `r1_auto_microns micron`. 
 
 	Default: `None`
 
@@ -338,7 +342,15 @@ The *extract* section contains parameters which specify how to filter the raw mi
 
 * **r_smooth**: *maybe_list_int*.
 
-	Radius of averaging filter to do smoothing of filtered image. Provide two numbers to do 2D smoothing and three numbers to do 3D smoothing. Typical 2D: `2, 2`. Typical 3D: `2, 2, 2`. Leave empty to do no smoothing. 
+	Radius of averaging filter to do smoothing of filtered image. Provide two numbers to do 2D smoothing and three numbers to do 3D smoothing. Typical *2D*: `2, 2`. Typical *3D*: `1, 1, 2`. Recommended use is in *3D* only as it incorporates information between z-planes which filtering with difference of hanning kernels does not. 
+
+	 Size of `r_smooth` has big influence on time taken for smoothing. For a `2048 x 2048 x 50` image: 
+
+	 * `r_smooth = 1, 1, 2`: 2.8 seconds 
+
+	 * `r_smooth = 2, 2, 2`: 8.5 seconds 
+
+	 Leave empty to do no smoothing. 
 
 	Default: `None`
 

@@ -1,248 +1,217 @@
+import napari
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.widgets import TextBox, Button, RangeSlider
+from .. import extract, utils
+from ..setup import Notebook
+from .raw import get_raw_images, number_to_list
+from typing import Optional, Union, List
+from qtpy.QtCore import Qt
+from PyQt5.QtWidgets import QSlider
+import time
+from superqt import QLabeledSlider
 
-import iss.utils.nd2
-from ..pipeline.basic_info import set_basic_info
-from .. import setup, extract, utils
-import os
 
 
-class plot_3d:
-    def __init__(self, image, title, color_ax_min=None, color_ax_max=None):
-        self.fig, self.ax = plt.subplots(1, 1)
-        self.title = title
-        self.nz = image.shape[2]
-        self.z = 0
-        self.base_image = image
-        self.image = image.copy()
-        # min_color is min possible color axis
-        # color_ax_min is current min color axis.
-        min_color = self.image.min()
-        if color_ax_min is None:
-            color_ax_min = min_color
-        if color_ax_min < min_color:
-            min_color = color_ax_min
-        max_color = self.image.max()
-        if color_ax_max is None:
-            color_ax_max = self.image.max()
-        if color_ax_max > max_color:
-            max_color = color_ax_max
-        self.im = self.ax.imshow(self.image[:, :, self.z], vmin=color_ax_min, vmax=color_ax_max)
+class view_filter:
+    def __init__(self, nb: Optional[Notebook] = None, tiles: int = 0,
+                 rounds: int = 0,
+                 channels: int = 0,
+                 use_z: Optional[Union[int, List[int]]] = None, config_file: Optional[str] = None):
+        """
+        Function to view filtering of raw data in napari.
+        There will be 2 scrollbars in 3D.
+        One to change between *raw/filtered/filtered+smoothed* and one to change z-plane.
 
-        self.update()
-        self.ax.invert_yaxis()
-        self.fig.colorbar(self.im)
-        self.fig.canvas.mpl_connect('scroll_event', self.z_scroll)
+        There are also sliders to change the parameters for the filtering/smoothing.
+        When the sliders are changed, the time taken for the new filtering/smoothing
+        will be printed to the console.
 
-        slider_ax = self.fig.add_axes([0.1, 0.1, 0.01, 0.8])
-        self.color_slider = RangeSlider(slider_ax, "Clim", min_color, max_color, [color_ax_min, color_ax_max],
-                                        orientation='vertical', valfmt='%.2f')
-        self.color_slider.on_changed(self.change_clim)
+        !!! note
+            When `r_smooth` is set to `[1, 1, 1]`, no smoothing will be performed.
+            When this is the case, changing the filtering radius using the slider will
+            be quicker because it will only do filtering and not any smoothing.
 
-    def z_scroll(self, event):
-        if event.button == 'up':
-            self.z = (self.z + 1) % self.nz
+
+        Args:
+            nb: *Notebook* for experiment. If no *Notebook* exists, pass `config_file` instead.
+            tiles: npy (as opposed to nd2 fov) tile index to view.
+                For an experiment where the tiles are arranged in a 4 x 3 (ny x nx) grid, tile indices are indicated as
+                below:
+
+                | 2  | 1  | 0  |
+
+                | 5  | 4  | 3  |
+
+                | 8  | 7  | 6  |
+
+                | 11 | 10 | 9  |
+            rounds: round to view
+            channels: Channel to view.
+            use_z: Which z-planes to load in from raw data. If `None`, will use load all z-planes (except from first
+                one if `config['basic_info']['ignore_first_z_plane'] == True`).
+            config_file: path to config file for experiment.
+        """
+        if nb is None:
+            nb = Notebook(config_file=config_file)
+        if use_z is None:
+            use_z = nb.basic_info.use_z
+        tiles, rounds, channels, use_z = number_to_list([tiles, rounds, channels, use_z])
+        self.image_raw = get_raw_images(nb, tiles, rounds, channels, use_z)[0, 0, 0]
+
+        self.is_3d = nb.basic_info.is_3d
+        if not self.is_3d:
+            self.image_raw = extract.focus_stack(self.image_raw)
+            self.image_plot = np.zeros((3, nb.basic_info.tile_sz, nb.basic_info.tile_sz), dtype=np.int32)
+            self.image_plot[0] = self.image_raw
         else:
-            self.z = (self.z - 1) % self.nz
-        self.update()
+            self.image_plot = np.zeros((3, len(use_z), nb.basic_info.tile_sz, nb.basic_info.tile_sz), dtype=np.int32)
+            self.image_plot[0] = np.moveaxis(self.image_raw, 2, 0)  # put z axis first for plotting
+        self.raw_max = self.image_raw.max()
 
-    def update(self):
-        self.im.set_data(self.image[:, :, self.z])
-        self.ax.set_title(f'{self.title}\nZ-Plane = {self.z}')
-        self.im.axes.figure.canvas.draw()
+        # find faulty columns and update self.image_raw so don't have to run strip_hack each time we filter
+        self.image_raw, self.bad_columns = extract.strip_hack(self.image_raw)
 
-    def change_clim(self, val):
-        self.im.set_clim(val[0], val[1])
-        self.im.axes.figure.canvas.draw()
-
-
-class plot_filter:
-    def __init__(self, config_file, t=None, r=None, c=None):
-        print('Getting info from nd2 files...')
-        config = setup.get_config(config_file)
-        nbp_file, nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
-        print('Done.')
-
-        # Get filter info
-        config_extract = config['extract']
-        r1 = config_extract['r1']
-        r2 = config_extract['r2']
-        if r1 is None:
-            r1 = extract.get_pixel_length(config_extract['r1_auto_microns'], nbp_basic.pixel_size_xy)
+        # Get default filter info
+        config = nb.get_config()['extract']
+        self.r_filter = config['r1']
+        r2 = config['r2']
+        if self.r_filter is None:
+            self.r_filter = extract.get_pixel_length(config['r1_auto_microns'], nb.basic_info.pixel_size_xy)
         if r2 is None:
-            r2 = r1 * 2
-        self.filter_kernel = iss.utils.morphology.morphology.hanning_diff(r1, r2)
+            r2 = self.r_filter * 2
+        self.update_filter_image(r2)
 
-        # Get deconvolution info - uses anchor round
-        if os.path.isfile(nbp_file.psf):
-            psf_tiles_used = [0]
-            psf = utils.tiff.load(nbp_file.psf).astype(float)
+        # Get default smoothing info
+        if config['r_smooth'] is None:
+            # start with no smoothing. Quicker to change filter params as no need to update smoothing too.
+            config['r_smooth'] = [1, 1, 1]
+        if not nb.basic_info.is_3d:
+            config['r_smooth'] = config['r_smooth'][:2]
+        self.r_smooth = config['r_smooth']
+        self.update_smooth_image()
+
+        self.viewer = napari.Viewer()
+        self.viewer.add_image(self.image_plot, name=f"Tile {tiles[0]}, Round {rounds[0]}, Channel{channels[0]}")
+        # Set min image contrast to 0 for better comparison between images
+        self.viewer.layers[0].contrast_limits = [0, 0.9 * self.viewer.layers[0].contrast_limits[1]]
+        self.ax0_ind = 0
+        self.ax0_labels = ['Raw', 'Filtered', 'Filtered and Smoothed']
+        self.viewer.dims.set_point(0, self.ax0_ind)  # set filter type to raw initially
+        self.viewer.dims.events.current_step.connect(self.filter_type_status)
+
+        self.filter_slider = QSlider(Qt.Orientation.Horizontal)
+        self.filter_slider.setRange(2, 10)
+        self.filter_slider.setValue(self.r_filter)
+        # When dragging, status will show r_filter value
+        self.filter_slider.valueChanged.connect(lambda x: self.show_filter_radius(x))
+        # On release of slider, filtered / smoothed images updated
+        self.filter_slider.sliderReleased.connect(self.filter_slider_func)
+        self.viewer.window.add_dock_widget(self.filter_slider, area="left", name='Filter Radius')
+
+        self.smooth_yx_slider = QSlider(Qt.Orientation.Horizontal)
+        self.smooth_yx_slider.setRange(1, 5)  # gets very slow with large values
+        self.smooth_yx_slider.setValue(self.r_smooth[0])
+        # When dragging, status will show r_smooth value
+        self.smooth_yx_slider.valueChanged.connect(lambda x: self.show_smooth_radius_yx(x))
+        # On release of slider, smoothed image updated
+        self.smooth_yx_slider.sliderReleased.connect(self.smooth_slider_func)
+        smooth_title = "Smooth Radius"
+        if self.is_3d:
+            smooth_title = smooth_title + " YX"
+        self.viewer.window.add_dock_widget(self.smooth_yx_slider, area="left", name=smooth_title)
+
+        if self.is_3d:
+            self.smooth_z_slider = QSlider(Qt.Orientation.Horizontal)
+            self.smooth_z_slider.setRange(1, 5)  # gets very slow with large values
+            self.smooth_z_slider.setValue(self.r_smooth[2])
+            # When dragging, status will show r_smooth value
+            self.smooth_z_slider.valueChanged.connect(lambda x: self.show_smooth_radius_z(x))
+            # On release of slider, smoothed image updated
+            self.smooth_z_slider.sliderReleased.connect(self.smooth_slider_func)
+            self.viewer.window.add_dock_widget(self.smooth_z_slider, area="left", name="Smooth Radius Z")
+
+        if self.is_3d:
+            self.viewer.dims.axis_labels = ['Filter Type', 'z', 'y', 'x']
         else:
-            print('Getting psf...')
-            if nbp_basic.ref_round == nbp_basic.anchor_round:
-                im_file = os.path.join(nbp_file.input_dir, nbp_file.anchor + nbp_file.raw_extension)
-            else:
-                im_file = os.path.join(nbp_file.input_dir,
-                                       nbp_file.round[nbp_basic.ref_round] + nbp_file.raw_extension)
+            self.viewer.dims.axis_labels = ['Filter Type', 'y', 'x']
+        napari.run()
 
-            spot_images, psf_intensity_thresh, psf_tiles_used = \
-                extract.get_psf_spots(im_file, nbp_basic.tilepos_yx, nbp_basic.tilepos_yx_nd2,
-                                      nbp_basic.use_tiles, nbp_basic.ref_channel, nbp_basic.use_z,
-                                      config_extract['psf_detect_radius_xy'], config_extract['psf_detect_radius_z'],
-                                      config_extract['psf_min_spots'], config_extract['psf_intensity_thresh'],
-                                      config_extract['auto_thresh_multiplier'], config_extract['psf_isolation_dist'],
-                                      config_extract['psf_shape'])
-            psf = extract.get_psf(spot_images, config_extract['psf_annulus_width'])
-            print('Done.')
-        # normalise psf so min is 0 and max is 1.
-        psf = psf - psf.min()
-        psf = psf / psf.max()
-        self.wiener_pad_shape = config_extract['wiener_pad_shape']
-        self.pad_im_shape = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz]) + \
-                       np.array(self.wiener_pad_shape) * 2
-        self.psf = psf
-        psf_plot = plot_3d(psf, 'Point Spread Function', 0, 1)
-        self.wiener_constant = config_extract['wiener_constant']
+    def update_filter_image(self, r2: Optional[int] = None):
+        if r2 is None:
+            r2 = self.r_filter * 2  # default outer hanning filter is double inner radius
+        print(f"Updating filtered image with r1 = {self.r_filter} and r2 = {r2}...")
+        filter_kernel = utils.morphology.hanning_diff(self.r_filter, r2)
+        time_start = time.time()
+        image_filter = utils.morphology.convolve_2d(self.image_raw, filter_kernel)
+        image_filter[:, self.bad_columns] = 0
+        time_end = time.time()
+        # set max value to be same as image_raw
+        image_filter = np.rint(image_filter / image_filter.max() * self.raw_max)
+        if self.is_3d:
+            image_filter = np.moveaxis(image_filter, 2, 0)  # put z axis first for plotting
+        self.image_plot[1] = image_filter
+        print("Finished in {:.2f} seconds".format(time_end - time_start))
 
-        # Load in image to filter
-        if t is None:
-            t = psf_tiles_used[0]
-        if r is None:
-            r = nbp_basic.ref_round
-        if c is None:
-            c = nbp_basic.ref_channel
-        self.title = f"Tile {t}, Round {r}, Channel {c}"
-        if nbp_basic.use_anchor:
-            # always have anchor as first round after imaging rounds
-            round_files = nbp_file.round + [nbp_file.anchor]
+    def update_smooth_image(self):
+        if np.max(self.r_smooth) > 1:
+            print(f"Updating smoothed image with r_smooth = {self.r_smooth}...")
+            image_filter = self.image_plot[1]
+            if self.is_3d:
+                image_filter = np.moveaxis(image_filter, 0, 2)  # put z axis to end for smoothing
+            smooth_kernel = np.ones(tuple(np.array(self.r_smooth, dtype=int) * 2 - 1))
+            smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
+            time_start = time.time()
+            image_smooth = utils.morphology.imfilter(image_filter, smooth_kernel, oa=False)
+            image_smooth[:, self.bad_columns] = 0
+            time_end = time.time()
+            # set max value to be same as image_raw
+            image_smooth = np.rint(image_smooth / image_smooth.max() * self.raw_max)
+            if self.is_3d:
+                image_smooth = np.moveaxis(image_smooth, 2, 0)  # put z axis first for plotting
+            self.image_plot[2] = image_smooth
+            print("Finished in {:.2f} seconds".format(time_end - time_start))
         else:
-            round_files = nbp_file.round
-        print(f'Loading in tile {t}, round {r}, channel {c} from nd2 file...')
-        im_file = os.path.join(nbp_file.input_dir, round_files[r] + nbp_file.raw_extension)
-        images = utils.nd2.load(im_file)
-        self.base_image = utils.nd2.get_image(images, iss.utils.nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2,
-                                                                                     nbp_basic.tilepos_yx),
-                                              c, nbp_basic.use_z)
-        print('Done.')
+            self.image_plot[2] = self.image_plot[1]  # if radius of smoothing are all 1, same as no smoothing
 
-        # Plot image
-        self.fig, self.ax = plt.subplots(1, 1)
-        self.fig.subplots_adjust(left=0, right=1, bottom=0.16, top=0.94)
-        self.nz = self.base_image.shape[2]
-        self.z = 0
-        self.wiener = False
-        self.hanning_filter = False
-        self.image = self.base_image.copy()
-        self.im = self.ax.imshow(self.image[:, :, self.z], cmap="gray")
-        self.raw_clims = [0, self.image.max()]
-        self.filt_clims = [-nbp_basic.tile_pixel_value_shift, config_extract['scale_norm']]
-        self.ax.invert_yaxis()
-        self.fig.colorbar(self.im)
-        self.fig.canvas.mpl_connect('scroll_event', self.z_scroll)
+    def filter_type_status(self, event):
+        if event.value[0] != self.ax0_ind:
+            # Whenever filter type axis is changed, indicate in bottom left corner.
+            self.ax0_ind = event.value[0]
+            self.viewer.status = f'Filter Type: {self.ax0_labels[self.ax0_ind]}'
 
-        slider_ax = self.fig.add_axes([0.1, 0.1, 0.01, 0.8])
-        self.color_slider = RangeSlider(slider_ax, "Clim", -nbp_basic.tile_pixel_value_shift, np.iinfo(np.uint16).max,
-                                        self.raw_clims, orientation='vertical', valfmt='%.0f')
-        self.color_slider.on_changed(self.change_clim)
+    def show_filter_radius(self, val):
+        self.viewer.status = f"Filtering Radius = {val}"
 
-        self.update()
-        self.update_images()
+    def filter_slider_func(self):
+        if self.r_filter != self.filter_slider.value():
+            self.r_filter = self.filter_slider.value()
+            self.update_filter_image()
+            self.update_smooth_image()
+            self.viewer.layers[0].data = self.image_plot
 
-        # [left, bottom, width, height]
-        wiener_button_ax = self.fig.add_axes([0.8, 0.025+0.05, 0.1, 0.04])
-        self.wiener_button = Button(wiener_button_ax, 'WienerFilter', hovercolor='0.975')
-        self.wiener_button.on_clicked(self.wiener_button_click)
-        filter_button_ax = self.fig.add_axes([0.8, 0.025, 0.1, 0.04])
-        self.filter_button = Button(filter_button_ax, 'HanningFilter', hovercolor='0.975')
-        self.filter_button.on_clicked(self.filter_button_click)
-        text_ax = self.fig.add_axes([0.5, 0.025, 0.2, 0.04])
-        self.text_box = TextBox(text_ax, 'Wiener Constant', self.wiener_constant)
-        self.text_box.on_submit(self.text_update)
-
-        # plt.show(block=True) # this is needed when called from PythonConsole
-        plt.show()
-
-    def z_scroll(self, event):
-        if event.button == 'up':
-            self.z = (self.z + 1) % self.nz
+    def show_smooth_radius_yx(self, val):
+        r_smooth_update = self.r_smooth.copy()
+        r_smooth_update[0] = val
+        r_smooth_update[1] = val
+        if np.max(r_smooth_update) == 1:
+            self.viewer.status = f"Smoothing Radius = {r_smooth_update} (No smoothing)"
         else:
-            self.z = (self.z - 1) % self.nz
-        self.update()
+            self.viewer.status = f"Smoothing Radius = {r_smooth_update}"
 
-    def wiener_button_click(self, event):
-        if self.wiener:
-            self.wiener = False
-            if self.hanning_filter:
-                self.image = self.filtered_image
-            else:
-                self.image = self.base_image
+    def show_smooth_radius_z(self, val):
+        r_smooth_update = self.r_smooth.copy()
+        r_smooth_update[2] = val
+        if np.max(r_smooth_update) == 1:
+            self.viewer.status = f"Smoothing Radius = {r_smooth_update} (No smoothing)"
         else:
-            self.wiener = True
-            if self.hanning_filter:
-                self.image = self.filtered_wiener_image
-            else:
-                self.image = self.wiener_image
-        self.update()
+            self.viewer.status = f"Smoothing Radius = {r_smooth_update}"
 
-    def filter_button_click(self, event):
-        if self.hanning_filter:
-            self.hanning_filter = False
-            if self.wiener:
-                self.image = self.wiener_image
-            else:
-                self.image = self.base_image
-        else:
-            self.hanning_filter = True
-            if self.wiener:
-                self.image = self.filtered_wiener_image
-            else:
-                self.image = self.filtered_image
-        self.update()
-
-    def text_update(self, text):
-        # If change wiener_constant value, all images are found again.
-        self.wiener_constant = float(text)
-        self.update_images()
-        self.image = self.base_image
-        self.wiener = False
-        self.hanning_filter = False
-        self.update()
-
-    def change_clim(self, val):
-        if self.hanning_filter:
-            self.filt_clims = val
-        else:
-            self.raw_clims = val
-        self.im.set_clim(val[0], val[1])
-        self.im.axes.figure.canvas.draw()
-
-    def update(self):
-        self.im.set_data(self.image[:, :, self.z])
-        if self.hanning_filter:
-            self.im.set_clim(self.filt_clims[0], self.filt_clims[1])
-            self.color_slider.set_val(self.filt_clims)
-        else:
-            self.im.set_clim(self.raw_clims[0], self.raw_clims[1])
-            self.color_slider.set_val(self.raw_clims)
-        self.ax.set_title(f'{self.title}\nZ-Plane = {self.z}, WienerFilter = {self.wiener},'
-                          f' HanningFilter = {self.hanning_filter}')
-        self.im.axes.figure.canvas.draw()
-
-    def update_images(self):
-        im, bad_columns = extract.strip_hack(self.base_image)
-        print('Doing Wiener Filtering...')
-        self.wiener_filter = extract.get_wiener_filter(self.psf, self.pad_im_shape, self.wiener_constant)
-        self.wiener_image = extract.wiener_deconvolve(im, self.wiener_pad_shape, self.wiener_filter)
-        print('Doing Filtering...')
-        self.filtered_wiener_image = iss.utils.morphology.morphology.convolve_2d(self.wiener_image, self.filter_kernel)
-        scale = self.filt_clims[1] / self.filtered_wiener_image.max()
-        self.filtered_wiener_image = self.filtered_wiener_image * scale
-        print('Doing Filtering...')
-        self.filtered_image = iss.utils.morphology.morphology.convolve_2d(im, self.filter_kernel)
-        scale = self.filt_clims[1] / self.filtered_image.max()
-        self.filtered_image = self.filtered_image * scale
-        self.wiener_image[:, bad_columns] = 0
-        self.filtered_wiener_image[:, bad_columns] = 0
-        self.filtered_image[:, bad_columns] = 0
-        print('Done.')
+    def smooth_slider_func(self):
+        r_smooth_update = self.r_smooth.copy()
+        r_smooth_update[0] = self.smooth_yx_slider.value()
+        r_smooth_update[1] = self.smooth_yx_slider.value()
+        if self.is_3d:
+            r_smooth_update[2] = self.smooth_z_slider.value()
+        if self.r_smooth != r_smooth_update:
+            self.r_smooth = r_smooth_update
+            self.update_smooth_image()
+            self.viewer.layers[0].data = self.image_plot

@@ -127,6 +127,7 @@ nav:
         - Plot:
             - Viewer: code/plot/viewer.md
             - Raw: code/plot/raw.md
+            - Extract: code/plot/extract.md
             - Stitch: code/plot/stitch.md
             - Register: code/plot/register.md
             - Call Spots: code/plot/call_spots.md

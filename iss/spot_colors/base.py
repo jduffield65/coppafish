@@ -125,7 +125,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         tile_sz = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz], dtype=np.int16)
 
     with tqdm(total=n_use_rounds * n_use_channels, disable=no_verbose) as pbar:
-        pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from npy files.")
+        pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from npy files")
         for r in range(n_use_rounds):
             if not nbp_basic.is_3d:
                 # If 2D, load in all channels first

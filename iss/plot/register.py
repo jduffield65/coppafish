@@ -240,8 +240,6 @@ def view_pcr(nb: Notebook, t: int, r: int, c: int):
         r: Want to find the transform between the reference round and this round.
         c: Want to find the transform between the reference channel and this channel.
     """
-    # TODO: if used regularisation i.e. if transform_outlier non-zero, add another transform which is the non-regularised
-    #  i.e. transform_outlier
     config = nb.get_config()
     if nb.basic_info.is_3d:
         neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
@@ -267,8 +265,14 @@ def view_pcr(nb: Notebook, t: int, r: int, c: int):
     point_clouds = point_clouds + [point_clouds[1] + shift]
 
     # Add reference point cloud transformed by an affine transform
+    transform_outlier = None
     if nb.has_page('register'):
         transform = nb.register.transform[t, r, c]
+        if nb.has_page('register_debug'):
+            # If particular tile/round/channel was found by regularised least squares
+            transform_outlier = nb.register_debug.transform_outlier[t, r, c]
+            if np.abs(transform_outlier).max() == 0:
+                transform_outlier = None
     else:
         transform = get_single_affine_transform(config['register'], point_clouds[1], point_clouds[0], z_scale, z_scale,
                                                 shift, neighb_dist_thresh, nb.basic_info.tile_centre)[0]
@@ -279,9 +283,15 @@ def view_pcr(nb: Notebook, t: int, r: int, c: int):
     else:
         tile_sz = np.array([nb.basic_info.tile_sz, nb.basic_info.tile_sz, nb.basic_info.nz], dtype=np.int16)
 
+    if transform_outlier is not None:
+        point_clouds = point_clouds + [apply_transform(point_clouds[1], transform_outlier, nb.basic_info.tile_centre,
+                                                       z_scale, tile_sz)[0]]
+
     point_clouds = point_clouds + [apply_transform(point_clouds[1], transform, nb.basic_info.tile_centre, z_scale,
                                                    tile_sz)[0]]
     pc_labels = [f'Imaging: r{r}, c{c}', f'Reference: r{r_ref}, c{c_ref}', f'Reference: r{r_ref}, c{c_ref} - Shift',
                  f'Reference: r{r_ref}, c{c_ref} - Affine']
+    if transform_outlier is not None:
+        pc_labels = pc_labels + [f'Reference: r{r_ref}, c{c_ref} - Regularized']
     view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
                       f'Transform of tile {t} to round {r}, channel {c}')

@@ -44,7 +44,7 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
     if yxz_target_tree is None:
         yxz_target_tree = KDTree(yxz_target)
     yxz_base_pad = np.pad(yxz_base, [(0, 0), (0, 1)], constant_values=1)
-    yxz_transform = np.matmul(yxz_base_pad, transform_old)
+    yxz_transform = yxz_base_pad @ transform_old
     distances, neighbour = yxz_target_tree.query(yxz_transform, distance_upper_bound=dist_thresh)
     neighbour = neighbour.flatten()
     distances = distances.flatten()

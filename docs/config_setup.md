@@ -282,12 +282,28 @@ The parameter `r_smooth` in the extract section specifies whether to smooth with
 the raw images have been convolved with a 
 [difference of hanning kernel](code/utils/morphology.md#iss.utils.morphology.base.hanning_diff).
 This will make the extract section of the pipeline slower but will reduce the influence
-of anomalously high or low intensity pixels.
+of anomalously high or low intensity pixels. It may be particularly appropriate to *3D* data because
+the difference of hanning convolution is done independently on each z-plane but the smoothing
+can incorporate information between z-planes.
+
+??? note "Time for smoothing"
+
+    The size of `r_smooth` has big influence on time taken for smoothing. 
+    For a `2048 x 2048 x 50` image:
+
+    * `r_smooth = 1, 1, 2`: 2.8 seconds
+    * `r_smooth = 2, 2, 2`: 8.5 seconds
+
+    The convolution with the 
+    [difference of hanning kernel](code/utils/morphology.md#iss.utils.morphology.base.hanning_diff)
+    takes 4.1 seconds on the same image so smoothing will make the extract section of the pipeline 
+    significantly longer.
+
 
 By default, this is not specified meaning no smoothing is done. If smoothing is needed, typical values are:
 
 - 2D: `r_smooth = 2, 2`
-- 3D: `r_smooth = 2, 2, 2`
+- 3D: `r_smooth = 1, 1, 2`
 
 The kernel which the image is correlated with is then 
 `np.ones(2 * r_smooth - 1) / np.sum(np.ones(2 * r_smooth - 1))` so for `r_smooth = 2, 2` it will be:
