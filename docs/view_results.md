@@ -1,7 +1,7 @@
 # Viewing the results
 
 Once the pipeline has completed the [`reference_spots`](code/pipeline/run.md#iss.pipeline.run.run_reference_spots) step 
-such that the notebook contains the [*call_spots*](notebook_comments.md#call_spots) and 
+such that the [*Notebook*](notebook.md) contains the [*call_spots*](notebook_comments.md#call_spots) and 
 [*ref_spots*](notebook_comments.md#ref_spots) pages, the gene assignments of the spots found can be visualised
 by using [`iss_plot`](code/plot/viewer.md).
 
@@ -188,7 +188,7 @@ rounds/channels where the gene is particularly strong. It is also done in [`view
 ### *space*: Change to *select* mode
 To run the below diagnostics, you need to change to *select* mode. This is done by pressing *space-bar*.
 In *select* mode, you won't be able to pan or zoom. To change back to *pan/zoom* mode, press *space-bar* again.
-On pressing *space-bar*, it should tell you in the bottom right corner of the viewer which method you are using.
+On pressing *space-bar*, it should tell you in the bottom right corner of the viewer which mode you are in.
 
 When clicking on a spot in *select* mode, it should tell you in the bottom left corner, the *spot_no* of that spot
 and to which *gene* it was assigned. 

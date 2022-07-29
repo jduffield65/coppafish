@@ -1,6 +1,6 @@
 # Running the code
 
-Once the config file has been [set up](config_setup.md) with the path */Users/user/iss/experiment/settings.ini*, 
+Once the configuration file has been [set up](config_setup.md) with the path */Users/user/iss/experiment/settings.ini*, 
 the [code](code/pipeline/run.md#iss.pipeline.run.run_pipeline) can be run via the command line or using a python script:
 
 === "Command Line"
@@ -16,7 +16,7 @@ the [code](code/pipeline/run.md#iss.pipeline.run.run_pipeline) can be run via th
     nb = run_pipeline(ini_file)
     ```
 
-If the pipeline has already been partially run and the notebook .npz file exists in the output directory, 
+If the pipeline has already been partially run and the [notebook.npz](notebook.md) file exists in the output directory, 
 the above will pick up the pipeline from the last stage it finished. So for a notebook that contains the pages 
 [*file_names*](notebook_comments.md#file_names), [*basic_info*](notebook_comments.md#basic_info),
 [*extract*](notebook_comments.md#extract), [*extract_debug*](notebook_comments.md#extract_debug) and 
@@ -68,4 +68,4 @@ An example file is given [here](images/pciseq_omp.csv).
 This will also add a page named [*thresholds*](notebook_comments.md#thresholds) to the notebook which 
 inherits all the values from the [*thresholds*](config.md#thresholds) section of the config file. 
 This is to remove the possibility of the [*thresholds*](config.md#thresholds) section in the config
-file being changed once the results have been exported.
+file [being changed](notebook.md#configuration-file) once the results have been exported.

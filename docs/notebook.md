@@ -55,8 +55,8 @@ run `nb = Notebook('/Users/user/iss/experiment/notebook.npz')`.
 
 ??? note "Using *Notebook* outside the ISS pipeline"
 
-    Passing the configuration file to the *Notebook* allows for several features explained below.
-    However, a *Notebook* can be created without it:
+    Passing the configuration file to the *Notebook* allows for several [features](#configuration-file),
+    however a *Notebook* can be created without it:
     ``` python
     from iss import Notebook
     nb_file = '/Users/user/iss/experiment/notebook.npz'
@@ -174,12 +174,12 @@ function. An example to print the comment for the variable `gene_no` in the *omp
 
 === "Code"
     ``` python
-        nb.omp.describe('gene_no')
+    nb.omp.describe('gene_no')
     ```
 === "Output"
     ``` text
-        Numpy int16 array [n_spots]
-        gene_no[s] is the index of the gene assigned to spot s.
+    Numpy int16 array [n_spots]
+    gene_no[s] is the index of the gene assigned to spot s.
     ```
 
 If [`describe`](code/setup/notebook.md#iss.setup.notebook.Notebook.describe) is called from the *Notebook* instead,
@@ -189,18 +189,18 @@ name that it encounters:
 === "Code"
 
     ``` python
-        nb.describe('gene_no')
+    nb.describe('gene_no')
     ```
 === "Output"
 
     ``` text
-        gene_no in ref_spots:
-        Numpy int16 array [n_spots]
-        gene_no[s] is the index of the gene assigned to spot s.
+    gene_no in ref_spots:
+    Numpy int16 array [n_spots]
+    gene_no[s] is the index of the gene assigned to spot s.
 
-        gene_no in omp:
-        Numpy int16 array [n_spots]
-        gene_no[s] is the index of the gene assigned to spot s.
+    gene_no in omp:
+    Numpy int16 array [n_spots]
+    gene_no[s] is the index of the gene assigned to spot s.
     ```
 
 If [`describe`](code/setup/notebook.md#iss.setup.notebook.Notebook.describe) is called from the *Notebook* 
@@ -210,14 +210,14 @@ for `dp_thresh` in the *omp* section:
 === "Code"
 
     ``` python
-        nb.describe('dp_thresh')
+    nb.describe('dp_thresh')
     ```
 === "Output"
 
     ``` text
-        No variable named dp_thresh in the omp page.
-        But it is in the omp section of the config file and has value:
-        0.225
+    No variable named dp_thresh in the omp page.
+    But it is in the omp section of the config file and has value:
+    0.225
     ```
 
 ### Configuration File
@@ -227,7 +227,7 @@ The configuration file can be returned as a dictionary of dictionaries from the 
 === "Code"
 
     ``` python
-        config = nb.get_config()
+    config = nb.get_config()
     ```
 === "config"
 
@@ -333,37 +333,37 @@ when loading it in as explained below:
 === "Code"
 
     ``` python
-        from iss import Notebook
-        nb_file = '/Users/user/iss/experiment/notebook.npz'
-        ini_file = '/Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini'
+    from iss import Notebook
+    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    ini_file = '/Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini'
 
-        # config_file not given so will use last one saved to Notebook
-        nb_old = Notebook(nb_file)  
-        print('Using config file saved to notebook:')
-        print(nb_old.file_names.output_dir)
-        print(nb_old.file_names.big_anchor_image)
-        # tile file path for round 0, tile 0, channel 0
-        print(nb_old.file_names.tile[0][0][0])
+    # config_file not given so will use last one saved to Notebook
+    nb_old = Notebook(nb_file)  
+    print('Using config file saved to notebook:')
+    print(nb_old.file_names.output_dir)
+    print(nb_old.file_names.big_anchor_image)
+    # tile file path for round 0, tile 0, channel 0
+    print(nb_old.file_names.tile[0][0][0])
 
-        # config_file given so will update nb._config
-        nb_new = Notebook(nb_file, ini_file)  
-        print(f'Using new config file {ini_file}:')
-        print(nb_new.file_names.output_dir)
-        print(nb_new.file_names.big_anchor_image)
-        # tile file path for round 0, tile 0, channel 0
-        print(nb_new.file_names.tile[0][0][0])  
+    # config_file given so will update nb._config
+    nb_new = Notebook(nb_file, ini_file)  
+    print(f'Using new config file {ini_file}:')
+    print(nb_new.file_names.output_dir)
+    print(nb_new.file_names.big_anchor_image)
+    # tile file path for round 0, tile 0, channel 0
+    print(nb_new.file_names.tile[0][0][0])  
     ```
-=== "Output of Code"
+=== "Output"
 
     ``` text
-        Using config file saved to notebook:
-        /Users/user/iss/experiment1/output
-        /Users/user/iss/experiment1/output/anchor_image.npz
-        /Users/user/iss/experiment1/tiles/Exp1_r0_t0c0.npy
-        Using new config file /Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini:
-        /Users/NEW_USER/iss/NEW_EXPERIMENT/output
-        /Users/NEW_USER/iss/NEW_EXPERIMENT/output/anchor_image.npz
-        /Users/NEW_USER/iss/NEW_EXPERIMENT/tiles/Exp1_r0_t0c0.npy
+    Using config file saved to notebook:
+    /Users/user/iss/experiment1/output
+    /Users/user/iss/experiment1/output/anchor_image.npz
+    /Users/user/iss/experiment1/tiles/Exp1_r0_t0c0.npy
+    Using new config file /Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini:
+    /Users/NEW_USER/iss/NEW_EXPERIMENT/output
+    /Users/NEW_USER/iss/NEW_EXPERIMENT/output/anchor_image.npz
+    /Users/NEW_USER/iss/NEW_EXPERIMENT/tiles/Exp1_r0_t0c0.npy
     ```
 === "nb._config (saved to *Notebook*)"
 
@@ -398,10 +398,8 @@ when loading it in as explained below:
     dapi_channel = 0
     ```
 
-
-
 Also, as soon as a *NotebookPage* named [*basic_info*](notebook_comments.md#basic_info) is added to the *Notebook*,
-the [*file_names*](notebook_comments.md#file_names) *NotebookPage* will also be added due to 
-information in the `Notebook._no_save_pages` dictionary.
+the [*file_names*](notebook_comments.md#file_names) *NotebookPage* will also be 
+[added](code/setup/notebook.md#set_file_names) due to information in the `Notebook._no_save_pages` dictionary.
 
 

@@ -128,7 +128,11 @@ Some example config files for typical experiments are listed below.
 
 These parameters are explained below and [here](config.md). 
 
-## file_names
+## [file_names](config.md#file_names)
+If the names of the files change during the pipeline or if they are being accessed from another computer,
+the [*file_names*](config.md#file_names) section of the configuration file can also be 
+changed as explained [here](notebook.md#file_names).
+
 ### input_dir
 
 The input directory is the path to the folder which contains the raw data. 
@@ -163,8 +167,9 @@ directory looks like for the config files *3D* and *.npy Raw Data* listed above)
 
 
 ### output_dir
-The output directory is the path to the folder that you would like the notebook.npz file containing the experiment 
-results to be saved. The image below shows what the output directory typically looks like at the end of the experiment.
+The output directory is the path to the folder that you would like the [notebook.npz](notebook.md) 
+file containing the experiment  results to be saved. 
+The image below shows what the output directory typically looks like at the end of the experiment.
 
 ![image](images/config/OutputDirectory.png){width="400" align=left }
 
@@ -216,7 +221,7 @@ Thus it is of length `n_rounds`, containing numbers in the range from `0` to `n_
     - Round 6: `AF594`
 
 
-## basic_info
+## [basic_info](config.md#basic_info)
 ### anchor_channel
 The `anchor_channel` is the channel in the `anchor_round` which contains spots corresponding to all genes. 
 These spots are used for registration to the imaging rounds and to determine the expected `bled_code` for each gene.
@@ -272,7 +277,7 @@ but if a dye, camera or laser not indicated in this file are used in an experime
 There are a few other parameters that may often need to be different to those given in the 
 [default config file](config.md).
 
-### `extract[r_smooth]`
+### [`extract[r_smooth]`](config.md#extract)
 The parameter `r_smooth` in the extract section specifies whether to smooth with an averaging kernel after
 the raw images have been convolved with a 
 [difference of hanning kernel](code/utils/morphology.md#iss.utils.morphology.base.hanning_diff).
@@ -293,11 +298,11 @@ array([[0.11111111, 0.11111111, 0.11111111],
        [0.11111111, 0.11111111, 0.11111111]])
 ```
 
-### `stitch[expected_overlap]`
+### [`stitch[expected_overlap]`](config.md#stitch)
 This is the expected fractional overlap between neighbouring tiles. 
 By default, it is 0.1 meaning a 10% overlap is expected.
 
-### thresholds
+### [thresholds](config.md#thresholds)
 The parameters in the [thresholds](config.md#thresholds) section of the config file contains the thresholds 
 used to determine which spots pass a quality thresholding process such that we consider their 
 gene assignments legitimate.
