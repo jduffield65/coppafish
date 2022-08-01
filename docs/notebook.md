@@ -323,7 +323,7 @@ case where the various file locations have changed e.g. when accessing them from
 The [*file_names*](notebook_comments.md#file_names) *NotebookPage*
 is never saved when the *Notebook* is saved and adding a *NotebookPage* called *file_names* 
 does not trigger a save. When the *Notebook* is loaded in, a [*file_names*](notebook_comments.md#file_names) 
-*NotebookPage* will automatically be [created](code/setup/notebook.md#set_file_names) and added to the 
+*NotebookPage* will automatically be [created](code/setup/file_names.md) and added to the 
 *Notebook* if the *Notebook* contains a [*basic_info*](notebook_comments.md#basic_info) *NotebookPage*.
 The [*file_names*](notebook_comments.md#file_names) *NotebookPage* will then inherit information from
 the [*file_names*](config.md#file_names) section of the `config_file` which was passed to the *Notebook* 

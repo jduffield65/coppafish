@@ -79,6 +79,7 @@ nav:
         - Setup:
             - Notebook: code/setup/notebook.md
             - Tile Detail: code/setup/tile_details.md
+            - File Names: code/setup/file_names.md
         - Extract:
             - Base: code/extract/base.md
             - Deconvolution: code/extract/deconvolution.md
