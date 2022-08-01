@@ -314,7 +314,7 @@ array([[0.11111111, 0.11111111, 0.11111111],
        [0.11111111, 0.11111111, 0.11111111]])
 ```
 
-The effect of smoothing can be seen using `view_extract`.
+The effect of smoothing can be seen using `view_filter`.
 
 ### [`extract[r_dapi]`](config.md#extract)
 By default, no filtering will be applied to the *dapi_channel* image of the *anchor_round* and thus no .npy file
@@ -336,7 +336,7 @@ will be computed automatically by converting this into units of yx-pixels (typic
     The tophat filtering is only done on one channel for each tile but it is quite slow so it may be best to avoid it,
     especially for experiments with lots of tiles.
 
-The effect of DAPI filtering can be seen using `view_extract`.
+The effect of DAPI filtering can be seen using `view_filter`.
 
 
 ### [`stitch[expected_overlap]`](config.md#stitch)

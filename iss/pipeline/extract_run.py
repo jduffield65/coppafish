@@ -138,6 +138,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 smooth_kernel_2d = smooth_kernel.copy()
             # smoothing is averaging so to average in 2D, need to re normalise filter
             smooth_kernel_2d = smooth_kernel_2d / np.sum(smooth_kernel_2d)
+            if np.max(config['r_smooth'][:2]) <= 1:
+                smooth_kernel_2d = None  # If dimensions of 2D kernel are [1, 1] is equivalent to no smoothing
         nbp_debug.scale_tile, nbp_debug.scale_channel, nbp_debug.scale_z, config['scale'] = \
             extract.get_scale(nbp_file, nbp_basic, 0, nbp_basic.use_tiles, nbp_basic.use_channels, nbp_basic.use_z,
                               config['scale_norm'], filter_kernel, smooth_kernel_2d)
