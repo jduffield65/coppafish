@@ -1,13 +1,12 @@
 import napari
 import numpy as np
-from iss import extract, utils
-from iss.setup import Notebook
-from iss.plot.raw import get_raw_images, number_to_list
+from ... import extract, utils
+from ...setup import Notebook
+from ..raw import get_raw_images, number_to_list, add_basic_info_no_save
 from typing import Optional, Union, List
 from qtpy.QtCore import Qt
 from PyQt5.QtWidgets import QSlider
 import time
-from superqt import QLabeledSlider
 
 
 class view_filter:
@@ -54,6 +53,7 @@ class view_filter:
         """
         if nb is None:
             nb = Notebook(config_file=config_file)
+        add_basic_info_no_save(nb)  # deal with case where there is no notebook yet
         if use_z is None:
             use_z = nb.basic_info.use_z
         t, r, c, use_z = number_to_list([t, r, c, use_z])

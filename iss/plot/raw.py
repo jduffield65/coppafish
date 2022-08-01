@@ -5,7 +5,6 @@ from ..pipeline.basic_info import set_basic_info
 import numpy as np
 import numbers
 from typing import Union, Optional, List, Tuple
-import os
 from tqdm import tqdm
 
 
@@ -118,6 +117,7 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
     """
     if nb is None:
         nb = Notebook(config_file=config_file)
+    add_basic_info_no_save(nb)  # deal with case where there is no notebook yet
     if channels is None:
         channels = np.arange(nb.basic_info.n_channels)
     if use_z is None:
