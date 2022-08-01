@@ -47,7 +47,7 @@ def get_raw_images(nb: Notebook, tiles: List[int], rounds: List[int],
         use_z: Which z-planes to load in from raw data.
 
     Returns:
-        `raw_images` - `[len(tiles) x len(rounds) x len(channels)]` object array.
+        `raw_images` - `[len(tiles) x len(rounds) x len(channels) x n_y x n_x x len(use_z)]` uint16 array.
         `raw_images[t, r, c]` is the `[n_y x n_x x len(use_z)]` image for tile `tiles[t]`, round `rounds[r]` and channel
         `channels[c]`.
     """
@@ -55,8 +55,11 @@ def get_raw_images(nb: Notebook, tiles: List[int], rounds: List[int],
     n_rounds = len(rounds)
     n_channels = len(channels)
     n_images = n_rounds * n_tiles * n_channels
+    ny = nb.basic_info.tile_sz
+    nx = ny
+    nz = len(use_z)
 
-    raw_images = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
+    raw_images = np.zeros((n_tiles, n_rounds, n_channels, ny, nx, nz), dtype=np.uint16)
     with tqdm(total=n_images) as pbar:
         pbar.set_description(f'Loading in raw data')
         for r in range(n_rounds):
@@ -122,19 +125,14 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
     tiles, rounds, channels, use_z = number_to_list([tiles, rounds, channels, use_z])
 
     raw_images = get_raw_images(nb, tiles, rounds, channels, use_z)
-    n_tiles, n_rounds, n_channels = raw_images.shape
-    ny, nx, nz = raw_images[0, 0, 0].shape
     viewer = napari.Viewer()
-    for t in range(n_tiles):
-        for r in range(n_rounds):
-            all_channel_image = np.zeros((n_channels, nz, ny, nx), dtype=np.uint16)
-            for c in range(len(channels)):
-                all_channel_image[c] = np.moveaxis(raw_images[t, r, c], -1, 0)  # put z axis first
-            viewer.add_image(all_channel_image, name=f"Tile {t}, Round {r} Raw Data")
+    viewer.add_image(np.moveaxis(raw_images, -1, 3), name='Raw Images')
 
     @viewer.dims.events.current_step.connect
     def update_slider(event):
-        viewer.status = f'Channel: {channels[event.value[0]]}, Z: {use_z[event.value[1]]}'
+        viewer.status = f'Tile: {tiles[event.value[0]]}, Round: {rounds[event.value[1]]}, ' \
+                        f'Channel: {channels[event.value[2]]}, Z: {use_z[event.value[3]]}'
 
-    viewer.dims.axis_labels = ['channel', 'z', 'y', 'x']
+    viewer.dims.axis_labels = ['Tile', 'Round', 'Channel', 'z', 'y', 'x']
+    viewer.dims.set_point([0, 1, 2], [0, 0, 0])  # set to first tile, round and channel initially
     napari.run()

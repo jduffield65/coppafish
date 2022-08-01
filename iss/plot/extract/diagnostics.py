@@ -4,6 +4,7 @@ import numpy as np
 from ...setup import Notebook
 from ...call_spots import color_normalisation
 from matplotlib.widgets import Button
+
 plt.style.use('dark_background')
 
 
@@ -49,6 +50,26 @@ def thresh_box_plots(nb: Notebook):
     plt.show()
 
 
+def resample_histogram(hist_values_old: np.ndarray, hist_counts_old: np.ndarray,
+                       hist_values_new: np.ndarray) -> np.ndarray:
+    """
+    Resamples hist counts according to hist_values_new.
+
+    Args:
+        hist_values_old: float [n_old_values]
+        hist_counts_old: int [n_old_values]
+        hist_values_new: float [n_new_values]
+
+    Returns:
+        int [n_new_values] - hist_counts_new.
+    """
+    hist_spacing = hist_values_new[1] - hist_values_new[0]  # spacing must be constant through hist_values_new
+    hist_bins_new = np.append(hist_values_new, hist_values_new[-1] + hist_spacing)
+    hist_bins_new = hist_bins_new - hist_spacing / 2
+    hist_counts_new = np.histogram(hist_values_old, hist_bins_new, weights=hist_counts_old)
+    return hist_counts_new[0]
+
+
 class histogram_plots:
     def __init__(self, nb: Notebook):
         """
@@ -65,6 +86,7 @@ class histogram_plots:
         self.use_rounds = nb.basic_info.use_rounds
         self.use_channels = nb.basic_info.use_channels
         self.hist_values = nb.extract.hist_values
+        self.hist_values_norm = np.arange(-10, 10.004, 0.005)
         n_use_rounds = len(self.use_rounds)
         n_use_channels = len(self.use_channels)
         self.fig, self.ax1 = plt.subplots(n_use_channels, n_use_rounds, figsize=(10, 6), sharey=True, sharex=True)
@@ -82,11 +104,20 @@ class histogram_plots:
         i = 0
         min_value = 3  # clip hist counts to this so don't get log(0) error
         self.plot_lines = []
+        self.hist_counts_norm = []
+        self.hist_counts = []
         for c in self.use_channels:
             for r in self.use_rounds:
-                self.plot_lines = self.plot_lines + \
-                                  self.ax1[i].plot(self.hist_values,
-                                                   np.clip(nb.extract.hist_counts[:, r, c], min_value, np.inf))
+                # Clip histogram to stop log(0) error.
+                self.hist_counts = self.hist_counts + [np.clip(nb.extract.hist_counts[:, r, c], min_value, np.inf)]
+                self.hist_counts_norm = self.hist_counts_norm + \
+                                        [resample_histogram(self.hist_values / self.color_norm_factor[i],
+                                                            self.hist_counts[i], self.hist_values_norm)]
+
+                # Normalise histograms to give probabilities
+                self.hist_counts[i] = self.hist_counts[i] / np.sum(nb.extract.hist_counts[:, r, c])
+                self.hist_counts_norm[i] = self.hist_counts_norm[i] / np.sum(nb.extract.hist_counts[:, r, c])
+                self.plot_lines = self.plot_lines + self.ax1[i].plot(self.hist_values, self.hist_counts[i])
                 if r == nb.basic_info.use_rounds[0]:
                     self.ax1[i].set_ylabel(c)
                 if c == nb.basic_info.use_channels[-1]:
@@ -96,7 +127,7 @@ class histogram_plots:
         self.fig.supylabel('Channel')
         self.fig.supxlabel('Round')
         plt.suptitle('Histograms showing distribution of intensity values combined from '
-                      'all tiles for each round and channel')
+                     'all tiles for each round and channel')
 
         self.norm = False
         self.xlims_norm = [-1, 1]
@@ -119,9 +150,9 @@ class histogram_plots:
             self.norm = True
         for i in range(len(self.plot_lines)):
             if self.norm:
-                self.plot_lines[i].set_xdata(self.hist_values / self.color_norm_factor[i])
+                self.plot_lines[i].set_data(self.hist_values_norm, self.hist_counts_norm[i])
             else:
-                self.plot_lines[i].set_xdata(self.hist_values)
+                self.plot_lines[i].set_data(self.hist_values, self.hist_counts[i])
         if self.norm:
             self.ax1[0].set_xlim(self.xlims_norm[0], self.xlims_norm[1])
         else:

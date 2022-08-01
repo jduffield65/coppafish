@@ -168,6 +168,7 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
     failed_matches = n_matches < matches_thresh
     failed = failed_matches.copy()
 
+    # Assume scaling is the same for particular channel across all tile and rounds
     scaling = transforms[:, :, :, np.arange(dim), np.arange(dim)]
     scaling = np.moveaxis(scaling, -1, 0)
     av_scaling = mod_median(scaling, np.expand_dims(failed, 0).repeat(dim, 0), axis=[1, 2])
@@ -175,6 +176,7 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
     failed_scale = np.max(diff_to_av_scaling - np.array(scale_thresh).reshape(dim, 1, 1, 1) > 0, axis=0)
     failed = np.logical_or(failed, failed_scale)
 
+    # Assume shift the same for particular tile and round across all channels
     shifts = np.moveaxis(transforms[:, :, :, 3], -1, 0)
     av_shifts = mod_median(shifts, np.expand_dims(failed, 0).repeat(dim, 0), axis=3)
     diff_to_av_shift = np.abs(shifts - np.expand_dims(av_shifts, 3))
