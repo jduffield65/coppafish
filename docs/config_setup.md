@@ -314,6 +314,31 @@ array([[0.11111111, 0.11111111, 0.11111111],
        [0.11111111, 0.11111111, 0.11111111]])
 ```
 
+The effect of smoothing can be seen using `view_extract`.
+
+### [`extract[r_dapi]`](config.md#extract)
+By default, no filtering will be applied to the *dapi_channel* image of the *anchor_round* and thus no .npy file
+will be saved to the *tile_dir*. This can be changed by specifying `r_dapi` which should be approximately
+the radius of a feature in the DAPI image (typical `r_dapi` is 48). In this case, a *2D* tophat filtering
+will be performed using a kernel of radius `r_dapi`. 
+
+Alternatively, `r_dapi_auto_microns` can be specified to be the radius of the kernel in units of microns and `r_dapi`
+will be computed automatically by converting this into units of yx-pixels (typical `r_dapi_auto_microns` is 8).
+
+??? note "Time for DAPI filtering"
+
+    The size of `r_dapi` has big influence on time taken for tophat filtering. 
+    For a `2048 x 2048 x 50` image:
+
+    * `r_dapi = 48`: 142.4 seconds
+    * `r_smooth = 12`: 3.9 seconds
+
+    The tophat filtering is only done on one channel for each tile but it is quite slow so it may be best to avoid it,
+    especially for experiments with lots of tiles.
+
+The effect of DAPI filtering can be seen using `view_extract`.
+
+
 ### [`stitch[expected_overlap]`](config.md#stitch)
 This is the expected fractional overlap between neighbouring tiles. 
 By default, it is 0.1 meaning a 10% overlap is expected.

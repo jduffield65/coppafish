@@ -10,11 +10,10 @@ import time
 from superqt import QLabeledSlider
 
 
-
 class view_filter:
-    def __init__(self, nb: Optional[Notebook] = None, tiles: int = 0,
-                 rounds: int = 0,
-                 channels: int = 0,
+    def __init__(self, nb: Optional[Notebook] = None, t: int = 0,
+                 r: int = 0,
+                 c: int = 0,
                  use_z: Optional[Union[int, List[int]]] = None, config_file: Optional[str] = None):
         """
         Function to view filtering of raw data in napari.
@@ -30,10 +29,13 @@ class view_filter:
             When this is the case, changing the filtering radius using the slider will
             be quicker because it will only do filtering and not any smoothing.
 
+        If `r == anchor_round` and `c == dapi_channel`, the filtering will be tophat filtering and no smoothing
+        will be allowed. Otherwise, the filtering will be convolution with a difference of hanning kernel.
+
 
         Args:
             nb: *Notebook* for experiment. If no *Notebook* exists, pass `config_file` instead.
-            tiles: npy (as opposed to nd2 fov) tile index to view.
+            t: npy (as opposed to nd2 fov) tile index to view.
                 For an experiment where the tiles are arranged in a 4 x 3 (ny x nx) grid, tile indices are indicated as
                 below:
 
@@ -44,8 +46,8 @@ class view_filter:
                 | 8  | 7  | 6  |
 
                 | 11 | 10 | 9  |
-            rounds: round to view
-            channels: Channel to view.
+            r: round to view
+            c: Channel to view.
             use_z: Which z-planes to load in from raw data. If `None`, will use load all z-planes (except from first
                 one if `config['basic_info']['ignore_first_z_plane'] == True`).
             config_file: path to config file for experiment.
@@ -54,8 +56,8 @@ class view_filter:
             nb = Notebook(config_file=config_file)
         if use_z is None:
             use_z = nb.basic_info.use_z
-        tiles, rounds, channels, use_z = number_to_list([tiles, rounds, channels, use_z])
-        self.image_raw = get_raw_images(nb, tiles, rounds, channels, use_z)[0, 0, 0]
+        t, r, c, use_z = number_to_list([t, r, c, use_z])
+        self.image_raw = get_raw_images(nb, t, r, c, use_z)[0, 0, 0]
 
         self.is_3d = nb.basic_info.is_3d
         if not self.is_3d:
@@ -71,35 +73,51 @@ class view_filter:
         self.image_raw, self.bad_columns = extract.strip_hack(self.image_raw)
 
         # Get default filter info
+        self.ax0_labels = ['Raw', 'Filtered', 'Filtered and Smoothed']  # label for each image in image_plot
         config = nb.get_config()['extract']
-        self.r_filter = config['r1']
-        r2 = config['r2']
-        if self.r_filter is None:
-            self.r_filter = extract.get_pixel_length(config['r1_auto_microns'], nb.basic_info.pixel_size_xy)
-        if r2 is None:
-            r2 = self.r_filter * 2
-        self.update_filter_image(r2)
+        if r[0] == nb.basic_info.anchor_round and c[0] == nb.basic_info.dapi_channel:
+            self.dapi = True
+            if config['r_dapi'] is None:
+                if config['r_dapi_auto_microns'] is not None:
+                    config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'],
+                                                                nb.basic_info.pixel_size_xy)
+                else:
+                    config['r_dapi'] = 48  # good starting value
+            self.r_filter = config['r_dapi']
+            self.image_plot = self.image_plot[:2]  # no smoothing if dapi
+            self.ax0_labels = self.ax0_labels[:2]
+            self.update_filter_image()
+            r_filter_lims = [10, 70]
+        else:
+            self.dapi = False
+            self.r_filter = config['r1']
+            r2 = config['r2']
+            if self.r_filter is None:
+                self.r_filter = extract.get_pixel_length(config['r1_auto_microns'], nb.basic_info.pixel_size_xy)
+            if r2 is None:
+                r2 = self.r_filter * 2
+            r_filter_lims = [2, 10]
+            self.update_filter_image(r2)
 
-        # Get default smoothing info
-        if config['r_smooth'] is None:
-            # start with no smoothing. Quicker to change filter params as no need to update smoothing too.
-            config['r_smooth'] = [1, 1, 1]
-        if not nb.basic_info.is_3d:
-            config['r_smooth'] = config['r_smooth'][:2]
-        self.r_smooth = config['r_smooth']
-        self.update_smooth_image()
+            # Get default smoothing info
+            if config['r_smooth'] is None:
+                # start with no smoothing. Quicker to change filter params as no need to update smoothing too.
+                config['r_smooth'] = [1, 1, 1]
+            if not nb.basic_info.is_3d:
+                config['r_smooth'] = config['r_smooth'][:2]
+            self.r_smooth = config['r_smooth']
+            self.update_smooth_image()
 
         self.viewer = napari.Viewer()
-        self.viewer.add_image(self.image_plot, name=f"Tile {tiles[0]}, Round {rounds[0]}, Channel{channels[0]}")
+        self.viewer.add_image(self.image_plot, name=f"Tile {t[0]}, Round {r[0]}, Channel{c[0]}")
         # Set min image contrast to 0 for better comparison between images
         self.viewer.layers[0].contrast_limits = [0, 0.9 * self.viewer.layers[0].contrast_limits[1]]
         self.ax0_ind = 0
-        self.ax0_labels = ['Raw', 'Filtered', 'Filtered and Smoothed']
         self.viewer.dims.set_point(0, self.ax0_ind)  # set filter type to raw initially
         self.viewer.dims.events.current_step.connect(self.filter_type_status)
 
         self.filter_slider = QSlider(Qt.Orientation.Horizontal)
-        self.filter_slider.setRange(2, 10)
+        self.filter_slider.setRange(r_filter_lims[0], r_filter_lims[1])
         self.filter_slider.setValue(self.r_filter)
         # When dragging, status will show r_filter value
         self.filter_slider.valueChanged.connect(lambda x: self.show_filter_radius(x))
@@ -107,19 +125,20 @@ class view_filter:
         self.filter_slider.sliderReleased.connect(self.filter_slider_func)
         self.viewer.window.add_dock_widget(self.filter_slider, area="left", name='Filter Radius')
 
-        self.smooth_yx_slider = QSlider(Qt.Orientation.Horizontal)
-        self.smooth_yx_slider.setRange(1, 5)  # gets very slow with large values
-        self.smooth_yx_slider.setValue(self.r_smooth[0])
-        # When dragging, status will show r_smooth value
-        self.smooth_yx_slider.valueChanged.connect(lambda x: self.show_smooth_radius_yx(x))
-        # On release of slider, smoothed image updated
-        self.smooth_yx_slider.sliderReleased.connect(self.smooth_slider_func)
-        smooth_title = "Smooth Radius"
-        if self.is_3d:
-            smooth_title = smooth_title + " YX"
-        self.viewer.window.add_dock_widget(self.smooth_yx_slider, area="left", name=smooth_title)
+        if not self.dapi:
+            self.smooth_yx_slider = QSlider(Qt.Orientation.Horizontal)
+            self.smooth_yx_slider.setRange(1, 5)  # gets very slow with large values
+            self.smooth_yx_slider.setValue(self.r_smooth[0])
+            # When dragging, status will show r_smooth value
+            self.smooth_yx_slider.valueChanged.connect(lambda x: self.show_smooth_radius_yx(x))
+            # On release of slider, smoothed image updated
+            self.smooth_yx_slider.sliderReleased.connect(self.smooth_slider_func)
+            smooth_title = "Smooth Radius"
+            if self.is_3d:
+                smooth_title = smooth_title + " YX"
+            self.viewer.window.add_dock_widget(self.smooth_yx_slider, area="left", name=smooth_title)
 
-        if self.is_3d:
+        if self.is_3d and not self.dapi:
             self.smooth_z_slider = QSlider(Qt.Orientation.Horizontal)
             self.smooth_z_slider.setRange(1, 5)  # gets very slow with large values
             self.smooth_z_slider.setValue(self.r_smooth[2])
@@ -138,14 +157,20 @@ class view_filter:
     def update_filter_image(self, r2: Optional[int] = None):
         if r2 is None:
             r2 = self.r_filter * 2  # default outer hanning filter is double inner radius
-        print(f"Updating filtered image with r1 = {self.r_filter} and r2 = {r2}...")
-        filter_kernel = utils.morphology.hanning_diff(self.r_filter, r2)
         time_start = time.time()
-        image_filter = utils.morphology.convolve_2d(self.image_raw, filter_kernel)
-        image_filter[:, self.bad_columns] = 0
+        if self.dapi:
+            print(f"Updating filtered image with r_dapi = {self.r_filter}...")
+            filter_kernel = utils.strel.disk(self.r_filter)
+            image_filter = utils.morphology.top_hat(self.image_raw, filter_kernel)
+        else:
+            print(f"Updating filtered image with r1 = {self.r_filter} and r2 = {r2}...")
+            filter_kernel = utils.morphology.hanning_diff(self.r_filter, r2)
+            image_filter = utils.morphology.convolve_2d(self.image_raw, filter_kernel)
         time_end = time.time()
-        # set max value to be same as image_raw
-        image_filter = np.rint(image_filter / image_filter.max() * self.raw_max)
+        image_filter[:, self.bad_columns] = 0
+        if not self.dapi:
+            # set max value to be same as image_raw
+            image_filter = np.rint(image_filter / image_filter.max() * self.raw_max)
         if self.is_3d:
             image_filter = np.moveaxis(image_filter, 2, 0)  # put z axis first for plotting
         self.image_plot[1] = image_filter
@@ -185,7 +210,8 @@ class view_filter:
         if self.r_filter != self.filter_slider.value():
             self.r_filter = self.filter_slider.value()
             self.update_filter_image()
-            self.update_smooth_image()
+            if not self.dapi:
+                self.update_smooth_image()
             self.viewer.layers[0].data = self.image_plot
 
     def show_smooth_radius_yx(self, val):

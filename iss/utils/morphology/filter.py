@@ -27,9 +27,7 @@ def imfilter(image: np.ndarray, kernel: np.ndarray, padding: Union[float, str] =
             - `'wrap'` - Input array values outside the bounds of the array are computed by implicitly
                 assuming the input array is periodic.
         corr_or_conv:
-
             - `'corr'` - Performs multidimensional filtering using correlation.
-                This is the default when no option specified.
             - `'conv'` - Performs multidimensional filtering using convolution.
         oa: Whether to use oaconvolve or scipy.ndimage.convolve.
             scipy.ndimage.convolve seems to be quicker for smoothing in extract step (3s vs 20s for 50 z-planes).
@@ -89,6 +87,7 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
         coords: `int [n_points x image.ndims]`.
             Coordinates where result of filtering is desired.
         padding: One of the following, indicated which padding to be used.
+
             - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
                 When no padding option is specified, the default is `0`.
             - `‘symmetric’` - Input array values outside the bounds of the array are computed by
@@ -99,7 +98,6 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
                 assuming the input array is periodic.
         corr_or_conv:
             - `'corr'` - Performs multidimensional filtering using correlation.
-                This is the default when no option specified.
             - `'conv'` - Performs multidimensional filtering using convolution.
 
     Returns:

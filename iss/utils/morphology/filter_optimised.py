@@ -82,6 +82,7 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
         coords: `int [n_points x image.ndims]`.
             Coordinates where result of filtering is desired.
         padding: One of the following, indicated which padding to be used.
+
             - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
                 When no padding option is specified, the default is `0`.
             - `‘symmetric’` - Input array values outside the bounds of the array are computed by
