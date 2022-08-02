@@ -2,6 +2,75 @@ import numpy as np
 from .. import utils
 from ..setup import NotebookPage
 from typing import List, Tuple, Optional
+import os
+import warnings
+
+
+def get_scale_from_txt(txt_file: str, scale: Optional[float], scale_anchor: Optional[float],
+                       tol: float = 0.001) -> Tuple[float, float]:
+    """
+    This checks whether `scale` and `scale_anchor` values used for producing npy files in *tile_dir* match
+    values used and saved to `txt_file` on previous run.
+
+    Will raise error if they are different.
+
+    Args:
+        txt_file: `nb.file_names.scale`, path to text file where scale values are saved.
+            File contains two values, `scale` first and `scale_anchor` second.
+            Values will be 0 if not used or not yet computed.
+        scale: Value of `scale` used for current run of extract method i.e. `config['extract']['scale']`.
+        scale_anchor: Value of `scale_anchor` used for current run of extract method
+            i.e. `config['extract']['scale_anchor']`.
+        tol: Two scale values will be considered the same if they are closer than this.
+
+    Returns:
+        scale - If txt_file exists, this will be the value saved in it otherwise will just be the input value.
+        scale_anchor - If txt_file exists, this will be the value saved in it otherwise will just be the input value.
+    """
+    if os.path.isfile(txt_file):
+        scale_saved, scale_anchor_saved = np.genfromtxt(txt_file)
+        if np.abs(scale_saved) < tol:
+            pass  # 0 means scale not used so do nothing
+        elif scale is None:
+            warnings.warn("Using value of scale = {:.2f} saved in\n".format(scale_saved) + txt_file)
+            scale = float(scale_saved)  # Set to saved value used up till now if not specified
+        elif np.abs(scale - scale_saved) > tol:
+            raise ValueError(f"\nImaging round (Not anchor) tiles saved so far were calculated with scale = "
+                             f"{scale_saved}\nas saved in {txt_file}\n"
+                             f"This is different from config['extract']['scale'] = {scale}.")
+        if np.abs(scale_anchor_saved) < tol:
+            pass  # 0 means scale_anchor not computed yet so do nothing
+        elif scale_anchor is None:
+            warnings.warn("Using value of scale_anchor = {:.2f} saved in\n".format(scale_anchor_saved) + txt_file)
+            scale_anchor = float(scale_anchor_saved)  # Set to saved value used up till now if not specified
+        elif np.abs(scale_anchor - scale_anchor_saved) > tol:
+            raise ValueError(f"\nAnchor round tiles saved so far were calculated with scale_anchor = "
+                             f"{scale_anchor_saved}\nas saved in {txt_file}\n"
+                             f"This is different from config['extract']['scale_anchor'] = {scale_anchor}.")
+    return scale, scale_anchor
+
+
+def save_scale(txt_file: str, scale: Optional[float], scale_anchor: Optional[float]):
+    """
+    This saves `scale` and `scale_anchor` to `txt_file`. If either `scale` and `scale_anchor` are `None`,
+    they will be set to 0 when saving.
+
+    Args:
+        txt_file: `nb.file_names.scale`, path to text file where scale values are to be saved.
+            File will contain two values, `scale` first and `scale_anchor` second.
+            Values will be 0 if not used or not yet computed.
+        scale: Value of `scale` used for current run of extract method i.e. `config['extract']['scale']` or
+            value computed from `get_scale`.
+        scale_anchor: Value of `scale_anchor` used for current run of extract method
+            i.e. `config['extract']['scale_anchor']` or value computed from `get_scale`.
+
+    """
+    scale, scale_anchor = get_scale_from_txt(txt_file, scale, scale_anchor)  # check if match current saved values
+    if scale is None:
+        scale = 0
+    if scale_anchor is None:
+        scale_anchor = 0
+    np.savetxt(txt_file, [scale, scale_anchor], header='scale followed by scale_anchor')
 
 
 def central_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:

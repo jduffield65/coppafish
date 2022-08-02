@@ -121,6 +121,10 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.psf_intensity_thresh = None
         nbp_debug.psf_tiles_used = None
 
+    # check to see if scales have already been computed
+    config['scale'], config['scale_anchor'] = extract.get_scale_from_txt(nbp_file.scale, config['scale'],
+                                                                         config['scale_anchor'])
+
     if config['scale'] is None and len(nbp_file.round) > 0:
         # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
         scale_norm_min = (np.iinfo('uint16').max - nbp_basic.tile_pixel_value_shift) / 5
@@ -149,6 +153,10 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_z = None
         smooth_kernel_2d = None
     nbp_debug.scale = config['scale']
+    print(f"Scale: {nbp_debug.scale}")
+
+    # save scale values incase need to re-run
+    extract.save_scale(nbp_file.scale, nbp_debug.scale, config['scale_anchor'])
 
     # get rounds to iterate over
     use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
@@ -189,10 +197,13 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         extract.get_scale(nbp_file, nbp_basic, nbp_basic.anchor_round, nbp_basic.use_tiles,
                                           [nbp_basic.anchor_channel], nbp_basic.use_z,
                                           config['scale_norm'], filter_kernel, smooth_kernel_2d)
+                    # save scale values incase need to re-run
+                    extract.save_scale(nbp_file.scale, nbp_debug.scale, config['scale_anchor'])
                 else:
                     nbp_debug.scale_anchor_tile = None
                     nbp_debug.scale_anchor_z = None
                 nbp_debug.scale_anchor = config['scale_anchor']
+                print(f"Scale_anchor: {nbp_debug.scale_anchor}")
                 scale = nbp_debug.scale_anchor
                 use_channels = use_channels_anchor
             else:
@@ -248,7 +259,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             im = utils.morphology.top_hat(im, filter_kernel_dapi)
                             im[:, bad_columns] = 0
                         else:
-                            # im converted to float in convolve_2d so no point changing dtype before hand.
+                            # im converted to float in convolve_2d so no point changing dtype beforehand.
                             im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                             if config['r_smooth'] is not None:
                                 # oa convolve uses lots of memory and much slower here.

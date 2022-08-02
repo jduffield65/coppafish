@@ -38,6 +38,12 @@ file_names page contains all files that are used throughout the pipeline. 'tile'
 
 	text file which contains the codes indicating which dye to expect on each round for each gene
 
+* **scale**: *File*.
+
+	Text file saved containing the `extract['scale']` and `extract['scale_anchor']` values used to create  the tile .npy files in the *tile_dir*. If the second value is 0, it means `extract['scale_anchor']`  has not been calculated yet. 
+
+	 If the extract step of the pipeline is re-run with `extract['scale']` or  `extract['scale_anchor']` different to values saved here, an error will be raised.
+
 * **psf**: *File or None*.
 
 	npy file indicating average spot shape (before padding and scaled to fill uint16 range). Will be None if 2d pipeline used. File won't exist/used if config['extract']['deconvolve'] is False. If 3D, 1st axis in npy file is z.
@@ -200,7 +206,7 @@ basic_info page contains information that is used at all stages of the pipeline.
 	True if anchor round is used, False if not.
 
 ## extract
-`extract` page contains variables from `extract_and_filter` step which are used later in the  pipeline. `auto_thresh` is used in `find_spots` step. `hist_values` and `hist_counts` are used for  normalisation between channels in the `call_reference_spots` step. Page added to notebook in *pipeline/extract_run.py*
+The `extract` page contains variables from `extract_and_filter` step which are used later in the  pipeline. `auto_thresh` is used in `find_spots` step. `hist_values` and `hist_counts` are used for  normalisation between channels in the `call_reference_spots` step. Page added to notebook in *pipeline/extract_run.py*
 
 * **auto_thresh**: *Numpy float array `[n_tiles x (n_rounds + n_extra_rounds) x n_channels]`*.
 

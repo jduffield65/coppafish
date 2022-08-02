@@ -32,6 +32,13 @@
     "code_book": [
       "File",
       "text file which contains the codes indicating which dye to expect on each round for each gene"],
+    "scale": [
+      "File",
+      "Text file saved containing the `extract['scale']` and `extract['scale_anchor']` values used to create ",
+      "the tile .npy files in the *tile_dir*. If the second value is 0, it means `extract['scale_anchor']` ",
+      "has not been calculated yet.", "", "If the extract step of the pipeline is re-run with `extract['scale']` or ",
+      "`extract['scale_anchor']` different to values saved here, an error will be raised."
+    ],
     "psf": [
       "File or None",
       "npy file indicating average spot shape (before padding and scaled to fill uint16 range).",

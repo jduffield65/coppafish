@@ -58,6 +58,7 @@ _options = {
             'raw_metadata': 'maybe_str',
             'dye_camera_laser': 'maybe_file',
             'code_book': 'str',
+            'scale': 'str',
             'psf': 'str',
             'omp_spot_shape': 'str',
             'omp_spot_info': 'str',

@@ -70,6 +70,14 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 	Default: `MUST BE SPECIFIED`
 
+* **scale**: *str*.
+
+	Text file saved in *tile_dir* containing `extract['scale']` and `extract['scale_anchor']` values used to create the tile .npy files in the *tile_dir*. If the second value is 0, it means `extract['scale_anchor']` has not been calculated yet. 
+
+	 If the extract step of the pipeline is re-run with `extract['scale']` or `extract['scale_anchor']` different to values saved here, an error will be raised. 
+
+	Default: `scale`
+
 * **psf**: *str*.
 
 	npy file in output directory indicating average spot shape. If deconvolution required and file does not exist, will be computed automatically in extract step. (this is psf before tapering and scaled to fill uint16 range). 

@@ -12,7 +12,23 @@ The [`extract`](../notebook_comments.md#extract) *NotebookPage* contains the var
 `auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$ used for spot detection 
 in the `find_spots` step of the pipeline.
 
+`auto_thresh[t, r, c]` is set to `config['extract']['auto_thresh_multiplier'] * median(abs(image))` where
+image is the mid z-plane (`nb.extract_debug.z_info`) of the image saved to `tile_dir` for tile $t$, round $r$, 
+channel $c$ during the extract step of the pipeline.
+This is just saying that we expect `median(abs(image))` to be the characteristic intensity of background pixels
+and spot pixels should be much more intense that this.
+
 These values can be viewed with the function [`thresh_box_plots`](../code/plot/extract.md#thresh_box_plots):
+
+![thresh](../images/pipeline/extract/auto_thresh.png){width="800"}
+
+For each round and channel, this shows a box plot combining all tiles (i.e. a box plot of `auto_thresh[:, r, c]`).
+For the `anchor_round`, only one channel (`anchor_channel`) is shown as it is the only one used on this round.
+In this plot, we expect for a given channel, `auto_thresh` should be similar across all rounds and tiles (i.e.
+boxplots of the same color should be at the same height, and they should have quite small ranges with any 
+outlier tiles (white crosses, +) not far from the boxplot). 
+
+
 
 ## `hist_counts`
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* also contains the variable `hist_counts`.
@@ -21,7 +37,6 @@ value `nb.extract.hist_values[i]`.
 It is used for [normalisation](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
 (see *Norm Button* box [here](../view_results.md#b-view_bleed_matrix)) 
 between channels in the `call_reference_spots` step.
-
 
 
 ## Raw data

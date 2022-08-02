@@ -31,7 +31,7 @@ def thresh_box_plots(nb: Notebook):
     leg_labels = nb.basic_info.use_channels
     if nb.basic_info.use_anchor:
         tick_labels = tick_labels + ['Anchor']
-        leg_labels = leg_labels + ['Anchor']
+        leg_labels = leg_labels + [f'Anchor ({nb.basic_info.anchor_channel})']
     ax1.set_xticklabels(tick_labels)
     if nb.basic_info.use_anchor:
         ticks = ax1.get_xticklabels()

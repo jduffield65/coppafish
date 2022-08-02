@@ -44,6 +44,11 @@ def set_file_names(nb, nbp):
     nbp.dye_camera_laser = config['dye_camera_laser']
     config['code_book'] = config['code_book'].replace('.txt', '')
     nbp.code_book = config['code_book'] + '.txt'
+
+    # where to save scale and scale_anchor values used in extract step.
+    config['scale'] = config['scale'].replace('.txt', '')
+    nbp.scale = os.path.join(config['tile_dir'], config['scale'] + '.txt')
+
     # where to save psf, indicating average spot shape in raw image. Only ever needed in 3D.
     if nb.basic_info.is_3d:
         config['psf'] = config['psf'].replace('.npy', '')
