@@ -75,6 +75,8 @@ nav:
         - Notebook: notebook.md
         - Config Default Settings: config.md
         - Notebook Comments: notebook_comments.md
+    - Pipeline:
+        - Extract and Filter: pipeline/extract.md
     - Code:
         - Setup:
             - Notebook: code/setup/notebook.md

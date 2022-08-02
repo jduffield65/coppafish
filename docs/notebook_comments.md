@@ -200,22 +200,22 @@ basic_info page contains information that is used at all stages of the pipeline.
 	True if anchor round is used, False if not.
 
 ## extract
-extract page contains variables from extract_and_filter step which are used later in the pipeline. auto_thresh is used to find spots. hist_values and hist_counts are used for normalisation between channels. Page added to notebook in pipeline/extract_run.py
+`extract` page contains variables from `extract_and_filter` step which are used later in the  pipeline. `auto_thresh` is used in `find_spots` step. `hist_values` and `hist_counts` are used for  normalisation between channels in the `call_reference_spots` step. Page added to notebook in *pipeline/extract_run.py*
 
-* **auto_thresh**: *Numpy float array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]*.
+* **auto_thresh**: *Numpy float array `[n_tiles x (n_rounds + n_extra_rounds) x n_channels]`*.
 
-	auto_thresh[t, r, c] is the threshold spot intensity for tile t, round r, channel c.
+	`auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$ used for spot detection in the `find_spots` step of the pipeline.
 
 * **hist_values**: *Numpy integer array [n_pixel_values]*.
 
-	all possible pixel values in saved npy images i.e. length is approx np.iinfo(np.uint16).max
+	All possible pixel values in saved npy images i.e. length is approx `np.iinfo(np.uint16).max`
 
-* **hist_counts**: *Numpy integer array [n_pixel_values x n_rounds x n_channels]*.
+* **hist_counts**: *Numpy integer array `[n_pixel_values x n_rounds x n_channels]`*.
 
-	hist_counts[i, r, c] is the number of pixels across all tiles in round r, channel c which had the value hist_values[i].
+	`hist_counts[i, r, c]` is the number of pixels across all tiles in round $r$, channel $c$ which had the value `hist_values[i]`.
 
 ## extract_debug
-extract_debug page stores variables from extract_and_filter step which are not needed later in the pipeline but may be useful for debugging purposes. Page added to notebook in pipeline/extract_run.py
+`extract_debug` page stores variables from `extract_and_filter` step which are not needed later in the pipeline but may be useful for debugging purposes. Page added to notebook in *pipeline/extract_run.py*
 
 * **n_clip_pixels**: *Numpy integer array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]*.
 

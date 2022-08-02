@@ -93,8 +93,7 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
              use_z: Optional[Union[int, List[int]]] = None, config_file: Optional[str] = None):
     """
     Function to view raw data in napari.
-    Each tile/round will be a separate image layer and there will be 2 scrollbars for each image layer.
-    One to change channel and one to change z-plane.
+    There will upto 4 scrollbars for each image to change tile, round, channel and z-plane.
 
     Args:
         nb: *Notebook* for experiment. If no *Notebook* exists, pass `config_file` instead.
@@ -109,7 +108,7 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
             | 8  | 7  | 6  |
 
             | 11 | 10 | 9  |
-        rounds: rounds to view
+        rounds: rounds to view (`anchor` will be `nb.basic_info.n_rounds` i.e. the last round.)
         channels: Channels to view. If `None`, will load all channels.
         use_z: Which z-planes to load in from raw data. If `None`, will use load all z-planes (except from first
             one if `config['basic_info']['ignore_first_z_plane'] == True`).

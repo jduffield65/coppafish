@@ -7,6 +7,9 @@ from typing import Optional, Union, List
 from qtpy.QtCore import Qt
 from PyQt5.QtWidgets import QSlider
 import time
+import matplotlib.pyplot as plt
+
+plt.style.use('dark_background')
 
 
 class view_filter:
@@ -17,7 +20,7 @@ class view_filter:
         """
         Function to view filtering of raw data in napari.
         There will be 2 scrollbars in 3D.
-        One to change between *raw/filtered/filtered+smoothed* and one to change z-plane.
+        One to change between *raw/difference_of_hanning/difference_of_hanning+smoothed* and one to change z-plane.
 
         There are also sliders to change the parameters for the filtering/smoothing.
         When the sliders are changed, the time taken for the new filtering/smoothing
@@ -30,6 +33,8 @@ class view_filter:
 
         If `r == anchor_round` and `c == dapi_channel`, the filtering will be tophat filtering and no smoothing
         will be allowed. Otherwise, the filtering will be convolution with a difference of hanning kernel.
+
+        The current difference of hanning kernel can be viewed by pressing the 'h' key.
 
 
         Args:
@@ -73,7 +78,10 @@ class view_filter:
         self.image_raw, self.bad_columns = extract.strip_hack(self.image_raw)
 
         # Get default filter info
-        self.ax0_labels = ['Raw', 'Filtered', 'Filtered and Smoothed']  # label for each image in image_plot
+        # label for each image in image_plot
+        self.ax0_labels = ['Raw', 'Difference of Hanning', 'Difference of Hanning and Smoothed']
+        if not self.is_3d:
+            self.ax0_labels[0] = 'Raw (Focus Stacked)'
         config = nb.get_config()['extract']
         if r[0] == nb.basic_info.anchor_round and c[0] == nb.basic_info.dapi_channel:
             self.dapi = True
@@ -98,6 +106,7 @@ class view_filter:
                 r2 = self.r_filter * 2
             r_filter_lims = [2, 10]
             self.update_filter_image(r2)
+            self.r_filter2 = r2
 
             # Get default smoothing info
             if config['r_smooth'] is None:
@@ -123,7 +132,11 @@ class view_filter:
         self.filter_slider.valueChanged.connect(lambda x: self.show_filter_radius(x))
         # On release of slider, filtered / smoothed images updated
         self.filter_slider.sliderReleased.connect(self.filter_slider_func)
-        self.viewer.window.add_dock_widget(self.filter_slider, area="left", name='Filter Radius')
+        if self.dapi:
+            filter_slider_name = 'Tophat kernel radius'
+        else:
+            filter_slider_name = 'Difference of Hanning Radius'
+        self.viewer.window.add_dock_widget(self.filter_slider, area="left", name=filter_slider_name)
 
         if not self.dapi:
             self.smooth_yx_slider = QSlider(Qt.Orientation.Horizontal)
@@ -149,14 +162,17 @@ class view_filter:
             self.viewer.window.add_dock_widget(self.smooth_z_slider, area="left", name="Smooth Radius Z")
 
         if self.is_3d:
-            self.viewer.dims.axis_labels = ['Filter Type', 'z', 'y', 'x']
+            self.viewer.dims.axis_labels = ['Filter Method', 'z', 'y', 'x']
         else:
-            self.viewer.dims.axis_labels = ['Filter Type', 'y', 'x']
+            self.viewer.dims.axis_labels = ['Filter Method', 'y', 'x']
+
+        self.key_call_functions()
         napari.run()
 
     def update_filter_image(self, r2: Optional[int] = None):
         if r2 is None:
             r2 = self.r_filter * 2  # default outer hanning filter is double inner radius
+        self.r_filter2 = r2
         time_start = time.time()
         if self.dapi:
             print(f"Updating filtered image with r_dapi = {self.r_filter}...")
@@ -204,7 +220,10 @@ class view_filter:
             self.viewer.status = f'Filter Type: {self.ax0_labels[self.ax0_ind]}'
 
     def show_filter_radius(self, val):
-        self.viewer.status = f"Filtering Radius = {val}"
+        if self.dapi:
+            self.viewer.status = f"Tophat kernel radius = {val}"
+        else:
+            self.viewer.status = f"Difference of Hanning radii: r1 = {val}, r2 = {val * 2}"
 
     def filter_slider_func(self):
         # TODO: Only filter current z-plane showing as will be much quicker
@@ -243,4 +262,34 @@ class view_filter:
             self.update_smooth_image()
             self.viewer.layers[0].data = self.image_plot
 
+    def key_call_functions(self):
+        @self.viewer.bind_key('h')
+        def view_hanning_kernel(viewer):
+            view_hanning(self.r_filter, self.r_filter2)
 
+
+def view_hanning(r1: int, r2: int):
+    """
+    Views the 1D version of the difference of hanning kernel (before *utils/morphology/ftrans2* applied to make it 2D).
+
+    Args:
+        r1: Inner radius
+        r2: Outer radius
+    """
+    h_outer = np.hanning(2 * r2 + 3)[1:-1]  # ignore zero values at first and last index
+    h_outer = -h_outer / h_outer.sum()
+    h_inner = np.hanning(2 * r1 + 3)[1:-1]
+    h_inner = h_inner / h_inner.sum()
+    h = h_outer.copy()
+    h[r2 - r1:r2 + r1 + 1] += h_inner
+    h_inner_plot = np.zeros_like(h)
+    h_inner_plot[r2 - r1:r2 + r1 + 1] += h_inner
+
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    x = np.arange(-r2, r2+1)
+    ax1.plot(x, h_outer, label='Negative Outer Hanning Window')
+    ax1.plot(x, h_inner_plot, label='Positive Inner Hanning Window')
+    ax1.plot(x, h, label='Difference of Hanning Kernel')
+    ax1.legend()
+    plt.title(f'1D view of Difference of Hanning Kernel with r1={r1}, r2={r2}')
+    plt.show()
