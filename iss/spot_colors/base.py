@@ -67,7 +67,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     !!! note
         `invalid_value = -nbp_basic.tile_pixel_value_shift` is the lowest possible value saved in the npy file
         minus 1 (due to clipping in extract step), so it is impossible for spot_color to be this.
-        Hence I use this as integer nan. It will be `invalid_value` if the registered coordinate of
+        Hence, I use this as integer nan. It will be `invalid_value` if the registered coordinate of
         spot `s` is outside the tile in round `r`, channel `c`.
 
     Args:
@@ -152,7 +152,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     # Remove shift so now spots outside bounds have color equal to - nbp_basic.tile_pixel_shift_value.
     # It is impossible for any actual spot color to be this due to clipping at the extract stage.
     spot_colors = spot_colors - nbp_basic.tile_pixel_value_shift
-    invalid_value = - nbp_basic.tile_pixel_value_shift
+    invalid_value = -nbp_basic.tile_pixel_value_shift
     if return_in_bounds:
         good = ~np.any(spot_colors == invalid_value, axis=(1, 2))
         return spot_colors[good], yxz_base[good]

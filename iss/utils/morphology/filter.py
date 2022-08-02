@@ -104,5 +104,5 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
         `int [n_points]`.
             Result of filtering of `image` at each point in `coords`.
     """
-    im_filt = imfilter(image, kernel, padding, corr_or_conv, oa=False)
+    im_filt = imfilter(image.astype(int), kernel, padding, corr_or_conv, oa=False)
     return im_filt[tuple([coords[:, j] for j in range(im_filt.ndim)])]

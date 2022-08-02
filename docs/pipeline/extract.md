@@ -6,8 +6,25 @@ the resultant filtered images for each tile/round/channel combination as [npy fi
 It also adds the [`extract`](../notebook_comments.md#extract) and 
 [`extract_debug`](../notebook_comments.md#extract_debug) *NotebookPages* to the *Notebook*.
 
-## Raw data
 
+## `auto_thresh`
+The [`extract`](../notebook_comments.md#extract) *NotebookPage* contains the variable `auto_thresh`.
+`auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$ used for spot detection 
+in the `find_spots` step of the pipeline.
+
+These values can be viewed with the function [`thresh_box_plots`](../code/plot/extract.md#thresh_box_plots):
+
+## `hist_counts`
+The [`extract`](../notebook_comments.md#extract) *NotebookPage* also contains the variable `hist_counts`.
+`hist_counts[i, r, c]` is the number of pixels across all tiles in round $r$, channel $c$ which had the 
+value `nb.extract.hist_values[i]`. 
+It is used for [normalisation](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
+(see *Norm Button* box [here](../view_results.md#b-view_bleed_matrix)) 
+between channels in the `call_reference_spots` step.
+
+
+
+## Raw data
 The raw data can be viewed using [`view_raw`](../code/plot/raw.md#iss.plot.raw.view_raw). It can either be called
 for an experiment which already has a *Notebook* or for one which no code has been run yet but the `config_file` 
 has been made:
