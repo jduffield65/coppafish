@@ -6,6 +6,11 @@ the resultant filtered images for each tile/round/channel combination as [npy fi
 It also adds the [`extract`](../notebook_comments.md#extract) and 
 [`extract_debug`](../notebook_comments.md#extract_debug) *NotebookPages* to the *Notebook*.
 
+If the extract and filter step of the pipeline bugs out halfway through for some reason, it can be re-run
+without needing to remake all the tiles already saved to the [tile directory](../config_setup.md#tile_dir).
+It will just start with the first tile yet to be saved. 
+The [scale](#scale) values must not be changed when re-running though.
+
 
 ## `auto_thresh`
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* contains the variable `auto_thresh`.
@@ -13,7 +18,7 @@ The [`extract`](../notebook_comments.md#extract) *NotebookPage* contains the var
 in the `find_spots` step of the pipeline.
 
 `auto_thresh[t, r, c]` is set to `config['extract']['auto_thresh_multiplier'] * median(abs(image))` where
-image is the mid z-plane (`nb.extract_debug.z_info`) of the image saved to `tile_dir` for tile $t$, round $r$, 
+`image` is the mid z-plane (`nb.extract_debug.z_info`) of the image saved to `tile_dir` for tile $t$, round $r$, 
 channel $c$ during the extract step of the pipeline.
 This is just saying that we expect `median(abs(image))` to be the characteristic intensity of background pixels
 and spot pixels should be much more intense that this.
@@ -29,14 +34,39 @@ boxplots of the same color should be at the same height, and they should have qu
 outlier tiles (white crosses, +) not far from the boxplot). 
 
 
-
 ## `hist_counts`
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* also contains the variable `hist_counts`.
-`hist_counts[i, r, c]` is the number of pixels across all tiles in round $r$, channel $c$ which had the 
-value `nb.extract.hist_values[i]`. 
+`hist_counts[i, r, c]` is the number of pixels across the mid z-plane (`nb.extract_debug.z_info`) 
+of all tiles in round $r$, channel $c$ which had the value `nb.extract.hist_values[i]`. 
 It is used for [normalisation](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
 (see *Norm Button* box [here](../view_results.md#b-view_bleed_matrix)) 
 between channels in the `call_reference_spots` step.
+
+The histograms can be viewed using [`histogram_plots`](../code/plot/extract.md#histogram_plots).
+Initially, this will show the `hist_counts[:, r, c]` vs `hist_values` for each round and channel.
+There is also a *Norm Button* which 
+[equalises the channels](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) according to 
+[`config['call_spots']['color_norm_intensities']`](../config.md#call_spots)
+and [`config['call_spots']['color_norm_probs']`](../config.md#call_spots). In the normalised histograms,
+most values will be between ±1.
+
+=== "Un-normalised Histograms"
+    ![image](../images/pipeline/extract/histogram.png){width="800"}
+
+=== "Normalised Histograms"
+    ![image](../images/pipeline/extract/histogram_norm.png){width="800"}
+
+In the normalised histograms, we want to see a sharp peak at 0 accounting for the background pixels with a 
+long tail to larger values accounting for the spot pixels and a tail to 
+[negative values](#effect-of-filtering) accounting for the pixels in annuli surrounding spots.
+
+So in this example, channel 2 will likely prove the most problematic because the peak centered on 0 is much wider
+than for any other channel. This indicates that there is quite a lot of variance in the background pixels, 
+making it harder to distinguish the spots from the background.
+
+Also, from the un-normalised histograms we can see that the peak centered on 0 is widest for channel 0. 
+Thus, the median of absolute values will be largest for this channel. This explains why [`auto_thresh`](#auto_thresh) 
+is significantly larger for channel 0 than any other channel.
 
 
 ## Raw data
@@ -261,3 +291,119 @@ This suggests that the z averaging is more important, this also makes sense seen
 difference of hanning kernel is done in *2D* so treats each z-plane independently. In the `r_smooth = 4, 4, 1` image
 with no z-averaging, we see that the spots have more of a gradual increase in intensity instead of a sharp peak.
 
+
+## Scale
+The filtered images produced are of *float* data type with negatives, 
+but they are saved to `config['file_names']['tile_dir']` in *uint16* format.
+
+To do this conversion, the images are first multiplied by a scale factor so that they fill most of the *uint16* 
+range (between 0 and 65535) to keep the maximum amount of information. There are two different scale factors,
+`scale` which is applied to all tiles and channels of the imaging rounds 
+(`config['file_names']['round']`) and `scale_anchor` which is applied to all tiles of 
+the `anchor_channel` of the `anchor_round`.
+
+??? error "Potential error if `scale` changed"
+
+    It is important that the value of `scale` used does not vary between tiles/rounds/channels as
+    it would affect the assignment of spots to genes. For example, if the value of `config['extract']['scale']` 
+    was larger for round 2, channel 3, then spots will be more likely to be assigned to 
+    genes which appear here according to their barcode in the [`code_book`](../config_setup.md#code_book)
+    (`scale_anchor` is allowed to differ from `scale` because the `anchor_round` is not used in gene assignment).
+    
+    To stop this possibility, the values of `scale` and `scale_anchor` used
+    are [saved](../code/extract/scale.md#save_scale) to the `config['file_names']['tile_dir']` 
+    in a text file (`config['file_names']['scale']`).
+    Then if these [differ](../code/extract/scale.md#iss.extract.scale.get_scale_from_txt) 
+    from `config['extract']['scale']` and `config['extract']['scale_anchor']`, an error will occur.
+
+`scale` can be specified through `config['extract']['scale']` but if this is empty, it will be 
+[set](../code/extract/scale.md#iss.extract.scale.get_scale)
+to `scale = config['extract']['scale_norm']/max(scale_image)`. `scale_image` is the 
+`nb.basic_info.tile_sz x nb.basic_info.tile_sz` raw image belonging to the channel and z-plane containing 
+the pixel with maximum intensity of the central tile (saved as `scale_channel`, `scale_z`, `scale_tile` in 
+[`nb.extract_debug`](../notebook_comments.md#extract_debug)) in round 0. It is then filtered/smoothed according
+to the parameters in `config['extract']` before being used in the `scale` calculation.
+
+`scale_anchor` can be specified through `config['extract']['scale_anchor']`. If it is left empty,
+it is [computed](../code/extract/scale.md#iss.extract.scale.get_scale) in the same way as `scale` 
+(the channel used is `anchor_channel` and the tile and z-plane used are saved as `scale_ancor_tile` and 
+`scale_anchor_z` in [`nb.extract_debug`](../notebook_comments.md#extract_debug)).
+
+After the tiles are multiplied by the scale factor, they still contain negative values, so
+when they are [saved](../code/utils/npy.md#iss.utils.npy.save_tile), a shift 
+(`config['basic_info']['tile_pixel_value_shift']`) in intensity is added to each pixel.
+This shift is then subtracted when the tiles are [loaded](../code/utils/npy.md#iss.utils.npy.load_tile).
+
+### Potential error with clipped pixels
+Because `scale` is computed from one tile and round, there is a possibility during the course
+of the extract step of the pipeline that a much more intense tile/round will be encountered such that 
+the pixel values will have to be clipped after scaling to be kept within the *uint16* range.
+
+The number of pixels for which this happens on tile $t$, round $r$, channel $c$ is saved as 
+[`nb.extract_debug.n_clip_pixels[t, r, c]`](../notebook_comments.md#extract_debug).
+
+Clipped pixels can cause more spots to be detected in the find_spots section of the pipeline as shown 
+below, so are best avoided:
+
+=== "Spot detection with no clipped pixels"
+    ![image](../images/pipeline/extract/spot_no_clip.png){width="500"}
+
+=== "Spot detection with clipped pixels"
+    ![image](../images/pipeline/extract/spot_clip.png){width="500"}
+
+If more than `config['extract']['n_clip_error']` (will be set to 1% of pixels on single z-plane if not specified) 
+pixels have been clipped for `config['extract']['n_clip_error_images_thresh']` images,
+an error will be raised stopping the extract section of the pipeline. 
+    
+When this error occurs, a *Notebook* called *notebook_extract_error.npz* will be saved to the output directory
+with the pages *extract_fail* and *extract_debug_fail*. `nb.extract_fail.fail_trc` records the tile, round, channel
+where it terminated.
+
+#### Solution
+If the failed round, `nb.extract_fail.fail_trc[1]` is not the `anchor_round`, then delete everything in the tile
+directory including the `scale.txt` file. Then set `config['extract']['scale']` to `new_scale` and re-run:
+
+``` python
+scale_clip = nb.extract_debug.clip_extract_scale
+new_anchor_scale = scale_clip[scale_clip > 0].min()
+```
+
+This is the scale such that all tiles saved so far will not have any clipped pixels.
+
+If the failed round, `nb.extract_fail.fail_trc[1]` is the `anchor_round`, then delete all .npy files belonging to
+the anchor round in the tile directory as well as the `scale.txt` file. 
+Then set `config['extract']['scale_anchor']` to `new_anchor_scale` and re-run:
+
+``` python
+anchor_scale_clip = \
+    nb.extract_debug.clip_extract_scale[:, anchor_round, anchor_channel]
+new_anchor_scale = anchor_scale_clip[anchor_scale_clip > 0].min()
+```
+
+This is the scale such that all anchor tiles saved so far will not have any clipped pixels.
+
+
+## Psuedocode
+This is the pseudocode outlining the basics of this [step of the pipeline](../code/pipeline/extract_run.md).
+
+```
+for r in use_rounds:
+    for t in use_tiles:
+        for c in use_channels:
+            im = load image from raw data in input_dir
+            if 2D:
+                im = focus_stack(im)
+            if r is anchor_round and c is dapi_channel:
+                im = tophat_filter(im, dapi_kernel)
+            else:
+                im = convolve(im, diff_hanning_kernel)
+                im = im * scale
+                if smooth:
+                    im = correlate(im, smooth_kernel)
+                Compute auto_thresh[t, r, c] and hist_counts[t, r, c] from
+                 mid z-plane of im.
+                Save im to tile directory.
+Add information needed for later stages of pipeline to extract NotebookPage
+Add useful debugging info to extract_debug NotebookPage.
+Return both.            
+```

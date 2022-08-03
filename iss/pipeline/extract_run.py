@@ -30,6 +30,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
             but may be useful for debugging purposes.
     """
+    # Check scaling won't cause clipping when saving as uint16
+    scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
+    if config['scale_norm'] >= scale_norm_max:
+        raise ValueError(f"\nconfig['extract']['scale_norm'] = {config['scale_norm']} but it must be below "
+                         f"{scale_norm_max}")
+
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config['deconvolve'] = False  # only deconvolve if 3d pipeline
@@ -274,6 +280,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
                                                          hist_bin_edges, max_tiff_pixel_value, scale,
                                                          nbp_debug.z_info)
+
+                            # Deal with pixels outside uint16 range when saving
                             if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
                                 warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
                                               f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
@@ -297,6 +305,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 else:
                                     warnings.warn(f"{message}\nWhen this reaches {config['n_clip_error_images_thresh']}"
                                                   f", the extract step of the algorithm will be interrupted.")
+
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                         if nbp_basic.is_3d:

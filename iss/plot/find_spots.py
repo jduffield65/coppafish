@@ -210,6 +210,8 @@ class view_find_spots:
 
         if self.show_isolated:
             self.viewer.window.add_dock_widget(self.isolation_thresh_slider, area="left", name='Isolation Threshold')
+        # set image as selected layer so can see intensity values in status
+        self.viewer.layers.selection.active = self.viewer.layers[0]
         napari.run()
 
     def show_thresh(self, thresh):

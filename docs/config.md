@@ -274,6 +274,8 @@ The *extract* section contains parameters which specify how to filter the raw mi
 
 	If `scale` not given, `scale = scale_norm/max(scale_image)`. Where `scale_image` is the `n_channels x n_y x n_x x n_z` image belonging to the central tile (saved as `nb.extract_debug.scale_tile`) of round 0 after filtering and smoothing. 
 
+	 Must be less than `np.iinfo(np.uint16).max - config['basic_info']['tile_pixel_value_shift']` which is typically $65535 - 15000 = 50535$. 
+
 	Default: `35000`
 
 * **scale_anchor**: *maybe_number*.
