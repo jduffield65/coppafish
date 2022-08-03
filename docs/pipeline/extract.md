@@ -1,7 +1,8 @@
 # Extract and Filter
 
-The extract and filter step of the pipeline loads in the raw images, filters them and saves
-the resultant filtered images for each tile/round/channel combination as [npy files](../config_setup.md#tile_dir).
+The [extract and filter step of the pipeline](../code/pipeline/extract_run.md) loads in the raw images, 
+filters them and saves the resultant filtered images for each tile/round/channel combination 
+as [npy files](../config_setup.md#tile_dir).
 
 It also adds the [`extract`](../notebook_comments.md#extract) and 
 [`extract_debug`](../notebook_comments.md#extract_debug) *NotebookPages* to the *Notebook*.
@@ -11,8 +12,8 @@ without needing to remake all the tiles already saved to the [tile directory](..
 It will just start with the first tile yet to be saved. 
 The [scale](#scale) values must not be changed when re-running though.
 
-
-## `auto_thresh`
+## Variables in `extract` page
+### `auto_thresh`
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* contains the variable `auto_thresh`.
 `auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$ used for spot detection 
 in the `find_spots` step of the pipeline.
@@ -34,7 +35,7 @@ boxplots of the same color should be at the same height, and they should have qu
 outlier tiles (white crosses, +) not far from the boxplot). 
 
 
-## `hist_counts`
+### `hist_counts`
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* also contains the variable `hist_counts`.
 `hist_counts[i, r, c]` is the number of pixels across the mid z-plane (`nb.extract_debug.z_info`) 
 of all tiles in round $r$, channel $c$ which had the value `nb.extract.hist_values[i]`. 

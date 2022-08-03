@@ -6,6 +6,7 @@ from typing import Optional
 from ..setup import Notebook
 from .raw import get_raw_images, number_to_list, add_basic_info_no_save
 from .. import extract, utils
+from ..find_spots import check_neighbour_intensity
 from qtpy.QtCore import Qt
 from PyQt5.QtWidgets import QSlider
 import time
@@ -135,6 +136,7 @@ class view_find_spots:
         self.r_isolation_xy = config['isolation_radius_xy']
         self.normal_color = np.array([1, 0, 0, 1]) # red
         self.isolation_color = np.array([0, 1, 0, 1])  # green
+        self.neg_neighb_color = np.array([0, 0, 1, 1])  # blue
         self.point_size = 9
         self.z_thick = 1  # show +/- 1 plane initially
         self.z_thick_list = np.arange(1, 1 + 15 * 2, 2)  # only odd z-thick make any difference
@@ -154,6 +156,7 @@ class view_find_spots:
         self.dilate = None
         self.spot_zyx = None
         self.image_isolated = None
+        self.no_negative_neighbour = None
         self.update_dilate()
         if self.show_isolated:
             self.update_isolated_image()
@@ -242,6 +245,8 @@ class view_find_spots:
         spots = np.logical_and(self.image + self.small > self.dilate, self.image > self.auto_thresh)
         peak_pos = np.where(spots)
         self.spot_zyx = np.concatenate([coord.reshape(-1, 1) for coord in peak_pos], axis=1)
+        self.no_negative_neighbour = check_neighbour_intensity(self.image, self.spot_zyx,
+                                                               thresh=0)
         if self.is_3d:
             self.spot_zyx = self.spot_zyx[:, [2, 0, 1]]
         if len(self.viewer.layers) == 1:
@@ -249,10 +254,13 @@ class view_find_spots:
                 point_size = [self.z_thick_list[self.z_thick], self.point_size, self.point_size]
             else:
                 point_size = self.point_size
-            self.viewer.add_points(self.spot_zyx, edge_color=self.normal_color, face_color='r', symbol='x', opacity=0.8,
-                                   edge_width=0, out_of_slice_display=True, size=point_size, name='Spots Found')
+            self.viewer.add_points(self.spot_zyx, edge_color=self.normal_color, face_color=self.normal_color,
+                                   symbol='x', opacity=0.8, edge_width=0, out_of_slice_display=True,
+                                   size=point_size, name='Spots Found')
         else:
             self.viewer.layers[1].data = self.spot_zyx
+        self.viewer.layers[1].face_color[np.invert(self.no_negative_neighbour)] = self.neg_neighb_color
+        self.viewer.layers[1].visible = 1  # no idea why, but seem to need this line to update colors
         if self.show_isolated:
             self.update_isolated_spots()
         self.viewer.layers[1].selected_data = set()  # sometimes it selects points at random when change thresh
@@ -296,6 +304,8 @@ class view_find_spots:
         isolated = self.image_isolated[tuple([self.spot_zyx[:, j] for j in
                                               range(self.image_isolated.ndim)])] < self.isolation_thresh
         self.viewer.layers[1].face_color[np.invert(isolated)] = self.normal_color
+        isolated = np.logical_and(isolated, self.no_negative_neighbour)
+        self.viewer.layers[1].face_color[np.invert(self.no_negative_neighbour)] = self.neg_neighb_color
         self.viewer.layers[1].face_color[isolated] = self.isolation_color
         self.viewer.layers[1].visible = 1  # no idea why, but seem to need this line to update colors
 

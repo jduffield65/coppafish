@@ -12,7 +12,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
     """
     Finds local maxima in image exceeding ```intensity_thresh```.
     This is achieved by looking at neighbours of pixels above intensity_thresh.
-    Should use for a small se.
+    Should use for a small `se` and high `intensity_thresh`.
 
     Args:
         image: ```float [n_y x n_x x n_z]```.

@@ -81,7 +81,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                                                         config['isolation_radius_z'])
 
                     else:
-                        # if imaging round, only keep highest intensity spots on each z plane
+                        # if imaging round, only keep the highest intensity spots on each z plane
                         # as only used for registration
                         keep = np.ones(spot_yxz.shape[0], dtype=bool)
                         for z in range(n_z):
