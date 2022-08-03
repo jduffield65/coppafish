@@ -168,8 +168,8 @@ This can be called in a similar way to [`view_raw`](#raw-data):
     nb = Notebook(nb_file)
     t = 1       # tile to view
     r = 3       # round to view
-    c = 6       # channels to view
-    view_raw(nb, t, r, c)
+    c = 6       # channel to view
+    view_filter(nb, t, r, c)
     ```
 
 === "Without *Notebook*"
@@ -179,8 +179,8 @@ This can be called in a similar way to [`view_raw`](#raw-data):
     ini_file = '/Users/user/iss/experiment/settings.ini'
     t = 1       # tile to view
     r = 3       # round to view
-    c = 6       # channels to view
-    view_raw(None, t, r, c, config_file=ini_file)
+    c = 6       # channel to view
+    view_filter(None, t, r, c, config_file=ini_file)
     ```
 
 This will open a napari viewer with up to 2 scrollbars. One to change z-plane and another to change the filter method.

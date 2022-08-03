@@ -259,6 +259,7 @@ class view_find_spots:
                                    size=point_size, name='Spots Found')
         else:
             self.viewer.layers[1].data = self.spot_zyx
+        self.viewer.layers[1].face_color[self.no_negative_neighbour] = self.normal_color
         self.viewer.layers[1].face_color[np.invert(self.no_negative_neighbour)] = self.neg_neighb_color
         self.viewer.layers[1].visible = 1  # no idea why, but seem to need this line to update colors
         if self.show_isolated:

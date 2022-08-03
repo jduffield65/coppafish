@@ -73,7 +73,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
 
     if not nb.has_page('reg_to_anchor_info'):
         nbp = setup.NotebookPage('reg_to_anchor_info')
-        if transform is None:
+        if transform is not None:
             nbp.transform = transform
         else:
             # remove duplicate spots

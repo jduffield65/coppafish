@@ -2,6 +2,7 @@ import os
 from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
     call_reference_spots, call_spots_omp
+from ..find_spots import check_n_spots
 from ..call_spots import get_non_duplicate
 import warnings
 import numpy as np
@@ -88,6 +89,7 @@ def run_find_spots(nb: setup.Notebook):
         config = nb.get_config()
         nbp = find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract.auto_thresh)
         nb += nbp
+        check_n_spots(nb)
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
 

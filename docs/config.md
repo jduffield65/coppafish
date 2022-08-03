@@ -439,6 +439,30 @@ The *find_spots* section contains parameters which specify how to convert the im
 
 	Default: `-0.2`
 
+* **n_spots_warn_factor**: *number*.
+
+	Used in *iss/find_spots/base/check_n_spots* 
+
+	 A warning will be raised if for any tile, round, channel the number of spots detected is less than: 
+
+	 `n_spots_warn = n_spots_warn_factor * max_spots * nb.basic_info.nz` 
+
+	 where `max_spots` is `max_spots_2d` if *2D* and `max_spots_3d` if *3D*. 
+
+	Default: `0.1`
+
+* **n_spots_error_factor**: *number*.
+
+	Used in *iss/find_spots/base/check_n_spots*. An error is raised if any of the following are satisfied: 
+
+	 * For any given channel, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_factor` of tiles/rounds. 
+
+	 * For any given tile, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_factor` of rounds/channels. 
+
+	 * For any given round, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_factor` of tiles/channels. 
+
+	Default: `0.5`
+
 ## stitch
 The *stitch* section contains parameters which specify how the overlaps between neighbouring tiles are found. Note that references to south in this section should really be north and west should be east.
 
