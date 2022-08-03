@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from iss.pcr import get_single_affine_transform
 from iss.pipeline.run import initialize_nb, run_extract, run_find_spots
 from iss import setup, utils
@@ -20,7 +20,8 @@ matplotlib.use('Qt5Agg')
 matplotlib.pyplot.style.use('dark_background')
 
 
-def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save: List):
+def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save: List,
+                      transform: Optional[np.ndarray] = None):
     """
     This runs the pipeline for a separate round up till the end of the stitching stage and then finds the
     affine transform that takes it to the anchor image of the full pipeline run.
@@ -28,12 +29,15 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     `channels_to_save`.
 
     Args:
-        config_file: config_file: Path to config file for separate round.
+        config_file: Path to config file for separate round.
             This should have only 1 round, that round being an anchor round and only one channel being used so
             filtering is only done on the anchor channel.
         config_file_full: Path to config file for full pipeline run, for which full notebook exists.
         channels_to_save: Channels of the separate round, that will be saved to the output directory in
             the same coordinate system as the anchor round of the full run.
+        transform: `float [4 x 3]`.
+            Can provide the affine transform which transforms the separate round onto the anchor
+            image of the full pipeline run. If not provided, it will be computed.
     """
     # Get all information from full pipeline results - global spot positions and z scaling
     nb_full = initialize_nb(config_file_full)
@@ -68,40 +72,47 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
         image_centre = np.append(np.floor(yx_size/2).astype(int), 0)
 
     if not nb.has_page('reg_to_anchor_info'):
-        # remove duplicate spots
-        spot_local_yxz = nb.find_spots.spot_details[:, -3:]
-        spot_tile = nb.find_spots.spot_details[:, 0]
-        not_duplicate = get_non_duplicate(nb.stitch.tile_origin, nb.basic_info.use_tiles,
-                                          nb.basic_info.tile_centre, spot_local_yxz, spot_tile)
-        global_yxz = spot_local_yxz[not_duplicate] + nb.stitch.tile_origin[spot_tile[not_duplicate]]
-
-        # Only keep isolated points far from neighbour
-        if nb.basic_info.is_3d:
-            neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
-        else:
-            neighb_dist_thresh = config['register']['neighb_dist_thresh_2d']
-
-        isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
-        isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
-        global_yxz = global_yxz[isolated, :]
-        global_yxz_full = global_yxz_full[isolated_full, :]
-
-        # get initial shift from separate round to the full anchor image
         nbp = setup.NotebookPage('reg_to_anchor_info')
-        nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info = \
-            get_shift(config['register_initial'], global_yxz, global_yxz_full,
-                      z_scale, z_scale_full, nb.basic_info.is_3d)
+        if transform is None:
+            nbp.transform = transform
+        else:
+            # remove duplicate spots
+            spot_local_yxz = nb.find_spots.spot_details[:, -3:]
+            spot_tile = nb.find_spots.spot_details[:, 0]
+            not_duplicate = get_non_duplicate(nb.stitch.tile_origin, nb.basic_info.use_tiles,
+                                              nb.basic_info.tile_centre, spot_local_yxz, spot_tile)
+            global_yxz = spot_local_yxz[not_duplicate] + nb.stitch.tile_origin[spot_tile[not_duplicate]]
 
-        # view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
-        #             debug_info['scores_3d'], nbp.shift, nbp.shift_score_thresh)
+            # Only keep isolated points far from neighbour
+            if nb.basic_info.is_3d:
+                neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
+            else:
+                neighb_dist_thresh = config['register']['neighb_dist_thresh_2d']
 
-        # Get affine transform from separate round to full anchor image
-        nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
-            get_single_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
-                                        nbp.shift, neighb_dist_thresh, image_centre)
+            isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
+            isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
+            global_yxz = global_yxz[isolated, :]
+            global_yxz_full = global_yxz_full[isolated_full, :]
+
+            # get initial shift from separate round to the full anchor image
+            nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info = \
+                get_shift(config['register_initial'], global_yxz, global_yxz_full,
+                          z_scale, z_scale_full, nb.basic_info.is_3d)
+
+            # view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
+            #             debug_info['scores_3d'], nbp.shift, nbp.shift_score_thresh)
+
+            # Get affine transform from separate round to full anchor image
+            nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
+                get_single_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
+                                            nbp.shift, neighb_dist_thresh, image_centre)
         nb += nbp  # save results of transform found
     else:
         nbp = nb.reg_to_anchor_info
+        if transform is not None:
+            if (transform != nb.reg_to_anchor_info.transform).any():
+                raise ValueError(f"transform given is:\n{transform}.\nThis differs "
+                                 f"from nb.reg_to_anchor_info.transform:\n{nb.reg_to_anchor_info.transform}")
 
     # save all the images
     for c in channels_to_save:
@@ -137,11 +148,11 @@ def get_shift(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.nd
         is_3d: Whether pipeline is 3D or not.
 
     Returns:
-        - `shift` - `float [shift_y, shift_x, shift_z]`.
+        `shift` - `float [shift_y, shift_x, shift_z]`.
             Best shift found.
-        - `shift_score` - `float`.
+        `shift_score` - `float`.
             Score of best shift found.
-        - `min_score` - `float`.
+        `min_score` - `float`.
             Threshold score that was calculated, i.e. range of shifts searched changed until score exceeded this.
     """
 
@@ -181,8 +192,9 @@ def transform_image(image: np.ndarray, transform: np.ndarray, image_centre: np.n
             z centre i.e. `image_centre[2]` is in units of z-pixels.
         z_scale: Scaling to put z coordinates in same units as yx coordinates.
 
-    Returns: `int [n_y x n_x (x n_z)]`.
-        `image` transformed according to `transform`.
+    Returns:
+        `int [n_y x n_x (x n_z)]`.
+            `image` transformed according to `transform`.
 
     """
     im_transformed = np.zeros_like(image)
