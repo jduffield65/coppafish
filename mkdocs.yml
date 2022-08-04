@@ -116,7 +116,7 @@ nav:
             - Stitch: code/pipeline/stitch.md
             - Register Initial: code/pipeline/register_initial.md
             - Register: code/pipeline/register.md
-            - Reference Spots: code/pipeline/reference_spots.md
+            - Get Reference Spots: code/pipeline/get_reference_spots.md
             - Call Reference Spots: code/pipeline/call_reference_spots.md
             - OMP: code/pipeline/omp.md
         - Utils:

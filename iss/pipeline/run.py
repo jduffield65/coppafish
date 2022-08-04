@@ -1,6 +1,6 @@
 import os
 from .. import setup, utils
-from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, reference_spots, \
+from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, get_reference_spots, \
     call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
 from ..call_spots import get_non_duplicate
@@ -179,8 +179,8 @@ def run_reference_spots(nb: setup.Notebook):
             raise ValueError(f"The code_book file:\n{nb.file_names.code_book}\ndoes not exist. "
                              f"Change it in the config file and re-run.")
         config = nb.get_config()
-        nbp_ref_spots = reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
-                                        nb.stitch.tile_origin, nb.register.transform)
+        nbp_ref_spots = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
+                                            nb.stitch.tile_origin, nb.register.transform)
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nbp_ref_spots,
                                                   nb.extract.hist_values, nb.extract.hist_counts, nb.register.transform)
         nb += nbp_ref_spots

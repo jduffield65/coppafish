@@ -6,6 +6,7 @@ from ..spot_colors.base import apply_transform
 from .stitch import view_shifts, view_point_clouds
 from ..setup import Notebook
 from typing import Optional
+import matplotlib.pyplot as plt
 
 
 def view_initial_shift(nb: Notebook, t: int, r: int, c: Optional[int] = None,

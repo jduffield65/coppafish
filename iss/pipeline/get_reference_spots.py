@@ -9,8 +9,8 @@ except ImportError:
 from ..setup.notebook import NotebookPage
 
 
-def reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_details: np.ndarray,
-                    tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
+def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_details: np.ndarray,
+                        tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
     """
     This takes each spot found on the reference round/channel and computes the corresponding intensity
     in each of the imaging rounds/channels.

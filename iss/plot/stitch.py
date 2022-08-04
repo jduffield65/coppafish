@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import scipy.ndimage
@@ -7,9 +6,12 @@ from matplotlib.widgets import TextBox, RadioButtons
 from scipy.spatial import KDTree
 from ..stitch import compute_shift, get_shifts_to_search
 from ..find_spots import spot_yxz
+from ..call_spots import get_non_duplicate
 from ..setup import Notebook
 import warnings
 from typing import Tuple, List, Optional
+
+plt.style.use('dark_background')
 
 
 def interpolate_array(array: np.ndarray, invalid_value: float) -> np.ndarray:
@@ -169,14 +171,14 @@ def view_shifts(shifts_2d: np.ndarray, scores_2d: np.ndarray, shifts_3d: Optiona
         return fig
 
 
-def view_stitch(nb: Notebook, t: int, direction: Optional[str] = None):
+def view_stitch_search(nb: Notebook, t: int, direction: Optional[str] = None):
     """
     Function to plot results of exhaustive search to find overlap between tile `t` and its neighbours.
-    Useful for debugging the stitch section of the pipeline.
+    Useful for debugging the `stitch` section of the pipeline.
 
     Args:
         nb: Notebook containing results of the experiment. Must contain `find_spots` page.
-        t: Want to look at overlap between tile `t` and its south/west neighbour.
+        t: Want to look at overlap between tile `t` and its north/east neighbour.
         direction: Direction of overlap interested in - either `'south'`/`'north'` or `'west'`/`'east'`.
             If `None`, then will look at both directions.
     """
@@ -258,7 +260,7 @@ class view_point_clouds:
         """
         n_point_clouds = len(point_clouds)
         if len(point_clouds) != len(pc_labels):
-            raise ValueError(f'There are {n_point_clouds} but {len(pc_labels)} labels')
+            raise ValueError(f'There are {n_point_clouds} point clouds but {len(pc_labels)} labels')
         self.fig, self.ax = plt.subplots(1, 1)
         subplots_adjust = [0.07, 0.775, 0.095, 0.89]
         self.fig.subplots_adjust(left=subplots_adjust[0], right=subplots_adjust[1], bottom=subplots_adjust[2],
@@ -323,15 +325,22 @@ class view_point_clouds:
             self.ax.set_title(f'Z = {int(self.z)}', size=10)
             self.fig.canvas.mpl_connect('scroll_event', self.z_scroll)
             text_ax = self.fig.add_axes([0.8, 0.095, 0.15, 0.04])
-            self.text_box = TextBox(text_ax, 'Z-Thick', self.z_thick, color='k', hovercolor=[0.2, 0.2, 0.2])
-            self.text_box.cursor.set_color('r')
-            # change text box title to be above not to the left of box
-            label = text_ax.get_children()[0]  # label is a child of the TextBox axis
+        else:
+            # For some reason in 2D, still need the text box otherwise buttons don't do work
+            # But shift it off-screen and make small
+            text_ax = self.fig.add_axes([40, 40, 0.00001, 0.00001])
+        self.text_box = TextBox(text_ax, 'Z-Thick', self.z_thick, color='k', hovercolor=[0.2, 0.2, 0.2])
+        self.text_box.cursor.set_color('r')
+        # change text box title to be above not to the left of box
+        label = text_ax.get_children()[0]  # label is a child of the TextBox axis
+        if self.nz == 1:
+            label.set_position([40, 40])  # shift label off-screen in 2D
+        else:
             label.set_position([0.5, 2])  # [x,y] - change here to set the position
-            # centering the text
-            label.set_verticalalignment('top')
-            label.set_horizontalalignment('center')
-            self.text_box.on_submit(self.text_update)
+        # centering the text
+        label.set_verticalalignment('top')
+        label.set_horizontalalignment('center')
+        self.text_box.on_submit(self.text_update)
 
         if n_point_clouds >= 3:
             # If 3 or more point clouds, add radio button to change the second point cloud shown.
@@ -394,11 +403,25 @@ class view_point_clouds:
             self.pc_plots[i].set_data(self.point_clouds[self.active_pc[i]][self.in_z[self.active_pc[i]], 1],
                                       self.point_clouds[self.active_pc[i]][self.in_z[self.active_pc[i]], 0])
         self.update_neighb_lines()
-        self.ax.set_title(f"Z = {int(self.z)}", size=10)
+        if self.nz > 1:
+            self.ax.set_title(f"Z = {int(self.z)}", size=10)
         self.ax.figure.canvas.draw()
 
 
-def view_stitch_point_clouds(nb: Notebook, t: int, direction: str = 'south'):
+def view_stitch_overlap(nb: Notebook, t: int, direction: str = 'south'):
+    """
+    This plots point clouds of neighbouring tiles with:
+
+    * No overlap
+    * Initial guess at shift using `config['stitch']['expected_overlap']`
+    * Overlap determined in stitch stage of the pipeline (using `nb.stitch.south_shifts` or `nb.stitch.west_shifts`)
+    * Their final global coordinate system positions (using `nb.stitch.tile_origin`)
+
+    Args:
+        nb: *Notebook* containing at least `stitch` page.
+        t: Want to look at overlap between tile `t` and its north or east neighbour.
+        direction: Direction of overlap interested in - either `'south'`/`'north'` or `'west'`/`'east'`.
+    """
     # NOTE that directions should actually be 'north' and 'east'
     if direction.lower() == 'south' or direction.lower() == 'west':
         direction = direction.lower()
@@ -417,16 +440,17 @@ def view_stitch_point_clouds(nb: Notebook, t: int, direction: str = 'south'):
             warnings.warn(f"Tile {t} has no overlapping tiles in the south direction so changing to west.")
             direction = 'west'
         else:
-            initial_shift = [-nb.basic_info.tile_sz, 0, 0]  # assuming no overlap between tiles
+            no_overlap_shift = np.array([-nb.basic_info.tile_sz, 0, 0])  # assuming no overlap between tiles
             found_shift = nb.stitch.south_shifts[np.where(nb.stitch.south_pairs[:,0] == t)[0]][0]
     if direction == 'west':
         t_neighb = np.where(np.sum(nb.basic_info.tilepos_yx == nb.basic_info.tilepos_yx[t, :] + [0, 1],
                                    axis=1) == 2)[0]
         if t_neighb not in nb.basic_info.use_tiles:
             raise ValueError(f"Tile {t} has no overlapping tiles in the west direction.")
-        initial_shift = [0, -nb.basic_info.tile_sz, 0]  # assuming no overlap between tiles
+        no_overlap_shift = np.array([0, -nb.basic_info.tile_sz, 0])  # assuming no overlap between tiles
         found_shift = nb.stitch.west_shifts[np.where(nb.stitch.west_pairs[:, 0] == t)[0]][0]
 
+    config = nb.get_config()['stitch']
     t_neighb = t_neighb[0]
     r = nb.basic_info.ref_round
     c = nb.basic_info.ref_channel
@@ -437,16 +461,59 @@ def view_stitch_point_clouds(nb: Notebook, t: int, direction: str = 'south'):
 
     local_yxz_t = spot_yxz(nb.find_spots.spot_details, t, r, c)
     # Add point cloud for tile t assuming no overlap
+    point_clouds = point_clouds + [local_yxz_t + nb.stitch.tile_origin[t_neighb] + no_overlap_shift]
+    # Add point cloud assuming expected overlap
+    initial_shift = (1-config['expected_overlap']) * no_overlap_shift
     point_clouds = point_clouds + [local_yxz_t + nb.stitch.tile_origin[t_neighb] + initial_shift]
     # Add point cloud for tile t with found shift
     point_clouds = point_clouds + [local_yxz_t + nb.stitch.tile_origin[t_neighb] + found_shift]
     # Add point cloud for tile t in global coordinate system
     point_clouds = point_clouds + [local_yxz_t + nb.stitch.tile_origin[t]]
 
+    neighb_dist_thresh = config['neighb_dist_thresh']
+    z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
+    pc_labels = [f'Tile {t_neighb}', f'Tile {t} - No overlap',
+                 f"Tile {t} - {int(config['expected_overlap']*100)}% overlap", f'Tile {t} - Shift', f'Tile {t} - Final']
+    view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
+                      f'Overlap between tile {t} and tile {t_neighb} in the {direction_label[direction]}')
+    plt.show()
+
+
+def view_stitch(nb: Notebook):
+    """
+    This plots all the reference spots found (`ref_round`/`ref_channel`) in the global coordinate system created
+    in the `stitch` stage of the pipeline.
+
+    It also indicates which of these spots are duplicates (detected on a tile which is not the tile whose centre
+    they are closest to) to be removed in the `get_reference_spots` step of the pipeline.
+
+    Args:
+        nb: *Notebook* containing at least `stitch` page.
+    """
+    is_ref = np.all((nb.find_spots.spot_details[:, 1] == nb.basic_info.ref_round,
+                     nb.find_spots.spot_details[:, 2] == nb.basic_info.ref_channel), axis=0)
+    local_yxz = nb.find_spots.spot_details[is_ref, -3:]
+    tile = nb.find_spots.spot_details[is_ref, 0]
+
+    # find duplicate spots as those detected on a tile which is not tile centre they are closest to
+    tile_origin = nb.stitch.tile_origin
+    not_duplicate = get_non_duplicate(tile_origin, nb.basic_info.use_tiles, nb.basic_info.tile_centre,
+                                      local_yxz, tile)
+
+    global_yxz = local_yxz + nb.stitch.tile_origin[tile]
+    global_yxz[:, 2] = np.rint(global_yxz[:, 2])  # make z coordinate an integer
     config = nb.get_config()['stitch']
     neighb_dist_thresh = config['neighb_dist_thresh']
     z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
-    pc_labels = [f'Tile {t_neighb}', f'Tile {t} - No overlap', f'Tile {t} - Shift', f'Tile {t} - Final']
-    view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
-                      f'Overlap between tile {t} and tile {t_neighb} in the {direction_label[direction]}')
+    vpc = view_point_clouds([global_yxz[not_duplicate], global_yxz[np.invert(not_duplicate)]],
+                            ['Not Duplicate', 'Duplicate'], neighb_dist_thresh, z_scale,
+                            "Reference Spots in the Global Coordinate System")
+
+    tile_sz = nb.basic_info.tile_sz
+    for t in nb.basic_info.use_tiles:
+        rect = matplotlib.patches.Rectangle((tile_origin[t, 1], tile_origin[t, 0]), tile_sz, tile_sz,
+                                            linewidth=1, edgecolor='g', facecolor='none', linestyle=':')
+        vpc.ax.add_patch(rect)
+        vpc.ax.text(tile_origin[t, 1] + 20, tile_origin[t, 0] + 20, f"Tile {t}",
+                    size=6, color='g', ha='left', weight='light')
     plt.show()
