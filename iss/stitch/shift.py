@@ -395,7 +395,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         yxz_transform = yxz_transform * [1, 1, z_scale[1]]
     yxz_transform_tree = KDTree(yxz_transform)
     shift_2d, score_2d, all_shifts_2d, all_scores_2d = get_best_shift_2d(yx_base_slices, yx_transform_trees,
-                                                                       neighb_dist_thresh, y_shifts, x_shifts)
+                                                                         neighb_dist_thresh, y_shifts, x_shifts)
 
     # Only look at 3 shifts in z to start with about guess from getting the 2d slices.
     if z_shifts is None:

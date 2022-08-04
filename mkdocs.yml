@@ -78,6 +78,7 @@ nav:
     - Pipeline:
         - Extract and Filter: pipeline/extract.md
         - Find Spots: pipeline/find_spots.md
+        - Stitch: pipeline/stitch.md
     - Code:
         - Setup:
             - Notebook: code/setup/notebook.md

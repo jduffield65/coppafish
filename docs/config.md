@@ -474,7 +474,7 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 * **auto_n_shifts**: *list_int*.
 
-	If `shift_south_min/max` and/or `shift_east_min/max` not given, the initial shift search will have `auto_n_shifts` either side of the expected shift given the `expected_overla`p with step given by `shift_step`. First value gives n_shifts in direction of overlap (y for south, x for west). Second value gives n_shifts in other direction (x for south, y for west). Third value gives n_shifts in z. 
+	If `shift_south_min/max` and/or `shift_west_min/max` not given, the initial shift search will have `auto_n_shifts` either side of the expected shift given the `expected_overlap` with step given by `shift_step`. First value gives $n_{shifts}$ in direction of overlap (y for south, x for west). Second value gives $n_{shifts}$ in other direction (x for south, y for west). Third value gives $n_{shifts}$ in z. 
 
 	Default: `20, 20, 1`
 

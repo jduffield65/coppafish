@@ -350,3 +350,7 @@ gene assignments legitimate.
 
 The default values are based on an experiment run with ground truth data, but they will likely need adjusting 
 after investigating the effect of the thresholds using [`iss_plot`](code/plot/viewer.md).
+
+
+### ADD USE_TILES USE_ROUNDS USE_CHANNELS
+LINK TO ERROR WITH TOO FEW SPOTS IN FIND_SPOTS PIPELINE SECTION
