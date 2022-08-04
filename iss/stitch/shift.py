@@ -463,7 +463,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         all_shifts_3d = None
         all_scores_3d = None
     else:
-        if min_score_multiplier is not None and score_2d >= min_score:
+        if min_score_multiplier is not None:
             # Lower threshold score in 3D if passed 2d threshold as expect score to be smaller.
             min_score = min_score / min_score_multiplier
         y_shift_2d = np.array(shift_2d[0])
@@ -534,15 +534,3 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                                                  'shifts_3d': all_shifts_3d, 'scores_3d': all_scores_3d,
                                                  'shift_2d_initial': shift_2d_initial,
                                                  'shift_thresh': shift_thresh}
-
-# TODO: Not sure what amend_shifts function was for. Does not seem to be used in anything.
-# def amend_shifts(shift_info, shifts, spot_details, c, r, neighb_dist_thresh, z_scale):
-#     good_shifts = (shift_info['score'] > shift_info['score_thresh']).flatten()
-#     if sum(good_shifts) < 2 and len(good_shifts) > 4:
-#         raise ValueError(f"{len(good_shifts)-sum(good_shifts)}/{len(good_shifts)} of shifts fell below score threshold")
-#     elif sum(good_shifts) < len(good_shifts):
-#         coords = ['y', 'x', 'z']
-#         shift_info['outlier'] = shift_info['shifts']
-#         shift_info[good_shifts, :] = 0
-#         for i in range(len(coords)):
-#             shifts[coords[i]] = update_shifts(shifts[coords[i]], shift_info['shifts'][good_shifts, i])

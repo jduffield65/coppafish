@@ -205,6 +205,7 @@ def view_stitch_search(nb: Notebook, t: int, direction: Optional[str] = None):
     """
     Function to plot results of exhaustive search to find overlap between tile `t` and its neighbours.
     Useful for debugging the `stitch` section of the pipeline.
+    White in the color plot refers to the value of `score_thresh` for this search.
 
     Args:
         nb: Notebook containing results of the experiment. Must contain `find_spots` page.

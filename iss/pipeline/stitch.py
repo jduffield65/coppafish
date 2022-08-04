@@ -108,7 +108,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             t = shift_info[j]['pairs'][i, 0]
             t_neighb = shift_info[j]['pairs'][i, 1]
             # re-find shifts that fell below threshold by only looking at shifts near to others found
-            # score set to 0 so will find do refined search no matter what.
+            # Don't allow any widening so shift found must be in this range.
+            # score_thresh given is 0, so it is not re-computed.
             shift_info[j]['shifts'][i], shift_info[j]['score'][i] = \
                 compute_shift(spot_yxz(spot_details, t, r, c), spot_yxz(spot_details, t_neighb, r, c), 0, None, None,
                               None, config['neighb_dist_thresh'], shifts[j]['y'], shifts[j]['x'], shifts[j]['z'],
@@ -116,7 +117,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> N
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
 
-    # get tile origins in global coordinates
+    # get tile origins in global coordinates.
     # global coordinates are built about central tile so found this first
     tile_dist_to_centre = np.linalg.norm(nbp_basic.tilepos_yx[nbp_basic.use_tiles] -
                                          np.mean(nbp_basic.tilepos_yx, axis=0), axis=1)
