@@ -68,7 +68,9 @@ def view_initial_shift(nb: Notebook, t: int, r: int, c: Optional[int] = None,
     else:
         show = True
     view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
-                debug_info['scores_3d'], shift, shift_score_thresh, title, show)
+                debug_info['scores_3d'], shift, shift_score_thresh, debug_info['shift_2d_initial'],
+                debug_info['shift_thresh'], config['shift_score_thresh_min_dist'],
+                config['shift_score_thresh_max_dist'], title, show)
     if return_shift:
         return shift
 

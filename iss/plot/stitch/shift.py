@@ -66,7 +66,9 @@ def get_plot_images_from_shifts(shifts: np.ndarray, scores: np.ndarray) -> Tuple
 
 def view_shifts(shifts_2d: np.ndarray, scores_2d: np.ndarray, shifts_3d: Optional[np.ndarray] = None,
                 scores_3d: Optional[np.ndarray] = None, best_shift: Optional[np.ndarray] = None,
-                score_thresh: Optional[float] = None, title: Optional[str] = None, show: bool = True):
+                score_thresh: Optional[float] = None, best_shift_initial: Optional[np.ndarray] = None,
+                thresh_shift: Optional[np.ndarray] = None, thresh_min_dist: Optional[int] = None,
+                thresh_max_dist: Optional[int] = None, title: Optional[str] = None, show: bool = True):
     """
     Function to plot scores indicating number of neighbours between 2 point clouds corresponding to particular shifts
     applied to one of them. I.e. you can use this to view the output from iss/stitch/shift/compute_shift function.
@@ -93,6 +95,17 @@ def view_shifts(shifts_2d: np.ndarray, scores_2d: np.ndarray, shifts_3d: Optiona
         score_thresh: Threshold returned by `compute_shift` function, if `score` is above this,
             it indicates an accepted shift. If given, a red-white-blue colorbar will be used with white corresponding
             to `score_thresh`.
+        best_shift_initial: `int [y_shift, x_shift]`.
+            Best yx shift found by in first search of algorithm. I.e. `score_thresh` computation based on this.
+            Will show as green x if given.
+        thresh_shift: `int [y_shift, x_shift]`.
+            yx shift corresponding to `score_thresh`. Will show as green + if given.
+        thresh_min_dist: `shift_thresh` is the shift with the max score in an annulus a distance between
+            `thresh_min_dist` and `thresh_max_dist` away from `best_shift_initial`.
+            Annulus will be shown in green if given.
+        thresh_max_dist: `shift_thresh` is the shift with the max score in an annulus a distance between
+            `thresh_min_dist` and `thresh_max_dist` away from `best_shift_initial`.
+            Annulus will be shown in green if given.
         title: Title to show.
         show: If `True`, will call `plt.show()`, else will `return fig`.
     """
@@ -113,14 +126,18 @@ def view_shifts(shifts_2d: np.ndarray, scores_2d: np.ndarray, shifts_3d: Optiona
             v_max = images_3d.max()
         if images_3d.min() < v_min:
             v_min = images_3d.min()
+        if cmap == 'bwr':
+            cmap_extent = np.max([v_max-score_thresh, score_thresh-v_min])
+            # Have equal range above and below score_thresh to not skew colormap
+            v_min = score_thresh - cmap_extent
+            v_max = score_thresh + cmap_extent
         cmap_norm = matplotlib.colors.TwoSlopeNorm(vmin=v_min, vcenter=score_thresh, vmax=v_max)
         n_cols = images_3d.shape[2]
         if n_cols > 13:
             # If loads of z-planes, just show the 13 with the largest score
             n_cols = 13
             max_score_z = images_3d.max(axis=(0, 1))
-            max_score_z_thresh = max_score_z[np.argpartition(max_score_z, -n_cols)[-n_cols]]
-            use_z = np.where(max_score_z >= max_score_z_thresh)[0]
+            use_z = np.sort(np.argsort(max_score_z)[::-1][:n_cols])
         else:
             use_z = np.arange(n_cols)
 
@@ -149,18 +166,35 @@ def view_shifts(shifts_2d: np.ndarray, scores_2d: np.ndarray, shifts_3d: Optiona
         ax_2d = plt.subplot2grid(shape=(n_cols, n_cols), loc=(0, 0))
         ax_2d.set_xlabel('X')
         ax_2d.set_ylabel('Y')
+        if cmap == 'bwr':
+            cmap_extent = np.max([v_max-score_thresh, score_thresh-v_min])
+            # Have equal range above and below score_thresh to not skew colormap
+            v_min = score_thresh - cmap_extent
+            v_max = score_thresh + cmap_extent
         cmap_norm = matplotlib.colors.TwoSlopeNorm(vmin=v_min, vcenter=score_thresh, vmax=v_max)
 
     im_2d = ax_2d.imshow(image_2d, extent=extent_2d, aspect='auto', cmap=cmap, norm=cmap_norm)
     if best_shift is not None:
-        ax_2d.plot(best_shift[1], best_shift[0], 'kx')
+        ax_2d.plot(best_shift[1], best_shift[0], 'kx', label='Best shift')
+    if best_shift_initial is not None and best_shift_initial != best_shift:
+        ax_2d.plot(best_shift_initial[1], best_shift_initial[0], 'x', color='lime', label='Best shift initial')
+    if thresh_shift is not None:
+        ax_2d.plot(thresh_shift[1], thresh_shift[0], '+', color='lime', label='Thresh shift')
+    if thresh_min_dist is not None and best_shift_initial is not None:
+        ax_2d.add_patch(plt.Circle((best_shift_initial[1], best_shift_initial[0]), thresh_min_dist, color='lime',
+                                   fill=False))
+    if thresh_max_dist is not None and best_shift_initial is not None:
+        ax_2d.add_patch(plt.Circle((best_shift_initial[1], best_shift_initial[0]), thresh_max_dist, color='lime',
+                                   fill=False))
     ax_2d.invert_yaxis()
     if title is None:
         title = 'Approx number of neighbours found for all shifts'
     ax_2d.set_title(title)
+    ax_2d.legend(facecolor='b')
     fig.subplots_adjust(left=0.07, right=0.85, bottom=0.07, top=0.95)
     cbar_ax = fig.add_axes([0.9, 0.07, 0.03, 0.9])  # left, bottom, width, height
     fig.colorbar(im_2d, cax=cbar_ax)
+    cbar_ax.set_ylim(np.clip(v_min, 0, v_max), v_max)
     if show:
         plt.show()
     else:
@@ -229,7 +263,9 @@ def view_stitch_search(nb: Notebook, t: int, direction: Optional[str] = None):
             title = f'Overlap between t={t} and neighbor in {direction_label[j]} (t={t_neighb[j][0]}). ' \
                     f'YXZ Shift = {shift}.'
             fig = fig + [view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
-                                     debug_info['scores_3d'], shift, score_thresh, title, False)]
+                                     debug_info['scores_3d'], shift, score_thresh, debug_info['shift_2d_initial'],
+                                     debug_info['shift_thresh'], config['shift_score_thresh_min_dist'],
+                                     config['shift_score_thresh_max_dist'], title, False)]
     if len(fig) > 0:
         plt.show()
     else:

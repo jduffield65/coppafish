@@ -55,7 +55,7 @@ def scaled_k_means(x: np.ndarray, initial_cluster_mean: np.ndarray,
         cluster_ind_old = cluster_ind.copy()
 
         # project each point onto each cluster. Use normalized so we can interpret score
-        score = np.matmul(x_norm, norm_cluster_mean.transpose())
+        score = x_norm @ norm_cluster_mean.transpose()
         cluster_ind = np.argmax(score, axis=1)  # find best cluster for each point
         top_score = score[np.arange(n_points), cluster_ind]
         top_score[np.where(np.isnan(top_score))[0]] = score_thresh.min()-1  # don't include nan values

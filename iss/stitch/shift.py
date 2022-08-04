@@ -220,7 +220,7 @@ def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List
 
 
 def get_score_thresh(all_shifts: np.ndarray, all_scores: np.ndarray, best_shift: Union[np.ndarray, List], min_dist: float,
-                     max_dist: float, thresh_multiplier: float) -> float:
+                     max_dist: float, thresh_multiplier: float) -> Tuple[float, Optional[np.ndarray]]:
     """
     Score thresh is the max of all scores from transforms between a `distance=min_dist` and `distance=max_dist`
     from the `best_shift`.
@@ -243,15 +243,21 @@ def get_score_thresh(all_shifts: np.ndarray, all_scores: np.ndarray, best_shift:
             from `best_shift`.
 
     Returns:
-        Threshold used to determine if best_shift found is legitimate.
+        score_thresh - Threshold used to determine if `best_shift` found is legitimate.
+        shift_thresh - `float [2]`
+            shift corresponding to `score_thresh`. Will be None if there were no shifts
+            in the range set by `min_dist` and `max_dist`.
     """
     dist_to_best = pairwise_distances(np.array(all_shifts), np.array(best_shift)[np.newaxis]).squeeze()
     use = np.where(np.logical_and(dist_to_best <= max_dist, dist_to_best >= min_dist))[0]
     if len(use) > 0:
-        score_thresh = thresh_multiplier * np.max(all_scores[use])
+        thresh_ind = use[np.argmax(all_scores[use])]
+        score_thresh = thresh_multiplier * all_scores[thresh_ind]
+        shift_thresh = all_shifts[thresh_ind]
     else:
         score_thresh = thresh_multiplier * np.median(all_scores)
-    return score_thresh
+        shift_thresh = None
+    return score_thresh, shift_thresh
 
 
 def get_2d_slices(yxz_base: np.ndarray, yxz_transform: np.ndarray,
@@ -380,7 +386,11 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                 All yxz shifts searched to get best `yxz_shift`. `None` if `nz_collapse is None` i.e. 2D point cloud.
             - `scores_3d`: `float [n_shifts_3d]`
                 Score corresponding to each 3d shift. `None` if `nz_collapse is None` i.e. 2D point cloud.
-
+            - `shift_2d_initial`: `float [2]`
+                Best shift found after first 2D search. I.e. annulus around this shift was used
+                to compute `min_score` and `shift_thresh`.
+            - `shift_thresh`: `float [2]`
+                yx shift corresponding to `min_score`. Will be `None` if `min_score` provided in advance.
     """
     if widen is None:
         widen = [0, 0, 0]
@@ -403,9 +413,12 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
 
     # save initial_shifts so don't look over same shifts twice
     # initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
+    shift_2d_initial = shift_2d.copy()
     if min_score is None:
-        min_score = get_score_thresh(all_shifts_2d, all_scores_2d, shift_2d, min_score_min_dist, min_score_max_dist,
-                                     min_score_multiplier)
+        min_score, shift_thresh = get_score_thresh(all_shifts_2d, all_scores_2d, shift_2d, min_score_min_dist,
+                                                   min_score_max_dist, min_score_multiplier)
+    else:
+        shift_thresh = None
     if score_2d <= min_score and np.max(widen[:2]) > 0:
         shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
         if max_range is None:
@@ -518,7 +531,9 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         all_shifts_3d = all_shifts_3d.astype(np.int16)
     shift[2] = shift[2] / z_scale[0]
     return shift.astype(int), score, min_score, {'shifts_2d': all_shifts_2d, 'scores_2d': all_scores_2d,
-                                                 'shifts_3d': all_shifts_3d, 'scores_3d': all_scores_3d}
+                                                 'shifts_3d': all_shifts_3d, 'scores_3d': all_scores_3d,
+                                                 'shift_2d_initial': shift_2d_initial,
+                                                 'shift_thresh': shift_thresh}
 
 # TODO: Not sure what amend_shifts function was for. Does not seem to be used in anything.
 # def amend_shifts(shift_info, shifts, spot_details, c, r, neighb_dist_thresh, z_scale):
