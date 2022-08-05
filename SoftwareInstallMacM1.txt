@@ -10,6 +10,7 @@ pip install opencv-python
 pip install nd2
 pip install h5py
 pip install matplotlib
+pip install distinctipy
 
 
 The initial condo pyqt install is to install the PyQt5 required by napari. This does not work with pip. If napari still does not appear to be working then, you may have to install pyqt with brew. See solution here:
