@@ -589,6 +589,24 @@ will have their pixel value set to $0$ before saving.
 There are a few functions using matplotlib which may help to debug this section of the pipeline.
 
 ### [`view_stitch_shift_info`](../code/plot/stitch.md#view_stitch_shift_info)
+The [`view_stitch_shift_info`](../code/plot/stitch.md#view_stitch_shift_info) function
+plots the shifts found for all neighbouring tiles in a given direction on the same plot
+(there are 3 plots for each direction).
+This allows you to see if they are similar, as we expect or if there are some outliers.
+
+It also includes a plot of `score` vs `score_thresh` for each pair of neighbouring tiles:
+
+![image](../images/pipeline/stitch/view_shift_info.png){width="800"}
+
+In this case, all the shifts seem reasonable as the top two plots show quite a small range
+and the bottom plot shows `score > score_thresh` for every shift (blue numbers are all above the green line).
+If a shift had `score < score_thresh`, it would be shown in red in each of the three plots
+for that direction.
+
+The numbers refer to the tile with a neighbouring tile to either the north or east of it.
+This example is for a $4$ ($n_y$) $\times$ $3$ ($n_x$) grid of tiles, so the number $1$ in the *West* column 
+of plots refers to the shift found between tile $1$ and tile $0$. 
+The number $3$ in the *South* column of plots refers to the shift found between tile $3$ and tile $0$.
 
 
 ### [`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap)
