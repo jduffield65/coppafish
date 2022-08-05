@@ -12,3 +12,6 @@
 
 ## `view_point_clouds`
 ### ::: iss.plot.stitch.point_clouds.view_point_clouds.__init__
+
+## `view_stitch_shift_info`
+### ::: iss.plot.stitch.diagnostics.view_stitch_shift_info
