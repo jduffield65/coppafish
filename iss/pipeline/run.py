@@ -5,6 +5,7 @@ from . import set_basic_info, extract_and_filter, find_spots, stitch, register_i
 from ..find_spots import check_n_spots
 from ..call_spots import get_non_duplicate
 import warnings
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse
 
@@ -173,22 +174,26 @@ def run_reference_spots(nb: setup.Notebook):
         nb: `Notebook` containing `stitch` and `register` pages.
 
     """
-    if not all(nb.has_page(["ref_spots", "call_spots"])):
+    if not nb.has_page('ref_spots'):
+        nbp = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
+                                  nb.stitch.tile_origin, nb.register.transform)
+        nb += nbp  # save to Notebook with gene_no, score, score_diff, intensity = None.
+                   # These will be added in call_reference_spots
+    else:
+        warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
+    if not nb.has_page("call_spots"):
         if not os.path.isfile(nb.file_names.code_book):
             # Raise error here if code_book file does not exist as will be needed in call_reference_spots
             raise ValueError(f"The code_book file:\n{nb.file_names.code_book}\ndoes not exist. "
                              f"Change it in the config file and re-run.")
         config = nb.get_config()
-        nbp_ref_spots = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
-                                            nb.stitch.tile_origin, nb.register.transform)
-        nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nbp_ref_spots,
+        # nb.ref_spots.finalized = False  # so can set gene_no, score, score_diff, intensity.
+        nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
                                                   nb.extract.hist_values, nb.extract.hist_counts, nb.register.transform)
-        nb += nbp_ref_spots
         nb += nbp
         # only raise error after saving to notebook if spot_colors have nan in wrong places.
-        utils.errors.check_color_nan(nbp_ref_spots.colors, nb.basic_info)
+        utils.errors.check_color_nan(nb.ref_spots.colors, nb.basic_info)
     else:
-        warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
 
 

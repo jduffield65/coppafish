@@ -455,7 +455,7 @@ register_debug page contains information on how the affine transforms in registe
 	[t, r, c] is the final transform found for tile t, round r, channel c without regularisation. Regularisation only used for t,r,c indicated by failed and so transform_outlier is 0 for others.
 
 ## ref_spots
-ref_spots page contains gene assignments and info for spots found on reference round. Page added to notebook in pipeline/call_reference_spots.py
+ref_spots page contains gene assignments and info for spots found on reference round. Page added to notebook in pipeline/get_reference_spots.py.  The variables `gene_no`, `score`, `score_diff`, `intensity` will be set to `None` after `get_reference_spots`.  `call_reference_spots` should then be run to give their actual values. This is so if there is an error in  `call_reference_spots`, `get_reference_spots` won't have to be re-run.
 
 * **local_yxz**: *Numpy int16 array [n_spots x 3]*.
 

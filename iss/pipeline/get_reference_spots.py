@@ -17,6 +17,16 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_de
 
     See `'ref_spots'` section of `notebook_comments.json` file
     for description of the variables in the page.
+    The following variables:
+
+    * `gene_no`
+    * `score`
+    * `score_diff`
+    * `intensity`
+
+    will be set to `None` so the page can be added to a *Notebook*. `call_reference_spots` should then be run
+    to give their actual values. This is so if there is an error in `call_reference_spots`,
+    `get_reference_spots` won't have to be re-run.
 
     Args:
         nbp_file: `file_names` notebook page
@@ -95,4 +105,12 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_de
     nbp.isolated = good_isolated
     nbp.tile = good_local_tile
     nbp.colors = good_spot_colors
+
+    # Set variables added in call_reference_spots to None so can save to Notebook.
+    # I.e. if call_reference_spots hit error, but we did not do this,
+    # we would have to run get_reference_spots again.
+    nbp.gene_no = None
+    nbp.score = None
+    nbp.score_diff = None
+    nbp.intensity = None
     return nbp

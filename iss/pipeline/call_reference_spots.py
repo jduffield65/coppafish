@@ -6,11 +6,12 @@ from ..extract import scale
 from ..spot_colors import get_spot_colors, all_pixel_yxz
 from ..utils import round_any
 from typing import Tuple
+import warnings
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_ref_spots: NotebookPage,
                          hist_values: np.ndarray, hist_counts: np.ndarray,
-                         transform: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
+                         transform: np.ndarray, overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
     simple dot product for spots found on the reference round.
@@ -27,6 +28,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         nbp_basic: `basic_info` notebook page
         nbp_ref_spots: `ref_spots` notebook page containing all variables produced in `pipeline/reference_spots.py` i.e.
             `local_yxz`, `isolated`, `tile`, `colors`.
+            `gene_no`, `score`, `score_diff`, `intensity` should all be `None` to add them here, unless
+            `overwrite_ref_spots == True`.
         hist_values: `int [n_pixel_values]`.
             All possible pixel values in saved tiff images i.e. `n_pixel_values` is approximately
             `np.iinfo(np.uint16).max` because tiffs saved as `uint16` images.
@@ -39,12 +42,42 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
             tile `t`, round `r`, channel `c`.
             This is saved in the register notebook page i.e. `nb.register.transform`.
+        overwrite_ref_spots: If `True`, the variables:
+
+            * `gene_no`
+            * `score`
+            * `score_diff`
+            * `intensity`
+
+            in `nbp_ref_spots` will be overwritten if they exist. If this is `False`, they will only be overwritten
+            if they are all set to `None`, otherwise an error will occur.
 
     Returns:
         `NotebookPage[call_spots]` - Page contains bleed matrix and expected code for each gene.
         `NotebookPage[ref_spots]` - Page contains gene assignments and info for spots found on reference round.
             Parameters added are: intensity, score, gene_no, score_diff
     """
+    if overwrite_ref_spots:
+        warnings.warn("\noverwrite_ref_spots = True so will overwrite:\ngene_no, score, score_diff, intensity"
+                      "\nin nbp_ref_spots.")
+        nbp_ref_spots.finalized = False
+    else:
+        # Raise error if data in nbp_ref_spots already exists that will be overwritted in this function.
+        error_message = ""
+        if nbp_ref_spots.finalized:
+            error_message += "\nnbp_ref_spots already added to a Notebook so can't change it." \
+                             "\nSet nbp_ref_spots.finalized = False to get past this error."
+        for var in ['gene_no', 'score', 'score_diff', 'intensity']:
+            if hasattr(nbp_ref_spots, var) and nbp_ref_spots.__getattribute__(var) is not None:
+                error_message += f"\nnbp_ref_spots.{var} is not None but this function will overwrite {var}." \
+                                 f"\nRun with overwrite_ref_spots = True to get past this error."
+        if len(error_message) > 0:
+            raise ValueError(error_message)
+
+    # delete all variables in ref_spots set to None so can add them later.
+    for var in ['gene_no', 'score', 'score_diff', 'intensity']:
+        if hasattr(nbp_ref_spots, var):
+            nbp_ref_spots.__delattr__(var)
     nbp = NotebookPage("call_spots")
 
     # get color norm factor

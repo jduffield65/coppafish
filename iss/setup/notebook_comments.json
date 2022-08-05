@@ -382,7 +382,10 @@
   "ref_spots":
   {
     "DESCRIPTION": ["ref_spots page contains gene assignments and info for spots found on reference round.",
-      "Page added to notebook in pipeline/call_reference_spots.py"],
+      "Page added to notebook in pipeline/get_reference_spots.py.", "",
+      "The variables `gene_no`, `score`, `score_diff`, `intensity` will be set to `None` after `get_reference_spots`.",
+      "","`call_reference_spots` should then be run to give their actual values. This is so if there is an error in ",
+      "`call_reference_spots`, `get_reference_spots` won't have to be re-run."],
 
     "local_yxz": ["Numpy int16 array [n_spots x 3]",
       "local_yxz[s] are the yxz coordinates of spot s found on tile[s], ref_round, ref_channel.",
