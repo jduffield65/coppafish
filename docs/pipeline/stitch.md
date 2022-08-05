@@ -640,7 +640,7 @@ The example below is for a $4\times3$ grid of tiles in *2D*.
 The blue spots are duplicate spots (detected on a tile which is not the tile whose centre they are closest to).
 For each duplicate spot, we expect there is a non-duplicate spot in red, detected on a different tile
 but with the same global coordinate. We can see this in the *Zoom* plot showing the intersection between tile 1 and 
-tile 2 (indicated by a faint white box in the *Full* image).
+tile 2 (indicated by a green box in the *Full* image).
 
 These duplicate spots will be removed in the `get_reference_spots` step of the pipeline, so we don't double count
 the same spot.
