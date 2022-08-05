@@ -1,7 +1,26 @@
 from ..stitch.diagnostics import shift_info_plot
+from ...setup import Notebook
 
 
-def view_reg_shift_info(nb):
+def view_reg_shift_info(nb: Notebook):
+    """
+    For all shifts to imaging rounds from the reference round computed in the `register_initial` section
+    of the pipeline, this plots the values of the shifts found and the `score` compared to
+    the `score_thresh`.
+
+    For each round, there will be 3 plots:
+
+    * y shift vs x shift for all tiles
+    * z shift vs x shift for all tiles
+    * `score` vs `score_thresh` for all tiles (a green score = score_thresh line is plotted in this).
+
+    In each case, the markers in the plots are numbers.
+    These numbers indicate the tile the shift was found for.
+    The number will be blue if `score > score_thresh` and red otherwise.
+
+    Args:
+        nb: Notebook containing at least the `register_initial` page.
+    """
     shift_info = {}
     if nb.basic_info.is_3d:
         ndim = 3

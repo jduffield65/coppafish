@@ -112,8 +112,8 @@ class TestGetDyeChannelIntensityGuess(unittest.TestCase):
     output: float array [n_dyes x n_channels] giving approximate intensity of each dye in each channel
     """
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'examples')
-    csv_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname( __file__ )))),
-                            'dye_camera_laser_raw_intensity.csv')
+    csv_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                            'setup', 'dye_camera_laser_raw_intensity.csv')
     tol = 1e-10
 
     def test_get_dye_channel_intensity_guess(self):

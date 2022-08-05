@@ -585,12 +585,15 @@ We do this because the image is useful for plotting, but we do not care much abo
 Also to save memory, all pixels with absolute value less than `config['stitch']['save_image_zero_thresh']`
 will have their pixel value set to $0$ before saving.
     
-## View stitched point clouds
-### [`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap)
-To debug this section of the pipeline, the function 
-[`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap) is useful.
+## Debugging
+There are a few functions using matplotlib which may help to debug this section of the pipeline.
 
-For an experiment with tile $0$ to the north of tile $1$, `view_stitch_overlap(nb, 1, 'north')`
+### [`view_stitch_shift_info`](../code/plot/stitch.md#view_stitch_shift_info)
+
+
+### [`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap)
+For an experiment with tile $0$ to the north of tile $1$, 
+[`view_stitch_overlap(nb, 1, 'north')`](../code/plot/stitch.md#view_stitch_overlap)
 will always show the global coordinates of the point cloud for tile $0$ in red 
 (`global_yxz = local_yxz + nb.stitch.tile_origin[0]`).
 There are then buttons to select which point cloud for tile $1$ is plotted in blue:

@@ -15,3 +15,6 @@
 
 ## `view_stitch_shift_info`
 ### ::: iss.plot.stitch.diagnostics.view_stitch_shift_info
+
+## `shift_info_plot`
+### ::: iss.plot.stitch.diagnostics.shift_info_plot

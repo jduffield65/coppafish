@@ -6,13 +6,27 @@ from ...setup import Notebook
 
 def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
     """
+    If `shift_info` contains $n$ keys, this will produce an $n$ column x 3 row grid of subplots.
+    For each key in `shift_info` dictionary, there are 3 plots:
+
+    * y shift vs x shift
+    * z shift vs x shift
+    * `score` vs `score_thresh`
+
+    In each case, the markers in the plots are numbers.
+    These numbers are given by `shift_info[key][tile]`.
+    The number will be blue if `score > score_thresh` and red otherwise.
 
     Args:
-        shift_info:
-        title:
+        shift_info: Dictionary containing $n$ dictionaries.
+            Each of these dictionaries contains:
 
-    Returns:
-
+            * shift - `float [n_tiles x 3]`. $yxz$ shifts for each tile.
+            * tile - `int [n_tiles]`. Indicates tile each shift was found for.
+            * score - `float [n_tiles]`. Indicates `score` found for each shift (approx number of matches between
+                point clouds).
+            * score_thresh - `float [n_tiles]`. If `score<score_thresh`, it will be shown in red.
+        title: Overall title for the plot.
     """
     n_cols = len(shift_info)
     col_titles = list(shift_info.keys())
@@ -75,12 +89,25 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
 
 def view_stitch_shift_info(nb: Notebook):
     """
+    For all north/south and east/west shifts computed in the `stitch` section
+    of the pipeline, this plots the values of the shifts found and the `score` compared to
+    the `score_thresh`.
+
+    For each direction, there will be 3 plots:
+
+    * y shift vs x shift for all pairs of neighbouring tiles
+    * z shift vs x shift for all pairs of neighbouring tiles
+    * `score` vs `score_thresh` for all pairs of neighbouring tiles
+    (a green score = score_thresh line is plotted in this).
+
+    In each case, the markers in the plots are numbers.
+    These numbers indicate the tile, the shift was applied to,
+    to take it to its north or east neighbour i.e. `nb.stitch.south_pairs[:, 0]`
+    or `nb.stitch.west_pairs[:, 0]`.
+    The number will be blue if `score > score_thresh` and red otherwise.
 
     Args:
-        nb:
-
-    Returns:
-
+        nb: Notebook containing at least the `stitch` page.
     """
     if nb.basic_info.is_3d:
         ndim = 3
