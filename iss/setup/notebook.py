@@ -511,8 +511,18 @@ class Notebook:
             s += "\n".join(sorted(page._times.keys()))
         return hashlib.md5(bytes(s, "utf8")).hexdigest()
 
-    def save(self):
+    def save(self, file: Optional[str] = None):
+        """
+        Saves Notebook as a npz file at the path indicated by `file`.
+        Args:
+            file: Where to save *Notebook*. If `None`, will use `self._file`.
+
+        """
         """Save the Notebook to a file"""
+        if file is not None:
+            if not file.endswith(".npz"):
+                file = file + ".npz"
+            self._file = file
         d = {}
         # Diagnostic information about how long the save took.  We can probably
         # take this out, or else set it at a higher debug level via warnings

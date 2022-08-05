@@ -352,5 +352,15 @@ The default values are based on an experiment run with ground truth data, but th
 after investigating the effect of the thresholds using [`iss_plot`](code/plot/viewer.md).
 
 
-### ADD USE_TILES USE_ROUNDS USE_CHANNELS
-LINK TO ERROR WITH TOO FEW SPOTS IN FIND_SPOTS PIPELINE SECTION
+### Using a subset of the raw data
+To run the pipeline with a subset of tiles, imaging rounds, channels and z-planes the following parameters 
+can be set in the [*basic_info*](config.md#basic_info) section of the configuration file:
+
+* `use_tiles`
+* `use_rounds`
+* `use_channels`
+* `use_z`
+
+If midway through the pipeline, it is decided that a particular tile, round or channel is not worth using,
+it can be [removed](notebook.md#changing-basic_info-mid-pipeline) 
+without re-running all the steps of the pipeline completed so far.

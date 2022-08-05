@@ -315,8 +315,95 @@ Otherwise, when the *Notebook* is loaded, the saved value of the configuration f
         ; but register page has been added to Notebook.
         ```
 
+#### Changing *basic_info* mid-pipeline
+It is quite common to want to change the *basic_info* section of the configuration file halfway through the pipeline
+without re-running the steps of the pipeline which have already been completed.
 
-### file_names
+For example, we may have specified the wrong `dye_names`, but this is not used until the `call_reference_spots`
+stage. Or after the *find_spots* or *register* sections, we may want to remove some problematic 
+tiles, rounds or channels (through `use_tiles`, `use_rounds` and `use_channels`).
+
+But if the *basic_info* section of the configuration file is changed, 
+an error would be raised unless the *basic_info NotebookPage* is deleted. The code below illustrates
+how to save a new *Notebook* with a different *basic_info* page:
+
+=== "Code"
+
+    ``` python
+    from iss import Notebook
+    from iss.pipeline import set_basic_info
+    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
+    ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
+
+    # config_file not given so will use last one saved to Notebook
+    nb = Notebook(nb_file)
+    print('Using config file saved to notebook:')
+    print(f"use_channels: {nb.basic_info.use_channels}")
+    print(f"use_tiles: {nb.basic_info.use_tiles}")
+
+    # Change basic_info
+    del nb.basic_info     # delete old basic info
+    nb.save(nb_file_new)  # save Notebook with no basic_info page to new file 
+                          # so does not overwrite old Notebook
+    # Load in new notebook with new config file with different basic_info
+    nb_new = Notebook(nb_file_new, ini_file_new)
+    # add new basic_info page to Notebook
+    config = nb_new.get_config()
+    nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
+    nb_new += nbp_basic
+    print(f'Using new config file {ini_file_new}:')
+    print(f"use_channels: {nb_new.basic_info.use_channels}")
+    print(f"use_tiles: {nb_new.basic_info.use_tiles}")
+    ```
+=== "Output"
+
+    ``` 
+    Using config file saved to notebook:
+    use_channels: [0, 1, 2, 3, 4, 5, 6]
+    use_tiles: [0, 1, 2, 3]
+    Using new config file /Users/user/iss/experiment/settings_new.ini:
+    use_channels: [1, 2, 5, 6]
+    use_tiles: [0, 2, 3]
+
+    ```
+=== "nb._config (saved to *Notebook*)"
+
+    ``` ini
+    [file_names]
+    input_dir = /Users/user/iss/experiment1/raw
+    output_dir = /Users/user/iss/experiment1/output
+    tile_dir = /Users/user/iss/experiment1/tiles
+    round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
+    anchor = Exp1_anchor
+    code_book = /Users/user/iss/experiment1/codebook.txt
+
+    [basic_info]
+    is_3d = True
+    anchor_channel = 4
+    dapi_channel = 0
+    ```
+=== "*/Users/user/iss/experiment/settings_new.ini*"
+
+    ``` ini
+    [file_names]
+    input_dir = /Users/user/iss/experiment1/raw
+    output_dir = /Users/user/iss/experiment1/output
+    tile_dir = /Users/user/iss/experiment1/tiles
+    round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
+    anchor = Exp1_anchor
+    code_book = /Users/user/iss/experiment1/codebook.txt
+
+    [basic_info]
+    is_3d = True
+    anchor_channel = 4
+    dapi_channel = 0
+    use_channels = 1, 2, 5, 6
+    use_tiles = 0, 2, 3
+    ```
+
+
+#### *file_names*
 The [*file_names*](notebook_comments.md#file_names) section of the *Notebook* is treated differently to deal with the 
 case where the various file locations have changed e.g. when accessing them from a different computer.
 

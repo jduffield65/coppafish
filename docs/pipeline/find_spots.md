@@ -131,17 +131,17 @@ An error will be raised if any of the following is satisfied:
 * For any given channel, the number of spots found was less than `n_spots_warn` for at least
 the fraction `n_spots_error_factor` of tiles/rounds.
 
-    The faulty channels should then be removed from `use_channels` before re-running.
+    The faulty channels should then be removed from `use_channels`.
 
 * For any given tile, the number of spots found was less than `n_spots_warn` for at least
 the fraction `n_spots_error_factor` of rounds/channels. 
 
-    The faulty tiles should then be removed from `use_tiles` before re-running.
+    The faulty tiles should then be removed from `use_tiles`.
 
 * For any given round, the number of spots found was less than `n_spots_warn` for at least
 the fraction `n_spots_error_factor` of tiles/channels.
 
-    The faulty rounds should then be removed from `use_rounds` before re-running.
+    The faulty rounds should then be removed from `use_rounds`.
 
 ??? example
 
@@ -169,8 +169,10 @@ the fraction `n_spots_error_factor` of tiles/channels.
     The value of `n_spots_error_factor` for this experiment is 0.5 so the threshold number of 
     failed tiles/rounds to give an error is $0.5 \times n_{tiles} \times n_{rounds} = 7.5$.
     We have 10 failed tiles/rounds so an error would be raised in this case.
-    
 
+The `use_tiles`, `use_rounds` and `use_channels` parameters can be changed without having to re-run
+the `find_spots` section of the pipeline as explained [here](../notebook.md#changing-basic_info-mid-pipeline).
+It tiles/rounds/channels are added instead of removed though, it will need re-running, as will the `extract` step.
 
 ## Viewer
 We can see how the various parameters affect which spots are detected using 
