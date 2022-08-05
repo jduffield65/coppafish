@@ -4,7 +4,7 @@ from typing import Optional
 from ...setup import Notebook
 
 
-def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
+def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_plot_thresh: int = 0):
     """
     If `shift_info` contains $n$ keys, this will produce an $n$ column x 3 row grid of subplots.
     For each key in `shift_info` dictionary, there are 3 plots:
@@ -27,6 +27,7 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
                 point clouds).
             * score_thresh - `float [n_tiles]`. If `score<score_thresh`, it will be shown in red.
         title: Overall title for the plot.
+        score_plot_thresh: Only shifts with score > score_plot_thresh are shown.
     """
     n_cols = len(shift_info)
     col_titles = list(shift_info.keys())
@@ -42,6 +43,8 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
         tile_color = np.full(n_tiles, 'b')
         tile_color[(shift_info_i['score'] < shift_info_i['score_thresh']).flatten()] = 'r'
         for t in range(n_tiles):
+            if shift_info_i['score'][t] <= score_plot_thresh:
+                continue
             ax[0, i].text(shift_info_i['shift'][t, 1], shift_info_i['shift'][t, 0],
                           str(shift_info_i['tile'][t]), color=tile_color[t], fontsize=12,
                           ha='center', va='center')
@@ -56,6 +59,8 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
         row_ind = 1
         if n_rows == 3:
             for t in range(n_tiles):
+                if shift_info_i['score'][t] <= score_plot_thresh:
+                    continue
                 ax[row_ind, i].text(shift_info_i['shift'][t, 1], shift_info_i['shift'][t, 2],
                                     str(shift_info_i['tile'][t]), color=tile_color[t], fontsize=12,
                                     ha='center', va='center')
@@ -75,6 +80,8 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None):
         ax[row_ind, i].plot([score_min, score_max], [score_min, score_max], 'lime', linestyle=':', linewidth=2,
                             alpha=0.5)
         for t in range(n_tiles):
+            if shift_info_i['score'][t] <= score_plot_thresh:
+                continue
             ax[row_ind, i].text(shift_info_i['score_thresh'][t], shift_info_i['score'][t],
                                 str(shift_info_i['tile'][t]), color=tile_color[t], fontsize=12,
                                 ha='center', va='center')
