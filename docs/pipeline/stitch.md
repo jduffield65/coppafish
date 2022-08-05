@@ -1,8 +1,10 @@
 # Stitch
 The [stitch step of the pipeline](../code/pipeline/stitch.md) uses the reference point clouds
 (all tiles of `ref_round`/`ref_channel`) added to the *Notebook* during the [`find_spots`](find_spots.md) step
-to find the overlap between neighbouring tiles in the form of shifts. It then uses these shifts to get
-the origin of each tile in a global coordinate system.
+to find the [overlap](#shift) between neighbouring tiles in the form of shifts. It then uses these shifts to get
+the origin of each tile in a [global coordinate system](#global-coordinates). The tile origins are
+saved to the *Notebook* as `nb.stitch.tile_origins` and this is the only variable computed in 
+this section which is used later in the pipeline.
 
 The [`stitch`](../notebook_comments.md#stitch) *NotebookPage* is added to the *Notebook* after this stage
 is finished.
@@ -31,6 +33,8 @@ We then ask if there is a tile to the east of it and if there is we compute the 
     Tile 4 also has a tile to the east (3) so we find the shift between tile 4 and tile 3.
     * Tile 5 has a tile to the north (2) so we find the shift between tile 5 and tile 2.
     Tile 5 also has a tile to the east (4) so we find the shift between tile 5 and tile 4.
+
+    We will always be finding the offset of a tile relative to a tile with a [smaller index](#global-coordinates).
 
 The tile indices for neighbours that we find the overlap in the north/south direction for
 are saved as `nb.stitch.south_pairs`. The shift between tile `nb.stitch.south_pairs[i, 0]`
@@ -513,7 +517,7 @@ our initial exhaustive search range to save time for future tiles.
         Updated number of shifts in search: 105
         ```
 
-### Dealing with low score shifts
+### Amend low score shifts
 After all the shifts between neighbouring tiles have been found, the ones with `score < score_thresh` are 
 amended.
 
@@ -536,7 +540,133 @@ The new shift and score will be saved in `nb.stitch.south_shifts` and
 `nb.stitch.south_score` respectively.
  
 ## Global coordinates
+After finding the overlap for the set of neighbouring tile pairs ($\mathcal{R}$), we are left with a shift vector
+$\pmb{\Delta}_{T_1, T_2}$ for every pair of neighbouring tiles $T_1$ and $T_2$, that specifies the $yxz$ offsets
+of tile $T_2$ relative to tile $T_1$. 
+
+We define a single global coordinate system by finding the coordinate origin $\pmb{\mathrm{X}}_T$ (bottom left corner) 
+for each tile $T$. Note however that this problem is overdetermined as there are more neighbor pairs than there 
+are tiles. We therefore compute the offsets by minimizing the loss function:
+
+$$
+L = \sum_{(T_1, T_2) \in \mathcal{R}} \pmb{|} \pmb{\mathrm{X}}_{T_1} - \pmb{\mathrm{X}}_{T_2} - \pmb{\Delta}_{T_1, T_2}
+\pmb{|}^2
+$$
+
+Differentiating this loss function with respect to $\pmb{\mathrm{X}}_T$ 
+yields a set of simultaneous linear equations, whose solution yields the origins of each 
+tile on the reference round/channel.
+
+This procedure is done with the [`get_tile_origin`](../code/stitch/tile_origin.md) function, with 
+the tile origins saved to the *Notebook* as `nb.stitch.tile_origin`.
 
 ## Saving stitched images
+[After](../code/pipeline/run.md#iss.pipeline.run.run_stitch) 
+the `tile_origin` has been computed and the `stitch` *NotebookPage* has been added to the *Notebook*, 
+a stitched image of the `ref_round`/`ref_channel` will be [saved](../code/utils/npy.md#iss.utils.npy.save_stitched) 
+to the `output_dir` as a npz file with the file name `nb.file_names.big_anchor_image`. 
+
+To save memory, the stitched reference image will be saved as *int16* after rescaling to fill the range.
+We do this because the image is useful for plotting, but we do not care much about the actual pixel values.
+
+??? note "DAPI"
+
+    If `dapi_channel` is specified, a stitched image of the 
+    `anchor_round`/`dapi_channel` will be [saved](../code/utils/npy.md#iss.utils.npy.save_stitched) 
+    to the `output_dir` as a npz file with the file name `nb.file_names.big_dapi_image`.
+
+    If DAPI [tophat filtering was specified](../config_setup.md#extractr_dapi), the filtered images
+    save to `tile_dir` will be loaded in and stitched together. Otherwise, the raw data will be 
+    loading in from the `input_dir` and stitched together with no filtering. 
+    I.e. `from_raw == True` in[`save_stitched`](../code/utils/npy.md#iss.utils.npy.save_stitched).
+
+    The stitched DAPI image will be saved as *uint16* with no rescaling.
+
+Also to save memory, all pixels with absolute value less than `config['stitch']['save_image_zero_thresh']`
+will have their pixel value set to $0$ before saving.
     
 ## View stitched point clouds
+### [`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap)
+To debug this section of the pipeline, the function 
+[`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap) is useful.
+
+For an experiment with tile $0$ to the north of tile $1$, `view_stitch_overlap(nb, 1, 'north')`
+will always show the global coordinates of the point cloud for tile $0$ in red 
+(`global_yxz = local_yxz + nb.stitch.tile_origin[0]`).
+There are then buttons to select which point cloud for tile $1$ is plotted in blue:
+
+* No overlap: This is assuming there is $0\%$ overlap between the two tiles.
+* $x\%$ overlap: $x$ here will be `config['stitch']['expected_overlap']`.
+This is our starting guess, i.e. the expected overlap in the $y$ and a shift of 0 in $x$ and $z$.
+* Shift: This is the best shift found, saved in `nb.stitch.south_shifts`.
+* Final: This is the coordinates of tile $1$ spots in the global coordinate system 
+(`local_yxz + nb.stitch.tile_origin[1]`).
+
+An example is shown below:
+
+=== "No overlap"
+    ![image](../images/pipeline/stitch/overlap_none.png){width="800"}
+
+=== "10% overlap"
+    ![image](../images/pipeline/stitch/overlap_10.png){width="800"}
+
+=== "Shift"
+    ![image](../images/pipeline/stitch/overlap_shift.png){width="800"}
+
+=== "Final"
+    ![image](../images/pipeline/stitch/overlap_final.png){width="800"}
+
+The z-plane is changed by scrolling with the mouse. You can change the value of z-thick in the bottom right.
+Spots detected on the current z-plane and this many z-planes either side of it will be shown.
+
+The white lines (only really visible in the *Final* plot) indicate neighbouring points with 
+a distance between them of less than or equal to `config['stitch']['neighb_dist_thresh']`.
+The number of matches listed on the right is then the number of these white lines (across all z-planes), 
+this will be similar to the [`score`](#score).
+
+### [`view_stitch`](../code/plot/stitch.md#view_stitch)
+Another useful function is [`view_stitch`](../code/plot/stitch.md#view_stitch). 
+This plots the all spots found in the `ref_round`/`ref_channel` in the global coordinate system specified
+by `nb.stitch.tile_origin`.
+
+The example below is for a $4\times3$ grid of tiles in *2D*.
+
+=== "Full"
+    ![image](../images/pipeline/stitch/view_stitch.png){width="800"}
+
+=== "Zoom"
+    ![image](../images/pipeline/stitch/view_stitch_zoom.png){width="800"}
+
+The blue spots are duplicate spots (detected on a tile which is not the tile whose centre they are closest to).
+For each duplicate spot, we expect there is a non-duplicate spot in red, detected on a different tile
+but with the same global coordinate. We can see this in the *Zoom* plot showing the intersection between tile 1 and 
+tile 2 (indicated by a faint white box in the *Full* image).
+
+These duplicate spots will be removed in the `get_reference_spots` step of the pipeline, so we don't double count
+the same spot.
+
+The white lines and number of matches are the same as for [`view_stitch_overlap`](#view_stitch_overlap).
+Also in *3D*, you can scroll between z-planes with the mouse and specify z-thick in the same way.
+
+
+## Pseudocode
+This is the pseudocode outlining the basics of this [step of the pipeline](../code/pipeline/stitch.md).
+For more detailed pseudocode about how the best shift is found, see the [shift](#obtaining-best-shift) section.
+
+```
+spot_yxz[t] = yxz coordinates for spots detected on tile t of 
+              ref_round and ref_channel
+for t in use_tiles:
+    if tile to north of t:
+        Find best_shift between tile spot_yxz[t] and spot_yxz[t_north].
+    if tile to east of t:
+        Find best_shift between tile spot_yxz[t] and spot_yxz[t_east].
+
+Amend shifts with score < score_thresh using new search range.
+Find tile_origin specifying global coordinate system.
+
+Add tile_origin and debugging info to stitch NotebookPage.
+Add stitch NotebookPage to Notebook.         
+Use tile_origin to save stitched ref_channel (and DAPI) image to 
+output directory.
+```

@@ -42,10 +42,11 @@ class view_point_clouds:
         n_matches_str = 'Number Of Matches'
         for i in range(1, n_point_clouds):
             tree = KDTree(point_clouds[i] * [1, 1, z_scale])
-            self.neighb = self.neighb + [tree.query(point_clouds[0] * [1, 1, z_scale],
-                                                    distance_upper_bound=neighb_dist_thresh)[1]]
-            self.neighb[i][self.neighb[i] == len(point_clouds[i])] = -1  # set inf distance neighb_ind to -1.
-            n_matches_str = n_matches_str + f'\n- {pc_labels[i]}: {np.sum(self.neighb[i] >= 0)}'
+            dist, neighb = tree.query(point_clouds[0] * [1, 1, z_scale],
+                                      distance_upper_bound=neighb_dist_thresh * 3)
+            neighb[dist > neighb_dist_thresh] = -1  # set too large distance neighb_ind to -1.
+            n_matches_str = n_matches_str + f'\n- {pc_labels[i]}: {np.sum(neighb >= 0)}'
+            self.neighb = self.neighb + [neighb]
 
         # Add text box to indicate number of matches between first point cloud and each of the others.
         n_matches_ax = self.fig.add_axes([0.8, subplots_adjust[3] - 0.6, 0.15, 0.2])
@@ -256,7 +257,8 @@ def view_stitch(nb: Notebook):
     in the `stitch` stage of the pipeline.
 
     It also indicates which of these spots are duplicates (detected on a tile which is not the tile whose centre
-    they are closest to) to be removed in the `get_reference_spots` step of the pipeline.
+    they are closest to).
+    These will be removed in the `get_reference_spots` step of the pipeline so we don't double count the same spot.
 
     Args:
         nb: *Notebook* containing at least `stitch` page.
