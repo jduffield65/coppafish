@@ -94,7 +94,7 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_p
     plt.show()
 
 
-def view_stitch_shift_info(nb: Notebook):
+def view_stitch_shift_info(nb: Notebook, outlier: bool = False):
     """
     For all north/south and east/west shifts computed in the `stitch` section
     of the pipeline, this plots the values of the shifts found and the `score` compared to
@@ -115,6 +115,9 @@ def view_stitch_shift_info(nb: Notebook):
 
     Args:
         nb: Notebook containing at least the `stitch` page.
+        outlier: If `True`, will plot `nb.stitch.south_shift_outlier` instead of
+            `nb.stitch.south_shift`. In this case, only tiles for which
+            the two are different are plotted for each round.
     """
     if nb.basic_info.is_3d:
         ndim = 3
@@ -123,15 +126,27 @@ def view_stitch_shift_info(nb: Notebook):
     shift_info = {}
     if len(nb.stitch.south_shifts) > 0:
         shift_info['South'] = {}
-        shift_info['South']['shift'] = nb.stitch.south_shifts[:, :ndim]
         shift_info['South']['tile'] = nb.stitch.south_pairs[:, 0]
-        shift_info['South']['score'] = nb.stitch.south_score
         shift_info['South']['score_thresh'] = nb.stitch.south_score_thresh
+        if outlier:
+            shift_info['South']['shift'] = nb.stitch.south_outlier_shifts[:, :ndim]
+            shift_info['South']['score'] = nb.stitch.south_outlier_score
+        else:
+            shift_info['South']['shift'] = nb.stitch.south_shifts[:, :ndim]
+            shift_info['South']['score'] = nb.stitch.south_score
     if len(nb.stitch.west_shifts) > 0:
         shift_info['West'] = {}
-        shift_info['West']['shift'] = nb.stitch.west_shifts[:, :ndim]
         shift_info['West']['tile'] = nb.stitch.west_pairs[:, 0]
-        shift_info['West']['score'] = nb.stitch.west_score
         shift_info['West']['score_thresh'] = nb.stitch.west_score_thresh
-    shift_info_plot(shift_info, "Shifts found in stitch part of pipeline between each tile and the neighbouring tile "
-                                "in the direction specified")
+        if outlier:
+            shift_info['West']['shift'] = nb.stitch.west_outlier_shifts[:, :ndim]
+            shift_info['West']['score'] = nb.stitch.west_outlier_score
+        else:
+            shift_info['West']['shift'] = nb.stitch.west_shifts[:, :ndim]
+            shift_info['West']['score'] = nb.stitch.west_score
+    if outlier:
+        title_start = "Outlier "
+    else:
+        title_start = ""
+    shift_info_plot(shift_info, f"{title_start}Shifts found in stitch part of pipeline between each tile and the "
+                                f"neighbouring tile in the direction specified")
