@@ -76,6 +76,7 @@ nav:
         - Config Default Settings: config.md
         - Notebook Comments: notebook_comments.md
     - Pipeline:
+        - Overview: pipeline/overview.md
         - Extract and Filter: pipeline/extract.md
         - Find Spots: pipeline/find_spots.md
         - Stitch: pipeline/stitch.md

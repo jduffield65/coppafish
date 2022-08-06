@@ -560,6 +560,20 @@ tile on the reference round/channel.
 This procedure is done with the [`get_tile_origin`](../code/stitch/tile_origin.md) function, with 
 the tile origins saved to the *Notebook* as `nb.stitch.tile_origin`.
 
+## Potential error with too many bad shifts
+After the `stitch` *NotebookPage* has been [added](../code/pipeline/run.md#iss.pipeline.run.run_stitch)
+to the *Notebook*, [`check_shifts_stitch`](../code/stitch/check_shifts.md#iss.stitch.check_shifts.check_shifts_stitch) 
+will be run.
+
+This will produce a warning for any shift found with `score < score_thresh`.
+
+An error will be raised if the fraction of shifts with `score < score_thresh` exceeds 
+`config['stitch']['n_shifts_error_fraction']`.
+
+If this error does occur, it is probably worth looking at the [debugging plots](#debugging) to see if the stitching
+looks good enough to continue with the rest of the pipeline or if it should be re-run with different configuration
+file parameters (e.g. finer spacing or larger range in the exhaustive search). 
+
 ## Saving stitched images
 [After](../code/pipeline/run.md#iss.pipeline.run.run_stitch) 
 the `tile_origin` has been computed and the `stitch` *NotebookPage* has been added to the *Notebook*, 
@@ -584,6 +598,7 @@ We do this because the image is useful for plotting, but we do not care much abo
 
 Also to save memory, all pixels with absolute value less than `config['stitch']['save_image_zero_thresh']`
 will have their pixel value set to $0$ before saving.
+
     
 ## Debugging
 There are a few functions using matplotlib which may help to debug this section of the pipeline.

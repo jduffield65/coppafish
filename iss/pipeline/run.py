@@ -115,7 +115,7 @@ def run_stitch(nb: setup.Notebook):
     if not nb.has_page("stitch"):
         nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
         nb += nbp_debug
-        check_shifts_stitch(nb)  # error if too many bad stitches
+        check_shifts_stitch(nb)  # error if too many bad shifts between tiles
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
