@@ -96,6 +96,7 @@ nav:
             - Shift: code/stitch/shift.md
             - Starting Shifts: code/stitch/starting_shifts.md
             - Tile Origin: code/stitch/tile_origin.md
+            - Check Shifts: code/stitch/check_shifts.md
         - Point Cloud Registration:
             - Base: code/pcr/base.md
         - Spot Colors:

@@ -3,6 +3,7 @@ from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, get_reference_spots, \
     call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
+from ..stitch import check_shifts_stitch
 from ..call_spots import get_non_duplicate
 import warnings
 import matplotlib.pyplot as plt
@@ -21,6 +22,7 @@ def run_pipeline(config_file: str) -> setup.Notebook:
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
+    # spot_no = 371046
     run_extract(nb)
     run_find_spots(nb)
     run_stitch(nb)
@@ -90,7 +92,7 @@ def run_find_spots(nb: setup.Notebook):
         config = nb.get_config()
         nbp = find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract.auto_thresh)
         nb += nbp
-        check_n_spots(nb)
+        check_n_spots(nb)  # error if too few spots
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
 
@@ -113,6 +115,7 @@ def run_stitch(nb: setup.Notebook):
     if not nb.has_page("stitch"):
         nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
         nb += nbp_debug
+        check_shifts_stitch(nb)  # error if too many bad stitches
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):

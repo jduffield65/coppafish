@@ -353,7 +353,7 @@ after investigating the effect of the thresholds using [`iss_plot`](code/plot/vi
 
 
 ### Using a subset of the raw data
-To run the pipeline with a subset of tiles, imaging rounds, channels and z-planes the following parameters 
+To run the pipeline with a subset of tiles, imaging rounds, channels or z-planes the following parameters 
 can be set in the [*basic_info*](config.md#basic_info) section of the configuration file:
 
 * `use_tiles`

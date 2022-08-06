@@ -105,8 +105,8 @@ _options = {
             'isolation_radius_z': 'number',
             'isolation_thresh': 'maybe_number',
             'auto_isolation_thresh_multiplier': 'number',
-            'n_spots_warn_factor': 'number',
-            'n_spots_error_factor': 'number'
+            'n_spots_warn_fraction': 'number',
+            'n_spots_error_fraction': 'number'
         },
     'stitch':
         {
@@ -125,6 +125,7 @@ _options = {
             'shift_score_thresh_min_dist': 'number',
             'shift_score_thresh_max_dist': 'number',
             'nz_collapse': 'int',
+            'n_shifts_error_fraction': 'number',
             'save_image_zero_thresh': 'int'
         },
     'register_initial':
@@ -140,7 +141,8 @@ _options = {
             'shift_score_thresh_multiplier': 'number',
             'shift_score_thresh_min_dist': 'number',
             'shift_score_thresh_max_dist': 'number',
-            'nz_collapse': 'int'
+            'nz_collapse': 'int',
+            'n_shifts_error_fraction': 'number'
         },
     'register':
         {

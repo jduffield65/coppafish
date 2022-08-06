@@ -439,27 +439,27 @@ The *find_spots* section contains parameters which specify how to convert the im
 
 	Default: `-0.2`
 
-* **n_spots_warn_factor**: *number*.
+* **n_spots_warn_fraction**: *number*.
 
 	Used in *iss/find_spots/base/check_n_spots* 
 
 	 A warning will be raised if for any tile, round, channel the number of spots detected is less than: 
 
-	 `n_spots_warn = n_spots_warn_factor * max_spots * nb.basic_info.nz` 
+	 `n_spots_warn = n_spots_warn_ffraction * max_spots * nb.basic_info.nz` 
 
 	 where `max_spots` is `max_spots_2d` if *2D* and `max_spots_3d` if *3D*. 
 
 	Default: `0.1`
 
-* **n_spots_error_factor**: *number*.
+* **n_spots_error_fraction**: *number*.
 
 	Used in *iss/find_spots/base/check_n_spots*. An error is raised if any of the following are satisfied: 
 
-	 * For any given channel, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_factor` of tiles/rounds. 
+	 * For any given channel, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_fraction` of tiles/rounds. 
 
-	 * For any given tile, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_factor` of rounds/channels. 
+	 * For any given tile, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_fraction` of rounds/channels. 
 
-	 * For any given round, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_factor` of tiles/channels. 
+	 * For any given round, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_fraction` of tiles/channels. 
 
 	Default: `0.5`
 
@@ -556,6 +556,12 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 	Default: `30`
 
+* **n_shifts_error_fraction**: *number*.
+
+	If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
+
+	Default: `0.2`
+
 * **save_image_zero_thresh**: *int*.
 
 	When saving stitched images, all pixels with absolute value less than or equal to `save_image_zero_thresh` will be set to 0. This helps reduce size of the .npz files and does not lose any important information. 
@@ -636,6 +642,12 @@ The *register_initial* section contains parameters which specify how the shifts 
 	3D data is converted into `np.ceil(nz / nz_collapse)` 2D slices for exhaustive shift search to quicken it up. I.e. this is the maximum number of z-planes to be collapsed to a 2D slice when searching for the best shift. 
 
 	Default: `30`
+
+* **n_shifts_error_fraction**: *number*.
+
+	If more than this fraction of `shifts` between the `ref_round`/`ref_channel` and each imaging round for each tile have `score < score_thresh`, an error will be raised. 
+
+	Default: `0.2`
 
 ## register
 The *register* section contains parameters which specify how the affine transforms from the ref_round/ref_channel to each imaging round/channel are found from the shifts found in the *register_initial* section.

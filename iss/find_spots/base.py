@@ -127,7 +127,7 @@ def check_n_spots(nb: Notebook):
 
     An error will be raised if any of these conditions are violated.
 
-    `config['find_spots']['n_spots_warn_factor']` and `config['find_spots']['n_spots_error_factor']`
+    `config['find_spots']['n_spots_warn_fraction']` and `config['find_spots']['n_spots_error_fraction']`
     are the parameters which determine if warnings/errors will be raised.
 
     Args:
@@ -136,9 +136,9 @@ def check_n_spots(nb: Notebook):
     """
     config = nb.get_config()['find_spots']
     if nb.basic_info.is_3d:
-        n_spots_warn = config['n_spots_warn_factor'] * config['max_spots_3d'] * nb.basic_info.nz
+        n_spots_warn = config['n_spots_warn_fraction'] * config['max_spots_3d'] * nb.basic_info.nz
     else:
-        n_spots_warn = config['n_spots_warn_factor'] * config['max_spots_2d']
+        n_spots_warn = config['n_spots_warn_fraction'] * config['max_spots_2d']
     n_spots_warn = int(np.ceil(n_spots_warn))
     use_tiles = np.asarray(nb.basic_info.use_tiles)
     use_rounds = np.asarray(nb.basic_info.use_rounds)  # don't consider anchor in this analysis
@@ -148,7 +148,7 @@ def check_n_spots(nb: Notebook):
 
     # Consider bad channels first as most likely to have consistently low spot counts in a channel
     n_images = len(use_tiles) * len(use_rounds)
-    n_images_error = int(np.floor(n_images * config['n_spots_error_factor']))
+    n_images_error = int(np.floor(n_images * config['n_spots_error_fraction']))
     n_bad_images = np.zeros(len(use_channels), dtype=int)
     for c in range(len(use_channels)):
         bad_images = np.vstack(np.where(spot_no[:, :, c] < n_spots_warn)).T
@@ -172,7 +172,7 @@ def check_n_spots(nb: Notebook):
 
     # Consider bad tiles next as second most likely to have consistently low spot counts in a tile
     n_images = len(use_channels) * len(use_rounds)
-    n_images_error = int(np.floor(n_images * config['n_spots_error_factor']))
+    n_images_error = int(np.floor(n_images * config['n_spots_error_fraction']))
     n_bad_images = np.zeros(len(use_tiles), dtype=int)
     for t in range(len(use_tiles)):
         bad_images = np.vstack(np.where(spot_no[t] < n_spots_warn)).T
@@ -190,7 +190,7 @@ def check_n_spots(nb: Notebook):
 
     # Consider bad rounds last as least likely to have consistently low spot counts in a round
     n_images = len(use_channels) * len(use_tiles)
-    n_images_error = int(np.floor(n_images * config['n_spots_error_factor']))
+    n_images_error = int(np.floor(n_images * config['n_spots_error_fraction']))
     n_bad_images = np.zeros(len(use_rounds), dtype=int)
     for r in range(len(use_rounds)):
         bad_images = np.vstack(np.where(spot_no[:, r] < n_spots_warn)).T
@@ -207,7 +207,7 @@ def check_n_spots(nb: Notebook):
     if nb.basic_info.use_anchor:
         spot_no = nb.find_spots.spot_no[use_tiles, nb.basic_info.anchor_round, nb.basic_info.anchor_channel]
         n_images = len(use_tiles)
-        n_images_error = int(np.floor(n_images * config['n_spots_error_factor']))
+        n_images_error = int(np.floor(n_images * config['n_spots_error_fraction']))
         bad_images = np.where(spot_no < n_spots_warn)[0]
         n_bad_images = len(bad_images)
         if n_bad_images > 0:
@@ -223,4 +223,6 @@ def check_n_spots(nb: Notebook):
                                             f"Consider removing these tiles from use_tiles."
 
     if len(error_message) > 0:
+        error_message = error_message + f"\nThe function iss.plot.view_find_spots may be useful for investigating " \
+                                        f"why the above tiles/rounds/channels had so few spots detected."
         raise ValueError(error_message)

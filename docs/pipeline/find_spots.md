@@ -121,7 +121,7 @@ to the *Notebook*, [`check_n_spots`](../code/find_spots/base.md#iss.find_spots.b
 
 This will produce a warning for any tile, round, channel for which fewer than
 
-`n_spots_warn = config['find_spots']['n_spots_warn_factor'] * max_spots * nb.basic_info.nz`
+`n_spots_warn = config['find_spots']['n_spots_warn_fraction'] * max_spots * nb.basic_info.nz`
 
 spots were detected, where `max_spots` is `config['find_spots']['max_spots_2d']` if *2D* and 
 `config['find_spots']['max_spots_3d']` if *3D*. 
@@ -129,17 +129,17 @@ spots were detected, where `max_spots` is `config['find_spots']['max_spots_2d']`
 An error will be raised if any of the following is satisfied:
 
 * For any given channel, the number of spots found was less than `n_spots_warn` for at least
-the fraction `n_spots_error_factor` of tiles/rounds.
+the fraction `n_spots_error_fraction` of tiles/rounds.
 
     The faulty channels should then be removed from `use_channels`.
 
 * For any given tile, the number of spots found was less than `n_spots_warn` for at least
-the fraction `n_spots_error_factor` of rounds/channels. 
+the fraction `n_spots_error_fraction` of rounds/channels. 
 
     The faulty tiles should then be removed from `use_tiles`.
 
 * For any given round, the number of spots found was less than `n_spots_warn` for at least
-the fraction `n_spots_error_factor` of tiles/channels.
+the fraction `n_spots_error_fraction` of tiles/channels.
 
     The faulty rounds should then be removed from `use_rounds`.
 
@@ -166,7 +166,7 @@ the fraction `n_spots_error_factor` of tiles/channels.
            [1, 3],
            [1, 4]])
     ```
-    The value of `n_spots_error_factor` for this experiment is 0.5 so the threshold number of 
+    The value of `n_spots_error_fraction` for this experiment is 0.5 so the threshold number of 
     failed tiles/rounds to give an error is $0.5 \times n_{tiles} \times n_{rounds} = 7.5$.
     We have 10 failed tiles/rounds so an error would be raised in this case.
 
@@ -300,6 +300,17 @@ spots which do not look real while the 4757 plot misses some obvious spots.
 The value of `nb.extract.auto_thresh[t, r, c]` obtained for this data is approximately 2234.
 
 The green spots are those which are identified as isolated. 
+
+#### Changing `auto_thresh`
+If after playing with this slider, it is decided that the `find_spots` part of the pipeline should be run
+(or re-run) with the updated intensity threshold, `new_thresh`, for tile $t$, round $r$, channel $c$, 
+this can be achieved by setting `nb.extract.auto_thresh[t, r, c] = new_thresh`.
+
+Note, this is an abuse of the rules of the *Notebook* as it is 
+[changing a variable](../notebook.md#modifying-a-notebookpage) after it has been added 
+and thus should not be allowed, but it does work. To keep the `new_thresh` value, the *Notebook* will need
+saving after `nb.extract.auto_thresh` has been updated. It should be saved to a different location, so it does 
+not overwrite the initial *Notebook* i.e. `nb.save('/Users/user/experiment1/output/notebook_new_auto_thresh.npz')`.
 
 ### Isolation threshold
 The images below show the effect of using the slider to change `nb.find_spots.isolation_thresh[t, r, c]`. 
