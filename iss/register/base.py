@@ -6,7 +6,7 @@ from typing import Optional, Tuple, Union, List
 
 
 def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,
-                  yxz_target_tree: Optional[KDTree] = None, reg_constant_rot: float = 30000,
+                  yxz_target_tree: Optional[KDTree] = None, reg_constant_scale: float = 30000,
                   reg_constant_shift: float = 9,
                   reg_transform: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray, int, float]:
     """
@@ -24,7 +24,7 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
             Typical: ```3```.
         yxz_target_tree: KDTree produced from ```yxz_target```.
             If ```None```, it will be computed.
-        reg_constant_rot: Constant used for scaling and rotation when doing regularized least squares.
+        reg_constant_scale: Constant used for scaling and rotation when doing regularized least squares.
         reg_constant_shift: Constant used for shift when doing regularized least squares.
         reg_transform: ```float [4 x 3]```.
             Affine transform which we want final transform to be near when doing regularized least squares.
@@ -54,7 +54,7 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
     if reg_transform is None:
         transform = np.linalg.lstsq(yxz_base_pad[use, :], yxz_target[neighbour[use], :], rcond=None)[0]
     else:
-        scale = np.array([reg_constant_rot, reg_constant_rot, reg_constant_rot, reg_constant_shift]).reshape(4, 1)
+        scale = np.array([reg_constant_scale, reg_constant_scale, reg_constant_scale, reg_constant_shift]).reshape(4, 1)
         yxz_base_regularised = np.concatenate((yxz_base_pad[use, :], np.eye(4) * scale), axis=0)
         yxz_target_regularised = np.concatenate((yxz_target[neighbour[use], :], reg_transform * scale), axis=0)
         transform = np.linalg.lstsq(yxz_base_regularised, yxz_target_regularised, rcond=None)[0]
@@ -211,7 +211,7 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
 
 def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.ndarray, n_iter: int,
         dist_thresh: float, matches_thresh: Union[int, np.ndarray], scale_dev_thresh: np.ndarray,
-        shift_dev_thresh: np.ndarray, reg_constant_rot: Optional[float] = None,
+        shift_dev_thresh: np.ndarray, reg_constant_scale: Optional[float] = None,
         reg_constant_shift: Optional[float] = None) -> Tuple[np.ndarray, dict]:
     """
     This gets the affine `transforms` from `yxz_base` to `yxz_target` using iterative closest point until
@@ -253,12 +253,12 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
             Typically, this threshold will be the same in y and x but different in z.
             Typical: `10` xy pixels in xy direction, `2` z pixels in z direction
             (normalised to have same units as `yx_pixels`).
-        reg_constant_rot: Constant used for scaling and rotation when doing regularized least squares.
+        reg_constant_scale: Constant used for scaling and rotation when doing regularized least squares.
             `None` means no regularized least squares performed.
-            Typical = `30000`.
+            Typical = `5e8`.
         reg_constant_shift: Constant used for shift when doing regularized least squares.
             `None` means no regularized least squares performed.
-            Typical = `9`
+            Typical = `500`
 
     Returns:
         - `transforms` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.
@@ -318,7 +318,7 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
                             reg_transform = None
                         transforms[t, r, c], neighbour[t, r, c], n_matches[t, r, c], error[t, r, c] = \
                             get_transform(yxz_base[t], transforms[t, r, c], yxz_target[t, r, c], dist_thresh,
-                                          tree_target[t, r, c], reg_constant_rot, reg_constant_shift, reg_transform)
+                                          tree_target[t, r, c], reg_constant_scale, reg_constant_shift, reg_transform)
                         if i > i_finished_good:
                             is_converged[t, r, c] = np.abs(neighbour[t, r, c] - neighbour_last[t, r, c]).max() == 0
                             if is_converged[t, r, c]:
@@ -326,7 +326,7 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
             if (is_converged.all() and finished_good_images == False) or i == n_iter - 1:
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
-                if reg_constant_rot is not None and reg_constant_shift is not None and i < n_iter - 1:
+                if reg_constant_scale is not None and reg_constant_shift is not None and i < n_iter - 1:
                     # reset transforms of those that failed to average transform as starting point for
                     # regularised fitting
                     transforms_outlier[failed, :, :] = transforms[failed, :, :].copy()
@@ -348,7 +348,7 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
 def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,
                                 z_scale_transform: float, start_transform: np.ndarray,
                                 neighb_dist_thresh: float, tile_centre: np.ndarray, n_iter: int = 100,
-                                reg_constant_rot: Optional[float] = None, reg_constant_shift: Optional[float] = None,
+                                reg_constant_scale: Optional[float] = None, reg_constant_shift: Optional[float] = None,
                                 reg_transform: Optional[np.ndarray] = None) -> Tuple[np.ndarray, int, float, bool]:
     """
     Finds the affine transform taking `spot_yxz_base` to `spot_yxz_transform`.
@@ -368,12 +368,12 @@ def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: n
         tile_centre: int [3].
             yxz coordinates of centre of image where spot_yxz found on.
         n_iter: Max number of iterations to perform of ICP.
-        reg_constant_rot: Constant used for scaling and rotation when doing regularized least squares.
+        reg_constant_scale: Constant used for scaling and rotation when doing regularized least squares.
             `None` means no regularized least squares performed.
-            Typical = `30000`.
+            Typical = `5e8`.
         reg_constant_shift: Constant used for shift when doing regularized least squares.
             `None` means no regularized least squares performed.
-            Typical = `9`
+            Typical = `500`
         reg_transform: `float [4 x 3]`.
             Transform to regularize to when doing regularized least squares.
             `None` means no regularized least squares performed.
@@ -395,7 +395,7 @@ def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: n
         neighbour_last = neighbour.copy()
         transform, neighbour, n_matches, error = \
             get_transform(spot_yxz_base, transform, spot_yxz_transform, neighb_dist_thresh,
-                          tree_transform, reg_constant_rot, reg_constant_shift, reg_transform)
+                          tree_transform, reg_constant_scale, reg_constant_shift, reg_transform)
 
         is_converged = np.abs(neighbour - neighbour_last).max() == 0
         if is_converged:

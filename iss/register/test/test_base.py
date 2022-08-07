@@ -47,7 +47,7 @@ class TestGetTransform(unittest.TestCase):
             if np.abs(reg_transform).max() == 0:
                 reg_transform = None
             transform_python, neighbour_python, n_matches_python, error_python = \
-                get_transform(yxz_base, transform_old, yxz_target, dist_thresh, reg_constant_rot=reg_constant_rot,
+                get_transform(yxz_base, transform_old, yxz_target, dist_thresh, reg_constant_scale=reg_constant_rot,
                               reg_constant_shift=reg_constant_shift, reg_transform=reg_transform)
             diff_1 = transform_python - transform_matlab
             diff_2 = (neighbour_python+1) - neighbour_matlab

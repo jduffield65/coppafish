@@ -700,17 +700,33 @@ The *register* section contains parameters which specify how the affine transfor
 
 	Default: `15, 15, 5`
 
-* **regularize_constant_scale**: *number*.
+* **regularize_constant**: *int*.
 
-	Constant used for scaling and rotation when doing regularized least squares. 
+	Constant used when doing regularized least squares. If the number of neighbours are above this, regularization will have little effect. If the number of neighbours is less than this, regularization will have significant effect, and final transform will be similar to transform being regularized towards. 
 
-	Default: `30000`
+	Default: `500`
 
-* **regularize_constant_shift**: *number*.
+* **regularize_factor**: *number*.
 
-	Constant used for shift when doing regularized least squares. We want to allow for a rotation deviation of around 0.0003 and a shift deviation of around 9 hence the difference in constants. 
+	The loss function for finding the transform through regularized least squares is: 
 
-	Default: `9`
+	 $\sum_s^{n_{neighb}}D_s^2 + 0.5\lambda (\mu D_{scale}^2 + D_{shift}^2)$ 
+
+	 Where: 
+
+	 * $D_s^2$ is the squared distance between the pair of neighbours indicated by $s$. Only neighbours with distance between them on previous iteration les than `neighb_dist` are considered. 
+
+	 * $\lambda$ is `regularize_constant`. 
+
+	 * $\mu$ is `regularize_factor` such that when $n_{neighb} = \lambda$ and $D_s^2 = D_{shift}^2$ for all $s$, the two contributions to the loss function are approximately equal i.e. $\mu = D_{shift}^2/D_{scale}^2$. 
+
+	 * $D_{scale}^2$ is the squared distance between `transform[:3, :]` and `transform_regularize[:3, :]`. I.e. the squared difference of the scaling/rotation part of the transform from the target. 
+
+	 * $D_{shift}^2$ is the squared distance between `transform[3]` and `transform_regularize[3]`. I.e. the squared difference of the shift part of the transform from the target. 
+
+	 So if a typical value of $D_{shift}$ (or $D_s$) is 2 and a typical value of $D_{scale}$ is 0.002, $\mu = 1\times10^6$. 
+
+	Default: `1e6`
 
 ## call_spots
 The *call_spots* section contains parameters which determine how the `bleed_matrix` and `gene_efficiency` are computed, as well as how a gene is assigned to each spot found on the ref_round/ref_channel.

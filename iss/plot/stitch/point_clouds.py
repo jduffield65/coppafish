@@ -32,7 +32,7 @@ class view_point_clouds:
         n_point_clouds = len(point_clouds)
         if len(point_clouds) != len(pc_labels):
             raise ValueError(f'There are {n_point_clouds} point clouds but {len(pc_labels)} labels')
-        self.fig, self.ax = plt.subplots(1, 1)
+        self.fig, self.ax = plt.subplots(1, 1, figsize=(15, 8))
         subplots_adjust = [0.07, 0.775, 0.095, 0.89]
         self.fig.subplots_adjust(left=subplots_adjust[0], right=subplots_adjust[1], bottom=subplots_adjust[2],
                                  top=subplots_adjust[3])
@@ -49,7 +49,7 @@ class view_point_clouds:
             self.neighb = self.neighb + [neighb]
 
         # Add text box to indicate number of matches between first point cloud and each of the others.
-        n_matches_ax = self.fig.add_axes([0.8, subplots_adjust[3] - 0.6, 0.15, 0.2])
+        n_matches_ax = self.fig.add_axes([0.8, subplots_adjust[3] - 0.75, 0.15, 0.2])
         plt.axis('off')
         n_matches_ax.text(0.05, 0.95, n_matches_str)
 
@@ -61,8 +61,8 @@ class view_point_clouds:
         pc_min_lims = np.zeros((n_point_clouds, 3))
         pc_max_lims = np.zeros_like(pc_min_lims)
         for i in range(n_point_clouds):
-            pc_min_lims[i] = np.min(point_clouds[i],axis=0)
-            pc_max_lims[i] = np.max(point_clouds[i],axis=0)
+            pc_min_lims[i] = np.min(point_clouds[i], axis=0)
+            pc_max_lims[i] = np.max(point_clouds[i], axis=0)
 
         self.z_planes = np.arange(int(np.min(pc_min_lims[:, 2])), int(np.max(pc_max_lims[:, 2]) + 1))
         self.nz = len(self.z_planes)
@@ -117,6 +117,7 @@ class view_point_clouds:
         if n_point_clouds >= 3:
             # If 3 or more point clouds, add radio button to change the second point cloud shown.
             buttons_ax = self.fig.add_axes([0.8, subplots_adjust[3] - 0.2, 0.15, 0.2])
+            plt.axis('off')
             self.buttons = RadioButtons(buttons_ax, self.pc_labels[1:], 0, activecolor='w')
             for i in range(n_point_clouds-1):
                 self.buttons.circles[i].set_color('w')

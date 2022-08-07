@@ -80,12 +80,16 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
     av_shifts = np.zeros_like(initial_shift)
     transform_outliers = np.zeros_like(start_transform)
 
+    # Deviation in scale/rotation is much less than permitted deviation in shift so boost scale reg constant.
+    reg_constant_scale = np.sqrt(0.5 * config['regularize_constant'] * config['regularize_factor'])
+    reg_constant_shift = np.sqrt(0.5 * config['regularize_constant'])
+
     # get ICP output only for tiles/rounds/channels that we are using
     final_transform[trc_ind], pcr_debug = \
         icp(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
             start_transform[trc_ind], config['n_iter'], neighb_dist_thresh,
             n_matches_thresh[trc_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
-            config['regularize_constant_scale'], config['regularize_constant_shift'])
+            reg_constant_scale, reg_constant_shift)
 
     # save debug info at correct tile, round, channel index
     n_matches[trc_ind] = pcr_debug['n_matches']

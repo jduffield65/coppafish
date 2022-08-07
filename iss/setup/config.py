@@ -154,8 +154,8 @@ _options = {
             'matches_thresh_max': 'int',
             'scale_dev_thresh': 'list_number',
             'shift_dev_thresh': 'list_number',
-            'regularize_constant_scale': 'number',
-            'regularize_constant_shift': 'number'
+            'regularize_constant': 'int',
+            'regularize_factor': 'number'
         },
     'call_spots':
         {
