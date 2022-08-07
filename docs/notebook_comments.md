@@ -373,8 +373,8 @@ stitch page contains information about how tiles were stitched together to give 
 
 	If west_score[i] was below west_score_thresh[i], west_shifts[i] was found again and old score recorded as west_outlier_score[i]. Will be zero if this did not happen.
 
-## register_initial_debug
-register_initial_debug page contains information about how shift between ref round/channel to each imaging round for each tile was found. These are then used as the starting point for determining the affine transforms. Only 'shift' is used in later stages of the pipeline. Page added to notebook in pipeline/register_initial.py
+## register_initial
+register_initial page contains information about how shift between ref round/channel to each imaging round for each tile was found. These are then used as the starting point for determining the affine transforms. Only 'shift' is used in later stages of the pipeline. Page added to notebook in pipeline/register_initial.py
 
 * **shift**: *Numpy integer array [n_tiles x n_rounds x 3]*.
 

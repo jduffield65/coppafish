@@ -11,7 +11,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     This finds the shift between ref round/channel to each imaging round for each tile.
     These are then used as the starting point for determining the affine transforms in `pipeline/register.py`.
 
-    See `'register_initial_debug'` section of `notebook_comments.json` file
+    See `'register_initial'` section of `notebook_comments.json` file
     for description of the variables in the page.
 
     Args:
@@ -22,10 +22,10 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
 
     Returns:
-        `NotebookPage[register_initial_debug]` - Page contains information about how shift between ref round/channel
+        `NotebookPage[register_initial]` - Page contains information about how shift between ref round/channel
             to each imaging round for each tile was found.
     """
-    nbp_debug = NotebookPage("register_initial_debug")
+    nbp_debug = NotebookPage("register_initial")
     if config['shift_channel'] is None:
         config['shift_channel'] = nbp_basic.ref_channel
     if not np.isin(config['shift_channel'], nbp_basic.use_channels):

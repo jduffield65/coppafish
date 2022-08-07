@@ -299,9 +299,9 @@
       "and old score recorded as west_outlier_score[i]. Will be zero if this did not happen."]
   },
 
-  "register_initial_debug":
+  "register_initial":
   {
-    "DESCRIPTION": ["register_initial_debug page contains information about how shift between ref round/channel",
+    "DESCRIPTION": ["register_initial page contains information about how shift between ref round/channel",
       "to each imaging round for each tile was found. These are then used as the starting point",
       "for determining the affine transforms. Only 'shift' is used in later stages of the pipeline.",
       "Page added to notebook in pipeline/register_initial.py"],

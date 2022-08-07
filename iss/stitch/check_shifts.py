@@ -39,7 +39,61 @@ def check_shifts_stitch(nb: Notebook):
         message = message + f"\n{n_fail}/{n_shifts} shifts have score < score_thresh.\n" \
                             f"This exceeds error threshold of {n_error_thresh}.\nLook at the following diagnostics " \
                             f"to decide if stitching is acceptable to continue:\n" \
-                            f"iss.plot.view_stitch_shift_info\niss.plot.view_stitch\niss.plot.view_stitch_overlap"
+                            f"iss.plot.view_stitch_shift_info\niss.plot.view_stitch\niss.plot.view_stitch_overlap\n" \
+                            f"iss.plot.view_stitch_search\nIf stitching looks wrong, maybe try re-running with " \
+                            f"different configuration parameters e.g. smaller shift_step or larger shift_max_range."
         raise ValueError(f"{message}")
     elif n_fail >= 1:
         warnings.warn(message)
+
+
+def check_shifts_register(nb: Notebook):
+    """
+    This checks that a decent number of shifts computed in the `register_initial` stage of the pipeline
+    are acceptable (`score > score_thresh`).
+
+    An error will be raised if the fraction of shifts with `score < score_thresh`
+    exceeds `config['stitch']['n_shifts_error_fraction']`.
+
+    Args:
+        nb: *Notebook* containing `stitch` page.
+    """
+    r_ref = nb.basic_info.ref_round
+    c_ref = nb.basic_info.ref_channel
+    c_shift = nb.register_initial.shift_channel
+    use_rounds = np.asarray(nb.basic_info.use_rounds)
+    use_tiles = np.asarray(nb.basic_info.use_tiles)
+    n_shifts = len(use_rounds) * len(use_tiles)
+    n_fail = 0
+    config = nb.get_config()['register_initial']
+    shift = nb.register_initial.shift
+    score = nb.register_initial.shift_score
+    score_thresh = nb.register_initial.shift_score_thresh
+    fail_info = np.zeros((0, 7), dtype=int)
+    for r in nb.basic_info.use_rounds:
+        fail_tiles = use_tiles[np.where((score[use_tiles, r] < score_thresh[use_tiles, r]).flatten())[0]]
+        n_fail += len(fail_tiles)
+        if len(fail_tiles) > 0:
+            fail_info_r = np.zeros((len(fail_tiles), 7), dtype=int)
+            fail_info_r[:, 0] = r
+            fail_info_r[:, 1] = fail_tiles
+            fail_info_r[:, 2:5] = shift[fail_tiles, r]
+            fail_info_r[:, 5] = score[fail_tiles, r].flatten()
+            fail_info_r[:, 6] = score_thresh[fail_tiles, r].flatten()
+            fail_info = np.append(fail_info, fail_info_r, axis=0)
+    if n_fail >= 1:
+        message = f"\nInfo for the {n_fail} shifts from round {r_ref}/channel {c_ref} to channel {c_shift}" \
+                  f" with score < score_thresh:\n" \
+                  f"Round, Tile, Y shift, X shift, Z shift, score, score_thresh\n" \
+                  f"{fail_info}"
+        n_error_thresh = int(np.floor(config['n_shifts_error_fraction'] * n_shifts))
+        if n_fail > n_error_thresh:
+            message = message + f"\n{n_fail}/{n_shifts} shifts have score < score_thresh.\n" \
+                                f"This exceeds error threshold of {n_error_thresh}.\nLook at the following diagnostics " \
+                                f"to decide if shifts are acceptable to continue:\n" \
+                                f"iss.plot.view_register_shift_info\niss.plot.view_register_search\n" \
+                                f"If shifts looks wrong, maybe try re-running with " \
+                                f"different configuration parameters e.g. smaller shift_step or larger shift_max_range."
+            raise ValueError(f"{message}")
+        else:
+            warnings.warn(message)

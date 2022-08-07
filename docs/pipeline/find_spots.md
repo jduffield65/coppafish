@@ -115,7 +115,7 @@ The process of obtaining isolated spots can be visualised with [`view_find_spots
         === "z = 1"
             ![image](../images/pipeline/find_spots/annulus+1.png){width="400"}
 
-## Potential error with too few spots
+## Error - too few spots
 After the `find_spots` *NotebookPage* has been [added](../code/pipeline/run.md#iss.pipeline.run.run_find_spots)
 to the *Notebook*, [`check_n_spots`](../code/find_spots/base.md#iss.find_spots.base.check_n_spots) will be run.
 

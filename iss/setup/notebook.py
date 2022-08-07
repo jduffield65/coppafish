@@ -492,6 +492,26 @@ class Notebook:
                 # If contains all required pages to run load_func, then add the page
                 self._no_save_pages[page_name]['load_func'](self, page_name)
 
+    def change_page_name(self, old_name: str, new_name: str):
+        """
+        This changes the name of the page `old_name` to `new_name`. It will trigger two saves,
+        one after changing the new and one after changing the time the page was added to be the time
+        the initial page was added.
+
+        Args:
+            old_name:
+            new_name:
+        """
+        nbp = self.__getattribute__(old_name)
+        warnings.warn(f"Changing name of {old_name} page to {new_name}")
+        time_added = self._page_times[old_name]
+        nbp.finalized = False
+        nbp.name = new_name
+        self.__delattr__(old_name)
+        self.add_page(nbp)
+        self._page_times[new_name] = time_added  # set time to time page initially added
+        self.save()
+
     def version_hash(self):
         # A short string representing the file version.
         #

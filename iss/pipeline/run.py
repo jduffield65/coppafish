@@ -3,7 +3,7 @@ from .. import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, get_reference_spots, \
     call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
-from ..stitch import check_shifts_stitch
+from ..stitch import check_shifts_stitch, check_shifts_register
 from ..call_spots import get_non_duplicate
 import warnings
 import matplotlib.pyplot as plt
@@ -138,7 +138,7 @@ def run_register(nb: setup.Notebook):
     for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
     the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
 
-    `register_initial_debug`, `register` and `register_debug` pages are added to the `Notebook` before saving.
+    `register_initial`, `register` and `register_debug` pages are added to the `Notebook` before saving.
 
     If `Notebook` already contains these pages, it will just be returned.
 
@@ -147,15 +147,20 @@ def run_register(nb: setup.Notebook):
 
     """
     config = nb.get_config()
-    if not nb.has_page("register_initial_debug"):
-        nbp_initial_debug = register_initial(config['register_initial'], nb.basic_info,
+    if nb.has_page("register_initial_debug"):
+        # deal with old notebook files where page was called "register_initial_debug" instead of
+        # "register_initial". This will trigger a save after name change too.
+        nb.change_page_name("register_initial_debug", "register_initial")
+    if not nb.has_page("register_initial"):
+        nbp_initial = register_initial(config['register_initial'], nb.basic_info,
                                              nb.find_spots.spot_details)
-        nb += nbp_initial_debug
+        nb += nbp_initial
+        check_shifts_register(nb)  # error if too many bad shifts between rounds
     else:
-        warnings.warn('register_initial_debug', utils.warnings.NotebookPageWarning)
+        warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
         nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details,
-                                  nb.register_initial_debug.shift)
+                                  nb.register_initial.shift)
         nb += nbp
         nb += nbp_debug
     else:

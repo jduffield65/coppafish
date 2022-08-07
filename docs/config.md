@@ -558,7 +558,7 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 * **n_shifts_error_fraction**: *number*.
 
-	If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
+	Used in *iss/stitch/check_shifts/check_shifts_stitch* If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
 
 	Default: `0.2`
 
@@ -645,7 +645,7 @@ The *register_initial* section contains parameters which specify how the shifts 
 
 * **n_shifts_error_fraction**: *number*.
 
-	If more than this fraction of `shifts` between the `ref_round`/`ref_channel` and each imaging round for each tile have `score < score_thresh`, an error will be raised. 
+	Used in *iss/stitch/check_shifts/check_shifts_register* If more than this fraction of `shifts` between the `ref_round`/`ref_channel` and each imaging round for each tile have `score < score_thresh`, an error will be raised. 
 
 	Default: `0.2`
 

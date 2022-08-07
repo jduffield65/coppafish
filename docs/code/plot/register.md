@@ -1,5 +1,8 @@
-## view_initial_shift
-::: iss.plot.register.view_initial_shift
+## view_register_shift_info
+::: iss.plot.register.shift.view_register_shift_info
 
-## view_pcr
-::: iss.plot.register.view_pcr
+## view_initial_search
+::: iss.plot.register.shift.view_register_search
+
+## view_icp
+::: iss.plot.register.icp.view_icp
