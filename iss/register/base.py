@@ -209,10 +209,10 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
     return av_transforms, av_scaling, av_shifts, failed, failed_non_matches
 
 
-def iterate(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.ndarray, n_iter: int,
-            dist_thresh: float, matches_thresh: Union[int, np.ndarray], scale_dev_thresh: np.ndarray,
-            shift_dev_thresh: np.ndarray, reg_constant_rot: Optional[float] = None,
-            reg_constant_shift: Optional[float] = None) -> Tuple[np.ndarray, dict]:
+def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.ndarray, n_iter: int,
+        dist_thresh: float, matches_thresh: Union[int, np.ndarray], scale_dev_thresh: np.ndarray,
+        shift_dev_thresh: np.ndarray, reg_constant_rot: Optional[float] = None,
+        reg_constant_shift: Optional[float] = None) -> Tuple[np.ndarray, dict]:
     """
     This gets the affine `transforms` from `yxz_base` to `yxz_target` using iterative closest point until
     all iterations used or convergence.
@@ -353,7 +353,7 @@ def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yx
                                 z_scale_transform: float, initial_shift: np.ndarray,
                                 neighb_dist_thresh: float, tile_centre: np.ndarray) -> Tuple[np.ndarray, int, float, bool]:
     """
-    Finds the affine transform taking spot_yxz_base to spot_yxz_transform.
+    Finds the affine transform taking `spot_yxz_base` to `spot_yxz_transform`.
 
     Args:
         config: register section of config file corresponding to spot_yxz_base.
@@ -391,9 +391,9 @@ def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yx
     spot_yxz_transform_array = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
     spot_yxz_transform_array[0, 0, 0] = (spot_yxz_transform - tile_centre) * [1, 1, z_scale_transform]
     final_transform, pcr_debug = \
-        iterate(spot_yxz_base_array, spot_yxz_transform_array,
-                start_transform, config['n_iter'], neighb_dist_thresh,
-                n_matches_thresh, config['scale_dev_thresh'], config['shift_dev_thresh'],
-                None, None)
+        icp(spot_yxz_base_array, spot_yxz_transform_array,
+            start_transform, config['n_iter'], neighb_dist_thresh,
+            n_matches_thresh, config['scale_dev_thresh'], config['shift_dev_thresh'],
+            None, None)
     return final_transform.squeeze(), int(pcr_debug['n_matches']), float(pcr_debug['error']
                                                                          ), bool(pcr_debug['is_converged'])

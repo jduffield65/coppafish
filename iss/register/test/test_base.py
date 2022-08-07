@@ -1,5 +1,5 @@
 import unittest
-from ..base import get_transform, get_average_transform, iterate
+from ..base import get_transform, get_average_transform, icp
 from ...utils import matlab, errors
 import os
 import numpy as np
@@ -194,9 +194,9 @@ class TestIterate(unittest.TestCase):
             error_matlab = np.moveaxis(error_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             failed_matlab = np.moveaxis(failed_matlab, 1, 2)  # change to t,r,c from MATLAB t,c,r
             yxz_target = np.moveaxis(yxz_target, 1, 2)  # change to t,r,c from MATLAB t,c,r
-            transforms_python, debug_python = iterate(yxz_base, yxz_target, transforms_start, n_iter, dist_thresh,
-                                                      matches_thresh, scale_dev_thresh, shift_dev_thresh,
-                                                      reg_constant_rot, reg_constant_shift)
+            transforms_python, debug_python = icp(yxz_base, yxz_target, transforms_start, n_iter, dist_thresh,
+                                                  matches_thresh, scale_dev_thresh, shift_dev_thresh,
+                                                  reg_constant_rot, reg_constant_shift)
             diff_1 = transforms_python - transforms_matlab
             diff_2 = debug_python['n_matches'] - n_matches_matlab
             diff_3 = debug_python['error'] - error_matlab

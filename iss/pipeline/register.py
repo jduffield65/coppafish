@@ -1,4 +1,5 @@
-from .. import pcr
+# from .. import register
+from ..register import icp, transform_from_scale_shift
 from ..find_spots import spot_yxz, get_isolated_points
 import numpy as np
 from ..setup.notebook import NotebookPage
@@ -9,7 +10,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
              initial_shift: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
     """
     This finds the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
-    It uses point cloud registration and the starting shifts found in `pipeline/register_initial.py`.
+    It uses iterative closest point and the starting shifts found in `pipeline/register_initial.py`.
 
     See `'register'` and `'register_debug'` sections of `notebook_comments.json` file
     for description of the variables in each page.
@@ -69,7 +70,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
     n_matches_thresh = n_matches_thresh.astype(int)
 
     # Initialise variables obtain from PCR algorithm. This includes spaces for tiles/rounds/channels not used
-    start_transform = pcr.transform_from_scale_shift(np.ones((nbp_basic.n_channels, 3)), initial_shift)
+    start_transform = transform_from_scale_shift(np.ones((nbp_basic.n_channels, 3)), initial_shift)
     final_transform = np.zeros_like(start_transform)
     n_matches = np.zeros_like(spot_yxz_imaging, dtype=int)
     error = np.zeros_like(spot_yxz_imaging, dtype=float)
@@ -79,12 +80,12 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
     av_shifts = np.zeros_like(initial_shift)
     transform_outliers = np.zeros_like(start_transform)
 
-    # get PCR output only for tiles/rounds/channels that we are using
+    # get ICP output only for tiles/rounds/channels that we are using
     final_transform[trc_ind], pcr_debug = \
-        pcr.iterate(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
-                    start_transform[trc_ind], config['n_iter'], neighb_dist_thresh,
-                    n_matches_thresh[trc_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
-                    config['regularize_constant_scale'], config['regularize_constant_shift'])
+        icp(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
+            start_transform[trc_ind], config['n_iter'], neighb_dist_thresh,
+            n_matches_thresh[trc_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
+            config['regularize_constant_scale'], config['regularize_constant_shift'])
 
     # save debug info at correct tile, round, channel index
     n_matches[trc_ind] = pcr_debug['n_matches']

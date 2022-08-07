@@ -1,7 +1,7 @@
 import numpy as np
 from .shift import view_register_search
 from ...find_spots import spot_yxz, get_isolated_points
-from ...pcr import get_single_affine_transform
+from ...register import get_single_affine_transform
 from ...spot_colors.base import apply_transform
 from ..stitch import view_point_clouds
 from ...setup import Notebook

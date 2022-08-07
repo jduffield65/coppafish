@@ -3,7 +3,7 @@ import iss.extract.test as extract
 import iss.utils.test as utils
 import iss.stitch.test as stitch
 import iss.setup.test as setup
-import iss.pcr.test as pcr
+import iss.register.test as register
 import iss.spot_colors.test as spot_colors
 import iss.call_spots.test as call_spots
 import iss.omp.test as omp
@@ -46,11 +46,11 @@ def suite_stitch():
     return suite
 
 
-def suite_pcr():
+def suite_register():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(pcr.TestGetTransform, 'test'))
-    suite.addTest(unittest.makeSuite(pcr.TestGetAverageTransform, 'test'))
-    suite.addTest(unittest.makeSuite(pcr.TestIterate, 'test'))
+    suite.addTest(unittest.makeSuite(register.TestGetTransform, 'test'))
+    suite.addTest(unittest.makeSuite(register.TestGetAverageTransform, 'test'))
+    suite.addTest(unittest.makeSuite(register.TestIterate, 'test'))
     return suite
 
 
@@ -89,7 +89,7 @@ def suite_all():
     suite.addTest(suite_extract())
     suite.addTest(suite_find_spots())
     suite.addTest(suite_stitch())
-    suite.addTest(suite_pcr())
+    suite.addTest(suite_register())
     suite.addTest(suite_spot_colors())
     suite.addTest(suite_call_spots())
     suite.addTest(suite_omp())
