@@ -8,6 +8,7 @@ from ...setup import Notebook
 import distinctipy
 from typing import Optional, List
 import matplotlib.pyplot as plt
+plt.style.use('dark_background')
 
 
 def view_icp(nb: Notebook, t: int, r: int, c: int):
