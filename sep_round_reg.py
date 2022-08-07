@@ -1,5 +1,5 @@
 from typing import List, Tuple, Optional
-from iss.pcr import get_single_affine_transform
+from iss.register import get_single_affine_transform
 from iss.pipeline.run import initialize_nb, run_extract, run_find_spots
 from iss import setup, utils
 from iss.call_spots import get_non_duplicate
@@ -7,7 +7,7 @@ from iss.stitch import compute_shift
 from iss.find_spots import get_isolated_points
 from iss.pipeline import stitch
 from iss.spot_colors import apply_transform
-from iss.plot.register import view_shifts
+from iss.plot.register.shift import view_shifts
 import numpy as np
 import os
 import warnings
@@ -103,9 +103,11 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             #             debug_info['scores_3d'], nbp.shift, nbp.shift_score_thresh)
 
             # Get affine transform from separate round to full anchor image
+            start_transform = np.eye(4, 3)  # no scaling just shift to start off icp
+            start_transform[3] = nbp.shift * [1, 1, z_scale]
             nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
-                get_single_affine_transform(config['register'], global_yxz, global_yxz_full, z_scale, z_scale_full,
-                                            nbp.shift, neighb_dist_thresh, image_centre)
+                get_single_affine_transform(global_yxz, global_yxz_full, z_scale, z_scale_full,
+                                            start_transform, neighb_dist_thresh, image_centre)
         nb += nbp  # save results of transform found
     else:
         nbp = nb.reg_to_anchor_info

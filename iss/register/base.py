@@ -233,7 +233,7 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
             `transforms_initial[t, r, c, :dim, :dim]` is probably going to be the identity matrix.
             `transforms_initial[t, r, c, dim, :]` is the shift which needs to be pre-computed somehow to get a
             good result.
-        n_iter: Max number of iterations to perform of PCR.
+        n_iter: Max number of iterations to perform of ICP.
         dist_thresh: If neighbours closer than this, they are used to compute the new transform.
             Typical: `3`.
         matches_thresh: `int [n_tiles x n_rounds x n_channels]` or single `int`.
@@ -326,9 +326,6 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
             if (is_converged.all() and finished_good_images == False) or i == n_iter - 1:
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
-                # TODO: included failed_non_matches with idea that if failed on matches but not on anomalous transform,
-                #  then find transform again with regularization and keep transform for which matches higher.
-                #  Unit testing would then not work because this is not done in MATLAB.
                 if reg_constant_rot is not None and reg_constant_shift is not None and i < n_iter - 1:
                     # reset transforms of those that failed to average transform as starting point for
                     # regularised fitting
@@ -348,26 +345,38 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
     return transforms, debug_info
 
 
-def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray,
-                                z_scale_base: float,
-                                z_scale_transform: float, initial_shift: np.ndarray,
-                                neighb_dist_thresh: float, tile_centre: np.ndarray) -> Tuple[np.ndarray, int, float, bool]:
+def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: np.ndarray, z_scale_base: float,
+                                z_scale_transform: float, start_transform: np.ndarray,
+                                neighb_dist_thresh: float, tile_centre: np.ndarray, n_iter: int = 100,
+                                reg_constant_rot: Optional[float] = None, reg_constant_shift: Optional[float] = None,
+                                reg_transform: Optional[np.ndarray] = None) -> Tuple[np.ndarray, int, float, bool]:
     """
     Finds the affine transform taking `spot_yxz_base` to `spot_yxz_transform`.
 
     Args:
-        config: register section of config file corresponding to spot_yxz_base.
         spot_yxz_base: Point cloud want to find the shift from.
             spot_yxz_base[:, 2] is the z coordinate in units of z-pixels.
         spot_yxz_transform: Point cloud want to find the shift to.
             spot_yxz_transform[:, 2] is the z coordinate in units of z-pixels.
         z_scale_base: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.
         z_scale_transform: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.
-        initial_shift: yxz shift to be used as starting point to find affine transfom.
-            yx shift is in units of yx-pixels. z shift is in units of z-pixels.
+        start_transform: `float [4 x 3]`.
+            Start affine transform for iterative closest point.
+            Typically, `start_transform[:3, :]` is identity matrix and
+            `start_transform[3]` is approx yxz shift (z shift in units of xy pixels).
         neighb_dist_thresh: Distance between 2 points must be less than this to be constituted a match.
         tile_centre: int [3].
             yxz coordinates of centre of image where spot_yxz found on.
+        n_iter: Max number of iterations to perform of ICP.
+        reg_constant_rot: Constant used for scaling and rotation when doing regularized least squares.
+            `None` means no regularized least squares performed.
+            Typical = `30000`.
+        reg_constant_shift: Constant used for shift when doing regularized least squares.
+            `None` means no regularized least squares performed.
+            Typical = `9`
+        reg_transform: `float [4 x 3]`.
+            Transform to regularize to when doing regularized least squares.
+            `None` means no regularized least squares performed.
 
     Returns:
         - `transform` - `float [4 x 3]`.
@@ -376,24 +385,19 @@ def get_single_affine_transform(config: dict, spot_yxz_base: np.ndarray, spot_yx
         - `error` - Average distance between neighbours below `neighb_dist_thresh`.
         - `is_converged` - `False` if max iterations reached before transform converged.
     """
-    n_tiles = 1
-    n_channels = 1
-    n_rounds = 1
-    initial_shift = np.asarray(initial_shift).reshape(n_tiles, n_rounds, -1)
-    n_matches_thresh = config['matches_thresh_fract'] * np.min(
-        [spot_yxz_base.shape[0], spot_yxz_transform.shape[0]])
-    n_matches_thresh = np.clip(n_matches_thresh, config['matches_thresh_min'], config['matches_thresh_max'])
-    n_matches_thresh = n_matches_thresh.astype(int)
-    initial_shift = initial_shift * [1, 1, z_scale_base]
-    start_transform = transform_from_scale_shift(np.ones((n_channels, 3)), initial_shift)
-    spot_yxz_base_array = np.zeros(n_tiles, dtype=object)
-    spot_yxz_base_array[0] = (spot_yxz_base - tile_centre) * [1, 1, z_scale_base]
-    spot_yxz_transform_array = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
-    spot_yxz_transform_array[0, 0, 0] = (spot_yxz_transform - tile_centre) * [1, 1, z_scale_transform]
-    final_transform, pcr_debug = \
-        icp(spot_yxz_base_array, spot_yxz_transform_array,
-            start_transform, config['n_iter'], neighb_dist_thresh,
-            n_matches_thresh, config['scale_dev_thresh'], config['shift_dev_thresh'],
-            None, None)
-    return final_transform.squeeze(), int(pcr_debug['n_matches']), float(pcr_debug['error']
-                                                                         ), bool(pcr_debug['is_converged'])
+
+    spot_yxz_base = (spot_yxz_base - tile_centre) * [1, 1, z_scale_base]
+    spot_yxz_transform = (spot_yxz_transform - tile_centre) * [1, 1, z_scale_transform]
+    tree_transform = KDTree(spot_yxz_transform)
+    neighbour = np.zeros(spot_yxz_base.shape[0], dtype=int)
+    transform = start_transform.copy()
+    for i in range(n_iter):
+        neighbour_last = neighbour.copy()
+        transform, neighbour, n_matches, error = \
+            get_transform(spot_yxz_base, transform, spot_yxz_transform, neighb_dist_thresh,
+                          tree_transform, reg_constant_rot, reg_constant_shift, reg_transform)
+
+        is_converged = np.abs(neighbour - neighbour_last).max() == 0
+        if is_converged:
+            break
+    return transform, n_matches, error, is_converged

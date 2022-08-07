@@ -5,6 +5,7 @@ from ...register import get_single_affine_transform
 from ...spot_colors.base import apply_transform
 from ..stitch import view_point_clouds
 from ...setup import Notebook
+from typing import Optional, List
 import matplotlib.pyplot as plt
 
 
@@ -30,17 +31,20 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
     point_clouds = []
     # 1st point cloud is imaging one as does not change
     point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r, c)]
+    # only keep isolated spots, those whose second neighbour is far away
+    # Do this only for imaging point cloud as that is what is done in pipeline/register
+    isolated = get_isolated_points(point_clouds[0] * z_scale, 2 * neighb_dist_thresh)
+    point_clouds[0] = point_clouds[0][isolated]
+
+    # 2nd is untransformed reference point cloud
     r_ref = nb.basic_info.ref_round
     c_ref = nb.basic_info.ref_channel
     point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref)]
-    for i in range(2):
-        # only keep isolated spots, those whose second neighbour is far away
-        isolated = get_isolated_points(point_clouds[i] * z_scale, 2 * neighb_dist_thresh)
-        point_clouds[i] = point_clouds[i][isolated]
     z_scale = z_scale[2]
+
     # Add shifted reference point cloud
-    if nb.has_page('register_initial_debug'):
-        shift = nb.register_initial_debug.shift[t, r]
+    if nb.has_page('register_initial'):
+        shift = nb.register_initial.shift[t, r]
     else:
         shift = view_register_search(nb, t, r, return_shift=True)
     point_clouds = point_clouds + [point_clouds[1] + shift]
@@ -55,8 +59,10 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
             if np.abs(transform_outlier).max() == 0:
                 transform_outlier = None
     else:
-        transform = get_single_affine_transform(config['register'], point_clouds[1], point_clouds[0], z_scale, z_scale,
-                                                shift, neighb_dist_thresh, nb.basic_info.tile_centre)[0]
+        start_transform = np.eye(4, 3)  # no scaling just shift to start off icp
+        start_transform[3] = shift * [1, 1, z_scale]
+        transform = get_single_affine_transform(point_clouds[1], point_clouds[0], z_scale, z_scale,
+                                                start_transform, neighb_dist_thresh, nb.basic_info.tile_centre)[0]
 
     if not nb.basic_info.is_3d:
         # use numpy not jax.numpy as reading in tiff is done in numpy.
@@ -77,3 +83,29 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
     view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
                       f'Transform of tile {t} to round {r}, channel {c}')
     plt.show()
+
+
+def view_icp_reg(nb: Notebook, t: int, r: int, c: int, reg_constant_rot: List, reg_constant_shift: List,
+                 reg_transform: Optional[np.ndarray] = None, start_transform: Optional[np.ndarray] = None):
+    config = nb.get_config()
+    if nb.basic_info.is_3d:
+        neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
+    else:
+        neighb_dist_thresh = config['register']['neighb_dist_thresh_2d']
+    z_scale = [1, 1, nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy]
+    point_clouds = []
+    # 1st point cloud is imaging one as does not change
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r, c)]
+    # only keep isolated spots, those whose second neighbour is far away
+    # Do this only for imaging point cloud as that is what is done in pipeline/register
+    isolated = get_isolated_points(point_clouds[0] * z_scale, 2 * neighb_dist_thresh)
+    point_clouds[0] = point_clouds[0][isolated]
+
+    # 2nd is untransformed reference point cloud
+    r_ref = nb.basic_info.ref_round
+    c_ref = nb.basic_info.ref_channel
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref)]
+    z_scale = z_scale[2]
+
+
+
