@@ -40,6 +40,10 @@ An example is shown below:
 
 ![viewer](images/viewer/initial.png){width="800"}
 
+???+ info "Markers not visible"
+    When the napari viewer first opens, the markers are often not visible because it is so far zoomed out.
+    After zooming in by scrolling with the mouse, they should show up.
+
 ## Background Image
 By default, the spots will be plotted on top of the stitched DAPI image (`config['file_names']['big_dapi_image']`) 
 if it exists, otherwise there will not be a background image.

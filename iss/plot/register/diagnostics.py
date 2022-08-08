@@ -84,7 +84,6 @@ class view_affine_shift_info:
                 `nb.register.transform`. In this case, only tiles for which
                 `nb.register_debug.failed == True` are plotted for each round/channel.
         """
-        # TODO: should have this so axis limits do not change when scroll with mouse to change channel
         self.outlier = outlier
         self.nb = nb
         if c is None:
