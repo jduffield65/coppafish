@@ -79,3 +79,70 @@ with more spots, smaller `config['register_initial']['shift_step']` or larger
 `config['register_initial']['shift_max_range']`). 
 
 ## Debugging
+There are a few functions using matplotlib which may help to debug this section of the pipeline.
+
+To view how the shift matches up the point clouds, an analogous function to 
+[`view_stitch_overlap`](stitch.md#view_stitch_overlap)
+is [`view_icp`](../code/plot/register.md#view_icp) which is [explained](register.md#view_icp) 
+in the next step of the pipeline. The *register* stage of the pipeline does 
+not need to have been run to use this function though.
+
+### [`view_register_shift_info`](../code/plot/register.md#view_register_shift_info)
+The [`view_register_shift_info`](../code/plot/register.md#view_register_shift_info) function
+plots the shifts to all tiles of a given round on the same plot
+(there are 3 plots for each round).
+This allows you to see if they are similar, as we expect or if there are some outliers.
+
+It also includes a plot of `score` vs `score_thresh` for each pair of neighbouring tiles:
+
+![image](../images/pipeline/register_initial/view_shift_info.png){width="800"}
+
+In this case, all the shifts seem reasonable as the top two plots show quite a small range
+and the bottom plot shows `score > score_thresh` for every shift (blue numbers are all above the green line).
+If a shift had `score < score_thresh`, it would be shown in red in each of the three plots
+for that direction.
+
+The numbers refer to the tile.
+
+??? note "Viewing outlier shifts"
+
+    The shifts saved as [`nb.register_initial.shift_outlier`](#amend-low-score-shifts) can be viewed by calling
+    `view_register_shift_info(nb, True)`.
+
+    The example below shows the difference between the outlier shifts and the final shifts (`nb.register_initial.shift`)
+    saved for a data set which did not work well.
+
+    === "`shift_outlier`"
+        ![image](../images/pipeline/register_initial/view_shift_info_outlier1.png){width="800"}
+
+    === "`shift`"
+        ![image](../images/pipeline/register_initial/view_shift_info_outlier2.png){width="800"}
+
+    Clearly from the top plot, the range of `shift` is much smaller than the range of `shift_outlier` as we
+    expect from the [reduced range](#updating-initial-range) of the exhaustive search to find these.
+
+### [`view_register_search`](../code/plot/register.md#view_register_search)
+The [`view_register_search`](../code/plot/register.md#view_register_search) function is exactly the same
+as [`view_stitch_search`](stitch.md#view_stitch_search).
+
+## Pseudocode
+This is the pseudocode outlining the basics of this [step of the pipeline](../code/pipeline/register_initial.md).
+For more detailed pseudocode about how the best shift is found, see the [shift](stitch.md#obtaining-best-shift) section.
+
+```
+r_ref = reference round
+c_ref = reference round
+c_shift = config['register_initial']['shift_channel']
+spot_yxz[t, r, c] = yxz coordinates for spots detected on tile t,
+                    round r, channel c.
+for r in use_rounds:            
+    for t in use_tiles:
+        Find best_shift between spot_yxz[t, r_ref, c_ref] and 
+                                spot_yxz[t, r, c_shift].
+        If 3 or more shifts to round r with score > score_thresh:
+            Update search range around these shifts.   
+Amend shifts with score < score_thresh using new search range for each round.
+
+Add shifts and debugging info to register_initial NotebookPage.
+Add register_initial NotebookPage to Notebook.      
+```

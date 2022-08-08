@@ -623,6 +623,9 @@ This example is for a $4$ ($n_y$) $\times$ $3$ ($n_x$) grid of tiles, so the num
 of plots refers to the shift found between tile $1$ and tile $0$. 
 The number $3$ in the *South* column of plots refers to the shift found between tile $3$ and tile $0$.
 
+This function can also be used to view [`nb.stitch.outlier_shifts`](#amend-low-score-shifts) by running 
+[`view_stitch_shift_info(nb, True)`](register_initial.md#view_register_shift_info).
+
 
 ### [`view_stitch_overlap`](../code/plot/stitch.md#view_stitch_overlap)
 For an experiment with tile $0$ to the north of tile $1$, 
@@ -690,15 +693,25 @@ This is the pseudocode outlining the basics of this [step of the pipeline](../co
 For more detailed pseudocode about how the best shift is found, see the [shift](#obtaining-best-shift) section.
 
 ```
-spot_yxz[t] = yxz coordinates for spots detected on tile t of 
-              ref_round and ref_channel
+r_ref = reference round
+c_ref = reference round
+spot_yxz[t, r, c] = yxz coordinates for spots detected on tile t,
+                    round r, channel c.
+                    
 for t in use_tiles:
     if tile to north of t:
-        Find best_shift between tile spot_yxz[t] and spot_yxz[t_north].
+        Find best_shift between spot_yxz[t, r_ref, c_ref] and 
+                                spot_yxz[t_north, r_ref, c_ref].
+        If 3 or more north/south shifts with score > score_thresh:
+            Update search range around these shifts.              
     if tile to east of t:
-        Find best_shift between tile spot_yxz[t] and spot_yxz[t_east].
+        Find best_shift between spot_yxz[t, r_ref, c_ref] and 
+                                spot_yxz[t_east, r_ref, c_ref].
+        If 3 or more east/west shifts with score > score_thresh:
+            Update search range around these shifts.       
 
-Amend shifts with score < score_thresh using new search range.
+Amend shifts with score < score_thresh using new search range for 
+each direction.
 Find tile_origin specifying global coordinate system.
 
 Add tile_origin and debugging info to stitch NotebookPage.

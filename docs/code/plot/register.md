@@ -2,7 +2,7 @@
 ### `view_register_shift_info`
 ::: iss.plot.register.shift.view_register_shift_info
 
-### `view_initial_search`
+### `view_register_search`
 ::: iss.plot.register.shift.view_register_search
 
 ## Register
