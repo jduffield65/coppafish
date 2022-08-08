@@ -100,6 +100,7 @@ nav:
             - Check Shifts: code/stitch/check_shifts.md
         - Register:
             - Base: code/register/base.md
+            - Check Transforms: code/register/check_transforms.md
         - Spot Colors:
             - Base: code/spot_colors/base.md
         - Call Spots:

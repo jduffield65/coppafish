@@ -3,6 +3,7 @@ from scipy.spatial import KDTree
 from .. import utils
 from tqdm import tqdm
 from typing import Optional, Tuple, Union, List
+import warnings
 
 
 def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,
@@ -329,10 +330,10 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
                             is_converged[t, r, c] = np.abs(neighbour[t, r, c] - neighbour_last[t, r, c]).max() == 0
                             if is_converged[t, r, c]:
                                 pbar.update(1)
-            if (is_converged.all() and not finished_good_images) or i == n_iter - 1:
+            if (is_converged.all() and not finished_good_images) or (i == n_iter - 1 and not finished_good_images):
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
-                if reg_constant_scale is not None and reg_constant_shift is not None and i < n_iter - 1:
+                if reg_constant_scale is not None and reg_constant_shift is not None:
                     # reset transforms of those that failed to average transform as starting point for
                     # regularised fitting
                     transforms_outlier[failed, :, :] = transforms[failed, :, :].copy()
@@ -345,6 +346,9 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
             if is_converged.all():
                 break
     pbar.close()
+    if i == n_iter:
+        warnings.warn(f"Max number of iterations, {n_iter} reached but only "
+                      f"{np.sum(is_converged)}/{np.sum(is_converged>=0)} transforms converged")
 
     debug_info = {'n_matches': n_matches, 'error': error, 'failed': failed, 'is_converged': is_converged,
                   'av_scaling': av_scaling, 'av_shifts': av_shifts, 'transforms_outlier': transforms_outlier}

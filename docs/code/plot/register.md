@@ -9,6 +9,9 @@
 ### `scale_box_plots`
 ::: iss.plot.register.diagnostics.scale_box_plots
 
+### `view_affine_shift_info`
+::: iss.plot.register.diagnostics.view_affine_shift_info.__init__
+
 ### `view_icp`
 ::: iss.plot.register.icp.view_icp
 

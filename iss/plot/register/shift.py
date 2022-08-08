@@ -50,7 +50,8 @@ def view_register_shift_info(nb: Notebook, outlier: bool = False):
         title_start = "Outlier "
     else:
         title_start = ""
-    shift_info_plot(shift_info, f"{title_start}Shifts from round {nb.basic_info.ref_round}, channel "
+    shift_info_plot(shift_info, f"{title_start}Shifts found in register_initial part of pipeline "
+                                f"from round {nb.basic_info.ref_round}, channel "
                                 f"{nb.basic_info.ref_channel} to channel "
                                 f"{nb.register_initial.shift_channel} for each round and tile")
 
