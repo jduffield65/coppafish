@@ -4,7 +4,7 @@ from typing import Optional
 from ...setup import Notebook
 
 
-def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_plot_thresh: int = 0,
+def shift_info_plot(shift_info: dict, title: Optional[str] = None, score_plot_thresh: int = 0,
                     fig: Optional[plt.Figure] = None, ax: Optional[np.ndarray] = None, return_ax: bool = False):
     """
     If `shift_info` contains $n$ keys, this will produce an $n$ column x 3 row grid of subplots.
