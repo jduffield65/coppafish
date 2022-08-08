@@ -66,7 +66,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
     tr_ind = np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds)  # needed for av_shifts as no channel index
 
     n_matches_thresh[trc_ind] = np.clip(n_matches_thresh[trc_ind], config['matches_thresh_min'],
-                                                    config['matches_thresh_max'])
+                                        config['matches_thresh_max'])
     n_matches_thresh = n_matches_thresh.astype(int)
 
     # Initialise variables obtain from PCR algorithm. This includes spaces for tiles/rounds/channels not used

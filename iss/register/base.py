@@ -72,7 +72,7 @@ def transform_from_scale_shift(scale: np.ndarray, shift: np.ndarray) -> np.ndarr
         scale: ```float [n_channels x n_dims]```.
             ```scale[c, d]``` is the scaling to account for chromatic aberration from reference channel
             to channel ```c``` for dimension ```d```.
-            Typically as an initial guess all values in scale will be ```1```.
+            Typically, as an initial guess all values in scale will be ```1```.
         shift: ```float [n_tiles x n_rounds x n_dims]```.
             ```shift[t, r, d]``` is the shift to account for the shift between the reference round for tile ```t``` and
             round ```r``` for tile ```t``` in dimension ```d```.
