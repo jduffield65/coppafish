@@ -9,3 +9,6 @@ If at any stage, a section of the pipeline, needs re-running, then the relevant 
 [removed](../notebook.md#deleting-a-notebookpage) 
 from the *Notebook* before the configuration file parameters for that section can be altered.
 
+??? example "Re-run register_initial"
+
+    Code to re-run 

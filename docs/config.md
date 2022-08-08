@@ -445,7 +445,7 @@ The *find_spots* section contains parameters which specify how to convert the im
 
 	 A warning will be raised if for any tile, round, channel the number of spots detected is less than: 
 
-	 `n_spots_warn = n_spots_warn_ffraction * max_spots * nb.basic_info.nz` 
+	 `n_spots_warn = n_spots_warn_fraction * max_spots * nb.basic_info.nz` 
 
 	 where `max_spots` is `max_spots_2d` if *2D* and `max_spots_3d` if *3D*. 
 
@@ -727,6 +727,18 @@ The *register* section contains parameters which specify how the affine transfor
 	 So if a typical value of $D_{shift}$ (or $D_s$) is 2 and a typical value of $D_{scale}$ is 0.002, $\mu = 1\times10^6$. 
 
 	Default: `1e6`
+
+* **n_transforms_error_fraction**: *number*.
+
+	Used in *iss/register/check_transforms/check_transforms* An error is raised if any of the following are satisfied where a failed transform is one with `nb.register_debug.n_matches < nb.register_debug.n_matches_thresh`. 
+
+	 * For any given channel, the fraction of failed transforms was greater than `n_transforms_error_fraction` of tiles/rounds. 
+
+	 * For any given tile, the fraction of failed transforms was greater than `n_transforms_error_fraction` of rounds/channels. 
+
+	 * For any given round, the fraction of failed transforms was greater than `n_transforms_error_fraction` of tiles/channels. 
+
+	Default: `0.5`
 
 ## call_spots
 The *call_spots* section contains parameters which determine how the `bleed_matrix` and `gene_efficiency` are computed, as well as how a gene is assigned to each spot found on the ref_round/ref_channel.

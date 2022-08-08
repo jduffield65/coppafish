@@ -89,11 +89,21 @@ def check_shifts_register(nb: Notebook):
         n_error_thresh = int(np.floor(config['n_shifts_error_fraction'] * n_shifts))
         if n_fail > n_error_thresh:
             message = message + f"\n{n_fail}/{n_shifts} shifts have score < score_thresh.\n" \
-                                f"This exceeds error threshold of {n_error_thresh}.\nLook at the following diagnostics " \
-                                f"to decide if shifts are acceptable to continue:\n" \
+                                f"This exceeds error threshold of {n_error_thresh}.\nLook at the following " \
+                                f"diagnostics to decide if shifts are acceptable to continue:\n" \
                                 f"iss.plot.view_register_shift_info\niss.plot.view_register_search\n" \
                                 f"If shifts looks wrong, maybe try re-running with " \
                                 f"different configuration parameters e.g. smaller shift_step or larger shift_max_range."
+
+            # Recommend channel with the most spots on the tile/round for which it has the least.
+            spot_no = nb.find_spots.spot_no[np.ix_(nb.basic_info.use_tiles, nb.basic_info.use_rounds)]
+            # For each channel this is number of spots on tile/round with the least spots.
+            spot_no = np.min(spot_no, axis=(0, 1))
+            c_most_spots = np.argmax(spot_no)
+            if c_most_spots != nb.register_initial.shift_channel:
+                message = message + f"\nAlso consider changing config['register_initial']['shift_channel']. " \
+                                    f"Current channel {c_ref} has at least {spot_no[c_ref]} on all tiles and rounds " \
+                                    f"but channel {c_most_spots} has at least {spot_no[c_most_spots]}."
             raise ValueError(f"{message}")
         else:
             warnings.warn(message)

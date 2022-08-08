@@ -158,11 +158,11 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
         - `av_shifts` - `float [n_tiles x n_rounds x dim]`.
             `av_shifts[t, r, d]` is the median scaling for tile `t`, round `r`, dimension `d`, over all channels.
         - `failed` - `bool [n_tiles x n_rounds x n_channels]`.
-            Indicates tiles/rounds/channels to which transform had too few matches or transform was anomalous compared
-            to median. These were not included when calculating `av_transforms`.
+            Indicates the tiles/rounds/channels to which transform had too few matches or transform was anomalous
+            compared to median. These were not included when calculating `av_transforms`.
         - `failed_non_matches` - `bool [n_tiles x n_rounds x n_channels]`.
-            Indicates tiles/rounds/channels to which transform was anomalous compared to median either due to shift or
-            scaling in one or more directions.
+            Indicates the tiles/rounds/channels to which transform was anomalous compared to median either due to shift
+            or scaling in one or more directions.
     """
     dim = transforms.shape[-1]
     failed_matches = n_matches < matches_thresh
@@ -191,7 +191,8 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
     if n_failed > 0:
         # to compute median scale to particular channel, at least one good tile/round.
         raise ValueError(f"\nNo suitable scales found for the following channels across all tiles/rounds\n"
-                         f"{[all_failed_scale_c[i][0] for i in range(n_failed)]}")
+                         f"{[all_failed_scale_c[i][0] for i in range(n_failed)]}\n"
+                         f"Consider removing these from use_channels.")
     all_failed_shifts_tr = np.unique(np.argwhere(np.isnan(av_shifts))[:, 1:], axis=0)
     n_failed = len(all_failed_shifts_tr[:, 0])
     if n_failed > 0:
@@ -199,7 +200,11 @@ def get_average_transform(transforms: np.ndarray, n_matches: np.ndarray, matches
         raise ValueError(f"\nNo suitable shifts found for the following tile/round combinations"
                          f" across all colour channels\n"
                          f"t: {[all_failed_shifts_tr[i, 0] for i in range(n_failed)]}\n"
-                         f"r: {[all_failed_shifts_tr[i, 1] for i in range(n_failed)]}")
+                         f"r: {[all_failed_shifts_tr[i, 1] for i in range(n_failed)]}\n"
+                         f"Look at the following diagnostics to see why registration has few matches for these:\n"
+                         f"iss.plot.view_register_shift_info\niss.plot.view_register_search\niss.plot.view_icp\n"
+                         f"If it seems to be a single tile/round that is the problem, maybe remove from "
+                         f"use_tiles/use_rounds and re-run.")
 
     av_scaling = np.moveaxis(av_scaling, 0, -1)  # so get in order channel,dim
     av_shifts = np.moveaxis(av_shifts, 0, -1)  # so get in order tile,round,dim
@@ -302,9 +307,10 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
     finished_good_images = False
     av_transforms = None
     i_finished_good = 0
+    i = 0
     with tqdm(total=n_tiles * n_rounds * n_channels) as pbar:
         pbar.set_description(f"Iterative Closest Point to find affine transforms")
-        for i in range(n_iter):
+        while i < n_iter:
             pbar.set_postfix({'iter': f'{i + 1}/{n_iter}', 'regularized': str(finished_good_images)})
             neighbour_last = neighbour.copy()
             for t in range(n_tiles):
@@ -323,7 +329,7 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
                             is_converged[t, r, c] = np.abs(neighbour[t, r, c] - neighbour_last[t, r, c]).max() == 0
                             if is_converged[t, r, c]:
                                 pbar.update(1)
-            if (is_converged.all() and finished_good_images == False) or i == n_iter - 1:
+            if (is_converged.all() and not finished_good_images) or i == n_iter - 1:
                 av_transforms, av_scaling, av_shifts, failed, failed_non_matches = \
                     get_average_transform(transforms, n_matches, matches_thresh, scale_dev_thresh, shift_dev_thresh)
                 if reg_constant_scale is not None and reg_constant_shift is not None and i < n_iter - 1:
@@ -332,10 +338,10 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
                     transforms_outlier[failed, :, :] = transforms[failed, :, :].copy()
                     transforms[failed, :, :] = av_transforms[failed, :, :]
                     is_converged[failed] = False
-                    i_finished_good = i + 1  # so don't end iteration on next one
+                    i = -1  # Allow n_iter to find regularized best transforms as well.
                     finished_good_images = True
                     pbar.update(-np.sum(failed.flatten()))
-
+            i += 1
             if is_converged.all():
                 break
     pbar.close()

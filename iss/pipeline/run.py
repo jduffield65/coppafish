@@ -4,6 +4,7 @@ from . import set_basic_info, extract_and_filter, find_spots, stitch, register_i
     call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
 from ..stitch import check_shifts_stitch, check_shifts_register
+from ..register import check_transforms
 from ..call_spots import get_non_duplicate
 import warnings
 import matplotlib.pyplot as plt
@@ -163,6 +164,7 @@ def run_register(nb: setup.Notebook):
                                   nb.register_initial.shift)
         nb += nbp
         nb += nbp_debug
+        check_transforms(nb)
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)

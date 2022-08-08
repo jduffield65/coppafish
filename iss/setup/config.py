@@ -155,7 +155,8 @@ _options = {
             'scale_dev_thresh': 'list_number',
             'shift_dev_thresh': 'list_number',
             'regularize_constant': 'int',
-            'regularize_factor': 'number'
+            'regularize_factor': 'number',
+            'n_transforms_error_fraction': 'number'
         },
     'call_spots':
         {
