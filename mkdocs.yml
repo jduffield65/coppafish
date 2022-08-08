@@ -80,6 +80,8 @@ nav:
         - Extract and Filter: pipeline/extract.md
         - Find Spots: pipeline/find_spots.md
         - Stitch: pipeline/stitch.md
+        - Register initial: pipeline/register_initial.md
+        - Register: pipeline/register.md
     - Code:
         - Setup:
             - Notebook: code/setup/notebook.md

@@ -53,7 +53,7 @@ def check_shifts_register(nb: Notebook):
     are acceptable (`score > score_thresh`).
 
     An error will be raised if the fraction of shifts with `score < score_thresh`
-    exceeds `config['stitch']['n_shifts_error_fraction']`.
+    exceeds `config['register_initial']['n_shifts_error_fraction']`.
 
     Args:
         nb: *Notebook* containing `stitch` page.

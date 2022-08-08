@@ -167,6 +167,10 @@ class iss_plot:
                 #  but at the moment cannot use at same time as show.
                 #  When this works, can change n_z shown by changing z-dimension of point_size i.e.
                 #  point_size = [z_size, 10, 10] and z_size changes.
+                #  On next napari, release should be able to change thickness of spots in z-direction i.e. control what
+                #  number of z-planes can be seen at any one time:
+                #  https://github.com/napari/napari/issues/4816#issuecomment-1186600574.
+                #  Then see find_spots viewer for how I added a z-thick slider
 
         self.viewer.layers.selection.active = self.viewer.layers[self.diagnostic_layer_ind]
         # so indicates when a spot is selected in viewer status
@@ -218,9 +222,6 @@ class iss_plot:
             self.viewer.dims.axis_labels = ['z', 'y', 'x']
         else:
             self.viewer.dims.axis_labels = ['y', 'x']
-        # TODO: on next napari, release should be able to change thickness of spots in z-direction i.e. control what
-        #  number of z-planes can be seen at any one time:
-        #  https://github.com/napari/napari/issues/4816#issuecomment-1186600574.
 
         napari.run()
 
