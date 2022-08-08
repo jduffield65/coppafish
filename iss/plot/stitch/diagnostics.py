@@ -32,6 +32,8 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_p
                 point clouds).
             * n_matches_thresh - `int [n_tiles]`. If `n_matches<n_matches_thresh`, it will be shown in red.
             * error - `float [n_tiles]`. Average distance between neighbours.
+            * x_lim - `float [n_plots x 2]`. Can optionally specify number axis limits for each plot.
+            * y_lim - `float [n_plots x 2]`. Can optionally specify number axis limits for each plot.
         title: Overall title for the plot.
         score_plot_thresh: Only shifts with `score` (or `n_matches`) > `score_plot_thresh` are shown.
         fig: Can provide previous figure to plot on.
@@ -65,8 +67,14 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_p
             ax[0, i].text(shift_info_i['shift'][t, 1], shift_info_i['shift'][t, 0],
                           str(shift_info_i['tile'][t]), color=tile_color[t], fontsize=12,
                           ha='center', va='center')
-        ax[0, i].set_xlim([np.min(shift_info_i['shift'][:, 1]) - 3, np.max(shift_info_i['shift'][:, 1]) + 3])
-        ax[0, i].set_ylim([np.min(shift_info_i['shift'][:, 0]) - 3, np.max(shift_info_i['shift'][:, 0]) + 3])
+        if 'x_lim' in shift_info_i:
+            ax[0, i].set_xlim(shift_info_i['x_lim'][0])
+        else:
+            ax[0, i].set_xlim([np.min(shift_info_i['shift'][:, 1]) - 3, np.max(shift_info_i['shift'][:, 1]) + 3])
+        if 'y_lim' in shift_info_i:
+            ax[0, i].set_ylim(shift_info_i['y_lim'][0])
+        else:
+            ax[0, i].set_ylim([np.min(shift_info_i['shift'][:, 0]) - 3, np.max(shift_info_i['shift'][:, 0]) + 3])
         if i == int(np.ceil(n_cols/2)-1):
             ax[0, i].set_xlabel('X Shift')
         if i == 0:
@@ -81,8 +89,16 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_p
                 ax[row_ind, i].text(shift_info_i['shift'][t, 1], shift_info_i['shift'][t, 2],
                                     str(shift_info_i['tile'][t]), color=tile_color[t], fontsize=12,
                                     ha='center', va='center')
-            ax[row_ind, i].set_xlim([np.min(shift_info_i['shift'][:, 1]) - 3, np.max(shift_info_i['shift'][:, 1]) + 3])
-            ax[row_ind, i].set_ylim([np.min(shift_info_i['shift'][:, 2]) - 1, np.max(shift_info_i['shift'][:, 2]) + 1])
+            if 'x_lim' in shift_info_i:
+                ax[row_ind, i].set_xlim(shift_info_i['x_lim'][row_ind])
+            else:
+                ax[row_ind, i].set_xlim([np.min(shift_info_i['shift'][:, 1]) - 3,
+                                         np.max(shift_info_i['shift'][:, 1]) + 3])
+            if 'y_lim' in shift_info_i:
+                ax[row_ind, i].set_ylim(shift_info_i['y_lim'][row_ind])
+            else:
+                ax[row_ind, i].set_ylim([np.min(shift_info_i['shift'][:, 2]) - 1,
+                                         np.max(shift_info_i['shift'][:, 2]) + 1])
             if i == int(np.ceil(n_cols/2)-1):
                 ax[row_ind, i].set_xlabel('X Shift')
             if i == 0:
@@ -91,8 +107,12 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_p
 
         if 'score' in shift_info_i:
             # Plot line so that all with score > score_thresh are above it
-            score_min = np.min(np.vstack([shift_info_i['score_thresh'], shift_info_i['score']])) - 5
-            score_max = np.max(np.vstack([shift_info_i['score_thresh'], shift_info_i['score']])) + 5
+            if 'x_lim' in shift_info_i and 'y_lim' in shift_info_i:
+                score_min = np.min(shift_info_i['y_lim'][row_ind, 0], shift_info_i['x_lim'][row_ind, 0]) - 5
+                score_max = np.max(shift_info_i['y_lim'][row_ind, 1], shift_info_i['x_lim'][row_ind, 1]) + 5
+            else:
+                score_min = np.min(np.vstack([shift_info_i['score_thresh'], shift_info_i['score']])) - 5
+                score_max = np.max(np.vstack([shift_info_i['score_thresh'], shift_info_i['score']])) + 5
             ax[row_ind, i].set_xlim([score_min, score_max])
             ax[row_ind, i].set_ylim([score_min, score_max])
             ax[row_ind, i].plot([score_min, score_max], [score_min, score_max], 'lime', linestyle=':', linewidth=2,
@@ -108,8 +128,15 @@ def shift_info_plot(shift_info: dict[dict], title: Optional[str] = None, score_p
             if i == 0:
                 ax[row_ind, i].set_ylabel('Score')
         elif 'n_matches' in shift_info_i:
-            ax[row_ind, i].set_xlim([np.min(shift_info_i['error']) - 0.1, np.max(shift_info_i['error']) + 0.1])
-            ax[row_ind, i].set_ylim([np.min(shift_info_i['n_matches']) - 100, np.max(shift_info_i['n_matches']) + 100])
+            if 'x_lim' in shift_info_i:
+                ax[row_ind, i].set_xlim(shift_info_i['x_lim'][row_ind])
+            else:
+                ax[row_ind, i].set_xlim([np.min(shift_info_i['error']) - 0.1, np.max(shift_info_i['error']) + 0.1])
+            if 'y_lim' in shift_info_i:
+                ax[row_ind, i].set_ylim(shift_info_i['y_lim'][row_ind])
+            else:
+                ax[row_ind, i].set_ylim([np.min(shift_info_i['n_matches']) - 100,
+                                         np.max(shift_info_i['n_matches']) + 100])
             for t in range(n_tiles):
                 if skip_tile[t]:
                     continue
