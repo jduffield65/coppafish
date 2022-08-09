@@ -9,7 +9,7 @@ def check_transforms(nb: Notebook):
     are acceptable (`n_matches > n_matches_thresh`).
 
     If for any of the following, the fraction of transforms with
-    `n_matches < n_matches_thresh` exceeds `config['register']['n_transforms_warn_fraction']`
+    `n_matches < n_matches_thresh` exceeds `config['register']['n_transforms_error_fraction']`
     an error will be raised.
 
     * Each channel across all rounds and tiles.

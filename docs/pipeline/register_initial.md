@@ -93,7 +93,7 @@ plots the shifts to all tiles of a given round on the same plot
 (there are 3 plots for each round).
 This allows you to see if they are similar, as we expect or if there are some outliers.
 
-It also includes a plot of `score` vs `score_thresh` for each pair of neighbouring tiles:
+It also includes a plot of `score` vs `score_thresh` for each round:
 
 ![image](../images/pipeline/register_initial/view_shift_info.png){width="800"}
 

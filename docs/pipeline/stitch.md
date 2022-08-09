@@ -596,7 +596,7 @@ We do this because the image is useful for plotting, but we do not care much abo
 
     The stitched DAPI image will be saved as *uint16* with no rescaling.
 
-Also to save memory, all pixels with absolute value less than `config['stitch']['save_image_zero_thresh']`
+Also, to save memory, all pixels with absolute value less than `config['stitch']['save_image_zero_thresh']`
 will have their pixel value set to $0$ before saving.
 
     
@@ -632,6 +632,7 @@ For an experiment with tile $0$ to the north of tile $1$,
 [`view_stitch_overlap(nb, 1, 'north')`](../code/plot/stitch.md#view_stitch_overlap)
 will always show the global coordinates of the point cloud for tile $0$ in red 
 (`global_yxz = local_yxz + nb.stitch.tile_origin[0]`).
+
 There are then buttons to select which point cloud for tile $1$ is plotted in blue:
 
 * No overlap: This is assuming there is $0\%$ overlap between the two tiles.

@@ -526,15 +526,156 @@ If `reg_constant` and `reg_factor` are not provided, `config['register']['regula
 The example below shows the point clouds produced after running
 `view_icp_reg(0, 1, 0, reg_constant=[3e4], reg_factor=[1e6])`:
 
+=== "No transform"
+    ![image](../images/pipeline/register/pc_no_transform.png){width="800"}
+
+=== "$\lambda=0$"
+    ![image](../images/pipeline/register/pc_no_reg.png){width="800"}
+
+=== "$\lambda=\infty$"
+    ![image](../images/pipeline/register/pc_reg_infinite.png){width="800"}
+
+=== "$\lambda=30000, \mu=1\times10^6$"
+    ![image](../images/pipeline/register/pc_reg.png){width="800"}
+
+Here we see that all the transforms are visibly different but the $\lambda=30000, \mu=1\times10^6$ case
+is closer to $\lambda=\infty$ than $\lambda=0$. This makes sense because as shown in the right sidebar 
+of the plots, the number of matches is about 5600 so $\lambda = 30000 > n_{neighb}$ so 
+the final transform should be close to the target transform we are regularising towards.
+
+If [`view_icp_reg`](../code/plot/register.md#view_icp_reg) is run with `plot_residual=True`, it produces
+another plot which indicates how $D_{shift}$ and $D_{scale}$ vary with different values of `reg_constant`
+and `reg_factor`. 
+
+`view_icp_reg(nb, 0, 1, 0, reg_constant=np.logspace(0, 7, 8), reg_factor=[5e4]*8, plot_residual=True)` 
+produces the following additional plot:
+
+![image](../images/pipeline/register/varying_reg_constant.png){width="800"}
+
+Here, each colored marker refers to a different $\lambda/\mu$ combination. 
+The $\lambda=0$ horizontal line indicates the values with no regularisation and 
+the $n_{matches}$ line indicates the number of matches found with $\lambda=\infty$. 
+
+This plot nicely shows that for $\lambda < n_{matches}$, the transform found is pretty close to 
+the normal least squares solution by for $\lambda > n_{matches}$, it is closer to the 
+target transform we are regularising towards.
+
+`view_icp_reg(nb, 0, 1, 0, reg_constant=[500] * 8, reg_factor=np.logspace(2, 9, 8), plot_residual=True)` 
+produces the following additional plot:
+
+![image](../images/pipeline/register/varying_reg_factor.png){width="800"}
+
+This shows that varying $\mu$ while keeping $\lambda$ constant does not affect $D_{shift}$ much 
+but $D_{scale}$ does decrease as $\mu$ increases.
 
 ## Error - too few matches
+After the `register` and `register_debug` *NotebookPages* have been 
+[added](../code/pipeline/run.md#iss.pipeline.run.run_register)
+to the *Notebook*, 
+[`check_transforms`](../code/register/check_transforms.md#iss.register.check_transforms.check_transforms) will be run.
 
+This will produce a warning for any tile, round, channel for which
 
+`nb.register_debug.n_matches < nb.register_debug.n_matches_thresh`
+
+An error will be raised if any of the following is satisfied:
+
+* For any given channel, the number of transforms with 
+`n_matches < n_matches_thresh` exceeds `error_fraction`.
+
+    The faulty channels should then be removed from `use_channels`.
+
+* For any given tile, the number of transforms with 
+`n_matches < n_matches_thresh` exceeds `error_fraction`.
+
+    The faulty tiles should then be removed from `use_tiles`.
+
+* For any given round, the number of transforms with 
+`n_matches < n_matches_thresh` exceeds `error_fraction`.
+
+    The faulty rounds should then be removed from `use_rounds`.
+
+`error_fraction` is given by `config['register']['n_transforms_error_fraction`].
 
 ## Debugging
-### [`view_icp`](../code/plot/register.md#view_icp)
+There are a few functions using matplotlib which may help to debug this section of the pipeline.
 
-`view_icp_reg(t, r, c, [lambda], [mu])` will produce a point cloud in red corresponding to
-tile $t$, round $r$, channel $c$ (`spot_yxz` in the [pseudocode](#icp)). Then 
-there are buttons to change which point cloud is shown in blue:
-* Reference: 
+### [`view_affine_shift_info`](../code/plot/register.md#view_affine_shift_info)
+The [`view_affine_shift_info`](../code/plot/register.md#view_affine_shift_info) function
+plots the shift part of the affine transform (`nb.register.transform[t, r, c, 3]`) to 
+all tiles of a given round and channel on the same plot
+(there are 3 plots for each round and channel).
+
+It also includes a plot of `nb.register_debug.n_matches` vs `nb.register_debug.error` for each round and channel.
+The error is the root-mean-square distance between neighbours used to compute the transform. Thus, the lower 
+this value, and the higher $n_{matches}$, the better the transform.
+
+
+=== "Channel 0"
+    ![image](../images/pipeline/register/affine_info0.png){width="800"}
+
+=== "Channel 2"
+    ![image](../images/pipeline/register/affine_info2.png){width="800"}
+
+The channel shown is changed by scrolling with the mouse and as a sanity check, we do not expect
+the top two plots to vary much when the channel changes (the round 0 shifts above is quite a good example).
+
+The numbers refer to the tile, and they are blue if 
+`nb.register_debug.n_matches[t, r, c] > nb.register_debug.n_matches_thresh[t, r, c]`.
+Otherwise, they are red, as with tile 2 in round 1 and 4 of the channel 2 plots.
+
+As with [`view_register_shift_info`](register_initial.md#view_register_shift_info), this function 
+can also be used to show `nb.register_debug.transform_outlier[t, r, c, 3]` by setting `outlier=True`, although 
+the bottom plot will always show `nb.register_debug.n_matches` vs `nb.register_debug.error`.
+
+### [`scale_box_plots`](../code/plot/register.md#scale_box_plots)
+This function produces two or three plots, one for each dimension. In plot $i$, there is a boxplot 
+for each round and channel of `nb.register.transform[:, r, c, i, i]`:
+
+![image](../images/pipeline/register/scale_box_plots.png){width="800"}
+
+
+
+### [`view_icp`](../code/plot/register.md#view_icp)
+This is similar to [`view_stitch_overlap`](stitch.md#view_stitch_overlap).
+[`view_icp(nb, t, r, c)`](../code/plot/register.md#view_icp)
+will always show the local coordinates of the point cloud for tile $t$, round $r$, channel $c$ in red.
+This is `spot_yxz` in the [psuedocode](#icp).
+
+There are then buttons to select which reference point cloud for tile $t$, round $r_{ref}$, channel 
+$c_{ref}$ is plotted in blue:
+
+* *No transform*: This is the reference point cloud with no transform applied
+(`ref_spot_yxz` in the [psuedocode](#icp)).
+* *Shift*: This is the reference point cloud, shifted according to `nb.register_initial.shifts[t, r]`
+(`ref_spot_yxz_transform` computed in the first iteration in the [psuedocode](#icp))
+* *Affine*: This is the reference point cloud, transformed according to `nb.register.transform[t, r, c]`
+(`ref_spot_yxz_transform` computed in the last iteration in the [psuedocode](#icp))
+
+An example is shown below:
+
+=== "*No transform*"
+    ![image](../images/pipeline/register/view_icp0.png){width="800"}
+
+=== "*Shift*"
+    ![image](../images/pipeline/register/view_icp1.png){width="800"}
+
+=== "*Affine*"
+    ![image](../images/pipeline/register/view_icp2.png){width="800"}
+
+If [regularized *ICP*](#regularized-icp) was required for the chosen tile/round/channel, an additional button 
+will be present titled *Regularized*. The *Affine* button will then indicate 
+the reference point cloud, transformed according to `nb.register_debug.transform_outlier` (i.e. with no regularization).
+The *Regularized* button will indicate the reference point cloud, transformed according to 
+`nb.register.transform[t, r, c]` (i.e. final transform found with regularization).
+
+??? note "Can I use [`view_icp`](../code/plot/register.md#view_icp) before running the register stage of the pipeline?"
+
+    The [`view_icp`](../code/plot/register.md#view_icp) function can be used after the `find_spots`
+    page has been added to the *Notebook*. 
+
+    In the case where the *Notebook* does not have the 
+    `register_initial` page, the shift will be computed. In the case where the *Notebook* does not have the 
+    `register` page, the affine transform will be 
+    [computed](../code/register/base.md#iss.register.base.get_single_affine_transform) with no regularization.
+
