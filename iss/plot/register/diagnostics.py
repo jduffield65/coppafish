@@ -20,7 +20,7 @@ def scale_box_plots(nb: Notebook):
     if nb.basic_info.is_3d:
         ndim = 3
         if np.ptp(nb.register.transform[np.ix_(nb.basic_info.use_tiles, nb.basic_info.use_rounds,
-                                               nb.basic_info.use_channels)][:, :, :, 2, 2]) < 1e5:
+                                               nb.basic_info.use_channels)][:, :, :, 2, 2]) < 1e-5:
             ndim = 2
             warnings.warn("Not showing z-scaling as all are the same")
     else:

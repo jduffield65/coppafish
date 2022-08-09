@@ -634,7 +634,11 @@ for each round and channel of `nb.register.transform[:, r, c, i, i]`:
 
 ![image](../images/pipeline/register/scale_box_plots.png){width="800"}
 
-
+In this plot, we expect for a given channel, the scaling should be similar across all rounds and tiles (i.e.
+boxplots of the same color should be at the same height, and they should have quite small ranges with any 
+outlier tiles (white crosses, +) not far from the boxplot). Also, we expect the *Scaling - Y* and
+*Scaling - X* to be very similar. *Scaling - Z* will likely be different, but it won't be shown if
+the range of *Scaling - Z* is less than 0.00001, which usually the case.
 
 ### [`view_icp`](../code/plot/register.md#view_icp)
 This is similar to [`view_stitch_overlap`](stitch.md#view_stitch_overlap).
@@ -679,3 +683,45 @@ The *Regularized* button will indicate the reference point cloud, transformed ac
     `register` page, the affine transform will be 
     [computed](../code/register/base.md#iss.register.base.get_single_affine_transform) with no regularization.
 
+
+## Psuedocode
+This is the pseudocode outlining the basics of this [step of the pipeline](../code/pipeline/register.md).
+For more detailed pseudocode about how the transform is found, see the [*ICP*](#icp) section.
+
+```
+r_ref = reference round
+c_ref = reference round
+c_shift = config['register_initial']['shift_channel']
+spot_yxz[t, r, c] = yxz coordinates for spots detected on tile t,
+                    round r, channel c.
+for t in use_tiles:      
+    Center reference point cloud:
+        spot_yxz[t, r_ref, c_ref] = spot_yxz[t, r_ref, c_ref] - tile_centre
+    Convert z coordinate into yx-pixels:
+        spot_yxz[t, r_ref, c_ref][:, 3] = spot_yxz[t, r_ref, c_ref][:, 3] * z_scale
+    for r in use_rounds:            
+        for c in use_channels:
+            Center point cloud:
+                spot_yxz[t, r, c] = spot_yxz[t, r, c] - tile_centre
+            Convert z coordinate into yx-pixels:
+                spot_yxz[t, r, c][:, 3] = spot_yxz[t, r, c][:, 3] * z_scale
+            Only keep spots whose nearest neighbour is far
+                spot_yxz[t, r, c] = spot_yxz[t, r, c][isolated]           
+            Find transform between spot_yxz[t, r_ref, c_ref] and 
+                                   spot_yxz[t, r, c] using ICP.
+                               
+Compute av_scaling and av_shift.
+
+transforms[t, r, c] is failed if one of the following is satisfied:
+    - n_matches < n_matches_thresh.
+    - transforms[t, r, c][i, i] significantly different to av_scaling[c, i] for any i.
+    - transforms[t, r, c][3, i] significantly different to av_shift[t, r, i] for any i.
+
+For failed transforms, recompute transform between 
+    spot_yxz[t, r_ref, c_ref] and spot_yxz[t, r, c]
+    using regularized ICP.           
+
+Add transform to register NotebookPage.
+Add debugging information to register_debug NotebookPage.      
+Add register and register_debug NotebookPages to Notebook.  
+```

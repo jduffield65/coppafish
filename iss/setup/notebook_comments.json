@@ -342,7 +342,7 @@
     "initial_shift": ["Numpy integer array [n_tiles x n_rounds x 3]",
       "shift[t, r, :] is the yxz shift found that is applied to tile t, ref_round to take it to tile t, round r.",
       "Units: [yx_pixels, yx_pixels, z_pixels], [:, :, 2] = 0 if 2d.",
-      "Same as shift in register_initial_debug page."],
+      "Same as shift in register_initial_debug page. DON'T KNOW WHY COPIED THIS - PROBABLY SHOULD REMOVE"],
     "transform": ["Numpy float array [n_tiles x n_rounds x n_channels x 4 x 3]",
       "transform[t, r, c] is the affine transform to get from tile t, ref_round, ref_channel to tile t, round r, channel c",
       "Before applying to coordinates, they must be centered and z coordinates put into units of yx_pixels.",
