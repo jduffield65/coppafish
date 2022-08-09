@@ -724,9 +724,9 @@ The *register* section contains parameters which specify how the affine transfor
 
 	 * $D_{shift}^2$ is the squared distance between `transform[3]` and `transform_regularize[3]`. I.e. the squared difference of the shift part of the transform from the target. 
 
-	 So if a typical value of $D_{shift}$ (or $D_s$) is 2 and a typical value of $D_{scale}$ is 0.002, $\mu = 1\times10^6$. 
+	 So if a typical value of $D_{shift}$ (or $D_s$) is 2 and a typical value of $D_{scale}$ is 0.009, $\mu = 5\times10^4$. 
 
-	Default: `1e6`
+	Default: `5e4`
 
 * **n_transforms_error_fraction**: *number*.
 

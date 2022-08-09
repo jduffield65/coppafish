@@ -286,8 +286,8 @@ def plot_reg_residual(reg_transform: np.ndarray, transforms_plot: List[np.ndarra
         col_info[col_ind]['x'] = reg_constant
         col_info[col_ind]['x_lims'] = [int(0.9 * np.min(reg_constant)), int(1.1 * np.max(reg_constant))]
         if n_matches is not None:
-            col_info[col_ind]['x_lims'] = [int(0.9 * np.min(reg_constant + [n_matches])),
-                                           int(1.1 * np.max(reg_constant + [n_matches]))]
+            col_info[col_ind]['x_lims'] = [int(0.9 * np.min(list(reg_constant) + [n_matches])),
+                                           int(1.1 * np.max(list(reg_constant) + [n_matches]))]
         col_info[col_ind]['log_x'] = np.ptp(col_info[col_ind]['x_lims']) > 100
         col_info[col_ind]['n_matches'] = n_matches
         col_ind += 1
@@ -312,7 +312,7 @@ def plot_reg_residual(reg_transform: np.ndarray, transforms_plot: List[np.ndarra
     if len(col_info) == 0:
         raise ValueError("Not enough data to plot")
 
-    y0 = [np.linalg.norm(transforms_plot[i][:3, :]-reg_transform[:3,:]) for i in range(n_reg)]
+    y0 = [np.linalg.norm(transforms_plot[i][:3, :]-reg_transform[:3, :]) for i in range(n_reg)]
     y1 = [np.linalg.norm(transforms_plot[i][3] - reg_transform[3]) for i in range(n_reg)]
     if transform_no_reg is not None:
         y0_no_reg = np.linalg.norm(transform_no_reg[:3, :]-reg_transform[:3,:])
