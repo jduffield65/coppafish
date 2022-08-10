@@ -261,11 +261,12 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
         track: If `True` and one pixel, info about genes added at each step returned.
 
     Returns:
-        - gene_coefs - `float32 [n_pixels x n_genes]`.
+        gene_coefs - `float32 [n_pixels x n_genes]`.
             `gene_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm. Most are zero.
-        - background_coefs - `float32 [n_pixels x n_channels]`.
+        background_coefs - `float32 [n_pixels x n_channels]`.
             coefficient value for each background vector found for each pixel.
-        - track_info - dictionary containing info about genes added at each step returned if `track == True` -
+        track_info - dictionary containing info about genes added at each step returned if `track == True` -
+
             - `background_codes` - `float [n_channels x n_rounds x n_channels]`.
                 `background_codes[c]` is the background vector for channel `c` with L2 norm of 1.
             - `background_coefs` - `float [n_channels]`.

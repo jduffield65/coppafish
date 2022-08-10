@@ -16,3 +16,6 @@ This is for a 9 rounds x 9 channels QuadCam3D experiment.
 To run the software with config file "config_file.ini" from the command line, do:
 
 > python -m iss config_file.ini
+
+
+Website: https://jduffield65.github.io/iss_python/config_setup/

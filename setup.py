@@ -24,7 +24,8 @@ setup(
     install_requires=['jax', 'jaxlib', 'numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python',
                       'scikit-image', 'nd2', 'matplotlib', 'h5py', 'ipympl', 'distinctipy', 'napari'],
     package_data={'iss.setup': ['settings.default.ini', 'notebook_comments.json',
-                                'dye_camera_laser_raw_intensity.csv']},
+                                'dye_camera_laser_raw_intensity.csv'],
+                  'iss.plot.results_viewer.legend':['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

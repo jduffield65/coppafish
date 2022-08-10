@@ -134,6 +134,7 @@ def check_n_spots(nb: Notebook):
         nb: *Notebook* containing `find_spots` page.
 
     """
+    # TODO: show example of what error looks like in the docs
     config = nb.get_config()['find_spots']
     if nb.basic_info.is_3d:
         n_spots_warn = config['n_spots_warn_fraction'] * config['max_spots_3d'] * nb.basic_info.nz
