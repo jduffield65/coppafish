@@ -300,7 +300,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
             track_info = {'residual': np.zeros((max_genes+3, n_rounds, n_channels)),
                           'background_codes': None, 'background_coefs': None,
                           'inverse_var': np.zeros((max_genes+3, n_rounds, n_channels)),
-                          'coef': np.zeros((max_genes+3, n_genes)), 'dot_product': np.zeros(max_genes+3),
+                          'coef': np.zeros((max_genes+3, n_genes+n_channels)), 'dot_product': np.zeros(max_genes+3),
                           'gene_added': np.ones(max_genes+3, dtype=int) * -1}
             track_info['residual'][0] = pixel_colors[0]
         else:
@@ -367,11 +367,12 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
                     else:
                         track_info['gene_added'][i + 2] = i_added_genes
                     added_genes_fail = np.hstack((added_genes, i_added_genes[:, np.newaxis]))
+                    # Need to usee all_codes here to deal with case where the best gene is background
                     if weight_coef_fit:
                         residual_pixel_colors_fail, i_coefs_fail = \
-                            fit_coefs_weight(bled_codes, pixel_colors, added_genes_fail, np.sqrt(inverse_var))
+                            fit_coefs_weight(all_codes.T, pixel_colors, added_genes_fail, np.sqrt(inverse_var))
                     else:
-                        residual_pixel_colors_fail, i_coefs_fail = fit_coefs(bled_codes, pixel_colors, added_genes_fail)
+                        residual_pixel_colors_fail, i_coefs_fail = fit_coefs(all_codes.T, pixel_colors, added_genes_fail)
                     track_info['residual'][i + 2] = residual_pixel_colors_fail.reshape(n_rounds, n_channels)
                     track_info['coef'][i + 2][added_genes_fail] = i_coefs_fail
                     # Only save info where gene is actually added or for final case where not added.

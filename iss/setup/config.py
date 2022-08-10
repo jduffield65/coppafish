@@ -175,7 +175,9 @@ _options = {
             'gene_efficiency_n_iter': 'int',
             'gene_efficiency_score_thresh': 'number',
             'gene_efficiency_score_diff_thresh': 'number',
-            'gene_efficiency_intensity_thresh': 'maybe_number'
+            'gene_efficiency_intensity_thresh': 'maybe_number',
+            'alpha': 'number',
+            'beta': 'number'
         },
     'omp':
         {

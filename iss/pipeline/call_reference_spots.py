@@ -1,5 +1,5 @@
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
-    dot_product_score_no_weight, get_spot_intensity, fit_background, get_gene_efficiency
+    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
 import numpy as np
 from ..setup.notebook import NotebookPage
 from ..extract import scale
@@ -194,14 +194,20 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     n_spots, n_rounds_use, n_channels_use = spot_colors_use.shape
     dp_norm_shift = nbp.dp_norm_shift * np.sqrt(n_rounds_use)
 
+    # Down-weight round/channels with high background when compute dot product
+    alpha = config['alpha']
+    beta = config['beta']
+    background_codes = background_codes[crc_ind].reshape(n_channels_use, -1)
+    background_var = background_coef[:, nbp_basic.use_channels]**2 @ background_codes**2 * alpha + beta ** 2
+
     # find spot assignments to genes and gene efficiency
     n_iter = config['gene_efficiency_n_iter'] + 1
     pass_intensity_thresh = nbp_ref_spots.intensity > nbp.gene_efficiency_intensity_thresh
     use_ge_last = np.zeros(n_spots).astype(bool)
     bled_codes_ge_use = bled_codes_use.copy()
     for i in range(n_iter):
-        scores = np.asarray(dot_product_score_no_weight(spot_colors_use.reshape(n_spots, -1),
-                                                        bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift))
+        scores = np.asarray(dot_product_score(spot_colors_use.reshape(n_spots, -1),
+                                              bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift, 1/background_var))
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
         pass_score_thresh = spot_score > config['gene_efficiency_score_thresh']
@@ -235,8 +241,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     if config['gene_efficiency_n_iter'] > 0:
         # Compute score with final gene efficiency
-        scores = np.asarray(dot_product_score_no_weight(spot_colors_use.reshape(n_spots, -1),
-                                                        bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift))
+        scores = np.asarray(dot_product_score(spot_colors_use.reshape(n_spots, -1),
+                                              bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift, 1/background_var))
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
 
