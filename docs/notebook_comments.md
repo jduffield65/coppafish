@@ -413,7 +413,7 @@ register page contains the affine transforms to go from the ref round/channel to
 
 * **initial_shift**: *Numpy integer array [n_tiles x n_rounds x 3]*.
 
-	shift[t, r, :] is the yxz shift found that is applied to tile t, ref_round to take it to tile t, round r. Units: [yx_pixels, yx_pixels, z_pixels], [:, :, 2] = 0 if 2d. Same as shift in register_initial_debug page.
+	shift[t, r, :] is the yxz shift found that is applied to tile t, ref_round to take it to tile t, round r. Units: [yx_pixels, yx_pixels, z_pixels], [:, :, 2] = 0 if 2d. Same as shift in register_initial_debug page. DON'T KNOW WHY COPIED THIS - PROBABLY SHOULD REMOVE
 
 * **transform**: *Numpy float array [n_tiles x n_rounds x n_channels x 4 x 3]*.
 

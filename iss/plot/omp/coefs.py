@@ -1,4 +1,6 @@
-from ..call_spots import ColorPlotBase, view_dot_product, get_track_info
+from ..call_spots.spot_colors import ColorPlotBase
+from ..call_spots.dot_product import view_score
+from .track_fit import get_track_info
 from ...spot_colors.base import get_spot_colors
 from ...call_spots import omp_spot_score, get_spot_intensity
 from ...setup import Notebook
@@ -145,6 +147,8 @@ class view_omp_fit(ColorPlotBase):
                  max_genes: Optional[int] = None):
         """
         Diagnostic to run omp on a single pixel and see which genes fitted at which iteration.
+        Right-clicking on a particular bled code will cause iss.plot.call_spots.view_score
+        to run, indicating how the dot product calculation for that iteration was performed.
 
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
@@ -247,5 +251,5 @@ class view_omp_fit(ColorPlotBase):
             for i in range(n_iters):
                 iter_x_coord[i] = np.mean(self.ax[i+1].bbox.extents[:3:2])
             iter = np.argmin(np.abs(iter_x_coord - x_click))
-            view_dot_product(self.nb, self.spot_no, self.method, iter=iter,
-                             omp_fit_info=[self.track_info, self.bled_codes, self.dp_thresh])
+            view_score(self.nb, self.spot_no, self.method, iter=iter,
+                       omp_fit_info=[self.track_info, self.bled_codes, self.dp_thresh])

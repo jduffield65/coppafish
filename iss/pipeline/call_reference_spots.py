@@ -131,6 +131,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         if config['background_weight_shift'] is None:
             config['background_weight_shift'] = float(round_any(nbp.median_abs_intensity,
                                                                 config['norm_shift_precision'], 'ceil'))
+        # intensity thresh is just a very low threshold, would basically be the same if set to 0
+        # but found it to be slightly better on ground truth
         if config['gene_efficiency_intensity_thresh'] is None:
             config['gene_efficiency_intensity_thresh'] = \
                 float(round_any(nbp.median_abs_intensity / config['norm_shift_to_intensity_scale'],

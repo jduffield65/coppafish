@@ -3,3 +3,6 @@
 
 ## `view_omp_fit`
 ### ::: iss.plot.omp.coefs.view_omp_fit.__init__
+
+## `get_track_info`
+### ::: iss.plot.omp.track_fit.get_track_info

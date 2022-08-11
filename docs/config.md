@@ -839,6 +839,18 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 	Default: `None`
 
+* **alpha**: *number*.
+
+	Parameter for fitting_standard_deviation. By how much to increase variance as genes added. Set to 0 to get regular dot product TODO: make this comment better 
+
+	Default: `120`
+
+* **beta**: *number*.
+
+	Parameter for fitting_standard_deviation. The variance with no genes added (`coef=0`) is `beta**2`. 
+
+	Default: `1`
+
 ## omp
 The *omp* section contains parameters which are use to carry out orthogonal matching pursuit (omp) on every pixel, as well as how to convert the results of this to spot locations.
 

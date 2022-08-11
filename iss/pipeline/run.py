@@ -5,30 +5,41 @@ from . import set_basic_info, extract_and_filter, find_spots, stitch, register_i
 from ..find_spots import check_n_spots
 from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
-from ..call_spots import get_non_duplicate
+from ..call_spots import get_non_duplicate, quality_threshold
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import sparse
+from scipy import sparse, stats
 
 
-def run_pipeline(config_file: str) -> setup.Notebook:
+def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.Notebook:
     """
     Bridge function to run every step of the pipeline.
 
     Args:
         config_file: Path to config file.
+        overwrite_ref_spots: Only used if *Notebook* contains *ref_spots* but not *call_spots* page.
+            If `True`, the variables:
+
+            * `gene_no`
+            * `score`
+            * `score_diff`
+            * `intensity`
+
+            in `nb.ref_spots` will be overwritten if they exist. If this is `False`, they will only be overwritten
+            if they are all set to `None`, otherwise an error will occur.
 
     Returns:
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
-    # spot_no = 371046
+    # spot_no = 2783  # good dot product spot_no
+    # spot_no = 371046  # good omp dot product spot_no
     run_extract(nb)
     run_find_spots(nb)
     run_stitch(nb)
     run_register(nb)
-    run_reference_spots(nb)
+    run_reference_spots(nb, overwrite_ref_spots)
     run_omp(nb)
     return nb
 
@@ -170,7 +181,7 @@ def run_register(nb: setup.Notebook):
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_reference_spots(nb: setup.Notebook):
+def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
     """
     This runs the `reference_spots` step of the pipeline to get the intensity of each spot on the reference
     round/channel in each imaging round/channel. The `call_spots` step of the pipeline is then run to produce the
@@ -182,7 +193,16 @@ def run_reference_spots(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `stitch` and `register` pages.
+        overwrite_ref_spots: Only used if *Notebook* contains *ref_spots* but not *call_spots* page.
+            If `True`, the variables:
 
+            * `gene_no`
+            * `score`
+            * `score_diff`
+            * `intensity`
+
+            in `nb.ref_spots` will be overwritten if they exist. If this is `False`, they will only be overwritten
+            if they are all set to `None`, otherwise an error will occur.
     """
     if not nb.has_page('ref_spots'):
         nbp = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
@@ -197,9 +217,9 @@ def run_reference_spots(nb: setup.Notebook):
             raise ValueError(f"The code_book file:\n{nb.file_names.code_book}\ndoes not exist. "
                              f"Change it in the config file and re-run.")
         config = nb.get_config()
-        # nb.ref_spots.finalized = False  # so can set gene_no, score, score_diff, intensity.
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
-                                                  nb.extract.hist_values, nb.extract.hist_counts, nb.register.transform)
+                                                  nb.extract.hist_values, nb.extract.hist_counts,
+                                                  nb.register.transform, overwrite_ref_spots)
         nb += nbp
         # only raise error after saving to notebook if spot_colors have nan in wrong places.
         utils.errors.check_color_nan(nb.ref_spots.colors, nb.basic_info)
@@ -222,8 +242,10 @@ def run_omp(nb: setup.Notebook):
     """
     if not nb.has_page("omp"):
         config = nb.get_config()
+        # Use tile with most spots on to find spot shape in omp
+        tile_most_spots = int(stats.mode(nb.ref_spots.tile[quality_threshold(nb, 'ref')])[0][0])
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
-                             nb.stitch.tile_origin, nb.register.transform)
+                             nb.stitch.tile_origin, nb.register.transform, tile_most_spots)
         nb += nbp
 
         # Update omp_info files after omp notebook page saved into notebook

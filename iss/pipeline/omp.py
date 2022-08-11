@@ -9,6 +9,7 @@ from .. import omp
 import os
 import warnings
 from scipy import sparse
+from typing import Optional
 try:
     import jax.numpy as jnp
 except ImportError:
@@ -18,7 +19,7 @@ except ImportError:
 
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
-                   transform: np.ndarray) -> NotebookPage:
+                   transform: np.ndarray, shape_tile: Optional[int]) -> NotebookPage:
     """
     This runs orthogonal matching pursuit (omp) on every pixel to determine a coefficient for each gene at each pixel.
 
@@ -40,6 +41,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
             tile `t`, round `r`, channel `c`.
             This is saved in the register notebook page i.e. `nb.register.transform`.
+        shape_tile: Tile to use to compute the expected shape of a spot in the gene coefficient images.
+            Should be the tile, for which the most spots where found in the `call_reference_spots` step.
+            If `None`, will be set to the centre tile.
 
     Returns:
         `NotebookPage[omp]` - Page contains gene assignments and info for spots using omp.
@@ -91,11 +95,13 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
     use_tiles = np.array(nbp_basic.use_tiles.copy())
     if not os.path.isfile(nbp_file.omp_spot_shape):
-        # TODO: set to tile with most spots in call_ref_spots
-        # Set tile order so do central tile first because better to compute spot_shape from central tile.
-        t_centre = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
-        t_centre_ind = np.where(np.array(nbp_basic.use_tiles) == t_centre)[0][0]
-        use_tiles[0], use_tiles[t_centre_ind] = use_tiles[t_centre_ind], use_tiles[0]
+        # Set tile order so do shape_tile first to compute spot_shape from it.
+        if shape_tile is None:
+            shape_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+        if shape_tile not in nbp_basic.use_tiles:
+            raise ValueError(f"shape_tile, {shape_tile} is not in nbp_basic.use_tiles, {nbp_basic.use_tiles}")
+        shape_tile_ind = np.where(np.array(nbp_basic.use_tiles) == shape_tile)[0][0]
+        use_tiles[0], use_tiles[shape_tile_ind] = use_tiles[shape_tile_ind], use_tiles[0]
         spot_shape = None
     else:
         nbp.shape_tile = None

@@ -10,8 +10,5 @@
 ## `view_spot`
 ### ::: iss.plot.call_spots.spot_colors.view_spot.__init__
 
-## `view_dot_product`
-### ::: iss.plot.call_spots.dot_product.view_dot_product.__init__
-
-## `get_track_info`
-### ::: iss.plot.call_spots.dot_product.get_track_info
+## `view_score`
+### ::: iss.plot.call_spots.dot_product.view_score.__init__
