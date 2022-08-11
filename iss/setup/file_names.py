@@ -72,13 +72,19 @@ def set_file_names(nb, nbp):
     nbp.pciseq = [os.path.join(config['output_dir'], val + '.csv') for val in config['pciseq']]
 
     # add dapi channel and anchor channel to notebook even if set to None.
-    config['big_dapi_image'] = config['big_dapi_image'].replace('.npz', '')
-    if nb.basic_info.dapi_channel is None:
+    if config['big_dapi_image'] is None:
         nbp.big_dapi_image = None
     else:
-        nbp.big_dapi_image = os.path.join(config['output_dir'], config['big_dapi_image'] + '.npz')
-    config['big_anchor_image'] = config['big_anchor_image'].replace('.npz', '')
-    nbp.big_anchor_image = os.path.join(config['output_dir'], config['big_anchor_image'] + '.npz')
+        config['big_dapi_image'] = config['big_dapi_image'].replace('.npz', '')
+        if nb.basic_info.dapi_channel is None:
+            nbp.big_dapi_image = None
+        else:
+            nbp.big_dapi_image = os.path.join(config['output_dir'], config['big_dapi_image'] + '.npz')
+    if config['big_anchor_image'] is None:
+        nbp.big_anchor_image = None
+    else:
+        config['big_anchor_image'] = config['big_anchor_image'].replace('.npz', '')
+        nbp.big_anchor_image = os.path.join(config['output_dir'], config['big_anchor_image'] + '.npz')
 
     if config['anchor'] is not None:
         round_files = config['round'] + [config['anchor']]

@@ -102,15 +102,15 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 	Default: `omp_spot_coef`
 
-* **big_dapi_image**: *str*.
+* **big_dapi_image**: *maybe_str*.
 
-	npz file in *output_dir* where stitched DAPI image is saved. If it does not exist, it will be saved if `basic_info['dapi_channel']` is not `None`. 
+	npz file in *output_dir* where stitched DAPI image is saved. If it does not exist, it will be saved if `basic_info['dapi_channel']` is not `None`. Leave blank to not save stitched anchor 
 
 	Default: `dapi_image`
 
-* **big_anchor_image**: *str*.
+* **big_anchor_image**: *maybe_str*.
 
-	npz file in *output_dir* where stitched image of `ref_round`/`ref_channel` is saved. If it does not exist, it will be saved. 
+	npz file in *output_dir* where stitched image of `ref_round`/`ref_channel` is saved. If it does not exist, it will be saved. Leave blank to not save stitched anchor 
 
 	Default: `anchor_image`
 
@@ -888,7 +888,7 @@ The *omp* section contains parameters which are use to carry out orthogonal matc
 
 	Max allowed value of `initial_intensity_thresh`. 
 
-	Default: `0.5`
+	Default: `0.2`
 
 * **initial_intensity_precision**: *number*.
 
