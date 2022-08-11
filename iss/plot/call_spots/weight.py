@@ -284,7 +284,7 @@ class view_weight:
         self.update()
 
     def show_background(self, event):
-        # If click on background plot, it will show background calculation for the current iteration
+        # If click on background plot, it will show background calculation
         x_click = event.x
         y_click = event.y
         if y_click < self.ax[0].bbox.extents[1] and x_click < self.ax[1].bbox.extents[0]:

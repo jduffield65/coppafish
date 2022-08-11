@@ -21,12 +21,10 @@ class view_background:
         """
         This shows how the background coefficients were calculated.
 
-        The bottom row shows the contribution from background and genes to the variance.
+        The weighted dot product is equal to weight multiplied by dot product.
+        Coefficient for background gene c is the sum over all rounds of weighted dot product in channel c.
 
-        The iteration as well as the alpha and beta parameters used to compute the weight can be changed through
-        the text boxes.
-
-        If the weight plot is clicked on, the `view_weight` plot will open for the current iteration.
+        Also shows residual after removing background.
 
         Args:
             nb: *Notebook* containing at least the *call_spots* and *ref_spots* pages.

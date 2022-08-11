@@ -112,6 +112,7 @@ nav:
             - Dot Product: code/call_spots/dot_product.md
             - Quality Check: code/call_spots/qual_check.md
         - OMP:
+            - Base: code/omp/base.md
             - Coefficients: code/omp/coefs.md
             - Spots: code/omp/spots.md
         - Pipeline:

@@ -1,14 +1,14 @@
 from ..call_spots.spot_colors import ColorPlotBase
 from ..call_spots.dot_product import view_score
+from ..call_spots.background import view_background
 from .track_fit import get_track_info
 from ...spot_colors.base import get_spot_colors
 from ...call_spots import omp_spot_score, get_spot_intensity
 from ...setup import Notebook
-from ... import utils
 from ...omp.coefs import get_all_coefs
+from ...omp.base import get_initial_intensity_thresh
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 from typing import Optional
 plt.style.use('dark_background')
 
@@ -26,10 +26,6 @@ class view_omp(ColorPlotBase):
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
             im_size: Radius of image to be plotted for each gene.
         """
-        if not os.path.isfile(str(nb._config_file)):
-            raise ValueError(f'Need access to config_file to run this diagnostic.\n'
-                             f'But nb._config_file = {str(nb._config_file)} does not exist.')
-
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)]
 
@@ -65,14 +61,7 @@ class view_omp(ColorPlotBase):
         if nb.has_page('omp'):
             initial_intensity_thresh = nb.omp.initial_intensity_thresh
         else:
-            initial_intensity_thresh = config['initial_intensity_thresh']
-            if initial_intensity_thresh is None:
-                initial_intensity_thresh = \
-                    utils.round_any(nb.call_spots.median_abs_intensity * config['initial_intensity_thresh_auto_param'],
-                                    config['initial_intensity_precision'])
-            initial_intensity_thresh = \
-                float(np.clip(initial_intensity_thresh, config['initial_intensity_thresh_min'],
-                              config['initial_intensity_thresh_max']))
+            initial_intensity_thresh = get_initial_intensity_thresh(config, nb.call_spots)
 
         keep = spot_intensity > initial_intensity_thresh
         bled_codes = nb.call_spots.bled_codes_ge
@@ -148,8 +137,11 @@ class view_omp_fit(ColorPlotBase):
                  max_genes: Optional[int] = None):
         """
         Diagnostic to run omp on a single pixel and see which genes fitted at which iteration.
-        Right-clicking on a particular bled code will cause iss.plot.call_spots.view_score
+        Right-clicking on a particular bled code will cause iss.plot.call_spots.dot_product.view_score
         to run, indicating how the dot product calculation for that iteration was performed.
+
+        Left-clicking on background image will cause iss.plot.call_spots.background.view_background to run,
+        indicating how the dot product calculation for performed.
 
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
@@ -238,15 +230,15 @@ class view_omp_fit(ColorPlotBase):
                     self.ax[k].add_patch(rectangle)
 
         self.change_norm()
-
-        self.fig.canvas.mpl_connect('button_press_event', self.show_dot_product)
+        self.fig.canvas.mpl_connect('button_press_event', self.show_calc)
         self.track_info = track_info
         plt.show()
 
-    def show_dot_product(self, event):
-        # If right click anywhere, it will show dot product calculation for the iteration clicked on.
+    def show_calc(self, event):
+        x_click = event.x
+        y_click = event.y
         if event.button.name == 'RIGHT':
-            x_click = event.x
+            # If right click anywhere, it will show dot product calculation for the iteration clicked on.
             n_iters = len(self.track_info['gene_added']) - 2
             iter_x_coord = np.zeros(n_iters)
             for i in range(n_iters):
@@ -254,3 +246,8 @@ class view_omp_fit(ColorPlotBase):
             iter = np.argmin(np.abs(iter_x_coord - x_click))
             view_score(self.nb, self.spot_no, self.fitting_method, iter=iter,
                        omp_fit_info=[self.track_info, self.bled_codes, self.dp_thresh])
+        else:
+            # If click on background plot, it will show background calculation
+            if y_click < self.ax[0].bbox.extents[1] and x_click < self.ax[1].bbox.extents[0]:
+                view_background(self.nb, self.spot_no, self.fitting_method,
+                                track_info=[self.track_info, None])

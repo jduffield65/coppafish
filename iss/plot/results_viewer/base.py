@@ -91,7 +91,7 @@ class iss_plot:
                     file_name = nb.file_names.big_anchor_image
                 else:
                     file_name = background_image
-                if os.path.isfile(file_name):
+                if file_name is not None and os.path.isfile(file_name):
                     background_image = np.load(file_name)
                     if file_name.endswith('.npz'):
                         # Assume image is first array if .npz file

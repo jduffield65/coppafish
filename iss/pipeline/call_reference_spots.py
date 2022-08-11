@@ -114,40 +114,37 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # Get norm_shift and intensity_thresh from middle tile/ z-plane average intensity
     # This is because these variables are all a small fraction of a spot_color L2 norm in one round.
     # Hence use average pixel as example of low intensity spot.
-    if any([config['dp_norm_shift'] is None, config['background_weight_shift'] is None,
-            config['gene_efficiency_intensity_thresh'] is None]):
-        # get central tile
-        nbp.norm_shift_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
-        if nbp_basic.is_3d:
-            nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
-        else:
-            nbp.norm_shift_z = 0
-        pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
-                                       nbp.norm_shift_tile, transform, nbp_file, nbp_basic, return_in_bounds=True)[0]
-        pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
-        nbp.median_abs_intensity = float(np.median(pixel_intensity))
-        if config['dp_norm_shift'] is None:
-            config['dp_norm_shift'] = float(round_any(nbp.median_abs_intensity, config['norm_shift_precision'], 'ceil'))
-        if config['background_weight_shift'] is None:
-            config['background_weight_shift'] = float(round_any(nbp.median_abs_intensity,
-                                                                config['norm_shift_precision'], 'ceil'))
-        # intensity thresh is just a very low threshold, would basically be the same if set to 0
-        # but found it to be slightly better on ground truth
-        if config['gene_efficiency_intensity_thresh'] is None:
-            config['gene_efficiency_intensity_thresh'] = \
-                float(round_any(nbp.median_abs_intensity / config['norm_shift_to_intensity_scale'],
-                                config['norm_shift_precision']/config['norm_shift_to_intensity_scale'], 'ceil'))
+    # get central tile
+    nbp.norm_shift_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+    if nbp_basic.is_3d:
+        nbp.norm_shift_z = int(np.floor(nbp_basic.nz / 2))  # central z-plane to get info from.
     else:
-        nbp.norm_shift_tile = None
-        nbp.norm_shift_z = None
-        nbp.median_abs_intensity = None
+        nbp.norm_shift_z = 0
+    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
+                                   nbp.norm_shift_tile, transform, nbp_file, nbp_basic, return_in_bounds=True)[0]
+    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(100))
+    if config['background_weight_shift'] is None:
+        # Set to median absolute pixel intensity
+        config['background_weight_shift'] = float(round_any(nbp.abs_intensity_percentile[50],
+                                                            config['norm_shift_precision'], 'ceil'))
+    median_round_l2_norm = np.median(np.linalg.norm(pixel_colors / color_norm_factor[rc_ind], axis=2))
+    if config['dp_norm_shift'] is None:
+        config['dp_norm_shift'] = float(round_any(median_round_l2_norm, config['norm_shift_precision']))
+    # intensity thresh is just a very low threshold, would basically be the same if set to 0
+    # but found it to be slightly better on ground truth
+    pixel_intensity = get_spot_intensity(pixel_colors / color_norm_factor[rc_ind])
+    if config['gene_efficiency_intensity_thresh'] is None:
+        config['gene_efficiency_intensity_thresh'] = \
+            float(round_any(np.percentile(pixel_intensity, config['gene_efficiency_intensity_thresh_percentile']),
+                            config['gene_efficiency_intensity_thresh_precision']))
     nbp.dp_norm_shift = float(np.clip(config['dp_norm_shift'], config['norm_shift_min'], config['norm_shift_max']))
     nbp.background_weight_shift = float(np.clip(config['background_weight_shift'],
                                                 config['norm_shift_min'], config['norm_shift_max']))
     nbp.gene_efficiency_intensity_thresh = \
         float(np.clip(config['gene_efficiency_intensity_thresh'],
-                      config['norm_shift_min']/config['norm_shift_to_intensity_scale'],
-                      config['norm_shift_max']/config['norm_shift_to_intensity_scale']))
+                      config['gene_efficiency_intensity_thresh_min'],
+                      config['gene_efficiency_intensity_thresh_max']))
 
     # get bleed matrix
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]

@@ -85,13 +85,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         use_z = np.arange(n_z)
 
     # determine initial_intensity_thresh from average intensity over all pixels on central z-plane.
-    if config['initial_intensity_thresh'] is None:
-        config['initial_intensity_thresh'] = \
-            utils.round_any(nbp_call_spots.median_abs_intensity * config['initial_intensity_thresh_auto_param'],
-                            config['initial_intensity_precision'])
-    nbp.initial_intensity_thresh = \
-        float(np.clip(config['initial_intensity_thresh'], config['initial_intensity_thresh_min'],
-                      config['initial_intensity_thresh_max']))
+    nbp.initial_intensity_thresh = omp.get_initial_intensity_thresh(config, nbp_call_spots)
 
     use_tiles = np.array(nbp_basic.use_tiles.copy())
     if not os.path.isfile(nbp_file.omp_spot_shape):
