@@ -13,7 +13,7 @@ plt.style.use('dark_background')
 class view_score:
     intense_gene_thresh = 0.2   # Crosshair will be plotted for rounds/channels where gene
     # bled code more intense than this
-    check_tol = 1e-4  # Weights and dot products are deamed the same if closer than this.
+    check_tol = 1e-4  # Weights and dot products are deemed the same if closer than this.
     weight_plot_ind = 4  # When click on weight plot, will open view_weight plot
 
     def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', g: Optional[int] = None,
@@ -121,7 +121,7 @@ class view_score:
         self.add_rectangles()
 
         # Text boxes to change parameters
-        text_box_labels = ['Gene', 'Iteration', r'$\alpha$', r'$\beta$', r'dp_norm, $\lambda_d$']
+        text_box_labels = ['Gene', 'Iteration', r'$\alpha$', r'$\beta$', r'dp_shift, $\lambda_d$']
         text_box_values = [self.g, self.iter, self.alpha, self.beta, self.dp_norm_shift]
         text_box_funcs = [self.update_g, self.update_iter, self.update_alpha, self.update_beta,
                           self.update_dp_norm_shift]

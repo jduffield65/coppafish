@@ -15,3 +15,6 @@
 
 ## `view_weight`
 ### ::: iss.plot.call_spots.weight.view_weight.__init__
+
+## `view_background`
+### ::: iss.plot.call_spots.background.view_background.__init__

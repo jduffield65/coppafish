@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox
 from ...setup import Notebook
 from ..omp.track_fit import get_track_info
+from .background import view_background
 from typing import Optional, List
 import warnings
 plt.style.use('dark_background')
@@ -25,6 +26,8 @@ class view_weight:
 
         The gene/iteration as well as the parameters used to compute the dot product score can be changed
         with the text boxes.
+
+        Click on background plot to show how it is calculated
 
 
         Args:
@@ -85,11 +88,15 @@ class view_weight:
         self.vmax = None
         self.get_cax_lim()
         n_rows = 2
-        n_cols = np.max([self.n_plots_top_row, self.n_iter])
+        n_cols = int(np.max([self.n_plots_top_row, self.n_iter]))
         self.fig = plt.figure(figsize=(16, 7))
         self.ax = []
         for i in range(self.n_plots):
-            self.ax += [self.fig.add_subplot(n_rows, n_cols, i + 1)]
+            if i >= self.n_plots_top_row:
+                # So goes to next row
+                self.ax += [self.fig.add_subplot(n_rows, n_cols, n_cols + i + 1 - self.n_plots_top_row)]
+            else:
+                self.ax += [self.fig.add_subplot(n_rows, n_cols, i + 1)]
         # Y and X axis are the same for all plots hence share
         self.ax[0].get_shared_x_axes().join(self.ax[0], *self.ax[1:])
         self.ax[0].get_shared_y_axes().join(self.ax[0], *self.ax[1:])
@@ -121,6 +128,9 @@ class view_weight:
             label.set_horizontalalignment('center')
             self.text_boxes[i].on_submit(text_box_funcs[i])
 
+        self.nb = nb
+        self.method = method
+        self.fig.canvas.mpl_connect('button_press_event', self.show_background)
         plt.show()
 
     def update_data(self):
@@ -142,8 +152,8 @@ class view_weight:
 
         self.im_data = [self.spot_color.T, residual.T, variance.T, weight.T]
 
-        # Add the background kmage
-        background_image = np.zeros((self.n_rounds_use, self.n_rounds_use))
+        # Add the background image
+        background_image = np.zeros((self.n_rounds_use, self.n_channels_use))
         for c in range(self.n_channels_use):
             background_image += self.track_info['background_codes'][c] * self.track_info['background_coefs'][c]
         self.im_data += [background_image.T]
@@ -199,8 +209,8 @@ class view_weight:
                       r"$\sigma^2_{{si}_{rc}} = \beta^2 + \alpha\sum_g\mu^2_{sig}b^2_{g_{rc}}$",
                       r"$\omega^2_{{si}_{rc}} = n_{r}n_{c}"
                       r"\frac{\sigma^{-2}_{{si}_{rc}}}{\sum_{rc}\sigma^{-2}_{{si}_{rc}}}$",
-                      r"Background, $\sum_{g=" + str(self.n_genes) + "}^{" + str(self.n_genes_all - 1) +
-                      "}\mu_{sig}\mathbf{b}_g$"]
+                      r"Background, $\mathbf{B_s}=\sum_{g=" + str(self.n_genes) + "}^{" + str(self.n_genes_all - 1) +
+                      "}\mu_{sg}\mathbf{b}_g$"]
         for i in range(self.n_iter - 1):
             g = self.track_info['gene_added'][i + 2]
             gene_name = self.gene_names[g]
@@ -272,3 +282,11 @@ class view_weight:
         self.beta = beta
         self.text_boxes[2].set_val(beta)
         self.update()
+
+    def show_background(self, event):
+        # If click on background plot, it will show background calculation for the current iteration
+        x_click = event.x
+        y_click = event.y
+        if y_click < self.ax[0].bbox.extents[1] and x_click < self.ax[1].bbox.extents[0]:
+            view_background(self.nb, self.spot_no, self.method,
+                            track_info=[self.track_info, self.vmax[0]])
