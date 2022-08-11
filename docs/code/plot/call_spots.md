@@ -12,3 +12,6 @@
 
 ## `view_score`
 ### ::: iss.plot.call_spots.dot_product.view_score.__init__
+
+## `view_weight`
+### ::: iss.plot.call_spots.weight.view_weight.__init__

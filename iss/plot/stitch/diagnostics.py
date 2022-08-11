@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Optional
 from ...setup import Notebook
+plt.style.use('dark_background')
 
 
 def shift_info_plot(shift_info: dict, title: Optional[str] = None, score_plot_thresh: int = 0,

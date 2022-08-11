@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from ...setup import Notebook
 from .spot_colors import ColorPlotBase
+plt.style.use('dark_background')
 
 
 class view_bleed_matrix(ColorPlotBase):

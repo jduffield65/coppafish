@@ -7,6 +7,7 @@ from ...spot_colors.base import get_spot_colors
 import matplotlib
 from typing import List, Optional, Tuple, Union
 matplotlib.use('qtagg')
+plt.style.use('dark_background')
 
 
 class ColorPlotBase:
@@ -211,7 +212,7 @@ class view_codes(ColorPlotBase):
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
                                                                  nb.basic_info.use_channels)].transpose()
         super().__init__([spot_color, gene_color], color_norm)
-        self.ax[0].set_title(f'Spot {spot_no}: match {np.round(spot_score, decimals=2)} '
+        self.ax[0].set_title(f'Spot {spot_no}: match {str(np.around(spot_score, 2))} '
                              f'to {gene_name}')
         self.ax[1].set_title(f'Predicted code for {gene_name}')
         self.ax[0].set_yticks(ticks=np.arange(self.im_data[0].shape[0]), labels=nb.basic_info.use_channels)

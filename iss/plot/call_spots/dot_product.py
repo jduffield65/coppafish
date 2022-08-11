@@ -4,24 +4,30 @@ from matplotlib.widgets import TextBox
 from ..omp.track_fit import get_track_info
 from ...setup import Notebook
 from ...utils.base import round_any
+from .weight import view_weight
 from typing import Optional, List
 import warnings
+plt.style.use('dark_background')
 
 
 class view_score:
     intense_gene_thresh = 0.2   # Crosshair will be plotted for rounds/channels where gene
     # bled code more intense than this
+    check_tol = 1e-4  # Weights and dot products are deamed the same if closer than this.
+    weight_plot_ind = 4  # When click on weight plot, will open view_weight plot
 
     def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', g: Optional[int] = None,
                  iter: int = 0, omp_fit_info: Optional[List] = None, check_weight: bool = True):
         """
-        This produces 7 plots which show how the dot product score was calculated.
-        The final dot product score is the sum of all the values in the weighted dot product image (bottom right)
-        and is indicated in the title to this image.
+        This produces 4 plots on the first row, showing spot_color, residual, variance and weight squared (basically
+        the normalised inverse variance).
 
-        The gene/iteration as well as the parameters used to compute the dot product score can be changed
-        with the text boxes.
+        The bottom row shows the contribution from background and genes to the variance.
 
+        The iteration as well as the alpha and beta parameters used to compute the weight can be changed through
+        the text boxes.
+
+        If the weight plot is clicked on, the `view_weight` plot will open for the current iteration.
 
         Args:
             nb: *Notebook* containing at least the *call_spots* and *ref_spots* pages.
@@ -71,7 +77,6 @@ class view_score:
         self.beta = config[config_name]['beta']
         self.dp_norm_shift = nb.call_spots.dp_norm_shift
         self.check_weight = check_weight
-        self.check_tol = 1e-4
 
         self.n_iter = self.track_info['residual'].shape[0] - 2  # first two indices in track is not added gene
         if iter >= self.n_iter or iter < 0:
@@ -115,8 +120,9 @@ class view_score:
         self.set_titles()
         self.add_rectangles()
 
+        # Text boxes to change parameters
         text_box_labels = ['Gene', 'Iteration', r'$\alpha$', r'$\beta$', r'dp_norm, $\lambda_d$']
-        text_box_values = [self.g, self.iter, int(self.alpha), self.beta, self.dp_norm_shift]
+        text_box_values = [self.g, self.iter, self.alpha, self.beta, self.dp_norm_shift]
         text_box_funcs = [self.update_g, self.update_iter, self.update_alpha, self.update_beta,
                           self.update_dp_norm_shift]
         self.text_boxes = [None] * len(text_box_labels)
@@ -134,6 +140,10 @@ class view_score:
             label.set_horizontalalignment('center')
             self.text_boxes[i].on_submit(text_box_funcs[i])
 
+        # Make so if click on weight plot, it opens view_weight
+        self.nb = nb
+        self.method = method
+        self.fig.canvas.mpl_connect('button_press_event', self.show_weight)
         plt.show()
 
     def update_data(self):
@@ -267,10 +277,11 @@ class view_score:
         else:
             title_extra = " "
         plt.suptitle(f"Dot Product Calculation for{title_extra}Gene {self.g}, {self.gene_names[self.g]}, at iteration "
-                     f"{self.iter} of OMP for spot {self.spot_no}", x=(self.subplot_adjust[0] + self.subplot_adjust[1]) / 2)
+                     f"{self.iter} of OMP for spot {self.spot_no}",
+                     x=(self.subplot_adjust[0] + self.subplot_adjust[1]) / 2)
 
     def add_rectangles(self):
-        intense_gene_cr = np.where(self.im_data[3] > self.intense_gene_thresh)
+        intense_gene_cr = np.where(np.abs(self.im_data[3]) > self.intense_gene_thresh)
         for i in [0, 1, 2, 3, 5, 6]:
             [p.remove() for p in reversed(self.ax[i].patches)]  # remove current rectangles
             for j in range(len(intense_gene_cr[0])):
@@ -353,3 +364,15 @@ class view_score:
         self.dp_norm_shift = dp_norm_shift
         self.text_boxes[4].set_val(dp_norm_shift)
         self.update()
+
+    def show_weight(self, event):
+        # If click on weight plot, it will show weight calculation for the current iteration
+        x_click = event.x
+        n_iters = len(self.track_info['gene_added']) - 2
+        iter_x_coord = np.zeros(len(self.ax))
+        for i in range(len(self.ax)):
+            iter_x_coord[i] = np.mean(self.ax[i].bbox.extents[:3:2])
+        plot_ind = int(np.argmin(np.abs(iter_x_coord - x_click)))
+        if plot_ind == self.weight_plot_ind:
+            view_weight(self.nb, self.spot_no, self.method, iter=self.iter,
+                        score_info=[self.track_info, self.bled_codes[:self.n_genes], self.vmax[4]])

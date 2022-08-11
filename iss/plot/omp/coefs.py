@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from typing import Optional
+plt.style.use('dark_background')
 
 
 class view_omp(ColorPlotBase):
@@ -165,7 +166,7 @@ class view_omp_fit(ColorPlotBase):
         self.bled_codes = bled_codes
         self.dp_thresh = dp_thresh
         self.spot_no = spot_no
-        self.method = method
+        self.fitting_method = method
         n_genes, n_use_rounds, n_use_channels = bled_codes.shape
 
         n_residual_images = track_info['residual'].shape[0]
@@ -251,5 +252,5 @@ class view_omp_fit(ColorPlotBase):
             for i in range(n_iters):
                 iter_x_coord[i] = np.mean(self.ax[i+1].bbox.extents[:3:2])
             iter = np.argmin(np.abs(iter_x_coord - x_click))
-            view_score(self.nb, self.spot_no, self.method, iter=iter,
+            view_score(self.nb, self.spot_no, self.fitting_method, iter=iter,
                        omp_fit_info=[self.track_info, self.bled_codes, self.dp_thresh])
