@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from ...call_spots.qual_check import quality_threshold
 from .legend import iss_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot
-from ...call_spots import omp_spot_score
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity
+from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
 from ...setup import Notebook
@@ -199,9 +199,8 @@ class iss_plot:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        if config['intensity'] is None:
-            config['intensity'] = nb.call_spots.gene_efficiency_intensity_thresh
-        self.intensity_thresh_slider.setValue(config['intensity'])
+        intensity_thresh = get_intensity_thresh(nb)
+        self.intensity_thresh_slider.setValue(intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
         # On release of slider, genes shown will change
@@ -439,6 +438,12 @@ class iss_plot:
             spot_no = self.get_selected_spot()
             if spot_no is not None:
                 view_score(self.nb, spot_no, self.method_buttons.method)
+
+        @self.viewer.bind_key('Shift-i')
+        def call_to_view_omp_score(viewer):
+            spot_no = self.get_selected_spot()
+            if spot_no is not None:
+                view_intensity(self.nb, spot_no, self.method_buttons.method)
 
         @self.viewer.bind_key('o')
         def call_to_view_omp(viewer):

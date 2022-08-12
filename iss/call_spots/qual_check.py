@@ -50,12 +50,32 @@ def omp_spot_score(nbp: NotebookPage, score_multiplier: float,
     return score
 
 
+def get_intensity_thresh(nb: Notebook) -> float:
+    """
+    Gets threshold for intensity from parameters in `config file` or Notebook.
+
+    Args:
+        nb: Notebook containing at least the `call_spots` page.
+
+    Returns:
+        intensity threshold
+    """
+    if nb.has_page('thresholds'):
+        intensity_thresh = nb.thresholds.intensity
+    else:
+        config = nb.get_config()['thresholds']
+        intensity_thresh = config['intensity']
+        if intensity_thresh is None:
+            intensity_thresh = nb.call_spots.gene_efficiency_intensity_thresh
+    return intensity_thresh
+
+
 def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
     """
     Indicates which spots pass both the score and intensity quality thresholding.
 
     Args:
-        nb: Notebook containing at least the ref_spots page.
+        nb: Notebook containing at least the `ref_spots` page.
         method: `'ref'` or `'omp'` indicating which spots to consider.
 
     Returns:
@@ -64,8 +84,8 @@ def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
     """
     if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
         raise ValueError(f"method must be 'omp' or 'anchor' but {method} given.")
+    intensity_thresh = get_intensity_thresh(nb)
     if nb.has_page('thresholds'):
-        intensity_thresh = nb.thresholds.intensity
         if method.lower() == 'omp':
             score_thresh = nb.thresholds.score_omp
             score_multiplier = nb.thresholds.score_omp_multiplier
@@ -73,9 +93,6 @@ def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
             score_thresh = nb.thresholds.score_ref
     else:
         config = nb.get_config()['thresholds']
-        intensity_thresh = config['intensity']
-        if intensity_thresh is None:
-            intensity_thresh = nb.call_spots.gene_efficiency_intensity_thresh
         if method.lower() == 'omp':
             score_thresh = config['score_omp']
             score_multiplier = config['score_omp_multiplier']

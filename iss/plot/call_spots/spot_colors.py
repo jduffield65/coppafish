@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button, RangeSlider
-from ...call_spots import omp_spot_score
+from ...call_spots import omp_spot_score, get_intensity_thresh
 from ...setup import Notebook
 from ...spot_colors.base import get_spot_colors
 import matplotlib
@@ -226,7 +226,7 @@ class view_codes(ColorPlotBase):
             for j in range(2):
                 # can't add rectangle to multiple axes hence second for loop
                 rectangle = plt.Rectangle((intense_gene_cr[1][i]-0.5, intense_gene_cr[0][i]-0.5), 1, 1,
-                                          fill=False, ec="g", linestyle=':', lw=2)
+                                          fill=False, ec="lime", linestyle=':', lw=2)
                 self.ax[j].add_patch(rectangle)
         self.change_norm()  # initialise with method = 'norm'
         plt.show()
@@ -290,11 +290,11 @@ class view_spot(ColorPlotBase):
         for i in range(self.n_images):
             # Add cross-hair
             if gene_color[i] > self.intense_gene_thresh:
-                cross_hair_color = 'g'  # different color if expected large intensity
+                cross_hair_color = 'lime'  # different color if expected large intensity
                 linestyle = '--'
-                self.ax[i].tick_params(color='g', labelcolor='g')
+                self.ax[i].tick_params(color='lime', labelcolor='lime')
                 for spine in self.ax[i].spines.values():
-                    spine.set_edgecolor('g')
+                    spine.set_edgecolor('lime')
             else:
                 cross_hair_color = 'k'
                 linestyle = ':'
@@ -319,4 +319,53 @@ class view_spot(ColorPlotBase):
         plt.suptitle(f'Spot {spot_no}: match {str(np.around(spot_score, decimals=2))} '
                      f'to {gene_name}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
         self.change_norm()
+        plt.show()
+
+
+class view_intensity(ColorPlotBase):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor'):
+        """
+        Diagnostic to compare `spot_color` to `bled_code` of predicted gene.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+            spot_no: Spot of interest to be plotted.
+            method: `'anchor'` or `'omp'`.
+                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
+        """
+        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                            nb.basic_info.use_channels)].transpose()
+        if method.lower() == 'omp':
+            page_name = 'omp'
+            config = nb.get_config()['thresholds']
+            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
+        else:
+            page_name = 'ref_spots'
+            spot_score = nb.ref_spots.score[spot_no]
+        intensity_saved = nb.__getattribute__(page_name).intensity[spot_no]
+        intensity_thresh = get_intensity_thresh(nb)
+        spot_color = nb.__getattribute__(page_name).colors[spot_no][
+                         np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose() / color_norm
+        subplot_adjust = [0.07, 0.775, 0.1, 0.85]
+        super().__init__([spot_color], color_norm, subplot_adjust=subplot_adjust)
+        if intensity_saved > intensity_thresh:
+            color = 'w'
+        else:
+            color = 'r'
+        spot_color_symbol = r"$\mathbf{\zeta_s}$"
+        intensity_symbol = r"$\chi_s$, (median of $\max_c\zeta_{s_{rc}}$ indicated in green)"
+        self.ax[0].set_title(f'Spot Color, {spot_color_symbol}, for spot {spot_no}\n'
+                             f'Intensity, {intensity_symbol} = {str(np.around(intensity_saved, 3))}', color=color)
+        self.ax[0].set_yticks(ticks=np.arange(self.im_data[0].shape[0]), labels=nb.basic_info.use_channels)
+        self.ax[0].set_xticks(ticks=np.arange(self.im_data[0].shape[1]), labels=nb.basic_info.use_rounds)
+        self.ax[0].set_xlabel('Round')
+        self.fig.supylabel('Color Channel')
+        # Highlight max channel in each round which contributes to intensity
+        max_channels = np.argmax(self.im_data[0], axis=0)
+        for r in range(len(nb.basic_info.use_rounds)):
+            # can't add rectangle to multiple axes hence second for loop
+            rectangle = plt.Rectangle((r-0.5, max_channels[r]-0.5), 1, 1,
+                                      fill=False, ec='lime', linestyle=':', lw=4)
+            self.ax[0].add_patch(rectangle)
+        self.change_norm()  # initialise with method = 'norm'
         plt.show()
