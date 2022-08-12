@@ -153,7 +153,7 @@ def n_spots_grid(nb: Notebook, n_spots_thresh: Optional[int] = None):
         y_labels += ['Anchor']
         n_round_channels += 1
     fig, ax = plt.subplots(1, 1, figsize=(np.clip(5+len(use_tiles)/2, 3, 18), 12))
-    subplot_adjust = [0.12, 0.97, 0.07, 0.9]
+    subplot_adjust = [0.12, 1, 0.07, 0.9]
     fig.subplots_adjust(left=subplot_adjust[0], right=subplot_adjust[1],
                         bottom=subplot_adjust[2], top=subplot_adjust[3])
     im = ax.imshow(spot_no, aspect='auto', vmax=vmax)

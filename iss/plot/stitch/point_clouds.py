@@ -7,6 +7,7 @@ from ...find_spots import spot_yxz
 from ...call_spots import get_non_duplicate
 from ...setup import Notebook
 import warnings
+import numpy_indexed
 from typing import List, Optional
 plt.style.use('dark_background')
 
@@ -279,8 +280,29 @@ def view_stitch(nb: Notebook):
     config = nb.get_config()['stitch']
     neighb_dist_thresh = config['neighb_dist_thresh']
     z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
-    vpc = view_point_clouds([global_yxz[not_duplicate], global_yxz[np.invert(not_duplicate)]],
-                            ['Not Duplicate', 'Duplicate'], neighb_dist_thresh, z_scale,
+
+    point_clouds = [global_yxz[not_duplicate], global_yxz[np.invert(not_duplicate)]]
+    pc_labels = ['Not Duplicate', 'Duplicate']
+    if nb.has_page('ref_spots'):
+        # Add point cloud indicating those spots that were not saved in ref_spots page
+        # because they were shifted outside the tile bounds on at least one round/channel
+        # and thus spot_color could not be found.
+        local_yxz = local_yxz[not_duplicate]  # Want to find those which were not duplicates but still removed
+        tile = tile[not_duplicate]
+        local_yxz_saved = nb.ref_spots.local_yxz
+        tile_saved = nb.ref_spots.tile
+        global_yxz_ns = np.zeros((0, 3)) # not saved in ref_spots spots
+        for t in nb.basic_info.use_tiles:
+            missing_ind = -100
+            local_yxz_t = local_yxz[tile == t]
+            removed_ind = np.where(numpy_indexed.indices(local_yxz_saved[tile_saved == t], local_yxz_t,
+                                                         missing=missing_ind) == missing_ind)[0]
+            global_yxz_ns = np.append(global_yxz_ns, local_yxz_t[removed_ind] + nb.stitch.tile_origin[t], axis=0)
+        global_yxz_ns[:, 2] = np.rint(global_yxz_ns[:, 2])
+        point_clouds += [global_yxz_ns]
+        pc_labels += ["No Spot Color"]
+
+    vpc = view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
                             "Reference Spots in the Global Coordinate System")
 
     tile_sz = nb.basic_info.tile_sz

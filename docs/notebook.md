@@ -333,6 +333,10 @@ how to save a new *Notebook* with a different *basic_info* page:
     from iss import Notebook
     from iss.pipeline import set_basic_info
     nb_file = '/Users/user/iss/experiment/notebook.npz'
+    
+    # Save new notebook with different name so it does not overwrite old notebook
+    # Make sure notebook_name is specified in [file_names] section 
+    # of settings_new.ini file to be same as name given here.
     nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
     ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
 
@@ -393,6 +397,7 @@ how to save a new *Notebook* with a different *basic_info* page:
     round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
     anchor = Exp1_anchor
     code_book = /Users/user/iss/experiment1/codebook.txt
+    notebook_name = notebook_new
 
     [basic_info]
     is_3d = True

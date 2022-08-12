@@ -357,6 +357,7 @@ To run the pipeline with a subset of tiles, imaging rounds, channels or z-planes
 can be set in the [*basic_info*](config.md#basic_info) section of the configuration file:
 
 * `use_tiles`
+* `ignore_tiles`
 * `use_rounds`
 * `use_channels`
 * `use_z`
