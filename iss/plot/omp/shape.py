@@ -18,14 +18,17 @@ class view_omp_score:
         Can also see how `score_omp_multiplier` affects the final score. The larger this is, the more
         the positive pixels contribute compared to the negative.
 
-        TODO: The textbox for this plot seems to be much less responsive than in the other diagnostics for some reason.
-
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
+            check: If `True`, will compare score found to that saved in *Notebook* and raise error if they differ.
+                Will also check that absolute sum of the top plots in the hatched regions is equal to
+                score calculated from counting the number of pixels with the correct sign.
         """
+        # TODO: The textbox for this plot seems to be much less responsive than in the other diagnostics
+        #  for some reason.
         if method.lower() == 'omp':
             page_name = 'omp'
         else:

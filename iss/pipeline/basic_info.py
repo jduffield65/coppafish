@@ -135,6 +135,8 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
                              f"But in the folder:\n{first_round_raw}\nTiles Available are {use_tiles_folder}.")
     if config_basic['use_tiles'] is None:
         config_basic['use_tiles'] = list(np.arange(n_tiles))
+    if config_basic['ignore_tiles'] is not None:
+        config_basic['use_tiles'] = list(np.setdiff1d(config_basic['use_tiles'], config_basic['ignore_tiles']))
     nbp.use_tiles = config_basic['use_tiles']
     nbp.use_tiles.sort()
     use_tiles_oob = [val for val in nbp.use_tiles if val < 0 or val >= n_tiles]

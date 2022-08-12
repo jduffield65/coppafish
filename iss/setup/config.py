@@ -39,6 +39,7 @@ _options = {
             'use_rounds': 'maybe_list_int',
             'use_z': 'maybe_list_int',
             'use_tiles': 'maybe_list_int',
+            'ignore_tiles': 'maybe_list_int',
             'use_dyes': 'maybe_list_int',
             'dye_names': 'maybe_list_str',
             'channel_camera': 'maybe_list_int',
