@@ -94,6 +94,7 @@ nav:
             - Scale: code/extract/scale.md
         - Find Spots:
             - Base: code/find_spots/base.md
+            - Check Spots: code/find_spots/check_spots.md
             - Detect: code/find_spots/detect.md
         - Stitch:
             - Shift: code/stitch/shift.md

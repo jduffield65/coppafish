@@ -137,7 +137,7 @@ The *basic_info* section indicates information required throughout the pipeline.
 
 * **dapi_channel**: *maybe_int*.
 
-	Channel in anchor round that contains DAPI images. Leave blank if no DAPI. 
+	Channel in anchor round that contains *DAPI* images. This does not have to be in `use_channels` as anchor round is dealt with separately. Leave blank if no *DAPI*. 
 
 	Default: `None`
 
@@ -182,6 +182,12 @@ The *basic_info* section indicates information required throughout the pipeline.
 	 | 8  | 7  | 6  | 
 
 	 | 11 | 10 | 9  | 
+
+	Default: `None`
+
+* **ignore_tiles**: *maybe_list_int*.
+
+	It is often easier to select tiles to remove than to use. All tiles listed here will be ignored. Leave blank to use all. 
 
 	Default: `None`
 
@@ -769,21 +775,15 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 * **background_weight_shift**: *maybe_number*.
 
-	Shift to apply to weighting of each background vector to limit boost of weak spots. The weighting of round r for the fitting of the background vector for channel c is `1 / (spot_color[r, c] + background_weight_shift)` so `background_weight_shift` ensures this does not go to infinity for small `spot_color[r, c]`. Typical `spot_color[r, c]` is 1 for intense spot so `background_weight_shift` is small fraction of this. Leave blank to determine using `norm_shift_auto_param`. 
+	Shift to apply to weighting of each background vector to limit boost of weak spots. The weighting of round r for the fitting of the background vector for channel c is `1 / (spot_color[r, c] + background_weight_shift)` so `background_weight_shift` ensures this does not go to infinity for small `spot_color[r, c]`. Typical `spot_color[r, c]` is 1 for intense spot so `background_weight_shift` is small fraction of this. Leave blank to set to median absolute intensity of all pixels on the mid z-plane of the central tile. 
 
 	Default: `None`
 
 * **dp_norm_shift**: *maybe_number*.
 
-	When calculating the `dot_product_score`, this is the small shift to apply when normalising `spot_colors` to ensure don't divide by zero. Value is for a single round and is multiplied by `sqrt(n_rounds_used)` when computing `dot_product_score`. Expected norm of a spot_color for a single round is 1 so `dp_norm_shift` is a small fraction of this. Leave blank to determine using `norm_shift_auto_param`. 
+	When calculating the `dot_product_score`, this is the small shift to apply when normalising `spot_colors` to ensure don't divide by zero. Value is for a single round and is multiplied by `sqrt(n_rounds_used)` when computing `dot_product_score`. Expected norm of a spot_color for a single round is 1 so `dp_norm_shift` is a small fraction of this. Leave blank to set to median L2 norm for a single round of all pixels on the mid z-plane of the central tile. 
 
 	Default: `None`
-
-* **norm_shift_auto_param**: *number*.
-
-	Parameter to automatically determine `dp_norm_shift`, `background_weight_shift` and `gene_efficiency_intensity_thresh`. They are all set using `norm_shift = norm_shift_auto_param * median(get_spot_intensity(abs(norm_shift_image)))`. Where `norm_shift_image` is the middle z-plane (`nb.call_spots.norm_shift_z`) of the central tile (`nb.call_spots.norm_shift_tile`). Work out from this because `dp_norm_shift` is basically a small fraction of the expected L2 norm of `spot_color` in a single round and this is basically what spot_intensity gives. It is also clamped between the min and max values. 
-
-	Default: `0.1`
 
 * **norm_shift_min**: *number*.
 
@@ -802,12 +802,6 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 	`dp_norm_shift` and `background_weight_shift` will be rounded to nearest `norm_shift_precision`. 
 
 	Default: `0.01`
-
-* **norm_shift_to_intensity_scale**: *number*.
-
-	`gene_efficiency_intensity_thresh` will be set to `norm_shift / norm_shift_to_intensity_scale` where `norm_shift` is determined using `norm_shift_auto_param` if not specified. 
-
-	Default: `10`
 
 * **gene_efficiency_min_spots**: *int*.
 
@@ -835,9 +829,33 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 * **gene_efficiency_intensity_thresh**: *maybe_number*.
 
-	Spots used to compute `gene_efficiency` must have `dot_product_score` greater than `gene_efficiency_score_thresh`, difference to second best score greater than `gene_efficiency_score_diff_thresh` and intensity greater than `gene_efficiency_intensity_thresh`. Leave blank to determine from `norm_shift_auto_param`. 
+	Spots used to compute `gene_efficiency` must have `dot_product_score` greater than `gene_efficiency_score_thresh`, difference to second best score greater than `gene_efficiency_score_diff_thresh` and intensity greater than `gene_efficiency_intensity_thresh`. Leave blank to determine from `gene_efficiency_intensity_thresh_percentile`. 
 
 	Default: `None`
+
+* **gene_efficiency_intensity_thresh_percentile**: *int*.
+
+	`gene_efficiency_intensity_thresh` will be set to this percentile of the intensity computed for all pixels on the mid z-plane of the most central tile if not specified. 
+
+	Default: `37`
+
+* **gene_efficiency_intensity_thresh_precision**: *number*.
+
+	`gene_efficiency_intensity_thresh` will be rounded to nearest `gene_efficiency_intensity_thresh_precision` if not given. 
+
+	Default: `0.001`
+
+* **gene_efficiency_intensity_thresh_min**: *number*.
+
+	Min allowed value of `gene_efficiency_intensity_thresh`. 
+
+	Default: `0.001`
+
+* **gene_efficiency_intensity_thresh_max**: *number*.
+
+	Max allowed value of `gene_efficiency_intensity_thresh`. 
+
+	Default: `0.2`
 
 * **alpha**: *number*.
 
@@ -872,11 +890,11 @@ The *omp* section contains parameters which are use to carry out orthogonal matc
 
 	Default: `None`
 
-* **initial_intensity_thresh_auto_param**: *number*.
+* **initial_intensity_thresh_percentile**: *int*.
 
-	If `initial_intensity_thresh`, it will be set to `initial_intensity_thresh_auto_param  * nb.call_spots.median_abs_intensity`. 
+	If `initial_intensity_thresh` not given, it will be set to the `initial_intensity_thresh_percentile` percentile of the absolute intensity of all pixels on the mid z-plane of the central tile. It uses `nb.call_spots.abs_intensity_percentile` 
 
-	Default: `0.5`
+	Default: `25`
 
 * **initial_intensity_thresh_min**: *number*.
 

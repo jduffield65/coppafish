@@ -540,17 +540,17 @@ call_spots page contains bleed matrix and expected code for each gene. Page adde
 
 	When calculating the dot_product_score, this is the small shift to apply when normalising spot_colors to ensure don't divide by zero. Value is for a single round and is multiplied by sqrt(n_rounds_used) when computing dot_product_score. Expected norm of a spot_color for a single round is 1 so dp_norm_shift is a small fraction of this.
 
-* **median_abs_intensity**: *Float or None*.
+* **abs_intensity_percentile**: *Numpy float array [100] or None*.
 
-	Median intensity of absolute pixel_colors of from norm_shift_tile, norm_shift_z.
+	abs_intensity_percentile[i] is the i% percentile of absolute pixel_colors on norm_shift_tile, norm_shift_z.
 
-* **norm_shift_tile**: *Integer or None*.
+* **norm_shift_tile**: *Integer*.
 
-	Tile that is used to compute median_abs_intensity from which dp_norm_shift, background_weight_shift  and intensity_thresh are computed. None if all these variables given in config file.
+	Tile that is used to compute abs_intensity_percentile from which dp_norm_shift, background_weight_shift  and intensity_thresh are computed.
 
-* **norm_shift_z**: *Integer or None*.
+* **norm_shift_z**: *Integer*.
 
-	z-plane that is used to compute median_abs_intensity from which dp_norm_shift, background_weight_shift  and intensity_thresh are computed. None if all these variables given in config file.
+	z-plane that is used to compute abs_intensity_percentile from which dp_norm_shift, background_weight_shift  and intensity_thresh are computed.
 
 * **gene_efficiency_intensity_thresh**: *Float*.
 
