@@ -117,7 +117,7 @@ The process of obtaining isolated spots can be visualised with [`view_find_spots
 
 ## Error - too few spots
 After the `find_spots` *NotebookPage* has been [added](../code/pipeline/run.md#iss.pipeline.run.run_find_spots)
-to the *Notebook*, [`check_n_spots`](../code/find_spots/base.md#iss.find_spots.base.check_n_spots) will be run.
+to the *Notebook*, [`check_n_spots`](../code/find_spots/check_spots.md#iss.find_spots.check_spots.check_n_spots) will be run.
 
 This will produce a warning for any tile, round, channel for which fewer than
 
@@ -173,6 +173,27 @@ the fraction `n_spots_error_fraction` of tiles/channels.
 The `use_tiles`, `use_rounds` and `use_channels` parameters can be changed without having to re-run
 the `find_spots` section of the pipeline as explained [here](../notebook.md#changing-basic_info-mid-pipeline).
 It tiles/rounds/channels are added instead of removed though, it will need re-running, as will the `extract` step.
+
+### `n_spots_grid`
+If [`check_n_spots`](../code/find_spots/check_spots.md#iss.find_spots.check_spots.check_n_spots) is run with 
+`show_grid = True`, [`n_spots_grid`](../code/find_spots/check_spots.md#iss.find_spots.check_spots.n_spots_grid) 
+will be run.
+
+This is useful to visualise the number of spots detected on each tile, round and channel:
+
+=== "Good"
+    ![image](../images/pipeline/find_spots/n_spots_grid.png){width="800"}
+
+=== "Bad"
+    ![image](../images/pipeline/find_spots/n_spots_grid_bad.png){width="800"}
+
+In the *good* example, you can see from the minimum on the colorbar that lots of spots have been detected on 
+every image. You can also see that tile 13 seems to have significantly fewer spots than the other tiles and 
+that round 0 often has fewer spots than the other rounds.
+
+In the *bad* example, all tiles, rounds and channels where `n_spots < n_spots_warn` are highlighted by a red border.
+Clearly, channels 0 and 3 did not work for this experiment and channel 1 probably didn't. Also, tile 1 appears 
+to have fewer spots than the other tiles.
 
 ## Viewer
 We can see how the various parameters affect which spots are detected using 

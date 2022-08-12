@@ -316,7 +316,7 @@ class view_spot(ColorPlotBase):
         self.ax[0].set_yticks([spot_yxz_global[0]])
         self.fig.supylabel('Color Channel', size=14)
         self.fig.supxlabel('Round (Gene Efficiency)', size=14, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
-        plt.suptitle(f'Spot {spot_no}: match {np.round(spot_score, decimals=2)} '
+        plt.suptitle(f'Spot {spot_no}: match {str(np.around(spot_score, decimals=2))} '
                      f'to {gene_name}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
         self.change_norm()
         plt.show()

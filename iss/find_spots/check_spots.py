@@ -5,7 +5,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 
 
-def check_n_spots(nb: Notebook):
+def check_n_spots(nb: Notebook, show_grid: bool = False):
     """
     This checks that a decent number of spots are detected on:
 
@@ -20,6 +20,7 @@ def check_n_spots(nb: Notebook):
 
     Args:
         nb: *Notebook* containing `find_spots` page.
+        show_grid: If `True`, will run n_spots_grid to show grid of number of spots detected.
 
     """
     # TODO: show example of what error looks like in the docs
@@ -111,6 +112,8 @@ def check_n_spots(nb: Notebook):
                                             f"error threshold of {n_images_error}.\n" \
                                             f"Consider removing these tiles from use_tiles."
 
+    if show_grid:
+        n_spots_grid(nb, n_spots_warn)
     if len(error_message) > 0:
         error_message = error_message + f"\nThe function iss.plot.view_find_spots may be useful for investigating " \
                                         f"why the above tiles/rounds/channels had so few spots detected."
@@ -139,15 +142,24 @@ def n_spots_grid(nb: Notebook, n_spots_thresh: Optional[int] = None):
     spot_no = nb.find_spots.spot_no[np.ix_(use_tiles, use_rounds, use_channels)]
     spot_no = np.moveaxis(spot_no, 1, 2)  # put rounds last
     spot_no = spot_no.reshape(len(use_tiles), -1).T  # spot_no[n_rounds, t] is now spot_no[t, r=0, c=1]
-
+    n_round_channels = len(use_rounds) * len(use_channels)
+    y_labels = np.tile(use_rounds, len(use_channels))
+    vmax = spot_no.max()  # clip colorbar at max of imaging rounds/channels because anchor can be a lot higher
+    if nb.basic_info.use_anchor:
+        anchor_spot_no = nb.find_spots.spot_no[use_tiles, nb.basic_info.anchor_round,
+                                               nb.basic_info.anchor_channel][np.newaxis]
+        spot_no = np.append(spot_no, anchor_spot_no, axis=0)
+        y_labels = y_labels.astype(str).tolist()
+        y_labels += ['Anchor']
+        n_round_channels += 1
     fig, ax = plt.subplots(1, 1, figsize=(np.clip(5+len(use_tiles)/2, 3, 18), 12))
     subplot_adjust = [0.12, 0.97, 0.07, 0.9]
     fig.subplots_adjust(left=subplot_adjust[0], right=subplot_adjust[1],
                         bottom=subplot_adjust[2], top=subplot_adjust[3])
-    im = ax.imshow(spot_no, aspect='auto')
+    im = ax.imshow(spot_no, aspect='auto', vmax=vmax)
     fig.colorbar(im, ax=ax)
-    ax.set_yticks(np.arange(len(use_rounds) * len(use_channels)))
-    ax.set_yticklabels(np.tile(use_rounds,len(use_channels)))
+    ax.set_yticks(np.arange(n_round_channels))
+    ax.set_yticklabels(y_labels)
     ax.set_xticks(np.arange(len(use_tiles)))
     ax.set_xticklabels(use_tiles)
     ax.set_xlabel('Tile')
@@ -163,4 +175,5 @@ def n_spots_grid(nb: Notebook, n_spots_thresh: Optional[int] = None):
         rectangle = plt.Rectangle((low_spots[1][j] - 0.5, low_spots[0][j] - 0.5), 1, 1,
                                   fill=False, ec="r", linestyle=':', lw=2)
         ax.add_patch(rectangle)
+    plt.suptitle(f"Number of Spots Found on each Tile, Round and Channel")
     plt.show()
