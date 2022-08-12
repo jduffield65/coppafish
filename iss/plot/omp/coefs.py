@@ -9,8 +9,101 @@ from ...omp.coefs import get_all_coefs
 from ...omp.base import get_initial_intensity_thresh
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Optional
+from typing import Optional, List, Tuple
 plt.style.use('dark_background')
+
+
+def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> Tuple[np.ndarray, List[float],
+                                                                                     List[float]]:
+    """
+    Gets image of $yxz$ dimension `(2*im_size[0]+1) x (2*im_size[1]+1) x (2*im_size[2]+1)` of the coefficients
+    fitted by omp for each gene.
+
+    Args:
+        nb: *Notebook* containing experiment details. Must have run at least as far as `call_reference_spots`.
+        spot_no: Spot of interest to get gene coefficient images for.
+        method: `'anchor'` or `'omp'`.
+            Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
+        im_size: $yxz$ radius of image to get for each gene.
+
+    Returns:
+        `coef_images` - `float [n_genes x (2*im_size[0]+1) x (2*im_size[1]+1) x (2*im_size[2]+1)]`.
+            Image for each gene, axis order is $gyxz$.
+            `coef_images[g, 0, 0, 0]` refers to coefficient of gene g at `global_yxz = min_global_yxz`.
+            `coef_images[g, -1, -1, -1]` refers to coefficient of gene g at `global_yxz = max_global_yxz`.
+        `min_global_yxz` - `float [3]`. Min $yxz$ coordinates of image in global coordinates.
+        `max_global_yxz` - `float [3]`. Max $yxz$ coordinates of image in global coordinates.
+    """
+    color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                        nb.basic_info.use_channels)]
+
+    if method.lower() == 'omp':
+        page_name = 'omp'
+    else:
+        page_name = 'ref_spots'
+    t = nb.__getattribute__(page_name).tile[spot_no]
+    spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
+
+    # Subtlety here, may have y-axis flipped, but I think it is correct:
+    # note im_yxz[1] refers to point at max_y, min_x+1, z. So when reshape and set plot_extent, should be correct.
+    # I.e. im = np.zeros(49); im[1] = 1; im = im.reshape(7,7); plt.imshow(im, extent=[-0.5, 6.5, -0.5, 6.5])
+    # will show the value 1 at max_y, min_x+1.
+    im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0] - im_size[0], spot_yxz[0] + im_size[0] + 1)[::-1],
+                                  np.arange(spot_yxz[1] - im_size[1], spot_yxz[1] + im_size[1] + 1),
+                                  spot_yxz[2]),
+                      dtype=np.int16).T.reshape(-1, 3)
+    z = np.arange(-im_size[2], im_size[2]+1)
+    im_yxz = np.vstack([im_yxz + [0, 0, val] for val in z])
+    im_diameter_yx = [2 * im_size[0] + 1, 2 * im_size[1] + 1]
+    spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info) / color_norm
+
+    # Only look at pixels with high enough intensity - same as in full pipeline
+    spot_intensity = get_spot_intensity(np.abs(spot_colors))
+    config = nb.get_config()['omp']
+    if nb.has_page('omp'):
+        initial_intensity_thresh = nb.omp.initial_intensity_thresh
+    else:
+        initial_intensity_thresh = get_initial_intensity_thresh(config, nb.call_spots)
+
+    keep = spot_intensity > initial_intensity_thresh
+    bled_codes = nb.call_spots.bled_codes_ge
+    n_genes = bled_codes.shape[0]
+    bled_codes = np.asarray(bled_codes[np.ix_(np.arange(n_genes),
+                                              nb.basic_info.use_rounds, nb.basic_info.use_channels)])
+    n_use_rounds = len(nb.basic_info.use_rounds)
+    dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
+
+    dp_thresh = config['dp_thresh']
+    if method.lower() == 'omp':
+        alpha = config['alpha']
+        beta = config['beta']
+    else:
+        config_call_spots = nb.get_config()['call_spots']
+        alpha = config_call_spots['alpha']
+        beta = config_call_spots['beta']
+    max_genes = config['max_genes']
+    weight_coef_fit = config['weight_coef_fit']
+
+    all_coefs = np.zeros((spot_colors.shape[0], n_genes + nb.basic_info.n_channels))
+    all_coefs[np.ix_(keep, np.arange(n_genes))], \
+    all_coefs[np.ix_(keep, np.array(nb.basic_info.use_channels) + n_genes)] = \
+        get_all_coefs(spot_colors[keep], bled_codes, nb.call_spots.background_weight_shift, dp_norm_shift,
+                      dp_thresh, alpha, beta, max_genes, weight_coef_fit)
+
+    n_genes = all_coefs.shape[1]
+    nz = len(z)
+    coef_images = np.zeros((n_genes, len(z), im_diameter_yx[0], im_diameter_yx[1]))
+    for g in range(n_genes):
+        ind = 0
+        for z in range(nz):
+            coef_images[g, z] = all_coefs[ind:ind+np.prod(im_diameter_yx), g].reshape(im_diameter_yx[0],
+                                                                                      im_diameter_yx[1])
+            ind += np.prod(im_diameter_yx)
+    coef_images = np.moveaxis(coef_images, 1, -1)  # move z index to end
+    min_global_yxz = im_yxz.min(axis=0)+nb.stitch.tile_origin[t]
+    max_global_yxz = im_yxz.max(axis=0)+nb.stitch.tile_origin[t]
+    return coef_images, min_global_yxz, max_global_yxz
+
 
 
 class view_omp(ColorPlotBase):
@@ -26,8 +119,7 @@ class view_omp(ColorPlotBase):
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
             im_size: Radius of image to be plotted for each gene.
         """
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)]
+        coef_images, min_global_yxz, max_global_yxz = get_coef_images(nb, spot_no, method, [im_size, im_size, 0])
 
         if method.lower() == 'omp':
             page_name = 'omp'
@@ -39,56 +131,14 @@ class view_omp(ColorPlotBase):
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
         t = nb.__getattribute__(page_name).tile[spot_no]
         spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
-
         gene_name = nb.call_spots.gene_names[gene_no]
         all_gene_names = list(nb.call_spots.gene_names) + [f'BG{i}' for i in range(nb.basic_info.n_channels)]
-        n_use_channels, n_use_rounds = color_norm.shape
         spot_yxz_global = spot_yxz + nb.stitch.tile_origin[t]
-        im_size = [im_size, im_size]  # Useful for debugging to have different im_size_y, im_size_x.
-        # Subtlety here, may have y-axis flipped, but I think it is correct:
-        # note im_yxz[1] refers to point at max_y, min_x+1, z. So when reshape and set plot_extent, should be correct.
-        # I.e. im = np.zeros(49); im[1] = 1; im = im.reshape(7,7); plt.imshow(im, extent=[-0.5, 6.5, -0.5, 6.5])
-        # will show the value 1 at max_y, min_x+1.
-        im_yxz = np.array(np.meshgrid(np.arange(spot_yxz[0]-im_size[0], spot_yxz[0]+im_size[0]+1)[::-1],
-                                      np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
-                          dtype=np.int16).T.reshape(-1, 3)
-        im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
-        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info) / color_norm
+        n_genes = nb.call_spots.bled_codes_ge.shape[0]
 
-        # Only look at pixels with high enough intensity - same as in full pipeline
-        spot_intensity = get_spot_intensity(np.abs(spot_colors))
-        config = nb.get_config()['omp']
-        if nb.has_page('omp'):
-            initial_intensity_thresh = nb.omp.initial_intensity_thresh
-        else:
-            initial_intensity_thresh = get_initial_intensity_thresh(config, nb.call_spots)
-
-        keep = spot_intensity > initial_intensity_thresh
-        bled_codes = nb.call_spots.bled_codes_ge
-        n_genes = bled_codes.shape[0]
-        bled_codes = np.asarray(bled_codes[np.ix_(np.arange(n_genes),
-                                                  nb.basic_info.use_rounds, nb.basic_info.use_channels)])
-        dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
-
-        dp_thresh = config['dp_thresh']
-        if method.lower() == 'omp':
-            alpha = config['alpha']
-            beta = config['beta']
-        else:
-            config_call_spots = nb.get_config()['call_spots']
-            alpha = config_call_spots['alpha']
-            beta = config_call_spots['beta']
-        max_genes = config['max_genes']
-        weight_coef_fit = config['weight_coef_fit']
-
-        all_coefs = np.zeros((spot_colors.shape[0], n_genes+nb.basic_info.n_channels))
-        all_coefs[np.ix_(keep, np.arange(n_genes))], \
-        all_coefs[np.ix_(keep, np.array(nb.basic_info.use_channels) + n_genes)] = \
-            get_all_coefs(spot_colors[keep], bled_codes, nb.call_spots.background_weight_shift, dp_norm_shift,
-                          dp_thresh, alpha, beta, max_genes, weight_coef_fit)
-        n_nonzero_pixels_thresh = np.min([im_size[0], 5])  # If 5 pixels non-zero, plot that gene
-        plot_genes = np.where(np.sum(all_coefs != 0, axis=0) > n_nonzero_pixels_thresh)[0]
-        coef_images = [all_coefs[:, g].reshape(im_diameter[0], im_diameter[1]) for g in plot_genes]
+        n_nonzero_pixels_thresh = np.min([im_size, 5])  # If 5 pixels non-zero, plot that gene
+        plot_genes = np.where(np.sum(coef_images != 0, axis=(1, 2, 3)) > n_nonzero_pixels_thresh)[0]
+        coef_images = coef_images[plot_genes, :, :, 0]
         n_plot = len(plot_genes)
         # at most n_max_rows rows
         if n_plot <= 16:
@@ -102,10 +152,8 @@ class view_omp(ColorPlotBase):
         super().__init__(coef_images, None, subplot_row_columns, subplot_adjust=subplot_adjust, fig_size=fig_size,
                          cbar_pos=[0.9, 0.05, 0.03, 0.86], slider_pos=[0.85, 0.05, 0.01, 0.86])
         # set x, y coordinates to be those of the global coordinate system
-        plot_extent = [im_yxz[:, 1].min()-0.5+nb.stitch.tile_origin[t, 1],
-                       im_yxz[:, 1].max()+0.5+nb.stitch.tile_origin[t, 1],
-                       im_yxz[:, 0].min()-0.5+nb.stitch.tile_origin[t, 0],
-                       im_yxz[:, 0].max()+0.5+nb.stitch.tile_origin[t, 0]]
+        plot_extent = [min_global_yxz[1]-0.5, max_global_yxz[1]+0.5,
+                       min_global_yxz[0]-0.5, max_global_yxz[0]+0.5]
         for i in range(self.n_images):
             # Add cross-hair
             self.ax[i].axes.plot([spot_yxz_global[1], spot_yxz_global[1]], [plot_extent[2], plot_extent[3]],

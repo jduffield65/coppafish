@@ -5,7 +5,7 @@ from ...call_spots.qual_check import quality_threshold
 from .legend import iss_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot
 from ...call_spots import omp_spot_score
-from ..omp import view_omp, view_omp_fit
+from ..omp import view_omp, view_omp_fit, view_omp_score
 from ...setup import Notebook
 import napari
 from napari.qt import thread_worker
@@ -444,6 +444,12 @@ class iss_plot:
             spot_no = self.get_selected_spot()
             if spot_no is not None:
                 view_omp_fit(self.nb, spot_no, self.method_buttons.method)
+
+        @self.viewer.bind_key('Shift-s')
+        def call_to_view_omp_score(viewer):
+            spot_no = self.get_selected_spot()
+            if spot_no is not None:
+                view_omp_score(self.nb, spot_no, self.method_buttons.method)
 
 
 class ButtonMethodWindow(QMainWindow):
