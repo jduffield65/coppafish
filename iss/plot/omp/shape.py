@@ -51,7 +51,7 @@ class view_omp_score:
 
         # Start with default multiplier
         config = nb.get_config()['thresholds']
-        self.score_multiplier = config['score_omp_multiplier']
+        self.score_multiplier = np.around(config['score_omp_multiplier'], 2)
         self.score_thresh = config['score_omp']
 
         # maximum possible value of any one pixel in expected_shape for any score_multiplier
@@ -102,7 +102,7 @@ class view_omp_score:
         # Add text box to change score multiplier
         text_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.062, self.subplot_adjust[2]+gap_size/5,
                                      0.05, 0.04])
-        self.text_box = TextBox(text_ax, 'Score\n'+r'Multiplier, $\rho$', self.score_multiplier, color='k',
+        self.text_box = TextBox(text_ax, 'Score\n'+r'Multiplier, $\rho$', str(self.score_multiplier), color='k',
                                 hovercolor=[0.2, 0.2, 0.2])
         self.text_box.cursor.set_color('r')
         label = text_ax.get_children()[0]  # label is a child of the TextBox axis
@@ -200,7 +200,7 @@ class view_omp_score:
             warnings.warn("Score multiplier cannot be negative")
             score_multiplier = self.score_multiplier
         self.score_multiplier = score_multiplier
-        self.text_box.set_val(score_multiplier)
+        self.text_box.set_val(np.around(score_multiplier, 2))
         # Update expected shape image to reflect new score multiplier
         expected_image_plot = self.expected_image()
         for i in range(self.nz):

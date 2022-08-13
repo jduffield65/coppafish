@@ -27,7 +27,7 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
         im_size: $yxz$ radius of image to get for each gene.
 
     Returns:
-        `coef_images` - `float [n_genes x (2*im_size[0]+1) x (2*im_size[1]+1) x (2*im_size[2]+1)]`.
+        `coef_images` - `float16 [n_genes x (2*im_size[0]+1) x (2*im_size[1]+1) x (2*im_size[2]+1)]`.
             Image for each gene, axis order is $gyxz$.
             `coef_images[g, 0, 0, 0]` refers to coefficient of gene g at `global_yxz = min_global_yxz`.
             `coef_images[g, -1, -1, -1]` refers to coefficient of gene g at `global_yxz = max_global_yxz`.
@@ -102,7 +102,7 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
     coef_images = np.moveaxis(coef_images, 1, -1)  # move z index to end
     min_global_yxz = im_yxz.min(axis=0)+nb.stitch.tile_origin[t]
     max_global_yxz = im_yxz.max(axis=0)+nb.stitch.tile_origin[t]
-    return coef_images, min_global_yxz, max_global_yxz
+    return coef_images.astype(np.float16), min_global_yxz, max_global_yxz
 
 
 

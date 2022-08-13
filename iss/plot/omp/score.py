@@ -78,10 +78,10 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, spot_
 
 class histogram_score:
     ylim_tol = 0.2  # If fractional change in y limit is less than this, then leave it the same
-    check_tol = 1e-3 # If saved spot_score and that computed here differs by more than this and check=True, get error.
+    check_tol = 1e-3  # If saved spot_score and that computed here differs by more than this and check=True, get error.
 
     def __init__(self, nb: Notebook, method: str = 'omp', score_omp_multiplier: Optional[float] = None,
-                 check: bool = False):
+                 check: bool = False, hist_spacing: float = 0.001, show_plot: bool = True):
         """
         If method is anchor, this will show the histogram of `nb.ref_spots.score` with the option to
         view the histogram of the score computed using various other configurations of `background` fitting
@@ -98,6 +98,8 @@ class histogram_score:
             score_omp_multiplier: Can specify the value of score_omp_multiplier to use to compute omp score.
                 If `None`, will use value in config file.
             check: If `True`, and `method='anchor'`, will check that scores computed here match those saved to Notebook.
+            hist_spacing: Initial width of bin in histogram.
+            show_plot: Whether to run `plt.show()` or not.
         """
         # Add data
         if score_omp_multiplier is None:
@@ -117,17 +119,17 @@ class histogram_score:
         bled_codes_ge = nb.call_spots.bled_codes_ge[grc_ind]
 
         # Save score_dp for each permutation of with/without background/gene_efficiency
-        n_plots = 5
+        self.n_plots = 5
         if method.lower() == 'omp':
-            n_plots += 1
+            self.n_plots += 1
             self.nbp_omp = nb.omp
             self.gene_no = self.nbp_omp.gene_no
-            self.score = np.zeros((self.gene_no.size, n_plots), dtype=np.float32)
+            self.score = np.zeros((self.gene_no.size, self.n_plots), dtype=np.float32)
             self.score[:, -1] = omp_spot_score(self.nbp_omp, self.score_multiplier)
             self.method = 'OMP'
         else:
             self.gene_no = nb.ref_spots.gene_no
-            self.score = np.zeros((self.gene_no.size, n_plots), dtype=np.float32)
+            self.score = np.zeros((self.gene_no.size, self.n_plots), dtype=np.float32)
             self.method = 'Anchor'
         self.use = np.isin(self.gene_no, self.genes_use)  # which spots to plot
         # DP score
@@ -167,15 +169,15 @@ class histogram_score:
         self.hit_min = np.percentile(self.score[:, 4], 0.1)
         # Set upper bound based on dot product score with GE and background because this is likely to be highest
         self.hist_max = np.clip(np.percentile(self.score[:, 0], 99.9), 1, 2)
-        self.hist_spacing = 0.001
+        self.hist_spacing = hist_spacing
         hist_bins = np.arange(self.hit_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
-        self.plots = [None] * n_plots
+        self.plots = [None] * self.n_plots
         default_colors = plt.rcParams['axes.prop_cycle']._left
-        for i in range(n_plots):
+        for i in range(self.n_plots):
             y, x = np.histogram(self.score[self.use, i], hist_bins)
             x = x[:-1] + self.hist_spacing / 2  # so same length as x
             self.plots[i], = self.ax.plot(x, y, color=default_colors[i]['color'])
-            if method.lower() == 'omp' and i < n_plots-1:
+            if method.lower() == 'omp' and i < self.n_plots - 1:
                 self.plots[i].set_visible(False)
             elif i > 0 and method.lower() != 'omp':
                 self.plots[i].set_visible(False)
@@ -209,27 +211,27 @@ class histogram_score:
             self.text_boxes[i].on_submit(text_box_funcs[i])
 
         # Add buttons to add/remove score_dp histograms
-        buttons_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.02, self.subplot_adjust[3] - 0.45, 0.15, 0.5])
+        self.buttons_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.02, self.subplot_adjust[3] - 0.45, 0.15, 0.5])
         plt.axis('off')
-        button_labels = [r"$\Delta_s$" + "\nDot Product Score",
-                         r"$\Delta_s$" + "\nNo Weighting",
-                         r"$\Delta_s$" + "\nNo Background",
-                         r"$\Delta_s$" + "\nNo Gene Efficiency",
-                         r"$\Delta_s$" + "\nNo Background\nNo Gene Efficiency"]
+        self.button_labels = [r"$\Delta_s$" + "\nDot Product Score",
+                              r"$\Delta_s$" + "\nNo Weighting",
+                              r"$\Delta_s$" + "\nNo Background",
+                              r"$\Delta_s$" + "\nNo Gene Efficiency",
+                              r"$\Delta_s$" + "\nNo Background\nNo Gene Efficiency"]
         label_checked = [True, False, False, False, False]
         if method.lower() == 'omp':
-            button_labels += [r"$\gamma_s$" + "\nOMP Score"]
+            self.button_labels += [r"$\gamma_s$" + "\nOMP Score"]
             label_checked += [True]
             label_checked[0] = False
-        self.buttons = CheckButtons(buttons_ax, button_labels, label_checked)
+        self.buttons = CheckButtons(self.buttons_ax, self.button_labels, label_checked)
 
-        for i in range(n_plots):
+        for i in range(self.n_plots):
             self.buttons.labels[i].set_fontsize(7)
             self.buttons.labels[i].set_color(default_colors[i]['color'])
             self.buttons.rectangles[i].set_color('w')
         self.buttons.on_clicked(self.choose_plots)
-
-        plt.show()
+        if show_plot:
+            plt.show()
 
     def update(self, inds_update: Optional[List[int]] = None):
         ylim_old = self.ax.get_ylim()[1]  # To check whether we need to change y limit
@@ -263,7 +265,7 @@ class histogram_score:
             try:
                 g = int(text)
                 if g >= self.n_genes or g < 0:
-                    warnings.warn(f'\nGene index needs to be between 0 and {self.n_genes_all}')
+                    warnings.warn(f'\nGene index needs to be between 0 and {self.n_genes}')
                     g = self.genes_use
             except (ValueError, TypeError):
                 # if a string, check if is name of gene
@@ -273,7 +275,10 @@ class histogram_score:
                 except ValueError:
                     # default to the best gene at this iteration
                     warnings.warn(f"\nGene given, {text}, is not valid")
-                    g = self.genes_use
+                    if isinstance(self.genes_use, int):
+                        g = self.genes_use
+                    else:
+                        g = 'all'
         if g == 'all':
             self.genes_use = np.arange(self.n_genes)
         else:
@@ -313,12 +318,62 @@ class histogram_score:
             warnings.warn("Score multiplier cannot be negative")
             score_multiplier = self.score_multiplier
         self.score_multiplier = score_multiplier
-        self.score[:, len(self.plots)-1] = omp_spot_score(self.nbp_omp, self.score_multiplier)
+        self.score[:, self.n_plots - 1] = omp_spot_score(self.nbp_omp, self.score_multiplier)
         self.text_boxes[2].set_val(np.around(score_multiplier, 2))
-        self.update(inds_update=[len(self.plots)-1])
+        self.update(inds_update=[self.n_plots - 1])
 
     def choose_plots(self, label):
-        labels = [self.buttons.labels[i].get_text() for i in range(len(self.plots))]
-        index = labels.index(label)
+        index = self.button_labels.index(label)
         self.plots[index].set_visible(not self.plots[index].get_visible())
+        self.ax.figure.canvas.draw()
+
+
+class histogram_2d_score(histogram_score):
+    def __init__(self, nb: Notebook, score_omp_multiplier: Optional[float] = None):
+        """
+        This plots the bivariate histogram to see the correlation between the omp spot score, $\gamma_s$ and
+        the dot product score $\Delta_s$.
+
+        Args:
+            nb: *Notebook* containing at least `call_spots` page.
+            method: `'anchor'` or `'omp'`.
+                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
+        """
+        # large hist_spacing so quick as we change it anway
+        super().__init__(nb, 'omp', score_omp_multiplier, False, 0.5, False)
+        self.ax.clear()
+        # Get rid of buttons - only use actual dot product score
+        self.buttons_ax.clear()
+        plt.axis('off')
+        self.score = self.score[:, [0, self.n_plots - 1]]
+        self.n_plots = 2
+        del self.plots
+        hist_bins = np.arange(self.hit_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
+        self.x_score_ind = 0
+        self.hist_spacing = 0.01
+        self.plot = self.ax.hist2d(self.score[:, self.x_score_ind], self.score[:, -1], hist_bins)[3]
+        self.cbar = self.fig.colorbar(self.plot, ax=self.ax)
+        self.ax.set_xlim(self.hit_min, self.hist_max)
+        self.ax.set_ylim(self.hit_min, self.hist_max)
+        self.text_boxes[1].set_val(self.hist_spacing)
+        self.ax.set_xlabel(self.button_labels[0].replace('\n', ', '))
+        self.ax.set_ylabel(self.button_labels[-1].replace('\n', ', '))
+        plt.show()
+
+    def update(self, inds_update: Optional[List[int]] = None):
+        ylim_old = self.plot.get_clim()[1]  # To check whether we need to change y limit
+        hist_bins = np.arange(self.hit_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
+        self.plot = self.ax.hist2d(self.score[self.use, self.x_score_ind], self.score[self.use, -1], hist_bins)[3]
+        ylim_new = self.plot.get_clim()[1]
+        self.ax.set_xlim(self.hit_min, self.hist_max)
+        self.ax.set_ylim(self.hit_min, self.hist_max)
+        if np.abs(ylim_new - ylim_old) / np.max([ylim_new, ylim_old]) < self.ylim_tol:
+            ylim_new = ylim_old
+        self.plot.set_clim(0, ylim_new)
+        self.cbar.update_normal(self.plot)
+        if isinstance(self.genes_use, int):
+            gene_label = f" matched to {self.gene_names[self.genes_use]}"
+        else:
+            gene_label = ""
+        self.ax.set_title(f"Distribution of Scores for all {self.method} spots" + gene_label)
         self.ax.figure.canvas.draw()
