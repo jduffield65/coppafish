@@ -204,7 +204,8 @@ class TestGetGeneEfficiency(unittest.TestCase):
             spot_gene_no = spot_gene_no.flatten()-1  # python indices start at 0
             gene_codes = gene_codes.astype(int)
             min_spots = int(min_spots)
-            output_python = get_gene_efficiency(spot_colors, spot_gene_no, gene_codes, bleed_matrix, min_spots)
+            output_python = get_gene_efficiency(spot_colors, spot_gene_no, gene_codes, bleed_matrix, min_spots,
+                                                np.inf, 0, 1)  # In Matlab, did not have max/min gene_efficiency
             # ref_round has efficiency of 1.
             # Can only compare gene efficiencies with same ref_rounds and
             # if both matlab and python are above/below min_spots (number of spots is affected by choice of ref_round).

@@ -7,6 +7,12 @@
 ## `view_omp_score`
 ### ::: iss.plot.omp.shape.view_omp_score.__init__
 
+## `histogram_score`
+### ::: iss.plot.omp.score.histogram_score.__init__
+
+## `histogram_2d_score`
+### ::: iss.plot.omp.score.histogram_2d_score.__init__
+
 ## `get_coef_images`
 ### ::: iss.plot.omp.coefs.get_coef_images
 

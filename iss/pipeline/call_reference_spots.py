@@ -224,7 +224,10 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         gene_efficiency_use = get_gene_efficiency(spot_colors_use[use_ge], spot_gene_no[use_ge],
                                                   gene_codes[:, nbp_basic.use_rounds],
                                                   np.nan_to_num(bleed_matrix[rc_ind]),
-                                                  config['gene_efficiency_min_spots'])
+                                                  config['gene_efficiency_min_spots'],
+                                                  config['gene_efficiency_max'],
+                                                  config['gene_efficiency_min'],
+                                                  config['gene_efficiency_min_factor'])
 
         # get new bled codes using gene efficiency with L2 norm = 1.
         multiplier_ge = np.tile(np.expand_dims(gene_efficiency_use, 2), [1, 1, n_channels_use])
@@ -245,7 +248,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
 
-    # save score using latest gene efficiency and diff to second best gene
+    # save score using the latest gene efficiency and diff to second best gene
     nbp_ref_spots.score = spot_score.astype(np.float32)
     nbp_ref_spots.gene_no = spot_gene_no.astype(np.int16)
     sort_gene_inds = np.argsort(scores, axis=1)
@@ -264,4 +267,11 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     bled_codes_ge = np.moveaxis(bled_codes_ge, -1, 0)
     nbp.bled_codes_ge = bled_codes_ge
 
+    ge_fail_genes = np.where(np.min(gene_efficiency_use,axis=1) == 1)[0]
+    n_fail_ge = len(ge_fail_genes)
+    if n_fail_ge > 0:
+        fail_genes_str = [str(ge_fail_genes[i]) + ': ' + gene_names[ge_fail_genes][i] for i in range(n_fail_ge)]
+        fail_genes_str = '\n'.join(fail_genes_str)
+        warnings.warn(f"\nGene Efficiency could not be calculated for {n_fail_ge}/{n_genes} "
+                      f"genes:\n{fail_genes_str}")
     return nbp, nbp_ref_spots

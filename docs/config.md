@@ -809,6 +809,24 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 	Default: `25`
 
+* **gene_efficiency_max**: *number*.
+
+	Maximum allowed value of `gene_efficiency` i.e. any one round can be at most this times more important than the median round for every gene. 
+
+	Default: `6`
+
+* **gene_efficiency_min**: *number*.
+
+	At most `ceil(gene_efficiency_min_factor * n_rounds_use)` rounds can have `gene_efficiency` below `gene_efficiency_min` for any given gene. 
+
+	Default: `0.05`
+
+* **gene_efficiency_min_factor**: *number*.
+
+	At most `ceil(gene_efficiency_min_factor * n_rounds_use)` rounds can have `gene_efficiency` below `gene_efficiency_min` for any given gene. 
+
+	Default: `0.2`
+
 * **gene_efficiency_n_iter**: *int*.
 
 	`gene_efficiency` is computed from spots which pass a quality thresholding based on the bled_codes computed with the gene_efficiency of the previous iteration. This process will continue until the `gene_effiency` converges or `gene_efficiency_n_iter` iterations are reached. 0 means `gene_efficiency` will not be used. 

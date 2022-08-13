@@ -173,7 +173,10 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
 
 
 def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_codes: np.ndarray,
-                        bleed_matrix: np.ndarray, min_spots: int = 30) -> np.ndarray:
+                        bleed_matrix: np.ndarray, min_spots,
+                        max_gene_efficiency: float = np.inf,
+                        min_gene_efficiency: float = 0,
+                        min_gene_efficiency_factor: float = 1) -> np.ndarray:
     """
     `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected
     by the `bleed_matrix`. It is computed based on the average of all `spot_colors` assigned to that gene.
@@ -189,7 +192,13 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
             For a spot, `s` matched to gene with dye `d` in round `r`, we expect `spot_colors[s, r]`",
             to be a constant multiple of `bleed_matrix[r, :, d]`"
         min_spots: If number of spots assigned to a gene less than or equal to this, `gene_efficiency[g]=1`
-            for all rounds.
+            for all rounds. Typical = 30.
+        max_gene_efficiency: Maximum allowed gene efficiency, i.e. any one round can be at most this times more
+            important than the median round for every gene. Typical = 6.
+        min_gene_efficiency: At most `ceil(min_gene_efficiency_factor * n_rounds)` rounds can have
+            `gene_efficiency` below `min_gene_efficiency` for any given gene. Typical = 0.05
+        min_gene_efficiency_factor: At most `ceil(min_gene_efficiency_factor * n_rounds)` rounds can have
+            `gene_efficiency` below `min_gene_efficiency` for any given gene. Typical = 0.2
 
     Returns:
         `float [n_genes x n_rounds]`.
@@ -213,6 +222,7 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
         raise utils.errors.OutOfBoundsError("spot_gene_no", gene_no_oob[0], 0, n_genes - 1)
 
     gene_efficiency = np.ones([n_genes, n_rounds])
+    n_min_thresh = int(np.ceil(min_gene_efficiency_factor * n_rounds))
     for g in range(n_genes):
         use = spot_gene_no == g
         if np.sum(use) > min_spots:
@@ -236,9 +246,14 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
             use = round_strength[:, ref_round] > 0
             if np.sum(use) > min_spots:
                 relative_round_strength = round_strength[use] / np.expand_dims(round_strength[use, ref_round], 1)
-                gene_efficiency[g] = np.median(relative_round_strength, 0)
+                # Only use spots with gene efficiency below the maximum allowed.
+                below_max = np.max(relative_round_strength, axis=1) < max_gene_efficiency
+                # Only use spots with at most n_min_thresh rounds below the minimum.
+                above_min = np.sum(relative_round_strength < min_gene_efficiency, axis=1) <= n_min_thresh
+                use = np.array([below_max, above_min]).all(axis=0)
+                if np.sum(use) > min_spots:
+                    gene_efficiency[g] = np.median(relative_round_strength[use], 0)
 
     # set negative values to 0
-    # TODO: maybe set a maximum value of gene efficiency so no one round can dominate too much.
     gene_efficiency = np.clip(gene_efficiency, 0, np.inf)
     return gene_efficiency
