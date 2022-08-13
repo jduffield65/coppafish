@@ -4,6 +4,7 @@ from matplotlib.widgets import TextBox
 import warnings
 from ...setup.notebook import Notebook
 from .coefs import get_coef_images
+from ...call_spots import omp_spot_score
 
 
 class view_omp_score:
@@ -99,9 +100,9 @@ class view_omp_score:
                      x=(self.subplot_adjust[0] + self.subplot_adjust[1]) / 2)
 
         # Add text box to change score multiplier
-        text_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.065, self.subplot_adjust[2]+gap_size/5,
+        text_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.062, self.subplot_adjust[2]+gap_size/5,
                                      0.05, 0.04])
-        self.text_box = TextBox(text_ax, 'Score\nMultiplier', self.score_multiplier, color='k',
+        self.text_box = TextBox(text_ax, 'Score\n'+r'Multiplier, $\rho$', self.score_multiplier, color='k',
                                 hovercolor=[0.2, 0.2, 0.2])
         self.text_box.cursor.set_color('r')
         label = text_ax.get_children()[0]  # label is a child of the TextBox axis
@@ -139,9 +140,8 @@ class view_omp_score:
         both_negative = np.asarray([self.coef_images[self.gene_no] < 0, self.expected_sign_image < 0]).all(axis=0)
         n_pos_neighb = np.sum(both_positive)
         n_neg_neighb = np.sum(both_negative)
-        max_score = self.score_multiplier * np.sum(self.expected_sign_image == 1) + \
-                    np.sum(self.expected_sign_image == -1)
-        score = (n_pos_neighb * self.score_multiplier + n_neg_neighb) / max_score
+        score = omp_spot_score(self.nbp_omp, self.score_multiplier, n_neighbours_pos=n_pos_neighb,
+                               n_neighbours_neg=n_neg_neighb)
         score_from_image = np.sum(expected_image[both_positive]) - np.sum(expected_image[both_negative])
         if self.check and np.abs(score - score_from_image) < self.tol:
             # Sanity check that the way we normalised top row is correct. i.e. absolute sum of top row plots equals 1.
@@ -170,8 +170,9 @@ class view_omp_score:
         else:
             color = 'r'
         mid_z = int((self.nz - 1) / 2)
+        score_str = r"$\gamma_s = \frac{n_{neg_s} + \rho n_{pos_s}}{n_{neg_{max}} + \rho n_{pos_{max}}}$"
         self.ax[mid_z + self.nz].set_title(f"Coefficient for Gene {self.gene_no}: {self.gene_names[self.gene_no]}, "
-                                           f"Score = {str(np.around(self.score, 2))}", color=color)
+                                           f"Score, {score_str}, = {str(np.around(self.score, 2))}", color=color)
 
     def add_hatching(self):
         # Add green hatching to top plot at locations which contribute to score

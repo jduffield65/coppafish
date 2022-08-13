@@ -5,7 +5,7 @@ from ...call_spots.qual_check import quality_threshold
 from .legend import iss_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity
 from ...call_spots import omp_spot_score, get_intensity_thresh
-from ..omp import view_omp, view_omp_fit, view_omp_score
+from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_omp_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
 from ...setup import Notebook
 import napari
@@ -195,6 +195,13 @@ class iss_plot:
         self.score_thresh_slider.sliderReleased.connect(self.update_plot)
         self.viewer.window.add_dock_widget(self.score_thresh_slider, area="left", name='Score Range')
 
+        # OMP Score Multiplier Slider
+        self.omp_score_multiplier_slider = QDoubleSlider(Qt.Orientation.Horizontal)
+        self.omp_score_multiplier_slider.setValue(self.score_omp_multiplier)
+        self.omp_score_multiplier_slider.setRange(0, 50)
+        self.omp_score_multiplier_slider.valueChanged.connect(lambda x: self.show_omp_score_multiplier(x))
+        self.omp_score_multiplier_slider.sliderReleased.connect(self.update_plot)
+
         # intensity is calculated same way for anchor / omp method so do not reset intensity threshold
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
@@ -214,6 +221,8 @@ class iss_plot:
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
         if self.nb.has_page('omp'):
+            self.viewer.window.add_dock_widget(self.omp_score_multiplier_slider, area="left",
+                                               name='OMP Score Multiplier')
             # Only have button to change method if have omp page too.
             self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
@@ -263,7 +272,7 @@ class iss_plot:
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp, self.score_omp_multiplier)
+            score = omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
@@ -337,6 +346,9 @@ class iss_plot:
     def show_score_thresh(self, low_value, high_value):
         self.viewer.status = self.method_buttons.method + ': Score Range = [{:.2f}, {:.2f}]'.format(low_value,
                                                                                                     high_value)
+
+    def show_omp_score_multiplier(self, value):
+        self.viewer.status = 'OMP Score Multiplier = {:.2f}'.format(value)
 
     def show_intensity_thresh(self, value):
         self.viewer.status = 'Intensity Threshold = {:.3f}'.format(value)
@@ -420,6 +432,11 @@ class iss_plot:
         @self.viewer.bind_key('g')
         def call_to_view_bm(viewer):
             view_bled_codes(self.nb)
+
+        @self.viewer.bind_key('Shift-h')
+        def call_to_view_omp_score(viewer):
+            if self.nb.has_page('omp'):
+                histogram_omp_score(self.nb, self.omp_score_multiplier_slider.value())
 
         @self.viewer.bind_key('c')
         def call_to_view_codes(viewer):

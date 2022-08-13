@@ -29,7 +29,9 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
 
 
 def omp_spot_score(nbp: NotebookPage, score_multiplier: float,
-                   spot_no: Optional[Union[int, List, np.ndarray]] = None) -> Union[float, np.ndarray]:
+                   spot_no: Optional[Union[int, List, np.ndarray]] = None,
+                   n_neighbours_pos: Optional[Union[np.ndarray, int]] = None,
+                   n_neighbours_neg: Optional[Union[np.ndarray, int]] = None) -> Union[float, np.ndarray]:
     """
     Score for omp gene assignment
 
@@ -43,10 +45,14 @@ def omp_spot_score(nbp: NotebookPage, score_multiplier: float,
         Score for each spot in spot_no if given, otherwise all spot scores.
     """
     max_score = score_multiplier * np.sum(nbp.spot_shape == 1) + np.sum(nbp.spot_shape == -1)
+    if n_neighbours_pos is None:
+        n_neighbours_pos = nbp.n_neighbours_pos
+    if n_neighbours_neg is None:
+        n_neighbours_neg = nbp.n_neighbours_neg
     if spot_no is None:
-        score = (score_multiplier * nbp.n_neighbours_pos + nbp.n_neighbours_neg) / max_score
+        score = (score_multiplier * n_neighbours_pos + n_neighbours_neg) / max_score
     else:
-        score = (score_multiplier * nbp.n_neighbours_pos[spot_no] + nbp.n_neighbours_neg[spot_no]) / max_score
+        score = (score_multiplier * n_neighbours_pos[spot_no] + n_neighbours_neg[spot_no]) / max_score
     return score
 
 
