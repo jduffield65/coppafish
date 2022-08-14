@@ -123,7 +123,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp.norm_shift_z),
                                    nbp.norm_shift_tile, transform, nbp_file, nbp_basic, return_in_bounds=True)[0]
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / color_norm_factor[rc_ind])
-    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(100))
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
     if config['background_weight_shift'] is None:
         # Set to median absolute pixel intensity
         config['background_weight_shift'] = float(round_any(nbp.abs_intensity_percentile[50],

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from ...call_spots.qual_check import quality_threshold
 from .legend import iss_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts
 from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
@@ -432,6 +432,18 @@ class iss_plot:
         @self.viewer.bind_key('g')
         def call_to_view_bm(viewer):
             view_bled_codes(self.nb)
+
+        @self.viewer.bind_key('Shift-g')
+        def call_to_gene_counts(viewer):
+            if self.nb.has_page('omp'):
+                score_multiplier = self.omp_score_multiplier_slider.value()
+                score_omp_thresh = self.score_range['omp'][0]
+            else:
+                score_multiplier = None
+                score_omp_thresh = None
+            score_thresh = self.score_range['anchor'][0]
+            intensity_thresh = self.intensity_thresh_slider.value()
+            gene_counts(self.nb, None, None, score_thresh, intensity_thresh, score_omp_thresh, score_multiplier)
 
         @self.viewer.bind_key('h')
         def call_to_view_omp_score(viewer):

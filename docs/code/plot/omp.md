@@ -1,20 +1,23 @@
-## `view_omp`
-### ::: iss.plot.omp.coefs.view_omp.__init__
+## Coefficients
+### `view_omp`
+::: iss.plot.omp.coefs.view_omp.__init__
 
-## `view_omp_fit`
-### ::: iss.plot.omp.coefs.view_omp_fit.__init__
+### `view_omp_fit`
+::: iss.plot.omp.coefs.view_omp_fit.__init__
 
-## `view_omp_score`
-### ::: iss.plot.omp.shape.view_omp_score.__init__
+### `get_coef_images`
+::: iss.plot.omp.coefs.get_coef_images
 
-## `histogram_score`
-### ::: iss.plot.omp.score.histogram_score.__init__
+## Score Shape
+### `view_omp_score`
+::: iss.plot.omp.score_shape.view_omp_score.__init__
 
-## `histogram_2d_score`
-### ::: iss.plot.omp.score.histogram_2d_score.__init__
+## Score Histogram
+### `histogram_score`
+::: iss.plot.omp.score_hist.histogram_score.__init__
 
-## `get_coef_images`
-### ::: iss.plot.omp.coefs.get_coef_images
+### `histogram_2d_score`
+::: iss.plot.omp.score_hist.histogram_2d_score.__init__
 
-## `get_track_info`
-### ::: iss.plot.omp.track_fit.get_track_info
+## Track Fit
+### ::: iss.plot.omp.track_fit

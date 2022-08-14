@@ -542,7 +542,9 @@ call_spots page contains bleed matrix and expected code for each gene. Page adde
 
 * **abs_intensity_percentile**: *Numpy float array [100] or None*.
 
-	abs_intensity_percentile[i] is the i% percentile of absolute pixel_colors on norm_shift_tile, norm_shift_z.
+	`abs_intensity_percentile[i]` is the i% percentile of absolute `pixel_colors` on `norm_shift_tile`,  `norm_shift_z`. 
+
+	 This is used to compute `omp[initial_intensity_thresh]` if not provided.
 
 * **norm_shift_tile**: *Integer*.
 

@@ -1,5 +1,5 @@
 from .results_viewer.base import iss_plot
-from .call_spots import view_spot, view_codes, view_bled_codes, view_bleed_matrix, view_intensity
+from .call_spots import view_spot, view_codes, view_bled_codes, view_bleed_matrix, view_intensity, gene_counts
 from .call_spots.dot_product import view_score
 from .call_spots.weight import view_weight
 from .call_spots.background import view_background

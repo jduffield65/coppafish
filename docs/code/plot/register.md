@@ -12,6 +12,7 @@
 ### `view_affine_shift_info`
 ::: iss.plot.register.diagnostics.view_affine_shift_info.__init__
 
+## *ICP*
 ### `view_icp`
 ::: iss.plot.register.icp.view_icp
 
