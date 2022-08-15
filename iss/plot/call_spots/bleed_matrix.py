@@ -39,16 +39,15 @@ class view_bleed_matrix(ColorPlotBase):
         # different norm for each round, each has dims n_use_channels x 1 whereas BM dims is n_use_channels x n_dyes
         # i.e. normalisation just affected by channel not by dye.
         color_norm = [np.expand_dims(color_norm[r], 1) for r in range(n_use_rounds)]
-        if nb.basic_info.dye_names is not None:
-            subplot_adjust[2] = 0.14  # need more space at bottom for dye labels
         super().__init__(bleed_matrix, color_norm, subplot_row_columns, subplot_adjust=subplot_adjust,
                          fig_size=fig_size)
         self.ax[0].set_yticks(ticks=np.arange(n_use_channels), labels=nb.basic_info.use_channels)
         if nb.basic_info.dye_names is None:
             self.ax[-1].set_xticks(ticks=np.arange(n_use_dyes), labels=nb.basic_info.use_dyes)
         else:
-            self.ax[-1].set_xticks(ticks=np.arange(n_use_dyes), labels=nb.basic_info.dye_names[nb.basic_info.use_dyes],
-                                   rotation=45)
+            self.fig.subplots_adjust(bottom=0.15)
+            self.ax[-1].set_xticks(ticks=np.arange(n_use_dyes),
+                                   labels=np.asarray(nb.basic_info.dye_names)[nb.basic_info.use_dyes], rotation=45)
         if single_bm:
             self.ax[0].set_title('Bleed Matrix')
             self.ax[0].set_ylabel('Color Channel')

@@ -113,7 +113,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # Get norm_shift and intensity_thresh from middle tile/ z-plane average intensity
     # This is because these variables are all a small fraction of a spot_color L2 norm in one round.
-    # Hence use average pixel as example of low intensity spot.
+    # Hence, use average pixel as example of low intensity spot.
     # get central tile
     nbp.norm_shift_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
     if nbp_basic.is_3d:
@@ -158,7 +158,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colors_use = np.asarray(spot_colors_use)  # in case using jax
     bleed_matrix = initial_raw_bleed_matrix.copy()
     bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
-                                             config['bleed_matrix_method'], config['bleed_matrix_score_thresh'])
+                                             config['bleed_matrix_method'], config['bleed_matrix_score_thresh'],
+                                             config['bleed_matrix_min_cluster_size'], config['bleed_matrix_n_iter'],
+                                             config['bleed_matrix_anneal'])
 
     # get gene codes
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()

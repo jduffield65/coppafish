@@ -33,3 +33,6 @@
 
 ## Score Calculation
 ### ::: iss.plot.call_spots.score_calc
+
+## Scaled K Means
+### ::: iss.plot.call_spots.scaled_k_means

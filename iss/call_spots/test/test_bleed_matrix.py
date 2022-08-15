@@ -40,7 +40,7 @@ class TestScaledKMeans(unittest.TestCase):
             min_cluster_size = int(min_cluster_size)
             k_matlab = k_matlab.flatten() - 1
             s2_matlab = s2_matlab.flatten()
-            v_python, s2_python, k_python, k_score = scaled_k_means(x, v0, score_thresh, min_cluster_size, max_iter)
+            v_python, s2_python, k_python, k_score = scaled_k_means(x, v0, score_thresh, min_cluster_size, max_iter)[:4]
             diff_1 = v_python - v_matlab
             diff_2 = k_python - k_matlab
             diff_3 = s2_python - s2_matlab

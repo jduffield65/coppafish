@@ -773,6 +773,12 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 	Default: `0`
 
+* **bleed_matrix_n_iter**: *in*.
+
+	Maximum number of iterations allowed in the `scaled_k_means` part of `bleed_matrix` calculation. 
+
+	Default: `100`
+
 * **background_weight_shift**: *maybe_number*.
 
 	Shift to apply to weighting of each background vector to limit boost of weak spots. The weighting of round r for the fitting of the background vector for channel c is `1 / (spot_color[r, c] + background_weight_shift)` so `background_weight_shift` ensures this does not go to infinity for small `spot_color[r, c]`. Typical `spot_color[r, c]` is 1 for intense spot so `background_weight_shift` is small fraction of this. Leave blank to set to median absolute intensity of all pixels on the mid z-plane of the central tile. 

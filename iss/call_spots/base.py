@@ -129,7 +129,7 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
     This gets ```bled_codes``` such that the spot_color of a gene ```g``` in round ```r``` is expected to be a constant
     multiple of ```bled_codes[g, r]```.
     This function should be run with full bleed_matrix with any rounds/channels/dyes outside those using set to nan.
-    Otherwise will get confusion with dye indices in `gene_codes` being outside size of `bleed_matrix`.
+    Otherwise, will get confusion with dye indices in `gene_codes` being outside size of `bleed_matrix`.
 
     !!! note
         All bled_codes returned with an L2 norm of 1 when summed over all rounds and channels

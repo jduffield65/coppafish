@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 from ...call_spots.qual_check import quality_threshold
 from .legend import iss_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
+    view_scaled_k_means
 from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
@@ -457,6 +458,10 @@ class iss_plot:
         def call_to_view_omp_score(viewer):
             if self.nb.has_page('omp'):
                 histogram_2d_score(self.nb, self.omp_score_multiplier_slider.value())
+
+        @self.viewer.bind_key('k')
+        def call_to_view_omp_score(viewer):
+            view_scaled_k_means(self.nb)
 
         @self.viewer.bind_key('c')
         def call_to_view_codes(viewer):
