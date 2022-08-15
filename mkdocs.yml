@@ -84,6 +84,7 @@ nav:
         - Register: pipeline/register.md
         - Get Reference Spots: pipeline/get_reference_spots.md
         - Call Reference Spots: pipeline/call_reference_spots.md
+        - OMP: pipeline/omp.md
     - Code:
         - Setup:
             - Notebook: code/setup/notebook.md

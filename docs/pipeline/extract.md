@@ -105,6 +105,11 @@ channel and z-plane being shown (e.g. below, the round at index 0 is 3 and the c
 
 ![raw](../images/pipeline/extract/raw.png){width="800"}
 
+Using this tool before running the pipeline may be useful for deciding which z-planes to use.
+For example, if say the first 10 z-planes don't show any clear spots, then [removing them with
+`use_z`](../config_setup.md#using-a-subset-of-the-raw-data) in the [*basic_info*](../config.md#basic_info) 
+section of the configuration file would make the pipeline run much quicker, 
+especially in the [*omp*](omp.md) and [*extract and filter*](#extract-and-filter) sections.
 
 ## Filtering
 Once the raw images are loaded in, they are 

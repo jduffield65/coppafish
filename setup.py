@@ -23,7 +23,7 @@ setup(
               'iss.pipeline', 'iss.omp', 'iss.find_spots', 'iss.call_spots', 'iss.utils.morphology', 
               'iss.register', 'iss.plot.call_spots', 'iss.plot.omp', 'iss.plot.register', 'iss.plot.stitch',
               'iss.plot.extract', 'iss.plot.results_viewer', 'iss.plot.results_viewer.legend'],
-    install_requires=['jax', 'jaxlib', 'numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python',
+    install_requires=['jax', 'jaxlib', 'numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'matplotlib', 'h5py', 'ipympl', 'distinctipy', 'napari',
                       'pandas', 'PyQt5', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl', 'cachey', 'hsluv', 
                       'npe2', 'magicgui', 'sphinx'],
