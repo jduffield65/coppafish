@@ -691,20 +691,19 @@ For more detailed pseudocode about how the transform is found, see the [*ICP*](#
 ```
 r_ref = reference round
 c_ref = reference round
-c_shift = config['register_initial']['shift_channel']
 spot_yxz[t, r, c] = yxz coordinates for spots detected on tile t,
                     round r, channel c.
 for t in use_tiles:      
     Center reference point cloud:
         spot_yxz[t, r_ref, c_ref] = spot_yxz[t, r_ref, c_ref] - tile_centre
     Convert z coordinate into yx-pixels:
-        spot_yxz[t, r_ref, c_ref][:, 3] = spot_yxz[t, r_ref, c_ref][:, 3] * z_scale
+        spot_yxz[t, r_ref, c_ref][:, 2] = spot_yxz[t, r_ref, c_ref][:, 2] * z_scale
     for r in use_rounds:            
         for c in use_channels:
             Center point cloud:
                 spot_yxz[t, r, c] = spot_yxz[t, r, c] - tile_centre
             Convert z coordinate into yx-pixels:
-                spot_yxz[t, r, c][:, 3] = spot_yxz[t, r, c][:, 3] * z_scale
+                spot_yxz[t, r, c][:, 2] = spot_yxz[t, r, c][:, 2] * z_scale
             Only keep spots whose nearest neighbour is far
                 spot_yxz[t, r, c] = spot_yxz[t, r, c][isolated]           
             Find transform between spot_yxz[t, r_ref, c_ref] and 

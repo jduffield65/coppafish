@@ -1,5 +1,5 @@
 # Stitch
-The [stitch step of the pipeline](../code/pipeline/stitch.md) uses the reference point clouds
+The [*stitch* step of the pipeline](../code/pipeline/stitch.md) uses the reference point clouds
 (all tiles of `ref_round`/`ref_channel`) added to the *Notebook* during the [`find_spots`](find_spots.md) step
 to find the [overlap](#shift) between neighbouring tiles in the form of shifts. It then uses these shifts to get
 the origin of each tile in a [global coordinate system](#global-coordinates). The tile origins are
@@ -682,8 +682,8 @@ For each duplicate spot, we expect there is a non-duplicate spot in red, detecte
 but with the same global coordinate. We can see this in the *Zoom* plot showing the intersection between tile 1 and 
 tile 2 (indicated by a green box in the *Full* image).
 
-These duplicate spots will be removed in the `get_reference_spots` step of the pipeline, so we don't double count
-the same spot.
+These duplicate spots will be removed in the [*get reference spots*](get_reference_spots.md#duplicates) 
+step of the pipeline, so we don't double count the same spot.
 
 The white lines and number of matches are the same as for [`view_stitch_overlap`](#view_stitch_overlap).
 Also in *3D*, you can scroll between z-planes with the mouse and specify z-thick in the same way.

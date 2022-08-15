@@ -471,7 +471,7 @@ ref_spots page contains gene assignments and info for spots found on reference r
 
 * **colors**: *Numpy int32 array [n_spots x n_rounds x n_channels]*.
 
-	[s, r, c] is the intensity of spot s on round r, channel c. -tile_pixel_value_shift-1 if that round/channel not used otherwise integer.
+	[s, r, c] is the intensity of spot s on round r, channel c. -tile_pixel_value_shift if that round/channel not used otherwise integer.
 
 * **gene_no**: *Numpy int16 array [n_spots]*.
 

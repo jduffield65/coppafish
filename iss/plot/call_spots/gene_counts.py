@@ -27,6 +27,10 @@ class gene_counts:
         There will also be a second reference spots histogram, the difference with this is that the spots
         were allowed to be assigned to some fake genes with `bled_codes` specified through `fake_bled_codes`.
 
+        !!! note
+        `fake_bled_codes` have dimension `n_fake x  nbp_basic.n_rounds x nbp_basic.n_channels` not
+        `n_fake x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels).
+
         Args:
             nb: *Notebook* containing at least `call_spots` page.
             fake_bled_codes: `float [n_fake_genes x n_rounds x n_channels]`.

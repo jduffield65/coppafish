@@ -77,7 +77,8 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
         t: npy tile index considering
         r: Round considering
         c: Channel considering
-        yxz: If None, whole image is loaded otherwise there are two choices:
+        yxz: If `None`, whole image is loaded otherwise there are two choices:
+
             - `int [2 or 3]`. List containing y,x,z coordinates of sub image to load in.
                 E.g. if `yxz = [np.array([5]), np.array([10,11,12]), np.array([8,9])]`
                 returned `image` will have shape `[1 x 3 x 2]`.

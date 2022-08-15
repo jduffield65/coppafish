@@ -1,5 +1,5 @@
 # Find Spots
-The [find spots step of the pipeline](../code/pipeline/find_spots.md) loads in the filtered images for each 
+The [*find spots* step of the pipeline](../code/pipeline/find_spots.md) loads in the filtered images for each 
 tile, round, channel saved during the [extract step](extract.md) and detects spots on them. 
 It is obtaining a point cloud from the images because in the stitch and register sections of the pipeline,
 it is quicker to use point clouds than the full images.
