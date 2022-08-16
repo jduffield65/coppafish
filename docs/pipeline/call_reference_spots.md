@@ -139,7 +139,7 @@ Where, $\lambda_b$ is `config['background_weight_shift']` and the sum is over al
 
 If the weighting, $w$, was a constant across rounds and channels ($\lambda_b = \infty$), this would just be 
 the least squares solution. After we have found the coefficients, we remove the background contribution
-from the spot colors to give $\pmb{\zeta_{{s0}}}$ which we use from now on.
+from the spot colors to give $\pmb{\zeta}_{{s0}}$ which we use from now on.
 
 $$
 \zeta_{{s0}_{rC}} = \zeta_{{s}_{rC}} - \mu_{sC}B_{C_{rC}}
@@ -192,6 +192,247 @@ $\lambda_b = \infty$ case. This is because the *Weight Squared*, $\Omega^2_{s_{r
 contribution of the weak round 1, channel 0 and decrease the contribution of the strong rounds: 0, 2, 3 and 6.
 
 ### Bleed Matrix
+Crosstalk can occur between color channels. Some crosstalk may occur due to optical bleedthrough; 
+additional crosstalk can occur due to chemical cross-reactivity of probes. The precise degree of crosstalk does not
+seem to vary much between sequencing rounds.
+It is therefore possible to largely compensate for this crosstalk by learning the precise amount of crosstalk 
+between each pair of color channels.
+
+To [estimate the crosstalk](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_bleed_matrix), 
+we use the spot colors, $\pmb{\zeta}_{s0}$, of all well isolated spots. We 
+reshape these, so we have a set of $n_{isolated} \times n_{rounds}$ vectors, each of dimension 
+$n_{channels}$, $\pmb{v}_i$ ($v_{0_c} = \zeta_{{s=0,0}_{r=0,c}}$).
+Only [well-isolated](find_spots.md#isolated-spots) spots are used to ensure that crosstalk estimation is 
+not affected by spatial overlap of spots corresponding to different genes.
+
+Crosstalk is then estimated by running a 
+[scaled k-means](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) 
+algorithm on these vectors, which finds a set of $n_{dye}$ vectors, $\pmb{c}_d$, such that the error function:
+
+$$
+\sum_i\min_{\lambda_i, d(i)}|\pmb{v}_i - \lambda_i\pmb{c}_{d(i)}|^2
+$$
+
+is minimized. In other words, it finds the $n_{dyes}$ intensity vectors, $\pmb{c}_d$, each of dimension
+$n_{channels}$, such that the spot color of each well isolated spot on every round is close to a scaled version of 
+one of them. The $n_{dyes} \times n_{channels}$
+array of dye vectors is termed the `bleed matrix` and is saved as `nb.call_spots.bleed_matrix`.
+The [`view_bleed_matrix`](../view_results.md#b-view_bleed_matrix) function can be used to show it:
+
+
+=== "Single Bleed Matrix"
+    ![image](../images/pipeline/call_spots/bleed_matrix/single.png){width="800"}
+=== "Separate Bleed Matrix For Each Round"
+    ![image](../images/pipeline/call_spots/bleed_matrix/separate.png){width="800"}
+
+
+As shown in the second plot, if `config['bleed_matrix_method'] = 'separate'`, we compute a different 
+`bleed_matrix` for each round - i.e. we loosen the assumption that crosstalk does not vary between sequencing rounds.
+
+#### Initial Bleed Matrix
+To estimate the dye intensity vectors, $\pmb{c}_d$, the 
+[`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) algorithm
+needs to know the number of dyes and a starting guess for what each dye vector looks like.
+
+This is specified in the [`basic_info`](../config.md#basic_info) section of the configuration file as explained 
+[here](../config_setup.md#specifying-dyes).
+
+#### Scaled K Means
+The pseudocode for the [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means)
+algorithm to obtain the dye intensity vectors, $\pmb{c}_d$, is given below:
+
+```
+v: Single round intensity vectors of well isolated spots 
+   [n_vectors x n_channels]
+c: Initial Guess of Bleed Matrix
+   [n_dyes x n_channels]
+dye_ind_old: [n_vectors] array of zeros.
+
+v_norm = v normalised so each vector has an L2 norm of 1.
+Normalise c so that each dye vector has an L2 norm of 1.
+
+i = 0
+while i < n_iter:
+    score = dot product between each vector in v_norm and each
+        dye in c. [n_vectors x n_dyes]
+    top_score = highest score across dyes for each vector
+        in v_norm. [n_vectors].
+    dye_ind = dye corresponding to top_score for each vector
+        in v_norm. [n_vectors].
+        
+    if dye_ind == dye_ind_old:
+        Stop iteration because we have reached convergence
+        i.e. i = n_iter
+    dye_ind_old = dye_ind
+    
+    for d in range(n_dyes):
+        v_use = all vectors in v with dye_ind = d and 
+            top_score > score_thresh.
+            Use un-normalised as to avoid overweighting weak points.
+            [n_use x n_channels]
+        if n_use < min_size:
+            c[d] = 0
+        else:
+            Update c[d] to be top svd component of v_use i.e.
+                v_matrix = v_use.transpose() @ v_use / n_use
+                    [n_channels x n_channels]
+                c[d] = np.linalg.svd(v_matrix)[0][:, 0]
+                    [n_channels]
+        
+    i = i + 1    
+return c
+```
+There are a few parameters in the config file which are used:
+
+* `bleed_matrix_n_iter`: This is `n_iter` in the above code.
+* `bleed_matrix_min_cluster_size`: This is `min_size` in the above code.
+* `bleed_matrix_score_thresh`: This is `score_thresh` in the above code.
+* `bleed_matrix_anneal`: If this is `True`, the `scaled_k_means` algorithm will be run twice.
+    The second time will use $\pmb{c}_d$ returned from the first run as the starting point,
+    and it will have a different `score_thresh` for each dye. `score_thresh` for dye $d$ 
+    will be equal to the median of `top_score[dye_ind == d]` in the last iteration of the first run.
+    The idea is that for the second run, we only use vectors which have a large score,
+    to get a more accurate estimate.
+
+#### [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means)
+The [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) algorithm 
+can be visualised using the [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means) function:
+
+![image](../images/pipeline/call_spots/bleed_matrix/scaled_k_means.png){width="800"}
+
+In each column, the top row, boxplot $d$, is for `top_score[dye_ind == d]` (only showing scores above
+`score_thresh`, which is 0 for the first two plots) with the dye vectors, $\pmb{c}_d$, indicated in the second
+row. The number of vectors assigned to each dye is indicated by the number within each boxplot.
+
+The first column is for the first iteration i.e. with the initial guess of the bleed matrix.
+The second column is after the first `scaled_k_means` algorithm has finished.
+The third column is after the second `scaled_k_means` algorithm has finished (only shown if `bleed_matrix_anneal=True`).
+The bottom whisked of the boxplots in the third column indicate the `score_thresh` used for each dye.
+
+This is useful for debugging the `bleed_matrix` computation, as you want the boxplots to show high scores and for those
+scores to increase from left to right as the algorithm is run.
+
+### Gene Bled Codes
+Once the `bleed_matrix` has been computed, the expected code for each gene can be 
+[obtained](../code/call_spots/base.md#iss.call_spots.base.get_bled_codes).
+
+Each gene appears with a single dye in each imaging round as indicated by the [codebook](../config_setup.md#code_book)
+and saved as `nb.call_spots.gene_codes`.
+`bled_code[g, r, c]` for gene $g$ in round $r$, channel $c$ is then given by `bleed_matrix[r, c, gene_codes[r]]`.
+
+Each `bled_code` is also normalised to have an L2 norm of 1. They are saved as `nb.call_spots.bled_codes`.
+
+??? example
+
+    Using the *Single Bleed Matrix* shown as an example [earlier](#bleed-matrix), the bled_code
+    for *Kcnk2* with `gene_code = 6304152` is:
+
+    ![image](../images/pipeline/call_spots/bleed_matrix/bled_code.png){width="800"}
+
+### Dot Product Score
+To assign spot $s$, with spot color (post background), $\pmb{\zeta}_{{si}}$, to a gene, we compute a dot product
+score, $\Delta_{sig}$ to each gene, $g$, with `bled_code` $\pmb{b}_g$. This is defined to be:
+
+$$
+\Delta_{sig} = \sum_{r=0}^{n_r-1}\sum_{c=0}^{n_c-1}\omega^2_{{si}_{rc}}\tilde{\zeta}_{{si}_{rc}}b_{g_{rc}}
+$$
+
+Where:
+
+$$
+\tilde{\zeta}_{{si}_{rc}} = \frac{\zeta_{{si}_{rc}}}
+{\sqrt{\sum_{\mathscr{r}=0}^{n_r-1}\sum_{\mathscr{c}=0}^{n_c-1}\zeta^2_{{si}_{\mathscr{rc}}}} + \lambda_d}
+$$
+
+$$
+\sigma^2_{{si}_{rc}} = \beta^2 + \alpha\sum_g\mu^2_{sig}b^2_{g_{rc}}
+$$
+
+$$
+\omega^2_{{si}_{rc}} = n_rn_c\frac{\sigma^{-2}_{{si}_{rc}}}
+{\sum_{\mathscr{r}=0}^{n_r-1}\sum_{\mathscr{c}=0}^{n_c-1}\sigma^{-2}_{{si}_{\mathscr{rc}}}}
+$$
+
+* $n_{r}$ is the number of rounds.
+* $n_{c}$ is the number of channels.
+* $\lambda_d$ is `config['dp_norm_shift'] * sqrt(n_rounds)` (typical `config['dp_norm_shift']` is 0.1).
+* $\alpha$ is `config['alpha']` (*default is 120*).
+* $\beta$ is `config['beta']` (*default is 1*).
+* The sum over genes, $\sum_g$, is over all real and background genes i.e. $\sum_{g=0}^{n_g+n_c-1}$
+* $i$ refers to the number of actual genes fit prior to this iteration of *OMP*. Here, because we are
+only fitting one gene, $i=0$, meaning only background has been fit.
+
+So if $\lambda_d = 0$ and $\pmb{\omega}^2_{si}$ was 1 for each round and channel (achieved through $\alpha=0$), then 
+this would just be the normal dot product between two vectors with L2 norm of one. 
+The min value is 0 and max value is 1. 
+
+The purpose of the weighting, $\pmb{\omega}^2_{{si}}$, is to decrease the contribution of rounds/channels 
+which already have a gene in. It is really more relevant to the *OMP* algorithm. 
+It can be turned off in this part of the pipeline by setting
+`config['alpha'] = 0`. The $n_rn_c$ term at the start of the $\omega^2_{{si}_{rc}}$ equation is a normalisation
+term such that the max possible value of $\Delta_{sig}$ is approximately 1 (it can be more though).
+
+??? note "Value of $\lambda_d$"
+
+    If in the $\Delta_{sig}$ equation, we used $\pmb{\zeta}_{{si}}$ instead of $\pmb{\tilde{\zeta}}_{{si}}$,
+    then the max value would no longer have an upper limit and a high score could be achieved by having 
+    large values of $\pmb{\zeta}_{{si}}$ in some rounds and channels as well as by having $\pmb{\zeta}_{{si}}$
+    being similar to $\pmb{b}_g$. 
+
+    We use the [intensity](#intensity) value to indicate the strength of the spot, so for $\Delta_{sig}$, we 
+    really just want a variable which indicates how alike the spot color is to the gene, indepenent of
+    strength. Hence, we use $\pmb{\tilde{\zeta}}_{{si}}$.
+
+    If $\lambda_d = 0$, it would mean that even background pixels with very small intensity could get a high score.
+    So, we use a non-zero value of $\lambda_d$ to prevent very weak spots getting a large $\Delta_{sig}$.
+
+    If `config['dp_norm_shift']` is not specified, it is set to the median of the L2 norm in a single round
+    computed from the colors of all pixels in the middle z-plane 
+    (`nb.call_spots.norm_shift_tile`) of the central tile (`nb.call_spots.norm_shift_z`).
+    
+    The idea behind this is that, the L2 norm of an average background pixel would be 
+    `config['dp_norm_shift'] * sqrt(n_rounds)`. So if $\lambda_d$ was set to this, it is giving 
+    a penalty to any spot which is less intense than the average background pixel. This is 
+    desirable since any pixels of such a low intensity are unlikely to be spots.
+
+The spot $s$, is assigned to the gene $g$, for which $\Delta_{sig}$ is the largest.
+
+#### [`view_score`](../code/plot/call_spots.md#view_score)
+How the various parameters in the dot product score calculation affect the final value can be investigated,
+for a single spot, through the function [`view_score`](../code/plot/call_spots.md#view_score):
+
+
+=== "`view_score`"
+    ![image](../images/pipeline/call_spots/view_score.png){width="800"}
+=== "`view_weight`"
+    ![image](../images/pipeline/call_spots/view_weight.png){width="800"}
+
+* The top left plot shows the spot color prior to background removal.
+* The bottom left plots shows the spot color after background removal.
+* The top right plot shows the dot product score obtained without weighting ($\alpha=0$).
+* The bottom right plot shows the actual score obtained with the current weighting parameters.
+* To get to the gene with the highest dot product score for the current iteration, you can enter an impossible value
+in the *Gene* textbox. As well as typing the index of the gene, you can also type in the gene name to 
+look at the calculation for a specific gene.
+* Clicking on the *Weight Squared* plot shows the [`view_weight`](../code/plot/call_spots.md#view_weight) 
+plot indicating how it is calculated (second image above).
+
+Looking at the `view_weight` image and the far right plots of the `view_score` image, 
+we see that the effect of the weighting is to down-weight color channel 0 because this is where the background
+coefficient is the largest. The channels with a smaller background coefficient (1, 5 and 6) then have 
+a weighting greater than 1. Thus, the weighted score is greater than the non-weighted one because
+channel 6, where this spot is particularly strong has a greater contribution.
+I.e. because the intensity in channel 6 cannot be explained by background genes, but it can be explained by Plp1, 
+we boost the score. For most spots, the background coefficients are very small and so the weighting has little effect.
+
+Using the [`histogram_score`](#histogram_score) function, we see that the effect of weighting (blue) is to 
+add a tail of scores greater than 1 for spots where an increased contribution is given to the rounds/channels
+where they are most intense. The mode score does not change though:
+
+![image](../images/pipeline/call_spots/hist_weight.png){width="800"}
+
+### Gene Efficiency
+
 
 
 ## Intensity

@@ -20,15 +20,10 @@ class view_weight:
                  iter: int = 0, alpha: Optional[float] = None, beta: Optional[float] = None,
                  score_info: Optional[List] = None, check_weight: bool = True):
         """
-        This produces 7 plots which show how the dot product score was calculated.
-        The final dot product score is the sum of all the values in the weighted dot product image (bottom right)
-        and is indicated in the title to this image.
+        This produces at least 5 plots which show how the weight used in the dot product score was calculated.
 
-        The gene/iteration as well as the parameters used to compute the dot product score can be changed
+        The iteration as well as the alpha and beta parameters used to compute the weight can be changed
         with the text boxes.
-
-        Click on background plot to show how it is calculated
-
 
         Args:
             nb: *Notebook* containing at least the *call_spots* and *ref_spots* pages.
