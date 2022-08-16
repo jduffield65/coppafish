@@ -190,7 +190,9 @@ class view_background:
         # Dot product weight
         self.weight_dp_cbar = self.fig.colorbar(self.im[dp_inds[3]], ax=self.ax[dp_inds[3]], fraction=0.046, pad=0.04,
                                                 aspect=51)
-        if self.vmax[dp_inds[3]] > 1.8:
+        if self.vmax[dp_inds[3]] > 2.5:
+            spacing = 1
+        elif self.vmax[dp_inds[3]] > 1.8:
             spacing = 0.5
         elif self.vmax[dp_inds[3]] > 1:
             spacing = 0.2
@@ -204,17 +206,17 @@ class view_background:
 
     def set_titles(self):
         self.title = [r'Spot Color, $\mathbf{\zeta_s}$',
-                      r"Background Codes, $\mathbf{B} = \sum_{g=" + str(self.n_genes) + "}^{" + str(self.n_genes_all - 1) +
-                      "}\mathbf{b}_g$",
+                      r"Background Codes, $\mathbf{B} = \sum_{C=" + str(0) + "}^{" + str(self.n_channels_use - 1) +
+                      "}\mathbf{B}_C$",
                       "Weight Squared\n"+r"$\Omega^2_{s_{rc}} = \frac{w^2_{rc}}{\sum_rw^2_{rc}B^2_{rc}}$ where "
                                          r"$w_{rc}=\frac{1}{|\zeta_{s_{rc}}|+\lambda_b}$",
                       r"Dot Product, $\zeta_{s_{rc}}B_{rc}$",
                       r"Weighted Dot Product, $\Omega^2_{s_{rc}}\zeta_{s_{rc}}B_{rc}$",
-                      r"Coef, $\sum_r\zeta_{s_{rc}}B_{rc}$",
-                      r"Weighted Coef, $\mu_{" + str(self.n_genes) + r"+c}=\sum_r\Omega^2_{s_{rc}}\zeta_{s_{rc}}B_{rc}$",
-                      f'Iter 0 Residual, ' + r'$\mathbf{\zeta_{si}}=\mathbf{\zeta_s}-\mathbf{B_s}$',
-                      r"Background, $\mathbf{B_s}=\sum_{g=" + str(self.n_genes) + "}^{" + str(self.n_genes_all - 1) +
-                      "}\mu_{sg}\mathbf{b}_g$"]
+                      r"Coef, $\sum_r\zeta_{s_{rC}}B_{rC}$",
+                      r"Weighted Coef, $\mu_{sC}=\sum_r\Omega^2_{s_{rC}}\zeta_{s_{rC}}B_{rC}$",
+                      f'Iter 0 Residual, ' + r'$\mathbf{\zeta_{s0}}=\mathbf{\zeta_s}-\mathbf{B_s}$',
+                      r"Background, $\mathbf{B_s}=\sum_{C=" + str(0) + "}^{" + str(self.n_channels_use - 1) +
+                      "}\mu_{sC}\mathbf{B}_C$"]
         for i in range(len(self.ax)):
             self.ax[i].set_title(self.title[i], size=10, color='w')
         plt.suptitle(f"Background Coefficient Calculation for for spot {self.spot_no}",
@@ -233,7 +235,9 @@ class view_background:
             self.im[dp_inds[3]].set_clim(-max_weight_dp, max_weight_dp)
             self.im[dp_inds[1]].set_clim(-max_weight_dp, max_weight_dp)
             self.weight_dp_cbar.update_normal(self.im[dp_inds[3]])
-            if self.weight_dp_cbar.vmax > 1.8:
+            if self.weight_dp_cbar.vmax > 2.5:
+                spacing = 1
+            elif self.weight_dp_cbar.vmax > 1.8:
                 spacing = 0.5
             elif self.weight_dp_cbar.vmax > 1:
                 spacing = 0.2

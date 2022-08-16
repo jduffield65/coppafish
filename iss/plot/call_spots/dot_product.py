@@ -59,8 +59,8 @@ class view_score:
         # Get saved values if anchor method
         if method.lower() != 'omp':
             self.g_saved = nb.ref_spots.gene_no[spot_no]
-            if self.track_info['gene_added'][2] != self.g_saved:
-                raise ValueError(f"\nBest gene saved was {self.g_saved} but with parameters used here, it"
+            if self.track_info['gene_added'][2] != self.g_saved and check_weight:
+                raise ValueError(f"\nBest gene saved was {self.g_saved} but with parameters used here, it "
                                  f"was {self.track_info['gene_added'][2]}.\nEnsure that alpha and beta in "
                                  f"config['call_spots'] have not been changed.\n"
                                  f"Set check_weight=False to skip this error.")

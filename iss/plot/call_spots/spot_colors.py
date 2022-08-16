@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button, RangeSlider
-from ...call_spots import omp_spot_score, get_intensity_thresh
+from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
+from ...call_spots.background import fit_background
 from ...setup import Notebook
 from ...spot_colors.base import get_spot_colors
 import matplotlib
@@ -204,17 +205,22 @@ class view_codes(ColorPlotBase):
         else:
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]
-        spot_color = nb.__getattribute__(page_name).colors[spot_no][
-                         np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose() / color_norm
+        self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
+                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose() / color_norm
+        # Get spot color after background fitting
+        self.background_removed = False
+        self.spot_color_pb = fit_background(self.spot_color.T[np.newaxis],
+                                            nb.call_spots.background_weight_shift)[0][0].T
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
 
         gene_name = nb.call_spots.gene_names[gene_no]
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
                                                                  nb.basic_info.use_channels)].transpose()
-        super().__init__([spot_color, gene_color], color_norm)
+        super().__init__([self.spot_color, gene_color], color_norm, slider_pos=[0.85, 0.2, 0.01, 0.75],
+                         cbar_pos=[0.9, 0.2, 0.03, 0.75])
         self.ax[0].set_title(f'Spot {spot_no}: match {str(np.around(spot_score, 2))} '
                              f'to {gene_name}')
-        self.ax[1].set_title(f'Predicted code for {gene_name}')
+        self.ax[1].set_title(f'Predicted code for Gene {gene_no}: {gene_name}')
         self.ax[0].set_yticks(ticks=np.arange(self.im_data[0].shape[0]), labels=nb.basic_info.use_channels)
         self.ax[1].set_xticks(ticks=np.arange(self.im_data[0].shape[1]))
         self.ax[1].set_xticklabels(['{:.0f} ({:.2f})'.format(r, nb.call_spots.gene_efficiency[gene_no, r])
@@ -228,8 +234,30 @@ class view_codes(ColorPlotBase):
                 rectangle = plt.Rectangle((intense_gene_cr[1][i]-0.5, intense_gene_cr[0][i]-0.5), 1, 1,
                                           fill=False, ec="lime", linestyle=':', lw=2)
                 self.ax[j].add_patch(rectangle)
+
+        self.background_button_ax = self.fig.add_axes([0.85, 0.1, 0.1, 0.05])
+        self.background_button = Button(self.background_button_ax, 'Background', hovercolor='0.275')
+        self.background_button.on_clicked(self.change_background)
+
         self.change_norm()  # initialise with method = 'norm'
         plt.show()
+
+    def change_background(self, event=None):
+        """
+        Function triggered on press of background button.
+        Will either remove/add background contribution to spot_color
+        """
+        # need to make new slider at each button press because min/max will change
+        if not self.background_removed:
+            self.im_data[0] = self.spot_color_pb
+            self.background_removed = True
+        else:
+            self.im_data[0] = self.spot_color
+            self.background_removed = False
+        # Change norm method before call change_norm so overall it does not change
+        if self.color_norm is not None:
+            self.method = 'norm' if self.method == 'raw' else 'raw'  # change to the other method
+        self.change_norm()
 
 
 class view_spot(ColorPlotBase):
