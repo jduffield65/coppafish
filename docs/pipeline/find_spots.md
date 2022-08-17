@@ -174,12 +174,9 @@ The `use_tiles`, `use_rounds` and `use_channels` parameters can be changed witho
 the `find_spots` section of the pipeline as explained [here](../notebook.md#changing-basic_info-mid-pipeline).
 It tiles/rounds/channels are added instead of removed though, it will need re-running, as will the `extract` step.
 
-### `n_spots_grid`
-If [`check_n_spots`](../code/find_spots/check_spots.md#iss.find_spots.check_spots.check_n_spots) is run with 
-`show_grid = True`, [`n_spots_grid`](../code/find_spots/check_spots.md#iss.find_spots.check_spots.n_spots_grid) 
-will be run.
-
-This is useful to visualise the number of spots detected on each tile, round and channel:
+### [`n_spots_grid`](../code/plot/find_spots.md#iss.plot.find_spots.n_spots.n_spots_grid)
+The [`n_spots_grid`](../code/plot/find_spots.md#iss.plot.find_spots.n_spots.n_spots_grid) function is 
+useful to visualise the number of spots detected on each tile, round and channel:
 
 === "Good"
     ![image](../images/pipeline/find_spots/n_spots_grid.png){width="800"}

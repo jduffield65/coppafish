@@ -40,7 +40,7 @@ def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.
         nan_tiles = np.unique(spot_tile)[np.unique(np.where(np.isnan(tile_origin[np.unique(spot_tile)]))[0])]
         raise ValueError(f"tile_origin for tiles\n{nan_tiles}\ncontains nan values but some spot_tile "
                          f"also contains these tiles. Maybe remove these from use_tiles to continue.\n"
-                         f"Also, consider iss.plot.find_spots.check_n_spots to check if these tiles have few spots.")
+                         f"Also, consider iss.plot.n_spots_grid to check if these tiles have few spots.")
     spot_global_yxz = spot_local_yxz + tile_origin[spot_tile]
     all_nearest_tile_ind = tree_tiles.query(spot_global_yxz[:, :2])[1]
     not_duplicate = np.asarray(use_tiles)[all_nearest_tile_ind.flatten()] == spot_tile
