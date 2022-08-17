@@ -54,7 +54,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_de
     all_local_yxz = np.zeros((0, 3), dtype=np.int16)
     all_isolated = np.zeros(0, dtype=bool)
     all_local_tile = np.zeros(0, dtype=np.int16)
-    for t in range(nbp_basic.n_tiles):
+    for t in nbp_basic.use_tiles:
         t_local_yxz, t_isolated = spot_yxz(spot_details, t, r, c, return_isolated=True)
         if np.shape(t_local_yxz)[0] > 0:
             all_local_yxz = np.append(all_local_yxz, t_local_yxz, axis=0)

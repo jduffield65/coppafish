@@ -269,6 +269,8 @@ def view_stitch(nb: Notebook):
                      nb.find_spots.spot_details[:, 2] == nb.basic_info.ref_channel), axis=0)
     local_yxz = nb.find_spots.spot_details[is_ref, -3:]
     tile = nb.find_spots.spot_details[is_ref, 0]
+    local_yxz = local_yxz[np.isin(tile, nb.basic_info.use_tiles)]
+    tile = tile[np.isin(tile, nb.basic_info.use_tiles)]
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
     tile_origin = nb.stitch.tile_origin
