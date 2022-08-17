@@ -31,6 +31,7 @@ class iss_plot:
             nb: Notebook containing at least the `ref_spots` page.
             background_image: Optional file_name or image that will be plotted as the background image.
                 If image, z dimension needs to be first i.e. `n_z x n_y x n_x` if 3D or `n_y x n_x` if 2D.
+                If pass *2D* image for *3D* data, will show same image as background on each z-plane.
         """
         # TODO: flip y axis so origin bottom left
         self.nb = nb

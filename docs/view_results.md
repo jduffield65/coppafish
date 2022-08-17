@@ -55,7 +55,9 @@ To use a particular background image, when calling `iss_plot` a second argument 
 - `'anchor'`: Will use `config['file_names']['big_anchor_image']` if it exists, otherwise will be no background.
 - Path to .npy or .npz file: An example would be `'/Users/user/iss/experiment/background_image.npz'`. 
     This file must contain an image with axis in the order z-y-x (y-x if 2D).
-- Numpy array: Can explicitly given the `[n_z x n_y x n_x]` (`[n_y x n_x]` in 2D) image desired.
+- Numpy array: Can explicitly given the `[n_z x n_y x n_x]` (`[n_y x n_x]` in *2D*) image desired. 
+
+If a *2D* image is provided for a *3D* dataset, then this image will be used as the background image for each z-plane.
 
 ## Sidebar
 
@@ -189,6 +191,22 @@ A green rectangle is added to each round/channel where the `bled_code` value is 
 rounds/channels where the gene is particularly strong. It is also done in [`view_codes`](#c-view_codes) and
 [`view_omp_fit`](#shift-o-view_omp_fit).
 
+### *Shift-g*: [`gene_counts`](code/plot/call_spots.md#gene_counts)
+[This plot](pipeline/call_reference_spots.md#gene_counts) indicates the number of spots assigned to each gene 
+which also have `nb.call_spots.score > score_thresh` and `nb.call_spots.intensity > intensity_thresh`. 
+The initial values of `score_thresh` and `intensity_thresh` used will be the current [slider](#score-range) values.
+
+### *h*: [`histogram_score`](code/plot/omp.md#histogram_score)
+[This plot](pipeline/call_reference_spots.md#histogram_score) shows the histogram of the score assigned to each spot.
+
+### *Shift-h*: [`histogram_2d_score`](code/plot/omp.md#histogram_2d_score)
+[This plot](pipeline/call_reference_spots.md#histogram_score) shows the bivariate histogram to see the correlation 
+between the omp spot score, $\gamma_s$ and the dot product score $\Delta_s$ for spots detected with the 
+*OMP* algorithm.
+
+### *k*: [`view_scaled_k_means`](code/plot/call_spots.md#scaled-k-means)
+[This plot](pipeline/call_reference_spots.md#view_scaled_k_means) shows how the `bleed_matrix` was computed.
+
 ### *space*: Change to *select* mode
 To run the below diagnostics, you need to change to *select* mode. This is done by pressing *space-bar*.
 In *select* mode, you won't be able to pan or zoom. To change back to *pan/zoom* mode, press *space-bar* again.
@@ -217,6 +235,14 @@ the case for [`view_omp`](#o-view_omp).
 
 The cross-hair is in green in each round/channel where the bled_code (with `gene_efficiency`) 
 of the predicted gene (*Snca* here) is greater than 0.2.
+
+### *d*: [`view_score`](code/plot/call_spots.md#view_score)
+[This plot](pipeline/call_reference_spots.md#view_score) indicates how the dot product score, $\Delta_s$, was computed
+for a particular spot.
+
+### *Shift-i*: [`view_intensity`](code/plot/call_spots.md#view_intensity)
+[This plot](pipeline/call_reference_spots.md#view_intensity) shows how the intensity, $\chi_s$ was computed
+for a particular spot.
 
 ### *o*: [`view_omp`](code/plot/omp.md#view_omp)
 The omp coefficients of all genes in neighbourhood of a particular spot can be viewed by pressing *o*
@@ -274,3 +300,6 @@ The gene shown in red is the first gene with a `dot_product_score` less than thi
 
 *Res* in the title of images in the first row gives the L2 norm of the residual `spot_color` at that iteration 
 of the omp algorithm. I.e. we expect this to decrease as the omp algorithm proceeds.
+
+### *Shift-s*: [`view_omp_score`](code/plot/omp.md#view_omp_score)
+This shows how the *OMP* score was computed.

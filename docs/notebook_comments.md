@@ -526,7 +526,7 @@ call_spots page contains bleed matrix and expected code for each gene. Page adde
 
 * **gene_efficiency**: *Numpy float array [n_genes x n_rounds]*.
 
-	gene_efficiency[g,r] gives the expected intensity of gene g in round r compared to that expected by the bleed_matrix. It is computed based on the average of isolated spot_colors assigned to that gene which exceed score, score_diff and intensity thresholds given in config file. For all g, there is a ref_round[g] such that gene_efficiency[g, ref_round[g]] = 1. nan if r outside use_rounds and 1 if gene_codes[g,r] outside use_dyes.
+	gene_efficiency[g,r] gives the expected intensity of gene g in round r compared to that expected by the bleed_matrix. It is computed based on the average of isolated spot_colors assigned to that gene which exceed score, score_diff and intensity thresholds given in config file. For all g, there is an av_round[g] such that gene_efficiency[g, av_round[g]] = 1. nan if r outside use_rounds and 1 if gene_codes[g,r] outside use_dyes.
 
 * **bled_codes_ge**: *Numpy float array [n_genes x n_rounds x n_channels]*.
 

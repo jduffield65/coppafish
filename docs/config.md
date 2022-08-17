@@ -773,11 +773,25 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 	Default: `0`
 
-* **bleed_matrix_n_iter**: *in*.
+* **bleed_matrix_min_cluster_size**: *int*.
+
+	If less than this many vectors are assigned to a dye cluster in the `scaled_k_means` part of `bleed_matrix` calculation, the expected code for that dye will be set to 0 for all color channels i.e. bleed matrix computation will have failed. 
+
+	Default: `10`
+
+* **bleed_matrix_n_iter**: *int*.
 
 	Maximum number of iterations allowed in the `scaled_k_means` part of `bleed_matrix` calculation. 
 
 	Default: `100`
+
+* **bleed_matrix_anneal**: *bool*.
+
+	If `True`, the `scaled_k_means` calculation will be performed twice. The second time starting with the output of the first and with `score_thresh` for cluster `i` set to the median of the scores assigned to cluster `i` in the first run. 
+
+	 This limits the influence of bad spots to the bleed matrix. 
+
+	Default: `True`
 
 * **background_weight_shift**: *maybe_number*.
 
