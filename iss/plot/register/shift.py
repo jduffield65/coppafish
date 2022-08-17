@@ -92,6 +92,7 @@ def view_register_search(nb: Notebook, t: int, r: int, c: Optional[int] = None,
                                          config['shift_max'][i] +
                                          config['shift_step'][i] / 2, config['shift_step'][i]).astype(int)
     if not nb.basic_info.is_3d:
+        config['nz_collapse'] = None
         config['shift_widen'][2] = 0  # so don't look for shifts in z direction
         config['shift_max_range'][2] = 0
         shifts[0]['z'] = np.array([0], dtype=int)
@@ -115,8 +116,8 @@ def view_register_search(nb: Notebook, t: int, r: int, c: Optional[int] = None,
     else:
         show = True
     view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
-                debug_info['scores_3d'], shift, shift_score_thresh, debug_info['shift_2d_initial'],
-                debug_info['shift_thresh'], config['shift_score_thresh_min_dist'],
+                debug_info['scores_3d'], shift, debug_info['min_score_2d'], debug_info['shift_2d_initial'],
+                shift_score_thresh, debug_info['shift_thresh'], config['shift_score_thresh_min_dist'],
                 config['shift_score_thresh_max_dist'], title, show)
     if return_shift:
         return shift

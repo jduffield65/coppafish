@@ -324,13 +324,16 @@ just saying we require a large gradient.
 
     ![image](../images/pipeline/stitch/thresh_calc_3d.png){width="800"}
 
-    Once an acceptable $yx$ shift has been found, we divide `score_thresh` by 
-    `config['stitch']['shift_score_thresh_multiplier']` i.e. we set it to the 
-    value of the `score` at `shift_yx_thresh`. Hence the `score` at the green **+**
-    in the above image appears white (it is equal to `score_thresh`). This new threshold
-    is then used to determine whether the final $yxz$ shift is acceptable.
+    Once an acceptable $yx$ shift has been found, we set `score_thresh` for the *3D* search 
+    to the max score at the $yx$ shift used to find `score_thresh` in *2D* across all z planes searched, multiplied
+    by `config['stitch']['shift_score_thresh_multiplier']`.
 
-    We decrease `score_thresh` when looking for the $yxz$ shift because
+    I.e. the green **+** in the *Z=0* plot is at the same $yx$ coordinate as the green **+** in the *2D* plot.
+    The maximum score at this $yx$ coordinate across z-shifts between -6 and 6 occurs at *Z=0*.
+    Thus, we set the `score_thresh` to be equal to the score at this $yxz$ shift multiplied by 
+    `config['stitch']['shift_score_thresh_multiplier']`.
+
+    The `score_thresh` is smaller when looking for the $yxz$ shift because
     we expect in *3D*, if neighbouring points are on slightly different z-planes but 
     very close in $yx$ they would have a small contribution to the `score`. 
     This is because the $z$ pixels are larger than the $yx$ pixels. 

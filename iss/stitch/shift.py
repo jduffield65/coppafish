@@ -4,6 +4,7 @@ from sklearn.metrics import pairwise_distances
 from ..utils.base import setdiff2d
 from typing import Tuple, Optional, List, Union
 import warnings
+import numpy_indexed
 
 
 def shift_score(distances: np.ndarray, thresh: float) -> float:
@@ -314,7 +315,7 @@ def get_2d_slices(yxz_base: np.ndarray, yxz_transform: np.ndarray,
     return yx_base_slices, yx_transform_trees, transform_min_z
 
 
-def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Optional[float],
+def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score_2d: Optional[float],
                   min_score_multiplier: Optional[float], min_score_min_dist: Optional[float],
                   min_score_max_dist: Optional[float],
                   neighb_dist_thresh: float, y_shifts: np.ndarray, x_shifts: np.ndarray,
@@ -324,8 +325,8 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
     """
     This finds the shift from those given that is best applied to `yxz_base` to match `yxz_transform`.
 
-    If the `score` of this is below `min_score`, a widened search is performed.
-    If the `score` is above `min_score`, a refined search is done about the best shift so as to find the absolute
+    If the `score` of this is below `min_score_2d`, a widened search is performed.
+    If the `score` is above `min_score_2d`, a refined search is done about the best shift so as to find the absolute
     best shift, not the best shift among those given.
 
     Args:
@@ -333,14 +334,14 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             Coordinates of spots on base image (yx in yx pixel units, z in z pixel units).
         yxz_transform: `int [n_spots_transform x 3]`.
             Coordinates of spots on transformed image (yx in yx pixel units, z in z pixel units).
-        min_score: If score of best shift is below this, will search among the widened shifts.
-            If `None`, `min_score` will be computed using `get_score_thresh`.
-        min_score_multiplier: Parameter used to find `min_score` if `min_score` not given.
+        min_score_2d: If score of best shift is below this, will search among the widened shifts.
+            If `None`, `min_score_2d` will be computed using `get_score_thresh`.
+        min_score_multiplier: Parameter used to find `min_score_2d` and `min_score_3d` if not given.
             Typical = `1.5` (definitely more than `1`).
-        min_score_min_dist: `min_score` is set to max score of those scores for shifts a distance between `min_dist` and
-            `max_dist` from the best_shift.
-        min_score_max_dist: `min_score` is set to max score of those scores for shifts a distance between `min_dist` and
-            `max_dist` from the best_shift.
+        min_score_min_dist: `min_score_2d` is set to max score of those scores for shifts a distance between `min_dist`
+            and `max_dist` from the best_shift.
+        min_score_max_dist: `min_score_2d` is set to max score of those scores for shifts a distance between `min_dist`
+            and `max_dist` from the best_shift.
         neighb_dist_thresh: Basically the distance below which neighbours are a good match.
             Typical = `2`.
         y_shifts: `float [n_y_shifts]`.
@@ -375,8 +376,8 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
             Best shift found.
         - `best_score` - `float`.
             Score of best shift.
-        - `min_score` - `float`.
-            Same as input, unless input was `None` in which case this is the calculated value.
+        - `min_score_3d` - `float`.
+            Same as `min_score_2d`, unless input was `None` in which case this is the calculated value.
         - `debug_info` - dict containing debugging information:
             - `shifts_2d`: `int [n_shifts_2d x 2]`
                 All yx shifts searched to get best `yx_shift`.
@@ -388,9 +389,12 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
                 Score corresponding to each 3d shift. `None` if `nz_collapse is None` i.e. 2D point cloud.
             - `shift_2d_initial`: `float [2]`
                 Best shift found after first 2D search. I.e. annulus around this shift was used
-                to compute `min_score` and `shift_thresh`.
-            - `shift_thresh`: `float [2]`
-                yx shift corresponding to `min_score`. Will be `None` if `min_score` provided in advance.
+                to compute `min_score_2d` and `shift_thresh`.
+            - `shift_thresh`: `int [3]`
+                yxz shift corresponding to `min_score_3d`. Will be `None` if `min_score_2d` provided in advance.
+                `shift_thresh[:2]` is the yx shift corresponding to `min_score_2d`
+            - `min_score_2d`: Same as input `min_score_2d`, unless was `None` in
+                which case this is the calculated value.
     """
     if widen is None:
         widen = [0, 0, 0]
@@ -414,12 +418,13 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
     # save initial_shifts so don't look over same shifts twice
     # initial_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     shift_2d_initial = shift_2d.copy()
-    if min_score is None:
-        min_score, shift_thresh = get_score_thresh(all_shifts_2d, all_scores_2d, shift_2d, min_score_min_dist,
-                                                   min_score_max_dist, min_score_multiplier)
+    if min_score_2d is None:
+        min_score_2d, shift_thresh = get_score_thresh(all_shifts_2d, all_scores_2d, shift_2d, min_score_min_dist,
+                                                      min_score_max_dist, min_score_multiplier)
+        shift_thresh = np.pad(shift_thresh, (0, 1))  # add z shift = 0
     else:
         shift_thresh = None
-    if score_2d <= min_score and np.max(widen[:2]) > 0:
+    if score_2d <= min_score_2d and np.max(widen[:2]) > 0:
         shift_ranges = np.array([np.ptp(i) for i in [y_shifts, x_shifts]])
         if max_range is None:
             # If don't specify max_range, only widen once.
@@ -429,16 +434,16 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         else:
             max_range_2d = np.asarray(max_range[:2])
         # keep extending range of shifts in yx until good score reached or hit max shift_range.
-        while score_2d <= min_score:
+        while score_2d <= min_score_2d:
             if np.all(shift_ranges >= max_range_2d):
                 warnings.warn(f"Shift search range exceeds max_range = {max_range_2d} in yxz directions but \n"
                               f"best score is only {round(score_2d, 2)} which is below "
-                              f"min_score = {round(min_score, 2)}."
+                              f"min_score = {round(min_score_2d, 2)}."
                               f"\nBest shift found was {shift_2d}.")
                 break
             else:
                 warnings.warn(f"Best shift found ({shift_2d}) has score of {round(score_2d, 2)} which is below "
-                              f"min_score = {round(min_score, 2)}."
+                              f"min_score = {round(min_score_2d, 2)}."
                               f"\nRunning again with extended shift search range in yx.")
             if shift_ranges[0] < max_range_2d[0]:
                 y_shifts = extend_array(y_shifts, widen[0])
@@ -462,30 +467,50 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         score = score_2d
         all_shifts_3d = None
         all_scores_3d = None
+        min_score_3d = min_score_2d
     else:
-        if min_score_multiplier is not None:
-            # Lower threshold score in 3D if passed 2d threshold as expect score to be smaller.
-            min_score = min_score / min_score_multiplier
-        y_shift_2d = np.array(shift_2d[0])
-        x_shift_2d = np.array(shift_2d[1])
+        ignore_shifts = None
+        if shift_thresh is None:
+            y_shift_2d = np.array(shift_2d[0])
+            x_shift_2d = np.array(shift_2d[1])
+        else:
+            y_shift_2d = np.array([shift_2d[0], shift_thresh[0]])
+            x_shift_2d = np.array([shift_2d[1], shift_thresh[1]])
+            if len(np.unique(y_shift_2d)) == 2 and len(np.unique(x_shift_2d)) == 2:
+                # Only find shifts for the shift_2d and shift_thresh, get rid of cross terms.
+                ignore_shifts = np.array([[shift_2d[0], shift_thresh[1]], [shift_thresh[0], shift_2d[1]]])
+                ignore_shifts = np.tile(np.pad(ignore_shifts, [(0, 0), (0, 1)]), [len(z_shifts), 1])
+                ignore_shifts[:, 2] = np.repeat(z_shifts * z_scale[0], len(y_shift_2d))
         # z_scale for yxz_base used from now on as we are finding the shift from yxz_base to yxz_transform.
         shift, score, all_shifts_3d, all_scores_3d = get_best_shift_3d(yxz_base, yxz_transform_tree, neighb_dist_thresh,
-                                                                       y_shift_2d, x_shift_2d, z_shifts * z_scale[0])
-        if score < min_score and widen[2] > 0:
+                                                                       y_shift_2d, x_shift_2d, z_shifts * z_scale[0],
+                                                                       ignore_shifts=ignore_shifts)
+        if shift_thresh is not None:
+            # Set min_score_3d to max score at shift used to find min_score_2d across all z planes
+            # multiplied by min_score_multiplier
+            shift_thresh_ind = np.where(numpy_indexed.indices(shift_thresh[np.newaxis, :2].astype(int),
+                                                              all_shifts_3d[:, :2].astype(int), missing=-10) == 0)[0]
+            shift_thresh_best_ind = shift_thresh_ind[np.argmax(all_scores_3d[shift_thresh_ind])]
+            min_score_3d = all_scores_3d[shift_thresh_best_ind] * min_score_multiplier
+            shift_thresh = (all_shifts_3d[shift_thresh_best_ind] / [1, 1, z_scale[0]]).astype(int)
+        else:
+            min_score_3d = min_score_2d
+
+        if score < min_score_2d and widen[2] > 0:
             # keep extending range of shifts in z until good score reached or hit max shift_range.
             # yx shift is kept as 2d shift found when using slices.
             max_range_z = np.asarray(max_range[2])
             z_shift_range = np.ptp(z_shifts)
-            while score < min_score:
+            while score < min_score_3d:
                 if z_shift_range > max_range_z:
                     warnings.warn(f"Shift search range exceeds max_range = {max_range_z} in z directions but \n"
-                                  f"best score is only {round(score, 2)} which is below "
-                                  f"min_score = {round(min_score, 2)}."
+                                  f"best score is only {np.around(score, 2)} which is below "
+                                  f"min_score = {np.around(min_score_3d, 2)}."
                                   f"\nBest shift found was {shift}.")
                     break
                 else:
                     warnings.warn(f"Best shift found ({shift}) has score of {round(score, 2)} which is below "
-                                  f"min_score = {round(min_score, 2)}."
+                                  f"min_score = {np.around(min_score_3d, 2)}."
                                   f"\nRunning again with extended shift search range in z.")
                 z_shifts = extend_array(z_shifts, widen[2])
                 shift_new, score_new, all_shifts_new, all_scores_new = \
@@ -530,7 +555,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score: Op
         all_shifts_3d[:, 2] = all_shifts_3d[:, 2] / z_scale[0]
         all_shifts_3d = all_shifts_3d.astype(np.int16)
     shift[2] = shift[2] / z_scale[0]
-    return shift.astype(int), score, min_score, {'shifts_2d': all_shifts_2d, 'scores_2d': all_scores_2d,
-                                                 'shifts_3d': all_shifts_3d, 'scores_3d': all_scores_3d,
-                                                 'shift_2d_initial': shift_2d_initial,
-                                                 'shift_thresh': shift_thresh}
+    return shift.astype(int), score, min_score_3d, {'shifts_2d': all_shifts_2d, 'scores_2d': all_scores_2d,
+                                                    'shifts_3d': all_shifts_3d, 'scores_3d': all_scores_3d,
+                                                    'shift_2d_initial': shift_2d_initial, 'shift_thresh': shift_thresh,
+                                                    'min_score_2d': min_score_2d}

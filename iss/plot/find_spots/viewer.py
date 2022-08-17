@@ -3,10 +3,10 @@ import numpy as np
 import os
 import warnings
 from typing import Optional
-from ..setup import Notebook
-from .raw import get_raw_images, number_to_list, add_basic_info_no_save
-from .. import extract, utils
-from ..find_spots import check_neighbour_intensity
+from ...setup import Notebook
+from ..raw import get_raw_images, number_to_list, add_basic_info_no_save
+from ... import extract, utils
+from ...find_spots import check_neighbour_intensity
 from qtpy.QtCore import Qt
 from PyQt5.QtWidgets import QSlider
 import time

@@ -293,6 +293,8 @@ def view_stitch(nb: Notebook):
         tile = tile[not_duplicate]
         local_yxz_saved = nb.ref_spots.local_yxz
         tile_saved = nb.ref_spots.tile
+        local_yxz_saved = local_yxz_saved[np.isin(tile_saved, nb.basic_info.use_tiles)]
+        tile_saved = tile_saved[np.isin(tile_saved, nb.basic_info.use_tiles)]
         global_yxz_ns = np.zeros((0, 3)) # not saved in ref_spots spots
         for t in nb.basic_info.use_tiles:
             missing_ind = -100
@@ -304,6 +306,10 @@ def view_stitch(nb: Notebook):
         point_clouds += [global_yxz_ns]
         pc_labels += ["No Spot Color"]
 
+    # Sometimes can be empty point cloud, so remove these
+    use_pc = [len(pc) > 0 for pc in point_clouds]
+    pc_labels = [pc_labels[i] for i in range(len(use_pc)) if use_pc[i]]
+    point_clouds= [point_clouds[i] for i in range(len(use_pc)) if use_pc[i]]
     vpc = view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
                             "Reference Spots in the Global Coordinate System")
 
