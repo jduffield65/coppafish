@@ -12,6 +12,9 @@
 ### `view_spot`
 ::: iss.plot.call_spots.spot_colors.view_spot.__init__
 
+### `view_intensity`
+::: iss.plot.call_spots.spot_colors.view_intensity.__init__
+
 ### `ColorPlotBase`
 ::: iss.plot.call_spots.spot_colors.ColorPlotBase.__init__
 
@@ -26,6 +29,7 @@
 ## Background
 ### `view_background`
 ::: iss.plot.call_spots.background.view_background.__init__
+
 
 ## Gene Counts
 ### `gene_counts`

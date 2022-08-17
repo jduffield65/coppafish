@@ -28,8 +28,8 @@ class gene_counts:
         were allowed to be assigned to some fake genes with `bled_codes` specified through `fake_bled_codes`.
 
         !!! note
-        `fake_bled_codes` have dimension `n_fake x  nbp_basic.n_rounds x nbp_basic.n_channels` not
-        `n_fake x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels).
+            `fake_bled_codes` have dimension `n_fake x  nbp_basic.n_rounds x nbp_basic.n_channels` not
+            `n_fake x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)`.
 
         Args:
             nb: *Notebook* containing at least `call_spots` page.

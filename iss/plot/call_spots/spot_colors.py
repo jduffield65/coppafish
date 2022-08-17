@@ -353,7 +353,7 @@ class view_spot(ColorPlotBase):
 class view_intensity(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor'):
         """
-        Diagnostic to compare `spot_color` to `bled_code` of predicted gene.
+        Diagnostic to show how intensity is computed from `spot_color`.
 
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
@@ -366,15 +366,13 @@ class view_intensity(ColorPlotBase):
         if method.lower() == 'omp':
             page_name = 'omp'
             config = nb.get_config()['thresholds']
-            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
         else:
             page_name = 'ref_spots'
-            spot_score = nb.ref_spots.score[spot_no]
         intensity_saved = nb.__getattribute__(page_name).intensity[spot_no]
         intensity_thresh = get_intensity_thresh(nb)
         spot_color = nb.__getattribute__(page_name).colors[spot_no][
                          np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose() / color_norm
-        subplot_adjust = [0.07, 0.775, 0.1, 0.85]
+        subplot_adjust = [0.07, 0.775, 0.1, 0.91]
         super().__init__([spot_color], color_norm, subplot_adjust=subplot_adjust)
         if intensity_saved > intensity_thresh:
             color = 'w'

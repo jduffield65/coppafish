@@ -8,12 +8,12 @@ strengths for each gene, before assigning each reference spot to a gene.
 
 These gene assignments are saved in the [`ref_spots`](../notebook_comments.md#ref_spots) *NotebookPage* 
 while the bleed_matrix and expected bled_code for each gene are saved in the 
-[`call_spots`](../notebook_comments.md#call_spots) *NotebookPage*.
+[`call_spots`](../notebook_comments.md#call_spots) *NotebookPage*. The distribution of the genes can be 
+seen using the [`iss_plot` viewer](../view_results.md) once these pages have been added.
 
 !!! note "Note: `config` in this section means `config['call_spots']`"
 
-## Gene Assignment
-### Color Normalisation
+## Color Normalisation
 We assign a spot $s$ to a gene $g$, based on its $n_{rounds} \times n_{channels}$ `color`, $\pmb{\acute{\zeta}_s}$, 
 indicating the intensity in each round and channel.
 
@@ -71,7 +71,7 @@ If `config[bleed_matrix_method] = 'single'`, then we combine all rounds for each
     and you can see that for each round and channel there is a similar area under the curve
     (probability) beyond $\zeta_{rc}=0.5$, as expected from `config['color_norm_intensities']`.
 
-### Background
+## Background
 After we have the normalised spot colors, $\pmb{\zeta}$, we 
 [remove](../code/call_spots/background.md#iss.call_spots.background.fit_background) some background *genes* from them. 
 There is one background *gene* for each channel, $\pmb{B}_C$. The background *gene* for channel $C$ is defined by:
@@ -170,7 +170,7 @@ $$
 
 
 
-#### [`view_background`](../code/plot/call_spots.md#view_background)
+### [`view_background`](../code/plot/call_spots.md#view_background)
 The background coefficient calculation can be visualised by using the 
 [`view_background`](../code/plot/call_spots.md#view_background) function:
 
@@ -191,7 +191,7 @@ The main difference between the two in this case is that the channel 0 coefficie
 $\lambda_b = \infty$ case. This is because the *Weight Squared*, $\Omega^2_{s_{rc}}$ term acts to increase the
 contribution of the weak round 1, channel 0 and decrease the contribution of the strong rounds: 0, 2, 3 and 6.
 
-### Bleed Matrix
+## Bleed Matrix
 Crosstalk can occur between color channels. Some crosstalk may occur due to optical bleedthrough; 
 additional crosstalk can occur due to chemical cross-reactivity of probes. The precise degree of crosstalk does not
 seem to vary much between sequencing rounds.
@@ -230,7 +230,7 @@ The [`view_bleed_matrix`](../view_results.md#b-view_bleed_matrix) function can b
 As shown in the second plot, if `config['bleed_matrix_method'] = 'separate'`, we compute a different 
 `bleed_matrix` for each round - i.e. we loosen the assumption that crosstalk does not vary between sequencing rounds.
 
-#### Initial Bleed Matrix
+### Initial Bleed Matrix
 To estimate the dye intensity vectors, $\pmb{c}_d$, the 
 [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) algorithm
 needs to know the number of dyes and a starting guess for what each dye vector looks like.
@@ -238,7 +238,7 @@ needs to know the number of dyes and a starting guess for what each dye vector l
 This is specified in the [`basic_info`](../config.md#basic_info) section of the configuration file as explained 
 [here](../config_setup.md#specifying-dyes).
 
-#### Scaled K Means
+### Scaled K Means
 The pseudocode for the [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means)
 algorithm to obtain the dye intensity vectors, $\pmb{c}_d$, is given below:
 
@@ -295,7 +295,7 @@ There are a few parameters in the config file which are used:
     The idea is that for the second run, we only use vectors which have a large score,
     to get a more accurate estimate.
 
-#### [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means)
+### [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means)
 The [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) algorithm 
 can be visualised using the [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means) function:
 
@@ -313,7 +313,7 @@ The bottom whisked of the boxplots in the third column indicate the `score_thres
 This is useful for debugging the `bleed_matrix` computation, as you want the boxplots to show high scores and for those
 scores to increase from left to right as the algorithm is run.
 
-### Gene Bled Codes
+## Gene Bled Codes
 Once the `bleed_matrix` has been computed, the expected code for each gene can be 
 [obtained](../code/call_spots/base.md#iss.call_spots.base.get_bled_codes).
 
@@ -331,9 +331,10 @@ Each `bled_code` is also normalised to have an L2 norm of 1. They are saved as `
 
     ![image](../images/pipeline/call_spots/bleed_matrix/bled_code.png){width="800"}
 
-### Dot Product Score
+## Dot Product Score
 To assign spot $s$, with spot color (post background), $\pmb{\zeta}_{{si}}$, to a gene, we compute a dot product
-score, $\Delta_{sig}$ to each gene, $g$, with `bled_code` $\pmb{b}_g$. This is defined to be:
+score, $\Delta_{sig}$ to each gene, $g$, with `bled_code` $\pmb{b}_g$. This is 
+[defined](../code/call_spots/dot_product.md#iss.call_spots.dot_product.dot_product_score) to be:
 
 $$
 \Delta_{sig} = \sum_{r=0}^{n_r-1}\sum_{c=0}^{n_c-1}\omega^2_{{si}_{rc}}\tilde{\zeta}_{{si}_{rc}}b_{g_{rc}}
@@ -401,7 +402,7 @@ term such that the max possible value of $\Delta_{sig}$ is approximately 1 (it c
 
 The spot $s$, is assigned to the gene $g$, for which $\Delta_{sig}$ is the largest.
 
-#### [`view_score`](../code/plot/call_spots.md#view_score)
+### [`view_score`](../code/plot/call_spots.md#view_score)
 How the various parameters in the dot product score calculation affect the final value can be investigated,
 for a single spot, through the function [`view_score`](../code/plot/call_spots.md#view_score):
 
@@ -435,7 +436,7 @@ where they are most intense. The mode score does not change though:
 
 ![image](../images/pipeline/call_spots/hist_weight.png){width="800"}
 
-### Gene Efficiency
+## Gene Efficiency
 Once we have a [score](#dot-product-score) and gene assigned to each spot, we can update the bled_codes
 for each gene, $\pmb{b}_g$ based on all the spot colors assigned to them, $\pmb{\zeta}_{{s0}}$. 
 We do this by determining `nb.call_spots.gene_efficiency`. `gene_efficiency[g, r]` gives the expected intensity
@@ -557,7 +558,7 @@ but this round will be different for each gene.
 
     ![image](../images/pipeline/call_spots/ge/hist_ge.png){width="600"}
 
-#### Spots used
+### Spots used
 Because we use the `gene_efficiency` to update the `bled_codes`, we only want to use spots, which we
 are fairly certain have been assigned to the correct gene. Thus, only spots which satisfy all the following
 are used in the `gene_efficiency` calculation:
@@ -585,7 +586,7 @@ $\Delta_{s0g_0}-\Delta_{s0g_1}$ must exceed `config['gene_efficiency_score_diff_
     threshold was too high, we would end up losing spots which look a lot like genes just
     because they are weak. But if it was too low, we would identify some background pixels as genes.
 
-#### Updating `bled_codes`
+### Updating `bled_codes`
 Once the `gene_efficiency` has been computed, the `bled_codes` can be updated:
 
 ```
@@ -609,12 +610,191 @@ have been used to compute the gene efficiency in two subsequent iterations or un
 The bled_codes computed from the final iteration will be saved as `nb.call_spots.bled_codes_ge`. This will
 be the same as `nb.call_spots.bled_codes` if `config[gene_efficiency_n_iter] = 0`.
 These are the ones used to compute dot product score to the best gene, $g_0$, $\Delta_{s0g_0}$.
-These are saved as `nb.ref_spots.gene_no` and `nb.ref_spots.score respectively`.
+These are saved as `nb.ref_spots.gene_no` and `nb.ref_spots.score` respectively.
 The difference between the dot product score to the best gene, $g_0$, and the second best gene, $g_1$:
 $\Delta_{s0g_0}-\Delta_{s0g_1}$ is saved as `nb.ref_spots.score_diff`.
 
 
 ## Intensity
+As well as a variable indicating how closely a spot matches a gene (`nb.ref_spots.score`), we also save 
+a variable indicating the overall fluorescence of a spot, independent of which gene it belongs to. This intensity,
+$\chi$, is saved as `nb.ref_spots.intensity` and for a spot $s$, it is 
+[defined](../code/call_spots/qual_check.md#iss.call_spots.qual_check.get_spot_intensity) by:
+
+$$
+\chi_s = \underset{r}{\mathrm{median}}(\max_c\zeta_{s_{rc}})
+$$
+
+I.e. for each round, we take the max color across channels to give a set of $n_{rounds}$ values.
+We then take the median of these. 
+
+The logic behind this is that if the spot is actually a gene, then
+there should be at least one channel in every round which is intense, because the relevant dye shows up in it.
+If the spot was not actually a gene though, you would expect all channels in any given round 
+to be similarly weakly intense and thus the max over channels would give a low value.
+
+
+### [`view_intensity`](../code/plot/call_spots.md#view_intensity)
+The intensity calculation can be visualised with the [`view_intensity`](../code/plot/call_spots.md#view_intensity)
+function:
+
+![image](../images/pipeline/call_spots/view_intensity.png){width="600"}
+
+$\chi_s = 0.542$ for this example spot, which is the median of all the values shown with a green border.
 
 ## Diagnostics
+There are a few functions using matplotlib which may help to debug this section of the pipeline.
+
 ### [`histogram_score`](../code/plot/omp.md#histogram_score)
+This shows the histogram of the [dot product score](#dot-product-score), $\Delta_s$, 
+assigned to every reference spot:
+
+=== "Dot Product Score"
+    ![image](../images/pipeline/call_spots/hist.png){width="800"}
+=== "All Plots"
+    ![image](../images/pipeline/call_spots/hist_all.png){width="800"}
+
+This is useful for checking how well that the gene assignment worked. The higher the score where the distribution 
+peaks, the better. Certainly, if the peak is around 0.8, as with this example, then it probably worked well.
+
+The *Dot Product Score* image above is showing the histogram of `nb.ref_spots.score`, but there are 4 other plots 
+which can be selected, as shown in the *All Plots* image above:
+
+* *No Weighting*: This is the score that would be computed if $\alpha=0$ in the 
+[dot product score calculation](#dot-product-score). The max possible score in this case is 1.
+* *No Background*: This is the score that would be computed if the [background](#background) *genes* were not removed
+before determining the score. This also has no weighting because in the dot product calculation, 
+$\omega^2_{si_{rc}} = 1$ if no background has been fitted. Hence, the max score is 1 as with *No Weighting*.
+* *No Gene Efficiency*: This is the score that would be computed if the `nb.call_spots.bled_codes`
+were used instead of `nb.call_spots.bled_codes_ge`. $\omega^2_{si_{rc}} \neq 1$ here so the max score is over 1.
+* *No Background / No Gene Efficiency*: This is the score that would be computed if the [background](#background) 
+*genes* were not removed before determining the score and if `nb.call_spots.bled_codes`
+were used instead of `nb.call_spots.bled_codes_ge`. The max score is 1 in this case.
+
+The *Gene* textbox can also be used to view the histogram of a single gene. Either the index of the gene
+or the gene name can be entered. To go back to viewing all genes, type in *all* into the textbox.
+
+The Histogram Spacing textbox can be used to change the bin size of the histogram.
+
+### [`gene_counts`](../code/plot/call_spots.md#gene_counts)
+This plot indicates the number of spots assigned to each gene which also have `nb.call_spots.score > score_thresh`
+and `nb.call_spots.intensity > intensity_thresh`. The default `score_thresh` and `intensity_thresh` 
+are `config['thresholds']['score_ref']` and `config['thresholds']['intensity']` respectively. They can be changed
+with the textboxes though. This 
+[thresholding](../code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold) 
+is the same that is done in the [results viewer](../view_results.md#score-range) 
+and when [exporting to pciSeq](../code/utils/pciseq.md). 
+
+=== "Gene Counts"
+    ![image](../images/pipeline/call_spots/gene_counts/gene_count.png){width="800"}
+=== "Gene Counts with Fake Genes"
+    ![image](../images/pipeline/call_spots/gene_counts/gene_count_fake.png){width="800"}
+
+There is also a second *Ref Spots - Fake Genes* plot which can be shown in yellow. This shows the results 
+of the gene assignment if we added some fake `bled_codes` as well as the ones corresponding to genes.
+The idea is to choose fake `bled_codes` which are well separated from the actual `bled_codes`. If spots then match to
+these fake genes then it probably means the initial gene assignment is not reliable.
+
+The fake `bled_codes` can be specified, but by default there is one fake bled_code added for each round, $r$, and
+channel $c$, which is 1 in round $r$, channel $c$ and 0 everywhere else. In the second image above, we see that 
+there is not much change in the gene counts when we add the fake genes, indicating the initial assignment is probably
+reliable.
+
+??? example "Example Dataset with lots of *Fake Genes*"
+
+    The example below indicates a case when the fake genes functionality may be useful.
+        
+    When we look at the `iss_plot`, we see that there seems to be too many spots assigned to *Penk* and 
+    *Vip*.
+    
+    === "`iss_plot`"
+        ![image](../images/pipeline/call_spots/gene_counts/fake_iss_plot.png){width="800"}
+    === "`gene_counts`"
+        ![image](../images/pipeline/call_spots/gene_counts/fake_gene_counts.png){width="800"}
+    === "*Penk*"
+        ![image](../images/pipeline/call_spots/gene_counts/fake_penk.png){width="800"}
+    === "*Vip*"
+        ![image](../images/pipeline/call_spots/gene_counts/fake_vip.png){width="800"}
+
+    If we then look at the `gene_counts`, we see that when we include fake genes, the number of spots
+    assigned to *Penk* and *Vip* decreases drastically because they have been assigned to the $r0c18$ fake gene.
+    
+    When we look at the *Penk* and *Vip* bled_codes, we see that they are very intense in round 0, channel 18.
+    So most spots seem to only have been assigned to these genes on the basis of this one round and channel.
+
+### [`view_bleed_matrix`](../code/plot/call_spots.md#view_bleed_matrix)
+[This function](../view_results.md#b-view_bleed_matrix) is useful for seeing if the dye vectors in the 
+bleed_matrix are easily distinguished.
+
+### [`view_bled_codes`](../code/plot/call_spots.md#view_bled_codes)
+[This function](../view_results.md#g-view_bled_codes) is useful for seeing how the `gene_efficiency` 
+affected the `bled_codes`.
+
+### [`view_codes`](../code/plot/call_spots.md#view_codes)
+[This function](../view_results.md#c-view_codes) is useful for seeing how a particular spot matches
+the gene it was assigned to.
+
+### [`view_spot`](../code/plot/call_spots.md#view_spot)
+[This function](../view_results.md#s-view_spot) is useful for seeing if the neighbourhood of a  particular spot 
+has high intensity in all rounds/channels where the gene it was assigned, expects it to.
+
+## Psuedocode
+This is the pseudocode outlining the basics of this [step of the pipeline](../code/pipeline/call_reference_spots.md).
+There is more detailed pseudocode about how the [`bleed_matrix`](#scaled-k-means) and 
+[`gene_efficiency`](#gene-efficiency) are found.
+
+```
+Determine color_norm_factor from nb.extract.hist_counts
+    [n_rounds x n_channels]
+
+Load in pixel colors of all pixel of middle z-plane of
+    central tile. Use these to determine the following
+    if not provided in the config file:
+    - nb.call_spots.background_weight_shift    
+    - nb.call_spots.dp_norm_shift
+    - nb.call_spots.gene_efficiency_intensity_thresh
+    - nb.call_spots.abs_intensity_percentile
+
+Normalise reference spot colors
+    spot_colors = nb.ref_spots.colors / color_norm_factor
+    [n_spots x n_rounds x n_channels]
+
+Compute Spot Intensity  (nb.ref_spots.intensity)
+Remove Background from spot_colors
+Compute Bleed Matrix    (nb.call_spots.bleed_matrix)
+Compute Bled Codes      (nb.call_spots.bled_codes)
+
+use_ge_last = array of length n_spots where all values are False.
+i = 0
+while i < gene_efficiency_n_iter:
+    Determine all_scores, the dot product score of each spot to 
+        each bled_code.
+        [n_spots x n_genes]
+    Determine gene_no, the gene for which all_scores is the greatest
+        for each spot.
+        [n_spots]
+    Determine score, the score in all_scores, corresponding to gene_no
+        for each spot.
+        [n_spots]
+    Determine score_diff, the difference between score and the second 
+        largest value in all_scores for each spot.
+        [n_spots]
+    Determine whether each spot was used for gene efficiency calculation.
+        use_ge = score > ge_score_thresh            and 
+                 score_diff > ge_score_diff_thresh  and 
+                 intensity > ge_intensity_thresh    and 
+                 nb.ref_spots.isolated.
+        [n_spots]
+    Compute gene_efficiency with spots indicated by use_ge
+    Update bled_codes based on gene_efficiency   
+    If use_ge == use_ge_last:
+        End iteration i.e. i = gene_efficiency_n_iter
+    use_ge_last = use_ge
+    i += 1
+
+Save final bled_codes as        nb.call_spots.bled_codes_ge
+Save final gene_efficiency as   nb.call_spots.gene_efficiency
+Save final gene_no as           nb.ref_spots.gene_no
+Save final score as             nb.ref_spots.score
+Save final score_diff as        nb.ref_spots.score_diff              
+```
