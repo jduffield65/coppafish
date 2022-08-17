@@ -216,7 +216,8 @@ $$
 is minimized. In other words, it finds the $n_{dyes}$ intensity vectors, $\pmb{c}_d$, each of dimension
 $n_{channels}$, such that the spot color of each well isolated spot on every round is close to a scaled version of 
 one of them. The $n_{dyes} \times n_{channels}$
-array of dye vectors is termed the `bleed matrix` and is saved as `nb.call_spots.bleed_matrix`.
+array of dye vectors is termed the `bleed matrix` and is saved as `nb.call_spots.bleed_matrix` (a `bleed_matrix` 
+is saved for each round, but if `config['bleed_matrix_method'] = 'single'`, it will be the same for each round).
 The [`view_bleed_matrix`](../view_results.md#b-view_bleed_matrix) function can be used to show it:
 
 
@@ -318,7 +319,8 @@ Once the `bleed_matrix` has been computed, the expected code for each gene can b
 
 Each gene appears with a single dye in each imaging round as indicated by the [codebook](../config_setup.md#code_book)
 and saved as `nb.call_spots.gene_codes`.
-`bled_code[g, r, c]` for gene $g$ in round $r$, channel $c$ is then given by `bleed_matrix[r, c, gene_codes[r]]`.
+`bled_code[g, r, c]` for gene $g$ in round $r$, channel $c$ is then given by `bleed_matrix[r, c, gene_codes[g, r]]`.
+If `gene_codes[g, r]` is outside `nb.basic_info.use_dyes`, then `bled_code[g, r]` will be set to 0.
 
 Each `bled_code` is also normalised to have an L2 norm of 1. They are saved as `nb.call_spots.bled_codes`.
 
@@ -358,9 +360,11 @@ $$
 * $\lambda_d$ is `config['dp_norm_shift'] * sqrt(n_rounds)` (typical `config['dp_norm_shift']` is 0.1).
 * $\alpha$ is `config['alpha']` (*default is 120*).
 * $\beta$ is `config['beta']` (*default is 1*).
-* The sum over genes, $\sum_g$, is over all real and background genes i.e. $\sum_{g=0}^{n_g+n_c-1}$
+* The sum over genes, $\sum_g$, is over all real and background genes i.e. $\sum_{g=0}^{n_g+n_c-1}$.
+$\mu_{sig=n_g+C} = \mu_{sC} \forall i$ and $\pmb{b}_{g=n_g+C} = \pmb{B}_C$ where $\mu_{sC}$ and $\pmb{B}_C$
+were introduced in the [background](#background) section.
 * $i$ refers to the number of actual genes fit prior to this iteration of *OMP*. Here, because we are
-only fitting one gene, $i=0$, meaning only background has been fit.
+only fitting one gene, $i=0$, meaning only background has been fit ($\sum_{g=0}^{n_g-1}\mu^2_{sig}b^2_{g_{rc}}=0$).
 
 So if $\lambda_d = 0$ and $\pmb{\omega}^2_{si}$ was 1 for each round and channel (achieved through $\alpha=0$), then 
 this would just be the normal dot product between two vectors with L2 norm of one. 
@@ -432,7 +436,182 @@ where they are most intense. The mode score does not change though:
 ![image](../images/pipeline/call_spots/hist_weight.png){width="800"}
 
 ### Gene Efficiency
+Once we have a [score](#dot-product-score) and gene assigned to each spot, we can update the bled_codes
+for each gene, $\pmb{b}_g$ based on all the spot colors assigned to them, $\pmb{\zeta}_{{s0}}$. 
+We do this by determining `nb.call_spots.gene_efficiency`. `gene_efficiency[g, r]` gives the expected intensity
+of gene $g$ in round $r$, as determined by the spots assigned to it, compared to that expected by the `bleed_matrix`.
 
+The pseudocode below explains how it is [computed](../code/call_spots/base.md#iss.call_spots.base.get_gene_efficiency).
+
+```
+spot_colors: Intensity of each spot in each channel
+    [n_spots x n_rounds x n_channels]
+spot_gene_no: Gene each spot was assigned to.
+    [n_spots]
+bm: Bleed Matrix, indicates expected intensity of each
+    dye in each round and channel.
+    [n_rounds x n_channels x n_dyes]
+gene_codes: Indicates dye each gene should appear with in each round.
+    [n_genes x n_rounds]
+
+for g in range(n_genes):
+    Only use spots assigned to current gene.
+        use = spot_gene_no == g
+    
+    for r in use_rounds:
+        Get bleed matrix prediction for strength of gene g in round r.
+            bm_pred = bm[r, :, gene_codes[g, r]]
+            [n_channels]
+        Get spot colors for this round.
+            spot_colors_r = spot_colors[use, r]
+            [n_use x n_channels]
+        For each spot, s, find the least squares coefficient, coef, such that
+            spot_colors_r[s] = coef * bm_pred
+    Store coef for each spot and round as spot_round_strength
+        [n_use x n_rounds]
+    
+    for r in use_rounds:
+        av_round_strength[r] = median(spot_round_strength[:, r])
+    Find av_round which is the round such that av_round_strength[av_round]
+        is the closest to median(av_round_strength).
+    
+    Update spot_round_strength to only use spots with positive strength in
+        av_round.
+        keep = spot_round_strength[:, av_round] > 0
+        spot_round_strength = spot_round_strength[keep]
+        [n_use2 x n_rounds]
+        
+    For each spot, determine the strength of each round relative to av_round.
+    for s in range(n_use2):
+        for r in use_rounds:
+            relative_round_strength[s, r] = spot_round_strength[s, r] /
+                                            spot_round_strength[s, av_round]
+    
+    Update relative_round_strength based on maximum value.
+        max_round_strength is max of relative_round_strength for 
+            each spot across rounds [n_use2].
+        keep = max_round_strength < max_thresh
+        relative_round_strength = relative_round_strength[keep]
+        [n_use3 x n_rounds]
+        
+    Update relative_round_strength based on low values.
+        Count number of rounds for each spot below min_thresh.
+        for s in range(n_use3):
+            n_min[s] = sum(relative_round_strength[s] < min_thresh)
+        keep = n_min <= n_min_thresh
+        relative_round_strength = relative_round_strength[keep]
+        [n_use4 x n_rounds]
+        
+    for r in use_rounds:
+        if n_use4 > min_spots:
+            gene_efficiency[g, r] = median(relative_round_strength[:, r])
+        else:
+            Not enought spots to compute gene efficiency so just set to 1 in 
+                every round.
+                gene_efficiency[g, r] = 1    
+
+Clip negative gene efficiency at 0.
+    gene_efficiency[gene_efficiency < 0] = 0  
+return gene_efficiency         
+```
+There are a few parameters in the [configuration file](../config.md#call_spots) which are used:
+
+* `gene_efficiency_max`: This is `max_thresh` in the above code.
+* `gene_efficiency_min`: This is `min_thresh` in the above code.
+* `gene_efficiency_min_factor`: `n_min_thresh` in the above code is set to 
+`ceil(gene_efficiency_min_factor * n_rounds)`.
+* `gene_efficiency_min_spots`: This is `min_spots` in the above code.
+
+In the gene_efficiency calculation, we computed the strength of each spot relative to `av_round`
+because, as with the `bleed_matrix` calculation, we expect each spot color to be a scaled version of
+one of the `bled_codes`. So we are trying to find out, once a spot color has been normalised such that its strength
+in `av_round` is 1, what is the corresponding strength in the other rounds. We do this normalisation
+relative to the average round so that half the `gene_efficiency` values will be more than 1 and half less than 1
+for each gene. For gene $g$, one value of `gene_efficiency[g]` will be 1, corresponding to `av_round`
+but this round will be different for each gene.
+
+??? question "Why do we need `gene_efficiency`?"
+        
+    We need `gene_efficiency` because there is a high variance in the strength each gene appears with in each round.
+    For example, in the the `bled_code` plot below, we see that the effect of incorporating gene_efficiency
+    is to reduce the strength of rounds 0, 5 and 6 while boosting rounds 2 and 3.
+
+    ??? note 
+        In the example below, it seems that rounds corresponding to the same dye (0 and 5; 1 and 4; 2 and 3) 
+        have similar strengths, so it may be that different dyes (instead of rounds) 
+        have different strengths for different genes.
+        
+
+    === "`bled_code`"
+        ![image](../images/pipeline/call_spots/ge/serpini1_bled_code.png){width="600"}
+    === "histogram"
+        ![image](../images/pipeline/call_spots/ge/serpini1_hist.png){width="600"}
+
+    The [histogram](#histogram_score) plot above then shows that when gene efficiency is included (blue line), 
+    the score distribution is shifted considerably. 
+    This indicates that gene efficiency is required to truly capture what
+    spot colors corresponding to `Serpini1` look like.
+    
+    The [`histogram_score`](#histogram_score) plot combining all genes, also shows a shift in the peak 
+    of the distribution towards higher scores when gene efficiency is included:
+
+    ![image](../images/pipeline/call_spots/ge/hist_ge.png){width="600"}
+
+#### Spots used
+Because we use the `gene_efficiency` to update the `bled_codes`, we only want to use spots, which we
+are fairly certain have been assigned to the correct gene. Thus, only spots which satisfy all the following
+are used in the `gene_efficiency` calculation:
+
+* Like with the [`scaled_k_means`](#bleed-matrix) calculation, only spots identified as [isolated](find_spots.md#isolated-spots) 
+in the *find spots* step of the pipeline are used.
+* The dot product score to the best gene, $g_0$, $\Delta_{s0g_0}$ must exceed `config['gene_efficiency_score_thresh']`.
+* The difference between the dot product score to the best gene, $g_0$, and the second best gene, $g_1$:
+$\Delta_{s0g_0}-\Delta_{s0g_1}$ must exceed `config['gene_efficiency_score_diff_thresh']`.
+* The [intensity](#intensity), $\chi_s$, must exceed `config['gene_efficiency_intensity_thresh']`.
+
+??? note "Value of `config['gene_efficiency_intensity_thresh']`"
+
+    If `config['gene_efficiency_intensity_thresh']` is not specified, 
+    it is set to the percentile indicated by `config['gene_efficiency_intensity_thresh_percentile']` 
+    of the [`intensity`](#intensity) 
+    computed from the colors of all pixels in the middle z-plane 
+    (`nb.call_spots.norm_shift_tile`) of the central tile (`nb.call_spots.norm_shift_z`).
+    
+    It is then clipped to be between `config[gene_efficiency_intensity_thresh_min]` and 
+    `config[gene_efficiency_intensity_thresh_max]`.
+
+    The idea is that this is quite a low threshold (default percentile is 37), 
+    just ensuring that the intensity is not amongst the weakest background pixels. If the intensity
+    threshold was too high, we would end up losing spots which look a lot like genes just
+    because they are weak. But if it was too low, we would identify some background pixels as genes.
+
+#### Updating `bled_codes`
+Once the `gene_efficiency` has been computed, the `bled_codes` can be updated:
+
+```
+bled_codes: Those computed from the bleed_matrix
+    [n_genes x n_rounds x n_channels].
+gene_efficiency: [n_genes x n_rounds]
+
+for g in range (n_genes):
+    for r in use_rounds:
+        for c in use_channels:
+            bled_codes[g, r, c] = bled_codes[g, r, c] * gene_efficiency[g, r]
+    Normalise bled_codes[g] so it has an L2 norm of 1.
+```
+
+We then re-compute the [dot product score](#dot-product-score) and gene assignment 
+for each spot with the new `bled_codes`. We continue this process of computing the gene_efficiency, 
+updating the [dot product score](#dot-product-score) until the same spots
+have been used to compute the gene efficiency in two subsequent iterations or until
+`config[gene_efficiency_n_iter]` iterations have been run.
+
+The bled_codes computed from the final iteration will be saved as `nb.call_spots.bled_codes_ge`. This will
+be the same as `nb.call_spots.bled_codes` if `config[gene_efficiency_n_iter] = 0`.
+These are the ones used to compute dot product score to the best gene, $g_0$, $\Delta_{s0g_0}$.
+These are saved as `nb.ref_spots.gene_no` and `nb.ref_spots.score respectively`.
+The difference between the dot product score to the best gene, $g_0$, and the second best gene, $g_1$:
+$\Delta_{s0g_0}-\Delta_{s0g_1}$ is saved as `nb.ref_spots.score_diff`.
 
 
 ## Intensity

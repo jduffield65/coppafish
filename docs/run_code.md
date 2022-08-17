@@ -23,6 +23,9 @@ the above will pick up the pipeline from the last stage it finished. So for a no
 [*find_spots*](notebook_comments.md#find_spots), running the above code will start the pipeline at
 the [stitch stage](code/pipeline/run.md#iss.pipeline.run.run_stitch).
 
+## Check data before running
+
+## Re-run section
 
 ## Exporting to pciSeq
 To save the results of the pipeline as a .csv file which can then be plotted with pciSeq, one  of 

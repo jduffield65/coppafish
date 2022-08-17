@@ -249,6 +249,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                               bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift, 1/background_var))
         spot_gene_no = np.argmax(scores, 1)
         spot_score = scores[np.arange(np.shape(scores)[0]), spot_gene_no]
+    else:
+        bled_codes_ge_use = bled_codes_use.copy()
 
     # save score using the latest gene efficiency and diff to second best gene
     nbp_ref_spots.score = spot_score.astype(np.float32)

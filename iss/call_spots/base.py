@@ -235,17 +235,17 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
 
             # find a reference round for each gene as that with median strength.
             av_round_strength = np.median(round_strength, 0)
-            ref_round = np.abs(av_round_strength - np.median(av_round_strength)).argmin()
+            av_round = np.abs(av_round_strength - np.median(av_round_strength)).argmin()
 
             # for each spot, find strength of each round relative to strength in
-            # ref_round. Need relative strength not absolute strength
+            # av_round. Need relative strength not absolute strength
             # because expect spot color to be constant multiple of bled code.
-            # So for all genes, gene_efficiency[g, ref_round] = 1 but ref_round is different between genes.
+            # So for all genes, gene_efficiency[g, av_round] = 1 but av_round is different between genes.
 
             # Only use spots whose strength in RefRound is positive.
-            use = round_strength[:, ref_round] > 0
+            use = round_strength[:, av_round] > 0
             if np.sum(use) > min_spots:
-                relative_round_strength = round_strength[use] / np.expand_dims(round_strength[use, ref_round], 1)
+                relative_round_strength = round_strength[use] / np.expand_dims(round_strength[use, av_round], 1)
                 # Only use spots with gene efficiency below the maximum allowed.
                 below_max = np.max(relative_round_strength, axis=1) < max_gene_efficiency
                 # Only use spots with at most n_min_thresh rounds below the minimum.
