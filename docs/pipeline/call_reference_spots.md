@@ -11,7 +11,7 @@ while the bleed_matrix and expected bled_code for each gene are saved in the
 [`call_spots`](../notebook_comments.md#call_spots) *NotebookPage*. The distribution of the genes can be 
 seen using the [`iss_plot` viewer](../view_results.md) once these pages have been added.
 
-!!! note "Note: `config` in this section means `config['call_spots']`"
+!!! note "Note: `config` in this section, with no section specified, means `config['call_spots']`"
 
 ## Color Normalisation
 We assign a spot $s$ to a gene $g$, based on its $n_{rounds} \times n_{channels}$ `color`, $\pmb{\acute{\zeta}_s}$, 
@@ -125,8 +125,9 @@ Where, $\lambda_b$ is `config['background_weight_shift']` and the sum is over al
 ??? note "Value of $\lambda_b$"
 
     If `config['background_weight_shift']` is left blank, it is set to the median of the [`intensity`](#intensity) 
-    computed from the absolute colors of all pixels in the middle z-plane 
-    (`nb.call_spots.norm_shift_tile`) of the central tile (`nb.call_spots.norm_shift_z`).
+    computed from the absolute colors, [$\tilde{\chi}$](omp.md#initial-intensity-threshold), 
+    of all pixels in the middle z-plane (`nb.call_spots.norm_shift_tile`) 
+    of the central tile (`nb.call_spots.norm_shift_z`).
 
     This is because it gives an estimate of what $|\zeta_{s_{rC}}|$ would be for an average non-spot pixel.
     If we set $\lambda_b$ to be equal to this, it is saying that if a spot had a round and channel with very
@@ -372,7 +373,8 @@ this would just be the normal dot product between two vectors with L2 norm of on
 The min value is 0 and max value is 1. 
 
 The purpose of the weighting, $\pmb{\omega}^2_{{si}}$, is to decrease the contribution of rounds/channels 
-which already have a gene in. It is really more relevant to the *OMP* algorithm. 
+which already have a gene in. It is really more relevant to the 
+[*OMP* algorithm](omp.md#weighting-in-dot-product-score). 
 It can be turned off in this part of the pipeline by setting
 `config['alpha'] = 0`. The $n_rn_c$ term at the start of the $\omega^2_{{si}_{rc}}$ equation is a normalisation
 term such that the max possible value of $\Delta_{sig}$ is approximately 1 (it can be more though).

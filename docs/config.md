@@ -566,7 +566,7 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 	Used in *iss/stitch/check_shifts/check_shifts_stitch* If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
 
-	Default: `0.2`
+	Default: `0.35`
 
 * **save_image_zero_thresh**: *int*.
 
