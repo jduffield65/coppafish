@@ -99,8 +99,8 @@ The slider can then be used to view only spots which satisfy:
 
 !!! note "Effect of changing Method on Score Range slider"
     
-    The `score` computed for spots using the omp method **[ADD LINK TO DESCRION OF SCORE]** differs from that used 
-    with the ref_spots method **[ADD LINK TO DESCRION OF SCORE]**.
+    The `score` computed for spots using the [omp method](pipeline/omp.md#omp-score) differs from that used 
+    with the [ref_spots method](pipeline/call_reference_spots.md#dot-product-score).
     Thus, we keep a unique score range slider for each method so that when the method is changed using the buttons, 
     the score range slider values will also change to the last values used with that method.
 
@@ -192,15 +192,22 @@ rounds/channels where the gene is particularly strong. It is also done in [`view
 [`view_omp_fit`](#shift-o-view_omp_fit).
 
 ### *Shift-g*: [`gene_counts`](code/plot/call_spots.md#gene_counts)
-[This plot](pipeline/call_reference_spots.md#gene_counts) indicates the number of spots assigned to each gene 
+[This plot](pipeline/call_reference_spots.md#gene_counts) indicates the number of reference spots assigned to each gene 
 which also have `nb.call_spots.score > score_thresh` and `nb.call_spots.intensity > intensity_thresh`. 
 The initial values of `score_thresh` and `intensity_thresh` used will be the current [slider](#score-range) values.
 
+If the *Notebook* has the [*OMP* page](notebook_comments.md#omp), then [it will also show](pipeline/omp.md#gene_counts) 
+the number of *OMP* spots assigned to each gene which also have $\gamma_s >$ `omp_score_thresh` and 
+`nb.omp.intensity > intensity_thresh`. The initial values of `omp_score_thresh`, `omp_score_multiplier` and 
+`intensity_thresh` used will be the current [slider](#score-range) values.
+
 ### *h*: [`histogram_score`](code/plot/omp.md#histogram_score)
-[This plot](pipeline/call_reference_spots.md#histogram_score) shows the histogram of the score assigned to each spot.
+[This plot](pipeline/call_reference_spots.md#histogram_score) shows the histogram of the score assigned to each spot 
+for the current [method](#method). If [the current method is *OMP*](pipeline/omp.md#histogram_score), 
+the initial value of `omp_score_multiplier` will be the current [slider](#score-range) value.
 
 ### *Shift-h*: [`histogram_2d_score`](code/plot/omp.md#histogram_2d_score)
-[This plot](pipeline/call_reference_spots.md#histogram_score) shows the bivariate histogram to see the correlation 
+[This plot](pipeline/omp.md#histogram_2d_score) shows the bivariate histogram to see the correlation 
 between the omp spot score, $\gamma_s$ and the dot product score $\Delta_s$ for spots detected with the 
 *OMP* algorithm.
 

@@ -568,5 +568,62 @@ We then save details of each spot to the *OMP* *NotebookPage* i.e. `local_yxz`, 
 [`n_neighbours_pos`](#n_neighbours).
 
 ## Diagnostics
+There are a few functions using matplotlib which may help to debug this section of the pipeline.
+
+### [`histogram_score`](call_reference_spots.md#histogram_score)
+When [`histogram_score`](call_reference_spots.md#histogram_score) is run with `method = 'omp'`, the histogram 
+of the [*OMP* score](#omp-score), $\gamma_s$, will be plotted:
+
+=== "OMP Score"
+    ![image](../images/pipeline/omp/diagnostics/hist_counts.png){width="800"}
+=== "All Plots"
+    ![image](../images/pipeline/omp/diagnostics/hist_counts_all.png){width="800"}
+
+The *Score Multiplier* textbox can then be used to see how the value of $\rho$ affects the distribution.
+
+There is also the option to show the 5 histograms available when 
+[`histogram_score`](call_reference_spots.md#histogram_score) is run with `method = 'anchor'`.
+These show the distribution of the dot product score, $\Delta_{s0g_s}$, of each spot, $s$, with gene 
+$g_s=$ `nb.omp.gene_no[s]`, if gene $g_s$ was added on the first iteration. 
+I.e. this is the score the spot would have had if it was a reference spot instead of an *OMP* spot.
+Clearly, we see that $\Delta_{s0g_s}$ tends to be larger than $\gamma_s$.
+
+### [`histogram_2d_score`](../code/plot/omp.md#histogram_2d_score)
+The [`histogram_2d_score`](../code/plot/omp.md#histogram_2d_score) function shows the bivariate histogram to 
+see the correlation between the omp spot score, $\gamma_s$ and the dot product score, $\Delta_{s0g_s}$ 
+(between the orange $\gamma_s$ and cyan *Dot Product Score* line in the above plot):
+
+=== "$\rho=0.95$"
+    ![image](../images/pipeline/omp/diagnostics/hist_2d_counts.png){width="800"}
+=== "$\rho=10$"
+    ![image](../images/pipeline/omp/diagnostics/hist_2d_counts10.png){width="800"}
+=== "*Plp1*"
+    ![image](../images/pipeline/omp/diagnostics/hist_2d_countsPlp1.png){width="800"}
+
+Like with the [`histogram_score`](call_reference_spots.md#histogram_score) plot, you can use the textboxes
+to change the bin spacing, see how $\rho$ affects the distribution (compare first and second plots to see how
+a larger $\rho$ creates two clusters of spots, one at $\Delta=0.4, \gamma=0.1$ and one at $\Delta=0.9, \gamma=0.8$) 
+and see the distribution of a single gene (see *Plp1* image above).
+
+### [`gene_counts`](call_reference_spots.md#gene_counts)
+If the [`gene_counts`](call_reference_spots.md#gene_counts) function is run and the *Notebook* contains the 
+*OMP* page, then the number of *OMP* spots with $\gamma_s >$ `omp_score_thresh` and 
+`nb.omp.intensity > intensity_thresh` assigned to each gene will also be shown:
+
+=== "Default Score Thresholds"
+    ![image](../images/pipeline/omp/diagnostics/gene_counts.png){width="800"}
+=== "Score Thresholds = 0"
+    ![image](../images/pipeline/omp/diagnostics/gene_counts_0thresh.png){width="800"}
+
+The default `omp_score_thresh`, `omp_score_multiplier` and `intensity_thresh` 
+are `config['thresholds']['score_omp']`, `config['thresholds']['score_omp_multiplier']` and 
+`config['thresholds']['intensity']` respectively.
+
+Clearly, when all the score thresholds are set to 0, there are many more *OMP* spots because we can detect 
+multiple spots at the same location if they belong to different genes.
+
+The *Fake Genes* plot has nothing to do with the *OMP* spots.
+
+
 ### `view_score`
 ### `view_weight`
