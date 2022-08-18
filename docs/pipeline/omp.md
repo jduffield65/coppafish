@@ -9,13 +9,18 @@ By doing a local maxima search on these images, we can obtain another estimate o
 we can compare to that obtained from the [reference spots](get_reference_spots.md). The number and location of spots
 found by the *OMP* method will be different though.
 
-There are some variables obtained for each spot (`local_yxz`, `tile`, `colors`, `gene_no` and `intensity`) saved in the 
+There are some variables obtained for each spot (`local_yxz`, `tile`, 
+[`colors`](get_reference_spots.md#reading-off-intensity), `gene_no` and 
+[`intensity`](call_reference_spots.md#intensity)) saved in the 
 [`omp`](../notebook_comments.md#omp) *NotebookPage* which are equivalent to the same variables saved 
 in the [`ref_spots`](../notebook_comments.md#ref_spots) *NotebookPage*. 
 There are also some other variables added to the [`omp`](../notebook_comments.md#omp) *NotebookPage* which 
 relate to the typical shape of a spot in the gene coefficient images.
 
-!!! note "Note: `config` in this section, with no section specified, means `config['omp']`"
+The *OMP* section takes quite a long time, so [`config['omp']['use_z']`](../config.md#omp) can be used to only run 
+*OMP* on a subset of z-planes.
+
+!!! note "Note: `config` in this section, with no section specified, means [`config['omp']`](../config.md#omp)"
 
 ## Why bother with *OMP*?
 There are two main reasons to use the *OMP* method for finding the distribution of genes instead of
@@ -67,7 +72,7 @@ $$
 \tilde{\chi}_s = \underset{r}{\mathrm{median}}(\max_c|\zeta_{s_{rc}}|)
 $$
 
-??? note "Why absolute pixel color is used"
+??? question "Why is absolute pixel color is used?"
 
     We use $|\pmb{\zeta}_s|$ because we are also interested in whether a pixel has a negative gene coefficient. We
     expect a negative coefficient in an annulus around a spot, as shown in the 
@@ -309,7 +314,259 @@ get a large score for *Aldoc* solely because of the contribution from round 2, c
 If we look at the bottom right though, we see that with $\alpha=120$, the score for *Aldoc* is very small, as we 
 would expect it should be, when comparing the 2 plots in the second column of the [`view_score`](#view_score) image.
 
+Basically, we need the weighting because we know that the least squares 
+[coefficient fitting](#finding-gene-coefficients) will produce some anomalously intense rounds and channels. 
+When selecting the [best gene](#finding-best-gene), we need to be robust to this.
+
+## Finding Spots
+![image](../images/pipeline/omp/spots/coef_image.png#right){width=200, align=right}
+After we have run the *OMP* algorithm on every pixel of a tile, we can 
+[produce an image](../code/omp/spots.md#iss.omp.spots.cropped_coef_image) for each gene 
+based on the $n_{pixels}\times n_{genes}$ array of coefficients, $\pmb{\mu}$.
+
+A $200\times 200$ pixel section of such an image for three genes is shown on the right.
+Clearly, most values in each image because each pixel only has a non-zero coefficient
+for a very small number of genes.
+
+<br clear="right"/>
+
+We then take each gene in turn and [find spots](../code/omp/spots.md#iss.omp.spots.get_spots) 
+which are the local maxima in the coefficient image. These local maxima are 
+[found](../code/find_spots/detect.md#iss.find_spots.detect.detect_spots) in exactly the same way
+as in the [*find spots*](find_spots.md#spot-detection) part of the pipeline. But here,
+the threshold intensity is 0 and the neighbourhood (kernel for dilation) is defined by the parameters
+`config['radius_xy']` and `config['radius_z']`.
+
+### Spot Shape
+In the gene coefficient images above, the spots can clearly be seen as red (positive) circles surrounded by a blue 
+(negative) annulus. So to decide whether a particular spot is legitimate, we want to compare its shape to 
+the average spot shape.
+
+This average spot shape can be specified in advance (e.g. if you have already run an experiment, which is expected
+to be similar to the current one, and you want the same shape to be used) with a *npy* file in the output directory 
+with the name given by `config['file_names']['omp_spot_shape']`. This file must contain an image (axis in 
+the order z-y-x) indicating the expected sign of a coefficient (only values are 1, 0, -1) 
+in the neighbourhood of a spot.
+
+If the file indicated by `config['file_names']['omp_spot_shape']` does not exist, then it will be 
+[computed](../code/omp/spots.md#iss.omp.spots.spot_neighbourhood)
+from the spots found on a specific tile. The tile used is the one for which the most spots were found with the 
+*reference spots* method, and it is saved as `nb.omp.shape_tile`. 
+
+
+The psuedocode for [obtaining the spot shape](../code/omp/spots.md#iss.omp.spots.spot_neighbourhood) is given below:
+
+```
+spot_yxz: yxz coordinates of all spots found on the tile
+    [n_spots x 3]
+gene_no: gene_no[s] is the gene whose coefficient image
+    spot s was found on.
+    [n_spots].
+tile_sz: nb.basic_info.tile_sz
+nz: nb.basic_info.nz
+gene_coef_im: gene_coef_im[g] is the gene coefficient image
+    for gene g, which can be made after running OMP on each pixel.
+    [n_genes x tile_sz x tile_sz x nz]
+    
+for s in range(n_spots):
+    1. use = True if number of pixels neighbouring
+        spot_yxz[s] in gene_coef_im[gene_no[s]]
+        with a positive value equals use_thresh.
+    2. If use, then obtain the [shape_ny x shape_nx x shape_nz] image 
+        centered on spot_yxz[s] in gene_coef_im[gene_no[s]]. 
+        
+3. We now have spot_images which is a 
+    [n_use x shape_ny x shape_nx x shape_nz] array.
+    We update this by only keeping images from isolated spots.
+    [n_use2 x shape_ny x shape_nx x shape_nz]
+4. Compute spot_sign_images by taking the sign of every value in spot_images 
+    so the only values are 1, 0, -1.
+    Next, we compute av_spot_sign_image which is the average of 
+    spot_sign_images across spots.
+    Where abs(av_spot_sign_image) < sign_thresh, set it to 0.
+    Take sign of av_spot_sign_image so it only contains 1, 0, -1.
+    [shape_ny x shape_nx x shape_nz]
+```
+There are a few parameters in the [configuration file](../config.md#omp) which are used:
+
+* `shape_pos_neighbour_thresh`: In *2D*, this is `use_thresh` in the above code. In *3D*, this is
+`use_thresh - 2`.
+* `shape_max_size`: This is `[shape_ny, shape_nx, shape_nz]` in the above code.
+* `shape_sign_thresh`: This is `sign_thresh` in the above code.
+
+*Step 1* is a thresholding procedure, so we only use spots we are quite confident are real for computing
+the average shape.
+For a spot to be used in computing the shape, on the z-plane of the gene coefficient image that it was found on, 
+within the $n_{pos_{use}}\times n_{pos_{use}}$ neighbourhood with the local maxima in the centre, all 
+`n_use = `$n_{pos_{use}}^2$ coefficients must be positive. In *3D*, the coefficient at the same $yx$ coordinate
+as the local maxima but on 1 z-plane either side must be also positive (now require `n_use = `$n_{pos_{use}}^2 + 2$ 
+positive coefficients in the neighbourhood of the spot). The value of $n_{pos_{use}}^2$ is given by 
+`config['shape_pos_neighbour_thresh']`, the default value is 9 meaning all pixels in a $3\times 3$ grid centered on
+the local maxima must be positive.
+
+??? example
+
+    The first image below shows a spot that would be used to compute the shape with 
+    `config['shape_pos_neighbour_thresh'] = 3`because all 9 pixels in the central z-plane have 
+    a positive coefficient, as do those on 1 z plane either side but in the middle yx pixel.
+
+    The second image shows a spot that would not be used.
+
+    === "✅"
+        ![image](../images/pipeline/omp/spots/shape_use.png){width="800"}
+    === "❌"
+        ![image](../images/pipeline/omp/spots/shape_no_use.png){width="800"}
+
+In *Step 2*, we just [get the cropped](../code/utils/spot_images.md#iss.utils.spot_images.get_spot_images) 
+gene coefficient image in the neighbourhood of the local maxima.
+3 examples are shown as *Spot 1*, *Spot 2* and *Spot 3* below.
+
+In *Step 3*, we are saying that most spots are probably not overlapping with any other genes so
+to get an estimate of what an average spot looks like, let us only use spots which are
+quite well isolated. Our definition of isolated here, is that the distance between each spot used in *Step 2*
+and any other spot used in *Step 2* must exceed `config[shape_isolation_dist]`.
+
+
+=== "Spot 1"
+    ![image](../images/pipeline/omp/spots/spot1.png){width="800"}
+=== "Spot 2"
+    ![image](../images/pipeline/omp/spots/spot2.png){width="800"}
+=== "Spot 3"
+    ![image](../images/pipeline/omp/spots/spot3.png){width="800"}
+=== "Average Sign"
+    ![image](../images/pipeline/omp/spots/av_shape_float.png){width="800"}
+=== "Spot Shape"
+    ![image](../images/pipeline/omp/spots/av_shape.png){width="800"}
+
+In *Step 4*, we first take the sign of the spot images and then compute the average of these using 
+[`get_average_spot_image`](../code/utils/spot_images.md#iss.utils.spot_images.get_average_spot_image).
+We set `av_type = 'mean'` and `symmetry = 'annulus_3d'`. We use this symmetry because we assume that the 
+spot should be circular within a z-plane and symmetric in z. This procedure produces the *Average Sign* image
+shown above. This is saved to the *Notebook* as `nb.omp.spot_shape_float`.
+
+After we have this `av_sign_image`, we get our final spot_shape via:
+
+``` python
+import numpy as np
+av_sign_image[np.abs(av_sign_image)] < config['omp']['shape_sign_thresh']] = 0
+spot_shape = np.sign(av_sign_image)
+```
+
+This is just saying that if the absolute value of the mean sign across all these spots was less than 
+`config['omp']['shape_sign_thresh']`, then we are not sure what sign these pixels 
+should be, so we won't assign them a sign in our final `spot_shape`. Otherwise, 
+we are fairly confident what sign they should be, so we do assign the sign to our final shape. The *Spot Shape*
+image above shows what this looks like.
+
+??? question "Why does the spot shape indicate the expected sign of the coefficient?"
+
+    The `spot_shape` indicates the expected sign of a coefficient, not the expected value.
+    This is because, through the [*OMP* algorithm](#omp-algorithm), for a pixel to have a non-zero coefficient 
+    for any gene, it has already gone through a [thresholding](#finding-best-gene) procedure which has decided that 
+    the gene `bled_code` is required to explain the pixel color.
+
+    The idea behind [counting](#n_neighbours) the number of coefficients with the correct sign is 
+    that if there are lots of pixels in the neighbourhood of the spot which required a certain gene, then that gives
+    us confidence that the gene is actually present. 
+
+    If we instead convolved the actual coefficent image (e.g. *Spot 1* image shown above) 
+    with the expected coefficient kernel (e.g. mean of spot_images in *Step 4* of the pseudocode), it 
+    would boost the score of intense pixels which we don't want to do.
+
+The final `spot_shape` is saved to the *Notebook* as `nb.omp.spot_shape` and is also saved as a 
+*npy* file in the output directory with the name indicated by `config['file_names']['omp_spot_shape']`.
+The coordinates and corresponding gene of spots used to compute `nb.omp.spot_shape` are saved as
+`nb.shape_spot_local_yxz` and `nb.shape_spot_gene_no` respectively.
+
+### `n_neighbours`
+Once we have found the `spot_shape`, we want to see how each spot resembles this. To do this, 
+if spot $s$, was found on the gene $g$ coefficient image, we first 
+[obtain](../code/utils/spot_images.md#iss.utils.spot_images.get_spot_images) `coef_im_s` which is the gene 
+$g$ coefficient image centered on the coordinates of spot $s$, with the same size as `spot_shape`.
+
+We then [count](../code/omp/spots.md#iss.omp.spots.count_spot_neighbours) the number of pixels for which 
+`coef_im_s` and `spot_shape` both have positive coefficients. We also count the number of pixels for which 
+`coef_im_s` and `spot_shape` both have negative coefficients. Once this has been done for all spots, these 
+are saved as `nb.omp.n_neighbours_pos` and `nb.omp.n_neighbours_neg` respectively.
+
+To reduce the memory of the *Notebook* file, we only save spots to the *Notebook* if `n_neighbours_pos`
+exceeds `config['initial_pos_neighbour_thresh']`. If this is left blank, it will be set
+to the fraction `config['initial_pos_neighbour_thresh_param']` of the maximum possible value (i.e.
+`sum(spot_shape>0)`). It will also be clipped between `config['initial_pos_neighbour_thresh_min']` and 
+`config['initial_pos_neighbour_thresh_max']`.
+
+
+#### [`view_omp_score`](../code/plot/omp.md#view_omp_score)
+The way `nb.omp.n_neighbours_pos` and `nb.omp.n_neighbours_neg` are obtained, can be visualised for a specific
+spot with the function [`view_omp_score`](../code/plot/omp.md#view_omp_score):
+
+=== "$\rho = 0.95$"
+    ![image](../images/pipeline/omp/spots/view_omp_score.png){width="800"}
+=== "$\rho = 0.1$"
+    ![image](../images/pipeline/omp/spots/view_omp_score2.png){width="800"}
+=== "$\rho = 20$"
+    ![image](../images/pipeline/omp/spots/view_omp_score3.png){width="800"}
+
+Here, the top plot shows `nb.omp.spot_shape` and the bottom plot shows the coefficient image for *Snca* in the 
+neighbourhood of spot $371046$ which has $yxz$ coordinates in the global coordinate system of 
+$[3970, 509, 25]$. 
+
+The green hatching in the top plot indicates where both plots have the same sign. So `nb.omp.n_neighbours_pos[371046]`
+is the number of red pixels with green hatching (316) and `nb.omp.n_neighbours_neg[371046]` is the number of 
+blue pixels with green hatching (192).
+
+#### *OMP* Score
+The final [score](../code/call_spots/qual_check.md#iss.call_spots.qual_check.omp_spot_score), $\gamma$, used for 
+[thresholding](../code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold) 
+*OMP* spots in the [final plot](../view_results.md) and when exporting to 
+[*pciSeq*](../run_code.md#exporting-to-pciseq) is: 
+
+$$
+\gamma_s = \frac{n_{neg_s} + \rho n_{pos_s}}{n_{neg_{max}} + \rho n_{pos_{max}}}
+$$
+
+Where:
+
+* $n_{neg_s}$ is `nb.omp.n_neighbours_neg[s]`
+* $n_{neg_s}$ is `nb.omp.n_neighbours_pos[s]`
+* $n_{neg_{max}}$ is `sum(nb.omp.spot_shape<0)`
+* $n_{pos_{max}}$ is `sum(nb.omp.spot_shape>0)`
+* $\rho$ is `config['thresholds']['score_omp_multiplier']`
+
+So if $\rho = 1$, this would just be the fraction of pixels in the neighbourhood of spot $s$ with the correct
+sign. The larger $\rho$, the greater the contribution of the positive pixels to $\gamma_s$.
+
+With the [`view_omp_score`](#view_omp_score) function, the effect of varying $\rho$ on the score, can 
+be seen by using the textbox. The top row of plots are also normalised so $\gamma_s$ is equal to the sum 
+of the absolute value of the pixels with the green hatching. I.e. in the $\rho=0.1$ image, the negative pixels
+are much larger than the positive and in the $\rho=20$ image, the positive pixels are much larger than the negative.
+
+## Saving *OMP* results
+Because the *OMP* section of the pipeline takes a long time, we want to save the results as we go along, so 
+we don't have to restart the whole thing if it crashes for some reason e.g. a memory error.
+
+Thus, after we have found the spots on a tile, we save the information for all of them to a npy file
+in the output directory with a name indicated by `config['file_names']['omp_spot_info']`. For each spot, $s$, 
+this file contains 7 integer values. The first 3 are the local $yxz$ coordinates (z-coordinate in units of z-pixels) on 
+the tile it was found on. The fourth is the gene it was assigned to. The fifth is `n_neighbours_pos` and the sixth
+is `n_neighbours_neg`. The seventh is the tile it was found on.
+
+We also save the coefficients of each spot $s$ for each gene, $\pmb{\mu}_s$, 
+found via the [*OMP* algorithm](#omp-algorithm). This $n_{spots}\times n_{genes}$ sparse array is saved as a 
+npz file in the output directory with a name indicated by `config['file_names']['omp_spot_coef']`. This 
+is not actually used anymore but may be useful for debugging purposes.
+
+If these files already exist, the [`call_spots_omp`](../code/pipeline/omp.md) function will simply skip over all tiles 
+for which spots have been saved and then load them all in after spots have been found on all the other tiles.
+
+After spots have been found on all tiles, duplicate spots are removed in the same way as in the 
+[*get reference spots*](get_reference_spots.md#duplicates) step of the pipeline.
+
+We then save details of each spot to the *OMP* *NotebookPage* i.e. `local_yxz`, `tile`, 
+[`colors`](get_reference_spots.md#reading-off-intensity), `gene_no`, 
+[`intensity`](call_reference_spots.md#intensity), [`n_neighbours_neg`](#n_neighbours) and 
+[`n_neighbours_pos`](#n_neighbours).
 
 ## Diagnostics
-### view_score
-### view_weight
+### `view_score`
+### `view_weight`

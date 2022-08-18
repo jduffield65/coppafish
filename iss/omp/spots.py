@@ -2,7 +2,7 @@ import warnings
 from typing import Union, List, Tuple, Optional
 import numpy as np
 from .. import utils
-from ..extract.deconvolution import get_spot_images, get_average_spot_image
+from ..utils.spot_images import get_spot_images, get_average_spot_image
 from ..find_spots import detect_spots, get_isolated_points
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
