@@ -24,9 +24,112 @@ the above will pick up the pipeline from the last stage it finished. So for a no
 the [stitch stage](code/pipeline/run.md#iss.pipeline.run.run_stitch).
 
 ## Check data before running
+The functions [`view_raw`](pipeline/extract.md#raw-data), 
+[`view_filter`](pipeline/extract.md#viewer) and [`view_find_spots`](pipeline/find_spots.md#viewer) 
+can be run before the *Notebook* is created if a valid configuration file is provided.
 
+So if there is a dataset of questionable quality, it may be worth running some of these first to see if it 
+looks ok. In particular, [`view_raw`](pipeline/extract.md#raw-data) may be useful for checking the correct
+channels are used, or to see if specific tiles/z-planes should be 
+[removed](config_setup.md#using-a-subset-of-the-raw-data).
 
 ## Re-run section
+If at any stage, a section of the pipeline needs re-running, then the relevant *NotebookPage* must first be 
+[removed](notebook.md#deleting-a-notebookpage) from the Notebook before the configuration file parameters for that 
+section can be [altered](notebook.md#configuration-file).
+
+??? example "Re-run `register_initial`"
+    The code below illustrates how you can re-run the [`register_initial`](pipeline/register_initial.md) step
+    of the pipeline with different configuration file parameters. 
+    
+    If the last line is uncommented, the full pipeline will be run, starting with `register_initial`, and the 
+    *Notebook* will be saved as `notebook_new.npz` in the output directory.
+
+    === "Code"
+
+        ``` python
+        from iss import Notebook, run_pipeline
+        nb_file = '/Users/user/iss/experiment/notebook.npz'
+        
+        # Save new notebook with different name so it does not overwrite old notebook
+        # Make sure notebook_name is specified in [file_names] section 
+        # of settings_new.ini file to be same as name given here.
+        nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
+        ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
+    
+        # config_file not given so will use last one saved to Notebook
+        nb = Notebook(nb_file)
+        config = nb.get_config()['register_initial']
+        print('Using config file saved to notebook:')
+        print(f"shift_max_range: {config['shift_max_range']}")
+        print(f"shift_score_thresh_multiplier: {config['shift_score_thresh_multiplier']}")
+    
+        # Change register_initial
+        del nb.register_initial     # delete old register_initial
+        nb.save(nb_file_new)        # save Notebook with no register_initial page to new file 
+                                    # so does not overwrite old Notebook
+        # Load in new notebook with new config file
+        nb_new = Notebook(nb_file_new, ini_file_new)
+        config_new = nb_new.get_config()['register_initial']
+        print(f'Using new config file {ini_file_new}:')
+        print(f"shift_max_range: {config_new['shift_max_range']}")
+        print(f"shift_score_thresh_multiplier: {config_new['shift_score_thresh_multiplier']}")
+        # nb = run_pipeline(ini_file_new)   # Uncomment this line to run pipeline starting from
+                                            # register_initial
+        ```
+    === "Output"
+
+        ``` 
+        Using config file saved to notebook:
+        shift_max_range: [500, 500, 10]
+        shift_score_thresh_multiplier: 1.5
+        Using new config file /Users/user/iss/experiment/settings_new.ini:
+        shift_max_range: [600, 600, 20]
+        shift_score_thresh_multiplier: 1.2
+    
+        ```
+    === "nb._config (saved to *Notebook*)"
+    
+        ``` ini
+        [file_names]
+        input_dir = /Users/user/iss/experiment1/raw
+        output_dir = /Users/user/iss/experiment1/output
+        tile_dir = /Users/user/iss/experiment1/tiles
+        round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
+        anchor = Exp1_anchor
+        code_book = /Users/user/iss/experiment1/codebook.txt
+    
+        [basic_info]
+        is_3d = True
+        anchor_channel = 4
+        dapi_channel = 0
+        ```
+    === "*/Users/user/iss/experiment/settings_new.ini*"
+    
+        ``` ini
+        [file_names]
+        input_dir = /Users/user/iss/experiment1/raw
+        output_dir = /Users/user/iss/experiment1/output
+        tile_dir = /Users/user/iss/experiment1/tiles
+        round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
+        anchor = Exp1_anchor
+        code_book = /Users/user/iss/experiment1/codebook.txt
+        notebook_name = notebook_new
+    
+        [basic_info]
+        is_3d = True
+        anchor_channel = 4
+        dapi_channel = 0
+
+        [register_initial]
+        shift_max_range = 600, 600, 20
+        shift_score_thresh_multiplier = 1.2
+        ```
+
+If the section that needs running is call_reference_spots, then the procedure is 
+[slightly different](pipeline/call_reference_spots.md#re-run-call_reference_spots) because
+this step adds variables to the [`ref_spots`](notebook_comments.md#ref_spots) page as well as creating the 
+[`call_spots`](notebook_comments.md#call_spots) page.
 
 ## Exporting to pciSeq
 To save the results of the pipeline as a .csv file which can then be plotted with pciSeq, one  of 

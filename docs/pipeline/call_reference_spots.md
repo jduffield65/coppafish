@@ -13,6 +13,10 @@ seen using the [`iss_plot` viewer](../view_results.md) once these pages have bee
 
 !!! note "Note: `config` in this section, with no section specified, means `config['call_spots']`"
 
+## Re-run [`call_reference_spots`](../code/pipeline/call_reference_spots.md)
+
+
+
 ## Color Normalisation
 We assign a spot $s$ to a gene $g$, based on its $n_{rounds} \times n_{channels}$ `color`, $\pmb{\acute{\zeta}_s}$, 
 indicating the intensity in each round and channel.

@@ -60,13 +60,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     if overwrite_ref_spots:
         warnings.warn("\noverwrite_ref_spots = True so will overwrite:\ngene_no, score, score_diff, intensity"
                       "\nin nbp_ref_spots.")
-        nbp_ref_spots.finalized = False
     else:
         # Raise error if data in nbp_ref_spots already exists that will be overwritted in this function.
         error_message = ""
-        if nbp_ref_spots.finalized:
-            error_message += "\nnbp_ref_spots already added to a Notebook so can't change it." \
-                             "\nSet nbp_ref_spots.finalized = False to get past this error."
         for var in ['gene_no', 'score', 'score_diff', 'intensity']:
             if hasattr(nbp_ref_spots, var) and nbp_ref_spots.__getattribute__(var) is not None:
                 error_message += f"\nnbp_ref_spots.{var} is not None but this function will overwrite {var}." \
@@ -74,6 +70,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         if len(error_message) > 0:
             raise ValueError(error_message)
 
+    nbp_ref_spots.finalized = False  # So we can add and delete ref_spots page variables
     # delete all variables in ref_spots set to None so can add them later.
     for var in ['gene_no', 'score', 'score_diff', 'intensity']:
         if hasattr(nbp_ref_spots, var):
@@ -278,4 +275,5 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         fail_genes_str = '\n'.join(fail_genes_str)
         warnings.warn(f"\nGene Efficiency could not be calculated for {n_fail_ge}/{n_genes} "
                       f"genes:\n{fail_genes_str}")
+    nbp_ref_spots.finalized = True
     return nbp, nbp_ref_spots
