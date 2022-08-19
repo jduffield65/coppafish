@@ -66,7 +66,7 @@ The names of the files are specified through `config['file_names']['pciseq']`. E
 Only spots which pass [`quality_threshold`](code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold)
 are saved. This depends on parameters given in [`config['thresholds']`](config.md#thresholds).
 
-An example file is given [here](images/pciseq_omp.csv).
+An example file is given [here](files/pciseq_omp.csv).
 
 This will also add a page named [*thresholds*](notebook_comments.md#thresholds) to the notebook which 
 inherits all the values from the [*thresholds*](config.md#thresholds) section of the config file. 

@@ -122,7 +122,10 @@ Some example config files for typical experiments are listed below.
     completion (using a config file like the *3D* one indicated above). The pipeline for the *Separate Round* case 
     cannot be run further that the stitching section.
 
-    The [`run_sep_reg`](code/sep_round_reg.md#sep_round_reg.run_sep_round_reg) function runs the pipeline for the 
+    The [`run_sep_reg`](code/sep_round_reg.md#docs.scripts.sep_round_reg.run_sep_round_reg) function 
+    (script is [here](scripts/sep_round_reg.py)) 
+    runs the pipeline 
+    for the 
     *Separate Round* case and then registers the `anchor_round`/`anchor_channel` to the `anchor_round`/`anchor_channel`
     of the full experiment.
 
@@ -152,7 +155,7 @@ directory looks like for the config files *3D* and *.npy Raw Data* listed above)
     For the .npy case, input_dir must also contain a metadata .json file. 
     This contains the metadata extracted from the initial .nd2 files using the function 
     [save_metadata](code/utils/nd2.md#iss.utils.nd2.save_metadata).
-    An example metadata file is given [here](images/config/metadata_example.json) for an experiment with 
+    An example metadata file is given [here](files/metadata_example.json) for an experiment with 
     3 tiles and 7 channels.
 
     Also, each name listed in the `round` parameter indicates a folder not a file. 
@@ -205,7 +208,7 @@ Thus it is of length `n_rounds`, containing numbers in the range from `0` to `n_
 
 ???+ example
 
-    An example is given [here](images/config/codebook.txt) so that if
+    An example is given [here](files/codebook.txt) so that if
 
     `basic_info[dye_names] = DY405, CF405L, AF488, DY520XL, AF532, AF594, ATTO425`
 

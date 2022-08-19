@@ -59,6 +59,26 @@ To use a particular background image, when calling `iss_plot` a second argument 
 
 If a *2D* image is provided for a *3D* dataset, then this image will be used as the background image for each z-plane.
 
+## Gene Markers
+The color and marker used for each gene can be provided through a *csv* file e.g.
+
+```
+iss_plot(nb, gene_marker_file='/Users/user/iss/experiment/gene_markers.csv')
+```
+
+This csv file must contain 
+6 columns with the following headers:
+
+* GeneNames - `str`, name of gene with first letter capital.
+* ColorR - `float`, Rgb color for plotting.
+* ColorG - `float`, rGb color for plotting.
+* ColorB - `float`, rgB color for plotting.
+* napari_symbol - `str`, symbol used to plot in napari.
+* mpl_symbol - `str`, equivalent of napari symbol in matplotlib.
+
+Only genes with names indicated in the *GeneNames* column will be shown in the viewer.
+If this file is not specified, then the [default file](files/gene_color.csv) will be used.
+
 ## Sidebar
 
 The sidebar on the left of the viewer includes various widgets which can change which spots are plotted.
@@ -99,8 +119,8 @@ The slider can then be used to view only spots which satisfy:
 
 !!! note "Effect of changing Method on Score Range slider"
     
-    The `score` computed for spots using the [omp method](pipeline/omp.md#omp-score) differs from that used 
-    with the [ref_spots method](pipeline/call_reference_spots.md#dot-product-score).
+    The `score` computed for spots using the [omp method](pipeline/omp.md#omp-score), $\gamma$, differs from that used 
+    with the [ref_spots method](pipeline/call_reference_spots.md#dot-product-score), $\Delta$.
     Thus, we keep a unique score range slider for each method so that when the method is changed using the buttons, 
     the score range slider values will also change to the last values used with that method.
 
@@ -118,6 +138,9 @@ Initially, `intensity_thresh` will be set to `config['thresholds']['intensity]` 
     The `intensity` is computed in the same way for omp method spots and ref_spots method spots.
     Thus the value of `intensity_thresh` will not change when the method is changed using the buttons.
 
+### OMP Score Multiplier
+This is the $\rho$ parameter used in the calculation of [*OMP* score](pipeline/omp.md#omp-score).
+It will not affect anything if the [method](#method) is *Anchor*.
 
 ## Diagnostics
 There are a few diagnostic plots which can be called with keyboard shortcuts with the viewer open.
@@ -146,7 +169,7 @@ This will then show the expected intensity of each dye in each channel. An examp
     [normalisation](code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
     has been applied to equalise the intensity between color channels i.e. weaker channels are boosted.
     
-    To remove this normalisation, press the *Norm* button. 
+    To remove this normalisation, press the *Norm* button (*Norm* will go red). 
     The range of the colorbar will then change from approximately *-1 to 1* to approximately *-1000 to 1000*. 
     This is then then the intensity that is read off from the filtered images saved as .npy files 
     in the *file_names[tile_dir]*.
@@ -204,12 +227,12 @@ the number of *OMP* spots assigned to each gene which also have $\gamma_s >$ `om
 ### *h*: [`histogram_score`](code/plot/omp.md#histogram_score)
 [This plot](pipeline/call_reference_spots.md#histogram_score) shows the histogram of the score assigned to each spot 
 for the current [method](#method). If [the current method is *OMP*](pipeline/omp.md#histogram_score), 
-the initial value of `omp_score_multiplier` will be the current [slider](#score-range) value.
+the initial value of `omp_score_multiplier` will be the current [slider](#omp-score-multiplier) value.
 
 ### *Shift-h*: [`histogram_2d_score`](code/plot/omp.md#histogram_2d_score)
 [This plot](pipeline/omp.md#histogram_2d_score) shows the bivariate histogram to see the correlation 
 between the omp spot score, $\gamma_s$ and the dot product score $\Delta_s$ for spots detected with the 
-*OMP* algorithm. The initial value of `omp_score_multiplier` will be the current [slider](#score-range) value.
+*OMP* algorithm. The initial value of `omp_score_multiplier` will be the current [slider](#omp-score-multiplier) value.
 
 ### *k*: [`view_scaled_k_means`](code/plot/call_spots.md#scaled-k-means)
 [This plot](pipeline/call_reference_spots.md#view_scaled_k_means) shows how the `bleed_matrix` was computed.
@@ -227,7 +250,13 @@ The `spot_color` for a particular spot can be compared to the `bled_code` (inclu
 of the gene it was assigned to by pressing *c* after clicking on the
 spot in [*select* mode](#space-change-to-select-mode):
 
-![image](images/viewer/view_codes.png){width="600"}
+=== "Background Not Removed"
+    ![image](images/viewer/view_codes.png){width="600"}
+=== "Background Removed"
+    ![image](images/viewer/view_codes_background.png){width="600"}
+
+Pressing the *Background* button (*Background* will turn red), shows what the `spot_color` looks like after the 
+background *genes* [have been removed](pipeline/call_reference_spots.md#background).
 
 The subsequent plots all show the same spot as used here.
 
@@ -324,4 +353,4 @@ that iteration.
 
 ### *Shift-s*: [`view_omp_score`](code/plot/omp.md#view_omp_score)
 [This shows](pipeline/omp.md#view_omp_score) how the *OMP* score, $\gamma_s$, was computed for a particular spot. 
-The initial value of `omp_score_multiplier` will be the current [slider](#score-range) value.
+The initial value of `omp_score_multiplier` will be the current [slider](#omp-score-multiplier) value.

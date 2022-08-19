@@ -79,13 +79,11 @@ def add_legend(gene_legend_info: Optional[pd.DataFrame],
     This returns a legend which displays the genes and/or cell types present.
 
     Args:
-        gene_legend_info: `[n_legend_genes x 8]` pandas data frame containing the following information for each gene
+        gene_legend_info: `[n_legend_genes x 6]` pandas data frame containing the following information for each gene
             - GeneNames - str, name of gene with first letter capital
             - ColorR - float, Rgb color for plotting
             - ColorG - float, rGb color for plotting
             - ColorB - float, rgB color for plotting
-            - Symbols - str, symbol used to plot in MATLAB.
-                each symbol needs to be of length=1 for selecting genes in napari e.g. `*`, `o`, `|`, `+` etc.
             - napari_symbol - str, symbol used to plot in napari
             - mpl_symbol - str, equivalent of napari symbol in matplotlib.
         genes: str [n_genes]

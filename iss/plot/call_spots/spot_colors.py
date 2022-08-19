@@ -136,8 +136,15 @@ class ColorPlotBase:
         self.slider_ax = self.fig.add_axes(self.slider_pos)
         self.color_slider = None
         if self.color_norm is not None:
+            self.norm_button_color = 'white'
+            self.norm_button_color_press = 'red'
+            if self.method == 'raw':
+                current_color = self.norm_button_color_press
+            else:
+                current_color = self.norm_button_color
             self.norm_button_ax = self.fig.add_axes(button_pos)
             self.norm_button = Button(self.norm_button_ax, 'Norm', hovercolor='0.275')
+            self.norm_button.label.set_color(current_color)
             self.norm_button.on_clicked(self.change_norm)
 
     def change_clim(self, val: List):
@@ -169,7 +176,11 @@ class ColorPlotBase:
         self.slider_ax = self.fig.add_axes(self.slider_pos)
         if self.color_norm is not None:
             self.method = 'norm' if self.method == 'raw' else 'raw'  # change to the other method
-
+        if self.method == 'raw':
+            # Change color of text when button pressed
+            self.norm_button.label.set_color(self.norm_button_color_press)
+        else:
+            self.norm_button.label.set_color(self.norm_button_color)
         for i in range(self.n_images):
             # change image to different normalisation and change clim
             self.im[i].set_data(self.im_data[i] * self.color_norm[i] if self.method == 'raw' else self.im_data[i])
@@ -237,6 +248,7 @@ class view_codes(ColorPlotBase):
 
         self.background_button_ax = self.fig.add_axes([0.85, 0.1, 0.1, 0.05])
         self.background_button = Button(self.background_button_ax, 'Background', hovercolor='0.275')
+        self.background_button.label.set_color(self.norm_button_color)
         self.background_button.on_clicked(self.change_background)
 
         self.change_norm()  # initialise with method = 'norm'
@@ -251,9 +263,12 @@ class view_codes(ColorPlotBase):
         if not self.background_removed:
             self.im_data[0] = self.spot_color_pb
             self.background_removed = True
+            # Change color when pressed
+            self.background_button.label.set_color(self.norm_button_color_press)
         else:
             self.im_data[0] = self.spot_color
             self.background_removed = False
+            self.background_button.label.set_color(self.norm_button_color)
         # Change norm method before call change_norm so overall it does not change
         if self.color_norm is not None:
             self.method = 'norm' if self.method == 'raw' else 'raw'  # change to the other method

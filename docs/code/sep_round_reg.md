@@ -1,1 +1,1 @@
-::: sep_round_reg
+::: docs.scripts.sep_round_reg

@@ -22,7 +22,8 @@ from typing import Optional, Union
 
 
 class iss_plot:
-    def __init__(self, nb: Notebook, background_image: Optional[Union[str, np.ndarray]] = 'dapi'):
+    def __init__(self, nb: Notebook, background_image: Optional[Union[str, np.ndarray]] = 'dapi',
+                 gene_marker_file: Optional[str] = None):
         """
         This is the function to view the results of the pipeline
         i.e. the spots found and which genes they were assigned to.
@@ -32,19 +33,33 @@ class iss_plot:
             background_image: Optional file_name or image that will be plotted as the background image.
                 If image, z dimension needs to be first i.e. `n_z x n_y x n_x` if 3D or `n_y x n_x` if 2D.
                 If pass *2D* image for *3D* data, will show same image as background on each z-plane.
+            gene_marker_file: Path to csv file containing marker and color for each gene. There must be 6 columns
+                in the csv file with the following headers:
+
+                * GeneNames - str, name of gene with first letter capital
+                * ColorR - float, Rgb color for plotting
+                * ColorG - float, rGb color for plotting
+                * ColorB - float, rgB color for plotting
+                * napari_symbol - str, symbol used to plot in napari
+                * mpl_symbol - str, equivalent of napari symbol in matplotlib.
+
+                If it is not provided, then the default file *iss/plot/results_viewer/legend.gene_color.csv*
+                will be used.
         """
         # TODO: flip y axis so origin bottom left
         self.nb = nb
-        legend_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend')
-        gene_legend_info = pd.read_csv(os.path.join(legend_folder, 'gene_color.csv'))
-        cell_legend_info = pd.read_csv(os.path.join(legend_folder, 'cell_color.csv'))
+        if gene_marker_file is None:
+            gene_marker_file = os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend'),
+                                       'gene_color.csv')
+        gene_legend_info = pd.read_csv(gene_marker_file)
 
         # indices of genes in notebook to gene_color data - quicker to look up integers than names
         # in change_threshold
         n_legend_genes = len(gene_legend_info['GeneNames'])
-        self.legend_gene_symbol = np.asarray(gene_legend_info['Symbols'])
+        self.legend_gene_symbol = np.asarray(gene_legend_info['mpl_symbol'])
         self.legend_gene_no = np.ones(n_legend_genes, dtype=int) * -1
         for i in range(n_legend_genes):
+            # TODO: maybe guard against different cases in this comparison
             gene_ind = np.where(self.nb.call_spots.gene_names == gene_legend_info['GeneNames'][i])[0]
             if len(gene_ind) > 0:
                 self.legend_gene_no[i] = gene_ind[0]
@@ -155,16 +170,15 @@ class iss_plot:
             self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
         else:
             self.spot_gene_no = self.nb.ref_spots.gene_no
-        self.label_prefix = 'Gene Symbol'  # prefix of label for layers showing spots
+        self.label_prefix = 'Gene Symbol:'  # prefix of label for layers showing spots
         for s in np.unique(self.legend_gene_symbol):
-            # TODO: set transparency based on spot score
             spots_correct_gene = np.isin(self.spot_gene_no, self.legend_gene_no[self.legend_gene_symbol == s])
             if spots_correct_gene.any():
                 coords_to_plot = spot_zyx[spots_correct_gene]
                 spotcolor_to_plot = gene_color[self.spot_gene_no[spots_correct_gene]]
                 symb_to_plot = np.unique(gene_legend_info[self.legend_gene_symbol == s]['napari_symbol'])[0]
                 self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
-                                       name=f'{self.label_prefix}: {s}', size=point_size,
+                                       name=f'{self.label_prefix}{s}', size=point_size,
                                        shown=show_spots[spots_correct_gene])
                 # TODO: showing multiple z-planes at once is possible using out_of_slice_display=True,
                 #  but at the moment cannot use at same time as show.
@@ -293,7 +307,7 @@ class iss_plot:
             if i == self.diagnostic_layer_ind:
                 self.viewer.layers[i].shown = spots_shown
             elif self.label_prefix in self.viewer.layers[i].name:
-                s = self.viewer.layers[i].name[-1]
+                s = self.viewer.layers[i].name.replace(self.label_prefix,'')
                 spots_correct_gene = np.isin(self.spot_gene_no,
                                              self.legend_gene_no[self.legend_gene_symbol == s])
                 self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
