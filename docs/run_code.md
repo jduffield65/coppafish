@@ -126,7 +126,8 @@ section can be [altered](notebook.md#configuration-file).
         shift_score_thresh_multiplier = 1.2
         ```
 
-If the section that needs running is call_reference_spots, then the procedure is 
+If the section that needs running is [`call_reference_spots`](code/pipeline/call_reference_spots.md), 
+then the procedure is 
 [slightly different](pipeline/call_reference_spots.md#re-run-call_reference_spots) because
 this step adds variables to the [`ref_spots`](notebook_comments.md#ref_spots) page as well as creating the 
 [`call_spots`](notebook_comments.md#call_spots) page.

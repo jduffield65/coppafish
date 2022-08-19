@@ -14,7 +14,129 @@ seen using the [`iss_plot` viewer](../view_results.md) once these pages have bee
 !!! note "Note: `config` in this section, with no section specified, means `config['call_spots']`"
 
 ## Re-run [`call_reference_spots`](../code/pipeline/call_reference_spots.md)
+To re-run the [*call reference spots* step of the pipeline](../code/pipeline/call_reference_spots.md) 
+of the pipeline with different parameters in the configuration file, the 
+[`call_spots`](../notebook_comments.md#call_spots) page must be
+deleted and then the [`run_reference_spots`](../code/pipeline/run.md#iss.pipeline.run.run_reference_spots) function 
+must be called with `overwrite_ref_spots = True`.
 
+This is so the variables `gene_no`, `score`, `score_diff`, `intensity` in the 
+[`ref_spots`](../notebook_comments.md#ref_spots) page will be updated.
+
+??? example "Re-run `call_reference_spots`"
+
+    The code below illustrates how you can re-run the 
+    [*call reference spots* step of the pipeline](../code/pipeline/call_reference_spots.md) step
+    of the pipeline without [weighting](#dot-product-score) or [`gene_efficiency`](#gene-efficiency).
+
+    === "Code"
+
+        ``` python
+        from iss import Notebook
+        from iss.pipeline.run import run_reference_spots
+        nb_file = '/Users/user/iss/experiment/notebook.npz'
+        
+        # Save new notebook with different name so it does not overwrite old notebook
+        # Make sure notebook_name is specified in [file_names] section 
+        # of settings_new.ini file to be same as name given here.
+        nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
+        ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
+    
+        # config_file not given so will use last one saved to Notebook
+        nb = Notebook(nb_file)
+        config = nb.get_config()['call_spots']
+        print('Using config file saved to notebook:')
+        print(f"alpha: {config['alpha']}")
+        print(f"gene_efficiency_n_iter: {config['gene_efficiency_n_iter']}")
+        print(f"First 5 gene assignments: {nb.ref_spots.gene_no[:5]}")
+        print(f"First 5 spot scores: {np.around(nb.ref_spots.score[:5], 3)}")
+        print(f"Bled Code of Gene 0, Round 0: {np.around(nb.call_spots.bled_codes_ge[0,0], 2)}")
+    
+        # Change call_spots
+        del nb.call_spots           # delete old call_spots
+        nb.save(nb_file_new)        # save Notebook with no call_spots page to new file 
+                                    # so does not overwrite old Notebook
+        # Load in new notebook with new config file
+        nb_new = Notebook(nb_file_new, ini_file_new)
+        config_new = nb_new.get_config()['call_spots']
+        # Show that config params have changed
+        print(f'\nUsing new config file but before re-running:')
+        print(f"alpha: {config_new['alpha']}")
+        print(f"gene_efficiency_n_iter: {config_new['gene_efficiency_n_iter']}")
+        # Show that ref_spots page variables are still the same
+        print(f"First 5 gene assignments: {nb_new.ref_spots.gene_no[:5]}")
+        print(f"First 5 spot scores: {np.around(nb_new.ref_spots.score[:5], 3)}")
+        
+        # Get new call_spots page
+        run_reference_spots(nb_new, overwrite_ref_spots=True)
+        print(f'\nUsing new config file after re-running:')
+        print(f"alpha: {config_new['alpha']}")
+        print(f"gene_efficiency_n_iter: {config_new['gene_efficiency_n_iter']}")
+        # Show that ref_spots and call_spots page variables have been updated
+        print(f"First 5 gene assignments: {nb_new.ref_spots.gene_no[:5]}")
+        print(f"First 5 spot scores: {np.around(nb_new.ref_spots.score[:5], 3)}")
+        print(f"Bled Code of Gene 0, Round 0: {np.around(nb_new.call_spots.bled_codes_ge[0,0], 2)}")
+        ```
+    === "Output"
+
+        ``` 
+        Using config file saved to notebook:
+        alpha: 120.0
+        gene_efficiency_n_iter: 10
+        First 5 gene assignments: [17 17 17 13 17]
+        First 5 spot scores: [0.645 0.806 0.702 0.692 0.796]
+        Bled Code of Gene 0, Round 0: [ 0.04  0.    0.   -0.    0.   -0.   -0.  ]
+
+        Using new config file but before re-running:
+        alpha: 0.0
+        gene_efficiency_n_iter: 0
+        First 5 gene assignments: [17 17 17 13 17]
+        First 5 spot scores: [0.645 0.806 0.702 0.692 0.796]
+
+        Using new config file after re-running:
+        alpha: 0.0
+        gene_efficiency_n_iter: 0
+        First 5 gene assignments: [17 17 17 13 17]
+        First 5 spot scores: [0.65  0.776 0.744 0.65  0.797]
+        Bled Code of Gene 0, Round 0: [ 0.25  0.    0.03 -0.    0.01 -0.   -0.  ]
+        ```
+    === "nb._config (saved to *Notebook*)"
+    
+        ``` ini
+        [file_names]
+        input_dir = /Users/user/iss/experiment1/raw
+        output_dir = /Users/user/iss/experiment1/output
+        tile_dir = /Users/user/iss/experiment1/tiles
+        round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
+        anchor = Exp1_anchor
+        code_book = /Users/user/iss/experiment1/codebook.txt
+    
+        [basic_info]
+        is_3d = True
+        anchor_channel = 4
+        dapi_channel = 0
+        ```
+    === "*/Users/user/iss/experiment/settings_new.ini*"
+    
+        ``` ini
+        [file_names]
+        input_dir = /Users/user/iss/experiment1/raw
+        output_dir = /Users/user/iss/experiment1/output
+        tile_dir = /Users/user/iss/experiment1/tiles
+        round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
+        anchor = Exp1_anchor
+        code_book = /Users/user/iss/experiment1/codebook.txt
+        notebook_name = notebook_new
+    
+        [basic_info]
+        is_3d = True
+        anchor_channel = 4
+        dapi_channel = 0
+
+        [call_spots]
+        gene_efficiency_n_iter = 0
+        alpha = 0
+        ```
 
 
 ## Color Normalisation

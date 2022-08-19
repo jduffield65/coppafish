@@ -761,10 +761,15 @@ Load in spot_info_t from all tiles and combine into large spot_info array
 Remove duplicate spots from spot_info
     [n_non_duplicate x 7]
 
+Load in spot_colors corresponding to the spots with yxz coordinates given 
+    by spot_info[:, :3]
+    [n_non_duplicate x n_rounds x n_channels]
+
 Save spot_info to Notebook:
     nb.omp.local_yxz =          spot_info[:, :3]
     nb.omp.gene_no =            spot_info[:, 3] 
     nb.omp.n_neighbours_pos =   spot_info[:, 4] 
     nb.omp.n_neighbours_neg =   spot_info[:, 5] 
-    nb.omp.tile =               spot_info[:, 6]            
+    nb.omp.tile =               spot_info[:, 6]  
+    nb.omp.colors =             spot_colors          
 ```
