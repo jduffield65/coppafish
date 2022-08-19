@@ -1041,7 +1041,7 @@ The *thresholds* section contains the thresholds used to determine which spots p
 
 * **intensity**: *maybe_number*.
 
-	Final accepted reference and OMP spots both require `intensity > thresholds[intensity]`. If not given, will be set to same value as `call_spots['gene_efficiency_intensity_thresh']`. intensity for a really intense spot is about 1 so intensity_thresh should be less than this. 
+	Final accepted reference and OMP spots both require `intensity > thresholds[intensity]`. If not given, will be set to same value as `nb.call_spots.gene_efficiency_intensity_thresh`. intensity for a really intense spot is about 1 so intensity_thresh should be less than this. 
 
 	Default: `None`
 

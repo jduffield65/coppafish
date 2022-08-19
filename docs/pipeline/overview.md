@@ -5,10 +5,5 @@ the configuration file is used for. Some useful [plots](../code/plot/viewer.md)
 that can be run for debugging purposes or to help understand what is going on are indicated. Potential
 errors that can be hit during each stage of the pipeline are also mentioned.
 
-If at any stage, a section of the pipeline, needs re-running, then the relevant *NotebookPage* must first be 
-[removed](../notebook.md#deleting-a-notebookpage) 
-from the *Notebook* before the configuration file parameters for that section can be altered.
+Instructions on how to re-run a section of the pipeline are given [here](../run_code.md#re-run-section).
 
-??? example "Re-run register_initial"
-
-    Code to re-run 

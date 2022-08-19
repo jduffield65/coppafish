@@ -168,12 +168,47 @@ The names of the files are specified through `config['file_names']['pciseq']`. E
 - z_stack - z coordinate of each spot in stitched coordinate system (in units of z-pixels).
 - Gene - Name of gene each spot was assigned to.
 
+An example file is given [here](files/pciseq_omp.csv).
+
+### Thresholding
 Only spots which pass [`quality_threshold`](code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold)
 are saved. This depends on parameters given in [`config['thresholds']`](config.md#thresholds).
 
-An example file is given [here](files/pciseq_omp.csv).
+For a [*reference*](pipeline/call_reference_spots.md) spot, $s$, to pass the thresholding, it must satisfy 
+the following:
 
-This will also add a page named [*thresholds*](notebook_comments.md#thresholds) to the notebook which 
-inherits all the values from the [*thresholds*](config.md#thresholds) section of the config file. 
-This is to remove the possibility of the [*thresholds*](config.md#thresholds) section in the config
+$$
+\displaylines{\Delta_s > \Delta_{thresh}\\ \chi_s > \chi_{thresh}}
+$$
+
+Where:
+
+* $\Delta_s$ is the maximum [dot product score](pipeline/call_reference_spots.md#dot-product-score) on iteration 0
+  for spot $s$ across all genes (i.e. $\Delta_s = \max_g(\Delta_{s0g})$).
+* $\Delta_{thresh}$ is `config['thresholds']['score_ref']`.
+* $\chi_s$ is the [intensity](pipeline/call_reference_spots.md#intensity) of spot $s$.
+* $\chi_{thresh}$ is `config['thresholds']['intensity']`. If this is not provided, it is set to
+`nb.call_spots.gene_efficiency_intensity_thresh`.
+
+For an [*OMP*](pipeline/omp.md) spot, $s$, to pass the thresholding, it must satisfy the following:
+
+$$
+\displaylines{\gamma_s > \gamma_{thresh}\\ \chi_s > \chi_{thresh}}
+$$
+
+Where:
+
+* $\gamma_s$ is the [*OMP* score](pipeline/omp.md#omp-score) for spot $s$.
+* $\gamma_{thresh}$ is `config['thresholds']['score_omp']`.
+* $\chi_s$ and $\chi_{thresh}$ are the same as for the *reference spots*.
+
+It is important that these thresholds are greater than 0, because when running the pipeline, we try to save a lot 
+of spots. The idea being this is that it is better to do the thresholding after the pipeline has been run rather than 
+during the pipeline. This is because, if there were too few spots in the latter case, much of the pipeline would
+have to be re-run to obtain new spots but in the former case, you can just change the threshold values.
+
+Once [`export_to_pciseq`](code/utils/pciseq.md#iss.utils.pciseq.export_to_pciseq) is run, the
+[*thresholds*](notebook_comments.md#thresholds) page will be added to the notebook. This
+inherits all the values from the [*thresholds*](config.md#thresholds) section of the config file, the purpose of which
+is to remove the possibility of the [*thresholds*](config.md#thresholds) section in the configuration
 file [being changed](notebook.md#configuration-file) once the results have been exported.

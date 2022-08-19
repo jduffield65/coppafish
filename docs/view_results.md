@@ -104,14 +104,12 @@ saved in the [*ref_spots*](notebook_comments.md#ref_spots) page.
 
 
 ### Score Range
-Only spots which pass a
-[quality thresholding](code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold) 
-are shown in the viewer.
+Only spots which pass a [quality thresholding](run_code.md#thresholding) are shown in the viewer.
 
 Spots are assigned a `score` between 0 and 1 which indicates the likelihood that the gene assignment is legitimate. 
-When the viewer is first opened, only spots with `score > config['thresholds']['score_omp]` 
-(`score > config['thresholds']['score_ref]` if no *omp* page in notebook) are shown
-and lower value of the score slider is set to `config['thresholds']['score_omp]`.
+When the viewer is first opened, only spots with `score > config['thresholds']['score_omp']` 
+(`score > config['thresholds']['score_ref']` if no *omp* page in notebook) are shown
+and lower value of the score slider is set to `config['thresholds']['score_omp']`.
 
 The slider can then be used to view only spots which satisfy:
 
@@ -128,14 +126,16 @@ The slider can then be used to view only spots which satisfy:
 As well as a score, each spot has an [`intensity`](code/call_spots/qual_check.md#iss.call_spots.get_spot_intensity) 
 value.
 
-The [quality thresholding](code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold) also means 
+The [quality thresholding](run_code.md#thresholding) also means 
 that only spots with `intensity > intensity_thresh` are shown in the viewer.
 
-Initially, `intensity_thresh` will be set to `config['thresholds']['intensity]` and the slider can be used to change it.
+Initially, `intensity_thresh` will be set to `config['thresholds']['intensity']` and the slider can be 
+used to change it.
 
 !!! note "Effect of changing Method on Intensity Threshold slider"
     
-    The `intensity` is computed in the same way for omp method spots and ref_spots method spots.
+    The `intensity` is [computed](pipeline/call_reference_spots.md#intensity) in the same way for omp 
+    method spots and ref_spots method spots.
     Thus the value of `intensity_thresh` will not change when the method is changed using the buttons.
 
 ### OMP Score Multiplier

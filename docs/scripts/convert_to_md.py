@@ -3,6 +3,7 @@ import json
 import numpy as np
 from typing import Tuple, List
 from iss.setup.config import _options
+import os
 
 
 def get_var_comment(var_name: str, var_comment: List[str]) -> str:
@@ -161,5 +162,7 @@ class ConvertToMD:
 
 
 if __name__ == '__main__':
-    ConvertToMD('iss/setup/settings.default.ini', 'docs/config.md', 'Default Config Settings')
-    ConvertToMD('iss/setup/notebook_comments.json', 'docs/notebook_comments.md', 'Notebook Comments')
+    ConvertToMD(os.path.abspath(__file__ + "/../../../iss/setup/settings.default.ini"),
+                os.path.abspath(__file__ + "/../../config.md"), 'Default Config Settings')
+    ConvertToMD(os.path.abspath(__file__ + "/../../../iss/setup/notebook_comments.json"),
+                os.path.abspath(__file__ + "/../../notebook_comments.md"), 'Notebook Comments')
