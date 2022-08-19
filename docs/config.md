@@ -566,7 +566,7 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 	Used in *iss/stitch/check_shifts/check_shifts_stitch* If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
 
-	Default: `0.35`
+	Default: `0.5`
 
 * **save_image_zero_thresh**: *int*.
 
@@ -653,7 +653,7 @@ The *register_initial* section contains parameters which specify how the shifts 
 
 	Used in *iss/stitch/check_shifts/check_shifts_register* If more than this fraction of `shifts` between the `ref_round`/`ref_channel` and each imaging round for each tile have `score < score_thresh`, an error will be raised. 
 
-	Default: `0.2`
+	Default: `0.5`
 
 ## register
 The *register* section contains parameters which specify how the affine transforms from the ref_round/ref_channel to each imaging round/channel are found from the shifts found in the *register_initial* section.

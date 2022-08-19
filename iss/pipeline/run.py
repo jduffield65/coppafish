@@ -7,7 +7,6 @@ from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
 from ..call_spots import get_non_duplicate, quality_threshold
 import warnings
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse, stats
 
@@ -104,7 +103,7 @@ def run_find_spots(nb: setup.Notebook):
         config = nb.get_config()
         nbp = find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract.auto_thresh)
         nb += nbp
-        check_n_spots(nb)  # error if too few spots
+        check_n_spots(nb)  # error if too few spots - may indicate tile or channel which should not be included
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
 
@@ -127,7 +126,6 @@ def run_stitch(nb: setup.Notebook):
     if not nb.has_page("stitch"):
         nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
         nb += nbp_debug
-        check_shifts_stitch(nb)  # error if too many bad shifts between tiles
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
@@ -167,7 +165,6 @@ def run_register(nb: setup.Notebook):
         nbp_initial = register_initial(config['register_initial'], nb.basic_info,
                                              nb.find_spots.spot_details)
         nb += nbp_initial
-        check_shifts_register(nb)  # error if too many bad shifts between rounds
     else:
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
@@ -175,7 +172,6 @@ def run_register(nb: setup.Notebook):
                                   nb.register_initial.shift)
         nb += nbp
         nb += nbp_debug
-        check_transforms(nb)
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
@@ -212,15 +208,16 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
     else:
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
     if not nb.has_page("call_spots"):
-        if not os.path.isfile(nb.file_names.code_book):
-            # Raise error here if code_book file does not exist as will be needed in call_reference_spots
-            raise ValueError(f"The code_book file:\n{nb.file_names.code_book}\ndoes not exist. "
-                             f"Change it in the config file and re-run.")
         config = nb.get_config()
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
                                                   nb.extract.hist_values, nb.extract.hist_counts,
                                                   nb.register.transform, overwrite_ref_spots)
         nb += nbp
+        # Raise errors if stitch, register_initial or register section failed
+        # Do that at this stage, so can still run viewer to see what spots look like
+        check_shifts_stitch(nb)  # error if too many bad shifts between tiles
+        check_shifts_register(nb)  # error if too many bad shifts between rounds
+        check_transforms(nb)  # error if affine transforms found have low number of matches
         # only raise error after saving to notebook if spot_colors have nan in wrong places.
         utils.errors.check_color_nan(nb.ref_spots.colors, nb.basic_info)
     else:
