@@ -70,7 +70,7 @@ def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
 
 
 def cropped_coef_image(pixel_yxz: np.ndarray,
-                       pixel_coefs: Union[csr_matrix, np.array]) -> Tuple[np.ndarray, np.ndarray]:
+                       pixel_coefs: Union[csr_matrix, np.array]) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
     """
     Make cropped coef_image which is smallest possible image such that all non-zero pixel_coefs included.
 
@@ -85,8 +85,10 @@ def cropped_coef_image(pixel_yxz: np.ndarray,
     Returns:
         - coef_image - `float [im_size_y x im_size_x x im_size_z]`
             cropped omp coefficient.
+            Will be `None` if there are no non-zero coefficients.
         - coord_shift - `int [3]`.
             yxz shift subtracted from pixel_yxz to build coef_image.
+            Will be `None` if there are no non-zero coefficients.
     """
     if isinstance(pixel_coefs, csr_matrix):
         nz_ind = pixel_coefs.nonzero()[0]
@@ -94,20 +96,24 @@ def cropped_coef_image(pixel_yxz: np.ndarray,
     else:
         nz_ind = pixel_coefs != 0
         nz_pixel_coefs = pixel_coefs[nz_ind]
-    nz_pixel_yxz = pixel_yxz[nz_ind, :]
-
-    # shift nz_pixel_yxz so min is 0 in each axis so smaller image can be formed.
-    coord_shift = nz_pixel_yxz.min(axis=0)
-    nz_pixel_yxz = nz_pixel_yxz - coord_shift
-    n_y, n_x, n_z = nz_pixel_yxz.max(axis=0) + 1
-
-    # coef_image at pixels other than nz_pixel_yxz is set to 0.
-    if n_z == 1:
-        coef_image = np.zeros((n_y, n_x))
+    if nz_pixel_coefs.size == 0:
+        # If no non-zero coefficients, return nothing
+        return None, None
     else:
-        coef_image = np.zeros((n_y, n_x, n_z))
-    coef_image[tuple([nz_pixel_yxz[:, j] for j in range(coef_image.ndim)])] = nz_pixel_coefs
-    return coef_image, coord_shift
+        nz_pixel_yxz = pixel_yxz[nz_ind, :]
+
+        # shift nz_pixel_yxz so min is 0 in each axis so smaller image can be formed.
+        coord_shift = nz_pixel_yxz.min(axis=0)
+        nz_pixel_yxz = nz_pixel_yxz - coord_shift
+        n_y, n_x, n_z = nz_pixel_yxz.max(axis=0) + 1
+
+        # coef_image at pixels other than nz_pixel_yxz is set to 0.
+        if n_z == 1:
+            coef_image = np.zeros((n_y, n_x))
+        else:
+            coef_image = np.zeros((n_y, n_x, n_z))
+        coef_image[tuple([nz_pixel_yxz[:, j] for j in range(coef_image.ndim)])] = nz_pixel_coefs
+        return coef_image, coord_shift
 
 
 def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, spot_yxz: np.ndarray,
@@ -195,6 +201,9 @@ def spot_neighbourhood(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.n
         if use.any():
             # Note size of image will be different for each gene.
             coef_sign_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
+            if coef_sign_image is None:
+                # Go to next gene if no non-zero coefficients for this gene
+                continue
             coef_sign_image = np.sign(coef_sign_image).astype(int)
             g_spot_yxz = spot_yxz[use] - coord_shift
 
@@ -328,6 +337,9 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
             # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
             # Note size of image will be different for each gene.
             coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
+            if coef_image is None:
+                # If no non-zero coefficients, go to next gene
+                continue
             if spot_yxzg is None:
                 spot_yxz = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)[0]
             else:

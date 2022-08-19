@@ -23,7 +23,7 @@ must be called with `overwrite_ref_spots = True`.
 This is so the variables `gene_no`, `score`, `score_diff`, `intensity` in the 
 [`ref_spots`](../notebook_comments.md#ref_spots) page will be updated.
 
-??? example "Re-run `call_reference_spots`"
+??? example
 
     The code below illustrates how you can re-run the 
     [*call reference spots* step of the pipeline](../code/pipeline/call_reference_spots.md) step
