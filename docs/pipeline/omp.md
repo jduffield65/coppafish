@@ -325,8 +325,8 @@ After we have run the *OMP* algorithm on every pixel of a tile, we can
 based on the $n_{pixels}\times n_{genes}$ array of coefficients, $\pmb{\mu}$.
 
 A $200\times 200$ pixel section of such an image for three genes is shown on the right.
-Clearly, most values in each image because each pixel only has a non-zero coefficient
-for a very small number of genes.
+Clearly, most values in each image are zero because each pixel only has a non-zero coefficient
+for a very small fraction of genes.
 
 <br clear="right"/>
 
@@ -568,7 +568,12 @@ We then save details of each spot to the *OMP* *NotebookPage* i.e. `local_yxz`, 
 [`n_neighbours_pos`](#n_neighbours).
 
 ## Diagnostics
-There are a few functions using matplotlib which may help to debug this section of the pipeline.
+As well as [`view_omp_score`](#view_omp_score), there are a few other functions using matplotlib which may help to 
+debug this section of the pipeline.
+
+The [`view_codes`](call_reference_spots.md#view_codes), [`view_spot`](call_reference_spots.md#view_spot) 
+and [`view_intensity`](call_reference_spots.md#view_intensity) 
+functions can also be used for *OMP* spots if the argument `method` has the value `'omp'` when calling them.
 
 ### [`histogram_score`](call_reference_spots.md#histogram_score)
 When [`histogram_score`](call_reference_spots.md#histogram_score) is run with `method = 'omp'`, the histogram 
@@ -624,6 +629,142 @@ multiple spots at the same location if they belong to different genes.
 
 The *Fake Genes* plot has nothing to do with the *OMP* spots.
 
+### [`view_omp`](../code/plot/omp.md#view_omp)
+[This function](../view_results.md#o-view_omp) is useful for seeing all gene coefficients fit in the neighbourhood
+of a spot.
 
-### `view_score`
-### `view_weight`
+### [`view_omp_fit`](../code/plot/omp.md#view_omp_fit)
+[This function](../view_results.md#shift-o-view_omp_fit) is useful for seeing how the [*OMP* algorithm](#omp-algorithm) 
+proceeded on the single pixel at the location of the spot.
+
+If you right-click on a column, it will run the [`view_score`](#view_score) function to indicate how 
+the dot product was calculated for that gene at that iteration. For example, right cicking 
+the third column in the `view_omp_fit` image below, produces the `view_omp_score` image indicating how
+the dot product score for *Trp53i11* was calculated on iteration 1.
+
+=== "`view_omp_fit`"
+    ![image](../images/pipeline/omp/diagnostics/view_omp_fit.png){width="800"}
+=== "`view_score`"
+    ![image](../images/pipeline/omp/diagnostics/view_score.png){width="800"}
+=== "`view_weight`"
+    ![image](../images/pipeline/omp/diagnostics/view_weight.png){width="800"}
+=== "`view_background`"
+    ![image](../images/pipeline/omp/diagnostics/view_background.png){width="800"}
+
+### [`view_score`](../code/plot/call_spots.md#view_score)
+The `view_score` is the same as [described for *reference spots* method](call_reference_spots.md#view_score).
+However, for the *OMP* method though, $\Delta_s$ is computed for each gene on each iteration. The calculation
+of all these different $\Delta_s$ values can be viewed by changing the gene/iteration in the textboxes.
+
+For example, the `view_score` above shows the calculation for *Trp53i11* on iteration 1 but if you wanted 
+to know why *Pde1a* was not fit on iteration 1, you can type in *Pde1a* or 42 in the *Gene* textbox:
+
+![image](../images/pipeline/omp/diagnostics/view_score2.png){width="800"}
+
+To get back to the best gene on any iteration, just type in any invalid number/letter into the *Gene* textbox.
+
+After iteration 0, once actual genes have been fit, the role of the weighting becomes 
+[much more important](#weighting-in-dot-product-score). If the *Weight Squared* plot is clicked on, 
+it will run the [`view_weight`](#view_weight) function for the current iteration, as shown in the `view_weight`
+image [above](#view_omp_fit).
+
+### [`view_weight`](../code/plot/call_spots.md#view_weight)
+The `view_weight` function produces a plot to indicate how the *weight squared* value for spot $s$, 
+$\pmb{\omega}^2_{si}$, is [calculated](call_reference_spots.md#dot-product-score) 
+from the genes fit prior to iteration $i$.
+
+The `view_weight` image [above](#view_omp_fit) shows how the background and *Snca* gene combine to produce
+$\pmb{\omega}^2_{si}$ on iteration 1. Clearly, the rounds/channels where *Snca* is strong have an 
+extremely low weight, as does channel 0 where the strongest background has been fit.
+
+The $\alpha$ and $\beta$ textboxes can be used to see how these parameters affect the final weighting.
+The iteration textbox can be used to see how the weighting and gene coefficients ($\mu$ values in titles
+of bottom row plots) change once more or less genes have been added.
+
+If the *Background* plot is clicked on, it will run the [`view_background`](#view_background) function, as shown 
+in the `view_background` image [above](#view_omp_fit).
+
+
+### [`view_background`](../code/plot/call_spots.md#view_background)
+The [background calculation](call_reference_spots.md#background) and `view_background` function is exactly the same as 
+[described for *reference spots* method](call_reference_spots.md#view_background).
+
+## Psuedocode
+This is the pseudocode outlining the basics of this [step of the pipeline](../code/pipeline/omp.md).
+There is more detailed pseudocode about how [*OMP* was run on each pixel](#omp-algorithm) and how the 
+[`spot_shape` was found](#spot-shape).
+
+```
+color_norm_factor: nb.call_spots.color_norm_factor
+    [n_rounds x n_channels]
+t_most_spots: tile with most spots found on it 
+    in the call_reference_spots function.
+tile_sz: nb.basic_info.tile_sz
+nz: nb.basic_info.nz
+
+Alter use_tiles so t_most_spots will be the first tile.
+
+for t in use_tiles:
+    for z in use_z:
+        Load in pixel_colors of all pixels on tile t, z-plane z.
+            [n_pixels_z x n_rounds x n_channels]
+        Normalise pixel_colors
+            pixel_colors = pixel_colors / color_norm_factor
+        Compute pixel_intensity from abs(pixel_colors)
+            [n_pixels_z]
+        Only keep pixels with intensity above threshold
+            pixel_colors = pixel_colors[pixel_intensity > 
+                           initial_intensity_thresh
+            [n_keep x n_rounds x n_channels]
+        for s in range(n_keep):
+            Remove background from pixel_colors[s]
+            
+            Run OMP algorithm to obtain coefficient of each gene.
+            Save coefficient for spot s, gene g as pixel_coefs_z[s, g]
+            [n_keep x n_genes]
+    Concatenate all pixel_coefs_z arrays into one big pixel_coefs array
+        containing all pixels across all z-planes.
+        [n_pixels x n_genes]
+        
+    If t == use_tiles[0]:
+        Compute spot_shape from pixel_coefs on first tile if not provided.
+        Save spot_shape to output directory.
+    
+    for g in range(n_genes):
+        Convert pixel_coefs[:, g] into coef_image
+            [tile_sz x tile_sz x nz]
+        Find yxz coordinates of local maxima in coef_image
+            [n_spots_g x 3]
+        Using spot_shape, find n_neighbours_pos
+            [n_spots_g]
+        Using spot_shape, find n_neighbours_neg
+            [n_spots_g]
+    Combine spots on all genes to create
+        spot_info_t [n_spots_t x 7]
+        Where:
+            spot_info_t[s, :3] are the yxz coordinates of spot s.
+            spot_info_t[s, 3] is the gene assigned to spot s.
+            spot_info_t[s, 4] is n_neighbours_pos for spot s.
+            spot_info_t[s, 5] is n_neighbours_neg for spot s.
+            spot_info_t[:, 6] = t
+        
+    Threshold based on n_neighbours_pos so only keep spots for which
+        n_neighbours_pos > n_pos_thresh:
+            spot_info_t = spot_info_t[spot_info_t[s, 4]>n_pos_thresh, :]
+            [n_save_t x 7]
+            
+    Save spot_info_t to output directory
+
+Load in spot_info_t from all tiles and combine into large spot_info array
+    [n_spots x 7]
+
+Remove duplicate spots from spot_info
+    [n_non_duplicate x 7]
+
+Save spot_info to Notebook:
+    nb.omp.local_yxz =          spot_info[:, :3]
+    nb.omp.gene_no =            spot_info[:, 3] 
+    nb.omp.n_neighbours_pos =   spot_info[:, 4] 
+    nb.omp.n_neighbours_neg =   spot_info[:, 5] 
+    nb.omp.tile =               spot_info[:, 6]            
+```

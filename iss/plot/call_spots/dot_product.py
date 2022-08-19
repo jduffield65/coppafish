@@ -278,7 +278,7 @@ class view_score:
             title_extra = " (Best) "
         else:
             title_extra = " "
-        plt.suptitle(f"Dot Product Calculation for{title_extra}Gene {self.g}, {self.gene_names[self.g]}, at iteration "
+        plt.suptitle(f"Dot Product Calculation for{title_extra}Gene {self.g}, {self.gene_names[self.g]}, on iteration "
                      f"{self.iter} of OMP for spot {self.spot_no}",
                      x=(self.subplot_adjust[0] + self.subplot_adjust[1]) / 2)
 

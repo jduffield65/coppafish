@@ -209,7 +209,7 @@ the initial value of `omp_score_multiplier` will be the current [slider](#score-
 ### *Shift-h*: [`histogram_2d_score`](code/plot/omp.md#histogram_2d_score)
 [This plot](pipeline/omp.md#histogram_2d_score) shows the bivariate histogram to see the correlation 
 between the omp spot score, $\gamma_s$ and the dot product score $\Delta_s$ for spots detected with the 
-*OMP* algorithm.
+*OMP* algorithm. The initial value of `omp_score_multiplier` will be the current [slider](#score-range) value.
 
 ### *k*: [`view_scaled_k_means`](code/plot/call_spots.md#scaled-k-means)
 [This plot](pipeline/call_reference_spots.md#view_scaled_k_means) shows how the `bleed_matrix` was computed.
@@ -278,6 +278,16 @@ The background codes are saved as
 [`call_reference_spots`](code/pipeline/call_reference_spots.md) section of the pipeline. Each background vector
 is always [fitted](code/call_spots/background.md) to each pixel by the omp algorithm, so they will always be shown.
 
+???+ note "OMP Diagnostics on *Reference Spots*"
+
+    The functions [`view_omp`](#o-view_omp), [`view_omp_fit`](#shift-o-view_omp_fit) and 
+    [`view_omp_score`](#shift-s-view_omp_score) can be run for
+    *reference spots* can also be seen by pressing the key once a spot has been selected in the *Anchor* 
+    [method](#method).
+
+    The [`view_omp_score`](#shift-s-view_omp_score) function requires the *Notebook* to have the 
+    [*OMP* page](notebook_comments.md#omp) but the other two do not.
+
 
 ### *shift-o*: [`view_omp_fit`](code/plot/omp.md#view_omp_fit)
 The genes fitted to a particular spot at each stage of the omp algorithm can be viewed by pressing *shift-o*
@@ -308,5 +318,10 @@ The gene shown in red is the first gene with a `dot_product_score` less than thi
 *Res* in the title of images in the first row gives the L2 norm of the residual `spot_color` at that iteration 
 of the omp algorithm. I.e. we expect this to decrease as the omp algorithm proceeds.
 
+[If you right-click on a column](pipeline/omp.md#view_omp_fit), 
+it will run the [`view_score`](#d-view_score) function to indicate how the dot product was calculated for that gene on
+that iteration.
+
 ### *Shift-s*: [`view_omp_score`](code/plot/omp.md#view_omp_score)
-This shows how the *OMP* score was computed.
+[This shows](pipeline/omp.md#view_omp_score) how the *OMP* score, $\gamma_s$, was computed for a particular spot. 
+The initial value of `omp_score_multiplier` will be the current [slider](#score-range) value.

@@ -414,15 +414,17 @@ for a single spot, through the function [`view_score`](../code/plot/call_spots.m
 === "`view_weight`"
     ![image](../images/pipeline/call_spots/view_weight.png){width="800"}
 
-* The top left plot shows the spot color prior to background removal.
-* The bottom left plots shows the spot color after background removal.
+* The top left plot shows the spot color prior to any removal of genes or background.
+* The bottom left plot shows the spot color after all genes fit prior to the current iteration have been removed
+(just background for iteration 0).
 * The top right plot shows the dot product score obtained without weighting ($\alpha=0$).
 * The bottom right plot shows the actual score obtained with the current weighting parameters.
 * To get to the gene with the highest dot product score for the current iteration, you can enter an impossible value
 in the *Gene* textbox. As well as typing the index of the gene, you can also type in the gene name to 
 look at the calculation for a specific gene.
 * Clicking on the *Weight Squared* plot shows the [`view_weight`](../code/plot/call_spots.md#view_weight) 
-plot indicating how it is calculated (second image above).
+plot indicating how it is calculated (second image above). 
+[This is more useful for iterations other than 0](omp.md#view_weight).
 
 Looking at the `view_weight` image and the far right plots of the `view_score` image, 
 we see that the effect of the weighting is to down-weight color channel 0 because this is where the background
@@ -645,7 +647,9 @@ function:
 $\chi_s = 0.542$ for this example spot, which is the median of all the values shown with a green border.
 
 ## Diagnostics
-There are a few functions using matplotlib which may help to debug this section of the pipeline.
+As well as [`view_background`](#view_background), [`view_scaled_k_means`](#view_scaled_k_means), 
+[`view_score`](#view_score) and [`view_intensity`](#view_intensity), 
+there are a few other functions using matplotlib which may help to debug this section of the pipeline.
 
 ### [`histogram_score`](../code/plot/omp.md#histogram_score)
 This shows the histogram of the [dot product score](#dot-product-score), $\Delta_s$, 

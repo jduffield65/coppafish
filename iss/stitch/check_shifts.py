@@ -92,6 +92,7 @@ def check_shifts_register(nb: Notebook):
                                 f"This exceeds error threshold of {n_error_thresh}.\nLook at the following " \
                                 f"diagnostics to decide if shifts are acceptable to continue:\n" \
                                 f"iss.plot.view_register_shift_info\niss.plot.view_register_search\n" \
+                                f"iss.plot.view_icp\n" \
                                 f"If shifts looks wrong, maybe try re-running with " \
                                 f"different configuration parameters e.g. smaller shift_step or larger shift_max_range."
 

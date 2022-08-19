@@ -5,12 +5,14 @@ import warnings
 from ...setup.notebook import Notebook
 from .coefs import get_coef_images
 from ...call_spots import omp_spot_score
+from typing import Optional
 
 
 class view_omp_score:
     tol = 1e-4   # error if sum calculation different to this
 
-    def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', check: bool = False):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', score_multiplier: Optional[float] = None,
+                 check: bool = False):
         """
         Diagnostic to show how score is computed in the omp method
         Hatched region in top plot shows pixels which contribute to the final score.
@@ -24,9 +26,11 @@ class view_omp_score:
             spot_no: Spot of interest to be plotted.
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
+            score_multiplier: Initial value of `score_omp_multiplier`.
             check: If `True`, will compare score found to that saved in *Notebook* and raise error if they differ.
                 Will also check that absolute sum of the top plots in the hatched regions is equal to
                 score calculated from counting the number of pixels with the correct sign.
+
         """
         # TODO: The textbox for this plot seems to be much less responsive than in the other diagnostics
         #  for some reason.
@@ -51,7 +55,9 @@ class view_omp_score:
 
         # Start with default multiplier
         config = nb.get_config()['thresholds']
-        self.score_multiplier = np.around(config['score_omp_multiplier'], 2)
+        if score_multiplier is None:
+            score_multiplier = config['score_omp_multiplier']
+        self.score_multiplier = score_multiplier
         self.score_thresh = config['score_omp']
 
         # maximum possible value of any one pixel in expected_shape for any score_multiplier
@@ -102,8 +108,8 @@ class view_omp_score:
         # Add text box to change score multiplier
         text_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.062, self.subplot_adjust[2]+gap_size/5,
                                      0.05, 0.04])
-        self.text_box = TextBox(text_ax, 'Score\n'+r'Multiplier, $\rho$', str(self.score_multiplier), color='k',
-                                hovercolor=[0.2, 0.2, 0.2])
+        self.text_box = TextBox(text_ax, 'Score\n'+r'Multiplier, $\rho$', str(np.around(self.score_multiplier, 2)),
+                                color='k', hovercolor=[0.2, 0.2, 0.2])
         self.text_box.cursor.set_color('r')
         label = text_ax.get_children()[0]  # label is a child of the TextBox axis
         label.set_position([0.5, 2.75])  # [x,y] - change here to set the position

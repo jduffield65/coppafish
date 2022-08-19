@@ -504,7 +504,7 @@ class iss_plot:
         def call_to_view_omp_score(viewer):
             spot_no = self.get_selected_spot()
             if spot_no is not None:
-                view_omp_score(self.nb, spot_no, self.method_buttons.method)
+                view_omp_score(self.nb, spot_no, self.method_buttons.method, self.omp_score_multiplier_slider.value())
 
 
 class ButtonMethodWindow(QMainWindow):
