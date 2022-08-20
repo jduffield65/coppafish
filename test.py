@@ -11,6 +11,7 @@ import iss.call_spots.test as call_spots
 import iss.omp.test as omp
 import unittest
 import sys
+import re
 
 
 def suite_utils(optimised: bool = False):
@@ -113,13 +114,15 @@ if __name__ == '__main__':
         optimised = False
     elif len(sys.argv) > 2:
         raise ValueError('Too many arguments passed')
-    elif sys.argv[1].lower() in ["optimised", "-optimised", "jax", "-jax", "o", "-o"]:
-        optimised = True
-    elif sys.argv[1].lower() in ["plotting", "-plotting"]:
-        optimised = False
     else:
-        raise ValueError(f"Only valid argument to pass is optimised but\n{sys.argv[1]}\nwas passed. "
-                         f"Provide no input argument to not test optimised functions.")
+        test_type = " ".join(re.findall("[a-zA-Z]+", sys.argv[1])).lower()   # remove all punctuation
+        if test_type in ["optimised", "jax", "o"]:
+            optimised = True
+        elif test_type in ["plotting", ""]:
+            optimised = False
+        else:
+            raise ValueError(f"Only valid argument to pass is optimised but\n{sys.argv[1]}\nwas passed. "
+                             f"Provide no input argument to not test optimised functions.")
     suite = suite_omp(optimised)
     sys.argv = sys.argv[:1]  # get error in unittest.main if sys.argv contains input other than file
     unittest.main(defaultTest='suite', exit=True)
