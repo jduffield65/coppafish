@@ -2,7 +2,7 @@ import tempfile
 import unittest
 import numpy as np
 from ... import utils
-from ...spot_colors.test.test_spot_colors import get_notebook_pages, single_random_tile
+from ...spot_colors.test import get_notebook_pages, single_random_tile
 
 
 class TestNPY(unittest.TestCase):
