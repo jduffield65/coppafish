@@ -7,8 +7,14 @@ from ...setup import Notebook
 from ...spot_colors.base import get_spot_colors
 import matplotlib
 from typing import List, Optional, Tuple, Union
-matplotlib.use('qtagg')
 plt.style.use('dark_background')
+try:
+    # So matplotlib plots pop out
+    # Put in try so don't get error when unit testing in continuous integration
+    # which is in headless mode
+    matplotlib.use('qtagg')
+except ImportError:
+    pass
 
 
 class ColorPlotBase:

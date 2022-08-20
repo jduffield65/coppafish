@@ -22,8 +22,6 @@ jobs:
     - name: Install all dependencies
       run: |
         pip install -e."[${{ matrix.extension }}]"
-        export DISPLAY=:99
-        Xvfb $DISPLAY -ac -screen 0 1024x768x24
     - name: Run tests
       run: |
         python test.py ${{ matrix.extension }}
