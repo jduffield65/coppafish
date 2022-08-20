@@ -9,11 +9,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
-        python-version: [3.8]
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        python-version: [3.8, 3.10]
         extension: ['optimised', 'plotting']
         exclude:
-          - os: windows-latest
+          - os: windows-latest  # windows does not support jax so exclude it
             extension: 'optimised'
 
     steps:
