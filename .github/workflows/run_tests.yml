@@ -10,11 +10,11 @@ jobs:
       matrix:
         os: [macos-latest]
         python-version: [3.9]
-        extension: ['optimised', 'plotting']
-        test_type: ['test.py']
         include:
           - extension: 'optimised'
             test_type: 'test.py -o'
+          - extension: 'plotting'
+            test_type: 'test.py'
 
     steps:
     - uses: actions/checkout@v2
