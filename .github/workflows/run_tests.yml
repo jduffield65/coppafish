@@ -11,10 +11,10 @@ jobs:
         os: [macos-latest]
         python-version: [3.9]
         extension: ['optimised', 'plotting']
-        test_type: ['']
+        test_type: ['test.py']
         include:
           - extension: 'optimised'
-            test_type: '-o'
+            test_type: 'test.py -o'
 
     steps:
     - uses: actions/checkout@v2
@@ -27,4 +27,4 @@ jobs:
         pip install -e."[${{ matrix.extension }}]"
     - name: Run tests
       run: |
-        python test.py ${{ matrix.test_type }}
+        python ${{ matrix.test_type }}
