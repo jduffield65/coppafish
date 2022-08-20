@@ -115,6 +115,8 @@ if __name__ == '__main__':
         raise ValueError('Too many arguments passed')
     elif sys.argv[1].lower() in ["optimised", "-optimised", "jax", "-jax", "o", "-o"]:
         optimised = True
+    elif sys.argv[1].lower() in ["plotting", "-plotting"]:
+        optimised = False
     else:
         raise ValueError(f"Only valid argument to pass is optimised but\n{sys.argv[1]}\nwas passed. "
                          f"Provide no input argument to not test optimised functions.")
