@@ -12,9 +12,9 @@ jobs:
         os: [windows-latest]
         python-version: ["3.10"]
         extension: ['optimised', 'plotting']
-      exclude:
-        - os: windows-latest
-          extension: 'optimised'
+        exclude:
+          - os: windows-latest
+            extension: 'optimised'
 
     steps:
     - uses: actions/checkout@v2
