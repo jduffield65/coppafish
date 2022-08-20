@@ -118,6 +118,6 @@ if __name__ == '__main__':
     else:
         raise ValueError(f"Only valid argument to pass is optimised but\n{sys.argv[1]}\nwas passed. "
                          f"Provide no input argument to not test optimised functions.")
-    suite = suite_all(optimised)
+    suite = suite_omp(optimised)
     sys.argv = sys.argv[:1]  # get error in unittest.main if sys.argv contains input other than file
     unittest.main(defaultTest='suite', exit=True)
