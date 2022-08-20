@@ -9,9 +9,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [windows-latest]
         python-version: ["3.10"]
-        extension: ['plotting']
+        extension: ['optimised', 'plotting']
+      exclude:
+        - os: windows-latest
+          extension: 'optimised'
 
     steps:
     - uses: actions/checkout@v2
