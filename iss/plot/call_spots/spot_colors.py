@@ -147,6 +147,7 @@ class ColorPlotBase:
             self.norm_button.label.set_color(current_color)
             self.norm_button.on_clicked(self.change_norm)
 
+
     def change_clim(self, val: List):
         """
         Function triggered on change of color axis slider.
@@ -176,11 +177,11 @@ class ColorPlotBase:
         self.slider_ax = self.fig.add_axes(self.slider_pos)
         if self.color_norm is not None:
             self.method = 'norm' if self.method == 'raw' else 'raw'  # change to the other method
-        if self.method == 'raw':
-            # Change color of text when button pressed
-            self.norm_button.label.set_color(self.norm_button_color_press)
-        else:
-            self.norm_button.label.set_color(self.norm_button_color)
+            if self.method == 'raw':
+                # Change color of text when button pressed
+                self.norm_button.label.set_color(self.norm_button_color_press)
+            else:
+                self.norm_button.label.set_color(self.norm_button_color)
         for i in range(self.n_images):
             # change image to different normalisation and change clim
             self.im[i].set_data(self.im_data[i] * self.color_norm[i] if self.method == 'raw' else self.im_data[i])
