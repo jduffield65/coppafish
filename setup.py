@@ -19,7 +19,7 @@ setup(
     license='MIT',
     python_requires='>=3.8',
     url='https://jduffield65.github.io/coppafish/',
-    packages=find_packages('src'),
+    packages=find_packages(),
     install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx'],
