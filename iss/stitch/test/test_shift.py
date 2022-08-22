@@ -12,7 +12,9 @@ class TestShift(unittest.TestCase):
     min_score = None
     min_score_min_dist = 11
     min_score_max_dist = 20
-    min_score_multiplier = 3  # this probably should be less for actual pipeline, about 1.5.
+    min_score_multiplier = 6  # This probably should be less for actual pipeline, about 1.5.
+                              # Needs to be larger here, because few spots so if shift is wrong get very low score
+                              # but if correct, get very high score.
     max_noise = 3
     nz_collapse = 30
     tol = 1
@@ -78,7 +80,7 @@ class TestShift(unittest.TestCase):
             return y_search, x_search, z_search
         else:
             return y_search, x_search, np.arange(1)
-    
+
     def all_test(self, dimensions, remove=None, widen=0, z_scale=1, multiple_widen=False):
         """
 
