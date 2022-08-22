@@ -18,4 +18,4 @@ To run the software with config file "config_file.ini" from the command line, do
 > python -m iss config_file.ini
 
 
-Website: https://jduffield65.github.io/iss_python/config_setup/
+Website: https://jduffield65.github.io/coppafish/config_setup/
