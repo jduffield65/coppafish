@@ -340,7 +340,7 @@ when they are [saved](../code/utils/npy.md#coppafish.utils.npy.save_tile), a shi
 (`config['basic_info']['tile_pixel_value_shift']`) in intensity is added to each pixel.
 This shift is then subtracted when the tiles are [loaded](../code/utils/npy.md#coppafish.utils.npy.load_tile).
 
-### Potential error with clipped pixels
+### Error - clipped pixels
 Because `scale` is computed from one tile and round, there is a possibility during the course
 of the extract step of the pipeline that a much more intense tile/round will be encountered such that 
 the pixel values will have to be clipped after scaling to be kept within the *uint16* range.

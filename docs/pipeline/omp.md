@@ -478,6 +478,46 @@ The final `spot_shape` is saved to the *Notebook* as `nb.omp.spot_shape` and is 
 The coordinates and corresponding gene of spots used to compute `nb.omp.spot_shape` are saved as
 `nb.shape_spot_local_yxz` and `nb.shape_spot_gene_no` respectively.
 
+#### Error - No negative values in `nb.omp.spot_shape`
+If `config['shape_sign_thresh']` is too large, `nb.omp.spot_shape` will not have any -1 values.
+This will then raise an error because [`nb.omp_n_neighbours_neg`](#n_neighbours) cannot be computed.
+To get past this error, the *OMP* step needs to be re-run with either 
+`config['shape_sign_thresh']` set to a lower value or 
+`nb.omp.spot_shape` specified through `config['file_names']['omp_spot_shape']`.
+
+??? example
+
+    The following error was hit when running with `config['shape_sign_thresh'] = 0.7`:
+
+    ![image](../images/pipeline/omp/error.png){width="600"}
+    
+    The error saves the spot shape, `nb.omp.spot_shape_float`, which is converted to `nb.omp.spot_shape` through 
+    thresholding with `config['shape_sign_thresh']` and then taking the sign.
+
+    If we then load this file, we can get an idea of a suitable value of `config['shape_sign_thresh']`:
+
+    === "Code"
+        ``` python 
+        import numpy as np
+        import napari
+        im_file = "/Users/joshduffield/Documents/UCL/ISS/Python/play/B8S5_Slice001_npy/omp_spot_shape_float_ERROR.npy"
+        im = np.load(im_file)
+        napari.view_image(im, contrast_limits=[-1, 1], colormap="PiYG")
+        ```
+    === "napari Viewer"
+        ![image](../images/pipeline/omp/error_napari.png){width="400"}
+    
+    Say we decide after looking at the image in *napari*, that we want values more negative than
+    at the blue cross to be included in the final shape. Then we set `config['shape_sign_thresh']`
+    to be just below the absolute value at this cross (0.336 as indicated in bottom left).
+    
+    The value of `config['shape_sign_thresh']` indicated in the error is the maximum allowed value
+    such that `nb.omp.spot_shape` will contain at least one pixel with the value of -1.
+
+    If the saved `nb.omp.spot_shape_float` image has no negative values, then `config['file_names']['omp_spot_shape']`
+    must be used to specify `nb.omp.spot_shape`. The saved image can still be used as a guide 
+    as to where `nb.omp.spot_shape=1` though.
+    
 ### `n_neighbours`
 Once we have found the `spot_shape`, we want to see how each spot resembles this. To do this, 
 if spot $s$, was found on the gene $g$ coefficient image, we first 

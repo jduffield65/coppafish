@@ -6,6 +6,8 @@ from ..extract import scale
 from ..spot_colors import get_spot_colors, all_pixel_yxz
 from ..call_spots import get_spot_intensity, get_non_duplicate
 from .. import omp
+from ..utils.base import round_any
+
 import os
 import warnings
 from scipy import sparse
@@ -196,11 +198,33 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             nbp.shape_tile = int(t)
             spot_yxz, spot_gene_no = omp.get_spots(pixel_coefs_t, pixel_yxz_t, config['radius_xy'], detect_radius_z)
             z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
-            spot_shape, spots_used, nbp.spot_shape_float = \
+            spot_shape, spots_used, spot_shape_float = \
                 omp.spot_neighbourhood(pixel_coefs_t, pixel_yxz_t, spot_yxz, spot_gene_no, config['shape_max_size'],
                                        config['shape_pos_neighbour_thresh'], config['shape_isolation_dist'], z_scale,
                                        config['shape_sign_thresh'])
-
+            if not np.isin(-1, spot_shape):
+                # Rase error if computed average spot shape has no negative values
+                error_file = nbp_file.omp_spot_shape.replace('.npy', '_float_ERROR.npy')
+                if spot_shape_float.ndim == 3:
+                    # put z axis to front before saving if 3D
+                    np.save(error_file, np.moveaxis(spot_shape_float, 2, 0))
+                else:
+                    np.save(error_file, spot_shape_float)
+                shape_neg_values = spot_shape_float[spot_shape_float < 0]
+                message = f"Error when computing nb.omp.spot_shape:\n" \
+                          f"Average spot_shape in OMP Coefficient images was found with {spots_used.size} spots.\n" \
+                          f"However, it contains no pixels with a value of -1.\n" \
+                          f"nb.omp.spot_shape_float was saved as\n{error_file}\n"
+                if len(shape_neg_values) == 0:
+                    message += "This contains no negative values either, so OMP section needs re-running with " \
+                               "config['file_names']['omp_spot_shape'] specified"
+                else:
+                    max_neg_value = round_any(np.abs(shape_neg_values).max(), 0.001, 'floor')
+                    message += f"OMP section needs re-running with\n" \
+                               f"config['omp']['shape_sign_thresh'] < {max_neg_value} or " \
+                               f"config['file_names']['omp_spot_shape'] specified"
+                raise ValueError(message)
+            nbp.spot_shape_float = spot_shape_float
             nbp.shape_spot_local_yxz = spot_yxz[spots_used]
             nbp.shape_spot_gene_no = spot_gene_no[spots_used]
             if spot_shape.ndim == 3:
