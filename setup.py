@@ -6,7 +6,7 @@ with open("coppafish/_version.py", "r") as f:
 with open("README.md", "r") as f:
     long_desc = f.read()
 
-packages = [folder for folder in find_packages() if folder[-5:] != '.test'],  # Get rid of test packages
+packages = [folder for folder in find_packages()],  # Get rid of test packages
 
 setup(
     name='coppafish',
