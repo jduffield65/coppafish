@@ -21,6 +21,8 @@ class view_omp_score:
         Can also see how `score_omp_multiplier` affects the final score. The larger this is, the more
         the positive pixels contribute compared to the negative.
 
+        !!! warning "Requires access to `nb.file_names.tile_dir`"
+
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.

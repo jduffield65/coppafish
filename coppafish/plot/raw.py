@@ -95,6 +95,8 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
     Function to view raw data in napari.
     There will upto 4 scrollbars for each image to change tile, round, channel and z-plane.
 
+    !!! warning "Requires access to `nb.file_names.input_dir`"
+
     Args:
         nb: *Notebook* for experiment. If no *Notebook* exists, pass `config_file` instead.
         tiles: npy (as opposed to nd2 fov) tile indices to view.

@@ -57,6 +57,8 @@ class view_find_spots:
         Can also view points from `±z_thick` z-planes on current z-plane using the z thickness slider. Initially,
         z thickness will be 1.
 
+        !!! warning "Requires access to `nb.file_names.input_dir` or `nb.file_names.tile_dir`"
+
         Args:
             nb: *Notebook* for experiment. If no *Notebook* exists, pass `config_file` instead. In this case,
                 the raw images will be loaded and then filtered according to parameters in `config['extract']`.

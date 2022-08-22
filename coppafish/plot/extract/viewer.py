@@ -36,6 +36,7 @@ class view_filter:
 
         The current difference of hanning kernel can be viewed by pressing the 'h' key.
 
+        !!! warning "Requires access to `nb.file_names.input_dir`"
 
         Args:
             nb: *Notebook* for experiment. If no *Notebook* exists, pass `config_file` instead.

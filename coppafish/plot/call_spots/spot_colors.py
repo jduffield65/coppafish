@@ -288,6 +288,8 @@ class view_spot(ColorPlotBase):
         Diagnostic to show intensity of each color channel / round in neighbourhood of spot.
         Will show a grid of `n_use_channels x n_use_rounds` subplots.
 
+        !!! warning "Requires access to `nb.file_names.tile_dir`"
+
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.

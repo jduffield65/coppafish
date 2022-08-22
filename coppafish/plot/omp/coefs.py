@@ -105,12 +105,13 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
     return coef_images.astype(np.float16), min_global_yxz, max_global_yxz
 
 
-
 class view_omp(ColorPlotBase):
     def __init__(self, nb: Notebook, spot_no: int, method: str = 'omp', im_size: int = 8):
         """
         Diagnostic to show omp coefficients of all genes in neighbourhood of spot.
         Only genes for which a significant number of pixels are non-zero will be plotted.
+
+        !!! warning "Requires access to `nb.file_names.tile_dir`"
 
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
