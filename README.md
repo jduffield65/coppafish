@@ -1,5 +1,7 @@
 # coppafish
 
+![](https://github.com/jduffield65/coppafish/tree/main/docs/images/readme_viewer.png)
+
 *coppafish* is a data analysis pipeline for decoding *coppaFISH* (combinatorial padlock-probe-amplified fluorescence in 
 situ hybridization) datasets. [*coppaFISH*](https://www.nature.com/articles/s41586-022-04915-7) 
 is a method for in situ transcriptomics which produces a series of images arranged in terms of tiles, rounds
