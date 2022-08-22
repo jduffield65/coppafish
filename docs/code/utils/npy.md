@@ -1,1 +1,1 @@
-::: iss.utils.npy
+::: coppafish.utils.npy

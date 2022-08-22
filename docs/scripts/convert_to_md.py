@@ -2,7 +2,7 @@
 import json
 import numpy as np
 from typing import Tuple, List
-from iss.setup.config import _options
+from coppafish.setup.config import _options
 import os
 
 

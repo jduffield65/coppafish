@@ -1,3 +1,3 @@
-::: iss.find_spots.detect
+::: coppafish.find_spots.detect
 ## Optimised
-### ::: iss.find_spots.detect_optimised
+### ::: coppafish.find_spots.detect_optimised

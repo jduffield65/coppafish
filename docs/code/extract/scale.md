@@ -1,1 +1,1 @@
-::: iss.extract.scale
+::: coppafish.extract.scale

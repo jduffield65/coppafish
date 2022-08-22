@@ -1,1 +1,1 @@
-::: iss.pipeline.call_reference_spots
+::: coppafish.pipeline.call_reference_spots

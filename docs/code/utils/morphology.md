@@ -1,6 +1,6 @@
 ## Base
-### ::: iss.utils.morphology.base
+### ::: coppafish.utils.morphology.base
 ## Filter
-### ::: iss.utils.morphology.filter
+### ::: coppafish.utils.morphology.filter
 ## Filter Optimised
-### ::: iss.utils.morphology.filter_optimised
+### ::: coppafish.utils.morphology.filter_optimised

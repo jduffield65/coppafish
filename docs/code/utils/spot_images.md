@@ -1,1 +1,1 @@
-::: iss.utils.spot_images
+::: coppafish.utils.spot_images

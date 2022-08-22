@@ -1,15 +1,15 @@
 from setuptools import setup
 
-with open("iss/_version.py", "r") as f:
+with open("coppafish/_version.py", "r") as f:
     exec(f.read())
 
 with open("README.md", "r") as f:
     long_desc = f.read()
 
 setup(
-    name='iss',
+    name='coppafish',
     version=__version__,
-    description='In Situ Sequencing software for Python',
+    description='coppaFISH software for Python',
     long_description=long_desc,
     long_description_content_type='text/markdown',
     author='Josh Duffield',
@@ -18,19 +18,20 @@ setup(
     maintainer_email='m.shinn@ucl.ac.uk',
     license='MIT',
     python_requires='>=3.8',
-    url='https://github.com/mwshinn/spatiotemporal',
-    packages=['iss', 'iss.setup', 'iss.utils', 'iss.extract', 'iss.stitch', 'iss.spot_colors', 'iss.plot',
-              'iss.pipeline', 'iss.omp', 'iss.find_spots', 'iss.call_spots', 'iss.utils.morphology', 
-              'iss.register', 'iss.plot.call_spots', 'iss.plot.omp', 'iss.plot.register', 'iss.plot.stitch',
-              'iss.plot.extract', 'iss.plot.results_viewer', 'iss.plot.results_viewer.legend'],
+    url='https://jduffield65.github.io/coppafish/',
+    packages=['coppafish', 'coppafish.setup', 'coppafish.utils', 'coppafish.extract', 'coppafish.stitch',
+              'coppafish.spot_colors', 'coppafish.plot', 'coppafish.pipeline', 'coppafish.omp', 'coppafish.find_spots',
+              'coppafish.call_spots', 'coppafish.utils.morphology', 'coppafish.register', 'coppafish.plot.call_spots',
+              'coppafish.plot.extract', 'coppafish.plot.find_spots', 'coppafish.plot.omp', 'coppafish.plot.register',
+              'coppafish.plot.results_viewer', 'coppafish.plot.results_viewer.legend', 'coppafish.plot.stitch'],
     install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx'],
     extras_require={'optimised': ['jax', 'jaxlib'], 'plotting': ['matplotlib', 'distinctipy', 'PyQt5',
-                                                             'magicgui', 'ipympl', 'napari', 'npe2', 'hsluv']},
-    package_data={'iss.setup': ['settings.default.ini', 'notebook_comments.json',
-                                'dye_camera_laser_raw_intensity.csv'],
-                  'iss.plot.results_viewer.legend':['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
+                                                                 'magicgui', 'ipympl', 'napari', 'npe2', 'hsluv']},
+    package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json',
+                                      'dye_camera_laser_raw_intensity.csv'],
+                  'coppafish.plot.results_viewer.legend': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

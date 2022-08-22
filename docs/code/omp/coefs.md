@@ -1,3 +1,3 @@
-::: iss.omp.coefs
+::: coppafish.omp.coefs
 ## Optimised
-### ::: iss.omp.coefs_optimised
+### ::: coppafish.omp.coefs_optimised

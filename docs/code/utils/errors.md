@@ -1,1 +1,1 @@
-::: iss.utils.errors
+::: coppafish.utils.errors

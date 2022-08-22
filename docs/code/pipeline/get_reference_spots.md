@@ -1,1 +1,1 @@
-::: iss.pipeline.get_reference_spots
+::: coppafish.pipeline.get_reference_spots

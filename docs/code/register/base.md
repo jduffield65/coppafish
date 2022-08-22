@@ -1,1 +1,1 @@
-::: iss.register.base
+::: coppafish.register.base

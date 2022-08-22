@@ -1,1 +1,1 @@
-::: iss.pipeline.basic_info
+::: coppafish.pipeline.basic_info

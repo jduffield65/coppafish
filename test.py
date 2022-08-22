@@ -1,14 +1,14 @@
-import iss.call_spots.test.test_base
-import iss.find_spots.test as find_spots
-import iss.extract.test as extract
-import iss.omp.test.test_all
-import iss.utils.test as utils
-import iss.stitch.test as stitch
-import iss.setup.test as setup
-import iss.register.test as register
-import iss.spot_colors.test as spot_colors
-import iss.call_spots.test as call_spots
-import iss.omp.test as omp
+import coppafish.call_spots.test.test_base
+import coppafish.find_spots.test as find_spots
+import coppafish.extract.test as extract
+import coppafish.omp.test.test_all
+import coppafish.utils.test as utils
+import coppafish.stitch.test as stitch
+import coppafish.setup.test as setup
+import coppafish.register.test as register
+import coppafish.spot_colors.test as spot_colors
+import coppafish.call_spots.test as call_spots
+import coppafish.omp.test as omp
 import unittest
 import sys
 import re
@@ -84,7 +84,7 @@ def suite_call_spots(optimised: bool = False):
 
 def suite_omp(optimised: bool = False):
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(iss.omp.test.test_all.TestFittingStandardDeviation, 'test'))
+    suite.addTest(unittest.makeSuite(coppafish.omp.test.test_all.TestFittingStandardDeviation, 'test'))
     suite.addTest(unittest.makeSuite(omp.TestCountSpotNeighbours, 'test'))
     if optimised:
         suite.addTest(unittest.makeSuite(omp.TestFitCoefs, 'test'))

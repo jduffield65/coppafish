@@ -1,1 +1,1 @@
-::: iss.setup.file_names
+::: coppafish.setup.file_names

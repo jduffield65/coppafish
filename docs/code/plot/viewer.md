@@ -1,2 +1,2 @@
-## iss_plot
-### ::: iss.plot.results_viewer.base.iss_plot.__init__
+## viewer
+### ::: coppafish.plot.results_viewer.base.viewer.__init__

@@ -1,1 +1,1 @@
-::: iss.find_spots.check_spots
+::: coppafish.find_spots.check_spots

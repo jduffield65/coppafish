@@ -1,4 +1,4 @@
 ## Notebook
-### ::: iss.setup.notebook.Notebook
+### ::: coppafish.setup.notebook.Notebook
 ## Notebook Page
-### ::: iss.setup.notebook.NotebookPage
+### ::: coppafish.setup.notebook.NotebookPage

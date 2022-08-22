@@ -1,1 +1,1 @@
-::: iss.omp.spots
+::: coppafish.omp.spots

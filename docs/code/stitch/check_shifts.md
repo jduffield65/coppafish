@@ -1,1 +1,1 @@
-::: iss.stitch.check_shifts
+::: coppafish.stitch.check_shifts

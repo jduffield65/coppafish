@@ -1,1 +1,1 @@
-::: iss.pipeline.register_initial
+::: coppafish.pipeline.register_initial

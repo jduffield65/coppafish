@@ -1,1 +1,1 @@
-::: iss.pipeline.stitch
+::: coppafish.pipeline.stitch

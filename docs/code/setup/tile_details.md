@@ -1,1 +1,1 @@
-::: iss.setup.tile_details
+::: coppafish.setup.tile_details

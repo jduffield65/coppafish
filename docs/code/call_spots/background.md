@@ -1,3 +1,3 @@
-::: iss.call_spots.background
+::: coppafish.call_spots.background
 ## Optimised
-### ::: iss.call_spots.background_optimised
+### ::: coppafish.call_spots.background_optimised

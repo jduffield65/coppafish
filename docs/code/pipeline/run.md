@@ -1,1 +1,1 @@
-::: iss.pipeline.run
+::: coppafish.pipeline.run

@@ -1,1 +1,1 @@
-::: iss.pipeline.omp
+::: coppafish.pipeline.omp

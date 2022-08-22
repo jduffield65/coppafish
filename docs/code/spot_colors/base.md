@@ -1,3 +1,3 @@
-::: iss.spot_colors.base
+::: coppafish.spot_colors.base
 ## Optimised
-### ::: iss.spot_colors.base_optimised
+### ::: coppafish.spot_colors.base_optimised
