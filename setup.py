@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("coppafish/_version.py", "r") as f:
     exec(f.read())
@@ -13,17 +13,14 @@ setup(
     long_description=long_desc,
     long_description_content_type='text/markdown',
     author='Josh Duffield',
-    author_email='m.shinn@ucl.ac.uk',
-    maintainer='Josh Duffield',
-    maintainer_email='m.shinn@ucl.ac.uk',
+    author_email='jduffield65@gmail.com',
+    maintainer='Reilly Tilbury',
+    maintainer_email='reillytilbury@gmail.com',
     license='MIT',
     python_requires='>=3.8',
     url='https://jduffield65.github.io/coppafish/',
-    packages=['coppafish', 'coppafish.setup', 'coppafish.utils', 'coppafish.extract', 'coppafish.stitch',
-              'coppafish.spot_colors', 'coppafish.plot', 'coppafish.pipeline', 'coppafish.omp', 'coppafish.find_spots',
-              'coppafish.call_spots', 'coppafish.utils.morphology', 'coppafish.register', 'coppafish.plot.call_spots',
-              'coppafish.plot.extract', 'coppafish.plot.find_spots', 'coppafish.plot.omp', 'coppafish.plot.register',
-              'coppafish.plot.results_viewer', 'coppafish.plot.results_viewer.legend', 'coppafish.plot.stitch'],
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx'],
