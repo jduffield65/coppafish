@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from ...call_spots.qual_check import quality_threshold
-from .legend.legend import add_legend
+from .legend import add_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
     view_scaled_k_means
 from ...call_spots import omp_spot_score, get_intensity_thresh
@@ -49,8 +49,7 @@ class Viewer:
         # TODO: flip y axis so origin bottom left
         self.nb = nb
         if gene_marker_file is None:
-            gene_marker_file = os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'legend'),
-                                       'gene_color.csv')
+            gene_marker_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gene_color.csv')
         gene_legend_info = pd.read_csv(gene_marker_file)
 
         # indices of genes in notebook to gene_color data - quicker to look up integers than names

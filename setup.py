@@ -27,7 +27,7 @@ setup(
                                                                  'magicgui', 'ipympl', 'napari', 'npe2', 'hsluv']},
     package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json',
                                       'dye_camera_laser_raw_intensity.csv'],
-                  'coppafish.plot.results_viewer.legend': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
+                  'coppafish.plot.results_viewer': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
