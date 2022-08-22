@@ -1,21 +1,19 @@
-# coppaFISH
- Python version of *coppaFISH* software
+# coppafish
 
-It requires Python 3.8 or newer and software that needs to be installed is indicated in the files 
-SoftwareInstallWindows.txt or SoftwareInstallMax.txt.
-
-Then to make sure it is working, run test.py which should take about 5 minutes and have no failures or errors.
-
-To run an experiment, create an .ini file with all the required experiment details (see iss/setup/settings.default.ini
-for parameters that need/can be set) and then change ini_file in main.py to this file path.
-Then run main.py.
-
-An example experiment .ini file is given as experiment_settings_example.ini. 
-This is for a 9 rounds x 9 channels QuadCam3D experiment.
-
-To run the software with config file "config_file.ini" from the command line, do:
-
-> python -m coppafish config_file.ini
+*coppafish* is a data analysis pipeline for decoding *coppaFISH* (combinatorial padlock-probe-amplified fluorescence in 
+situ hybridization) datasets. [*coppaFISH*](https://www.nature.com/articles/s41586-022-04915-7) 
+is a method for in situ transcriptomics which produces a series of images arranged in terms of tiles, rounds
+and channels. *coppafish* then determines the distribution of genes via 
+[image processing](https://jduffield65.github.io/coppafish/pipeline/extract/), 
+[spot detection](https://jduffield65.github.io/coppafish/pipeline/find_spots/), 
+[registration](https://jduffield65.github.io/coppafish/pipeline/register/) and 
+[gene calling](https://jduffield65.github.io/coppafish/pipeline/call_reference_spots/).
 
 
-Website: https://jduffield65.github.io/coppafish/config_setup/
+## Prerequisites
+Python >= 3.8
+
+## Documentation
+For more information on installation and usage, please see the 
+[documentation](https://jduffield65.github.io/coppafish/).
+
