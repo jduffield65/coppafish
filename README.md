@@ -1,6 +1,6 @@
 # coppafish
 
-![](https://github.com/jduffield65/coppafish/tree/main/docs/images/readme_viewer.png)
+![](https://github.com/jduffield65/coppafish/blob/main/docs/images/readme_viewer.png?raw=true)
 
 *coppafish* is a data analysis pipeline for decoding *coppaFISH* (combinatorial padlock-probe-amplified fluorescence in 
 situ hybridization) datasets. [*coppaFISH*](https://www.nature.com/articles/s41586-022-04915-7) 
