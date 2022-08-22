@@ -1,2 +1,2 @@
-## viewer
-### ::: coppafish.plot.results_viewer.base.viewer.__init__
+## Viewer
+### ::: coppafish.plot.results_viewer.base.Viewer.__init__

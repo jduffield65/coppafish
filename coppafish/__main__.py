@@ -3,7 +3,7 @@
 #
 #     python3 -m coppafish inifile.ini
 
-from coppafish import run_pipeline, viewer, Notebook, export_to_pciseq
+from coppafish import run_pipeline, Viewer, Notebook, export_to_pciseq
 import sys
 import os
 import textwrap
@@ -50,4 +50,4 @@ if len(sys.argv) == 3:
         if np.isin(sys.argv[2], ['export', '-export']):
             export_to_pciseq(nb)
         else:
-            viewer(nb)
+            Viewer(nb)

@@ -19,7 +19,7 @@ of this parameter.
 
 So, for tile $t$, round $r$, we find the shift between $r_{ref}$/$c_{ref}$ and $r$/$c_{shift}$.
 
-The [function](../code/stitch/shift.md#iss.stitch.shift.compute_shift) to compute these shifts is exactly the 
+The [function](../code/stitch/shift.md#coppafish.stitch.shift.compute_shift) to compute these shifts is exactly the 
 same as the one used in the [stitch](stitch.md#shift) section of the pipeline and the parameters in the 
 [*register initial*](../config.md#register_initial) section of the config file do the same thing as the 
 corresponding parameters in the [*stitch*](../config.md#stitch) section. A few details are different though,
@@ -63,8 +63,9 @@ The new shift and score will be saved in `nb.register_initial.shift[t, r]` and
 
 ## Error - too many bad shifts
 After the `register_initial` *NotebookPage* has been 
-[added](../code/pipeline/run.md#iss.pipeline.run.run_register) to the *Notebook*, 
-[`check_shifts_register`](../code/stitch/check_shifts.md#iss.stitch.check_shifts.check_shifts_register) will be run.
+[added](../code/pipeline/run.md#coppafish.pipeline.run.run_register) to the *Notebook*, 
+[`check_shifts_register`](../code/stitch/check_shifts.md#coppafish.stitch.check_shifts.check_shifts_register) 
+will be run.
 
 This will produce a warning for any shift found with `score < score_thresh`.
 

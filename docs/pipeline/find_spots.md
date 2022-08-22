@@ -8,15 +8,15 @@ The [`find_spots`](../notebook_comments.md#find_spots) *NotebookPage* is added t
 is finished.
 
 ## Spot detection
-The spots on tile $t$, round $r$, channel $c$ [are](../code/find_spots/detect.md#iss.find_spots.detect.detect_spots) 
+The spots on tile $t$, round $r$, channel $c$ [are](../code/find_spots/detect.md#coppafish.find_spots.detect.detect_spots) 
 the local maxima in the filtered image (loaded in through 
-[`load_tile(nb.file_names, nb.basic_info, t, r, c)`](../code/utils/npy.md#iss.utils.npy.load_tile)) 
+[`load_tile(nb.file_names, nb.basic_info, t, r, c)`](../code/utils/npy.md#coppafish.utils.npy.load_tile)) 
 with an intensity greater than [`auto_thresh[t, r, c]`](extract.md#auto_thresh).
 
 Local maxima means pixel with the largest intensity in a neighbourhood defined by `config['find_spots']['radius_xy']`
 and `config['find_spots']['radius_z']` (`kernel = np.ones((2*radius_xy-1, 2*radius_xy-1, 2*radius_z-1))`). 
 The position of the local maxima is found to be where the 
-[dilation](../code/utils/morphology.md#iss.utils.morphology.base.dilate) of the image with the `kernel` 
+[dilation](../code/utils/morphology.md#coppafish.utils.morphology.base.dilate) of the image with the `kernel` 
 is equal to the image. 
 
 The spot detection process can be visualised with [`view_find_spots`](#viewer).
@@ -24,7 +24,7 @@ The spot detection process can be visualised with [`view_find_spots`](#viewer).
 ??? note "Optimised spot detection"
 
     The dilation method is quite slow so if *jax* is installed, a 
-    [different spot detection method](../code/find_spots/detect.md#iss.find_spots.detect_optimised.detect_spots) 
+    [different spot detection method](../code/find_spots/detect.md#coppafish.find_spots.detect_optimised.detect_spots) 
     is used.
 
     In this method, we look at all pixels with intensity greater than `auto_thresh[t, r, c]`. For each of these,
@@ -42,7 +42,7 @@ The spot detection process can be visualised with [`view_find_spots`](#viewer).
 
     If there are two neighbouring pixels which have the same intensity which is the local maxima intensity, by default
     both pixels will be declared to be local maxima. However if `remove_duplicates == True` in 
-    [`detect_spots`](../code/find_spots/detect.md#iss.find_spots.detect.detect_spots), only one will be deemed a 
+    [`detect_spots`](../code/find_spots/detect.md#coppafish.find_spots.detect.detect_spots), only one will be deemed a 
     local maxima.
 
     This is achieved by adding a random shift to the intensity of each pixel. The max possible shift is 0.2 so it 
@@ -67,15 +67,15 @@ so it is beneficial to maximise the number of reference spots. As such, we do no
 we do for [imaging spots](#imaging-spots).
 
 However, we want to know which reference spots are isolated because when it comes to the 
-[`bleed_matrix`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_bleed_matrix) calculation,
+[`bleed_matrix`](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_bleed_matrix) calculation,
 we do not want to use overlapping spots.
 
 #### Isolated spots
-We deem a spot to be [isolated](../code/find_spots/base.md#iss.find_spots.base.get_isolated) 
+We deem a spot to be [isolated](../code/find_spots/base.md#coppafish.find_spots.base.get_isolated) 
 if it has a prominent [negative annulus](extract.md#effect-of-filtering),
 because if there was an overlapping spot, you would expect positive intensity in the annulus around the spot.
 We find the intensity of the annulus by computing the correlation of the image with an 
-annulus kernel obtained from [`annulus(r0, r_xy, r_z)`](../code/utils/strel.md#iss.utils.strel.annulus) where:
+annulus kernel obtained from [`annulus(r0, r_xy, r_z)`](../code/utils/strel.md#coppafish.utils.strel.annulus) where:
 
 * `r0 = config['find_spots']['isolation_radius_inner']`
 * `r_xy = config['find_spots']['isolation_radius_xy']` 
@@ -116,8 +116,8 @@ The process of obtaining isolated spots can be visualised with [`view_find_spots
             ![image](../images/pipeline/find_spots/annulus+1.png){width="400"}
 
 ## Error - too few spots
-After the `find_spots` *NotebookPage* has been [added](../code/pipeline/run.md#iss.pipeline.run.run_find_spots)
-to the *Notebook*, [`check_n_spots`](../code/find_spots/check_spots.md#iss.find_spots.check_spots.check_n_spots) will be run.
+After the `find_spots` *NotebookPage* has been [added](../code/pipeline/run.md#coppafish.pipeline.run.run_find_spots)
+to the *Notebook*, [`check_n_spots`](../code/find_spots/check_spots.md#coppafish.find_spots.check_spots.check_n_spots) will be run.
 
 This will produce a warning for any tile, round, channel for which fewer than
 
@@ -174,8 +174,8 @@ The `use_tiles`, `use_rounds` and `use_channels` parameters can be changed witho
 the `find_spots` section of the pipeline as explained [here](../notebook.md#changing-basic_info-mid-pipeline).
 It tiles/rounds/channels are added instead of removed though, it will need re-running, as will the `extract` step.
 
-### [`n_spots_grid`](../code/plot/find_spots.md#iss.plot.find_spots.n_spots.n_spots_grid)
-The [`n_spots_grid`](../code/plot/find_spots.md#iss.plot.find_spots.n_spots.n_spots_grid) function is 
+### [`n_spots_grid`](../code/plot/find_spots.md#coppafish.plot.find_spots.n_spots.n_spots_grid)
+The [`n_spots_grid`](../code/plot/find_spots.md#coppafish.plot.find_spots.n_spots.n_spots_grid) function is 
 useful to visualise the number of spots detected on each tile, round and channel:
 
 === "Good"
@@ -201,9 +201,9 @@ then [filtered](extract.md#filtering) according to parameters in [`config['extra
 === "With *Notebook*"
 
     ``` python
-    from iss import Notebook
-    from iss.plot import view_find_spots
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook
+    from coppafish.plot import view_find_spots
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     t = 1       # tile to view
     r = 3       # round to view
@@ -214,8 +214,8 @@ then [filtered](extract.md#filtering) according to parameters in [`config['extra
 === "Without *Notebook*"
 
     ``` python
-    from iss.plot import view_filter
-    ini_file = '/Users/user/iss/experiment/settings.ini'
+    from coppafish.plot import view_filter
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
     t = 1       # tile to view
     r = 3       # round to view
     c = 6       # channel to view
@@ -224,9 +224,9 @@ then [filtered](extract.md#filtering) according to parameters in [`config['extra
 === "Reference round/channel showing isolated spots"
 
     ``` python
-    from iss import Notebook
-    from iss.plot import view_find_spots
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook
+    from coppafish.plot import view_find_spots
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     t = 1                               # tile to view
     r = nb.basic_info.ref_round         # round to view
@@ -262,7 +262,7 @@ z-plane they were detected on. The closer to the current z-plane, the larger the
     ![image](../images/pipeline/find_spots/z_thick2.png){width="400"}
 
 The blue spot which has a 
-[neighbouring pixel with negative intensity](../code/find_spots/base.md#iss.find_spots.base.check_neighbour_intensity) 
+[neighbouring pixel with negative intensity](../code/find_spots/base.md#coppafish.find_spots.base.check_neighbour_intensity) 
 and is not kept in the final point cloud.
 
 

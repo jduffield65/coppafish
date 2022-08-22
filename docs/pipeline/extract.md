@@ -39,14 +39,14 @@ outlier tiles (white crosses, +) not far from the boxplot).
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* also contains the variable `hist_counts`.
 `hist_counts[i, r, c]` is the number of pixels across the mid z-plane (`nb.extract_debug.z_info`) 
 of all tiles in round $r$, channel $c$ which had the value `nb.extract.hist_values[i]`. 
-It is used for [normalisation](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
+It is used for [normalisation](../code/call_spots/base.md#coppafish.call_spots.base.color_normalisation) 
 (see *Norm Button* box [here](../view_results.md#b-view_bleed_matrix)) 
 between channels in the `call_reference_spots` step.
 
 The histograms can be viewed using [`histogram_plots`](../code/plot/extract.md#histogram_plots).
 Initially, this will show the `hist_counts[:, r, c]` vs `hist_values` for each round and channel.
 There is also a *Norm Button* which 
-[equalises the channels](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) according to 
+[equalises the channels](../code/call_spots/base.md#coppafish.call_spots.base.color_normalisation) according to 
 [`config['call_spots']['color_norm_intensities']`](../config.md#call_spots)
 and [`config['call_spots']['color_norm_probs']`](../config.md#call_spots). In the normalised histograms,
 most values will be between ±1.
@@ -71,16 +71,16 @@ is significantly larger for channel 0 than any other channel.
 
 
 ## Raw data
-The raw data can be viewed using [`view_raw`](../code/plot/raw.md#iss.plot.raw.view_raw). It can either be called
+The raw data can be viewed using [`view_raw`](../code/plot/raw.md#coppafish.plot.raw.view_raw). It can either be called
 for an experiment which already has a *Notebook* or for one which no code has been run yet but the `config_file` 
 has been made:
 
 === "With *Notebook*"
 
     ``` python
-    from iss import Notebook
-    from iss.plot import view_raw
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook
+    from coppafish.plot import view_raw
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     tiles = [0, 1]      # tiles to view
     rounds = [3, 5]     # rounds to view
@@ -91,8 +91,8 @@ has been made:
 === "Without *Notebook*"
 
     ``` python
-    from iss.plot import view_raw
-    ini_file = '/Users/user/iss/experiment/settings.ini'
+    from coppafish.plot import view_raw
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
     tiles = [0, 1]      # tiles to view
     rounds = [3, 5]     # rounds to view
     channels = [1, 6]   # channels to view
@@ -113,17 +113,17 @@ especially in the [*omp*](omp.md) and [*extract and filter*](#extract-and-filter
 
 ## Filtering
 Once the raw images are loaded in, they are 
-[convolved](../code/utils/morphology.md#iss.utils.morphology.base.convolve_2d) with a *2D* 
-[difference of hanning kernel](../code/utils/morphology.md#iss.utils.morphology.base.hanning_diff).
+[convolved](../code/utils/morphology.md#coppafish.utils.morphology.base.convolve_2d) with a *2D* 
+[difference of hanning kernel](../code/utils/morphology.md#coppafish.utils.morphology.base.hanning_diff).
 
 ??? note "Difference with *2D* pipeline"
     
     If `config['basic_info']['is_3d'] == False`, before the convolution with the difference of hanning kernel,
-    the *3D* raw data will be [focus stacked](../code/extract/fstack.md#iss.extract.fstack.focus_stack) so that 
+    the *3D* raw data will be [focus stacked](../code/extract/fstack.md#coppafish.extract.fstack.focus_stack) so that 
     it becomes *2D*.
 
 ### Difference of hanning kernel
-The [difference of hanning kernel](../code/utils/morphology.md#iss.utils.morphology.base.hanning_diff) is made up
+The [difference of hanning kernel](../code/utils/morphology.md#coppafish.utils.morphology.base.hanning_diff) is made up
 by adding together a positive hanning window (yellow below) of radius $r_1$ and an outer negative hanning window 
 (cyan below) of radius of $r_2$ (typically twice $r_1$).
 It is normalised such that the sum of the difference of hanning kernel is 0. An example for a *1D* version of the 
@@ -136,7 +136,7 @@ kernel with $r_1 = 3$ and $r_2 = 6$:
     ![hanning](../images/pipeline/extract/hanning_2d.png){width="400", align=right}
     
     The *1D* kernel shown in purple above is converted to the *2D* kernel shown on the right via the 
-    [`ftrans2`](../code/utils/morphology.md#iss.utils.morphology.base.ftrans2) function.
+    [`ftrans2`](../code/utils/morphology.md#coppafish.utils.morphology.base.ftrans2) function.
 
 In the pipeline, the value of $r_1$ is set to [`config['extract']['r1']`](../config.md#extract) 
 and $r_2$ is set to `config['extract']['r2']`.
@@ -148,7 +148,7 @@ In general, $r_1$ should be the typical radius of a spot in the raw image and $r
 
 ### Smoothing
 After the convolution with the difference of hanning kernel, there is an option to smooth the image by applying 
-a [correlation](../code/utils/morphology.md#iss.utils.morphology.filter.imfilter) with an averaging kernel.
+a [correlation](../code/utils/morphology.md#coppafish.utils.morphology.filter.imfilter) with an averaging kernel.
 This can be included by setting the [`config['extract']['r_smooth']`](../config_setup.md#extractr_smooth) parameter. 
 
 
@@ -161,15 +161,15 @@ setting [`config['extract']['r_dapi']`](../config_setup.md#extractr_dapi) and no
 ## Viewer
 The purpose of filtering the raw images is to make the spots appear much more prominently compared to the background 
 i.e. it is to extract the spots. We can see this effect and how the various parameters affect things with 
-[`view_filter`](../code/plot/extract.md#iss.plot.extract.view_filter). 
+[`view_filter`](../code/plot/extract.md#coppafish.plot.extract.view_filter). 
 This can be called in a similar way to [`view_raw`](#raw-data):
 
 === "With *Notebook*"
 
     ``` python
-    from iss import Notebook
-    from iss.plot import view_filter
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook
+    from coppafish.plot import view_filter
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     t = 1       # tile to view
     r = 3       # round to view
@@ -180,8 +180,8 @@ This can be called in a similar way to [`view_raw`](#raw-data):
 === "Without *Notebook*"
 
     ``` python
-    from iss.plot import view_filter
-    ini_file = '/Users/user/iss/experiment/settings.ini'
+    from coppafish.plot import view_filter
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
     t = 1       # tile to view
     r = 3       # round to view
     c = 6       # channel to view
@@ -319,11 +319,11 @@ the `anchor_channel` of the `anchor_round`.
     To stop this possibility, the values of `scale` and `scale_anchor` used
     are [saved](../code/extract/scale.md#save_scale) to the `config['file_names']['tile_dir']` 
     in a text file (`config['file_names']['scale']`).
-    Then if these [differ](../code/extract/scale.md#iss.extract.scale.get_scale_from_txt) 
+    Then if these [differ](../code/extract/scale.md#coppafish.extract.scale.get_scale_from_txt) 
     from `config['extract']['scale']` and `config['extract']['scale_anchor']`, an error will occur.
 
 `scale` can be specified through `config['extract']['scale']` but if this is empty, it will be 
-[set](../code/extract/scale.md#iss.extract.scale.get_scale)
+[set](../code/extract/scale.md#coppafish.extract.scale.get_scale)
 to `scale = config['extract']['scale_norm']/max(scale_image)`. `scale_image` is the 
 `nb.basic_info.tile_sz x nb.basic_info.tile_sz` raw image belonging to the channel and z-plane containing 
 the pixel with maximum intensity of the central tile (saved as `scale_channel`, `scale_z`, `scale_tile` in 
@@ -331,14 +331,14 @@ the pixel with maximum intensity of the central tile (saved as `scale_channel`, 
 to the parameters in `config['extract']` before being used in the `scale` calculation.
 
 `scale_anchor` can be specified through `config['extract']['scale_anchor']`. If it is left empty,
-it is [computed](../code/extract/scale.md#iss.extract.scale.get_scale) in the same way as `scale` 
+it is [computed](../code/extract/scale.md#coppafish.extract.scale.get_scale) in the same way as `scale` 
 (the channel used is `anchor_channel` and the tile and z-plane used are saved as `scale_ancor_tile` and 
 `scale_anchor_z` in [`nb.extract_debug`](../notebook_comments.md#extract_debug)).
 
 After the tiles are multiplied by the scale factor, they still contain negative values, so
-when they are [saved](../code/utils/npy.md#iss.utils.npy.save_tile), a shift 
+when they are [saved](../code/utils/npy.md#coppafish.utils.npy.save_tile), a shift 
 (`config['basic_info']['tile_pixel_value_shift']`) in intensity is added to each pixel.
-This shift is then subtracted when the tiles are [loaded](../code/utils/npy.md#iss.utils.npy.load_tile).
+This shift is then subtracted when the tiles are [loaded](../code/utils/npy.md#coppafish.utils.npy.load_tile).
 
 ### Potential error with clipped pixels
 Because `scale` is computed from one tile and round, there is a possibility during the course

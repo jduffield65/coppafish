@@ -1,18 +1,19 @@
 # Running the code
 
-Once the configuration file has been [set up](config_setup.md) with the path */Users/user/iss/experiment/settings.ini*, 
-the [code](code/pipeline/run.md#iss.pipeline.run.run_pipeline) can be run via the command line or using a python script:
+Once the configuration file has been [set up](config_setup.md) with the path 
+*/Users/user/coppafish/experiment/settings.ini*, the [code](code/pipeline/run.md#coppafish.pipeline.run.run_pipeline) 
+can be run via the command line or using a python script:
 
 === "Command Line"
 
     ``` bash
-    python -m iss /Users/user/iss/experiment/settings.ini
+    python -m coppafish /Users/user/coppafish/experiment/settings.ini
     ```
 
 === "Python Script"
     ``` python
-    from iss import run_pipeline
-    ini_file = '/Users/user/iss/experiment/settings.ini'
+    from coppafish import run_pipeline
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
     nb = run_pipeline(ini_file)
     ```
 
@@ -21,7 +22,7 @@ the above will pick up the pipeline from the last stage it finished. So for a no
 [*file_names*](notebook_comments.md#file_names), [*basic_info*](notebook_comments.md#basic_info),
 [*extract*](notebook_comments.md#extract), [*extract_debug*](notebook_comments.md#extract_debug) and 
 [*find_spots*](notebook_comments.md#find_spots), running the above code will start the pipeline at
-the [stitch stage](code/pipeline/run.md#iss.pipeline.run.run_stitch).
+the [stitch stage](code/pipeline/run.md#coppafish.pipeline.run.run_stitch).
 
 ## Check data before running
 The functions [`view_raw`](pipeline/extract.md#raw-data), 
@@ -48,14 +49,14 @@ section can be [altered](notebook.md#configuration-file).
     === "Code"
 
         ``` python
-        from iss import Notebook, run_pipeline
-        nb_file = '/Users/user/iss/experiment/notebook.npz'
+        from coppafish import Notebook, run_pipeline
+        nb_file = '/Users/user/coppafish/experiment/notebook.npz'
         
         # Save new notebook with different name so it does not overwrite old notebook
         # Make sure notebook_name is specified in [file_names] section 
         # of settings_new.ini file to be same as name given here.
-        nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
-        ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
+        nb_file_new = '/Users/user/coppafish/experiment/notebook_new.npz'
+        ini_file_new = '/Users/user/coppafish/experiment/settings_new.ini'
     
         # config_file not given so will use last one saved to Notebook
         nb = Notebook(nb_file)
@@ -83,7 +84,7 @@ section can be [altered](notebook.md#configuration-file).
         Using config file saved to notebook:
         shift_max_range: [500, 500, 10]
         shift_score_thresh_multiplier: 1.5
-        Using new config file /Users/user/iss/experiment/settings_new.ini:
+        Using new config file /Users/user/coppafish/experiment/settings_new.ini:
         shift_max_range: [600, 600, 20]
         shift_score_thresh_multiplier: 1.2
     
@@ -92,28 +93,28 @@ section can be [altered](notebook.md#configuration-file).
     
         ``` ini
         [file_names]
-        input_dir = /Users/user/iss/experiment1/raw
-        output_dir = /Users/user/iss/experiment1/output
-        tile_dir = /Users/user/iss/experiment1/tiles
+        input_dir = /Users/user/coppafish/experiment1/raw
+        output_dir = /Users/user/coppafish/experiment1/output
+        tile_dir = /Users/user/coppafish/experiment1/tiles
         round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
         anchor = Exp1_anchor
-        code_book = /Users/user/iss/experiment1/codebook.txt
+        code_book = /Users/user/coppafish/experiment1/codebook.txt
     
         [basic_info]
         is_3d = True
         anchor_channel = 4
         dapi_channel = 0
         ```
-    === "*/Users/user/iss/experiment/settings_new.ini*"
+    === "*/Users/user/coppafish/experiment/settings_new.ini*"
     
         ``` ini
         [file_names]
-        input_dir = /Users/user/iss/experiment1/raw
-        output_dir = /Users/user/iss/experiment1/output
-        tile_dir = /Users/user/iss/experiment1/tiles
+        input_dir = /Users/user/coppafish/experiment1/raw
+        output_dir = /Users/user/coppafish/experiment1/output
+        tile_dir = /Users/user/coppafish/experiment1/tiles
         round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
         anchor = Exp1_anchor
-        code_book = /Users/user/iss/experiment1/codebook.txt
+        code_book = /Users/user/coppafish/experiment1/codebook.txt
         notebook_name = notebook_new
     
         [basic_info]
@@ -134,32 +135,32 @@ this step adds variables to the [`ref_spots`](notebook_comments.md#ref_spots) pa
 
 ## Exporting to pciSeq
 To save the results of the pipeline as a .csv file which can then be plotted with pciSeq, one  of 
-the following can be run (assuming path to the config file is */Users/user/iss/experiment/settings.ini* 
-and the path to the notebook file is */Users/user/iss/experiment/notebook.npz*):
+the following can be run (assuming path to the config file is */Users/user/coppafish/experiment/settings.ini* 
+and the path to the notebook file is */Users/user/coppafish/experiment/notebook.npz*):
 
 === "Command Line"
 
     ``` bash
-    python -m iss /Users/user/iss/experiment/settings.ini -export
+    python -m coppafish /Users/user/coppafish/experiment/settings.ini -export
     ```
 
 === "Python Script Using Config Path"
     ``` python
-    from iss import Notebook, export_to_pciseq
-    ini_file = '/Users/user/iss/experiment/settings.ini'
+    from coppafish import Notebook, export_to_pciseq
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
     nb = Notebook(config_file=ini_file)
     export_to_pciseq(nb)
     ```
 
 === "Python Script Using Notebook Path"
     ``` python
-    from iss import Notebook, export_to_pciseq
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook, export_to_pciseq
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     export_to_pciseq(nb)
     ```
 
-[This](code/utils/pciseq.md#iss.utils.pciseq.export_to_pciseq) will save a csv file in the *output_dir* for each method 
+[This](code/utils/pciseq.md#coppafish.utils.pciseq.export_to_pciseq) will save a csv file in the *output_dir* for each method 
 (*omp* and *ref_spots*) of finding spots and assigning genes to them.
 The names of the files are specified through `config['file_names']['pciseq']`. Each file will contain:
 
@@ -171,7 +172,8 @@ The names of the files are specified through `config['file_names']['pciseq']`. E
 An example file is given [here](files/pciseq_omp.csv).
 
 ### Thresholding
-Only spots which pass [`quality_threshold`](code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold)
+Only spots which pass 
+[`quality_threshold`](code/call_spots/qual_check.md#coppafish.call_spots.qual_check.quality_threshold)
 are saved. This depends on parameters given in [`config['thresholds']`](config.md#thresholds).
 
 For a [*reference*](pipeline/call_reference_spots.md) spot, $s$, to pass the thresholding, it must satisfy 
@@ -207,7 +209,7 @@ of spots. The idea being this is that it is better to do the thresholding after 
 during the pipeline. This is because, if there were too few spots in the latter case, much of the pipeline would
 have to be re-run to obtain new spots but in the former case, you can just change the threshold values.
 
-Once [`export_to_pciseq`](code/utils/pciseq.md#iss.utils.pciseq.export_to_pciseq) is run, the
+Once [`export_to_pciseq`](code/utils/pciseq.md#coppafish.utils.pciseq.export_to_pciseq) is run, the
 [*thresholds*](notebook_comments.md#thresholds) page will be added to the notebook. This
 inherits all the values from the [*thresholds*](config.md#thresholds) section of the config file, the purpose of which
 is to remove the possibility of the [*thresholds*](config.md#thresholds) section in the configuration

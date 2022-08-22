@@ -9,7 +9,7 @@ strengths for each gene, before assigning each reference spot to a gene.
 These gene assignments are saved in the [`ref_spots`](../notebook_comments.md#ref_spots) *NotebookPage* 
 while the bleed_matrix and expected bled_code for each gene are saved in the 
 [`call_spots`](../notebook_comments.md#call_spots) *NotebookPage*. The distribution of the genes can be 
-seen using the [`iss_plot` viewer](../view_results.md) once these pages have been added.
+seen using [`coppafish.Viewer`](../view_results.md) once these pages have been added.
 
 !!! note "Note: `config` in this section, with no section specified, means `config['call_spots']`"
 
@@ -17,8 +17,8 @@ seen using the [`iss_plot` viewer](../view_results.md) once these pages have bee
 To re-run the [*call reference spots* step of the pipeline](../code/pipeline/call_reference_spots.md) 
 of the pipeline with different parameters in the configuration file, the 
 [`call_spots`](../notebook_comments.md#call_spots) page must be
-deleted and then the [`run_reference_spots`](../code/pipeline/run.md#iss.pipeline.run.run_reference_spots) function 
-must be called with `overwrite_ref_spots = True`.
+deleted and then the [`run_reference_spots`](../code/pipeline/run.md#coppafish.pipeline.run.run_reference_spots) 
+function must be called with `overwrite_ref_spots = True`.
 
 This is so the variables `gene_no`, `score`, `score_diff`, `intensity` in the 
 [`ref_spots`](../notebook_comments.md#ref_spots) page will be updated.
@@ -32,15 +32,15 @@ This is so the variables `gene_no`, `score`, `score_diff`, `intensity` in the
     === "Code"
 
         ``` python
-        from iss import Notebook
-        from iss.pipeline.run import run_reference_spots
-        nb_file = '/Users/user/iss/experiment/notebook.npz'
+        from coppafish import Notebook
+        from coppafish.pipeline.run import run_reference_spots
+        nb_file = '/Users/user/coppafish/experiment/notebook.npz'
         
         # Save new notebook with different name so it does not overwrite old notebook
         # Make sure notebook_name is specified in [file_names] section 
         # of settings_new.ini file to be same as name given here.
-        nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
-        ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
+        nb_file_new = '/Users/user/coppafish/experiment/notebook_new.npz'
+        ini_file_new = '/Users/user/coppafish/experiment/settings_new.ini'
     
         # config_file not given so will use last one saved to Notebook
         nb = Notebook(nb_file)
@@ -104,28 +104,28 @@ This is so the variables `gene_no`, `score`, `score_diff`, `intensity` in the
     
         ``` ini
         [file_names]
-        input_dir = /Users/user/iss/experiment1/raw
-        output_dir = /Users/user/iss/experiment1/output
-        tile_dir = /Users/user/iss/experiment1/tiles
+        input_dir = /Users/user/coppafish/experiment1/raw
+        output_dir = /Users/user/coppafish/experiment1/output
+        tile_dir = /Users/user/coppafish/experiment1/tiles
         round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
         anchor = Exp1_anchor
-        code_book = /Users/user/iss/experiment1/codebook.txt
+        code_book = /Users/user/coppafish/experiment1/codebook.txt
     
         [basic_info]
         is_3d = True
         anchor_channel = 4
         dapi_channel = 0
         ```
-    === "*/Users/user/iss/experiment/settings_new.ini*"
+    === "*/Users/user/coppafish/experiment/settings_new.ini*"
     
         ``` ini
         [file_names]
-        input_dir = /Users/user/iss/experiment1/raw
-        output_dir = /Users/user/iss/experiment1/output
-        tile_dir = /Users/user/iss/experiment1/tiles
+        input_dir = /Users/user/coppafish/experiment1/raw
+        output_dir = /Users/user/coppafish/experiment1/output
+        tile_dir = /Users/user/coppafish/experiment1/tiles
         round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
         anchor = Exp1_anchor
-        code_book = /Users/user/iss/experiment1/codebook.txt
+        code_book = /Users/user/coppafish/experiment1/codebook.txt
         notebook_name = notebook_new
     
         [basic_info]
@@ -168,7 +168,7 @@ normalisation factor, `nb.call_spots.color_norm_factor`.
     === "With Normalisation"
         ![image](../images/pipeline/call_spots/spot_color_with_norm.png){width="800"}
 
-This is [obtained](../code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
+This is [obtained](../code/call_spots/base.md#coppafish.call_spots.base.color_normalisation) 
 using the parameters `config['color_norm_intensities']` and 
 `config['color_norm_probs']` such that for each round, $r$, and channel $c$, 
 the probability of $\zeta_{rc}$ being larger than 
@@ -199,7 +199,7 @@ If `config[bleed_matrix_method] = 'single'`, then we combine all rounds for each
 
 ## Background
 After we have the normalised spot colors, $\pmb{\zeta}$, we 
-[remove](../code/call_spots/background.md#iss.call_spots.background.fit_background) some background *genes* from them. 
+[remove](../code/call_spots/background.md#coppafish.call_spots.background.fit_background) some background *genes* from them. 
 There is one background *gene* for each channel, $\pmb{B}_C$. The background *gene* for channel $C$ is defined by:
 $\pmb{B}_{C_{rc}}$ if $c = C$ and 0 otherwise i.e. it is just a strip in channel $C$:
 
@@ -325,7 +325,7 @@ seem to vary much between sequencing rounds.
 It is therefore possible to largely compensate for this crosstalk by learning the precise amount of crosstalk 
 between each pair of color channels.
 
-To [estimate the crosstalk](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_bleed_matrix), 
+To [estimate the crosstalk](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_bleed_matrix), 
 we use the spot colors, $\pmb{\zeta}_{s0}$, of all well isolated spots. We 
 reshape these, so we have a set of $n_{isolated} \times n_{rounds}$ vectors, each of dimension 
 $n_{channels}$, $\pmb{v}_i$ ($v_{0_c} = \zeta_{{s=0,0}_{r=0,c}}$).
@@ -333,7 +333,7 @@ Only [well-isolated](find_spots.md#isolated-spots) spots are used to ensure that
 not affected by spatial overlap of spots corresponding to different genes.
 
 Crosstalk is then estimated by running a 
-[scaled k-means](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) 
+[scaled k-means](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.scaled_k_means) 
 algorithm on these vectors, which finds a set of $n_{dye}$ vectors, $\pmb{c}_d$, such that the error function:
 
 $$
@@ -359,14 +359,14 @@ As shown in the second plot, if `config['bleed_matrix_method'] = 'separate'`, we
 
 ### Initial Bleed Matrix
 To estimate the dye intensity vectors, $\pmb{c}_d$, the 
-[`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) algorithm
+[`scaled_k_means`](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.scaled_k_means) algorithm
 needs to know the number of dyes and a starting guess for what each dye vector looks like.
 
 This is specified in the [`basic_info`](../config.md#basic_info) section of the configuration file as explained 
 [here](../config_setup.md#specifying-dyes).
 
 ### Scaled K Means
-The pseudocode for the [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means)
+The pseudocode for the [`scaled_k_means`](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.scaled_k_means)
 algorithm to obtain the dye intensity vectors, $\pmb{c}_d$, is given below:
 
 ```
@@ -423,7 +423,7 @@ There are a few parameters in the config file which are used:
     to get a more accurate estimate.
 
 ### [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means)
-The [`scaled_k_means`](../code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.scaled_k_means) algorithm 
+The [`scaled_k_means`](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.scaled_k_means) algorithm 
 can be visualised using the [`view_scaled_k_means`](../code/plot/call_spots.md#scaled-k-means) function:
 
 ![image](../images/pipeline/call_spots/bleed_matrix/scaled_k_means.png){width="800"}
@@ -442,7 +442,7 @@ scores to increase from left to right as the algorithm is run.
 
 ## Gene Bled Codes
 Once the `bleed_matrix` has been computed, the expected code for each gene can be 
-[obtained](../code/call_spots/base.md#iss.call_spots.base.get_bled_codes).
+[obtained](../code/call_spots/base.md#coppafish.call_spots.base.get_bled_codes).
 
 Each gene appears with a single dye in each imaging round as indicated by the [codebook](../config_setup.md#code_book)
 and saved as `nb.call_spots.gene_codes`.
@@ -461,7 +461,7 @@ Each `bled_code` is also normalised to have an L2 norm of 1. They are saved as `
 ## Dot Product Score
 To assign spot $s$, with spot color (post background), $\pmb{\zeta}_{{si}}$, to a gene, we compute a dot product
 score, $\Delta_{sig}$ to each gene, $g$, with `bled_code` $\pmb{b}_g$. This is 
-[defined](../code/call_spots/dot_product.md#iss.call_spots.dot_product.dot_product_score) to be:
+[defined](../code/call_spots/dot_product.md#coppafish.call_spots.dot_product.dot_product_score) to be:
 
 $$
 \Delta_{sig} = \sum_{r=0}^{n_r-1}\sum_{c=0}^{n_c-1}\omega^2_{{si}_{rc}}\tilde{\zeta}_{{si}_{rc}}b_{g_{rc}}
@@ -572,7 +572,7 @@ for each gene, $\pmb{b}_g$ based on all the spot colors assigned to them, $\pmb{
 We do this by determining `nb.call_spots.gene_efficiency`. `gene_efficiency[g, r]` gives the expected intensity
 of gene $g$ in round $r$, as determined by the spots assigned to it, compared to that expected by the `bleed_matrix`.
 
-The pseudocode below explains how it is [computed](../code/call_spots/base.md#iss.call_spots.base.get_gene_efficiency).
+The pseudocode below explains how it is [computed](../code/call_spots/base.md#coppafish.call_spots.base.get_gene_efficiency).
 
 ```
 spot_colors: Intensity of each spot in each channel
@@ -749,7 +749,7 @@ $\Delta_{s0g_0}-\Delta_{s0g_1}$ is saved as `nb.ref_spots.score_diff`.
 As well as a variable indicating how closely a spot matches a gene (`nb.ref_spots.score`), we also save 
 a variable indicating the overall fluorescence of a spot, independent of which gene it belongs to. This intensity,
 $\chi$, is saved as `nb.ref_spots.intensity` and for a spot $s$, it is 
-[defined](../code/call_spots/qual_check.md#iss.call_spots.qual_check.get_spot_intensity) by:
+[defined](../code/call_spots/qual_check.md#coppafish.call_spots.qual_check.get_spot_intensity) by:
 
 $$
 \chi_s = \underset{r}{\mathrm{median}}(\max_c\zeta_{s_{rc}})
@@ -813,7 +813,7 @@ This plot indicates the number of spots assigned to each gene which also have `n
 and `nb.call_spots.intensity > intensity_thresh`. The default `score_thresh` and `intensity_thresh` 
 are `config['thresholds']['score_ref']` and `config['thresholds']['intensity']` respectively. They can be changed
 with the textboxes though. This 
-[thresholding](../code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold) 
+[thresholding](../code/call_spots/qual_check.md#coppafish.call_spots.qual_check.quality_threshold) 
 is the same that is done in the [results viewer](../view_results.md#score-range) 
 and when [exporting to pciSeq](../code/utils/pciseq.md). 
 
@@ -836,10 +836,10 @@ reliable.
 
     The example below indicates a case when the fake genes functionality may be useful.
         
-    When we look at the `iss_plot`, we see that there seems to be too many spots assigned to *Penk* and 
+    When we open `coppafish.Viewer`, we see that there seems to be too many spots assigned to *Penk* and 
     *Vip*.
     
-    === "`iss_plot`"
+    === "`coppafish.Viewer`"
         ![image](../images/pipeline/call_spots/gene_counts/fake_iss_plot.png){width="800"}
     === "`gene_counts`"
         ![image](../images/pipeline/call_spots/gene_counts/fake_gene_counts.png){width="800"}

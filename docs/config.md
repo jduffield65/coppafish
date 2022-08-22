@@ -46,7 +46,7 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **raw_metadata**: *maybe_str*.
 
-	If .npy raw_extension, this is the name of the .json file in *input_dir* which contains the metadata required extracted from the initial .nd2 files. I.e. it contains the output of *iss/utils/nd2/save_metadata*: 
+	If .npy raw_extension, this is the name of the .json file in *input_dir* which contains the metadata required extracted from the initial .nd2 files. I.e. it contains the output of *coppafish/utils/nd2/save_metadata*: 
 
 	 - `xy_pos` - `List [n_tiles x 2]`. xy position of tiles in pixels. 
 
@@ -60,7 +60,7 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **dye_camera_laser**: *maybe_file*.
 
-	csv file giving the approximate raw intensity for each dye with each camera/laser combination. If not set, the file *iss/setup/dye_camera_laser_raw_intensity.csv* file will be used. 
+	csv file giving the approximate raw intensity for each dye with each camera/laser combination. If not set, the file *coppafish/setup/dye_camera_laser_raw_intensity.csv* file will be used. 
 
 	Default: `None`
 
@@ -116,7 +116,7 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 * **pciseq**: *list_str*.
 
-	csv files in *output_dir* where plotting information for pciSeq will be saved. First file is name where *omp* method output will be saved. Second file is name where *ref_spots* method output will be saved. If files don't exist, they will be created when the function *iss/export_to_pciseq* is run. 
+	csv files in *output_dir* where plotting information for pciSeq will be saved. First file is name where *omp* method output will be saved. Second file is name where *ref_spots* method output will be saved. If files don't exist, they will be created when the function *coppafish/export_to_pciseq* is run. 
 
 	Default: `pciseq_omp, pciseq_anchor`
 
@@ -447,7 +447,7 @@ The *find_spots* section contains parameters which specify how to convert the im
 
 * **n_spots_warn_fraction**: *number*.
 
-	Used in *iss/find_spots/base/check_n_spots* 
+	Used in *coppafish/find_spots/base/check_n_spots* 
 
 	 A warning will be raised if for any tile, round, channel the number of spots detected is less than: 
 
@@ -459,7 +459,7 @@ The *find_spots* section contains parameters which specify how to convert the im
 
 * **n_spots_error_fraction**: *number*.
 
-	Used in *iss/find_spots/base/check_n_spots*. An error is raised if any of the following are satisfied: 
+	Used in *coppafish/find_spots/base/check_n_spots*. An error is raised if any of the following are satisfied: 
 
 	 * For any given channel, the number of spots found was less than `n_spots_warn` for at least the fraction `n_spots_error_fraction` of tiles/rounds. 
 
@@ -534,7 +534,7 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 * **shift_score_thresh**: *maybe_number*.
 
-	A shift between tiles must have a number of close neighbours exceeding this. If not given, it will be worked using the `shift_score_thresh` parameters below using the function *iss/stitch/shift/get_score_thresh*. 
+	A shift between tiles must have a number of close neighbours exceeding this. If not given, it will be worked using the `shift_score_thresh` parameters below using the function *coppafish/stitch/shift/get_score_thresh*. 
 
 	Default: `None`
 
@@ -564,7 +564,7 @@ The *stitch* section contains parameters which specify how the overlaps between 
 
 * **n_shifts_error_fraction**: *number*.
 
-	Used in *iss/stitch/check_shifts/check_shifts_stitch* If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
+	Used in *coppafish/stitch/check_shifts/check_shifts_stitch* If more than this fraction of `shifts` found between neighbouring tiles have `score < score_thresh`, an error will be raised. 
 
 	Default: `0.5`
 
@@ -621,7 +621,7 @@ The *register_initial* section contains parameters which specify how the shifts 
 
 * **shift_score_thresh**: *maybe_number*.
 
-	A shift between tiles must have a number of close neighbours exceeding this. If not given, it will be worked using the `shift_score_thresh` parameters below using the function *iss/stitch/shift/get_score_thresh*. 
+	A shift between tiles must have a number of close neighbours exceeding this. If not given, it will be worked using the `shift_score_thresh` parameters below using the function *coppafish/stitch/shift/get_score_thresh*. 
 
 	Default: `None`
 
@@ -651,7 +651,7 @@ The *register_initial* section contains parameters which specify how the shifts 
 
 * **n_shifts_error_fraction**: *number*.
 
-	Used in *iss/stitch/check_shifts/check_shifts_register* If more than this fraction of `shifts` between the `ref_round`/`ref_channel` and each imaging round for each tile have `score < score_thresh`, an error will be raised. 
+	Used in *coppafish/stitch/check_shifts/check_shifts_register* If more than this fraction of `shifts` between the `ref_round`/`ref_channel` and each imaging round for each tile have `score < score_thresh`, an error will be raised. 
 
 	Default: `0.5`
 
@@ -736,7 +736,7 @@ The *register* section contains parameters which specify how the affine transfor
 
 * **n_transforms_error_fraction**: *number*.
 
-	Used in *iss/register/check_transforms/check_transforms* An error is raised if any of the following are satisfied where a failed transform is one with `nb.register_debug.n_matches < nb.register_debug.n_matches_thresh`. 
+	Used in *coppafish/register/check_transforms/check_transforms* An error is raised if any of the following are satisfied where a failed transform is one with `nb.register_debug.n_matches < nb.register_debug.n_matches_thresh`. 
 
 	 * For any given channel, the fraction of failed transforms was greater than `n_transforms_error_fraction` of tiles/rounds. 
 
@@ -1047,7 +1047,7 @@ The *thresholds* section contains the thresholds used to determine which spots p
 
 * **score_ref**: *number*.
 
-	Final accepted spots are those which pass quality_threshold which is `nb.ref_spots.score > thresholds[score_ref]` and `nb.ref_spots.intensity > intensity_thresh`. quality_threshold requires score computed with *iss/call_spots/dot_prodduct/dot_product_score* to exceed this. Max score is 1 so must be below this. 
+	Final accepted spots are those which pass quality_threshold which is `nb.ref_spots.score > thresholds[score_ref]` and `nb.ref_spots.intensity > intensity_thresh`. quality_threshold requires score computed with *coppafish/call_spots/dot_prodduct/dot_product_score* to exceed this. Max score is 1 so must be below this. 
 
 	Default: `0.25`
 

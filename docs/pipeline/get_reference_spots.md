@@ -32,7 +32,7 @@ in the [*call reference spots* step](call_reference_spots.md).
 We don't find the `spot_color` for every reference spot because there will be duplicates - the same spot detected
 on more than 1 tile. This is because there is an overlap between the tiles. 
 
-To [remove these duplicates](../code/call_spots/base.md#iss.call_spots.base.get_non_duplicate), we only keep spots 
+To [remove these duplicates](../code/call_spots/base.md#coppafish.call_spots.base.get_non_duplicate), we only keep spots 
 which were detected on a tile (saved in [`nb.find_spots.spot_details`](../notebook_comments.md#find_spots) 
 during the [*find spots* step](find_spots.md)) is also the tile whose centre they are closest to in the 
 global coordinate system (`nb.stitch.tile_origin + nb.basic_info.tile_centre`).
@@ -41,7 +41,7 @@ The [`view_stitch`](stitch.md#view_stitch) function shows the duplicate spots in
 
 ### Applying transform
 To determine the aligned coordinate of each reference spot detected on tile $t$ in round $r$, channel $c$, we
-must [apply](../code/spot_colors/base.md#iss.spot_colors.base.apply_transform) the affine transform found for 
+must [apply](../code/spot_colors/base.md#coppafish.spot_colors.base.apply_transform) the affine transform found for 
 tile $t$, round $r$, channel $c$: `nb.register.transform[t, r, c]` to the $yxz$ coordinates of the spots.
 
 First the $yxz$ coordinates must be centered (subtract `nb.basic_info.tile_centre`) and the z-coordinate
@@ -59,9 +59,9 @@ $yxz$ coordinates in round $r$, channel $c$.
 ### Reading off intensity
 After the $yxz$ coordinates in tile $t$, round $r$, channel $c$, are found, the intensity values at these coordinates
 are obtained by supplying the $n_{spots} \times 3$ array as the parameter `yxz` in the function 
-[`load_tile`](../code/utils/npy.md#iss.utils.npy.load_tile).
+[`load_tile`](../code/utils/npy.md#coppafish.utils.npy.load_tile).
 
-After [doing this](../code/spot_colors/base.md#iss.spot_colors.base.get_spot_colors) for all tiles, 
+After [doing this](../code/spot_colors/base.md#coppafish.spot_colors.base.get_spot_colors) for all tiles, 
 rounds and channels, we obtain the `spot_color` where `spot_color[s, r, c]` is the intensity value found for 
 spot `s` in round `r`, channel `c`.
 
@@ -83,7 +83,8 @@ all spots removed for this reason:
     if either `r` is not in `nb.basic_info.use_rounds` or `c` is not in `nb.basic_info.use_channels`.
     
     This is because it is impossible for an actual pixel to have this intensity due to clipping 
-    done in the [*extract* step](extract.md) when [saving the tiles](../code/utils/npy.md#iss.utils.npy.save_tile). 
+    done in the [*extract* step](extract.md) when 
+    [saving the tiles](../code/utils/npy.md#coppafish.utils.npy.save_tile). 
     So basically, this is an integer version of `nan`.
     
     

@@ -24,13 +24,13 @@ are written down.
 
 ## Create *Notebook*
 To create a *Notebook*, pass it the path to the file where the *Notebook* is to
-be saved (*/Users/user/iss/experiment/notebook.npz*) and the path to the configuration file
-(*/Users/user/iss/experiment/settings.ini*):
+be saved (*/Users/user/coppafish/experiment/notebook.npz*) and the path to the configuration file
+(*/Users/user/coppafish/experiment/settings.ini*):
 
 ``` python
-from iss import Notebook
-nb_file = '/Users/user/iss/experiment/notebook.npz'
-ini_file = '/Users/user/iss/experiment/settings.ini'
+from coppafish import Notebook
+nb_file = '/Users/user/coppafish/experiment/notebook.npz'
+ini_file = '/Users/user/coppafish/experiment/settings.ini'
 nb = Notebook(nb_file, ini_file)
 ```
 
@@ -38,8 +38,8 @@ nb = Notebook(nb_file, ini_file)
 
     The *Notebook* can also be created with just the config_file through:
     ``` python
-    from iss import Notebook
-    ini_file = '/Users/user/iss/experiment/settings.ini'
+    from coppafish import Notebook
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
     nb = Notebook(config_file=ini_file)
     ```
     The location where the *Notebook* is saved (nb._file) will then be set to:
@@ -51,15 +51,15 @@ the first *NotebookPage* is added to the *Notebook*.
 
 When the *Notebook* is created, it will save the contents of the configuration file (`nb._config`) thus
 there is no need to pass the `config_file` argument when re-loading a *Notebook*. You can just
-run `nb = Notebook('/Users/user/iss/experiment/notebook.npz')`.
+run `nb = Notebook('/Users/user/coppafish/experiment/notebook.npz')`.
 
-??? note "Using *Notebook* outside the ISS pipeline"
+??? note "Using *Notebook* outside the *coppaFISH* pipeline"
 
     Passing the configuration file to the *Notebook* allows for several [features](#configuration-file),
     however a *Notebook* can be created without it:
     ``` python
-    from iss import Notebook
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     ```
     You can then still add *NotebookPages* to the *Notebook* as normal.
@@ -68,7 +68,7 @@ run `nb = Notebook('/Users/user/iss/experiment/notebook.npz')`.
 To add a *NotebookPage* called *page_name* with variable `var_1 = 5` to the *Notebook*, you can do the following:
 
 ``` python
-from iss import NotebookPage
+from coppafish import NotebookPage
 nbp = NotebookPage('page_name')
 nbp.var_1 = 5  
 nb += nbp  # or nb.add_page(nbp) or nb.page_name = nbp
@@ -98,7 +98,7 @@ The *NotebookPage* is a write-once data structure so once a variable has been ad
 changed (unless it is listed in `NotebookPage._NON_RESULT_KEYS`). I.e. the following will raise an error:
 
 ``` python
-from iss import NotebookPage
+from coppafish import NotebookPage
 nbp = NotebookPage('page_name')
 nbp.var_1 = 5  
 nbp.var_1 = 10
@@ -108,7 +108,7 @@ Once a *NotebookPage* has been added to a *Notebook*, `nbp.finalized` will chang
 will be allowed to be added to the *NotebookPage*:
 
 ``` python
-from iss import NotebookPage
+from coppafish import NotebookPage
 nbp = NotebookPage('page_name')
 nbp.var_1 = 5  
 nbp.var_2 = 10  # fine as page not added to notebook yet
@@ -119,7 +119,7 @@ nb.page_name.var_3 = 99 # will raise error as page is added to notebook now
 To delete the variable `var_1` run `del nb.var_1`. Again, you won't be able to do this once the 
 *NotebookPage* has been added to a *Notebook*.
 
-## ISS Specific *NotebookPages*
+## *coppaFISH* Specific *NotebookPages*
 The names of all the *NotebookPages* added to the *Notebook* through the course of the pipeline are given as
 the headers in the [*notebook_comments.json* file](notebook_comments.md). 
 Then the bullet points give all the variables that are added to each *NotebookPage*.
@@ -136,7 +136,7 @@ are given below:
 === "✅"
 
     ``` python
-    from iss import NotebookPage
+    from coppafish import NotebookPage
     nbp = NotebookPage('thresholds')
     nbp.intensity = 0.01
     nbp.score_ref = 0.25
@@ -148,7 +148,7 @@ are given below:
 === "❌ Error adding variable to *NotebookPage*"
 
     ``` python
-    from iss import NotebookPage
+    from coppafish import NotebookPage
     nbp = NotebookPage('thresholds')
     nbp.intensity = 0.01
     nbp.var_1 = 5  # Error here as 'var_1' is not listed in 
@@ -158,7 +158,7 @@ are given below:
 === "❌ Error adding *NotebookPage* to *Notebook*"
 
     ``` python
-    from iss import NotebookPage
+    from coppafish import NotebookPage
     nbp = NotebookPage('thresholds')
     nbp.intensity = 0.01
     nbp.score_ref = 0.25 = 5  
@@ -169,7 +169,7 @@ are given below:
 
 ### Describe
 The comments given in the [*notebook_comments.json* file](notebook_comments.md) can be accessed from 
-the *NotebookPage* by calling the [`describe`](code/setup/notebook.md#iss.setup.notebook.NotebookPage.describe) 
+the *NotebookPage* by calling the [`describe`](code/setup/notebook.md#coppafish.setup.notebook.NotebookPage.describe) 
 function. An example to print the comment for the variable `gene_no` in the *omp* page is given below:
 
 === "Code"
@@ -182,7 +182,7 @@ function. An example to print the comment for the variable `gene_no` in the *omp
     gene_no[s] is the index of the gene assigned to spot s.
     ```
 
-If [`describe`](code/setup/notebook.md#iss.setup.notebook.Notebook.describe) is called from the *Notebook* instead,
+If [`describe`](code/setup/notebook.md#coppafish.setup.notebook.Notebook.describe) is called from the *Notebook* instead,
 it will loop through all *NotebookPages* in the *Notebook* and print the comment for each variable with the correct
 name that it encounters:
 
@@ -203,7 +203,7 @@ name that it encounters:
     gene_no[s] is the index of the gene assigned to spot s.
     ```
 
-If [`describe`](code/setup/notebook.md#iss.setup.notebook.Notebook.describe) is called from the *Notebook* 
+If [`describe`](code/setup/notebook.md#coppafish.setup.notebook.Notebook.describe) is called from the *Notebook* 
 and finds the variable in the configuration file, it will print the section it was found in and its value. E.g.
 for `dp_thresh` in the *omp* section:
 
@@ -222,7 +222,7 @@ for `dp_thresh` in the *omp* section:
 
 ### Configuration File
 The configuration file can be returned as a dictionary of dictionaries from the *Notebook* by using the function
-[`get_config`](code/setup/notebook.md#iss.setup.notebook.Notebook.get_config):
+[`get_config`](code/setup/notebook.md#coppafish.setup.notebook.Notebook.get_config):
 
 === "Code"
 
@@ -234,7 +234,7 @@ The configuration file can be returned as a dictionary of dictionaries from the 
     ![image](images/config_dict.png){width="400"}
 
 When the *Notebook* is re-loaded with a `config_file` (`nb = Notebook(nb_file, config_file)`), the configuration
-file supplied will be [compared](code/setup/notebook.md#iss.setup.notebook.Notebook.compare_config) 
+file supplied will be [compared](code/setup/notebook.md#coppafish.setup.notebook.Notebook.compare_config) 
 to the one saved in the *Notebook* (`nb._config`). 
 If the comparison indicates that the two are different, an error will be raised.
 Otherwise, when the *Notebook* is loaded, the saved value of the configuration file 
@@ -242,7 +242,7 @@ Otherwise, when the *Notebook* is loaded, the saved value of the configuration f
 
 ???+ note "What is compared?"
 
-    Each [*NotebookPage*](notebook_comments.md) added during the ISS pipeline has a name which is the same as a 
+    Each [*NotebookPage*](notebook_comments.md) added during the *coppaFISH* pipeline has a name which is the same as a 
     section in the [configuration file](config.md) or the same apart from a 
     [*_debug* suffix](notebook_comments.md#extract_debug).
 
@@ -250,7 +250,7 @@ Otherwise, when the *Notebook* is loaded, the saved value of the configuration f
     The [*file_names*](#file_names) section is also ignored in the comparison as it is included in 
     `Notebook._no_compare_config_sections`.
 
-    So if the [pipeline](code/pipeline/run.md#iss.pipeline.run.run_pipeline) has been run as far as the
+    So if the [pipeline](code/pipeline/run.md#coppafish.pipeline.run.run_pipeline) has been run as far as the
     [`call_reference_spots`](code/pipeline/call_reference_spots.md) 
     stage, the *Notebook* will not have the [*omp* page](notebook_comments.md#omp). 
     In this case, the [*omp*](config.md#omp) section of the `config_file` can be changed without causing an error
@@ -330,15 +330,15 @@ how to save a new *Notebook* with a different *basic_info* page:
 === "Code"
 
     ``` python
-    from iss import Notebook
-    from iss.pipeline import set_basic_info
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
+    from coppafish import Notebook
+    from coppafish.pipeline import set_basic_info
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     
     # Save new notebook with different name so it does not overwrite old notebook
     # Make sure notebook_name is specified in [file_names] section 
     # of settings_new.ini file to be same as name given here.
-    nb_file_new = '/Users/user/iss/experiment/notebook_new.npz'
-    ini_file_new = '/Users/user/iss/experiment/settings_new.ini'
+    nb_file_new = '/Users/user/coppafish/experiment/notebook_new.npz'
+    ini_file_new = '/Users/user/coppafish/experiment/settings_new.ini'
 
     # config_file not given so will use last one saved to Notebook
     nb = Notebook(nb_file)
@@ -366,7 +366,7 @@ how to save a new *Notebook* with a different *basic_info* page:
     Using config file saved to notebook:
     use_channels: [0, 1, 2, 3, 4, 5, 6]
     use_tiles: [0, 1, 2, 3]
-    Using new config file /Users/user/iss/experiment/settings_new.ini:
+    Using new config file /Users/user/coppafish/experiment/settings_new.ini:
     use_channels: [1, 2, 5, 6]
     use_tiles: [0, 2, 3]
 
@@ -375,28 +375,28 @@ how to save a new *Notebook* with a different *basic_info* page:
 
     ``` ini
     [file_names]
-    input_dir = /Users/user/iss/experiment1/raw
-    output_dir = /Users/user/iss/experiment1/output
-    tile_dir = /Users/user/iss/experiment1/tiles
+    input_dir = /Users/user/coppafish/experiment1/raw
+    output_dir = /Users/user/coppafish/experiment1/output
+    tile_dir = /Users/user/coppafish/experiment1/tiles
     round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
     anchor = Exp1_anchor
-    code_book = /Users/user/iss/experiment1/codebook.txt
+    code_book = /Users/user/coppafish/experiment1/codebook.txt
 
     [basic_info]
     is_3d = True
     anchor_channel = 4
     dapi_channel = 0
     ```
-=== "*/Users/user/iss/experiment/settings_new.ini*"
+=== "*/Users/user/coppafish/experiment/settings_new.ini*"
 
     ``` ini
     [file_names]
-    input_dir = /Users/user/iss/experiment1/raw
-    output_dir = /Users/user/iss/experiment1/output
-    tile_dir = /Users/user/iss/experiment1/tiles
+    input_dir = /Users/user/coppafish/experiment1/raw
+    output_dir = /Users/user/coppafish/experiment1/output
+    tile_dir = /Users/user/coppafish/experiment1/tiles
     round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
     anchor = Exp1_anchor
-    code_book = /Users/user/iss/experiment1/codebook.txt
+    code_book = /Users/user/coppafish/experiment1/codebook.txt
     notebook_name = notebook_new
 
     [basic_info]
@@ -425,9 +425,9 @@ when loading it in as explained below:
 === "Code"
 
     ``` python
-    from iss import Notebook
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
-    ini_file = '/Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini'
+    from coppafish import Notebook
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
+    ini_file = '/Users/NEW_USER/coppafish/NEW_EXPERIMENT/settings.ini'
 
     # config_file not given so will use last one saved to Notebook
     nb_old = Notebook(nb_file)  
@@ -449,40 +449,40 @@ when loading it in as explained below:
 
     ``` text
     Using config file saved to notebook:
-    /Users/user/iss/experiment1/output
-    /Users/user/iss/experiment1/output/anchor_image.npz
-    /Users/user/iss/experiment1/tiles/Exp1_r0_t0c0.npy
-    Using new config file /Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini:
-    /Users/NEW_USER/iss/NEW_EXPERIMENT/output
-    /Users/NEW_USER/iss/NEW_EXPERIMENT/output/anchor_image.npz
-    /Users/NEW_USER/iss/NEW_EXPERIMENT/tiles/Exp1_r0_t0c0.npy
+    /Users/user/coppafish/experiment1/output
+    /Users/user/coppafish/experiment1/output/anchor_image.npz
+    /Users/user/coppafish/experiment1/tiles/Exp1_r0_t0c0.npy
+    Using new config file /Users/NEW_USER/coppafish/NEW_EXPERIMENT/settings.ini:
+    /Users/NEW_USER/coppafish/NEW_EXPERIMENT/output
+    /Users/NEW_USER/coppafish/NEW_EXPERIMENT/output/anchor_image.npz
+    /Users/NEW_USER/coppafish/NEW_EXPERIMENT/tiles/Exp1_r0_t0c0.npy
     ```
 === "nb._config (saved to *Notebook*)"
 
     ``` ini
     [file_names]
-    input_dir = /Users/user/iss/experiment1/raw
-    output_dir = /Users/user/iss/experiment1/output
-    tile_dir = /Users/user/iss/experiment1/tiles
+    input_dir = /Users/user/coppafish/experiment1/raw
+    output_dir = /Users/user/coppafish/experiment1/output
+    tile_dir = /Users/user/coppafish/experiment1/tiles
     round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
     anchor = Exp1_anchor
-    code_book = /Users/user/iss/experiment1/codebook.txt
+    code_book = /Users/user/coppafish/experiment1/codebook.txt
 
     [basic_info]
     is_3d = True
     anchor_channel = 4
     dapi_channel = 0
     ```
-=== "*/Users/NEW_USER/iss/NEW_EXPERIMENT/settings.ini*"
+=== "*/Users/NEW_USER/coppafish/NEW_EXPERIMENT/settings.ini*"
 
     ``` ini
     [file_names]
-    input_dir = /Users/NEW_USER/iss/NEW_EXPERIMENT/raw
-    output_dir = /Users/NEW_USER/iss/NEW_EXPERIMENT/output
-    tile_dir = /Users/NEW_USER/iss/NEW_EXPERIMENT/tiles
+    input_dir = /Users/NEW_USER/coppafish/NEW_EXPERIMENT/raw
+    output_dir = /Users/NEW_USER/coppafish/NEW_EXPERIMENT/output
+    tile_dir = /Users/NEW_USER/coppafish/NEW_EXPERIMENT/tiles
     round = Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6
     anchor = Exp1_anchor
-    code_book = /Users/NEW_USER/iss/NEW_EXPERIMENT/codebook.txt
+    code_book = /Users/NEW_USER/coppafish/NEW_EXPERIMENT/codebook.txt
 
     [basic_info]
     is_3d = True

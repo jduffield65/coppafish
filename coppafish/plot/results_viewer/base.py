@@ -21,7 +21,7 @@ import warnings
 from typing import Optional, Union
 
 
-class viewer:
+class Viewer:
     def __init__(self, nb: Notebook, background_image: Optional[Union[str, np.ndarray]] = 'dapi',
                  gene_marker_file: Optional[str] = None):
         """

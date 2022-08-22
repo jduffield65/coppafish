@@ -50,7 +50,7 @@ for each gene, the `config['radius_xy']` and `config['radius_z']` parameters in 
 only necessitates a minimum distance between two spots of the same gene.
 
 The consequence of this, is that the spots detected by the *OMP* method tend to be in more dense clusters, as shown 
-by the [`iss_plot`](../view_results.md) below. This 
+by the [`coppafish.Viewer`](../view_results.md) images below. This 
 is then more useful for [cell typing](../code/utils/pciseq.md)
 
 === "*Reference Spots*"
@@ -81,7 +81,7 @@ $$
     negative coefficient annulus around the local maxima, then it boosts our confidence that it is legitimate.
 
 If `config['initial_intensity_thresh']` is not specified, it is 
-[set to](../code/omp/base.md#iss.omp.base.get_initial_intensity_thresh) the percentile indicated by 
+[set to](../code/omp/base.md#coppafish.omp.base.get_initial_intensity_thresh) the percentile indicated by 
 `config['initial_intensity_thresh_percentile']` of $\tilde{\chi}$ computed for all 
 pixels in the middle z-plane (`nb.call_spots.norm_shift_tile`) of the central tile (`nb.call_spots.norm_shift_z`).
 I.e., it is set to:
@@ -95,7 +95,7 @@ are the least intense. On other z-planes, we will get rid of more.
 ## *OMP* Algorithm
 For every pixel that passes the initial intensity threshold, 
 $s$, we run an Orthogonal Matching Pursuit (*OMP*) algorithm to find a coefficient, 
-$\mu_{sg}$, for every gene $g$. The pseudocode for how [this is done](../code/omp/coefs.md#iss.omp.coefs.get_all_coefs) 
+$\mu_{sg}$, for every gene $g$. The pseudocode for how [this is done](../code/omp/coefs.md#coppafish.omp.coefs.get_all_coefs) 
 for each pixel is given below:
 
 ```
@@ -153,7 +153,7 @@ There are a few parameters in the [configuration file](../config.md#omp) which a
 
 ### Pre-Iteration Procedure
 Prior to *Step 1*, `color` is $\pmb{\acute{\zeta}}_s$ found through 
-[`get_spot_colors`](../code/spot_colors/base.md#iss.spot_colors.base.get_spot_colors) 
+[`get_spot_colors`](../code/spot_colors/base.md#coppafish.spot_colors.base.get_spot_colors) 
 by obtaining the [aligned coordinate](get_reference_spots.md#applying-transform) of pixel $s$ in each round and 
 channel and then [reading off the corresponding intensity](get_reference_spots.md#reading-off-intensity).
 
@@ -211,7 +211,7 @@ than the second.
 ### Finding Gene Coefficients
 Once we have decided that a gene is acceptable, in *Step 5* we find the coefficient of that gene as well
 as updating the coefficients of all genes previously fit. On iteration $i$, there will be $i+1$ genes
-to find the coefficient of. The [coefficients are found](../code/omp/coefs.md#iss.omp.coefs.fit_coefs) 
+to find the coefficient of. The [coefficients are found](../code/omp/coefs.md#coppafish.omp.coefs.fit_coefs) 
 through normal least squares:
 
 $$
@@ -230,7 +230,7 @@ $[n_{rounds}n_{channels} \times 1]$.
 ??? "Weighted Least Squares"
 
     If `config['weight_coef_fit'] = True`, then the coefficients are found through 
-    [weighted least squares](../code/omp/coefs.md#iss.omp.coefs.fit_coefs_weight).
+    [weighted least squares](../code/omp/coefs.md#coppafish.omp.coefs.fit_coefs_weight).
     
     In this case, both $\pmb{\zeta}_{s0}$ and every column of $\pmb{G}_i$ are multiplied by
     $\pmb{\omega}_{si}$ where $\pmb{\omega}^2_{si}$ is defined in the 
@@ -321,7 +321,7 @@ When selecting the [best gene](#finding-best-gene), we need to be robust to this
 ## Finding Spots
 ![image](../images/pipeline/omp/spots/coef_image.png#right){width=200, align=right}
 After we have run the *OMP* algorithm on every pixel of a tile, we can 
-[produce an image](../code/omp/spots.md#iss.omp.spots.cropped_coef_image) for each gene 
+[produce an image](../code/omp/spots.md#coppafish.omp.spots.cropped_coef_image) for each gene 
 based on the $n_{pixels}\times n_{genes}$ array of coefficients, $\pmb{\mu}$.
 
 A $200\times 200$ pixel section of such an image for three genes is shown on the right.
@@ -330,9 +330,9 @@ for a very small fraction of genes.
 
 <br clear="right"/>
 
-We then take each gene in turn and [find spots](../code/omp/spots.md#iss.omp.spots.get_spots) 
+We then take each gene in turn and [find spots](../code/omp/spots.md#coppafish.omp.spots.get_spots) 
 which are the local maxima in the coefficient image. These local maxima are 
-[found](../code/find_spots/detect.md#iss.find_spots.detect.detect_spots) in exactly the same way
+[found](../code/find_spots/detect.md#coppafish.find_spots.detect.detect_spots) in exactly the same way
 as in the [*find spots*](find_spots.md#spot-detection) part of the pipeline. But here,
 the threshold intensity is 0 and the neighbourhood (kernel for dilation) is defined by the parameters
 `config['radius_xy']` and `config['radius_z']`.
@@ -349,12 +349,12 @@ the order z-y-x) indicating the expected sign of a coefficient (only values are 
 in the neighbourhood of a spot.
 
 If the file indicated by `config['file_names']['omp_spot_shape']` does not exist, then it will be 
-[computed](../code/omp/spots.md#iss.omp.spots.spot_neighbourhood)
+[computed](../code/omp/spots.md#coppafish.omp.spots.spot_neighbourhood)
 from the spots found on a specific tile. The tile used is the one for which the most spots were found with the 
 *reference spots* method, and it is saved as `nb.omp.shape_tile`. 
 
 
-The psuedocode for [obtaining the spot shape](../code/omp/spots.md#iss.omp.spots.spot_neighbourhood) is given below:
+The psuedocode for [obtaining the spot shape](../code/omp/spots.md#coppafish.omp.spots.spot_neighbourhood) is given below:
 
 ```
 spot_yxz: yxz coordinates of all spots found on the tile
@@ -417,7 +417,7 @@ the local maxima must be positive.
     === "❌"
         ![image](../images/pipeline/omp/spots/shape_no_use.png){width="800"}
 
-In *Step 2*, we just [get the cropped](../code/utils/spot_images.md#iss.utils.spot_images.get_spot_images) 
+In *Step 2*, we just [get the cropped](../code/utils/spot_images.md#coppafish.utils.spot_images.get_spot_images) 
 gene coefficient image in the neighbourhood of the local maxima.
 3 examples are shown as *Spot 1*, *Spot 2* and *Spot 3* below.
 
@@ -439,7 +439,7 @@ and any other spot used in *Step 2* must exceed `config[shape_isolation_dist]`.
     ![image](../images/pipeline/omp/spots/av_shape.png){width="800"}
 
 In *Step 4*, we first take the sign of the spot images and then compute the average of these using 
-[`get_average_spot_image`](../code/utils/spot_images.md#iss.utils.spot_images.get_average_spot_image).
+[`get_average_spot_image`](../code/utils/spot_images.md#coppafish.utils.spot_images.get_average_spot_image).
 We set `av_type = 'mean'` and `symmetry = 'annulus_3d'`. We use this symmetry because we assume that the 
 spot should be circular within a z-plane and symmetric in z. This procedure produces the *Average Sign* image
 shown above. This is saved to the *Notebook* as `nb.omp.spot_shape_float`.
@@ -481,10 +481,10 @@ The coordinates and corresponding gene of spots used to compute `nb.omp.spot_sha
 ### `n_neighbours`
 Once we have found the `spot_shape`, we want to see how each spot resembles this. To do this, 
 if spot $s$, was found on the gene $g$ coefficient image, we first 
-[obtain](../code/utils/spot_images.md#iss.utils.spot_images.get_spot_images) `coef_im_s` which is the gene 
+[obtain](../code/utils/spot_images.md#coppafish.utils.spot_images.get_spot_images) `coef_im_s` which is the gene 
 $g$ coefficient image centered on the coordinates of spot $s$, with the same size as `spot_shape`.
 
-We then [count](../code/omp/spots.md#iss.omp.spots.count_spot_neighbours) the number of pixels for which 
+We then [count](../code/omp/spots.md#coppafish.omp.spots.count_spot_neighbours) the number of pixels for which 
 `coef_im_s` and `spot_shape` both have positive coefficients. We also count the number of pixels for which 
 `coef_im_s` and `spot_shape` both have negative coefficients. Once this has been done for all spots, these 
 are saved as `nb.omp.n_neighbours_pos` and `nb.omp.n_neighbours_neg` respectively.
@@ -516,9 +516,9 @@ is the number of red pixels with green hatching (316) and `nb.omp.n_neighbours_n
 blue pixels with green hatching (192).
 
 #### *OMP* Score
-The final [score](../code/call_spots/qual_check.md#iss.call_spots.qual_check.omp_spot_score), $\gamma$, used for 
-[thresholding](../code/call_spots/qual_check.md#iss.call_spots.qual_check.quality_threshold) 
-*OMP* spots in the [final plot](../view_results.md) and when exporting to 
+The final [score](../code/call_spots/qual_check.md#coppafish.call_spots.qual_check.omp_spot_score), $\gamma$, used for 
+[thresholding](../code/call_spots/qual_check.md#coppafish.call_spots.qual_check.quality_threshold) 
+*OMP* spots in [`coppafish.Viewer`](../view_results.md) and when exporting to 
 [*pciSeq*](../run_code.md#exporting-to-pciseq) is: 
 
 $$

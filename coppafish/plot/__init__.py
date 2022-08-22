@@ -1,4 +1,4 @@
-from .results_viewer.base import viewer
+from .results_viewer.base import Viewer
 from .call_spots import view_spot, view_codes, view_bled_codes, view_bleed_matrix, view_intensity, gene_counts, \
     view_scaled_k_means
 from .call_spots.dot_product import view_score

@@ -157,7 +157,7 @@ class InvalidNotebookPageError(Exception):
 
 
 class Notebook:
-    """A write-only file-synchronized class to keep track of coppafish results.
+    """A write-only file-synchronized class to keep track of *coppaFISH* results.
 
     The `Notebook` object stores all of the outputs of the script.  Almost all
     information saved in the `Notebook` is encapsulated within `"pages"`, from the

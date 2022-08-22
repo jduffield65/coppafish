@@ -28,7 +28,7 @@ file_names page contains all files that are used throughout the pipeline. 'tile'
 
 * **raw_metadata**: *String or None*.
 
-	If .npy raw_extension, this is the name of the .json file in input_dir which contains the required metadata  extracted from the initial .nd2 files. I.e. it is the output of iss/utils/nd2/save_metadata
+	If .npy raw_extension, this is the name of the .json file in input_dir which contains the required metadata  extracted from the initial .nd2 files. I.e. it is the output of coppafish/utils/nd2/save_metadata
 
 * **dye_camera_laser**: *File*.
 
@@ -76,7 +76,7 @@ file_names page contains all files that are used throughout the pipeline. 'tile'
 
 	 `pciseq[1]` is the path where the *ref_spots* method output will be saved. 
 
-	 If files don't exist, they will be created when the function *iss/export_to_pciseq* is run.
+	 If files don't exist, they will be created when the function *coppafish/export_to_pciseq* is run.
 
 * **tile**: *List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]*.
 

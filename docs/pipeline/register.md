@@ -21,13 +21,13 @@ color channels. There may also be small rotational or non-rigid shifts; thus we 
 which can include shifts, scalings, rotations and shears.
 
 ### Starting Transform
-The affine transforms are found using the [iterative-closest point](../code/register/base.md#iss.register.base.icp) 
+The affine transforms are found using the [iterative-closest point](../code/register/base.md#coppafish.register.base.icp) 
 (*ICP*) algorithm. This is highly sensitive to local maxima, so it is initialized with the shifts found in the 
 [*register_initial*](register_initial.md) step, `nb.register_initial.shift`.
 
 The starting transform to a particular round and tile is the same for all channels. The shifts are put into
 the form of an affine transform ($4 \times 3$ array) through 
-[`transform_from_scale_shift`](../code/register/base.md#iss.register.base.transform_from_scale_shift).
+[`transform_from_scale_shift`](../code/register/base.md#coppafish.register.base.transform_from_scale_shift).
 
 ??? example "Starting transform from shifts"
     The code below indicates how the initial shifts ($n_{tiles} \times n_{rounds} \times 3$ array) 
@@ -36,7 +36,7 @@ the form of an affine transform ($4 \times 3$ array) through
     === "Code"
         ``` python
         import numpy as np
-        from iss.register.base import transform_from_scale_shift
+        from coppafish.register.base import transform_from_scale_shift
         t_print = 1
         r_print = 1
         initial_shifts = nb.register_initial.shift   # z shift is in z-pixel units
@@ -91,7 +91,7 @@ the form of an affine transform ($4 \times 3$ array) through
         ```
 
 ### *ICP*
-The pseudocode for the [*ICP*](../code/register/base.md#iss.register.base.icp) algorithm to 
+The pseudocode for the [*ICP*](../code/register/base.md#coppafish.register.base.icp) algorithm to 
 find the affine transform for tile $t$ round $r$, channel $c$ is indicated below.
 The shape of the various arrays are indicated in the comments (#).
 
@@ -115,7 +115,7 @@ The shape of the various arrays are indicated in the comments (#).
     is because the *ICP* algorithm is less likely to fall into local maxima if 
     the spots are quite well separated.
     
-    We deam a spot [isolated](../code/find_spots/base.md#iss.find_spots.base.get_isolated_points) 
+    We deam a spot [isolated](../code/find_spots/base.md#coppafish.find_spots.base.get_isolated_points) 
     if the nearest spot to it is further away than `2 * neighb_dist`.
     Where `neighb_dist = config['register']['neighb_dist_thresh_2d']` if *2D* and
     `config['register']['neighb_dist_thresh_3d']` if *3D*. 
@@ -176,7 +176,7 @@ while i < n_iter:
 ### Checking *ICP* results
 Once the [*ICP*](#icp) algorithm has obtained a transform, `transform[t, r, c]` for each tile, round and channel, 
 we want to determine if they are acceptable. Three criteria must be satisfied for 
-`transform[t, r, c]` to be [considered acceptable](../code/register/base.md#iss.register.base.get_average_transform):
+`transform[t, r, c]` to be [considered acceptable](../code/register/base.md#coppafish.register.base.get_average_transform):
 
 * [Number of matches exceeds threshold](#number-of-matches)
 * [Diagonal elements of `transform[t, r, c]` are near to what we broadly expect them to be](#chromatic-aberration).
@@ -345,7 +345,7 @@ intended to be quite hard to exceed i.e. only really awful shifts will fail in t
 applying the thresholding (the default value of 5 will become 29.95 for our examples).
 
 #### Error - average transform
-When [computing](../code/register/base.md#iss.register.base.get_average_transform) `av_shifts[t, r]`, 
+When [computing](../code/register/base.md#coppafish.register.base.get_average_transform) `av_shifts[t, r]`, 
 we require that for tile $t$, round $r$, at least one channel has not failed
 based on [matches](#number-of-matches) or [scaling](#chromatic-aberration). If they have all failed, 
 it cannot be computed and an error will be raised indicating the problematic tile/round pairs.
@@ -355,7 +355,7 @@ produces few matches or bad scaling for these tile/round pairs.
 If it seems to be a single tile or round that is the problem, it may be worth removing it from 
 `use_tiles`/`use_rounds` and [re-running](../notebook.md#changing-basic_info-mid-pipeline).
 
-When [computing](../code/register/base.md#iss.register.base.get_average_transform) `av_scaling[c]`, 
+When [computing](../code/register/base.md#coppafish.register.base.get_average_transform) `av_scaling[c]`, 
 we require that for channel $c$, at least one round and tile has not failed
 based on [matches](#number-of-matches). If they have all failed, 
 it cannot be computed and an error will be raised indicating the problematic channels.
@@ -470,7 +470,7 @@ distance between `transform[3]` and `av_transform[3]` i.e. between the shift par
     \lambda_1 = \sqrt{0.5\lambda}
     $$
 
-    Hence in [python](../code/register/base.md#iss.register.base.get_transform), 
+    Hence in [python](../code/register/base.md#coppafish.register.base.get_transform), 
     we append to the $y$ array containing `spot_yxz_use` the form of y here so
     it now has shape $(n_{neighb}+4) \times 3$. We also append to the $x$ array containing
     `ref_spot_yxz_use` the form of x here so it now has shape $(n_{neighb}+4) \times 4$.
@@ -570,9 +570,9 @@ but $D_{scale}$ does decrease as $\mu$ increases.
 
 ## Error - too few matches
 After the `register` and `register_debug` *NotebookPages* have been 
-[added](../code/pipeline/run.md#iss.pipeline.run.run_register)
+[added](../code/pipeline/run.md#coppafish.pipeline.run.run_register)
 to the *Notebook*, 
-[`check_transforms`](../code/register/check_transforms.md#iss.register.check_transforms.check_transforms) will be run.
+[`check_transforms`](../code/register/check_transforms.md#coppafish.register.check_transforms.check_transforms) will be run.
 
 This will produce a warning for any tile, round, channel for which
 
@@ -681,7 +681,7 @@ The *Regularized* button will indicate the reference point cloud, transformed ac
     In the case where the *Notebook* does not have the 
     `register_initial` page, the shift will be computed. In the case where the *Notebook* does not have the 
     `register` page, the affine transform will be 
-    [computed](../code/register/base.md#iss.register.base.get_single_affine_transform) with no regularization.
+    [computed](../code/register/base.md#coppafish.register.base.get_single_affine_transform) with no regularization.
 
 
 ## Psuedocode

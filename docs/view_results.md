@@ -1,34 +1,34 @@
 # Viewing the results
 
-Once the pipeline has completed the [`reference_spots`](code/pipeline/run.md#iss.pipeline.run.run_reference_spots) step 
+Once the pipeline has completed the [`reference_spots`](code/pipeline/run.md#coppafish.pipeline.run.run_reference_spots) step 
 such that the [*Notebook*](notebook.md) contains the [*call_spots*](notebook_comments.md#call_spots) and 
 [*ref_spots*](notebook_comments.md#ref_spots) pages, the gene assignments of the spots found can be visualised
-by using [`iss_plot`](code/plot/viewer.md).
+by using [`coppafish.viewer`](code/plot/viewer.md).
 
 This can be opened via the command line or using a python script. It requires either the path to the config file
-(*/Users/user/iss/experiment/settings.ini*) or the path to the notebook file 
-(*/Users/user/iss/experiment/notebook.npz*):
+(*/Users/user/coppafish/experiment/settings.ini*) or the path to the notebook file 
+(*/Users/user/coppafish/experiment/notebook.npz*):
 
 === "Command Line"
 
     ``` bash
-    python -m iss /Users/user/iss/experiment/settings.ini -view
+    python -m coppafish /Users/user/coppafish/experiment/settings.ini -view
     ```
 
 === "Python Script Using Config Path"
     ``` python
-    from iss import Notebook, iss_plot
-    ini_file = '/Users/user/iss/experiment/settings.ini'
-    nb = Notebook(config_file=ini_file)
-    iss_plot(nb)
+    import coppafish as cf
+    ini_file = '/Users/user/coppafish/experiment/settings.ini'
+    nb = cf.Notebook(config_file=ini_file)
+    cf.Viewer(nb)
     ```
 
 === "Python Script Using Notebook Path"
     ``` python
-    from iss import Notebook, iss_plot
-    nb_file = '/Users/user/iss/experiment/notebook.npz'
-    nb = Notebook(nb_file)
-    iss_plot(nb)
+    import coppafish as cf
+    nb_file = '/Users/user/coppafish/experiment/notebook.npz'
+    nb = cf.Notebook(nb_file)
+    cf.Viewer(nb)
     ```
 
 This will then open the napari viewer which will show the spots with a marker indicating which gene they 
@@ -48,12 +48,12 @@ An example is shown below:
 By default, the spots will be plotted on top of the stitched DAPI image (`config['file_names']['big_dapi_image']`) 
 if it exists, otherwise there will not be a background image.
 
-To use a particular background image, when calling `iss_plot` a second argument needs to be given 
-(`iss_plot(nb, background_image)`. There are several options:
+To use a particular background image, when calling `Viewer` a second argument needs to be given 
+(`Viewer(nb, background_image)`. There are several options:
 
 - `'dapi'`: Will use `config['file_names']['big_dapi_image']` if it exists, otherwise will be no background (default).
 - `'anchor'`: Will use `config['file_names']['big_anchor_image']` if it exists, otherwise will be no background.
-- Path to .npy or .npz file: An example would be `'/Users/user/iss/experiment/background_image.npz'`. 
+- Path to .npy or .npz file: An example would be `'/Users/user/coppafish/experiment/background_image.npz'`. 
     This file must contain an image with axis in the order z-y-x (y-x if 2D).
 - Numpy array: Can explicitly given the `[n_z x n_y x n_x]` (`[n_y x n_x]` in *2D*) image desired. 
 
@@ -63,7 +63,7 @@ If a *2D* image is provided for a *3D* dataset, then this image will be used as 
 The color and marker used for each gene can be provided through a *csv* file e.g.
 
 ```
-iss_plot(nb, gene_marker_file='/Users/user/iss/experiment/gene_markers.csv')
+Viewer(nb, gene_marker_file='/Users/user/coppafish/experiment/gene_markers.csv')
 ```
 
 This csv file must contain 
@@ -123,7 +123,7 @@ The slider can then be used to view only spots which satisfy:
     the score range slider values will also change to the last values used with that method.
 
 ### Intensity Threshold
-As well as a score, each spot has an [`intensity`](code/call_spots/qual_check.md#iss.call_spots.get_spot_intensity) 
+As well as a score, each spot has an [`intensity`](code/call_spots/qual_check.md#coppafish.call_spots.get_spot_intensity) 
 value.
 
 The [quality thresholding](run_code.md#thresholding) also means 
@@ -166,7 +166,7 @@ This will then show the expected intensity of each dye in each channel. An examp
     This plot as well as the `view_bled_codes`, `view_codes` and `view_spot` plots below have a *Norm* button. 
 
     When these plots open the colorbar gives the intensity after 
-    [normalisation](code/call_spots/base.md#iss.call_spots.base.color_normalisation) 
+    [normalisation](code/call_spots/base.md#coppafish.call_spots.base.color_normalisation) 
     has been applied to equalise the intensity between color channels i.e. weaker channels are boosted.
     
     To remove this normalisation, press the *Norm* button (*Norm* will go red). 
@@ -201,7 +201,7 @@ the `bleed_matrix` etc. These bled_codes are saved as
 [`call_reference_spots`](code/pipeline/call_reference_spots.md) section of the pipeline.
 
 The top plot shows the bled_code incorporating the calculated 
-[`gene_efficiency`](code/call_spots/base.md#iss.call_spots.base.get_gene_efficiency). 
+[`gene_efficiency`](code/call_spots/base.md#coppafish.call_spots.base.get_gene_efficiency). 
 The `gene_efficiency` is the expected strength of a gene in each round and is given in 
 brackets in the x-tick labels. These bled_codes are saved as 
 [`nb.call_spots.bled_codes_ge`](notebook_comments.md#call_spots) in the 

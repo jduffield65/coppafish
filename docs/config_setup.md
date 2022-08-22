@@ -154,7 +154,7 @@ directory looks like for the config files *3D* and *.npy Raw Data* listed above)
 
     For the .npy case, input_dir must also contain a metadata .json file. 
     This contains the metadata extracted from the initial .nd2 files using the function 
-    [save_metadata](code/utils/nd2.md#iss.utils.nd2.save_metadata).
+    [save_metadata](code/utils/nd2.md#coppafish.utils.nd2.save_metadata).
     An example metadata file is given [here](files/metadata_example.json) for an experiment with 
     3 tiles and 7 channels.
 
@@ -235,7 +235,7 @@ of spots in each channel. Spots in `ref_round` / `ref_channel` will then be used
 and to determine the expected `bled_code` for each gene. 
 
 If the `anchor_round` is used and `ref_round` is specified, `ref_round` will be set to `anchor_round` (last round) 
-[in the notebook](code/pipeline/basic_info.md#iss.pipeline.basic_info.set_basic_info).
+[in the notebook](code/pipeline/basic_info.md#coppafish.pipeline.basic_info.set_basic_info).
 
 ???+warning "Problem with not using anchor"
     With no anchor, the registration is likely to be worse because an imaging round is used as a reference.
@@ -250,7 +250,7 @@ If the `anchor_round` is used and `ref_round` is specified, `ref_round` will be 
 If there is no `anchor_round`, `ref_channel` must be specified instead and it should be the channel in `ref_round` 
 which contains the most spots. If the `anchor_round` is used and both `anchor_channel` and `ref_channel` are specified,
 `ref_channel` will be set to `anchor_channel` 
-[in the notebook](code/pipeline/basic_info.md#iss.pipeline.basic_info.set_basic_info).
+[in the notebook](code/pipeline/basic_info.md#coppafish.pipeline.basic_info.set_basic_info).
 
 ### dapi_channel
 This is the channel in the `anchor_round` that contains the DAPI images. 
@@ -263,17 +263,17 @@ To tophat filter the raw DAPI images first, either
 ### Specifying Dyes
 It is expected that each gene will appear with a single dye in a given round as indicated by `file_names[code_book]`.
 If `dye_names` is not specified, it is assumed as a starting point for the 
-[`bleed_matrix` calculation](code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_bleed_matrix) 
+[`bleed_matrix` calculation](code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_bleed_matrix) 
 that the number of dyes is equal to the number of channels and dye 0 will only appear in channel 0,
 dye 1 will only appear in channel 1 etc. 
 
 If `dye_names` is specified, both `channel_camera` and `channel_laser` must also be specified. This is so that
 a starting point for the `bleed_matrix` calculation can be obtained by 
-[reading off](code/call_spots/bleed_matrix.md#iss.call_spots.bleed_matrix.get_dye_channel_intensity_guess) 
+[reading off](code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_dye_channel_intensity_guess) 
 the expected intensity of each dye in each channel using the file `file_names[dye_camera_laser]`. 
 
 The default `file_names[dye_camera_laser]` is given 
-[here](https://github.com/jduffield65/iss_python/blob/main/iss/setup/dye_camera_laser_raw_intensity.csv) 
+[here](files/dye_camera_laser_raw_intensity.csv)
 but if a dye, camera or laser not indicated in this file are used in an experiment, a new version must be made.
 
 ## Common Additional Parameters
@@ -283,7 +283,7 @@ There are a few other parameters that may often need to be different to those gi
 ### [`extract[r_smooth]`](config.md#extract)
 The parameter `r_smooth` in the extract section specifies whether to smooth with an averaging kernel after
 the raw images have been convolved with a 
-[difference of hanning kernel](code/utils/morphology.md#iss.utils.morphology.base.hanning_diff).
+[difference of hanning kernel](code/utils/morphology.md#coppafish.utils.morphology.base.hanning_diff).
 This will make the extract section of the pipeline slower but will reduce the influence
 of anomalously high or low intensity pixels. It may be particularly appropriate to *3D* data because
 the difference of hanning convolution is done independently on each z-plane but the smoothing
@@ -298,7 +298,7 @@ can incorporate information between z-planes.
     * `r_smooth = 2, 2, 2`: 8.5 seconds
 
     The convolution with the 
-    [difference of hanning kernel](code/utils/morphology.md#iss.utils.morphology.base.hanning_diff)
+    [difference of hanning kernel](code/utils/morphology.md#coppafish.utils.morphology.base.hanning_diff)
     takes 4.1 seconds on the same image so smoothing will make the extract section of the pipeline 
     significantly longer.
 
@@ -352,7 +352,7 @@ used to determine which spots pass a quality thresholding process such that we c
 gene assignments legitimate.
 
 The default values are based on an experiment run with ground truth data, but they will likely need adjusting 
-after investigating the effect of the thresholds using [`iss_plot`](code/plot/viewer.md).
+after investigating the effect of the thresholds using the [`coppafish.Viewer`](code/plot/viewer.md).
 
 
 ### Using a subset of the raw data

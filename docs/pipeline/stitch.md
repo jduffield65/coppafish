@@ -12,7 +12,7 @@ is finished.
 ## Shift
 We need to find the overlap between each pair of neighbouring tiles. To do this, for each tile, we
 ask whether there is a tile to the north of it and if there is we 
-[compute the shift](../code/stitch/shift.md#iss.stitch.shift.compute_shift) between the two.
+[compute the shift](../code/stitch/shift.md#coppafish.stitch.shift.compute_shift) between the two.
 We then ask if there is a tile to the east of it and if there is we compute the shift between the two.
 
 ??? example
@@ -120,7 +120,7 @@ The range used for north/south overlap is saved as `nb.stitch.south_start_shift_
 
 ### Obtaining best shift
 Here is some pseudocode for how we 
-[obtain the best shift](../code/stitch/shift.md#iss.stitch.shift.get_best_shift_3d) between tile 5
+[obtain the best shift](../code/stitch/shift.md#coppafish.stitch.shift.get_best_shift_3d) between tile 5
 and tile 4 from an exhaustive search. The comments (#) give the shape of the indicated array.
 
 ``` 
@@ -158,7 +158,7 @@ best_shift is the shift with the best score
 ```
 
 #### `score`
-In the [score function](../code/stitch/shift.md#iss.stitch.shift.shift_score), the `dist_thresh` parameter 
+In the [score function](../code/stitch/shift.md#coppafish.stitch.shift.shift_score), the `dist_thresh` parameter 
 thus specifies the distance below which neighbours are a good match. It is specified through
 `config['stitch']['neighb_dist_thresh']`. 
 
@@ -168,9 +168,9 @@ the two point clouds with a distance between them less than `config['stitch']['n
 
 #### 3D
 For speed, rather than considering an exhaustive search in three dimensions, we first ignore any shift in z and 
-just find the [best yx shift](../code/stitch/shift.md#iss.stitch.shift.get_best_shift_2d).
+just find the [best yx shift](../code/stitch/shift.md#coppafish.stitch.shift.get_best_shift_2d).
 
-To do this, we [split](../code/stitch/shift.md#iss.stitch.shift.get_2d_slices) 
+To do this, we [split](../code/stitch/shift.md#coppafish.stitch.shift.get_2d_slices) 
 each *3D* point cloud into a number of *2D* point clouds. 
 The number is determined by `config['stitch']['nz_collapse']` to be:
 
@@ -236,7 +236,7 @@ exhaustive search must also be put into $yx$ pixel units.
 ??? example
 
     If the previous example found the best $yx$ shift to be `best_shift_yx`, 
-    the pseudocode below is what [follows](../code/stitch/shift.md#iss.stitch.shift.get_best_shift_3d) 
+    the pseudocode below is what [follows](../code/stitch/shift.md#coppafish.stitch.shift.get_best_shift_3d) 
     this to find the best $yxz$ shift.
 
     ```
@@ -265,7 +265,7 @@ is large enough for us to accept the shift or if we should [widen](#widening-ran
 
 We accept the shift if the score is above a `score_thresh`. This can either be specified through 
 `config['stitch']['shift_score_thresh']` or if this is left empty, it is 
-[computed](../code/stitch/shift.md#iss.stitch.shift.get_score_thresh) for each shift.
+[computed](../code/stitch/shift.md#coppafish.stitch.shift.get_score_thresh) for each shift.
 This computation is done after we have [found](#obtaining-best-shift) 
 the best $yx$ shift to be `best_shift_yx`, as explained by the following pseudocode (also shown
 with [`view_stitch_search`](#view_stitch_search)):
@@ -289,7 +289,7 @@ Where various parameters are specified through the configuration file:
 
 #### [`view_stitch_search`](../code/plot/stitch.md#iss.plot.stitch.view_stitch_search)
 A good debugging tool to visualise how the best shift was computed is 
-[`view_stitch_search`](../code/plot/stitch.md#iss.plot.stitch.view_stitch_search). 
+[`view_stitch_search`](../code/plot/stitch.md#coppafish.plot.stitch.view_stitch_search). 
 
 In *2D*, it shows the [`score`](#score) for all $yx$ shifts in the exhaustive search:
 
@@ -416,7 +416,7 @@ After widening though, we uncover a shift with a score far exceeding `score_thre
 ### Refined search
 After we have found the best $yxz$ shift from the exhaustive search, we find the 
 final shift by looking in the neighbourhood of this shift with a 
-[smaller spacing](../code/stitch/shift.md#iss.stitch.shift.refined_shifts).
+[smaller spacing](../code/stitch/shift.md#coppafish.stitch.shift.refined_shifts).
 Initially, we halve the spacing, then we reduce the spacing to 1.
 
 ??? example
@@ -443,14 +443,14 @@ Initially, we halve the spacing, then we reduce the spacing to 1.
     This search finds the best $yxz$ shift to be `[-1846, 20, 1]` with a `score` of 423.8.
     
 
-This is why the [`view_stitch_search`](../code/plot/stitch.md#iss.plot.stitch.view_stitch_search)
+This is why the [`view_stitch_search`](../code/plot/stitch.md#coppafish.plot.stitch.view_stitch_search)
 plot shows [more detail](#view_stitch_search) near the black **x** and why the black **x** is in a 
 different location from the green **x** even when no widening is required.
 
 ### Updating initial range
 We assume that all tiles overlapping in the same direction should have approximately the same
 shift between them. So, after we have found at least 3 shifts in a given direction 
-which have `score > score_thresh`, we [update](../code/stitch/shift.md#iss.stitch.shift.update_shifts) 
+which have `score > score_thresh`, we [update](../code/stitch/shift.md#coppafish.stitch.shift.update_shifts) 
 our initial exhaustive search range to save time for future tiles.
 
 ??? example
@@ -466,7 +466,7 @@ our initial exhaustive search range to save time for future tiles.
     === "Code"
         ``` python
         import numpy as np
-        from iss.stitch.shift import update_shifts
+        from coppafish.stitch.shift import update_shifts
         y_shifts_found = [-1846, -1853, -1854]
         x_shifts_found = [20, 22, 0]
         z_shifts_found = [1, 0, 0]
@@ -564,8 +564,8 @@ This procedure is done with the [`get_tile_origin`](../code/stitch/tile_origin.m
 the tile origins saved to the *Notebook* as `nb.stitch.tile_origin`.
 
 ## Error - too many bad shifts
-After the `stitch` *NotebookPage* has been [added](../code/pipeline/run.md#iss.pipeline.run.run_stitch)
-to the *Notebook*, [`check_shifts_stitch`](../code/stitch/check_shifts.md#iss.stitch.check_shifts.check_shifts_stitch) 
+After the `stitch` *NotebookPage* has been [added](../code/pipeline/run.md#coppafish.pipeline.run.run_stitch)
+to the *Notebook*, [`check_shifts_stitch`](../code/stitch/check_shifts.md#coppafish.stitch.check_shifts.check_shifts_stitch) 
 will be run.
 
 This will produce a warning for any shift found with `score < score_thresh`.
@@ -578,9 +578,9 @@ looks good enough to continue with the rest of the pipeline or if it should be r
 file parameters (e.g. smaller `config['stitch']['shift_step']` or larger `config['stitch']['shift_max_range']`). 
 
 ## Saving stitched images
-[After](../code/pipeline/run.md#iss.pipeline.run.run_stitch) 
+[After](../code/pipeline/run.md#coppafish.pipeline.run.run_stitch) 
 the `tile_origin` has been computed and the `stitch` *NotebookPage* has been added to the *Notebook*, 
-a stitched image of the `ref_round`/`ref_channel` will be [saved](../code/utils/npy.md#iss.utils.npy.save_stitched) 
+a stitched image of the `ref_round`/`ref_channel` will be [saved](../code/utils/npy.md#coppafish.utils.npy.save_stitched) 
 to the `output_dir` as a npz file with the file name `nb.file_names.big_anchor_image`. 
 
 To save memory, the stitched reference image will be saved as *int16* after rescaling to fill the range.
@@ -589,13 +589,13 @@ We do this because the image is useful for plotting, but we do not care much abo
 ??? note "DAPI"
 
     If `dapi_channel` is specified, a stitched image of the 
-    `anchor_round`/`dapi_channel` will be [saved](../code/utils/npy.md#iss.utils.npy.save_stitched) 
+    `anchor_round`/`dapi_channel` will be [saved](../code/utils/npy.md#coppafish.utils.npy.save_stitched) 
     to the `output_dir` as a npz file with the file name `nb.file_names.big_dapi_image`.
 
     If DAPI [tophat filtering was specified](../config_setup.md#extractr_dapi), the filtered images
     save to `tile_dir` will be loaded in and stitched together. Otherwise, the raw data will be 
     loading in from the `input_dir` and stitched together with no filtering. 
-    I.e. `from_raw == True` in[`save_stitched`](../code/utils/npy.md#iss.utils.npy.save_stitched).
+    I.e. `from_raw == True` in[`save_stitched`](../code/utils/npy.md#coppafish.utils.npy.save_stitched).
 
     The stitched DAPI image will be saved as *uint16* with no rescaling.
 

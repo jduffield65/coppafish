@@ -5,7 +5,7 @@ from .utils.pciseq import export_to_pciseq
 from ._version import __version__
 try:
     from . import plot
-    from .plot import viewer
+    from .plot import Viewer
 except ModuleNotFoundError:
     # So no error if not installed napari/matplotlib etc
     pass
