@@ -6,6 +6,8 @@ with open("coppafish/_version.py", "r") as f:
 with open("README.md", "r") as f:
     long_desc = f.read()
 
+packages = [folder for folder in find_packages() if folder[-5:] != '.test'],  # Get rid of test packages
+
 setup(
     name='coppafish',
     version=__version__,
@@ -19,7 +21,7 @@ setup(
     license='MIT',
     python_requires='>=3.8',
     url='https://jduffield65.github.io/coppafish/',
-    packages=find_packages(),
+    packages=packages,
     install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx'],
