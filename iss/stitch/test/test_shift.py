@@ -12,12 +12,13 @@ class TestShift(unittest.TestCase):
     min_score = None
     min_score_min_dist = 11
     min_score_max_dist = 20
-    min_score_multiplier = 6  # This probably should be less for actual pipeline, about 1.5.
-                              # Needs to be larger here, because few spots so if shift is wrong get very low score
-                              # but if correct, get very high score.
+    min_score_multiplier = 3   # This probably should be less for actual pipeline, about 1.5.
+    # For multi-widen, multiplier to be larger here, because few spots so if shift is wrong get very low score
+    # but if correct, get very high score.
+    min_score_multiplier_multi_widen = 6
     max_noise = 3
     nz_collapse = 30
-    tol = 1
+    tol = 2
 
     @staticmethod
     def get_spots(max_noise, dimensions=2):
@@ -117,14 +118,17 @@ class TestShift(unittest.TestCase):
         if remove == 'transform' or 'both':
             transform_yxz = remove_spots(transform_yxz, np.random.randint(transform_yxz.shape[0] / 8,
                                                                           transform_yxz.shape[0] / 2))
-
+        if multiple_widen:
+            min_score_multiplier = self.min_score_multiplier_multi_widen
+        else:
+            min_score_multiplier = self.min_score_multiplier
         if dimensions == 2:
             actual_transform = np.pad(actual_transform, (0, 1))
             nz_collapse = None
         else:
             nz_collapse = self.nz_collapse
         found_transform, score, score_thresh, debug_info = \
-            compute_shift(spot_yxz, transform_yxz, self.min_score, self.min_score_multiplier, self.min_score_min_dist,
+            compute_shift(spot_yxz, transform_yxz, self.min_score, min_score_multiplier, self.min_score_min_dist,
                           self.min_score_max_dist, self.shift_score_thresh, y_search, x_search, None,
                           [widen, widen, z_widen], max_shift_range, z_scale, nz_collapse, self.shift_spacing_z)
         diff = actual_transform.astype(int) - found_transform.astype(int)
