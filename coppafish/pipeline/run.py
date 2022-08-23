@@ -32,8 +32,6 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
-    # spot_no = 2783  # good dot product spot_no
-    # spot_no = 371046  # good omp dot product spot_no
     run_extract(nb)
     run_find_spots(nb)
     run_stitch(nb)
