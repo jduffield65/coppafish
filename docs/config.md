@@ -897,13 +897,15 @@ The *call_spots* section contains parameters which determine how the `bleed_matr
 
 * **alpha**: *number*.
 
-	Parameter for fitting_standard_deviation. By how much to increase variance as genes added. Set to 0 to get regular dot product TODO: make this comment better 
+	When computing the dot product score, $\Delta_{s0g}$ between spot $s$ and gene $g$, rounds/channels with background already fit contribute less. The larger $\alpha$, the lower the contribution. 
+
+	 Set $\alpha = 0$ to use the normal dot-product with no weighting. 
 
 	Default: `120`
 
 * **beta**: *number*.
 
-	Parameter for fitting_standard_deviation. The variance with no genes added (`coef=0`) is `beta**2`. 
+	Constant used in weighting factor when computing dot product score, $\Delta_{s0g}$ between spot $s$ and gene $g$. 
 
 	Default: `1`
 
@@ -966,13 +968,15 @@ The *omp* section contains parameters which are use to carry out orthogonal matc
 
 * **alpha**: *number*.
 
-	Parameter for fitting_standard_deviation. By how much to increase variance as genes added. TODO: make this comment better 
+	When computing the dot product score, $\Delta_{sig}$ between spot $s$ and gene $g$ on iteration $i$ of *OMP*, rounds/channels with genes already fit to them, contribute less. The larger $\alpha$, the lower the contribution. 
+
+	 Set $\alpha = 0$ to use the normal dot-product with no weighting. 
 
 	Default: `120`
 
 * **beta**: *number*.
 
-	Parameter for fitting_standard_deviation. The variance with no genes added (`coef=0`) is `beta**2`. 
+	Constant used in weighting factor when computing dot product score, $\Delta_{sig}$ between spot $s$ and gene $g$ on iteration $i$ of *OMP*. 
 
 	Default: `1`
 
@@ -1041,7 +1045,7 @@ The *thresholds* section contains the thresholds used to determine which spots p
 
 * **intensity**: *maybe_number*.
 
-	Final accepted reference and OMP spots both require `intensity > thresholds[intensity]`. If not given, will be set to same value as `nb.call_spots.gene_efficiency_intensity_thresh`. intensity for a really intense spot is about 1 so intensity_thresh should be less than this. 
+	Final accepted reference and OMP spots both require `intensity > thresholds[intensity]`. If not given, will be set to same value as `nb.call_spots.gene_efficiency_intensity_thresh`. intensity for a really intense spot is about 1 so `intensity_thresh` should be less than this. 
 
 	Default: `None`
 
@@ -1053,13 +1057,17 @@ The *thresholds* section contains the thresholds used to determine which spots p
 
 * **score_omp**: *number*.
 
-	Final accepted OMP spots are those which pass quality_threshold which is: `score > thresholds[score_omp]` and `intensity > thresholds[intensity]`. `score` is given by: `score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /   (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)` Max score is 1 so `score_thresh` should be less than this. 0.15 if more concerned for missed spots than false positives. 
+	Final accepted OMP spots are those which pass quality_threshold which is: `score > thresholds[score_omp]` and `intensity > thresholds[intensity]`. `score` is given by: `score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /   (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)` Max score is 1 so `score_thresh` should be less than this. 
+
+	 0.15 if more concerned for missed spots than false positives. 
 
 	Default: `0.263`
 
 * **score_omp_multiplier**: *number*.
 
-	Final accepted OMP spots are those which pass quality_threshold which is: `score > thresholds[score_omp]` and `intensity > thresholds[intensity]`. `score` is given by: `score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /   (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)` 0.45 if more concerned for missed spots than false positives. 
+	Final accepted OMP spots are those which pass quality_threshold which is: `score > thresholds[score_omp]` and `intensity > thresholds[intensity]`. `score` is given by: `score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /   (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)` 
+
+	 0.45 if more concerned for missed spots than false positives. 
 
 	Default: `0.95`
 
