@@ -370,8 +370,8 @@ If the failed round, `nb.extract_fail.fail_trc[1]` is not the `anchor_round`, th
 directory including the `scale.txt` file. Then set `config['extract']['scale']` to `new_scale` and re-run:
 
 ``` python
-scale_clip = nb.extract_debug.clip_extract_scale
-new_anchor_scale = scale_clip[scale_clip > 0].min()
+scale_clip = nb.extract_debug_fail.clip_extract_scale
+new_scale = scale_clip[scale_clip > 0].min()
 ```
 
 This is the scale such that all tiles saved so far will not have any clipped pixels.
@@ -382,7 +382,7 @@ Then set `config['extract']['scale_anchor']` to `new_anchor_scale` and re-run:
 
 ``` python
 anchor_scale_clip = \
-    nb.extract_debug.clip_extract_scale[:, anchor_round, anchor_channel]
+    nb.extract_debug_fail.clip_extract_scale[:, anchor_round, anchor_channel]
 new_anchor_scale = anchor_scale_clip[anchor_scale_clip > 0].min()
 ```
 

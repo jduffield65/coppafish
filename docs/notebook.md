@@ -119,7 +119,7 @@ nb.page_name.var_3 = 99 # will raise error as page is added to notebook now
 To delete the variable `var_1` run `del nb.var_1`. Again, you won't be able to do this once the 
 *NotebookPage* has been added to a *Notebook*.
 
-## *coppaFISH* Specific *NotebookPages*
+## *coppafish* Specific *NotebookPages*
 The names of all the *NotebookPages* added to the *Notebook* through the course of the pipeline are given as
 the headers in the [*notebook_comments.json* file](notebook_comments.md). 
 Then the bullet points give all the variables that are added to each *NotebookPage*.

@@ -67,7 +67,7 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
-    - Home: index.md
+    - Home: home.md
     - Getting Started:
         - Setting up the Config File: config_setup.md
         - Running the code: run_code.md
