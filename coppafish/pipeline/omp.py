@@ -109,7 +109,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         if spot_shape.ndim == 3:
             spot_shape = np.moveaxis(spot_shape, 0, 2)  # Put z to last index
 
-        # Deal with case where algorithm has been run for some tiles and data saved
+    # Deal with case where algorithm has been run for some tiles and data saved
     if os.path.isfile(nbp_file.omp_spot_info) and os.path.isfile(nbp_file.omp_spot_coef):
         if spot_shape is None:
             raise ValueError(f'OMP information already exists for some tiles but spot_shape tiff file does not:\n'
@@ -291,9 +291,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
     # Get colors, background_coef and intensity of final spots.
     n_spots = np.sum(not_duplicate)
-    nan_value = -nbp_basic.tile_pixel_value_shift - 1
+    invalid_value = -nbp_basic.tile_pixel_value_shift
     # Only read in used colors first for background/intensity calculation.
-    nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.int32) * nan_value
+    nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.int32) * invalid_value
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
@@ -305,7 +305,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     del spot_colors_norm
 
     # When saving to notebook, include unused rounds/channels.
-    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=np.int32) * nan_value
+    nd_spot_colors = np.ones((n_spots, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=np.int32) * invalid_value
     nd_spot_colors[np.ix_(np.arange(n_spots), nbp_basic.use_rounds, nbp_basic.use_channels)] = nd_spot_colors_use
     nbp.colors = nd_spot_colors
     del nd_spot_colors_use
