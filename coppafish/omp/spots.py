@@ -78,12 +78,12 @@ def cropped_coef_image(pixel_yxz: np.ndarray,
         pixel_yxz: `int [n_pixels x 3]`
             ```pixel_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for pixel ```s```.
             ```pixel_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for pixel ```s```.
-        pixel_coefs: `float [n_pixels x 1]`.
+        pixel_coefs: `float32 [n_pixels x 1]`.
             `pixel_coefs[s]` is the weighting of pixel `s` for a given gene found by the omp algorithm.
              Most are zero hence sparse form used.
 
     Returns:
-        - coef_image - `float [im_size_y x im_size_x x im_size_z]`
+        - coef_image - `float32 [im_size_y x im_size_x x im_size_z]`
             cropped omp coefficient.
             Will be `None` if there are no non-zero coefficients.
         - coord_shift - `int [3]`.
@@ -109,9 +109,9 @@ def cropped_coef_image(pixel_yxz: np.ndarray,
 
         # coef_image at pixels other than nz_pixel_yxz is set to 0.
         if n_z == 1:
-            coef_image = np.zeros((n_y, n_x))
+            coef_image = np.zeros((n_y, n_x), dtype=np.float32)
         else:
-            coef_image = np.zeros((n_y, n_x, n_z))
+            coef_image = np.zeros((n_y, n_x, n_z), dtype=np.float32)
         coef_image[tuple([nz_pixel_yxz[:, j] for j in range(coef_image.ndim)])] = nz_pixel_coefs
         return coef_image, coord_shift
 
