@@ -7,7 +7,7 @@ from coppafish.stitch import compute_shift
 from coppafish.find_spots import get_isolated_points
 from coppafish.pipeline import stitch
 from coppafish.spot_colors import apply_transform
-from coppafish.plot.register.shift import view_shifts
+# from coppafish.plot.register.shift import view_shifts
 import numpy as np
 import os
 import warnings
@@ -88,7 +88,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
                 neighb_dist_thresh = config['register']['neighb_dist_thresh_3d']
             else:
                 neighb_dist_thresh = config['register']['neighb_dist_thresh_2d']
-
+            n_iter = config['register']['n_iter']
             isolated = get_isolated_points(global_yxz * [1, 1, z_scale], 2 * neighb_dist_thresh)
             isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
             global_yxz = global_yxz[isolated, :]
@@ -105,9 +105,12 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             # Get affine transform from separate round to full anchor image
             start_transform = np.eye(4, 3)  # no scaling just shift to start off icp
             start_transform[3] = nbp.shift * [1, 1, z_scale]
-            nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
+            nbp.transform, n_matches, error, is_converged = \
                 get_single_affine_transform(global_yxz, global_yxz_full, z_scale, z_scale_full,
-                                            start_transform, neighb_dist_thresh, image_centre)
+                                            start_transform, neighb_dist_thresh, image_centre, n_iter)
+            nbp.n_matches = int(n_matches)
+            nbp.error = float(error)
+            nbp.is_converged = bool(is_converged)
         nb += nbp  # save results of transform found
     else:
         nbp = nb.reg_to_anchor_info
