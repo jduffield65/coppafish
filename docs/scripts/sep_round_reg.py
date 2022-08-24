@@ -7,17 +7,17 @@ from coppafish.stitch import compute_shift
 from coppafish.find_spots import get_isolated_points
 from coppafish.pipeline import stitch
 from coppafish.spot_colors import apply_transform
-# from coppafish.plot.register.shift import view_shifts
 import numpy as np
 import os
 import warnings
-import matplotlib
 try:
     import jax.numpy as jnp
 except ImportError:
     import numpy as jnp
-matplotlib.use('Qt5Agg')
-matplotlib.pyplot.style.use('dark_background')
+# Uncomment these lines and view_shifts line in code to produce view_shifts plot
+# import matplotlib
+# from coppafish.plot.register.shift import view_shifts
+# matplotlib.pyplot.style.use('dark_background')
 
 
 def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save: List,
@@ -99,8 +99,13 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
                 get_shift(config['register_initial'], global_yxz, global_yxz_full,
                           z_scale, z_scale_full, nb.basic_info.is_3d)
 
+            # # Uncomment to produce plot showing best shift found
             # view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
-            #             debug_info['scores_3d'], nbp.shift, nbp.shift_score_thresh)
+            #             debug_info['scores_3d'], nbp.shift, debug_info['min_score_2d'],
+            #             debug_info['shift_2d_initial'],
+            #             nbp.shift_score_thresh, debug_info['shift_thresh'],
+            #             config['register_initial']['shift_score_thresh_min_dist'],
+            #             config['register_initial']['shift_score_thresh_max_dist'])
 
             # Get affine transform from separate round to full anchor image
             start_transform = np.eye(4, 3)  # no scaling just shift to start off icp
