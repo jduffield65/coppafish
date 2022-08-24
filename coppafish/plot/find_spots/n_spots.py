@@ -22,13 +22,21 @@ def n_spots_grid(nb: Notebook, n_spots_thresh: Optional[int] = None):
         n_spots_thresh = int(np.ceil(n_spots_thresh))
     use_tiles = np.asarray(nb.basic_info.use_tiles)
     use_rounds = np.asarray(nb.basic_info.use_rounds)  # don't consider anchor in this analysis
-    use_channels = np.asarray(nb.basic_info.use_channels)
-    spot_no = nb.find_spots.spot_no[np.ix_(use_tiles, use_rounds, use_channels)]
-    spot_no = np.moveaxis(spot_no, 1, 2)  # put rounds last
-    spot_no = spot_no.reshape(len(use_tiles), -1).T  # spot_no[n_rounds, t] is now spot_no[t, r=0, c=1]
-    n_round_channels = len(use_rounds) * len(use_channels)
-    y_labels = np.tile(use_rounds, len(use_channels))
-    vmax = spot_no.max()  # clip colorbar at max of imaging rounds/channels because anchor can be a lot higher
+    if len(use_rounds) > 0:
+        use_channels = np.asarray(nb.basic_info.use_channels)
+        spot_no = nb.find_spots.spot_no[np.ix_(use_tiles, use_rounds, use_channels)]
+        spot_no = np.moveaxis(spot_no, 1, 2)  # put rounds last
+        spot_no = spot_no.reshape(len(use_tiles), -1).T  # spot_no[n_rounds, t] is now spot_no[t, r=0, c=1]
+        n_round_channels = len(use_rounds) * len(use_channels)
+        y_labels = np.tile(use_rounds, len(use_channels))
+        vmax = spot_no.max()  # clip colorbar at max of imaging rounds/channels because anchor can be a lot higher
+    else:
+        # Deal with case where only anchor round
+        use_channels = np.asarray([])
+        spot_no = np.zeros((0, len(use_tiles)), dtype=np.int32)
+        n_round_channels = 0
+        y_labels = np.zeros(0, dtype=int)
+        vmax = None
     if nb.basic_info.use_anchor:
         anchor_spot_no = nb.find_spots.spot_no[use_tiles, nb.basic_info.anchor_round,
                                                nb.basic_info.anchor_channel][np.newaxis]
@@ -36,6 +44,8 @@ def n_spots_grid(nb: Notebook, n_spots_thresh: Optional[int] = None):
         y_labels = y_labels.astype(str).tolist()
         y_labels += ['Anchor']
         n_round_channels += 1
+        if vmax is None:
+            vmax = spot_no.max()
     fig, ax = plt.subplots(1, 1, figsize=(np.clip(5+len(use_tiles)/2, 3, 18), 12))
     subplot_adjust = [0.12, 1, 0.07, 0.9]
     fig.subplots_adjust(left=subplot_adjust[0], right=subplot_adjust[1],
