@@ -45,7 +45,7 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/jduffield65/iss_python
+      link: https://github.com/jduffield65/coppafish
       name: Github Repository
 
 markdown_extensions:
