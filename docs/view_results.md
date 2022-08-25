@@ -270,6 +270,10 @@ spot in [*select* mode](#space-change-to-select-mode):
 Pressing the *Background* button (*Background* will turn red), shows what the `spot_color` looks like after the 
 background *genes* [have been removed](pipeline/call_reference_spots.md#background).
 
+The `spot_color` and `bled_code` that are used when computing the 
+[dot product score](pipeline/call_reference_spots.md#dot-product-score) are shown when the 
+*Background* button is red but the *Norm* button is white.
+
 The subsequent plots all show the same spot as used here.
 
 ### *s*: [`view_spot`](code/plot/call_spots.md#view_spot)

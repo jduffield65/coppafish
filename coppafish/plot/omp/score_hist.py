@@ -270,8 +270,8 @@ class histogram_2d_score(histogram_score):
 
         Args:
             nb: *Notebook* containing at least `call_spots` page.
-            method: `'anchor'` or `'omp'`.
-                Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
+            score_omp_multiplier: Can specify the value of score_omp_multiplier to use to compute omp score.
+                If `None`, will use value in config file.
         """
         # large hist_spacing so quick as we change it anway
         super().__init__(nb, 'omp', score_omp_multiplier, False, 0.5, False)

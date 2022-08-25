@@ -133,6 +133,9 @@ then the procedure is
 this step adds variables to the [`ref_spots`](notebook_comments.md#ref_spots) page as well as creating the 
 [`call_spots`](notebook_comments.md#call_spots) page.
 
+The [*OMP*](pipeline/omp.md#re-run-call_spots_omp) section is slightly different too because it saves files to 
+the output directory.
+
 ## Exporting to pciSeq
 To save the results of the pipeline as a .csv file which can then be plotted with pciSeq, one  of 
 the following can be run (assuming path to the config file is */Users/user/coppafish/experiment/settings.ini* 

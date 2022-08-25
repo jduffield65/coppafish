@@ -50,8 +50,8 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
     neighbour = neighbour.flatten()
     distances = distances.flatten()
     use = distances < dist_thresh
-    n_matches = np.sum(use)
-    error = np.sqrt(np.mean(distances[use] ** 2))
+    n_matches = int(np.sum(use))
+    error = float(np.sqrt(np.mean(distances[use] ** 2)))
     if reg_transform is None:
         transform = np.linalg.lstsq(yxz_base_pad[use, :], yxz_target[neighbour[use], :], rcond=None)[0]
     else:
@@ -408,7 +408,7 @@ def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: n
             get_transform(spot_yxz_base, transform, spot_yxz_transform, neighb_dist_thresh,
                           tree_transform, reg_constant_scale, reg_constant_shift, reg_transform)
 
-        is_converged = np.abs(neighbour - neighbour_last).max() == 0
+        is_converged = bool(np.abs(neighbour - neighbour_last).max() == 0)
         if is_converged:
             break
     return transform, n_matches, error, is_converged

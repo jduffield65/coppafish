@@ -178,7 +178,7 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
 
 
 def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_codes: np.ndarray,
-                        bleed_matrix: np.ndarray, min_spots,
+                        bleed_matrix: np.ndarray, min_spots: int,
                         max_gene_efficiency: float = np.inf,
                         min_gene_efficiency: float = 0,
                         min_gene_efficiency_factor: float = 1) -> np.ndarray:

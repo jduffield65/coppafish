@@ -51,7 +51,7 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, spot_
             score was largest.
         dp_norm_shift: Normalisation constant for single round used for dot product calculation.
             I.e. `nb.call_spots.dp_norm_shift`.
-        background_var - `float [n_spots x n_rounds_use x n_channels_use]`.
+        background_var: `float [n_spots x n_rounds_use x n_channels_use]`.
             inverse of the weighting used for dot product score calculation.
 
     Returns:

@@ -22,6 +22,19 @@ The *OMP* section takes quite a long time, so [`config['omp']['use_z']`](../conf
 
 !!! note "Note: `config` in this section, with no section specified, means [`config['omp']`](../config.md#omp)"
 
+## Re-run [`call_spots_omp`](../code/pipeline/omp.md)
+To re-run the *OMP* section, the [files](#saving-omp-results) generated during the *OMP* step
+which were saved at the paths indicated by:
+
+* `nb.file_names.omp_spot_shape`
+* `nb.file_names.omp_spot_info`
+* `nb.file_names.omp_spot_coef`
+
+need to be deleted or re-named (alternatively the `omp_spot_shape`, `omp_spot_info` and `omp_spot_coef` 
+parameters in the [*file names*](../config.md#file_names) section of the configuration file can be changed). This is
+so the old data is not loaded in when the *OMP* part of the pipeline is run.
+Other than that, the [usual instructions](../run_code.md#re-run-section) can be followed.
+
 ## Why bother with *OMP*?
 There are two main reasons to use the *OMP* method for finding the distribution of genes instead of
 [*reference spots*](call_reference_spots.md). The first is that *OMP* fits multiple coefficients to every 

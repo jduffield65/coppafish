@@ -13,8 +13,8 @@ from typing import Optional, List, Tuple
 plt.style.use('dark_background')
 
 
-def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> Tuple[np.ndarray, List[float],
-                                                                                     List[float]]:
+def get_coef_images(nb: Notebook, spot_no: int, method: str, im_size: List[int]) -> Tuple[np.ndarray, List[float],
+                                                                                          List[float]]:
     """
     Gets image of $yxz$ dimension `(2*im_size[0]+1) x (2*im_size[1]+1) x (2*im_size[2]+1)` of the coefficients
     fitted by omp for each gene.

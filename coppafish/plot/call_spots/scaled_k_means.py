@@ -3,7 +3,6 @@ from matplotlib import pyplot as plt
 from ...setup import Notebook
 from .score_calc import background_fitting
 from ...call_spots.bleed_matrix import get_bleed_matrix
-
 plt.style.use('dark_background')
 
 
@@ -72,7 +71,7 @@ def view_scaled_k_means(nb: Notebook, r: int = 0, check: bool = False):
         for d in range(n_use_dyes):
             ax[0, i].text(d + 1, np.percentile(box_data[d], 25), "{:.1e}".format(len(box_data[d])),
                           horizontalalignment='center', color=bp['medians'][d].get_color(), size=5, clip_on=True)
-            im = ax[1, i].imshow(bleed_matrix[i], extent=[0.5, n_use_dyes + 0.5, -0.5, n_use_channels - 0.5],
+            im = ax[1, i].imshow(bleed_matrix[i], extent=[0.5, n_use_dyes + 0.5, n_use_channels - 0.5, -0.5],
                                  aspect='auto', vmin=0, vmax=vmax)
         if nb.basic_info.dye_names is None:
             ax[1, i].set_xticks(ticks=np.arange(1, n_use_dyes + 1), labels=nb.basic_info.use_dyes)
@@ -81,6 +80,7 @@ def view_scaled_k_means(nb: Notebook, r: int = 0, check: bool = False):
             fig.subplots_adjust(bottom=subplot_adjust[2])
             ax[1, i].set_xticks(ticks=np.arange(1, n_use_dyes + 1),
                                 labels=np.asarray(nb.basic_info.dye_names)[nb.basic_info.use_dyes], rotation=45)
+        ax[1, i].set_yticks(ticks=np.arange(n_use_channels), labels=nb.basic_info.use_channels)
         ax[0, i].set_title(titles[i], fontsize=10)
         if i == 0:
             ax[0, i].set_ylabel('Dot Product to Best Dye Vector')
