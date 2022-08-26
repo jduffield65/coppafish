@@ -1,6 +1,7 @@
 import numpy as np
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
 from ..setup.notebook import NotebookPage
+import warnings
 
 
 class OutOfBoundsError(Exception):
@@ -133,25 +134,25 @@ def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage):
         use_rounds = np.arange(n_rounds)
         use_channels = np.arange(n_channels)
     else:
-        raise ColorInvalidError(colors, nbp_basic, invalid_value)
+        ColorInvalidWarning(colors, nbp_basic, invalid_value)
 
     ignore_rounds = np.setdiff1d(np.arange(n_rounds), use_rounds)
     for r in ignore_rounds:
         unique_vals = np.unique(colors[:, r, :])
         for val in unique_vals:
             if not invalid_value in unique_vals:
-                raise ColorInvalidError(colors, nbp_basic, invalid_value, round_no=r)
+                ColorInvalidWarning(colors, nbp_basic, invalid_value, round_no=r)
             if not np.array_equal(val, invalid_value, equal_nan=True):
-                raise ColorInvalidError(colors, nbp_basic, invalid_value, round_no=r)
+                ColorInvalidWarning(colors, nbp_basic, invalid_value, round_no=r)
 
     ignore_channels = np.setdiff1d(np.arange(n_channels), use_channels)
     for c in ignore_channels:
         unique_vals = np.unique(colors[:, :, c])
         for val in unique_vals:
             if not invalid_value in unique_vals:
-                raise ColorInvalidError(colors, nbp_basic, invalid_value, channel_no=c)
+                ColorInvalidWarning(colors, nbp_basic, invalid_value, channel_no=c)
             if not np.array_equal(val, invalid_value, equal_nan=True):
-                raise ColorInvalidError(colors, nbp_basic, invalid_value, channel_no=c)
+                ColorInvalidWarning(colors, nbp_basic, invalid_value, channel_no=c)
 
     # see if any spots contain invalid_values.
     use_colors = colors[np.ix_(np.arange(n_spots), use_rounds, use_channels)]
@@ -165,14 +166,14 @@ def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage):
         # round, channel number in spot_colors different from in use_spot_colors.
         r = np.arange(n_rounds)[nan_codes[1][0]]
         c = np.arange(n_channels)[nan_codes[2][0]]
-        raise ColorInvalidError(colors, nbp_basic, invalid_value, round_no=r, channel_no=c, code_no=s)
+        ColorInvalidWarning(colors, nbp_basic, invalid_value, round_no=r, channel_no=c, code_no=s)
 
 
-class ColorInvalidError(Exception):
-    def __init__(self, colors: np.ndarray, nbp_basic: NotebookPage, invalid_value: float, round_no: Optional[int] = None,
-                 channel_no: Optional[int] = None, code_no: Optional[int] = None):
+class ColorInvalidWarning:
+    def __init__(self, colors: np.ndarray, nbp_basic: NotebookPage, invalid_value: float,
+                 round_no: Optional[int] = None, channel_no: Optional[int] = None, code_no: Optional[int] = None):
         """
-        Error raised because `spot_colors` contains a `invalid_value` where it should not.
+        Warning raised because `spot_colors` contains a `invalid_value` where it should not.
 
         Args:
             colors: `int or float [n_codes x n_rounds x n_channels]`
@@ -202,4 +203,4 @@ class ColorInvalidError(Exception):
                            f"total_channels = {nbp_basic.n_channels}\n" \
                            f"nor the number of use_rounds = {len(nbp_basic.use_rounds)} and use_channels = " \
                            f"{len(nbp_basic.use_channels)}"
-        super().__init__(self.message)
+        warnings.warn(self.message)
