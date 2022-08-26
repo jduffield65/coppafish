@@ -32,7 +32,7 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
     z_scale = [1, 1, nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy]
     point_clouds = []
     # 1st point cloud is imaging one as does not change
-    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r, c)]
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r, c, nb.find_spots.spot_no)]
     # only keep isolated spots, those whose second neighbour is far away
     # Do this only for imaging point cloud as that is what is done in pipeline/register
     isolated = get_isolated_points(point_clouds[0] * z_scale, 2 * neighb_dist_thresh)
@@ -41,7 +41,7 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
     # 2nd is untransformed reference point cloud
     r_ref = nb.basic_info.ref_round
     c_ref = nb.basic_info.ref_channel
-    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref)]
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref, nb.find_spots.spot_no)]
     z_scale = z_scale[2]
 
     # Add shifted reference point cloud
@@ -151,7 +151,7 @@ def view_icp_reg(nb: Notebook, t: int, r: int, c: int, reg_constant: Optional[Li
         tile_sz = np.array([nb.basic_info.tile_sz, nb.basic_info.tile_sz, nb.basic_info.nz], dtype=np.int16)
     point_clouds = []
     # 1st point cloud is imaging one as does not change
-    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r, c)]
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r, c, nb.find_spots.spot_no)]
     # only keep isolated spots, those whose second neighbour is far away
     # Do this only for imaging point cloud as that is what is done in pipeline/register
     isolated = get_isolated_points(point_clouds[0] * z_scale, 2 * neighb_dist_thresh)
@@ -160,7 +160,7 @@ def view_icp_reg(nb: Notebook, t: int, r: int, c: int, reg_constant: Optional[Li
     # 2nd is untransformed reference point cloud
     r_ref = nb.basic_info.ref_round
     c_ref = nb.basic_info.ref_channel
-    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref)]
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref, nb.find_spots.spot_no)]
     z_scale = z_scale[2]
 
     # 3rd is ref point cloud transformed according to affine transform with no regularisation

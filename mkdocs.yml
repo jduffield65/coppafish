@@ -1,6 +1,6 @@
 site_name: coppafish
-repo_url: https://github.com/jduffield65/coppafish
-repo_name: jduffield65/coppafish
+repo_url: https://github.com/reillytilbury/coppafish
+repo_name: reillytilbury/coppafish
 
 theme:
   name: material
@@ -45,7 +45,7 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/jduffield65/iss_python
+      link: https://github.com/reillytilbury/coppafish
       name: Github Repository
 
 markdown_extensions:

@@ -271,8 +271,8 @@ def view_stitch_search(nb: Notebook, t: int, direction: Optional[str] = None):
         if t_neighb[j] in nb.basic_info.use_tiles:
             print(f'Finding shift between tiles {t} and {t_neighb[j][0]} ({direction_label[j]} overlap)')
             shift, score, score_thresh, debug_info = \
-                compute_shift(spot_yxz(nb.find_spots.spot_details, t, r, c),
-                              spot_yxz(nb.find_spots.spot_details, t_neighb[j][0], r, c),
+                compute_shift(spot_yxz(nb.find_spots.spot_details, t, r, c, nb.find_spots.spot_no),
+                              spot_yxz(nb.find_spots.spot_details, t_neighb[j][0], r, c, nb.find_spots.spot_no),
                               config['shift_score_thresh'],
                               config['shift_score_thresh_multiplier'],
                               config['shift_score_thresh_min_dist'],

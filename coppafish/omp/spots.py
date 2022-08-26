@@ -109,9 +109,9 @@ def cropped_coef_image(pixel_yxz: np.ndarray,
 
         # coef_image at pixels other than nz_pixel_yxz is set to 0.
         if n_z == 1:
-            coef_image = np.zeros((n_y, n_x))
+            coef_image = np.zeros((n_y, n_x), dtype = np.float32)
         else:
-            coef_image = np.zeros((n_y, n_x, n_z))
+            coef_image = np.zeros((n_y, n_x, n_z), dtype = np.float32)
         coef_image[tuple([nz_pixel_yxz[:, j] for j in range(coef_image.ndim)])] = nz_pixel_coefs
         return coef_image, coord_shift
 

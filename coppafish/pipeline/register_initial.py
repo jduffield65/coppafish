@@ -6,7 +6,8 @@ from ..setup.notebook import NotebookPage
 import warnings
 
 
-def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray) -> NotebookPage:
+def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray) \
+        -> NotebookPage:
     """
     This finds the shift between ref round/channel to each imaging round for each tile.
     These are then used as the starting point for determining the affine transforms in `pipeline/register.py`.
@@ -17,9 +18,12 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     Args:
         config: Dictionary obtained from `'register_initial'` section of config file.
         nbp_basic: `basic_info` notebook page
-        spot_details: `int [n_spots x 7]`.
-            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
+        spot_details: `int [n_spots x 3]`.
+            `spot_details[s]` is `[ y, x, z]` of spot `s`.
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+        spot_no: 'int[n_tiles x n_rounds x n_channels]'
+            'spot_no[t,r,c]' is num_spots found on that [t,r,c]
+            This is saved on find_spots notebook page
 
     Returns:
         `NotebookPage[register_initial]` - Page contains information about how shift between ref round/channel
@@ -65,7 +69,8 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
             for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'round': r, 'tile': t})
                 shift[t, r], shift_score[t, r], shift_score_thresh[t, r] = \
-                    compute_shift(spot_yxz(spot_details, t, r_ref, c_ref), spot_yxz(spot_details, t, r, c_imaging),
+                    compute_shift(spot_yxz(spot_details, t, r_ref, c_ref, spot_no),
+                                  spot_yxz(spot_details, t, r, c_imaging, spot_no),
                                   config['shift_score_thresh'], config['shift_score_thresh_multiplier'],
                                   config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
                                   config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
@@ -106,9 +111,9 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
                 continue
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
-            shift[t, r], shift_score[t, r] = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref),
-                                                           spot_yxz(spot_details, t, r, c_imaging), 0, None, None,
-                                                           None, config['neighb_dist_thresh'], shifts[r]['y'],
+            shift[t, r], shift_score[t, r] = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref, spot_no),
+                                                           spot_yxz(spot_details, t, r, c_imaging, spot_no), 0, None,
+                                                           None, None, config['neighb_dist_thresh'], shifts[r]['y'],
                                                            shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
                                                            config['nz_collapse'], config['shift_step'][2])[:2]
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"

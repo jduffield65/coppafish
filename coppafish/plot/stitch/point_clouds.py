@@ -230,10 +230,10 @@ def view_stitch_overlap(nb: Notebook, t: int, direction: str = 'south'):
     c = nb.basic_info.ref_channel
     point_clouds = []
     # add global coordinates of neighbour tile as point cloud that is always present.
-    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t_neighb, r, c) +
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t_neighb, r, c, nb.find_spots.spot_no) +
                                    nb.stitch.tile_origin[t_neighb]]
 
-    local_yxz_t = spot_yxz(nb.find_spots.spot_details, t, r, c)
+    local_yxz_t = spot_yxz(nb.find_spots.spot_details, t, r, c, nb.find_spots.spot_no)
     # Add point cloud for tile t assuming no overlap
     point_clouds = point_clouds + [local_yxz_t + nb.stitch.tile_origin[t_neighb] + no_overlap_shift]
     # Add point cloud assuming expected overlap

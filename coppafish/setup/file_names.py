@@ -56,12 +56,16 @@ def set_file_names(nb, nbp):
     else:
         nbp.psf = None
 
+    # Add files to save find_spot results after each tile as security if hit any bugs
+    config['spot_details_info'] = config['spot_details_info'].replace('.npy', '')
+    nbp.spot_details_info = os.path.join(config['output_dir'], config['spot_details_info'] + '.npz')
+
     # where to save omp_spot_shape, indicating average spot shape in omp coefficient sign images.
     config['omp_spot_shape'] = config['omp_spot_shape'].replace('.npy', '')
     omp_spot_shape_file = os.path.join(config['output_dir'], config['omp_spot_shape'] + '.npy')
     nbp.omp_spot_shape = omp_spot_shape_file
 
-    # Add files so save omp results after each tile as security if hit any bugs
+    # Add files to save omp results after each tile as security if hit any bugs
     config['omp_spot_info'] = config['omp_spot_info'].replace('.npy', '')
     nbp.omp_spot_info = os.path.join(config['output_dir'], config['omp_spot_info'] + '.npy')
     config['omp_spot_coef'] = config['omp_spot_coef'].replace('.npz', '')

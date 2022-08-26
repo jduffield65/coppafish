@@ -1,6 +1,6 @@
 from ..spot_colors import get_spot_colors
 from ..call_spots import get_non_duplicate
-from ..find_spots import spot_yxz
+from .. import find_spots as fs
 import numpy as np
 try:
     import jax.numpy as jnp
@@ -9,8 +9,9 @@ except ImportError:
 from ..setup.notebook import NotebookPage
 
 
-def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_details: np.ndarray,
+def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_find_spots: NotebookPage,
                         tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
+
     """
     This takes each spot found on the reference round/channel and computes the corresponding intensity
     in each of the imaging rounds/channels.
@@ -31,9 +32,8 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_de
     Args:
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
-        spot_details: `int [n_spots x 7]`.
-            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
-            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+        nbp_find_spots: 'find_spots' notebook page.
+            Here we will use find_spots, spot_no and isolated_spots variables from this page
         tile_origin: `float [n_tiles x 3]`.
             `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
             yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
@@ -42,6 +42,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_de
             `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
             tile `t`, round `r`, channel `c`.
             This is saved in the register notebook page i.e. `nb.register.transform`.
+
 
     Returns:
         `NotebookPage[ref_spots]` - Page containing intensity of each reference spot on each imaging round/channel.
@@ -54,8 +55,10 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, spot_de
     all_local_yxz = np.zeros((0, 3), dtype=np.int16)
     all_isolated = np.zeros(0, dtype=bool)
     all_local_tile = np.zeros(0, dtype=np.int16)
-    for t in nbp_basic.use_tiles:
-        t_local_yxz, t_isolated = spot_yxz(spot_details, t, r, c, return_isolated=True)
+
+    for t in range(nbp_basic.n_tiles):
+        t_local_yxz = fs.spot_yxz(nbp_find_spots.spot_details, t, r, c, nbp_find_spots.spot_no)
+        t_isolated = nbp_find_spots.isolated_spots
         if np.shape(t_local_yxz)[0] > 0:
             all_local_yxz = np.append(all_local_yxz, t_local_yxz, axis=0)
             all_isolated = np.append(all_isolated, t_isolated.astype(bool), axis=0)

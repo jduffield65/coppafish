@@ -32,8 +32,6 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
         `Notebook` containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
-    # spot_no = 2783  # good dot product spot_no
-    # spot_no = 371046  # good omp dot product spot_no
     run_extract(nb)
     run_find_spots(nb)
     run_stitch(nb)
@@ -124,7 +122,7 @@ def run_stitch(nb: setup.Notebook):
     """
     config = nb.get_config()
     if not nb.has_page("stitch"):
-        nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
+        nbp_debug = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no)
         nb += nbp_debug
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
@@ -163,12 +161,12 @@ def run_register(nb: setup.Notebook):
         nb.change_page_name("register_initial_debug", "register_initial")
     if not nb.has_page("register_initial"):
         nbp_initial = register_initial(config['register_initial'], nb.basic_info,
-                                             nb.find_spots.spot_details)
+                                             nb.find_spots.spot_details, nb.find_spots.spot_no)
         nb += nbp_initial
     else:
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
-        nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details,
+        nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
                                   nb.register_initial.shift)
         nb += nbp
         nb += nbp_debug
@@ -201,7 +199,7 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
             if they are all set to `None`, otherwise an error will occur.
     """
     if not nb.has_page('ref_spots'):
-        nbp = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots.spot_details,
+        nbp = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots,
                                   nb.stitch.tile_origin, nb.register.transform)
         nb += nbp  # save to Notebook with gene_no, score, score_diff, intensity = None.
                    # These will be added in call_reference_spots

@@ -6,7 +6,7 @@ from ..setup.notebook import NotebookPage
 from typing import Tuple
 
 
-def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
+def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray,
              initial_shift: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
     """
     This finds the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
@@ -18,9 +18,11 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
     Args:
         config: Dictionary obtained from `'register'` section of config file.
         nbp_basic: `basic_info` notebook page
-        spot_details: `int [n_spots x 7]`.
-            `spot_details[s]` is `[tile, round, channel, isolated, y, x, z]` of spot `s`.
+        spot_details: `int [n_spots x 3]`.
+            `spot_details[s]` is `[ y, x, z]` of spot `s`.
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+        spot_no: 'int[n_tiles x n_rounds x n_channels]'
+            'spot_no[t,r,c]' is num_spots found on that [t,r,c]
         initial_shift: `int [n_tiles x n_rounds x 3]`.
             `initial_shift[t, r]` is the yxz shift found that is applied to tile `t`, `ref_round` to take it to
             tile `t`, round `r`. Units: `[yx_pixels, yx_pixels, z_pixels]`.
@@ -47,12 +49,13 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
     n_matches_thresh = np.zeros_like(spot_yxz_imaging, dtype=float)
     initial_shift = initial_shift.astype(float)
     for t in nbp_basic.use_tiles:
-        spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel)
+        spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
+                                   spot_no)
         spot_yxz_ref[t] = (spot_yxz_ref[t] - nbp_basic.tile_centre) * z_scale
         for r in nbp_basic.use_rounds:
             initial_shift[t, r] = initial_shift[t, r] * z_scale  # put z initial shift into xy pixel units
             for c in nbp_basic.use_channels:
-                spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c)
+                spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no)
                 spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - nbp_basic.tile_centre) * z_scale
                 if neighb_dist_thresh < 50:
                     # only keep isolated spots, those whose second neighbour is far away

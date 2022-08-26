@@ -1,36 +1,43 @@
 from scipy.spatial import KDTree
 from .. import utils
 import numpy as np
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 
-def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int,
-             return_isolated: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int, spot_no: np.ndarray) -> np.ndarray:
     """
-    Function which gets yxz positions (and whether isolated) of spots on a particular ```tile```, ```round```, ```
-    channel``` from ```spot_details``` in find_spots notebook page.
+    Function which gets yxz positions of spots on a particular ```tile```, ```round```, ```
+    channel``` from ```spot_details``` in find_spots notebook page. Initially this just cropped spot_details array
+    with 7 columns and n_spots rows. Now spot_details is just an n_spots * 3 column array and tile, round and channel
+    are computed from number of spots on each t,r,c
 
     Args:
-        spot_details: ```int16 [n_spots x 7]```.
+        spot_details: ```int16 [n_spots x 3]```.
             ```spot_details[s]``` is ```[tile, round, channel, isolated, y, x, z]``` of spot ```s```.
         tile: Tile of desired spots.
         round: Round of desired spots.
         channel: Channel of desired spots.
-        return_isolated: Whether to return isolated status of each spot.
+        spot_no: num_tile * num_rounds * num_channels array containing num_spots on each [t,r,c]
 
     Returns:
         - ```spot_yxz``` - ```int16 [n_trc_spots x 3]```.
             yxz coordinates of spots on chosen ```tile```, ```round``` and ```channel```.
-        - ```spot_isolated``` - ```bool [n_trc_spots]``` (Only returned if ```return_isolated = True```).
-            Isolated status (```1``` if isolated, ```0``` if not) of the spots.
+
     """
-    #     Function which gets yxz positions (and whether isolated) of spots on a particular ```tile```, ```round```,
+    #     Function which gets yxz positions of spots on a particular ```tile```, ```round```,
     #     ```channel``` from ```spot_details``` in find_spots notebook page.
-    use = np.all((spot_details[:, 0] == tile, spot_details[:, 1] == round, spot_details[:, 2] == channel), axis=0)
-    if return_isolated:
-        return spot_details[use, 4:], spot_details[use, 3]
-    else:
-        return spot_details[use, 4:]
+
+    # spots are read in by looping over rounds, channels, then tiles we need to sum up to but not including the number
+    # of spots in all rounds before r, then sum round r with all tiles up to (but not incl) tile t, then sum round r,
+    # tile t and all channels up to (but not including) channel c. This gives number of spots found before [t,r,c] ie:
+    # start index. To get end_index, just add number of spots on [t,r,c]
+
+    start_index = np.sum(spot_no[:tile, :, :]) + np.sum(spot_no[tile, :round, :]) + np.sum(spot_no[tile, round, :channel])
+    end_index = start_index + spot_no[tile, round, channel]
+
+    use = range(start_index, end_index)
+
+    return spot_details[use]
 
 
 def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_inner: float, radius_xy: float,
@@ -91,7 +98,7 @@ def check_neighbour_intensity(image: np.ndarray, spot_yxz: np.ndarray, thresh: f
     for i, t in enumerate(transforms):
         mod_spot_yx = spot_yxz + t
         for j in range(image.ndim):
-            mod_spot_yx[:, j] = np.clip(mod_spot_yx[:, j], 0, image.shape[j]-1)
+            mod_spot_yx[:, j] = np.clip(mod_spot_yx[:, j], 0, image.shape[j] - 1)
         keep[:, i] = image[tuple([mod_spot_yx[:, j] for j in range(image.ndim)])] > thresh
     return keep.min(axis=1)
 

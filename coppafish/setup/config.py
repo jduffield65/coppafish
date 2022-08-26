@@ -60,6 +60,7 @@ _options = {
             'dye_camera_laser': 'maybe_file',
             'code_book': 'str',
             'scale': 'str',
+            'spot_details_info': 'str',
             'psf': 'str',
             'omp_spot_shape': 'str',
             'omp_spot_info': 'str',
