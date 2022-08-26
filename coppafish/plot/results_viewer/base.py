@@ -9,6 +9,7 @@ from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
 from ...setup import Notebook
+from ...utils import round_any
 import napari
 from napari.qt import thread_worker
 import time
@@ -27,7 +28,6 @@ class Viewer:
         """
         This is the function to view the results of the pipeline
         i.e. the spots found and which genes they were assigned to.
-
         Args:
             nb: Notebook containing at least the `ref_spots` page.
             background_image: Optional file_name or image that will be plotted as the background image.
@@ -35,14 +35,12 @@ class Viewer:
                 If pass *2D* image for *3D* data, will show same image as background on each z-plane.
             gene_marker_file: Path to csv file containing marker and color for each gene. There must be 6 columns
                 in the csv file with the following headers:
-
                 * GeneNames - str, name of gene with first letter capital
                 * ColorR - float, Rgb color for plotting
                 * ColorG - float, rGb color for plotting
                 * ColorB - float, rgB color for plotting
                 * napari_symbol - str, symbol used to plot in napari
                 * mpl_symbol - str, equivalent of napari symbol in matplotlib.
-
                 If it is not provided, then the default file *coppafish/plot/results_viewer/legend.gene_color.csv*
                 will be used.
         """
@@ -197,13 +195,17 @@ class Viewer:
         self.score_omp_multiplier = config['score_omp_multiplier']
         self.score_thresh_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
         # Scores for anchor/omp are different so reset score range when change method
-        self.score_range = {'anchor': [config['score_ref'], 1]}
+        # Max possible score is that found for ref_spots, as this can be more than 1.
+        # Max possible omp score is 1.
+        max_score = np.around(round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
+        max_score = float(np.clip(max_score, 1, np.inf))
+        self.score_range = {'anchor': [config['score_ref'], max_score]}
         if self.nb.has_page('omp'):
-            self.score_range['omp'] = [config['score_omp'], 1]
+            self.score_range['omp'] = [config['score_omp'], max_score]
             self.score_thresh_slider.setValue(self.score_range['omp'])
         else:
             self.score_thresh_slider.setValue(self.score_range['anchor'])
-        self.score_thresh_slider.setRange(0, 1)
+        self.score_thresh_slider.setRange(0, max_score)
         # When dragging, status will show thresh.
         self.score_thresh_slider.valueChanged.connect(lambda x: self.show_score_thresh(x[0], x[1]))
         # On release of slider, genes shown will change
