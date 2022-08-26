@@ -4,7 +4,7 @@ A config (.ini) file needs to be created for each experiment to run the pipeline
 All parameters not specified in this file will inherit the [default values](config.md).
 The parameters with Default = `MUST BE SPECIFIED` are the bare minimum parameters which need to be set in the experiment
 config file.
-If any section or parameter within a section is added to the config file 
+If any section, or parameter within a section, is added to the config file 
 which is not included in the [default file](config.md), an error will be raised when it is loaded in.
 Some example config files for typical experiments are listed below.
 
@@ -186,10 +186,11 @@ The tile directory is the path to the folder that you would like the filtered im
 colour channel to be saved to. 
 
 If `is_3d == True`, a .npy file will be produced for each round, tile and channel with
-the name for round r, tile *T*, channel *C* being `file_names[round][r]`_t*T*c*C*.npy with axis in the order z-y-x
-(the name for the anchor round, tile *T*, channel *C* will be `file_names[anchor]`_t*T*c*C*.npy).
-If `is_3d == False`, a .npy file will be produced for each round and tile called `file_names[round][r]`_t*T*.npy 
-with axis in the order c-y-x. 
+the name for round r, tile *T*, channel *C* being `config['file_names']['round'][r]`_t*T*c*C*.npy with axis in the 
+order z-y-x
+(the name for the anchor round, tile *T*, channel *C* will be `config['file_names']['anchor']`_t*T*c*C*.npy).
+If `is_3d == False`, a .npy file will be produced for each round and tile called 
+`config['file_names']['round'][r]`_t*T*.npy with axis in the order c-y-x. 
 
 An example of what the tile directory looks like at the end of the experiment is shown below for a 
 3D and 2D experiment with 3 tiles and 7 channels:
@@ -210,7 +211,7 @@ Thus it is of length `n_rounds`, containing numbers in the range from `0` to `n_
 
     An example is given [here](files/codebook.txt) so that if
 
-    `basic_info[dye_names] = DY405, CF405L, AF488, DY520XL, AF532, AF594, ATTO425`
+    `config['basic_info'][dye_names] = DY405, CF405L, AF488, DY520XL, AF532, AF594, ATTO425`
 
     the gene *Sst* with the code *6200265* will
     be expected to appear with the following dyes in each round:
@@ -254,15 +255,18 @@ which contains the most spots. If the `anchor_round` is used and both `anchor_ch
 
 ### dapi_channel
 This is the channel in the `anchor_round` that contains the DAPI images. 
-The tiles of this channel will be stitched together and saved in the `file_names[output_dir]` with a name 
-`file_names[big_dapi_image]`. 
+The tiles of this channel will be stitched together and saved in the `config['file_names']['output_dir']` with a name 
+`config['file_names']['big_dapi_image']`. 
+
+`dapi_channel` does not have to be included in `config['basic_info']['use_channels']` as the anchor round is dealt with 
+separately.
 
 To tophat filter the raw DAPI images first, either 
-[`extract[r_dapi]` or `extract[r_dapi_auto_microns]`](config.md#extract) must be specified.
+[`config['extract']['r_dapi']` or `config['extract']['r_dapi_auto_microns']`](config.md#extract) must be specified.
 
 ### Specifying Dyes
-It is expected that each gene will appear with a single dye in a given round as indicated by `file_names[code_book]`.
-If `dye_names` is not specified, it is assumed as a starting point for the 
+It is expected that each gene will appear with a single dye in a given round as indicated by 
+`config['file_names']['code_book']`. If `dye_names` is not specified, it is assumed as a starting point for the 
 [`bleed_matrix` calculation](code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_bleed_matrix) 
 that the number of dyes is equal to the number of channels and dye 0 will only appear in channel 0,
 dye 1 will only appear in channel 1 etc. 
@@ -270,9 +274,9 @@ dye 1 will only appear in channel 1 etc.
 If `dye_names` is specified, both `channel_camera` and `channel_laser` must also be specified. This is so that
 a starting point for the `bleed_matrix` calculation can be obtained by 
 [reading off](code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_dye_channel_intensity_guess) 
-the expected intensity of each dye in each channel using the file `file_names[dye_camera_laser]`. 
+the expected intensity of each dye in each channel using the file `config['file_names']['dye_camera_laser']`. 
 
-The default `file_names[dye_camera_laser]` is given 
+The default `config['file_names']['dye_camera_laser']` is given 
 [here](files/dye_camera_laser_raw_intensity.csv)
 but if a dye, camera or laser not indicated in this file are used in an experiment, a new version must be made.
 
@@ -309,7 +313,10 @@ By default, this is not specified meaning no smoothing is done. If smoothing is 
 - 3D: `r_smooth = 1, 1, 2`
 
 The kernel which the image is correlated with is then 
-`np.ones(2 * r_smooth - 1) / np.sum(np.ones(2 * r_smooth - 1))` so for `r_smooth = 2, 2` it will be:
+``` python 
+np.ones(2 * r_smooth - 1) / np.sum(np.ones(2 * r_smooth - 1))
+```
+so for `r_smooth = 2, 2` it will be:
 
 ``` python
 array([[0.11111111, 0.11111111, 0.11111111],
@@ -317,10 +324,11 @@ array([[0.11111111, 0.11111111, 0.11111111],
        [0.11111111, 0.11111111, 0.11111111]])
 ```
 
-The effect of smoothing can be seen using `view_filter`.
+The effect of smoothing can be seen using [`view_filter`](pipeline/extract.md#viewer).
 
 ### [`extract[r_dapi]`](config.md#extract)
-By default, no filtering will be applied to the *dapi_channel* image of the *anchor_round* and thus no .npy file
+By default, no filtering will be applied to the [*dapi_channel*](#dapi_channel) image of the *anchor_round* and thus 
+no .npy file
 will be saved to the *tile_dir*. This can be changed by specifying `r_dapi` which should be approximately
 the radius of a feature in the DAPI image (typical `r_dapi` is 48). In this case, a *2D* tophat filtering
 will be performed using a kernel of radius `r_dapi`. 
@@ -339,20 +347,20 @@ will be computed automatically by converting this into units of yx-pixels (typic
     The tophat filtering is only done on one channel for each tile but it is quite slow so it may be best to avoid it,
     especially for experiments with lots of tiles.
 
-The effect of DAPI filtering can be seen using `view_filter`.
+The effect of DAPI filtering can be seen using [`view_filter`](pipeline/extract.md#viewer).
 
 
 ### [`stitch[expected_overlap]`](config.md#stitch)
 This is the expected fractional overlap between neighbouring tiles. 
 By default, it is 0.1 meaning a 10% overlap is expected.
 
-### [thresholds](config.md#thresholds)
+### [*thresholds*](config.md#thresholds)
 The parameters in the [thresholds](config.md#thresholds) section of the config file contains the thresholds 
 used to determine which spots pass a quality thresholding process such that we consider their 
 gene assignments legitimate.
 
 The default values are based on an experiment run with ground truth data, but they will likely need adjusting 
-after investigating the effect of the thresholds using the [`coppafish.Viewer`](code/plot/viewer.md).
+after investigating the effect of the thresholds using the [`Viewer`](view_results.md).
 
 
 ### Using a subset of the raw data

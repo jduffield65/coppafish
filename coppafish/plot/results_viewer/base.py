@@ -9,6 +9,7 @@ from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
 from ...setup import Notebook
+from ...utils import round_any
 import napari
 from napari.qt import thread_worker
 import time
@@ -197,13 +198,17 @@ class Viewer:
         self.score_omp_multiplier = config['score_omp_multiplier']
         self.score_thresh_slider = QDoubleRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
         # Scores for anchor/omp are different so reset score range when change method
-        self.score_range = {'anchor': [config['score_ref'], 1]}
+        # Max possible score is that found for ref_spots, as this can be more than 1.
+        # Max possible omp score is 1.
+        max_score = np.around(round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
+        max_score = float(np.clip(max_score, 1, np.inf))
+        self.score_range = {'anchor': [config['score_ref'], max_score]}
         if self.nb.has_page('omp'):
-            self.score_range['omp'] = [config['score_omp'], 1]
+            self.score_range['omp'] = [config['score_omp'], max_score]
             self.score_thresh_slider.setValue(self.score_range['omp'])
         else:
             self.score_thresh_slider.setValue(self.score_range['anchor'])
-        self.score_thresh_slider.setRange(0, 1)
+        self.score_thresh_slider.setRange(0, max_score)
         # When dragging, status will show thresh.
         self.score_thresh_slider.valueChanged.connect(lambda x: self.show_score_thresh(x[0], x[1]))
         # On release of slider, genes shown will change

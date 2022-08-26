@@ -27,7 +27,7 @@ the [stitch stage](code/pipeline/run.md#coppafish.pipeline.run.run_stitch).
 ## Check data before running
 The functions [`view_raw`](pipeline/extract.md#raw-data), 
 [`view_filter`](pipeline/extract.md#viewer) and [`view_find_spots`](pipeline/find_spots.md#viewer) 
-can be run before the *Notebook* is created if a valid configuration file is provided.
+can be run before the *Notebook* is created if a valid [configuration file](config_setup.md) is provided.
 
 So if there is a dataset of questionable quality, it may be worth running some of these first to see if it 
 looks ok. In particular, [`view_raw`](pipeline/extract.md#raw-data) may be useful for checking the correct
@@ -35,8 +35,8 @@ channels are used, or to see if specific tiles/z-planes should be
 [removed](config_setup.md#using-a-subset-of-the-raw-data).
 
 ## Re-run section
-If at any stage, a section of the pipeline needs re-running, then the relevant *NotebookPage* must first be 
-[removed](notebook.md#deleting-a-notebookpage) from the Notebook before the configuration file parameters for that 
+If at any stage, if a section of the pipeline needs re-running, then the relevant *NotebookPage* must first be 
+[removed](notebook.md#deleting-a-notebookpage) from the Notebook, before the configuration file parameters for that 
 section can be [altered](notebook.md#configuration-file).
 
 ??? example "Re-run `register_initial`"
@@ -164,7 +164,7 @@ and the path to the notebook file is */Users/user/coppafish/experiment/notebook.
     ```
 
 [This](code/utils/pciseq.md#coppafish.utils.pciseq.export_to_pciseq) will save a csv file in the *output_dir* for each method 
-(*omp* and *ref_spots*) of finding spots and assigning genes to them.
+(*omp* and *ref_spots*) of finding spots, and assigning genes to them.
 The names of the files are specified through `config['file_names']['pciseq']`. Each file will contain:
 
 - y - y coordinate of each spot in stitched coordinate system.
@@ -208,9 +208,9 @@ Where:
 * $\chi_s$ and $\chi_{thresh}$ are the same as for the *reference spots*.
 
 It is important that these thresholds are greater than 0, because when running the pipeline, we try to save a lot 
-of spots. The idea being this is that it is better to do the thresholding after the pipeline has been run rather than 
+of spots. The idea being this is that it is better to do the thresholding after the pipeline has been run, rather than 
 during the pipeline. This is because, if there were too few spots in the latter case, much of the pipeline would
-have to be re-run to obtain new spots but in the former case, you can just change the threshold values.
+have to be re-run to obtain new spots, but in the former case, you can just change the threshold values.
 
 Once [`export_to_pciseq`](code/utils/pciseq.md#coppafish.utils.pciseq.export_to_pciseq) is run, the
 [*thresholds*](notebook_comments.md#thresholds) page will be added to the notebook. This

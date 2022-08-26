@@ -3,7 +3,7 @@
 Once the pipeline has completed the [`reference_spots`](code/pipeline/run.md#coppafish.pipeline.run.run_reference_spots) step 
 such that the [*Notebook*](notebook.md) contains the [*call_spots*](notebook_comments.md#call_spots) and 
 [*ref_spots*](notebook_comments.md#ref_spots) pages, the gene assignments of the spots found can be visualised
-by using [`coppafish.viewer`](code/plot/viewer.md).
+using [`coppafish.Viewer`](code/plot/viewer.md).
 
 This can be opened via the command line or using a python script. It requires either the path to the config file
 (*/Users/user/coppafish/experiment/settings.ini*) or the path to the notebook file 
@@ -17,25 +17,25 @@ This can be opened via the command line or using a python script. It requires ei
 
 === "Python Script Using Config Path"
     ``` python
-    import coppafish as cf
+    from coppafish import Notebook, Viewer
     ini_file = '/Users/user/coppafish/experiment/settings.ini'
-    nb = cf.Notebook(config_file=ini_file)
-    cf.Viewer(nb)
+    nb = Notebook(config_file=ini_file)
+    Viewer(nb)
     ```
 
 === "Python Script Using Notebook Path"
     ``` python
-    import coppafish as cf
+    from coppafish import Notebook, Viewer
     nb_file = '/Users/user/coppafish/experiment/notebook.npz'
-    nb = cf.Notebook(nb_file)
-    cf.Viewer(nb)
+    nb = Notebook(nb_file)
+    Viewer(nb)
     ```
 
 This will then open the napari viewer which will show the spots with a marker indicating which gene they 
-were assigned to. If the notebook contains the [*omp*](notebook_comments.md#omp) page, the spots plotted
-will be those found with the [omp algorithm](code/pipeline/omp.md), otherwise it will show the 
+were assigned to. If the *Notebook* contains the [*omp*](notebook_comments.md#omp) page, the spots plotted
+will be those found with the [*OMP* algorithm](pipeline/omp.md), otherwise it will show the 
 reference spots (those found on `nb.basic_info.ref_round`/`nb.basic_info.ref_channel`) 
-and their gene assignments found using [call_reference_spots](code/pipeline/call_reference_spots.md). 
+and their gene assignments found using [`call_reference_spots`](pipeline/call_reference_spots.md). 
 An example is shown below:
 
 ![viewer](images/viewer/initial.png){width="800"}
@@ -67,7 +67,7 @@ To use a particular background image, when calling `Viewer` a second argument ne
 - `'anchor'`: Will use `config['file_names']['big_anchor_image']` if it exists, otherwise will be no background.
 - Path to .npy or .npz file: An example would be `'/Users/user/coppafish/experiment/background_image.npz'`. 
     This file must contain an image with axis in the order z-y-x (y-x if 2D).
-- Numpy array: Can explicitly given the `[n_z x n_y x n_x]` (`[n_y x n_x]` in *2D*) image desired. 
+- Numpy array: Can explicitly give the `[n_z x n_y x n_x]` (`[n_y x n_x]` in *2D*) desired image. 
 
 If a *2D* image is provided for a *3D* dataset, then this image will be used as the background image for each z-plane.
 
@@ -82,9 +82,9 @@ This csv file must contain
 6 columns with the following headers:
 
 * GeneNames - `str`, name of gene with first letter capital.
-* ColorR - `float`, Rgb color for plotting.
-* ColorG - `float`, rGb color for plotting.
-* ColorB - `float`, rgB color for plotting.
+* ColorR - `float`, **R**gb color for plotting.
+* ColorG - `float`, r**G**b color for plotting.
+* ColorB - `float`, rg**B** color for plotting.
 * napari_symbol - `str`, symbol used to plot in napari.
 * mpl_symbol - `str`, equivalent of napari symbol in matplotlib.
 
@@ -111,17 +111,18 @@ sidebar. Initially the *OMP* button is selected meaning the spots shown are thos
 Pressing the *Anchor* button will change the spots shown to be those saved in the 
 [*ref_spots*](notebook_comments.md#ref_spots) page.
 
-If the notebook does not have the *omp* page, these buttons will not be present and the spots shown will be those 
+If the *Notebook* does not have the *omp* page, these buttons will not be present and the spots shown will be those 
 saved in the [*ref_spots*](notebook_comments.md#ref_spots) page.
 
 
 ### Score Range
 Only spots which pass a [quality thresholding](run_code.md#thresholding) are shown in the viewer.
 
-Spots are assigned a `score` between 0 and 1 which indicates the likelihood that the gene assignment is legitimate. 
+Spots are assigned a `score` between 0 and 1 (can be larger for `ref_spots`) which indicates the likelihood that the 
+gene assignment is legitimate. 
 When the viewer is first opened, only spots with `score > config['thresholds']['score_omp']` 
 (`score > config['thresholds']['score_ref']` if no *omp* page in notebook) are shown
-and lower value of the score slider is set to `config['thresholds']['score_omp']`.
+and the lower value of the score slider is set to this.
 
 The slider can then be used to view only spots which satisfy:
 

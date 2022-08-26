@@ -6,8 +6,8 @@ in situ hybridization) datasets. [*coppaFISH*](https://www.nature.com/articles/s
 is a method for in situ transcriptomics which produces a series of images arranged in terms of tiles, rounds and 
 channels. *coppafish* then determines the distribution of genes via [image processing](pipeline/extract.md), 
 [spot detection](pipeline/find_spots.md), [registration](pipeline/register.md) and 
-[gene calling](pipeline/call_reference_spots.md). The distribution of genes (like that shown above, each marker
-and color is a different gene) can then be used to determine the location and type of cells using 
+[gene calling](pipeline/call_reference_spots.md). The distribution of genes (like that shown above - each marker 
+refers to a different gene) can then be used to determine the location and type of cells using 
 [*pciSeq*](run_code.md#exporting-to-pciseq).
 
 
