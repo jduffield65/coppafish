@@ -234,7 +234,7 @@ class view_omp_fit(ColorPlotBase):
         self.ax[0].set_xticks(ticks=np.arange(self.im_data[0].shape[1]), labels=nb.basic_info.use_rounds)
         self.fig.supxlabel('Round', size=12, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
         self.fig.supylabel('Color Channel', size=12)
-        plt.suptitle(f'Residual at each iteration of OMP for Spot {spot_no}. DP Threshold = {dp_thresh}',
+        plt.suptitle(f'Residual at each iteration of OMP for Spot {spot_no}. '+r'$\Delta_{thresh}$ = '+f'{dp_thresh}',
                      x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
 
         # Add titles for each subplot
@@ -247,7 +247,7 @@ class view_omp_fit(ColorPlotBase):
         for i in range(2, n_residual_images):
             g = track_info['gene_added'][i]
             titles = titles + [f'{g}: {all_gene_names[g]}']
-            titles[-1] = titles[-1] + '\nDP = {:.2f}'.format(track_info['dot_product'][i])
+            titles[-1] = titles[-1] + '\n'+r'$\Delta_{s'+f'{i-2}'+'}$ = '+'{:.2f}'.format(track_info['dot_product'][i])
 
         # Make title red if dot product fell below dp_thresh or if best gene background
         is_fail_thresh = False

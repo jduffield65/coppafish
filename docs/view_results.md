@@ -147,8 +147,8 @@ used to change it.
 
 !!! note "Effect of changing Method on Intensity Threshold slider"
     
-    The `intensity` is [computed](pipeline/call_reference_spots.md#intensity) in the same way for omp 
-    method spots and ref_spots method spots.
+    The `intensity` is [computed](pipeline/call_reference_spots.md#intensity) in the same way for *OMP* 
+    spots and *reference spots*.
     Thus the value of `intensity_thresh` will not change when the method is changed using the buttons.
 
 ### OMP Score Multiplier
@@ -156,7 +156,7 @@ This is the $\rho$ parameter used in the calculation of [*OMP* score](pipeline/o
 It will not affect anything if the [method](#method) is *Anchor*.
 
 ## Diagnostics
-There are a few diagnostic plots which can be called with keyboard shortcuts with the viewer open.
+There are a few diagnostic plots which can be called with keyboard shortcuts while the viewer is open.
 
 
 ### *i*: Remove background image
@@ -185,14 +185,14 @@ This will then show the expected intensity of each dye in each channel. An examp
     To remove this normalisation, press the *Norm* button (*Norm* will go red). 
     The range of the colorbar will then change from approximately *-1 to 1* to approximately *-1000 to 1000*. 
     This is then then the intensity that is read off from the filtered images saved as .npy files 
-    in the *file_names[tile_dir]*.
+    in `config['file_names']['tile_dir']`.
 
     You can see above that in the un-normalised bleed matrix, channel 2 appears much weaker than it does in 
     the normalised version.
 
-    In both the *call_reference_spots* and *omp* sections of the pipeline, spots are assigned to genes by comparing the 
-    `spot_color` to the `bled_code` of each gene. This is done using the normalised `spot_color` and normalised
-    `bled_codes`.
+    In both the *call_reference_spots* and *OMP* sections of the pipeline, spots are assigned to genes by comparing the 
+    `spot_color` to the `bled_code` of each gene. This is done using the normalised `spot_color` (with 
+    [background removed](pipeline/call_reference_spots.md#background)) and normalised `bled_codes`.
 
 This plot is useful to check that the dyes can be distinguished. 
 I.e. that each column above (in the normalised version) is relatively unique. This is required so that 
@@ -209,14 +209,14 @@ The bottom plot shows the predicted code for the gene based on its [barcode](con
 and the [`bleed_matrix`](#b-view_bleed_matrix). 
 For this experiment, *Plp1* has the barcode *2364463* meaning the column for round 0 in the `bled_code` 
 is the column for dye 2 in the `bleed_matrix`, the column for round 1 above is the column for dye 3 in 
-the `bleed_matrix` etc. These bled_codes are saved as 
+the `bleed_matrix` etc. These `bled_codes` are saved as 
 [`nb.call_spots.bled_codes`](notebook_comments.md#call_spots) in the 
 [`call_reference_spots`](code/pipeline/call_reference_spots.md) section of the pipeline.
 
-The top plot shows the bled_code incorporating the calculated 
+The top plot shows the `bled_code` incorporating the calculated 
 [`gene_efficiency`](code/call_spots/base.md#coppafish.call_spots.base.get_gene_efficiency). 
 The `gene_efficiency` is the expected strength of a gene in each round and is given in 
-brackets in the x-tick labels. These bled_codes are saved as 
+brackets in the x-tick labels. These `bled_codes` are saved as 
 [`nb.call_spots.bled_codes_ge`](notebook_comments.md#call_spots) in the 
 [`call_reference_spots`](code/pipeline/call_reference_spots.md) section of the pipeline. It is these `bled_codes`
 which are compared to `spot_colors` when assigning each spot to a particular gene.
@@ -251,7 +251,7 @@ between the omp spot score, $\gamma_s$ and the dot product score $\Delta_s$ for 
 [This plot](pipeline/call_reference_spots.md#view_scaled_k_means) shows how the `bleed_matrix` was computed.
 
 ### *space*: Change to *select* mode
-To run the below diagnostics, you need to change to *select* mode. This is done by pressing *space-bar*.
+To run the diagnostics listed below, you need to change to *select* mode. This is done by pressing *space-bar*.
 In *select* mode, you won't be able to pan or zoom. To change back to *pan/zoom* mode, press *space-bar* again.
 On pressing *space-bar*, it should tell you in the bottom right corner of the viewer which mode you are in.
 
@@ -305,9 +305,9 @@ after clicking on the spot in [*select* mode](#space-change-to-select-mode):
 
 If a gene is not plotted, it means hardly any pixels had a non-zero coefficient for that gene.
 
-The gene indicated by *BG2* is the background code for channel 2 which is equal to 1 in all rounds of channel 
+The gene indicated by *BG2* is the background code for channel 2, which is equal to 1 in all rounds of channel 
 2 and 0 otherwise. It is then normalised to have an L2 norm of 1. E.g. for an experiment with 7 rounds and 7 channels, 
-the n_rounds x n_channels code would be:
+the $n_{rounds}\times n_{channels}$ code would be:
 
 ``` python
 array([[0.   , 0.   , 0.378, 0.   , 0.   , 0.   , 0.   ],
@@ -327,8 +327,8 @@ is always [fitted](code/call_spots/background.md) to each pixel by the omp algor
 ???+ note "OMP Diagnostics on *Reference Spots*"
 
     The functions [`view_omp`](#o-view_omp), [`view_omp_fit`](#shift-o-view_omp_fit) and 
-    [`view_omp_score`](#shift-s-view_omp_score) can be run for
-    *reference spots* can also be seen by pressing the key once a spot has been selected in the *Anchor* 
+    [`view_omp_score`](#shift-s-view_omp_score) can also be run for
+    *reference spots* by pressing the relavent key once a spot has been selected in the *Anchor* 
     [method](#method).
 
     The [`view_omp_score`](#shift-s-view_omp_score) function requires the *Notebook* to have the 
@@ -336,7 +336,7 @@ is always [fitted](code/call_spots/background.md) to each pixel by the omp algor
 
 
 ### *shift-o*: [`view_omp_fit`](code/plot/omp.md#view_omp_fit)
-The genes fitted to a particular spot at each stage of the omp algorithm can be viewed by pressing *shift-o*
+The genes fitted to a particular spot at each stage of the *OMP* algorithm can be viewed by pressing *shift-o*
 after clicking on the spot in [*select* mode](#space-change-to-select-mode):
 
 ![image](images/viewer/view_omp_fit.png){width="600"}
@@ -351,18 +351,18 @@ The image shown at column $i$ of the second row is the gene that best explains t
 shown at column $i$ of the first row. 
 
 The second row shows the `bled_code` (with `gene_efficiency`) for the gene multiplied by the coefficient found by
-the omp algorithm for that gene at that iteration.
+the [*OMP* algorithm](pipeline/omp.md#omp-algorithm) for that gene at that iteration.
 
 The first plot of the second row shows the sum of the contribution of all background vectors. They are
 combined because there is no overlap between the different `background_codes`.
 
-The omp algorithm stops when the absolute value of the [`dot_product_score`](code/call_spots/dot_product.md) 
+The *OMP* algorithm stops when the absolute value of the [`dot_product_score`](code/call_spots/dot_product.md) 
 (*DP* in the title of images in the second row) to the best gene drops below the *DP Threshold* indicated in 
 the title (0.225 here, this value is [`config['omp']['dp_thresh']`](config.md#omp)). 
 The gene shown in red is the first gene with a `dot_product_score` less than this and won't be fitted.
 
 *Res* in the title of images in the first row gives the L2 norm of the residual `spot_color` at that iteration 
-of the omp algorithm. I.e. we expect this to decrease as the omp algorithm proceeds.
+of the *OMP* algorithm. I.e. we expect this to decrease as the omp algorithm proceeds.
 
 [If you right-click on a column](pipeline/omp.md#view_omp_fit), 
 it will run the [`view_score`](#d-view_score) function to indicate how the dot product was calculated for that gene on

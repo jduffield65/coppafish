@@ -32,6 +32,7 @@ This is so the variables `gene_no`, `score`, `score_diff`, `intensity` in the
     === "Code"
 
         ``` python
+        import numpy as np
         from coppafish import Notebook
         from coppafish.pipeline.run import run_reference_spots
         nb_file = '/Users/user/coppafish/experiment/notebook.npz'

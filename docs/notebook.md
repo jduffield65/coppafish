@@ -10,7 +10,7 @@ Each *NotebookPage* may contain many different variables.
     Whenever a variable is added to a *NotebookPage*, in addition to saving the value, it saves the time
     at which the variable was added (`nbp._times`).  Likewise, the time at which a *NotebookPage* is
     created (`nbp._time_created`), and the time at which it is added to the *Notebook* (`nb._page_times`) 
-    are also recorded automatically. The time the Notebook was created is also
+    are also recorded automatically. The time the *Notebook* was created is also
     recorded (`nb._created_time`). This both serves as a record of what was done, as well as a
     source for debugging and optimization.
 
@@ -36,7 +36,7 @@ nb = Notebook(nb_file, ini_file)
 
 ??? note "Create just using `config_file`"
 
-    The *Notebook* can also be created with just the config_file through:
+    The *Notebook* can also be created with just the configuration file through:
     ``` python
     from coppafish import Notebook
     ini_file = '/Users/user/coppafish/experiment/settings.ini'
@@ -89,7 +89,7 @@ The variable `var_1` of the *NotebookPage* called *page_name* can then be access
 ### Deleting a *NotebookPage*
 To delete a *NotebookPage* called *page_name* which is in the *Notebook*, run `del nb.page_name`.
 
-You may want to do this, for example, if you want to re-run a section of the pipeline with 
+You may want to do this, for example, to [re-run](run_code.md#re-run-section) a section of the pipeline with 
 [different parameters](#configuration-file) in the corresponding section of the configuration file. 
 
 
@@ -242,7 +242,7 @@ Otherwise, when the *Notebook* is loaded, the saved value of the configuration f
 
 ???+ note "What is compared?"
 
-    Each [*NotebookPage*](notebook_comments.md) added during the *coppaFISH* pipeline has a name which is the same as a 
+    Each [*NotebookPage*](notebook_comments.md) added during the *coppafish* pipeline has a name which is the same as a 
     section in the [configuration file](config.md) or the same apart from a 
     [*_debug* suffix](notebook_comments.md#extract_debug).
 
@@ -413,13 +413,13 @@ The [*file_names*](notebook_comments.md#file_names) section of the *Notebook* is
 case where the various file locations have changed e.g. when accessing them from a different computer.
 
 The [*file_names*](notebook_comments.md#file_names) *NotebookPage*
-is never saved when the *Notebook* is saved and adding a *NotebookPage* called *file_names* 
+is never saved when the *Notebook* is saved, and adding a *NotebookPage* called *file_names* 
 does not trigger a save. When the *Notebook* is loaded in, a [*file_names*](notebook_comments.md#file_names) 
 *NotebookPage* will automatically be [created](code/setup/file_names.md) and added to the 
 *Notebook* if the *Notebook* contains a [*basic_info*](notebook_comments.md#basic_info) *NotebookPage*.
 The [*file_names*](notebook_comments.md#file_names) *NotebookPage* will then inherit information from
 the [*file_names*](config.md#file_names) section of the `config_file` which was passed to the *Notebook* 
-when loading it in as explained below:
+when loading it, in as explained below:
 
 
 === "Code"

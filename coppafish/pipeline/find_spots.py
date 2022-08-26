@@ -46,7 +46,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     # max value is y or x coordinate of around 2048 hence can use int16.
     spot_details = np.empty((0, 7), dtype=np.int16)
     nbp.spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds+nbp_basic.n_extra_rounds,
-                               nbp_basic.n_channels), dtype=np.int32)
+                            nbp_basic.n_channels), dtype=np.int32)
     use_rounds = nbp_basic.use_rounds
     n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     if nbp_basic.use_anchor:
