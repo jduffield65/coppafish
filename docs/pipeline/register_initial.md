@@ -28,8 +28,8 @@ as explained below.
 ### Initial range
 The difference to the [*stitch*](stitch.md#initial-range) case is that `config['register_initial']['shift_min']` and 
 `config['register_initial']['shift_max']` are always used. We expect the shift between rounds to be quite 
-small hence the default values which perform an exhaustive search centered on 0 in each direction
-with a range of 200 in $y$ and $x$ and a range of 6 in $z$.
+small hence the [default values](../config.md#register_initial), which perform an exhaustive search centered on 0 in 
+each direction with a range of 200 in $y$ and $x$ and a range of 6 in $z$.
 
 ### Updating initial range
 We assume that the shifts to a given round will be approximately the same for all tiles. So, after we have found 
@@ -45,14 +45,14 @@ After the shifts to all rounds for all tiles have been found, the ones with `sco
 amended.
 
 If for round $r$, tile $t$, the best shift found had a `score < score_thresh`, 
-the shift and score are saved in the notebook in `nb.register_initial.shift_outlier[t, r]` and 
-`nb.register_initial.shift_score_outlier` respectively.
+the shift and score are saved in the notebook as `nb.register_initial.shift_outlier[t, r]` and 
+`nb.register_initial.shift_score_outlier[t, r]` respectively.
 
 The shift is then re-computed using a new initial exhaustive search range 
 (saved as `nb.register_initial.final_shift_search`). This range is computed using the 
 [`update_shifts`](#updating-initial-range) function to centre 
 it on all the shifts found to round $r$ for which `score > score_thresh`.
-For this re-computation, no [widening](stitch.md#widening-range) is allowed either. The idea behind this 
+For this re-computation, no [widening](stitch.md#widening-range) is allowed either. The idea behind this, 
 is that it will force the shift to be within the range we expect based on the successful shifts. 
 I.e. a shift with a slightly lower `score` but with a shift
 more similar to the successful shifts is probably more reliable than a shift with 
@@ -62,8 +62,7 @@ The new shift and score will be saved in `nb.register_initial.shift[t, r]` and
 `nb.register_initial.shift_score[t, r]` respectively.
 
 ## Error - too many bad shifts
-After the `register_initial` *NotebookPage* has been 
-[added](../code/pipeline/run.md#coppafish.pipeline.run.run_register) to the *Notebook*, 
+After the [*call reference spots*](call_reference_spots.md) step, 
 [`check_shifts_register`](../code/stitch/check_shifts.md#coppafish.stitch.check_shifts.check_shifts_register) 
 will be run.
 
@@ -72,7 +71,8 @@ This will produce a warning for any shift found with `score < score_thresh`.
 An error will be raised if the fraction of shifts with `score < score_thresh` exceeds 
 `config['register_initial']['n_shifts_error_fraction']`.
 
-If this error does occur, it is probably worth looking at the [debugging plots](#debugging) to see if the shifts found
+If this error does occur, it is probably worth looking at the [`Viewer`](../view_results.md) and 
+[debugging plots](#debugging) to see if the shifts found
 looks good enough to use as a starting point for the [iterative closest point algorithm](register.md)
 or if it should be re-run with different configuration
 file parameters (e.g. different `config['register_initial']['shift_channel']` corresponding to a channel
@@ -84,8 +84,8 @@ There are a few functions using matplotlib which may help to debug this section 
 
 To view how the shift matches up the point clouds, an analogous function to 
 [`view_stitch_overlap`](stitch.md#view_stitch_overlap)
-is [`view_icp`](../code/plot/register.md#view_icp) which is [explained](register.md#view_icp) 
-in the next step of the pipeline. The *register* stage of the pipeline does 
+is [`view_icp`](../code/plot/register.md#view_icp), which is [explained](register.md#view_icp) 
+in the next step of the pipeline. The [*register*](register.md) stage of the pipeline does 
 not need to have been run to use this function though.
 
 ### [`view_register_shift_info`](../code/plot/register.md#view_register_shift_info)
@@ -119,7 +119,7 @@ The numbers refer to the tile.
     === "`shift`"
         ![image](../images/pipeline/register_initial/view_shift_info_outlier2.png){width="800"}
 
-    Clearly from the top plot, the range of `shift` is much smaller than the range of `shift_outlier` as we
+    Clearly from the top plot, the range of `shift` is much smaller than the range of `shift_outlier`, as we
     expect from the [reduced range](#updating-initial-range) of the exhaustive search to find these.
 
 ### [`view_register_search`](../code/plot/register.md#view_register_search)

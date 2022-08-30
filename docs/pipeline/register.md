@@ -4,7 +4,8 @@ the reference round/reference channel ($r_{ref}$/$c_{ref}$) and each imaging rou
 The affine transform to tile $t$, round $r$, channel $c$ is found through iterative closest point
 using the shift, `nb.register_initial.shift[t, r]`, found during the [*register_initial*](register_initial.md) step of 
 the pipeline as the starting point. It is saved to the *Notebook* as `nb.register.transform[t, r, c]`.
-These transforms are used later in the pipeline to determine the intensity of a pixel in each round and channel.
+These transforms are [used later in the pipeline](get_reference_spots.md#applying-transform) to 
+determine the intensity of a pixel in each round and channel.
 
 The [`register`](../notebook_comments.md#register) and [`register_debug`](../notebook_comments.md#register_debug) 
 *NotebookPages* are added to the *Notebook* after this stage is finished.
@@ -13,7 +14,8 @@ The [`register`](../notebook_comments.md#register) and [`register_debug`](../not
 We want to find the transform from tile $t$, round $r_{ref}$, channel $c_{ref}$ to round $r$, channel $c$ for all
 tiles, rounds and channels such that there is pixel-level alignment between the images. The pixel-level 
 alignment is important because most spots are only a few pixels in size, so even a one-pixel registration error 
-can compromise the `spot_colors` found in the next stage of the pipeline and thus the gene assignment.
+can compromise the `spot_colors` found in the [next stage of the pipeline](get_reference_spots.md) 
+and thus the [gene assignment](call_reference_spots.md).
 
 The shifts found in the [*register_initial*](register_initial.md) step of 
 the pipeline are not sufficient for this, because of chromatic aberration which will cause a scaling between 
@@ -26,8 +28,8 @@ The affine transforms are found using the [iterative-closest point](../code/regi
 [*register_initial*](register_initial.md) step, `nb.register_initial.shift`.
 
 The starting transform to a particular round and tile is the same for all channels. The shifts are put into
-the form of an affine transform ($4 \times 3$ array) through 
-[`transform_from_scale_shift`](../code/register/base.md#coppafish.register.base.transform_from_scale_shift).
+the form of an affine transform ($4 \times 3$ array) using the 
+[`transform_from_scale_shift`](../code/register/base.md#coppafish.register.base.transform_from_scale_shift) function.
 
 ??? example "Starting transform from shifts"
     The code below indicates how the initial shifts ($n_{tiles} \times n_{rounds} \times 3$ array) 
@@ -98,7 +100,7 @@ The shape of the various arrays are indicated in the comments (#).
 ??? note "Preparing point clouds"
 
     Prior to the *ICP* algorithm, the $yxz$ coordinates of spots on a tile
-    are centered. This is because, it makes more sense to me if any rotation is applied around 
+    are centered. This is because, it makes more sense to me, if any rotation is applied around 
     the centre of the tile.
 
     Also, like for the initial shifts, the z-coordinates must be converted into units of yx-pixels,
@@ -111,7 +113,7 @@ The shape of the various arrays are indicated in the comments (#).
     spot_yxz = spot_yxz * z_scale
     ```
     
-    Also, for the non-reference point clouds we only keep spots which are isolated. This 
+    For the non-reference point clouds we only keep spots which are isolated. This 
     is because the *ICP* algorithm is less likely to fall into local maxima if 
     the spots are quite well separated.
     
@@ -215,13 +217,13 @@ Where:
 
 The default are parameters are such that in most cases, `n_matches_thresh[t, r, c] = thresh_max` so 
 we require more than 300 matches for a transform to be acceptable. 
-The matches thresholds are saved to the *Notebook* as `nb.register_debug.n_matches_thresh[t, r, c]`.
+The thresholds are saved to the *Notebook* as `nb.register_debug.n_matches_thresh[t, r, c]`.
 
 
 #### Chromatic Aberration
 Our expectation of the transforms found is that there should be a scaling factor to 
 correct for chromatic aberration between color channels. We do not expect significant scaling between rounds
-for different tiles though.
+or tiles though.
 
 Thus, we can compute the expected scaling for each transform to channel $c$ by averaging over all tiles 
 and rounds. We also avoid transforms which have failed based on their [matches](#number-of-matches).
@@ -256,7 +258,7 @@ and rounds. We also avoid transforms which have failed based on their [matches](
 
 This gives us `av_scaling[c, i]` which is the scale factor for channel $c$ in dimension $i$ (order is $yxz$). 
 This is saved to the *Notebook* as `nb.register_debug.av_scaling`. 
-From the *Output* above, there is a clear difference between channels as we expect. Also, the $y$ and $x$ scaling
+From the *Output* above, there is a clear difference between channels, as we expect. Also, the $y$ and $x$ scaling
 for a particular channel tend to be very similar but the $z$ scaling is always 1. This is because the z-pixels
 are larger than the yx-pixels so there are no two pixels very close in $z$.
 
@@ -265,7 +267,8 @@ as quantified by:
 
 `np.abs(transform[t, r, c][i, i] - av_scaling[c, i]) > scale_thresh[i]` for any dimension $i$. 
 
-Here, `scale_thresh` is `config['register']['scale_dev_thresh']`. The default value of `[0.01, 0.01, 0.1]` is 
+Here, `scale_thresh` is `config['register']['scale_dev_thresh']`. The [default value](../config.md#register) 
+of `[0.01, 0.01, 0.1]` is 
 intended to be quite hard to exceed i.e. only really awful scaling will fail in this way. The $z$ threshold
 is larger because if there is scaling in $z$, you would expect larger variance because the $z$-pixels are larger
 than the $yx$-pixels (this may need looking at though, I am not too sure about it, but I think I made it
@@ -274,7 +277,7 @@ larger because quite a lot of transforms were failing based on the z-scaling).
 #### Shift
 Our expectation of the transforms found is that there should be a shift between rounds 
 for a particular tile (in [*register_initial*](register_initial.md#updating-initial-range) 
-we expected the shift to a particular round should be quite similar across tiles, we relax that here).
+we expected the shift to a particular round should be quite similar across tiles - we relax that here).
 We do not expect significant shifts between channels for the same tile and round though.
 
 Thus, we can compute the expected shift for each transform of tile $t$ to round $r$ by averaging over all channels. 
@@ -339,7 +342,8 @@ as quantified by:
 
 `np.abs(transform[t, r, c][3, i] - av_shifts[t, r, i]) > shift_thresh[i]` for any dimension $i$. 
 
-Here, `shift_thresh` is `config['register']['shift_dev_thresh']`. The default value of `[15, 15, 5]` is 
+Here, `shift_thresh` is `config['register']['shift_dev_thresh']`. The [default value](../config.md#register) 
+of `[15, 15, 5]` is 
 intended to be quite hard to exceed i.e. only really awful shifts will fail in this way. 
 `config['register']['shift_dev_thresh'][2]` is in units of z-pixels and is converted to $yx$-pixels before
 applying the thresholding (the default value of 5 will become 29.95 for our examples).
@@ -516,9 +520,9 @@ will have blue point clouds corresponding to:
 * $\lambda=\infty$: Reference point cloud transformed according to target transform for regularization, $M_a$.
 This is found from `av_scaling[c]` and `av_shifts[t, r]` unless it is provided.
 * $\lambda=$`lambda1`, $\mu=$`mu1`: Reference point cloud transformed according to transform found with 
-regularized *ICP* using lambda1 and mu1 as the regularization parameters.
+regularized *ICP* using `lambda1` and `mu1` as the regularization parameters.
 * $\lambda=$`lambda2`, $\mu=$`mu2`: Reference point cloud transformed according to transform found with 
-regularized *ICP* using lambda2 and mu2 as the regularization parameters.
+regularized *ICP* using `lambda2` and `mu2` as the regularization parameters.
 
 If `reg_constant` and `reg_factor` are not provided, `config['register']['regularize_constant']` and
 `config['register']['regularize_factor']` will be used.
@@ -557,7 +561,7 @@ The $\lambda=0$ horizontal line indicates the values with no regularisation and
 the $n_{matches}$ line indicates the number of matches found with $\lambda=\infty$. 
 
 This plot nicely shows that for $\lambda < n_{matches}$, the transform found is pretty close to 
-the normal least squares solution by for $\lambda > n_{matches}$, it is closer to the 
+the normal least squares solution but for $\lambda > n_{matches}$, it is closer to the 
 target transform we are regularising towards.
 
 `view_icp_reg(nb, 0, 1, 0, reg_constant=[500] * 8, reg_factor=np.logspace(2, 9, 8), plot_residual=True)` 
@@ -569,10 +573,9 @@ This shows that varying $\mu$ while keeping $\lambda$ constant does not affect $
 but $D_{scale}$ does decrease as $\mu$ increases.
 
 ## Error - too few matches
-After the `register` and `register_debug` *NotebookPages* have been 
-[added](../code/pipeline/run.md#coppafish.pipeline.run.run_register)
-to the *Notebook*, 
-[`check_transforms`](../code/register/check_transforms.md#coppafish.register.check_transforms.check_transforms) will be run.
+After the [*call reference spots*](call_reference_spots.md) step, 
+[`check_transforms`](../code/register/check_transforms.md#coppafish.register.check_transforms.check_transforms) 
+will be run.
 
 This will produce a warning for any tile, round, channel for which
 

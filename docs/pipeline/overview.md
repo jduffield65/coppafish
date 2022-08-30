@@ -62,7 +62,7 @@ In total, $n_{tiles} \times n_{rounds}$ shifts are found.
 and uses them as a [starting point](register.md#starting-transform) to determine the affine transform between the 
 [reference round](../config_setup.md#ref_round) / [reference channel](../config_setup.md#ref_round) and each
 sequencing round and channel for each tile. This is done through an [iterative closest point](register.md#icp) 
-algorithm (*ICP*) and in total, $n_{tiles} \times n_{rounds} \times n_{channels}$ are found.
+algorithm (*ICP*) and in total, $n_{tiles} \times n_{rounds} \times n_{channels}$ transforms are found.
 
     *Time: 20 seconds*
 

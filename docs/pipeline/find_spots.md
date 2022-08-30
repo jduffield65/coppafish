@@ -1,7 +1,7 @@
 # Find Spots
 The [*find spots* step of the pipeline](../code/pipeline/find_spots.md) loads in the filtered images for each 
 tile, round, channel saved during the [extract step](extract.md) and detects spots on them. 
-It is obtaining a point cloud from the images because in the stitch and register sections of the pipeline,
+We obtain a point cloud from the images because in the stitch and register sections of the pipeline,
 it is quicker to use point clouds than the full images.
 
 The [`find_spots`](../notebook_comments.md#find_spots) *NotebookPage* is added to the *Notebook* after this stage
@@ -14,7 +14,12 @@ the local maxima in the filtered image (loaded in through
 with an intensity greater than [`auto_thresh[t, r, c]`](extract.md#auto_thresh).
 
 Local maxima means pixel with the largest intensity in a neighbourhood defined by `config['find_spots']['radius_xy']`
-and `config['find_spots']['radius_z']` (`kernel = np.ones((2*radius_xy-1, 2*radius_xy-1, 2*radius_z-1))`). 
+and `config['find_spots']['radius_z']`:
+
+``` python
+kernel = np.ones((2*radius_xy-1, 2*radius_xy-1, 2*radius_z-1))
+```
+
 The position of the local maxima is found to be where the 
 [dilation](../code/utils/morphology.md#coppafish.utils.morphology.base.dilate) of the image with the `kernel` 
 is equal to the image. 
@@ -23,7 +28,7 @@ The spot detection process can be visualised with [`view_find_spots`](#viewer).
 
 ??? note "Optimised spot detection"
 
-    The dilation method is quite slow so if *jax* is installed, a 
+    The dilation method is quite slow, so if *jax* is installed, a 
     [different spot detection method](../code/find_spots/detect.md#coppafish.find_spots.detect_optimised.detect_spots) 
     is used.
 
@@ -36,12 +41,12 @@ The spot detection process can be visualised with [`view_find_spots`](#viewer).
     `auto_thresh[t, r, c]` is pretty large as the whole point is that all background pixels (the vast majority) 
     have intensity less than it.
 
-    TODO: GIVE TIMES FOR THIS SECTION WITH THE TWO DIFFERENT METHODS
+    For images of size $2048 \times 2048 \times 50$, the optimised method is around 9 times faster.
 
 ??? note "Dealing with duplicates"
 
-    If there are two neighbouring pixels which have the same intensity which is the local maxima intensity, by default
-    both pixels will be declared to be local maxima. However if `remove_duplicates == True` in 
+    If there are two neighbouring pixels which have the same intensity, which is the local maxima intensity, by default
+    both pixels will be declared to be local maxima. However, if `remove_duplicates == True` in 
     [`detect_spots`](../code/find_spots/detect.md#coppafish.find_spots.detect.detect_spots), only one will be deemed a 
     local maxima.
 
@@ -51,23 +56,23 @@ The spot detection process can be visualised with [`view_find_spots`](#viewer).
 
 ### Imaging spots
 For non reference spots (all round/channel combinations apart from `ref_round`/`ref_channel`),
-we only use the spots for registration to the reference spots so the quantity of
-spots is not important. In fact, registration tends to work better if there are fewer but more reliable spots
+we only use the spots for registration to the reference spots, so the quantity of
+spots is not important. In fact, registration tends to work better if there are fewer but more reliable spots,
 as this means there is a lesser chance of matching up spots by chance. 
 
-To exploit this, for each imaging tile $t$, round $r$, channel $c$ where $r$, the point cloud 
+To exploit this, for each imaging tile, round, channel, the point cloud 
 is made up of the `max_spots` most intense spots on each z-plane. In *2D*, `max_spots` is 
 `config['find_spots']['max_spots_2d']` and in *3D*, it is `config['find_spots']['max_spots_3d']`.
 If there are fewer than `max_spots` spots detected on a particular z-plane, all the spots will be kept.
 
 
 ### Reference spots
-We want to assign a gene to each reference spot (`ref_round`/`ref_channel`) as well as use it for registration,
+We want to assign a gene to each reference spot (`ref_round`/`ref_channel`), as well as use it for registration,
 so it is beneficial to maximise the number of reference spots. As such, we do not do the `max_spots` thresholding
-we do for [imaging spots](#imaging-spots).
+for reference spots.
 
 However, we want to know which reference spots are isolated because when it comes to the 
-[`bleed_matrix`](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.get_bleed_matrix) calculation,
+[`bleed_matrix`](call_reference_spots.md#bleed-matrix) calculation,
 we do not want to use overlapping spots.
 
 #### Isolated spots
@@ -82,10 +87,13 @@ annulus kernel obtained from [`annulus(r0, r_xy, r_z)`](../code/utils/strel.md#c
 * `r_z = config['find_spots']['isolation_radius_z']`.
 
 If the value of this correlation at the location of a spot is less than `config['find_spots']['isolation_thresh']`,
-then we deem the spot to be isolated. If `config['find_spots']['isolation_thresh']` is not given, it is set to
-`config['find_spots']['auto_isolation_thresh_multiplier'] * auto_thresh[t, r, c]`. 
-The final isolation thresholds used for each round, tile, channel are saved as 
-[nb.find_spots.isolation_thresh](../notebook_comments.md#find_spots). 
+then we deem the spot to be isolated. If `config['find_spots']['isolation_thresh']` is not given, it is set to:
+
+``` python
+config['find_spots']['auto_isolation_thresh_multiplier'] * auto_thresh[t, r, c]
+```
+The final isolation thresholds used for each tile are saved as 
+[`nb.find_spots.isolation_thresh`](../notebook_comments.md#find_spots). 
 The process of obtaining isolated spots can be visualised with [`view_find_spots`](#isolation-threshold).
 
 ??? note "Annulus kernel"
@@ -121,7 +129,9 @@ to the *Notebook*, [`check_n_spots`](../code/find_spots/check_spots.md#coppafish
 
 This will produce a warning for any tile, round, channel for which fewer than
 
-`n_spots_warn = config['find_spots']['n_spots_warn_fraction'] * max_spots * nb.basic_info.nz`
+``` python
+n_spots_warn = config['find_spots']['n_spots_warn_fraction'] * max_spots * nb.basic_info.nz
+```
 
 spots were detected, where `max_spots` is `config['find_spots']['max_spots_2d']` if *2D* and 
 `config['find_spots']['max_spots_3d']` if *3D*. 
@@ -172,7 +182,7 @@ the fraction `n_spots_error_fraction` of tiles/channels.
 
 The `use_tiles`, `use_rounds` and `use_channels` parameters can be changed without having to re-run
 the `find_spots` section of the pipeline as explained [here](../notebook.md#changing-basic_info-mid-pipeline).
-It tiles/rounds/channels are added instead of removed though, it will need re-running, as will the `extract` step.
+If tiles/rounds/channels are added instead of removed though, it will need re-running, as will the `extract` step.
 
 ### [`n_spots_grid`](../code/plot/find_spots.md#coppafish.plot.find_spots.n_spots.n_spots_grid)
 The [`n_spots_grid`](../code/plot/find_spots.md#coppafish.plot.find_spots.n_spots.n_spots_grid) function is 
@@ -239,14 +249,14 @@ This will open a napari viewer with up to 5 sliders in the bottom left:
 * [*Detection Radius YX*](#yx): This is the value of `config['find_spots']['r_xy']`.
 * [*Detection Radius Z*](#z): This is the value of `config['find_spots']['r_z']`.
 * [*Intensity Threshold*](#intensity-threshold): This is the value of `nb.extract.auto_thresh[t, r, c]`.
-* [*Isolation Threshold*](#isolation-threshold): This is the value of `nb.find_spots.isolation_thresh[t, r, c]`.
+* [*Isolation Threshold*](#isolation-threshold): This is the value of `nb.find_spots.isolation_thresh[t]`.
 It will only appear if `show_isolated == True`, `r = nb.basic_info.ref_round` and `c = nb.basic_info.ref_channel`.
 * [*Z Thickness*](#z-thickness): Spots detected on the current z-plane and this many z-planes either side of it 
 will be shown. Initially, this will be set to 1 so spots from the current z-plane and 1 either side of it will be shown. 
 
 Whenever the first two are changed, the dilation will be redone using the new values of the radii and the 
 time taken will be printed to the console. The correlation calculation required to determine which spots are 
-[isolated](#isolated-spots) is slow hence by default `show_isolated == False`.
+[isolated](#isolated-spots) is slow hence, by default `show_isolated == False`.
 
 ### Z thickness
 The images below show the effect of changing the z-thickness. The size of the spots is related to the 
@@ -261,7 +271,7 @@ z-plane they were detected on. The closer to the current z-plane, the larger the
 === "2"
     ![image](../images/pipeline/find_spots/z_thick2.png){width="400"}
 
-The blue spot which has a 
+The blue spot has a 
 [neighbouring pixel with negative intensity](../code/find_spots/base.md#coppafish.find_spots.base.check_neighbour_intensity) 
 and is not kept in the final point cloud.
 
@@ -280,7 +290,7 @@ The images below show the effect of using the slider to change `config['find_spo
 === "10"
     ![image](../images/pipeline/find_spots/radius_yx10.png){width="400"}
 
-Clearly, as the radius increases the spots have to be separated by a larger distance resulting in less spots found.
+Clearly, as the radius increases the spots have to be separated by a larger distance, resulting in less spots found.
 
 #### Z
 The images below show the effect of using the slider to change `config['find_spots']['r_z']` 
@@ -295,7 +305,7 @@ with `config['find_spots']['r_yx']` fixed at 2 and z thickness = 2:
 === "12"
     ![image](../images/pipeline/find_spots/radius_z12.png){width="400"}
 
-Again we see the number of spots reducing as this increases. However, it is less clear as to why because
+Again we see the number of spots reducing as this increases. However, it is less clear as to why, because
 the minimum separation in z is what is changing but, we are only seeing spots from 5 z-planes imposed on a
 single z-plane.
 
@@ -331,7 +341,7 @@ saving after `nb.extract.auto_thresh` has been updated. It should be saved to a 
 not overwrite the initial *Notebook* i.e. `nb.save('/Users/user/experiment1/output/notebook_new_auto_thresh.npz')`.
 
 ### Isolation threshold
-The images below show the effect of using the slider to change `nb.find_spots.isolation_thresh[t, r, c]`. 
+The images below show the effect of using the slider to change `nb.find_spots.isolation_thresh[t]`. 
 This is for a *2D* experiment with:
 
 * `config['find_spots']['r_yx'] = 2`, 
@@ -353,7 +363,7 @@ re-done everytime the radii change.
 Here, we see that as the absolute threshold increases, the spots need a darker (more negative) annulus to be considered
 isolated (green).
 
-The value of -438 is approximately what the value of `nb.find_spots.isolation_thresh[t, r, c]` used for this data
+The value of -438 is approximately the value of `nb.find_spots.isolation_thresh[t]` used for this data
 (i.e. `config['find_spots']['auto_isolation_thresh_multiplier'] = -0.2` and 
 [`auto_thresh[t, r, c] = 2234`](#intensity-threshold) gives -447 which is almost the same).
 

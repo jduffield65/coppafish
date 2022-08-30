@@ -16,10 +16,12 @@ The [scale](#scale) values must not be changed when re-running though.
 ### `auto_thresh`
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* contains the variable `auto_thresh`.
 `auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$ used for spot detection 
-in the `find_spots` step of the pipeline.
+in the [*find spots*](find_spots.md) step of the pipeline.
 
-`auto_thresh[t, r, c]` is set to `config['extract']['auto_thresh_multiplier'] * median(abs(image))` where
-`image` is the mid z-plane (`nb.extract_debug.z_info`) of the image saved to `tile_dir` for tile $t$, round $r$, 
+```
+auto_thresh[t, r, c] = config['extract']['auto_thresh_multiplier'] * median(abs(image))
+```
+where `image` is the mid z-plane (`nb.extract_debug.z_info`) of the image saved to `tile_dir` for tile $t$, round $r$, 
 channel $c$ during the extract step of the pipeline.
 This is just saying that we expect `median(abs(image))` to be the characteristic intensity of background pixels
 and spot pixels should be much more intense that this.
@@ -39,9 +41,9 @@ outlier tiles (white crosses, +) not far from the boxplot).
 The [`extract`](../notebook_comments.md#extract) *NotebookPage* also contains the variable `hist_counts`.
 `hist_counts[i, r, c]` is the number of pixels across the mid z-plane (`nb.extract_debug.z_info`) 
 of all tiles in round $r$, channel $c$ which had the value `nb.extract.hist_values[i]`. 
-It is used for [normalisation](../code/call_spots/base.md#coppafish.call_spots.base.color_normalisation) 
+It is used for [normalisation](call_reference_spots.md#color-normalisation) 
 (see *Norm Button* box [here](../view_results.md#b-view_bleed_matrix)) 
-between channels in the `call_reference_spots` step.
+between channels in the [*call reference spots*](call_reference_spots.md) step.
 
 The histograms can be viewed using [`histogram_plots`](../code/plot/extract.md#histogram_plots).
 Initially, this will show the `hist_counts[:, r, c]` vs `hist_values` for each round and channel.
@@ -59,7 +61,7 @@ most values will be between ±1.
 
 In the normalised histograms, we want to see a sharp peak at 0 accounting for the background pixels with a 
 long tail to larger values accounting for the spot pixels and a tail to 
-[negative values](#effect-of-filtering) accounting for the pixels in annuli surrounding spots.
+[negative values](#effect-of-filtering) accounting for the pixels in [annuli surrounding spots](#effect-of-filtering).
 
 So in this example, channel 2 will likely prove the most problematic because the peak centered on 0 is much wider
 than for any other channel. This indicates that there is quite a lot of variance in the background pixels, 
@@ -72,7 +74,7 @@ is significantly larger for channel 0 than any other channel.
 
 ## Raw data
 The raw data can be viewed using [`view_raw`](../code/plot/raw.md#coppafish.plot.raw.view_raw). It can either be called
-for an experiment which already has a *Notebook* or for one which no code has been run yet but the `config_file` 
+for an experiment which already has a *Notebook*, or for one for which no code has been run yet, but the `config_file` 
 has been made:
 
 === "With *Notebook*"
@@ -125,9 +127,9 @@ Once the raw images are loaded in, they are
 ### Difference of hanning kernel
 The [difference of hanning kernel](../code/utils/morphology.md#coppafish.utils.morphology.base.hanning_diff) is made up
 by adding together a positive hanning window (yellow below) of radius $r_1$ and an outer negative hanning window 
-(cyan below) of radius of $r_2$ (typically twice $r_1$).
+(cyan below) of radius $r_2$ (typically twice $r_1$).
 It is normalised such that the sum of the difference of hanning kernel is 0. An example for a *1D* version of the 
-kernel with $r_1 = 3$ and $r_2 = 6$:
+kernel with $r_1 = 3$ and $r_2 = 6$ is shown below:
 
 ![hanning](../images/pipeline/extract/hanning.png){width="800"}
 
@@ -155,12 +157,12 @@ This can be included by setting the [`config['extract']['r_smooth']`](../config_
 ### DAPI
 For the `dapi_channel` of the `anchor_round`, convolution with the difference of hanning kernel is not appropriate 
 as the features that need extracting do not look like spots. Instead, tophat filtering can be performed by 
-setting [`config['extract']['r_dapi']`](../config_setup.md#extractr_dapi) and no smoothing is permitted.
+setting [`config['extract']['r_dapi']`](../config_setup.md#extractr_dapi). No smoothing is permitted.
 
 
 ## Viewer
 The purpose of filtering the raw images is to make the spots appear much more prominently compared to the background 
-i.e. it is to extract the spots. We can see this effect and how the various parameters affect things with 
+i.e. extract the spots. We can see this effect and how the various parameters affect things with 
 [`view_filter`](../code/plot/extract.md#coppafish.plot.extract.view_filter). 
 This can be called in a similar way to [`view_raw`](#raw-data):
 
@@ -228,10 +230,10 @@ convolution with the difference of hanning kernel though, these regions become a
 is because the sum of the difference of hanning kernel is 0 so its effect on a background region with a uniform 
 non-zero value is to set it to 0.
 
-Looking at the spots, we see that the convolution helps isolate the spots from the background and separate
+Looking at the spots, we see that the convolution helps isolate them from the background and separate
 spots which are close together. There is also a very dark (negative) region surrounding the spots. 
 It is a feature of convolution with the difference of hanning kernel that it produces a negative annulus
-about spots. This is because, the result of 
+about spots.
 
 ??? note "Why negative annulus is expected"
 
@@ -246,7 +248,7 @@ This is because on one of the neighbouring z-planes, the spot has a larger inten
 averaging increases the absolute intensity.
 
 ### Varying difference of hanning kernel radius
-The below plots show the results of the convolution with the difference of hanning kernel for four different values
+The plots below show the results of the convolution with the difference of hanning kernel for four different values
 of `config['extract']['r1']`. In each case, `config['extract']['r2']` is twice this value.
 
 === "2"
@@ -262,14 +264,14 @@ of `config['extract']['r1']`. In each case, `config['extract']['r2']` is twice t
     ![image](../images/pipeline/extract/r1=6.png){width="800"}
 
 From this, we see that with $r_1 = 2$, the background regions away from the spots appear less uniform than with
-$r_1 = 3$ with quite a few patches of negative values. Also, the shape of the second spot from the left appears
+$r_1 = 3$, with quite a few patches of negative values. Also, the shape of the second spot from the left appears
 distorted. These both indicate that the kernel is wanting to extract features smaller than those of interest.
 
-As $r_1$ increases, we see that the negative annulus around becomes larger and eventually at $r_1=6$, the spots 
-start merging together indicating the kernel is wanting to extract features larger than those of interest.
+As $r_1$ increases, we see that the negative annulus around the spots becomes larger and eventually at $r_1=6$, the 
+spots start merging together, indicating the kernel is wanting to extract features larger than those of interest.
 
 ### Varying smoothing radius
-The below plots show the results of the convolution with the difference of hanning kernel followed by smoothing
+The plots below show the results of the convolution with the difference of hanning kernel followed by smoothing
 for four different values of `config['extract']['r_smooth']`. In each case, `config['extract']['r1'] = 3` and 
 `config['extract']['r2'] = 6`.
 
@@ -293,8 +295,8 @@ appear much more intense in the z-plane shown. For example, the feature towards 
 is barely visible with `r_smooth = 1, 1, 2` but is clear with `r_smooth = 1, 1, 5`.
 
 We also see that the difference between the `r_smooth = 1, 1, 2` and `r_smooth = 2, 2, 2` plots is barely perceivable.
-This suggests that the z averaging is more important, this also makes sense seen as the convolution with the 
-difference of hanning kernel is done in *2D* so treats each z-plane independently. In the `r_smooth = 4, 4, 1` image
+This suggests that the z averaging is more important, which makes sense, seen as the convolution with the 
+difference of hanning kernel is done in *2D*, so treats each z-plane independently. In the `r_smooth = 4, 4, 1` image
 with no z-averaging, we see that the spots have more of a gradual increase in intensity instead of a sharp peak.
 
 
@@ -324,7 +326,13 @@ the `anchor_channel` of the `anchor_round`.
 
 `scale` can be specified through `config['extract']['scale']` but if this is empty, it will be 
 [set](../code/extract/scale.md#coppafish.extract.scale.get_scale)
-to `scale = config['extract']['scale_norm']/max(scale_image)`. `scale_image` is the 
+to: 
+
+```
+scale = config['extract']['scale_norm']/max(scale_image)
+```
+
+`scale_image` is the 
 `nb.basic_info.tile_sz x nb.basic_info.tile_sz` raw image belonging to the channel and z-plane containing 
 the pixel with maximum intensity of the central tile (saved as `scale_channel`, `scale_z`, `scale_tile` in 
 [`nb.extract_debug`](../notebook_comments.md#extract_debug)) in round 0. It is then filtered/smoothed according
@@ -343,13 +351,13 @@ This shift is then subtracted when the tiles are [loaded](../code/utils/npy.md#c
 ### Error - clipped pixels
 Because `scale` is computed from one tile and round, there is a possibility during the course
 of the extract step of the pipeline that a much more intense tile/round will be encountered such that 
-the pixel values will have to be clipped after scaling to be kept within the *uint16* range.
+the pixel values will have to be clipped after scaling, to be kept within the *uint16* range.
 
 The number of pixels for which this happens on tile $t$, round $r$, channel $c$ is saved as 
 [`nb.extract_debug.n_clip_pixels[t, r, c]`](../notebook_comments.md#extract_debug).
 
-Clipped pixels can cause more spots to be detected in the find_spots section of the pipeline as shown 
-below, so are best avoided:
+Clipped pixels can cause more spots to be detected in the [*find spots*](find_spots.md) section of the pipeline,
+as shown below, so are best avoided:
 
 === "Spot detection with no clipped pixels"
     ![image](../images/pipeline/extract/spot_no_clip.png){width="500"}

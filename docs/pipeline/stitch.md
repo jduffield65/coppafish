@@ -11,9 +11,9 @@ is finished.
 
 ## Shift
 We need to find the overlap between each pair of neighbouring tiles. To do this, for each tile, we
-ask whether there is a tile to the north of it and if there is we 
+ask whether there is a tile to the north of it, and if there is we 
 [compute the shift](../code/stitch/shift.md#coppafish.stitch.shift.compute_shift) between the two.
-We then ask if there is a tile to the east of it and if there is we compute the shift between the two.
+We then ask if there is a tile to the east of it, and if there is we compute the shift between the two.
 
 ??? example
 
@@ -36,7 +36,7 @@ We then ask if there is a tile to the east of it and if there is we compute the 
 
     We will always be finding the offset of a tile relative to a tile with a [smaller index](#global-coordinates).
 
-The tile indices for neighbours that we find the overlap in the north/south direction for
+The tile indices for neighbours for which we find the overlap in the north/south direction
 are saved as `nb.stitch.south_pairs`. The shift between tile `nb.stitch.south_pairs[i, 0]`
 and tile `nb.stitch.south_pairs[i, 1]` is saved as `nb.stitch.south_shifts[i]`.
 
@@ -167,18 +167,20 @@ the two point clouds with a distance between them less than `config['stitch']['n
 
 
 #### 3D
-For speed, rather than considering an exhaustive search in three dimensions, we first ignore any shift in z and 
-just find the [best yx shift](../code/stitch/shift.md#coppafish.stitch.shift.get_best_shift_2d).
+For speed, rather than considering an exhaustive search in three dimensions, we first ignore any shift in $z$ and 
+just find the [best $yx$ shift](../code/stitch/shift.md#coppafish.stitch.shift.get_best_shift_2d).
 
 To do this, we [split](../code/stitch/shift.md#coppafish.stitch.shift.get_2d_slices) 
 each *3D* point cloud into a number of *2D* point clouds. 
 The number is determined by `config['stitch']['nz_collapse']` to be:
 
-`ceil(nb.basic_info.nz / config['stitch']['nz_collapse'])` 
+``` python
+ceil(nb.basic_info.nz / config['stitch']['nz_collapse'])
+``` 
 
 We then consider the corresponding point clouds independently.
 
-??? example
+??? example "Pseudocode - $yx$ shift"
 
     Lets consider finding the best yx shift between tile 5 and tile 4 with:
 
@@ -233,7 +235,7 @@ The conversion from $z$ pixel units to $yx$ pixel units is achieved by multiplyi
 the $z$ coordinate by `nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy`. The $z$ shifts in the 
 exhaustive search must also be put into $yx$ pixel units.
 
-??? example
+??? example "Pseudocode - $z$ shift"
 
     If the previous example found the best $yx$ shift to be `best_shift_yx`, 
     the pseudocode below is what [follows](../code/stitch/shift.md#coppafish.stitch.shift.get_best_shift_3d) 
@@ -455,8 +457,9 @@ our initial exhaustive search range to save time for future tiles.
 
 ??? example
 
-    The code below shows how the `update_shifts` works to refine the initial search 
-    range given the following $yxz$ shifts have been found for north/south overlapping tiles
+    The code below shows how [`update_shifts`](../code/stitch/shift.md#coppafish.stitch.shift.update_shifts) 
+    works to refine the initial search 
+    range, given that the following $yxz$ shifts have been found for north/south overlapping tiles
     (all with `score > score_thresh`):
     
     * `[-1846, 20, 1]`
@@ -564,8 +567,8 @@ This procedure is done with the [`get_tile_origin`](../code/stitch/tile_origin.m
 the tile origins saved to the *Notebook* as `nb.stitch.tile_origin`.
 
 ## Error - too many bad shifts
-After the `stitch` *NotebookPage* has been [added](../code/pipeline/run.md#coppafish.pipeline.run.run_stitch)
-to the *Notebook*, [`check_shifts_stitch`](../code/stitch/check_shifts.md#coppafish.stitch.check_shifts.check_shifts_stitch) 
+After the [*call reference spots*](call_reference_spots.md) step, 
+[`check_shifts_stitch`](../code/stitch/check_shifts.md#coppafish.stitch.check_shifts.check_shifts_stitch) 
 will be run.
 
 This will produce a warning for any shift found with `score < score_thresh`.
@@ -573,9 +576,10 @@ This will produce a warning for any shift found with `score < score_thresh`.
 An error will be raised if the fraction of shifts with `score < score_thresh` exceeds 
 `config['stitch']['n_shifts_error_fraction']`.
 
-If this error does occur, it is probably worth looking at the [debugging plots](#debugging) to see if the stitching
+If this error does occur, it is probably worth looking at the [`Viewer`](../view_results.md) 
+and the [debugging plots](#debugging) to see if the stitching
 looks good enough to continue with the rest of the pipeline or if it should be re-run with different configuration
-file parameters (e.g. smaller `config['stitch']['shift_step']` or larger `config['stitch']['shift_max_range']`). 
+file parameters (e.g. smaller `config['stitch']['shift_step']` or larger `config['stitch']['shift_max_range']`).
 
 ## Saving stitched images
 [After](../code/pipeline/run.md#coppafish.pipeline.run.run_stitch) 
@@ -616,7 +620,7 @@ It also includes a plot of `score` vs `score_thresh` for each pair of neighbouri
 
 ![image](../images/pipeline/stitch/view_shift_info.png){width="800"}
 
-In this case, all the shifts seem reasonable as the top two plots show quite a small range
+In this case, all the shifts seem reasonable as the top two plots show quite a small range,
 and the bottom plot shows `score > score_thresh` for every shift (blue numbers are all above the green line).
 If a shift had `score < score_thresh`, it would be shown in red in each of the three plots
 for that direction.
@@ -640,7 +644,7 @@ There are then buttons to select which point cloud for tile $1$ is plotted in bl
 
 * No overlap: This is assuming there is $0\%$ overlap between the two tiles.
 * $x\%$ overlap: $x$ here will be `config['stitch']['expected_overlap']`.
-This is our starting guess, i.e. the expected overlap in the $y$ and a shift of 0 in $x$ and $z$.
+This is our starting guess, i.e. the expected overlap in $y$ and a shift of 0 in $x$ and $z$.
 * Shift: This is the best shift found, saved in `nb.stitch.south_shifts`.
 * Final: This is the coordinates of tile $1$ spots in the global coordinate system 
 (`local_yxz + nb.stitch.tile_origin[1]`).
@@ -669,7 +673,7 @@ this will be similar to the [`score`](#score).
 
 ### [`view_stitch`](../code/plot/stitch.md#view_stitch)
 Another useful function is [`view_stitch`](../code/plot/stitch.md#view_stitch). 
-This plots the all spots found in the `ref_round`/`ref_channel` in the global coordinate system specified
+This plots all the spots found in the `ref_round`/`ref_channel` in the global coordinate system specified
 by `nb.stitch.tile_origin`.
 
 The example below is for a $4\times3$ grid of tiles in *2D*.
@@ -682,7 +686,7 @@ The example below is for a $4\times3$ grid of tiles in *2D*.
 
 The blue spots are duplicate spots (detected on a tile which is not the tile whose centre they are closest to).
 For each duplicate spot, we expect there is a non-duplicate spot in red, detected on a different tile
-but with the same global coordinate. We can see this in the *Zoom* plot showing the intersection between tile 1 and 
+but with the same global coordinate. We can see this in the *Zoom* plot, showing the intersection between tile 1 and 
 tile 2 (indicated by a green box in the *Full* image).
 
 These duplicate spots will be removed in the [*get reference spots*](get_reference_spots.md#duplicates) 

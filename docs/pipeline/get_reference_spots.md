@@ -34,7 +34,7 @@ on more than 1 tile. This is because there is an overlap between the tiles.
 
 To [remove these duplicates](../code/call_spots/base.md#coppafish.call_spots.base.get_non_duplicate), we only keep spots 
 which were detected on a tile (saved in [`nb.find_spots.spot_details`](../notebook_comments.md#find_spots) 
-during the [*find spots* step](find_spots.md)) is also the tile whose centre they are closest to in the 
+during the [*find spots* step](find_spots.md)) which is also the tile whose centre they are closest to in the 
 global coordinate system (`nb.stitch.tile_origin + nb.basic_info.tile_centre`).
 
 The [`view_stitch`](stitch.md#view_stitch) function shows the duplicate spots in blue.
@@ -53,7 +53,7 @@ form as was used to compute the transform (see *Preparing point clouds* and *Pad
 [here](register.md#icp)). 
 
 Once the $n_{spots} \times 4$ spot coordinate array is multiplied by the $4 \times 3$ transform, a 
-$n_{spots} \times 3$ array is obtained and after the z-scaling and centering are removed, this gives the corresponding
+$n_{spots} \times 3$ array is obtained, and after the z-scaling and centering are removed, this gives the corresponding
 $yxz$ coordinates in round $r$, channel $c$. 
 
 ### Reading off intensity
@@ -82,7 +82,7 @@ all spots removed for this reason:
     `nb.ref_spots.colors[s, r, c]` will be set to `-nb.basic_info.tile_pixel_value_shift` for all spots, `s`, 
     if either `r` is not in `nb.basic_info.use_rounds` or `c` is not in `nb.basic_info.use_channels`.
     
-    This is because it is impossible for an actual pixel to have this intensity due to clipping 
+    This is because it is impossible for an actual pixel to have this intensity, due to clipping 
     done in the [*extract* step](extract.md) when 
     [saving the tiles](../code/utils/npy.md#coppafish.utils.npy.save_tile). 
     So basically, this is an integer version of `nan`.
