@@ -1,0 +1,2739 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Notebook - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#notebook" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Notebook
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../config_setup/" class="md-tabs__link md-tabs__link--active">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Notebook
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Notebook
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#create-notebook" class="md-nav__link">
+    Create Notebook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-notebookpage" class="md-nav__link">
+    Adding a NotebookPage
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding a NotebookPage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deleting-a-notebookpage" class="md-nav__link">
+    Deleting a NotebookPage
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modifying-a-notebookpage" class="md-nav__link">
+    Modifying a NotebookPage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish-specific-notebookpages" class="md-nav__link">
+    coppafish Specific NotebookPages
+  </a>
+  
+    <nav class="md-nav" aria-label="coppafish Specific NotebookPages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#describe" class="md-nav__link">
+    Describe
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-file" class="md-nav__link">
+    Configuration File
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration File">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changing-basic_info-mid-pipeline" class="md-nav__link">
+    Changing basic_info mid-pipeline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#create-notebook" class="md-nav__link">
+    Create Notebook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-notebookpage" class="md-nav__link">
+    Adding a NotebookPage
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding a NotebookPage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deleting-a-notebookpage" class="md-nav__link">
+    Deleting a NotebookPage
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modifying-a-notebookpage" class="md-nav__link">
+    Modifying a NotebookPage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish-specific-notebookpages" class="md-nav__link">
+    coppafish Specific NotebookPages
+  </a>
+  
+    <nav class="md-nav" aria-label="coppafish Specific NotebookPages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#describe" class="md-nav__link">
+    Describe
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-file" class="md-nav__link">
+    Configuration File
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration File">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changing-basic_info-mid-pipeline" class="md-nav__link">
+    Changing basic_info mid-pipeline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/notebook.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="notebook"><a href="../code/setup/notebook/">Notebook</a></h1>
+<p>The <em>Notebook</em> is a write-once data structure which is saved as a npz file.
+It stores the output of each stage of the pipeline as a separate <em>NotebookPage</em>. 
+Each <em>NotebookPage</em> of the <em>Notebook</em> is itself a write-once data structure. 
+Each <em>NotebookPage</em> may contain many different variables.</p>
+<details class="note">
+<summary>Times saved to <em>Notebook</em> and <em>NotebookPage</em></summary>
+<p>Whenever a variable is added to a <em>NotebookPage</em>, in addition to saving the value, it saves the time
+at which the variable was added (<code>nbp._times</code>).  Likewise, the time at which a <em>NotebookPage</em> is
+created (<code>nbp._time_created</code>), and the time at which it is added to the <em>Notebook</em> (<code>nb._page_times</code>) 
+are also recorded automatically. The time the <em>Notebook</em> was created is also
+recorded (<code>nb._created_time</code>). This both serves as a record of what was done, as well as a
+source for debugging and optimization.</p>
+</details>
+<p>Conceptually, the idea is that a <em>Notebook</em> is like a lab notebook.  In a lab
+notebook, you write things in a separate section (here, <em>NotebookPage</em>) for each part of
+the experiment with the appropriate section name.  You only add, you never
+erase or modify.  Lab notebooks contain intermediate results, as well as the
+main data collected during the experiment.  All times and labels of all results
+are written down.</p>
+<h2 id="create-notebook">Create <em>Notebook</em></h2>
+<p>To create a <em>Notebook</em>, pass it the path to the file where the <em>Notebook</em> is to
+be saved (<em>/Users/user/coppafish/experiment/notebook.npz</em>) and the path to the configuration file
+(<em>/Users/user/coppafish/experiment/settings.ini</em>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span>
+<span class="n">nb_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/notebook.npz&#39;</span>
+<span class="n">ini_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/settings.ini&#39;</span>
+<span class="n">nb</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file</span><span class="p">,</span> <span class="n">ini_file</span><span class="p">)</span>
+</code></pre></div>
+<details class="note">
+<summary>Create just using <code>config_file</code></summary>
+<p>The <em>Notebook</em> can also be created with just the configuration file through:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span>
+<span class="n">ini_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/settings.ini&#39;</span>
+<span class="n">nb</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">config_file</span><span class="o">=</span><span class="n">ini_file</span><span class="p">)</span>
+</code></pre></div>
+The location where the <em>Notebook</em> is saved (nb._file) will then be set to:
+<code>config['file_names']['output_dir'] + config['file_names']['notebook_name']</code>.</p>
+</details>
+<p>If <code>nb_file</code> already exists, the <em>Notebook</em> located
+at this path will be loaded.  If not, a new file will be created as soon as
+the first <em>NotebookPage</em> is added to the <em>Notebook</em>. </p>
+<p>When the <em>Notebook</em> is created, it will save the contents of the configuration file (<code>nb._config</code>) thus
+there is no need to pass the <code>config_file</code> argument when re-loading a <em>Notebook</em>. You can just
+run <code>nb = Notebook('/Users/user/coppafish/experiment/notebook.npz')</code>.</p>
+<details class="note">
+<summary>Using <em>Notebook</em> outside the <em>coppaFISH</em> pipeline</summary>
+<p>Passing the configuration file to the <em>Notebook</em> allows for several <a href="#configuration-file">features</a>,
+however a <em>Notebook</em> can be created without it:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span>
+<span class="n">nb_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/notebook.npz&#39;</span>
+<span class="n">nb</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file</span><span class="p">)</span>
+</code></pre></div>
+You can then still add <em>NotebookPages</em> to the <em>Notebook</em> as normal.</p>
+</details>
+<h2 id="adding-a-notebookpage">Adding a <em>NotebookPage</em></h2>
+<p>To add a <em>NotebookPage</em> called <em>page_name</em> with variable <code>var_1 = 5</code> to the <em>Notebook</em>, you can do the following:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">NotebookPage</span>
+<span class="n">nbp</span> <span class="o">=</span> <span class="n">NotebookPage</span><span class="p">(</span><span class="s1">&#39;page_name&#39;</span><span class="p">)</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">var_1</span> <span class="o">=</span> <span class="mi">5</span>  
+<span class="n">nb</span> <span class="o">+=</span> <span class="n">nbp</span>  <span class="c1"># or nb.add_page(nbp) or nb.page_name = nbp</span>
+</code></pre></div>
+<p>Whenever a <em>NotebookPage</em> is added to the <em>Notebook</em>, it will trigger the <em>Notebook</em> to be saved (unless 
+the <em>NotebookPage</em> has a name listed in <code>Notebook._no_save_pages</code>).</p>
+<p>The variable <code>var_1</code> of the <em>NotebookPage</em> called <em>page_name</em> can then be accessed from the <em>Notebook</em> via
+<code>nb.page_name.var_1</code>.</p>
+<details class="note">
+<summary>Adding variables to <em>Notebook</em></summary>
+<p>Varibles of forms other than <em>NotebookPages</em> can be added directly to the <em>Notebook</em> e.g. <code>nb.var_1 = 5</code>.
+However, when the <em>Notebook</em> is saved and re-loaded, variables added in this way will no longer be
+present.</p>
+</details>
+<h3 id="deleting-a-notebookpage">Deleting a <em>NotebookPage</em></h3>
+<p>To delete a <em>NotebookPage</em> called <em>page_name</em> which is in the <em>Notebook</em>, run <code>del nb.page_name</code>.</p>
+<p>You may want to do this, for example, to <a href="../run_code/#re-run-section">re-run</a> a section of the pipeline with 
+<a href="#configuration-file">different parameters</a> in the corresponding section of the configuration file. </p>
+<h2 id="modifying-a-notebookpage">Modifying a <em>NotebookPage</em></h2>
+<p>The <em>NotebookPage</em> is a write-once data structure so once a variable has been added to it, it cannot be 
+changed (unless it is listed in <code>NotebookPage._NON_RESULT_KEYS</code>). I.e. the following will raise an error:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">NotebookPage</span>
+<span class="n">nbp</span> <span class="o">=</span> <span class="n">NotebookPage</span><span class="p">(</span><span class="s1">&#39;page_name&#39;</span><span class="p">)</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">var_1</span> <span class="o">=</span> <span class="mi">5</span>  
+<span class="n">nbp</span><span class="o">.</span><span class="n">var_1</span> <span class="o">=</span> <span class="mi">10</span>
+</code></pre></div>
+<p>Once a <em>NotebookPage</em> has been added to a <em>Notebook</em>, <code>nbp.finalized</code> will change to <code>True</code> and no more variables
+will be allowed to be added to the <em>NotebookPage</em>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">NotebookPage</span>
+<span class="n">nbp</span> <span class="o">=</span> <span class="n">NotebookPage</span><span class="p">(</span><span class="s1">&#39;page_name&#39;</span><span class="p">)</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">var_1</span> <span class="o">=</span> <span class="mi">5</span>  
+<span class="n">nbp</span><span class="o">.</span><span class="n">var_2</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># fine as page not added to notebook yet</span>
+<span class="n">nb</span> <span class="o">+=</span> <span class="n">nbp</span>
+<span class="n">nb</span><span class="o">.</span><span class="n">page_name</span><span class="o">.</span><span class="n">var_3</span> <span class="o">=</span> <span class="mi">99</span> <span class="c1"># will raise error as page is added to notebook now</span>
+</code></pre></div>
+<p>To delete the variable <code>var_1</code> run <code>del nb.var_1</code>. Again, you won't be able to do this once the 
+<em>NotebookPage</em> has been added to a <em>Notebook</em>.</p>
+<h2 id="coppafish-specific-notebookpages"><em>coppafish</em> Specific <em>NotebookPages</em></h2>
+<p>The names of all the <em>NotebookPages</em> added to the <em>Notebook</em> through the course of the pipeline are given as
+the headers in the <a href="../notebook_comments/"><em>notebook_comments.json</em> file</a>. 
+Then the bullet points give all the variables that are added to each <em>NotebookPage</em>.</p>
+<p>When a <em>NotebookPage</em> has one of these names, an error will be raised if you try to assign a variable to it
+which is not listed in the relevant section of the <a href="../notebook_comments/"><em>notebook_comments.json</em> file</a>. 
+When adding the <em>NotebookPage</em> to the <em>Notebook</em>, an error will be raised unless it contains all 
+the variables listed in the relevant section of the <a href="../notebook_comments/"><em>notebook_comments.json</em> file</a>
+and no others.</p>
+<p>Examples of adding a <em>NotebookPage</em> named <a href="../notebook_comments/#thresholds"><em>thresholds</em></a> to a <em>Notebook</em>
+are given below:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">✅</label><label for="__tabbed_1_2">❌ Error adding variable to <em>NotebookPage</em></label><label for="__tabbed_1_3">❌ Error adding <em>NotebookPage</em> to <em>Notebook</em></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">NotebookPage</span>
+<span class="n">nbp</span> <span class="o">=</span> <span class="n">NotebookPage</span><span class="p">(</span><span class="s1">&#39;thresholds&#39;</span><span class="p">)</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">intensity</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">score_ref</span> <span class="o">=</span> <span class="mf">0.25</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">score_omp</span> <span class="o">=</span> <span class="mf">0.263</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">score_omp_multiplier</span> <span class="o">=</span> <span class="mf">0.95</span>
+<span class="n">nb</span> <span class="o">+=</span> <span class="n">nbp</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">NotebookPage</span>
+<span class="n">nbp</span> <span class="o">=</span> <span class="n">NotebookPage</span><span class="p">(</span><span class="s1">&#39;thresholds&#39;</span><span class="p">)</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">intensity</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">var_1</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># Error here as &#39;var_1&#39; is not listed in </span>
+               <span class="c1"># &#39;thresholds&#39; section of notebook_comments.json</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">NotebookPage</span>
+<span class="n">nbp</span> <span class="o">=</span> <span class="n">NotebookPage</span><span class="p">(</span><span class="s1">&#39;thresholds&#39;</span><span class="p">)</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">intensity</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">nbp</span><span class="o">.</span><span class="n">score_ref</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">=</span> <span class="mi">5</span>  
+<span class="n">nb</span> <span class="o">+=</span> <span class="n">nbp</span>  <span class="c1"># Error here as &#39;score_omp&#39; and &#39;score_omp_multiplier&#39; </span>
+           <span class="c1"># are listed in &#39;thresholds&#39; section of </span>
+           <span class="c1"># notebook_comments.json but not added to page.</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="describe">Describe</h3>
+<p>The comments given in the <a href="../notebook_comments/"><em>notebook_comments.json</em> file</a> can be accessed from 
+the <em>NotebookPage</em> by calling the <a href="../code/setup/notebook/#coppafish.setup.notebook.NotebookPage.describe"><code>describe</code></a> 
+function. An example to print the comment for the variable <code>gene_no</code> in the <em>omp</em> page is given below:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Code</label><label for="__tabbed_2_2">Output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">nb</span><span class="o">.</span><span class="n">omp</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="s1">&#39;gene_no&#39;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>Numpy int16 array [n_spots]
+gene_no[s] is the index of the gene assigned to spot s.
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>If <a href="../code/setup/notebook/#coppafish.setup.notebook.Notebook.describe"><code>describe</code></a> is called from the <em>Notebook</em> instead,
+it will loop through all <em>NotebookPages</em> in the <em>Notebook</em> and print the comment for each variable with the correct
+name that it encounters:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Code</label><label for="__tabbed_3_2">Output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">nb</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="s1">&#39;gene_no&#39;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>gene_no in ref_spots:
+Numpy int16 array [n_spots]
+gene_no[s] is the index of the gene assigned to spot s.
+
+gene_no in omp:
+Numpy int16 array [n_spots]
+gene_no[s] is the index of the gene assigned to spot s.
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>If <a href="../code/setup/notebook/#coppafish.setup.notebook.Notebook.describe"><code>describe</code></a> is called from the <em>Notebook</em> 
+and finds the variable in the configuration file, it will print the section it was found in and its value. E.g.
+for <code>dp_thresh</code> in the <em>omp</em> section:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Code</label><label for="__tabbed_4_2">Output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">nb</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="s1">&#39;dp_thresh&#39;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>No variable named dp_thresh in the omp page.
+But it is in the omp section of the config file and has value:
+0.225
+</code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="configuration-file">Configuration File</h3>
+<p>The configuration file can be returned as a dictionary of dictionaries from the <em>Notebook</em> by using the function
+<a href="../code/setup/notebook/#coppafish.setup.notebook.Notebook.get_config"><code>get_config</code></a>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Code</label><label for="__tabbed_5_2">config</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">nb</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../images/config_dict.png" width="400" /></p>
+</div>
+</div>
+</div>
+<p>When the <em>Notebook</em> is re-loaded with a <code>config_file</code> (<code>nb = Notebook(nb_file, config_file)</code>), the configuration
+file supplied will be <a href="../code/setup/notebook/#coppafish.setup.notebook.Notebook.compare_config">compared</a> 
+to the one saved in the <em>Notebook</em> (<code>nb._config</code>). 
+If the comparison indicates that the two are different, an error will be raised.
+Otherwise, when the <em>Notebook</em> is loaded, the saved value of the configuration file 
+(<code>nb._config</code>) will be changed to the one given by the provided <code>config_file</code>.</p>
+<details class="note" open="open">
+<summary>What is compared?</summary>
+<p>Each <a href="../notebook_comments/"><em>NotebookPage</em></a> added during the <em>coppafish</em> pipeline has a name which is the same as a 
+section in the <a href="../config/">configuration file</a> or the same apart from a 
+<a href="../notebook_comments/#extract_debug"><em>_debug</em> suffix</a>.</p>
+<p>Only sections with a corresponding <em>NotebookPage</em> in the <em>Notebook</em> are compared.
+The <a href="#file_names"><em>file_names</em></a> section is also ignored in the comparison as it is included in 
+<code>Notebook._no_compare_config_sections</code>.</p>
+<p>So if the <a href="../code/pipeline/run/#coppafish.pipeline.run.run_pipeline">pipeline</a> has been run as far as the
+<a href="../code/pipeline/call_reference_spots/"><code>call_reference_spots</code></a> 
+stage, the <em>Notebook</em> will not have the <a href="../notebook_comments/#omp"><em>omp</em> page</a>. 
+In this case, the <a href="../config/#omp"><em>omp</em></a> section of the <code>config_file</code> can be changed without causing an error
+as indicated below:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><input id="__tabbed_6_3" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">nb._config (saved to <em>Notebook</em>)</label><label for="__tabbed_6_2">✅ Allowed <code>config_file</code></label><label for="__tabbed_6_3">❌ <code>config_file</code> giving error</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+
+<span class="k">[omp]</span><span class="w"></span>
+<span class="na">dp_thresh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0.3452  </span><span class="w"></span>
+<span class="c1">; Allowed because variable is in the omp section</span><span class="w"></span>
+<span class="c1">; and omp page not added to Notebook yet.</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+
+<span class="k">[register]</span><span class="w"></span>
+<span class="na">n_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">52  </span><span class="w"></span>
+<span class="c1">; Not allowed because variable is in the register section</span><span class="w"></span>
+<span class="c1">; but register page has been added to Notebook.</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+</details>
+<h4 id="changing-basic_info-mid-pipeline">Changing <em>basic_info</em> mid-pipeline</h4>
+<p>It is quite common to want to change the <em>basic_info</em> section of the configuration file halfway through the pipeline
+without re-running the steps of the pipeline which have already been completed.</p>
+<p>For example, we may have specified the wrong <code>dye_names</code>, but this is not used until the <code>call_reference_spots</code>
+stage. Or after the <em>find_spots</em> or <em>register</em> sections, we may want to remove some problematic 
+tiles, rounds or channels (through <code>use_tiles</code>, <code>use_rounds</code> and <code>use_channels</code>).</p>
+<p>But if the <em>basic_info</em> section of the configuration file is changed, 
+an error would be raised unless the <em>basic_info NotebookPage</em> is deleted. The code below illustrates
+how to save a new <em>Notebook</em> with a different <em>basic_info</em> page:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:4"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><input id="__tabbed_7_3" name="__tabbed_7" type="radio" /><input id="__tabbed_7_4" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Code</label><label for="__tabbed_7_2">Output</label><label for="__tabbed_7_3">nb._config (saved to <em>Notebook</em>)</label><label for="__tabbed_7_4"><em>/Users/user/coppafish/experiment/settings_new.ini</em></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span>
+<span class="kn">from</span> <span class="nn">coppafish.pipeline</span> <span class="kn">import</span> <span class="n">set_basic_info</span>
+<span class="n">nb_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/notebook.npz&#39;</span>
+
+<span class="c1"># Save new notebook with different name so it does not overwrite old notebook</span>
+<span class="c1"># Make sure notebook_name is specified in [file_names] section </span>
+<span class="c1"># of settings_new.ini file to be same as name given here.</span>
+<span class="n">nb_file_new</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/notebook_new.npz&#39;</span>
+<span class="n">ini_file_new</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/settings_new.ini&#39;</span>
+
+<span class="c1"># config_file not given so will use last one saved to Notebook</span>
+<span class="n">nb</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using config file saved to notebook:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;use_channels: </span><span class="si">{</span><span class="n">nb</span><span class="o">.</span><span class="n">basic_info</span><span class="o">.</span><span class="n">use_channels</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;use_tiles: </span><span class="si">{</span><span class="n">nb</span><span class="o">.</span><span class="n">basic_info</span><span class="o">.</span><span class="n">use_tiles</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Change basic_info</span>
+<span class="k">del</span> <span class="n">nb</span><span class="o">.</span><span class="n">basic_info</span>     <span class="c1"># delete old basic info</span>
+<span class="n">nb</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nb_file_new</span><span class="p">)</span>  <span class="c1"># save Notebook with no basic_info page to new file </span>
+                      <span class="c1"># so does not overwrite old Notebook</span>
+<span class="c1"># Load in new notebook with new config file with different basic_info</span>
+<span class="n">nb_new</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file_new</span><span class="p">,</span> <span class="n">ini_file_new</span><span class="p">)</span>
+<span class="c1"># add new basic_info page to Notebook</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">nb_new</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+<span class="n">nbp_basic</span> <span class="o">=</span> <span class="n">set_basic_info</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;file_names&#39;</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;basic_info&#39;</span><span class="p">])</span>
+<span class="n">nb_new</span> <span class="o">+=</span> <span class="n">nbp_basic</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Using new config file </span><span class="si">{</span><span class="n">ini_file_new</span><span class="si">}</span><span class="s1">:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;use_channels: </span><span class="si">{</span><span class="n">nb_new</span><span class="o">.</span><span class="n">basic_info</span><span class="o">.</span><span class="n">use_channels</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;use_tiles: </span><span class="si">{</span><span class="n">nb_new</span><span class="o">.</span><span class="n">basic_info</span><span class="o">.</span><span class="n">use_tiles</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>Using config file saved to notebook:
+use_channels: [0, 1, 2, 3, 4, 5, 6]
+use_tiles: [0, 1, 2, 3]
+Using new config file /Users/user/coppafish/experiment/settings_new.ini:
+use_channels: [1, 2, 5, 6]
+use_tiles: [0, 2, 3]
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/codebook.txt</span><span class="w"></span>
+<span class="na">notebook_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">notebook_new</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+<span class="na">use_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">1, 2, 5, 6</span><span class="w"></span>
+<span class="na">use_tiles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0, 2, 3</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h4 id="file_names"><em>file_names</em></h4>
+<p>The <a href="../notebook_comments/#file_names"><em>file_names</em></a> section of the <em>Notebook</em> is treated differently to deal with the 
+case where the various file locations have changed e.g. when accessing them from a different computer.</p>
+<p>The <a href="../notebook_comments/#file_names"><em>file_names</em></a> <em>NotebookPage</em>
+is never saved when the <em>Notebook</em> is saved, and adding a <em>NotebookPage</em> called <em>file_names</em> 
+does not trigger a save. When the <em>Notebook</em> is loaded in, a <a href="../notebook_comments/#file_names"><em>file_names</em></a> 
+<em>NotebookPage</em> will automatically be <a href="../code/setup/file_names/">created</a> and added to the 
+<em>Notebook</em> if the <em>Notebook</em> contains a <a href="../notebook_comments/#basic_info"><em>basic_info</em></a> <em>NotebookPage</em>.
+The <a href="../notebook_comments/#file_names"><em>file_names</em></a> <em>NotebookPage</em> will then inherit information from
+the <a href="../config/#file_names"><em>file_names</em></a> section of the <code>config_file</code> which was passed to the <em>Notebook</em> 
+when loading it, in as explained below:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:4"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><input id="__tabbed_8_3" name="__tabbed_8" type="radio" /><input id="__tabbed_8_4" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Code</label><label for="__tabbed_8_2">Output</label><label for="__tabbed_8_3">nb._config (saved to <em>Notebook</em>)</label><label for="__tabbed_8_4"><em>/Users/NEW_USER/coppafish/NEW_EXPERIMENT/settings.ini</em></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span>
+<span class="n">nb_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/notebook.npz&#39;</span>
+<span class="n">ini_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/NEW_USER/coppafish/NEW_EXPERIMENT/settings.ini&#39;</span>
+
+<span class="c1"># config_file not given so will use last one saved to Notebook</span>
+<span class="n">nb_old</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file</span><span class="p">)</span>  
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using config file saved to notebook:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nb_old</span><span class="o">.</span><span class="n">file_names</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nb_old</span><span class="o">.</span><span class="n">file_names</span><span class="o">.</span><span class="n">big_anchor_image</span><span class="p">)</span>
+<span class="c1"># tile file path for round 0, tile 0, channel 0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nb_old</span><span class="o">.</span><span class="n">file_names</span><span class="o">.</span><span class="n">tile</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># config_file given so will update nb._config</span>
+<span class="n">nb_new</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file</span><span class="p">,</span> <span class="n">ini_file</span><span class="p">)</span>  
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Using new config file </span><span class="si">{</span><span class="n">ini_file</span><span class="si">}</span><span class="s1">:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nb_new</span><span class="o">.</span><span class="n">file_names</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nb_new</span><span class="o">.</span><span class="n">file_names</span><span class="o">.</span><span class="n">big_anchor_image</span><span class="p">)</span>
+<span class="c1"># tile file path for round 0, tile 0, channel 0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nb_new</span><span class="o">.</span><span class="n">file_names</span><span class="o">.</span><span class="n">tile</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>  
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>Using config file saved to notebook:
+/Users/user/coppafish/experiment1/output
+/Users/user/coppafish/experiment1/output/anchor_image.npz
+/Users/user/coppafish/experiment1/tiles/Exp1_r0_t0c0.npy
+Using new config file /Users/NEW_USER/coppafish/NEW_EXPERIMENT/settings.ini:
+/Users/NEW_USER/coppafish/NEW_EXPERIMENT/output
+/Users/NEW_USER/coppafish/NEW_EXPERIMENT/output/anchor_image.npz
+/Users/NEW_USER/coppafish/NEW_EXPERIMENT/tiles/Exp1_r0_t0c0.npy
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/user/coppafish/experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/NEW_USER/coppafish/NEW_EXPERIMENT/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/NEW_USER/coppafish/NEW_EXPERIMENT/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/NEW_USER/coppafish/NEW_EXPERIMENT/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/NEW_USER/coppafish/NEW_EXPERIMENT/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Also, as soon as a <em>NotebookPage</em> named <a href="../notebook_comments/#basic_info"><em>basic_info</em></a> is added to the <em>Notebook</em>,
+the <a href="../notebook_comments/#file_names"><em>file_names</em></a> <em>NotebookPage</em> will also be 
+<a href="../code/setup/notebook/#set_file_names">added</a> due to information in the <code>Notebook._no_save_pages</code> dictionary.</p>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../view_results/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Viewing the results" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Viewing the results
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../config/" class="md-footer__link md-footer__link--next" aria-label="Next: Config Default Settings" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Config Default Settings
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

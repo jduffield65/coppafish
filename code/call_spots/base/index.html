@@ -1,0 +1,3176 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Base - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#coppafish.call_spots.base.color_normalisation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Base
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../config_setup/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../setup/notebook/" class="md-tabs__link md-tabs__link--active">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Base
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Base
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.color_normalisation" class="md-nav__link">
+    color_normalisation()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.get_bled_codes" class="md-nav__link">
+    get_bled_codes()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.get_gene_efficiency" class="md-nav__link">
+    get_gene_efficiency()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.get_non_duplicate" class="md-nav__link">
+    get_non_duplicate()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.color_normalisation" class="md-nav__link">
+    color_normalisation()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.get_bled_codes" class="md-nav__link">
+    get_bled_codes()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.get_gene_efficiency" class="md-nav__link">
+    get_gene_efficiency()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.call_spots.base.get_non_duplicate" class="md-nav__link">
+    get_non_duplicate()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/code/call_spots/base.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+  <h1>Base</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+  <div class="doc doc-contents first">
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.call_spots.base.color_normalisation" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">color_normalisation</span><span class="p">(</span><span class="n">hist_values</span><span class="p">,</span> <span class="n">hist_counts</span><span class="p">,</span> <span class="n">thresh_intensities</span><span class="p">,</span> <span class="n">thresh_probs</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>This finds the normalisations for each round, <code>r</code>, and channel, <code>c</code>, such that if <code>norm_spot_color[r,c] =
+spot_color[r,c] / norm_factor[r,c]</code>, the probability of <code>norm_spot_color</code> being larger than <code>thresh_intensities[i]</code> is less than <code>thresh_probs[i]</code> for every <code>i</code>.
+Where the probability is based on all pixels from all tiles in that round and channel.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>hist_values</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_pixel_values]</code>.
+All possible pixel values in saved tiff images i.e. n_pixel_values is approximately
+<code>np.iinfo(np.uint16).max</code> because tiffs saved as <code>uint16</code> images.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>hist_counts</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_pixel_values x n_rounds x n_channels]</code>.
+<code>hist_counts[i, r, c]</code> is the number of pixels across all tiles in round <code>r</code>, channel <code>c</code>
+which had the value <code>hist_values[i]</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>thresh_intensities</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[float, <span title="typing.List">List</span>[float], <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>float [n_thresholds]</code>.
+Thresholds such that the probability of having a normalised spot_color greater than this are quite low.
+Need to be ascending.
+Typical: <code>[0.5, 1, 5]</code> i.e. we want most of <code>normalised spot_colors</code> to be less than <code>0.5</code> so
+high normalised spot color is on the order of <code>1</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>thresh_probs</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[float, <span title="typing.List">List</span>[float], <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>float [n_thresholds]</code>.
+Probability of normalised spot color being greater than <code>thresh_intensities[i]</code> must be less than
+<code>thresh_probs[i]</code>. Needs to be same shape as thresh_intensities and descending.
+Typical: <code>[0.01, 5e-4, 1e-5]</code> i.e. want almost all non spot pixels to have
+normalised intensity less than <code>0.5</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>method</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td><p>Must be one of the following:</p>
+<ul>
+<li><code>'single'</code> - A single normalisation factor is produced for all rounds of each channel
+    i.e. <code>norm_factor[r, b]</code> for a given <code>b</code> value, will be the same for all <code>r</code> values.</li>
+<li><code>'separate'</code> - A different normalisation factor is made for each round and channel.</li>
+</ul></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_rounds x n_channels]</code>.
+<code>norm_factor</code> such that <code>norm_spot_color[s,r,c] = spot_color[s,r,c] / norm_factor[r,c]</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/call_spots/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">color_normalisation</span><span class="p">(</span><span class="n">hist_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">hist_counts</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                        <span class="n">thresh_intensities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                        <span class="n">thresh_probs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This finds the normalisations for each round, ```r```, and channel, ```c```, such that if ```norm_spot_color[r,c] =</span>
+<span class="sd">    spot_color[r,c] / norm_factor[r,c]```, the probability of ```norm_spot_color``` being larger than ```</span>
+<span class="sd">    thresh_intensities[i]``` is less than ```thresh_probs[i]``` for every ```i```.</span>
+<span class="sd">    Where the probability is based on all pixels from all tiles in that round and channel.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hist_values: ```int [n_pixel_values]```.</span>
+<span class="sd">            All possible pixel values in saved tiff images i.e. n_pixel_values is approximately</span>
+<span class="sd">            ```np.iinfo(np.uint16).max``` because tiffs saved as ```uint16``` images.</span>
+<span class="sd">        hist_counts: ```int [n_pixel_values x n_rounds x n_channels]```.</span>
+<span class="sd">            ```hist_counts[i, r, c]``` is the number of pixels across all tiles in round ```r```, channel ```c```</span>
+<span class="sd">            which had the value ```hist_values[i]```.</span>
+<span class="sd">        thresh_intensities: ```float [n_thresholds]```.</span>
+<span class="sd">            Thresholds such that the probability of having a normalised spot_color greater than this are quite low.</span>
+<span class="sd">            Need to be ascending.</span>
+<span class="sd">            Typical: ```[0.5, 1, 5]``` i.e. we want most of ```normalised spot_colors``` to be less than ```0.5``` so</span>
+<span class="sd">            high normalised spot color is on the order of ```1```.</span>
+<span class="sd">        thresh_probs: ```float [n_thresholds]```.</span>
+<span class="sd">            Probability of normalised spot color being greater than ```thresh_intensities[i]``` must be less than</span>
+<span class="sd">            ```thresh_probs[i]```. Needs to be same shape as thresh_intensities and descending.</span>
+<span class="sd">            Typical: ```[0.01, 5e-4, 1e-5]``` i.e. want almost all non spot pixels to have</span>
+<span class="sd">            normalised intensity less than ```0.5```.</span>
+<span class="sd">        method: Must be one of the following:</span>
+
+<span class="sd">            - ```&#39;single&#39;``` - A single normalisation factor is produced for all rounds of each channel</span>
+<span class="sd">                i.e. ```norm_factor[r, b]``` for a given ```b``` value, will be the same for all ```r``` values.</span>
+<span class="sd">            - ```&#39;separate&#39;``` - A different normalisation factor is made for each round and channel.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ```float [n_rounds x n_channels]```.</span>
+<span class="sd">            ```norm_factor``` such that ```norm_spot_color[s,r,c] = spot_color[s,r,c] / norm_factor[r,c]```.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">hist_values</span><span class="p">,</span> <span class="n">hist_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;hist_values&#39;</span><span class="p">,</span> <span class="n">hist_values</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">hist_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">1</span><span class="p">])</span>
+    <span class="c1"># if only one value provided, turn to a list</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">thresh_intensities</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="n">thresh_intensities</span> <span class="o">=</span> <span class="p">[</span><span class="n">thresh_intensities</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">thresh_probs</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="n">thresh_probs</span> <span class="o">=</span> <span class="p">[</span><span class="n">thresh_probs</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh_intensities</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh_probs</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;thresh_intensities&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh_intensities</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh_probs</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># sort thresholds and check that thresh_probs descend as thresh_intensities increase</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">thresh_intensities</span><span class="p">)</span>
+    <span class="n">thresh_intensities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh_intensities</span><span class="p">)[</span><span class="n">ind</span><span class="p">]</span>
+    <span class="n">thresh_probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh_probs</span><span class="p">)[</span><span class="n">ind</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">thresh_probs</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;thresh_probs given, </span><span class="si">{</span><span class="n">thresh_probs</span><span class="si">}</span><span class="s2">, do not all descend as thresh_intensities,&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">thresh_intensities</span><span class="si">}</span><span class="s2">, increase.&quot;</span><span class="p">)</span>
+
+    <span class="n">n_rounds</span><span class="p">,</span> <span class="n">n_channels</span> <span class="o">=</span> <span class="n">hist_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">norm_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_rounds</span><span class="p">,</span> <span class="n">n_channels</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">r_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;single&#39;</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;separate&#39;</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">r_ind</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;method given was </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> but should be either &#39;single&#39; or &#39;separate&#39;&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_channels</span><span class="p">):</span>
+            <span class="n">hist_counts_rb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">hist_counts</span><span class="p">[:,</span> <span class="n">r</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hist_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># if not np.int32, get error in windows when cumsum goes negative.</span>
+            <span class="n">cum_sum_rb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">hist_counts_rb</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span>
+            <span class="n">n_pixels</span> <span class="o">=</span> <span class="n">cum_sum_rb</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">norm_factor_rb</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="k">for</span> <span class="n">thresh_intensity</span><span class="p">,</span> <span class="n">thresh_prob</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">thresh_intensities</span><span class="p">,</span> <span class="n">thresh_probs</span><span class="p">):</span>
+                <span class="n">prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">hist_counts_rb</span><span class="p">[</span><span class="n">hist_values</span> <span class="o">&gt;=</span> <span class="n">thresh_intensity</span> <span class="o">*</span> <span class="n">norm_factor_rb</span><span class="p">])</span> <span class="o">/</span> <span class="n">n_pixels</span>
+                <span class="k">if</span> <span class="n">prob</span> <span class="o">&gt;</span> <span class="n">thresh_prob</span><span class="p">:</span>
+                    <span class="n">norm_factor_rb</span> <span class="o">=</span> <span class="n">hist_values</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cum_sum_rb</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">thresh_prob</span><span class="p">)</span> <span class="o">*</span> <span class="n">n_pixels</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                                     <span class="p">]</span> <span class="o">/</span> <span class="n">thresh_intensity</span>
+            <span class="n">norm_factor</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm_factor_rb</span>
+        <span class="k">if</span> <span class="n">r_ind</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;single&#39;</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="k">return</span> <span class="n">norm_factor</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.call_spots.base.get_bled_codes" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_bled_codes</span><span class="p">(</span><span class="n">gene_codes</span><span class="p">,</span> <span class="n">bleed_matrix</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>This gets <code>bled_codes</code> such that the spot_color of a gene <code>g</code> in round <code>r</code> is expected to be a constant
+multiple of <code>bled_codes[g, r]</code>.
+This function should be run with full bleed_matrix with any rounds/channels/dyes outside those using set to nan.
+Otherwise, will get confusion with dye indices in <code>gene_codes</code> being outside size of <code>bleed_matrix</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All bled_codes returned with an L2 norm of 1 when summed over all rounds and channels
+with any nan values assumed to be 0.</p>
+</div>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>gene_codes</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_genes x n_rounds]</code>.
+<code>gene_codes[g, r]</code> indicates the dye that should be present for gene <code>g</code> in round <code>r</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>bleed_matrix</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_rounds x n_channels x n_dyes]</code>.
+Expected intensity of dye <code>d</code> in round <code>r</code> is a constant multiple of <code>bleed_matrix[r, :, d]</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_genes x n_rounds x n_channels]</code>.
+<code>bled_codes</code> such that <code>spot_color</code> of a gene <code>g</code>
+in round <code>r</code> is expected to be a constant multiple of <code>bled_codes[g, r]</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/call_spots/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_bled_codes</span><span class="p">(</span><span class="n">gene_codes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">bleed_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This gets ```bled_codes``` such that the spot_color of a gene ```g``` in round ```r``` is expected to be a constant</span>
+<span class="sd">    multiple of ```bled_codes[g, r]```.</span>
+<span class="sd">    This function should be run with full bleed_matrix with any rounds/channels/dyes outside those using set to nan.</span>
+<span class="sd">    Otherwise, will get confusion with dye indices in `gene_codes` being outside size of `bleed_matrix`.</span>
+
+<span class="sd">    !!! note</span>
+<span class="sd">        All bled_codes returned with an L2 norm of 1 when summed over all rounds and channels</span>
+<span class="sd">        with any nan values assumed to be 0.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        gene_codes: ```int [n_genes x n_rounds]```.</span>
+<span class="sd">            ```gene_codes[g, r]``` indicates the dye that should be present for gene ```g``` in round ```r```.</span>
+<span class="sd">        bleed_matrix: ```float [n_rounds x n_channels x n_dyes]```.</span>
+<span class="sd">            Expected intensity of dye ```d``` in round ```r``` is a constant multiple of ```bleed_matrix[r, :, d]```.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ```float [n_genes x n_rounds x n_channels]```.</span>
+<span class="sd">            ```bled_codes``` such that ```spot_color``` of a gene ```g```</span>
+<span class="sd">            in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r]```.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_genes</span> <span class="o">=</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_rounds</span><span class="p">,</span> <span class="n">n_channels</span><span class="p">,</span> <span class="n">n_dyes</span> <span class="o">=</span> <span class="n">bleed_matrix</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">gene_codes</span><span class="p">,</span> <span class="p">[</span><span class="n">n_genes</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;gene_codes&#39;</span><span class="p">,</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="n">n_genes</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">n_dyes</span><span class="p">:</span>
+        <span class="n">ind_1</span><span class="p">,</span> <span class="n">ind_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">gene_codes</span> <span class="o">==</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;gene_code for gene </span><span class="si">{</span><span class="n">ind_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, round </span><span class="si">{</span><span class="n">ind_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> has a dye with index </span><span class="si">{</span><span class="n">gene_codes</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot; but there are only </span><span class="si">{</span><span class="n">n_dyes</span><span class="si">}</span><span class="s2"> dyes.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ind_1</span><span class="p">,</span> <span class="n">ind_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">gene_codes</span> <span class="o">==</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;gene_code for gene </span><span class="si">{</span><span class="n">ind_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, round </span><span class="si">{</span><span class="n">ind_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> has a dye with a negative index:&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">gene_codes</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">bled_codes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_genes</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">,</span> <span class="n">n_channels</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_genes</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_channels</span><span class="p">):</span>
+                <span class="n">bled_codes</span><span class="p">[</span><span class="n">g</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">bleed_matrix</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">gene_codes</span><span class="p">[</span><span class="n">g</span><span class="p">,</span> <span class="n">r</span><span class="p">]]</span>
+
+    <span class="c1"># Give all bled codes an L2 norm of 1 assuming any nan values are 0</span>
+    <span class="n">norm_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">bled_codes</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">norm_factor</span><span class="p">[</span><span class="n">norm_factor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>   <span class="c1"># For genes with no dye in any rounds, this avoids blow up on next line</span>
+    <span class="n">bled_codes</span> <span class="o">=</span> <span class="n">bled_codes</span> <span class="o">/</span> <span class="n">norm_factor</span>
+    <span class="k">return</span> <span class="n">bled_codes</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.call_spots.base.get_gene_efficiency" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_gene_efficiency</span><span class="p">(</span><span class="n">spot_colors</span><span class="p">,</span> <span class="n">spot_gene_no</span><span class="p">,</span> <span class="n">gene_codes</span><span class="p">,</span> <span class="n">bleed_matrix</span><span class="p">,</span> <span class="n">min_spots</span><span class="p">,</span> <span class="n">max_gene_efficiency</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">min_gene_efficiency</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">min_gene_efficiency_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p><code>gene_efficiency[g,r]</code> gives the expected intensity of gene <code>g</code> in round <code>r</code> compared to that expected
+by the <code>bleed_matrix</code>. It is computed based on the average of all <code>spot_colors</code> assigned to that gene.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>spot_colors</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_spots x n_rounds x n_channels]</code>.
+Spot colors normalised to equalise intensities between channels (and rounds).</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_gene_no</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_spots]</code>.
+Gene each spot was assigned to.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>gene_codes</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_genes, n_rounds]</code>.
+<code>gene_codes[g, r]</code> indicates the dye that should be present for gene <code>g</code> in round <code>r</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>bleed_matrix</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_rounds x n_channels x n_dyes]</code>.
+For a spot, <code>s</code> matched to gene with dye <code>d</code> in round <code>r</code>, we expect <code>spot_colors[s, r]</code>",
+to be a constant multiple of <code>bleed_matrix[r, :, d]</code>"</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>min_spots</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td><p>If number of spots assigned to a gene less than or equal to this, <code>gene_efficiency[g]=1</code>
+for all rounds. Typical = 30.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>max_gene_efficiency</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Maximum allowed gene efficiency, i.e. any one round can be at most this times more
+important than the median round for every gene. Typical = 6.</p></td>
+          <td>
+                <code>np.inf</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>min_gene_efficiency</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>At most <code>ceil(min_gene_efficiency_factor * n_rounds)</code> rounds can have
+<code>gene_efficiency</code> below <code>min_gene_efficiency</code> for any given gene. Typical = 0.05</p></td>
+          <td>
+                <code>0</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>min_gene_efficiency_factor</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>At most <code>ceil(min_gene_efficiency_factor * n_rounds)</code> rounds can have
+<code>gene_efficiency</code> below <code>min_gene_efficiency</code> for any given gene. Typical = 0.2</p></td>
+          <td>
+                <code>1</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_genes x n_rounds]</code>.
+<code>gene_efficiency[g,r]</code> gives the expected intensity of gene <code>g</code> in round <code>r</code> compared to that expected
+by the <code>bleed_matrix</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/call_spots/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_gene_efficiency</span><span class="p">(</span><span class="n">spot_colors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">spot_gene_no</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">gene_codes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                        <span class="n">bleed_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">min_spots</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">max_gene_efficiency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+                        <span class="n">min_gene_efficiency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="n">min_gene_efficiency_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected</span>
+<span class="sd">    by the `bleed_matrix`. It is computed based on the average of all `spot_colors` assigned to that gene.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        spot_colors: `float [n_spots x n_rounds x n_channels]`.</span>
+<span class="sd">            Spot colors normalised to equalise intensities between channels (and rounds).</span>
+<span class="sd">        spot_gene_no: `int [n_spots]`.</span>
+<span class="sd">            Gene each spot was assigned to.</span>
+<span class="sd">        gene_codes: `int [n_genes, n_rounds]`.</span>
+<span class="sd">            `gene_codes[g, r]` indicates the dye that should be present for gene `g` in round `r`.</span>
+<span class="sd">        bleed_matrix: `float [n_rounds x n_channels x n_dyes]`.</span>
+<span class="sd">            For a spot, `s` matched to gene with dye `d` in round `r`, we expect `spot_colors[s, r]`&quot;,</span>
+<span class="sd">            to be a constant multiple of `bleed_matrix[r, :, d]`&quot;</span>
+<span class="sd">        min_spots: If number of spots assigned to a gene less than or equal to this, `gene_efficiency[g]=1`</span>
+<span class="sd">            for all rounds. Typical = 30.</span>
+<span class="sd">        max_gene_efficiency: Maximum allowed gene efficiency, i.e. any one round can be at most this times more</span>
+<span class="sd">            important than the median round for every gene. Typical = 6.</span>
+<span class="sd">        min_gene_efficiency: At most `ceil(min_gene_efficiency_factor * n_rounds)` rounds can have</span>
+<span class="sd">            `gene_efficiency` below `min_gene_efficiency` for any given gene. Typical = 0.05</span>
+<span class="sd">        min_gene_efficiency_factor: At most `ceil(min_gene_efficiency_factor * n_rounds)` rounds can have</span>
+<span class="sd">            `gene_efficiency` below `min_gene_efficiency` for any given gene. Typical = 0.2</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        `float [n_genes x n_rounds]`.</span>
+<span class="sd">            `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected</span>
+<span class="sd">            by the `bleed_matrix`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check n_spots, n_rounds, n_channels, n_genes consistent across all variables.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">spot_colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bleed_matrix</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;spot_colors&#39;</span><span class="p">,</span> <span class="n">spot_colors</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="p">(</span><span class="n">spot_colors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">+</span> <span class="n">bleed_matrix</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">spot_colors</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">spot_gene_no</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;spot_colors&#39;</span><span class="p">,</span> <span class="n">spot_colors</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="n">spot_gene_no</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="n">bleed_matrix</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">n_genes</span><span class="p">,</span> <span class="n">n_rounds</span> <span class="o">=</span> <span class="n">gene_codes</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">spot_colors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(),</span> <span class="n">gene_codes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;spot_colors&#39;</span><span class="p">,</span> <span class="n">spot_colors</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="n">spot_gene_no</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="n">n_rounds</span><span class="p">,)</span> <span class="o">+</span> <span class="p">(</span><span class="n">bleed_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],))</span>
+
+    <span class="n">gene_no_oob</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">spot_gene_no</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">val</span> <span class="o">&gt;=</span> <span class="n">n_genes</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gene_no_oob</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">OutOfBoundsError</span><span class="p">(</span><span class="s2">&quot;spot_gene_no&quot;</span><span class="p">,</span> <span class="n">gene_no_oob</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n_genes</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">gene_efficiency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">n_genes</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">])</span>
+    <span class="n">n_min_thresh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_gene_efficiency_factor</span> <span class="o">*</span> <span class="n">n_rounds</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_genes</span><span class="p">):</span>
+        <span class="n">use</span> <span class="o">=</span> <span class="n">spot_gene_no</span> <span class="o">==</span> <span class="n">g</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">use</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">min_spots</span><span class="p">:</span>
+            <span class="n">round_strength</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">use</span><span class="p">),</span> <span class="n">n_rounds</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
+                <span class="n">dye_ind</span> <span class="o">=</span> <span class="n">gene_codes</span><span class="p">[</span><span class="n">g</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span>
+                <span class="c1"># below is equivalent to MATLAB spot_colors / bleed_matrix.</span>
+                <span class="n">round_strength</span><span class="p">[:,</span> <span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">bleed_matrix</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="p">:,</span> <span class="n">dye_ind</span><span class="p">:</span><span class="n">dye_ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+                                                       <span class="n">spot_colors</span><span class="p">[</span><span class="n">use</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">transpose</span><span class="p">(),</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># find a reference round for each gene as that with median strength.</span>
+            <span class="n">av_round_strength</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">round_strength</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">av_round</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">av_round_strength</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">av_round_strength</span><span class="p">))</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+
+            <span class="c1"># for each spot, find strength of each round relative to strength in</span>
+            <span class="c1"># av_round. Need relative strength not absolute strength</span>
+            <span class="c1"># because expect spot color to be constant multiple of bled code.</span>
+            <span class="c1"># So for all genes, gene_efficiency[g, av_round] = 1 but av_round is different between genes.</span>
+
+            <span class="c1"># Only use spots whose strength in RefRound is positive.</span>
+            <span class="n">use</span> <span class="o">=</span> <span class="n">round_strength</span><span class="p">[:,</span> <span class="n">av_round</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">use</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">min_spots</span><span class="p">:</span>
+                <span class="n">relative_round_strength</span> <span class="o">=</span> <span class="n">round_strength</span><span class="p">[</span><span class="n">use</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">round_strength</span><span class="p">[</span><span class="n">use</span><span class="p">,</span> <span class="n">av_round</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="c1"># Only use spots with gene efficiency below the maximum allowed.</span>
+                <span class="n">below_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">relative_round_strength</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_gene_efficiency</span>
+                <span class="c1"># Only use spots with at most n_min_thresh rounds below the minimum.</span>
+                <span class="n">above_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">relative_round_strength</span> <span class="o">&lt;</span> <span class="n">min_gene_efficiency</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">n_min_thresh</span>
+                <span class="n">use</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">below_max</span><span class="p">,</span> <span class="n">above_min</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">use</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">min_spots</span><span class="p">:</span>
+                    <span class="n">gene_efficiency</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">relative_round_strength</span><span class="p">[</span><span class="n">use</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># set negative values to 0</span>
+    <span class="n">gene_efficiency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">gene_efficiency</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">gene_efficiency</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.call_spots.base.get_non_duplicate" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_non_duplicate</span><span class="p">(</span><span class="n">tile_origin</span><span class="p">,</span> <span class="n">use_tiles</span><span class="p">,</span> <span class="n">tile_centre</span><span class="p">,</span> <span class="n">spot_local_yxz</span><span class="p">,</span> <span class="n">spot_tile</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Find duplicate spots as those detected on a tile which is not tile centre they are closest to.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>tile_origin</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_tiles x 3]</code>.
+<code>tile_origin[t,:]</code> is the bottom left yxz coordinate of tile <code>t</code>.
+yx coordinates in <code>yx_pixels</code> and z coordinate in <code>z_pixels</code>.
+This is saved in the <code>stitch</code> notebook page i.e. <code>nb.stitch.tile_origin</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>use_tiles</code></td>
+          <td>
+                <code><span title="typing.List">List</span></code>
+          </td>
+          <td><p><code>int [n_use_tiles]</code>.
+Tiles used in the experiment.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>tile_centre</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [3]</code>
+<code>tile_centre[:2]</code> are yx coordinates in <code>yx_pixels</code> of the centre of the tile that spots in
+<code>yxz</code> were found on.
+<code>tile_centre[2]</code> is the z coordinate in <code>z_pixels</code> of the centre of the tile.
+E.g. for tile of <code>yxz</code> dimensions <code>[2048, 2048, 51]</code>, <code>tile_centre = [1023.5, 1023.5, 25]</code>
+Each entry in <code>tile_centre</code> must be an integer multiple of <code>0.5</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_local_yxz</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_spots x 3]</code>.
+Coordinates of a spot s on tile spot_tile[s].
+<code>yxz[s, :2]</code> are the yx coordinates in <code>yx_pixels</code> for spot <code>s</code>.
+<code>yxz[s, 2]</code> is the z coordinate in <code>z_pixels</code> for spot <code>s</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_tile</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_spots]</code>.
+Tile each spot was found on.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>bool [n_spots]</code>.
+Whether spot_tile[s] is the tile that spot_global_yxz[s] is closest to.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/call_spots/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_non_duplicate</span><span class="p">(</span><span class="n">tile_origin</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">use_tiles</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">tile_centre</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                      <span class="n">spot_local_yxz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">spot_tile</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find duplicate spots as those detected on a tile which is not tile centre they are closest to.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tile_origin: `float [n_tiles x 3]`.</span>
+<span class="sd">            `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.</span>
+<span class="sd">            yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.</span>
+<span class="sd">            This is saved in the `stitch` notebook page i.e. `nb.stitch.tile_origin`.</span>
+<span class="sd">        use_tiles: ```int [n_use_tiles]```.</span>
+<span class="sd">            Tiles used in the experiment.</span>
+<span class="sd">        tile_centre: ```float [3]```</span>
+<span class="sd">            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in</span>
+<span class="sd">            ```yxz``` were found on.</span>
+<span class="sd">            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.</span>
+<span class="sd">            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```</span>
+<span class="sd">            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.</span>
+<span class="sd">        spot_local_yxz: ```int [n_spots x 3]```.</span>
+<span class="sd">            Coordinates of a spot s on tile spot_tile[s].</span>
+<span class="sd">            ```yxz[s, :2]``` are the yx coordinates in ```yx_pixels``` for spot ```s```.</span>
+<span class="sd">            ```yxz[s, 2]``` is the z coordinate in ```z_pixels``` for spot ```s```.</span>
+<span class="sd">        spot_tile: ```int [n_spots]```.</span>
+<span class="sd">            Tile each spot was found on.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ```bool [n_spots]```.</span>
+<span class="sd">            Whether spot_tile[s] is the tile that spot_global_yxz[s] is closest to.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tile_centres</span> <span class="o">=</span> <span class="n">tile_origin</span><span class="p">[</span><span class="n">use_tiles</span><span class="p">]</span> <span class="o">+</span> <span class="n">tile_centre</span>
+    <span class="c1"># Do not_duplicate search in 2D as overlap is only 2D</span>
+    <span class="n">tree_tiles</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">tile_centres</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">tile_origin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">spot_tile</span><span class="p">)])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">nan_tiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">spot_tile</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">tile_origin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">spot_tile</span><span class="p">)]))[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tile_origin for tiles</span><span class="se">\n</span><span class="si">{</span><span class="n">nan_tiles</span><span class="si">}</span><span class="se">\n</span><span class="s2">contains nan values but some spot_tile &quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;also contains these tiles. Maybe remove these from use_tiles to continue.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;Also, consider coppafish.plot.n_spots_grid to check if these tiles have few spots.&quot;</span><span class="p">)</span>
+    <span class="n">spot_global_yxz</span> <span class="o">=</span> <span class="n">spot_local_yxz</span> <span class="o">+</span> <span class="n">tile_origin</span><span class="p">[</span><span class="n">spot_tile</span><span class="p">]</span>
+    <span class="n">all_nearest_tile_ind</span> <span class="o">=</span> <span class="n">tree_tiles</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">spot_global_yxz</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">not_duplicate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">use_tiles</span><span class="p">)[</span><span class="n">all_nearest_tile_ind</span><span class="o">.</span><span class="n">flatten</span><span class="p">()]</span> <span class="o">==</span> <span class="n">spot_tile</span>
+    <span class="k">return</span> <span class="n">not_duplicate</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../../spot_colors/base/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Base" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Base
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../background/" class="md-footer__link md-footer__link--next" aria-label="Next: Background" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Background
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

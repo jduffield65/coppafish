@@ -1,0 +1,2802 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Viewing the results - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#viewing-the-results" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Viewing the results
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../config_setup/" class="md-tabs__link md-tabs__link--active">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Viewing the results
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Viewing the results
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background-image" class="md-nav__link">
+    Background Image
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gene-markers" class="md-nav__link">
+    Gene Markers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sidebar" class="md-nav__link">
+    Sidebar
+  </a>
+  
+    <nav class="md-nav" aria-label="Sidebar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#select-genes" class="md-nav__link">
+    Select Genes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image-contrast" class="md-nav__link">
+    Image contrast
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method" class="md-nav__link">
+    Method
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#score-range" class="md-nav__link">
+    Score Range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intensity-threshold" class="md-nav__link">
+    Intensity Threshold
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#omp-score-multiplier" class="md-nav__link">
+    OMP Score Multiplier
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    Diagnostics
+  </a>
+  
+    <nav class="md-nav" aria-label="Diagnostics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#i-remove-background-image" class="md-nav__link">
+    i: Remove background image
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-view_bleed_matrix" class="md-nav__link">
+    b: view_bleed_matrix
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g-view_bled_codes" class="md-nav__link">
+    g: view_bled_codes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-g-gene_counts" class="md-nav__link">
+    Shift-g: gene_counts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h-histogram_score" class="md-nav__link">
+    h: histogram_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-h-histogram_2d_score" class="md-nav__link">
+    Shift-h: histogram_2d_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k-view_scaled_k_means" class="md-nav__link">
+    k: view_scaled_k_means
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#space-change-to-select-mode" class="md-nav__link">
+    space: Change to select mode
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-view_codes" class="md-nav__link">
+    c: view_codes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s-view_spot" class="md-nav__link">
+    s: view_spot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-view_score" class="md-nav__link">
+    d: view_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-i-view_intensity" class="md-nav__link">
+    Shift-i: view_intensity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#o-view_omp" class="md-nav__link">
+    o: view_omp
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-o-view_omp_fit" class="md-nav__link">
+    shift-o: view_omp_fit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-s-view_omp_score" class="md-nav__link">
+    Shift-s: view_omp_score
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background-image" class="md-nav__link">
+    Background Image
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gene-markers" class="md-nav__link">
+    Gene Markers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sidebar" class="md-nav__link">
+    Sidebar
+  </a>
+  
+    <nav class="md-nav" aria-label="Sidebar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#select-genes" class="md-nav__link">
+    Select Genes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image-contrast" class="md-nav__link">
+    Image contrast
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method" class="md-nav__link">
+    Method
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#score-range" class="md-nav__link">
+    Score Range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intensity-threshold" class="md-nav__link">
+    Intensity Threshold
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#omp-score-multiplier" class="md-nav__link">
+    OMP Score Multiplier
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    Diagnostics
+  </a>
+  
+    <nav class="md-nav" aria-label="Diagnostics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#i-remove-background-image" class="md-nav__link">
+    i: Remove background image
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-view_bleed_matrix" class="md-nav__link">
+    b: view_bleed_matrix
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g-view_bled_codes" class="md-nav__link">
+    g: view_bled_codes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-g-gene_counts" class="md-nav__link">
+    Shift-g: gene_counts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h-histogram_score" class="md-nav__link">
+    h: histogram_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-h-histogram_2d_score" class="md-nav__link">
+    Shift-h: histogram_2d_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k-view_scaled_k_means" class="md-nav__link">
+    k: view_scaled_k_means
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#space-change-to-select-mode" class="md-nav__link">
+    space: Change to select mode
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-view_codes" class="md-nav__link">
+    c: view_codes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s-view_spot" class="md-nav__link">
+    s: view_spot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-view_score" class="md-nav__link">
+    d: view_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-i-view_intensity" class="md-nav__link">
+    Shift-i: view_intensity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#o-view_omp" class="md-nav__link">
+    o: view_omp
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-o-view_omp_fit" class="md-nav__link">
+    shift-o: view_omp_fit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shift-s-view_omp_score" class="md-nav__link">
+    Shift-s: view_omp_score
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/view_results.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="viewing-the-results">Viewing the results</h1>
+<p>Once the pipeline has completed the <a href="../code/pipeline/run/#coppafish.pipeline.run.run_reference_spots"><code>reference_spots</code></a> step 
+such that the <a href="../notebook/"><em>Notebook</em></a> contains the <a href="../notebook_comments/#call_spots"><em>call_spots</em></a> and 
+<a href="../notebook_comments/#ref_spots"><em>ref_spots</em></a> pages, the gene assignments of the spots found can be visualised
+using <a href="../code/plot/viewer/"><code>coppafish.Viewer</code></a>.</p>
+<p>This can be opened via the command line or using a python script. It requires either the path to the config file
+(<em>/Users/user/coppafish/experiment/settings.ini</em>) or the path to the notebook file 
+(<em>/Users/user/coppafish/experiment/notebook.npz</em>):</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Command Line</label><label for="__tabbed_1_2">Python Script Using Config Path</label><label for="__tabbed_1_3">Python Script Using Notebook Path</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>python -m coppafish /Users/user/coppafish/experiment/settings.ini -view
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span><span class="p">,</span> <span class="n">Viewer</span>
+<span class="n">ini_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/settings.ini&#39;</span>
+<span class="n">nb</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">config_file</span><span class="o">=</span><span class="n">ini_file</span><span class="p">)</span>
+<span class="n">Viewer</span><span class="p">(</span><span class="n">nb</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coppafish</span> <span class="kn">import</span> <span class="n">Notebook</span><span class="p">,</span> <span class="n">Viewer</span>
+<span class="n">nb_file</span> <span class="o">=</span> <span class="s1">&#39;/Users/user/coppafish/experiment/notebook.npz&#39;</span>
+<span class="n">nb</span> <span class="o">=</span> <span class="n">Notebook</span><span class="p">(</span><span class="n">nb_file</span><span class="p">)</span>
+<span class="n">Viewer</span><span class="p">(</span><span class="n">nb</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>This will then open the napari viewer which will show the spots with a marker indicating which gene they 
+were assigned to. If the <em>Notebook</em> contains the <a href="../notebook_comments/#omp"><em>omp</em></a> page, the spots plotted
+will be those found with the <a href="../pipeline/omp/"><em>OMP</em> algorithm</a>, otherwise it will show the 
+reference spots (those found on <code>nb.basic_info.ref_round</code>/<code>nb.basic_info.ref_channel</code>) 
+and their gene assignments found using <a href="../pipeline/call_reference_spots/"><code>call_reference_spots</code></a>. 
+An example is shown below:</p>
+<p><img alt="viewer" src="../images/viewer/initial.png" width="800" /></p>
+<details class="info" open="open">
+<summary>Markers not visible</summary>
+<p>When the napari viewer first opens, the markers are often not visible because it is so far zoomed out.
+After zooming in by scrolling with the mouse, they should show up.</p>
+</details>
+<details class="warning">
+<summary><em>pydevd</em> Warning</summary>
+<p>When opening the napari viewer, a series of warnings, starting with
+<div class="highlight"><pre><span></span><code>UserWarning: incompatible copy of pydevd already imported
+</code></pre></div>
+may occur e.g.
+<img alt="image" src="../images/napari_warning.png" width="800" />
+These can be removed by uninstalling <em>debugpy</em>:
+<div class="highlight"><pre><span></span><code>pip uninstall debugpy
+</code></pre></div></p>
+</details>
+<h2 id="background-image">Background Image</h2>
+<p>By default, the spots will be plotted on top of the stitched DAPI image (<code>config['file_names']['big_dapi_image']</code>) 
+if it exists, otherwise there will not be a background image.</p>
+<p>To use a particular background image, when calling <code>Viewer</code> a second argument needs to be given 
+(<code>Viewer(nb, background_image)</code>. There are several options:</p>
+<ul>
+<li><code>'dapi'</code>: Will use <code>config['file_names']['big_dapi_image']</code> if it exists, otherwise will be no background (default).</li>
+<li><code>'anchor'</code>: Will use <code>config['file_names']['big_anchor_image']</code> if it exists, otherwise will be no background.</li>
+<li>Path to .npy or .npz file: An example would be <code>'/Users/user/coppafish/experiment/background_image.npz'</code>. 
+    This file must contain an image with axis in the order z-y-x (y-x if 2D).</li>
+<li>Numpy array: Can explicitly give the <code>[n_z x n_y x n_x]</code> (<code>[n_y x n_x]</code> in <em>2D</em>) desired image. </li>
+</ul>
+<p>If a <em>2D</em> image is provided for a <em>3D</em> dataset, then this image will be used as the background image for each z-plane.</p>
+<h2 id="gene-markers">Gene Markers</h2>
+<p>The color and marker used for each gene can be provided through a <em>csv</em> file e.g.</p>
+<div class="highlight"><pre><span></span><code>Viewer(nb, gene_marker_file=&#39;/Users/user/coppafish/experiment/gene_markers.csv&#39;)
+</code></pre></div>
+<p>This csv file must contain 
+6 columns with the following headers:</p>
+<ul>
+<li>GeneNames - <code>str</code>, name of gene with first letter capital.</li>
+<li>ColorR - <code>float</code>, <strong>R</strong>gb color for plotting.</li>
+<li>ColorG - <code>float</code>, r<strong>G</strong>b color for plotting.</li>
+<li>ColorB - <code>float</code>, rg<strong>B</strong> color for plotting.</li>
+<li>napari_symbol - <code>str</code>, symbol used to plot in napari.</li>
+<li>mpl_symbol - <code>str</code>, equivalent of napari symbol in matplotlib.</li>
+</ul>
+<p>Only genes with names indicated in the <em>GeneNames</em> column will be shown in the viewer.
+If this file is not specified, then the <a href="../files/gene_color.csv">default file</a> will be used.</p>
+<h2 id="sidebar">Sidebar</h2>
+<p>The sidebar on the left of the viewer includes various widgets which can change which spots are plotted.</p>
+<h3 id="select-genes">Select Genes</h3>
+<ul>
+<li>To remove a gene from the plot, click on it in the gene legend. </li>
+<li>To add a gene that has been removed, click on it again.</li>
+<li>To view only one gene, right-click on it.</li>
+<li>To go back to viewing all genes, right-click on a gene which is the only gene selected.</li>
+</ul>
+<h3 id="image-contrast">Image contrast</h3>
+<p>The image contrast slider controls the brightness of the background image.</p>
+<h3 id="method">Method</h3>
+<p>If the notebook contains the <em>omp</em> page, a pair of buttons labelled <em>OMP</em> and <em>Anchor</em> will appear at the bottom of the 
+sidebar. Initially the <em>OMP</em> button is selected meaning the spots shown are those saved in the 
+<a href="../notebook_comments/#omp"><em>omp</em></a> page. 
+Pressing the <em>Anchor</em> button will change the spots shown to be those saved in the 
+<a href="../notebook_comments/#ref_spots"><em>ref_spots</em></a> page.</p>
+<p>If the <em>Notebook</em> does not have the <em>omp</em> page, these buttons will not be present and the spots shown will be those 
+saved in the <a href="../notebook_comments/#ref_spots"><em>ref_spots</em></a> page.</p>
+<h3 id="score-range">Score Range</h3>
+<p>Only spots which pass a <a href="../run_code/#thresholding">quality thresholding</a> are shown in the viewer.</p>
+<p>Spots are assigned a <code>score</code> between 0 and 1 (can be larger for <code>ref_spots</code>) which indicates the likelihood that the 
+gene assignment is legitimate. 
+When the viewer is first opened, only spots with <code>score &gt; config['thresholds']['score_omp']</code> 
+(<code>score &gt; config['thresholds']['score_ref']</code> if no <em>omp</em> page in notebook) are shown
+and the lower value of the score slider is set to this.</p>
+<p>The slider can then be used to view only spots which satisfy:</p>
+<p><code>slider_low_value &lt; score &lt; slider_high_value</code></p>
+<div class="admonition note">
+<p class="admonition-title">Effect of changing Method on Score Range slider</p>
+<p>The <code>score</code> computed for spots using the <a href="../pipeline/omp/#omp-score">omp method</a>, <span class="arithmatex">\(\gamma\)</span>, differs from that used 
+with the <a href="../pipeline/call_reference_spots/#dot-product-score">ref_spots method</a>, <span class="arithmatex">\(\Delta\)</span>.
+Thus, we keep a unique score range slider for each method so that when the method is changed using the buttons, 
+the score range slider values will also change to the last values used with that method.</p>
+</div>
+<h3 id="intensity-threshold">Intensity Threshold</h3>
+<p>As well as a score, each spot has an <a href="../code/call_spots/qual_check/#coppafish.call_spots.get_spot_intensity"><code>intensity</code></a> 
+value.</p>
+<p>The <a href="../run_code/#thresholding">quality thresholding</a> also means 
+that only spots with <code>intensity &gt; intensity_thresh</code> are shown in the viewer.</p>
+<p>Initially, <code>intensity_thresh</code> will be set to <code>config['thresholds']['intensity']</code> and the slider can be 
+used to change it.</p>
+<div class="admonition note">
+<p class="admonition-title">Effect of changing Method on Intensity Threshold slider</p>
+<p>The <code>intensity</code> is <a href="../pipeline/call_reference_spots/#intensity">computed</a> in the same way for <em>OMP</em> 
+spots and <em>reference spots</em>.
+Thus the value of <code>intensity_thresh</code> will not change when the method is changed using the buttons.</p>
+</div>
+<h3 id="omp-score-multiplier">OMP Score Multiplier</h3>
+<p>This is the <span class="arithmatex">\(\rho\)</span> parameter used in the calculation of <a href="../pipeline/omp/#omp-score"><em>OMP</em> score</a>.
+It will not affect anything if the <a href="#method">method</a> is <em>Anchor</em>.</p>
+<h2 id="diagnostics">Diagnostics</h2>
+<p>There are a few diagnostic plots which can be called with keyboard shortcuts while the viewer is open.</p>
+<h3 id="i-remove-background-image"><em>i</em>: Remove background image</h3>
+<p>The background image can be removed from the viewer by pressing the <em>i</em>  key. Once it has been removed, it can be 
+put back by pressing <em>i</em> again.</p>
+<h3 id="b-view_bleed_matrix"><em>b</em>: <a href="../code/plot/call_spots/#view_bleed_matrix"><code>view_bleed_matrix</code></a></h3>
+<p>The bleed matrix computed for the experiment can be shown by pressing <em>b</em>. 
+This will then show the expected intensity of each dye in each channel. An example is shown below.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Normalised Bleed Matrix</label><label for="__tabbed_2_2">Un-normalised Bleed Matrix</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../images/viewer/bleed_matrix.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../images/viewer/bleed_matrix_no_norm.png" width="600" /></p>
+</div>
+</div>
+</div>
+<details class="note">
+<summary>Norm Button</summary>
+<p>This plot as well as the <code>view_bled_codes</code>, <code>view_codes</code> and <code>view_spot</code> plots below have a <em>Norm</em> button. </p>
+<p>When these plots open the colorbar gives the intensity after 
+<a href="../code/call_spots/base/#coppafish.call_spots.base.color_normalisation">normalisation</a> 
+has been applied to equalise the intensity between color channels i.e. weaker channels are boosted.</p>
+<p>To remove this normalisation, press the <em>Norm</em> button (<em>Norm</em> will go red). 
+The range of the colorbar will then change from approximately <em>-1 to 1</em> to approximately <em>-1000 to 1000</em>. 
+This is then then the intensity that is read off from the filtered images saved as .npy files 
+in <code>config['file_names']['tile_dir']</code>.</p>
+<p>You can see above that in the un-normalised bleed matrix, channel 2 appears much weaker than it does in 
+the normalised version.</p>
+<p>In both the <em>call_reference_spots</em> and <em>OMP</em> sections of the pipeline, spots are assigned to genes by comparing the 
+<code>spot_color</code> to the <code>bled_code</code> of each gene. This is done using the normalised <code>spot_color</code> (with 
+<a href="../pipeline/call_reference_spots/#background">background removed</a>) and normalised <code>bled_codes</code>.</p>
+</details>
+<p>This plot is useful to check that the dyes can be distinguished. 
+I.e. that each column above (in the normalised version) is relatively unique. This is required so that 
+genes can be distinguished based on their barcodes which indicate which dye each gene should appear with in each round.</p>
+<h3 id="g-view_bled_codes"><em>g</em>: <a href="../code/plot/call_spots/#view_bled_codes"><code>view_bled_codes</code></a></h3>
+<p>The <code>bled_code</code> for each gene can be shown by pressing <em>g</em>. This shows two plots for each gene as shown below
+for <em>Plp1</em>:</p>
+<p><img alt="image" src="../images/viewer/bled_codes.png" width="600" /></p>
+<p>The bottom plot shows the predicted code for the gene based on its <a href="../config_setup/#code_book">barcode</a> 
+and the <a href="#b-view_bleed_matrix"><code>bleed_matrix</code></a>. 
+For this experiment, <em>Plp1</em> has the barcode <em>2364463</em> meaning the column for round 0 in the <code>bled_code</code> 
+is the column for dye 2 in the <code>bleed_matrix</code>, the column for round 1 above is the column for dye 3 in 
+the <code>bleed_matrix</code> etc. These <code>bled_codes</code> are saved as 
+<a href="../notebook_comments/#call_spots"><code>nb.call_spots.bled_codes</code></a> in the 
+<a href="../code/pipeline/call_reference_spots/"><code>call_reference_spots</code></a> section of the pipeline.</p>
+<p>The top plot shows the <code>bled_code</code> incorporating the calculated 
+<a href="../code/call_spots/base/#coppafish.call_spots.base.get_gene_efficiency"><code>gene_efficiency</code></a>. 
+The <code>gene_efficiency</code> is the expected strength of a gene in each round and is given in 
+brackets in the x-tick labels. These <code>bled_codes</code> are saved as 
+<a href="../notebook_comments/#call_spots"><code>nb.call_spots.bled_codes_ge</code></a> in the 
+<a href="../code/pipeline/call_reference_spots/"><code>call_reference_spots</code></a> section of the pipeline. It is these <code>bled_codes</code>
+which are compared to <code>spot_colors</code> when assigning each spot to a particular gene.</p>
+<p>You can view other gene codes by scrolling up and down with the mouse when this plot is open.</p>
+<p>A green rectangle is added to each round/channel where the <code>bled_code</code> value is greater than 0.2. This indicates
+rounds/channels where the gene is particularly strong. It is also done in <a href="#c-view_codes"><code>view_codes</code></a> and
+<a href="#shift-o-view_omp_fit"><code>view_omp_fit</code></a>.</p>
+<h3 id="shift-g-gene_counts"><em>Shift-g</em>: <a href="../code/plot/call_spots/#gene_counts"><code>gene_counts</code></a></h3>
+<p><a href="../pipeline/call_reference_spots/#gene_counts">This plot</a> indicates the number of reference spots assigned to each gene 
+which also have <code>nb.call_spots.score &gt; score_thresh</code> and <code>nb.call_spots.intensity &gt; intensity_thresh</code>. 
+The initial values of <code>score_thresh</code> and <code>intensity_thresh</code> used will be the current <a href="#score-range">slider</a> values.</p>
+<p>If the <em>Notebook</em> has the <a href="../notebook_comments/#omp"><em>OMP</em> page</a>, then <a href="../pipeline/omp/#gene_counts">it will also show</a> 
+the number of <em>OMP</em> spots assigned to each gene which also have <span class="arithmatex">\(\gamma_s &gt;\)</span> <code>omp_score_thresh</code> and 
+<code>nb.omp.intensity &gt; intensity_thresh</code>. The initial values of <code>omp_score_thresh</code>, <code>omp_score_multiplier</code> and 
+<code>intensity_thresh</code> used will be the current <a href="#score-range">slider</a> values.</p>
+<h3 id="h-histogram_score"><em>h</em>: <a href="../code/plot/omp/#histogram_score"><code>histogram_score</code></a></h3>
+<p><a href="../pipeline/call_reference_spots/#histogram_score">This plot</a> shows the histogram of the score assigned to each spot 
+for the current <a href="#method">method</a>. If <a href="../pipeline/omp/#histogram_score">the current method is <em>OMP</em></a>, 
+the initial value of <code>omp_score_multiplier</code> will be the current <a href="#omp-score-multiplier">slider</a> value.</p>
+<h3 id="shift-h-histogram_2d_score"><em>Shift-h</em>: <a href="../code/plot/omp/#histogram_2d_score"><code>histogram_2d_score</code></a></h3>
+<p><a href="../pipeline/omp/#histogram_2d_score">This plot</a> shows the bivariate histogram to see the correlation 
+between the omp spot score, <span class="arithmatex">\(\gamma_s\)</span> and the dot product score <span class="arithmatex">\(\Delta_s\)</span> for spots detected with the 
+<em>OMP</em> algorithm. The initial value of <code>omp_score_multiplier</code> will be the current <a href="#omp-score-multiplier">slider</a> value.</p>
+<h3 id="k-view_scaled_k_means"><em>k</em>: <a href="../code/plot/call_spots/#scaled-k-means"><code>view_scaled_k_means</code></a></h3>
+<p><a href="../pipeline/call_reference_spots/#view_scaled_k_means">This plot</a> shows how the <code>bleed_matrix</code> was computed.</p>
+<h3 id="space-change-to-select-mode"><em>space</em>: Change to <em>select</em> mode</h3>
+<p>To run the diagnostics listed below, you need to change to <em>select</em> mode. This is done by pressing <em>space-bar</em>.
+In <em>select</em> mode, you won't be able to pan or zoom. To change back to <em>pan/zoom</em> mode, press <em>space-bar</em> again.
+On pressing <em>space-bar</em>, it should tell you in the bottom right corner of the viewer which mode you are in.</p>
+<p>When clicking on a spot in <em>select</em> mode, it should tell you in the bottom left corner, the <em>spot_no</em> of that spot
+and to which <em>gene</em> it was assigned. </p>
+<h3 id="c-view_codes"><em>c</em>: <a href="../code/plot/call_spots/#view_codes"><code>view_codes</code></a></h3>
+<p>The <code>spot_color</code> for a particular spot can be compared to the <code>bled_code</code> (including <code>gene_efficiency</code>)
+of the gene it was assigned to by pressing <em>c</em> after clicking on the
+spot in <a href="#space-change-to-select-mode"><em>select</em> mode</a>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Background Not Removed</label><label for="__tabbed_3_2">Background Removed</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../images/viewer/view_codes.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../images/viewer/view_codes_background.png" width="600" /></p>
+</div>
+</div>
+</div>
+<p>Pressing the <em>Background</em> button (<em>Background</em> will turn red), shows what the <code>spot_color</code> looks like after the 
+background <em>genes</em> <a href="../pipeline/call_reference_spots/#background">have been removed</a>.</p>
+<p>The <code>spot_color</code> and <code>bled_code</code> that are used when computing the 
+<a href="../pipeline/call_reference_spots/#dot-product-score">dot product score</a> are shown when the 
+<em>Background</em> button is red but the <em>Norm</em> button is white.</p>
+<p>The subsequent plots all show the same spot as used here.</p>
+<h3 id="s-view_spot"><em>s</em>: <a href="../code/plot/call_spots/#view_spot"><code>view_spot</code></a></h3>
+<p>The intensity in the neighbourhood of a particular spot in each round/channel can be viewed by pressing <em>s</em> 
+after clicking on the spot in <a href="#space-change-to-select-mode"><em>select</em> mode</a>:</p>
+<p><img alt="image" src="../images/viewer/view_spot.png" width="600" /></p>
+<p>For a <em>3D</em> experiment, this will only show the neighbourhood on the z-plane where the spot was found. This is also
+the case for <a href="#o-view_omp"><code>view_omp</code></a>.</p>
+<p>The cross-hair is in green in each round/channel where the bled_code (with <code>gene_efficiency</code>) 
+of the predicted gene (<em>Snca</em> here) is greater than 0.2.</p>
+<h3 id="d-view_score"><em>d</em>: <a href="../code/plot/call_spots/#view_score"><code>view_score</code></a></h3>
+<p><a href="../pipeline/call_reference_spots/#view_score">This plot</a> indicates how the dot product score, <span class="arithmatex">\(\Delta_s\)</span>, was computed
+for a particular spot.</p>
+<h3 id="shift-i-view_intensity"><em>Shift-i</em>: <a href="../code/plot/call_spots/#view_intensity"><code>view_intensity</code></a></h3>
+<p><a href="../pipeline/call_reference_spots/#view_intensity">This plot</a> shows how the intensity, <span class="arithmatex">\(\chi_s\)</span> was computed
+for a particular spot.</p>
+<h3 id="o-view_omp"><em>o</em>: <a href="../code/plot/omp/#view_omp"><code>view_omp</code></a></h3>
+<p>The omp coefficients of all genes in neighbourhood of a particular spot can be viewed by pressing <em>o</em>
+after clicking on the spot in <a href="#space-change-to-select-mode"><em>select</em> mode</a>:</p>
+<p><img alt="image" src="../images/viewer/view_omp.png" width="600" /></p>
+<p>If a gene is not plotted, it means hardly any pixels had a non-zero coefficient for that gene.</p>
+<p>The gene indicated by <em>BG2</em> is the background code for channel 2, which is equal to 1 in all rounds of channel 
+2 and 0 otherwise. It is then normalised to have an L2 norm of 1. E.g. for an experiment with 7 rounds and 7 channels, 
+the <span class="arithmatex">\(n_{rounds}\times n_{channels}\)</span> code would be:</p>
+<div class="highlight"><pre><span></span><code><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.378</span><span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">,</span> <span class="mf">0.</span>   <span class="p">]])</span>
+</code></pre></div>
+<p>The background codes are saved as 
+<a href="../notebook_comments/#call_spots"><code>nb.call_spots.background_codes</code></a> in the 
+<a href="../code/pipeline/call_reference_spots/"><code>call_reference_spots</code></a> section of the pipeline. Each background vector
+is always <a href="../code/call_spots/background/">fitted</a> to each pixel by the omp algorithm, so they will always be shown.</p>
+<details class="note" open="open">
+<summary>OMP Diagnostics on <em>Reference Spots</em></summary>
+<p>The functions <a href="#o-view_omp"><code>view_omp</code></a>, <a href="#shift-o-view_omp_fit"><code>view_omp_fit</code></a> and 
+<a href="#shift-s-view_omp_score"><code>view_omp_score</code></a> can also be run for
+<em>reference spots</em> by pressing the relavent key once a spot has been selected in the <em>Anchor</em> 
+<a href="#method">method</a>.</p>
+<p>The <a href="#shift-s-view_omp_score"><code>view_omp_score</code></a> function requires the <em>Notebook</em> to have the 
+<a href="../notebook_comments/#omp"><em>OMP</em> page</a> but the other two do not.</p>
+</details>
+<h3 id="shift-o-view_omp_fit"><em>shift-o</em>: <a href="../code/plot/omp/#view_omp_fit"><code>view_omp_fit</code></a></h3>
+<p>The genes fitted to a particular spot at each stage of the <em>OMP</em> algorithm can be viewed by pressing <em>shift-o</em>
+after clicking on the spot in <a href="#space-change-to-select-mode"><em>select</em> mode</a>:</p>
+<p><img alt="image" src="../images/viewer/view_omp_fit.png" width="600" /></p>
+<p>The image shown at column <span class="arithmatex">\(i\)</span> of the first row is the residual <code>spot_color</code> before the gene shown 
+at the column <span class="arithmatex">\(i\)</span> of the second row has been fitted. </p>
+<p>The image shown at column <span class="arithmatex">\(i+1\)</span> of the first row is the residual <code>spot_color</code>
+after the gene at column <span class="arithmatex">\(i\)</span> of the second row has been removed.</p>
+<p>The image shown at column <span class="arithmatex">\(i\)</span> of the second row is the gene that best explains the residual <code>spot_color</code> 
+shown at column <span class="arithmatex">\(i\)</span> of the first row. </p>
+<p>The second row shows the <code>bled_code</code> (with <code>gene_efficiency</code>) for the gene multiplied by the coefficient found by
+the <a href="../pipeline/omp/#omp-algorithm"><em>OMP</em> algorithm</a> for that gene at that iteration.</p>
+<p>The first plot of the second row shows the sum of the contribution of all background vectors. They are
+combined because there is no overlap between the different <code>background_codes</code>.</p>
+<p>The <em>OMP</em> algorithm stops when the absolute value of the <a href="../code/call_spots/dot_product/"><code>dot_product_score</code></a> 
+(<em>DP</em> in the title of images in the second row) to the best gene drops below the <em>DP Threshold</em> indicated in 
+the title (0.225 here, this value is <a href="../config/#omp"><code>config['omp']['dp_thresh']</code></a>). 
+The gene shown in red is the first gene with a <code>dot_product_score</code> less than this and won't be fitted.</p>
+<p><em>Res</em> in the title of images in the first row gives the L2 norm of the residual <code>spot_color</code> at that iteration 
+of the <em>OMP</em> algorithm. I.e. we expect this to decrease as the omp algorithm proceeds.</p>
+<p><a href="../pipeline/omp/#view_omp_fit">If you right-click on a column</a>, 
+it will run the <a href="#d-view_score"><code>view_score</code></a> function to indicate how the dot product was calculated for that gene on
+that iteration.</p>
+<h3 id="shift-s-view_omp_score"><em>Shift-s</em>: <a href="../code/plot/omp/#view_omp_score"><code>view_omp_score</code></a></h3>
+<p><a href="../pipeline/omp/#view_omp_score">This shows</a> how the <em>OMP</em> score, <span class="arithmatex">\(\gamma_s\)</span>, was computed for a particular spot. 
+The initial value of <code>omp_score_multiplier</code> will be the current <a href="#omp-score-multiplier">slider</a> value.</p>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../run_code/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Running the code" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Running the code
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../notebook/" class="md-footer__link md-footer__link--next" aria-label="Next: Notebook" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Notebook
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

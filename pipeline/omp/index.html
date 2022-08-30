@@ -1,0 +1,3313 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>OMP - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#omp" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              OMP
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../config_setup/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        OMP
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#re-run-call_spots_omp" class="md-nav__link">
+    Re-run call_spots_omp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-bother-with-omp" class="md-nav__link">
+    Why bother with OMP?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initial-intensity-threshold" class="md-nav__link">
+    Initial Intensity Threshold
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#omp-algorithm" class="md-nav__link">
+    OMP Algorithm
+  </a>
+  
+    <nav class="md-nav" aria-label="OMP Algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-iteration-procedure" class="md-nav__link">
+    Pre-Iteration Procedure
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-best-gene" class="md-nav__link">
+    Finding Best Gene
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-gene-coefficients" class="md-nav__link">
+    Finding Gene Coefficients
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weighting-in-dot-product-score" class="md-nav__link">
+    Weighting in Dot Product Score
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#finding-spots" class="md-nav__link">
+    Finding Spots
+  </a>
+  
+    <nav class="md-nav" aria-label="Finding Spots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spot-shape" class="md-nav__link">
+    Spot Shape
+  </a>
+  
+    <nav class="md-nav" aria-label="Spot Shape">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-no-negative-values-in-nbompspot_shape" class="md-nav__link">
+    Error - No negative values in nb.omp.spot_shape
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n_neighbours" class="md-nav__link">
+    n_neighbours
+  </a>
+  
+    <nav class="md-nav" aria-label="n_neighbours">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view_omp_score" class="md-nav__link">
+    view_omp_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#omp-score" class="md-nav__link">
+    OMP Score
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saving-omp-results" class="md-nav__link">
+    Saving OMP results
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    Diagnostics
+  </a>
+  
+    <nav class="md-nav" aria-label="Diagnostics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#histogram_score" class="md-nav__link">
+    histogram_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#histogram_2d_score" class="md-nav__link">
+    histogram_2d_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gene_counts" class="md-nav__link">
+    gene_counts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_omp" class="md-nav__link">
+    view_omp
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_omp_fit" class="md-nav__link">
+    view_omp_fit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_score" class="md-nav__link">
+    view_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_weight" class="md-nav__link">
+    view_weight
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_background" class="md-nav__link">
+    view_background
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#psuedocode" class="md-nav__link">
+    Psuedocode
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#re-run-call_spots_omp" class="md-nav__link">
+    Re-run call_spots_omp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-bother-with-omp" class="md-nav__link">
+    Why bother with OMP?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initial-intensity-threshold" class="md-nav__link">
+    Initial Intensity Threshold
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#omp-algorithm" class="md-nav__link">
+    OMP Algorithm
+  </a>
+  
+    <nav class="md-nav" aria-label="OMP Algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-iteration-procedure" class="md-nav__link">
+    Pre-Iteration Procedure
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-best-gene" class="md-nav__link">
+    Finding Best Gene
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-gene-coefficients" class="md-nav__link">
+    Finding Gene Coefficients
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weighting-in-dot-product-score" class="md-nav__link">
+    Weighting in Dot Product Score
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#finding-spots" class="md-nav__link">
+    Finding Spots
+  </a>
+  
+    <nav class="md-nav" aria-label="Finding Spots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spot-shape" class="md-nav__link">
+    Spot Shape
+  </a>
+  
+    <nav class="md-nav" aria-label="Spot Shape">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-no-negative-values-in-nbompspot_shape" class="md-nav__link">
+    Error - No negative values in nb.omp.spot_shape
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n_neighbours" class="md-nav__link">
+    n_neighbours
+  </a>
+  
+    <nav class="md-nav" aria-label="n_neighbours">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view_omp_score" class="md-nav__link">
+    view_omp_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#omp-score" class="md-nav__link">
+    OMP Score
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saving-omp-results" class="md-nav__link">
+    Saving OMP results
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    Diagnostics
+  </a>
+  
+    <nav class="md-nav" aria-label="Diagnostics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#histogram_score" class="md-nav__link">
+    histogram_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#histogram_2d_score" class="md-nav__link">
+    histogram_2d_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gene_counts" class="md-nav__link">
+    gene_counts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_omp" class="md-nav__link">
+    view_omp
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_omp_fit" class="md-nav__link">
+    view_omp_fit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_score" class="md-nav__link">
+    view_score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_weight" class="md-nav__link">
+    view_weight
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_background" class="md-nav__link">
+    view_background
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#psuedocode" class="md-nav__link">
+    Psuedocode
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/pipeline/omp.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="omp">OMP</h1>
+<p>The <a href="../../code/pipeline/omp/"><em>OMP</em> step of the pipeline</a> runs an Orthogonal Matching Pursuit (<em>OMP</em>) algorithm on every 
+pixel, adding multiple gene <a href="../call_reference_spots/#gene-bled-codes"><code>bled_codes</code></a> 
+to explain the <span class="arithmatex">\(n_{rounds} \times n_{channels}\)</span> <a href="../get_reference_spots/#reading-off-intensity">intensity vector</a> 
+at each pixel. This gives us a coefficient, <span class="arithmatex">\(\mu_{sg}\)</span> for every pixel, <span class="arithmatex">\(s\)</span>, and gene, <span class="arithmatex">\(g\)</span>, and thus we can 
+create a coefficient image for every gene.</p>
+<p>By doing a local maxima search on these images, we can obtain another estimate of the distribution of genes, which 
+we can compare to that obtained from the <a href="../get_reference_spots/">reference spots</a>. The number and location of spots
+found by the <em>OMP</em> method will be different though.</p>
+<p>There are some variables obtained for each spot (<code>local_yxz</code>, <code>tile</code>, 
+<a href="../get_reference_spots/#reading-off-intensity"><code>colors</code></a>, <code>gene_no</code> and 
+<a href="../call_reference_spots/#intensity"><code>intensity</code></a>) saved in the 
+<a href="../../notebook_comments/#omp"><code>omp</code></a> <em>NotebookPage</em> which are equivalent to the same variables saved 
+in the <a href="../../notebook_comments/#ref_spots"><code>ref_spots</code></a> <em>NotebookPage</em>. 
+There are also some other variables added to the <a href="../../notebook_comments/#omp"><code>omp</code></a> <em>NotebookPage</em> which 
+relate to the typical shape of a spot in the gene coefficient images.</p>
+<p>The <em>OMP</em> section takes quite a long time, so <a href="../../config/#omp"><code>config['omp']['use_z']</code></a> can be used to only run 
+<em>OMP</em> on a subset of z-planes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note: <code>config</code> in this section, with no section specified, means <a href="../../config/#omp"><code>config['omp']</code></a></p>
+</div>
+<h2 id="re-run-call_spots_omp">Re-run <a href="../../code/pipeline/omp/"><code>call_spots_omp</code></a></h2>
+<p>To re-run the <em>OMP</em> section, the <a href="#saving-omp-results">files</a> generated during the <em>OMP</em> step
+which were saved at the paths indicated by:</p>
+<ul>
+<li><code>nb.file_names.omp_spot_shape</code></li>
+<li><code>nb.file_names.omp_spot_info</code></li>
+<li><code>nb.file_names.omp_spot_coef</code></li>
+</ul>
+<p>need to be deleted or re-named (alternatively the <code>omp_spot_shape</code>, <code>omp_spot_info</code> and <code>omp_spot_coef</code> 
+parameters in the <a href="../../config/#file_names"><em>file names</em></a> section of the configuration file can be changed). This is
+so the old data is not loaded in when the <em>OMP</em> part of the pipeline is run.
+Other than that, the <a href="../../run_code/#re-run-section">usual instructions</a> can be followed.</p>
+<h2 id="why-bother-with-omp">Why bother with <em>OMP</em>?</h2>
+<p>There are two main reasons to use the <em>OMP</em> method for finding the distribution of genes instead of
+<a href="../call_reference_spots/"><em>reference spots</em></a>. The first is that <em>OMP</em> fits multiple coefficients to every 
+pixel and thus allows for overlapping spots:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1"><code>view_omp_fit</code></label><label for="__tabbed_1_2"><code>view_omp</code></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/coef_fit.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/coef.png" width="600" /></p>
+</div>
+</div>
+</div>
+<p>In the <a href="../../view_results/#shift-o-view_omp_fit"><code>view_omp_fit</code></a> plot, it shows an example of a spot color, 
+<span class="arithmatex">\(\pmb{\zeta}_s\)</span>, which requires the <code>bled_code</code> of both <em>Plp1</em> and <em>Aldoc</em> to explain it. The 
+<a href="../../view_results/#o-view_omp"><code>view_omp</code></a> plot then shows that spots for both these genes are detected with 
+the <em>OMP</em> method. The <a href="../call_reference_spots/"><em>reference spots</em></a> method though, can only fit one gene 
+to each pixel, so here it only detects the <em>Plp1</em> spot.</p>
+<p>The second reason is that the <a href="../call_reference_spots/"><em>reference spots</em></a> method can only assign genes to spots
+<a href="../find_spots/">detected</a> on the reference round / reference channel images. It is thus restricted, because there may 
+be genes present at pixels other than the finite amount considered. Also, the 
+<code>config['find_spots']['radius_xy']</code> and <code>config['find_spots']['radius_z']</code> parameters in the spot detection 
+necessitates a minimum distance between any two genes.</p>
+<p>The <em>OMP</em> method says that spots are local maxima in the gene coefficient images, and thus it can find spots
+at locations other than the location of the <em>reference spots</em>. Also, because it does a separate local maxima search
+for each gene, the <code>config['radius_xy']</code> and <code>config['radius_z']</code> parameters in spot detection 
+only necessitates a minimum distance between two spots of the same gene.</p>
+<p>The consequence of this, is that the spots detected by the <em>OMP</em> method tend to be in more dense clusters, as shown 
+by the <a href="../../view_results/"><code>coppafish.Viewer</code></a> images below. This 
+is then more useful for <a href="../../code/utils/pciseq/">cell typing</a></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1"><em>Reference Spots</em></label><label for="__tabbed_2_2"><em>OMP</em></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/anchor_plot.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/omp_plot.png" width="600" /></p>
+</div>
+</div>
+</div>
+<h2 id="initial-intensity-threshold">Initial Intensity Threshold</h2>
+<p>To produce the gene coefficient images, as shown by the <a href="../../view_results/#shift-o-view_omp_fit"><code>view_omp_fit</code></a> 
+function, we need to run <em>OMP</em> on every pixel in the image. However, for a single <span class="arithmatex">\(2048\times2048\times50\)</span> tile, 
+there are <span class="arithmatex">\(2.1\times10^8\)</span> pixels. Thus, we do an initial thresholding so as not to consider all of them.</p>
+<p>We only consider pixel <span class="arithmatex">\(s\)</span>, with pixel color <span class="arithmatex">\(\pmb{\zeta}_s\)</span>, if it has an 
+<a href="../call_reference_spots/#intensity">intensity</a> computed from its absolute pixel color, 
+<span class="arithmatex">\(\tilde{\chi}_s\)</span>, greater than <code>config['initial_intensity_thresh']</code>. I.e.</p>
+<div class="arithmatex">\[
+\tilde{\chi}_s = \underset{r}{\mathrm{median}}(\max_c|\zeta_{s_{rc}}|)
+\]</div>
+<details class="question">
+<summary>Why is absolute pixel color is used?</summary>
+<p>We use <span class="arithmatex">\(|\pmb{\zeta}_s|\)</span> because we are also interested in whether a pixel has a negative gene coefficient. We
+expect a negative coefficient in an annulus around a spot, as shown in the 
+<a href="../../view_results/#o-view_omp"><code>view_omp</code></a> plots, as a result of the 
+<a href="../extract/#effect-of-filtering">difference of hanning kernel</a> used in the initial filtering. If a gene has a
+negative coefficient annulus around the local maxima, then it boosts our confidence that it is legitimate.</p>
+</details>
+<p>If <code>config['initial_intensity_thresh']</code> is not specified, it is 
+<a href="../../code/omp/base/#coppafish.omp.base.get_initial_intensity_thresh">set to</a> the percentile indicated by 
+<code>config['initial_intensity_thresh_percentile']</code> of <span class="arithmatex">\(\tilde{\chi}\)</span> computed for all 
+pixels in the middle z-plane (<code>nb.call_spots.norm_shift_tile</code>) of the central tile (<code>nb.call_spots.norm_shift_z</code>).
+I.e., it is set to:
+<div class="highlight"><pre><span></span><code><span class="n">nb</span><span class="o">.</span><span class="n">call_spots</span><span class="o">.</span><span class="n">abs_intensity_percentile</span><span class="p">[</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;initial_intensity_thresh_percentile&#39;</span><span class="p">]]</span>
+</code></pre></div>
+So this is saying that for a tile and z-plane which we expect to be among the most fluorescent, we are getting 
+rid of a quarter of the pixels (with the default value of <code>config['initial_intensity_thresh'] = 25</code>) which 
+are the least intense. On other z-planes, we will get rid of more.</p>
+<h2 id="omp-algorithm"><em>OMP</em> Algorithm</h2>
+<p>For every pixel that passes the initial intensity threshold, 
+<span class="arithmatex">\(s\)</span>, we run an Orthogonal Matching Pursuit (<em>OMP</em>) algorithm to find a coefficient, 
+<span class="arithmatex">\(\mu_{sg}\)</span>, for every gene <span class="arithmatex">\(g\)</span>. The pseudocode for how <a href="../../code/omp/coefs/#coppafish.omp.coefs.get_all_coefs">this is done</a> 
+for each pixel is given below:</p>
+<p><div class="highlight"><pre><span></span><code>color: Intensity read from .npy files in tile directory for 
+    each round and channel.
+    [n_rounds x n_channels]
+color_norm_factor: nb.call_spots.color_norm_factor
+    [n_rounds x n_channels]
+bled_codes: nb.call_spots.bled_codes_ge
+    [n_genes x n_rounds x n_channels]
+background_codes: nb.call_spots.background_codes
+    [n_channels x n_rounds x n_channels]
+
+1. Normalise color
+    color = color / color_norm_factor
+2. Compute background_coefs.
+    Remove background from color - 
+        for c in range(n_channels):
+            color = color - background_coefs[c] * 
+                            background_codes[c]
+3. Initialize variables for iterating.
+    residual = color  
+    added_genes = [] 
+    Append background_codes to bled_codes so has shape
+        [(n_genes+n_channels) x n_rounds x n_channels]
+    Initialize coefs with background_coefs which will not change - 
+        coefs = zeros(n_genes+n_channels)
+            coefs[n_genes:] = background_coefs
+
+i = 0
+while i &lt; n_iter:
+    4. Find best_gene to add based on dot product score between residual and 
+        bled_codes.
+        If score &lt; score_thresh or best_gene is background or best_gene 
+        already added:
+            Stop - go to step 7.
+        Append best_gene to added_genes.
+    5. Obtain added_coefs [i+1] 
+        for how the bled_codes of all genes in
+        added_genes can be combined to best explain color.
+        Update coefs -
+            for g_ind in range(i+1):
+                coefs[added_genes[g_ind]] = added_coefs[g_ind]
+    6. Update residual -
+        residual = color
+        for g in added_genes:
+            residual = residual - coefs[g] * bled_codes[g]
+    i += 1
+7. return coefs            
+</code></pre></div>
+There are a few parameters in the <a href="../../config/#omp">configuration file</a> which are used:</p>
+<ul>
+<li><code>max_genes</code>: This is <code>n_iter</code> in the above code.</li>
+<li><code>dp_thresh</code>: This is <code>score_thresh</code> in the above code.</li>
+</ul>
+<h3 id="pre-iteration-procedure">Pre-Iteration Procedure</h3>
+<p>Prior to <em>Step 1</em>, <code>color</code> is <span class="arithmatex">\(\pmb{\acute{\zeta}}_s\)</span> found through 
+<a href="../../code/spot_colors/base/#coppafish.spot_colors.base.get_spot_colors"><code>get_spot_colors</code></a> 
+by obtaining the <a href="../get_reference_spots/#applying-transform">aligned coordinate</a> of pixel <span class="arithmatex">\(s\)</span> in each round and 
+channel and then <a href="../get_reference_spots/#reading-off-intensity">reading off the corresponding intensity</a>.</p>
+<p><em>Step 1</em> is then just converting <code>color</code> from <span class="arithmatex">\(\pmb{\acute{\zeta}}_s\)</span> to <span class="arithmatex">\(\pmb{\zeta}_s\)</span> so the color channels 
+are equalised, as is done in <a href="../call_reference_spots/#color-normalisation"><code>call_reference_spots</code></a>.</p>
+<p><em>Step 2</em> is just finding a coefficient <span class="arithmatex">\(\mu_{sC}\)</span> for each background <em>gene</em>, <span class="arithmatex">\(\pmb{B}_C\)</span> as is done in
+<a href="../call_reference_spots/#background"><code>call_reference_spots</code></a>. The value of <span class="arithmatex">\(\lambda_b\)</span> in the <span class="arithmatex">\(w_{rC}\)</span>
+equation is set to <code>nb.call_spots.background_weight_shift</code> so the same value is used for the 
+<em>reference spots</em> and <em>OMP</em> methods.
+After this step, <code>color</code> is <span class="arithmatex">\(\pmb{\zeta}_{s0}\)</span> and will always remain so. I.e. once background is fit once, it
+is never updated.</p>
+<p><em>Step 3</em> is adding the artificial background <em>genes</em> to our actual genes. After this step, we have a set of
+<code>bled_codes</code>, <span class="arithmatex">\(\pmb{b}\)</span> such that <span class="arithmatex">\(\pmb{b}_{g=n_{g}+C} = \pmb{B}_C\)</span>. We also have a set of coefficients,
+<span class="arithmatex">\(\pmb{\mu}_{s0}\)</span> such that <span class="arithmatex">\(\mu_{s0g=n_g+C} = \mu_{sC}\)</span>. The set of coefficients after <span class="arithmatex">\(i\)</span> actual genes have been fit
+is <span class="arithmatex">\(\pmb{\mu}_{si}\)</span> (<span class="arithmatex">\(i=0\)</span> means just background has been fit) but <span class="arithmatex">\(\mu_{sig=n_g+C} = \mu_{sC} \forall i,C\)</span> 
+as the background coefficients are never updated.</p>
+<h3 id="finding-best-gene">Finding Best Gene</h3>
+<p><em>Step 4</em> is finding the gene, <span class="arithmatex">\(g_i\)</span>, with the <code>bled_code</code>, <span class="arithmatex">\(b_{g_i}\)</span> which best represents the residual after <span class="arithmatex">\(i\)</span> 
+actual genes have been added, <span class="arithmatex">\(\pmb{\zeta}_{si}\)</span>. </p>
+<p>We determine <span class="arithmatex">\(g_i\)</span> to be the gene for which <span class="arithmatex">\(|\Delta_{sig}|\)</span> is the largest, where <span class="arithmatex">\(\Delta_{sig}\)</span> is exactly 
+the same dot product score used in <a href="../call_reference_spots/#dot-product-score"><code>call_reference_spots</code></a>. We use 
+the absolute score here because negative gene coefficients also provide useful information as 
+<a href="#initial-intensity-threshold">explained earlier</a>.</p>
+<details class="note">
+<summary>Dot Product Score Parameters</summary>
+<p>In the configuration file, <code>alpha</code> and <code>beta</code> are specified in both the <code>call_spots</code> and <code>omp</code> sections,
+so different values of these parameters can be used for each method.</p>
+<p>The value of <span class="arithmatex">\(\lambda_d\)</span> in the <span class="arithmatex">\(\tilde{\zeta}_{{si}_{rc}}\)</span>
+<a href="../call_reference_spots/#dot-product-score">equation</a> is set 
+to <code>nb.call_spots.dp_norm_shift * sqrt(n_rounds)</code> so the same value is used for the 
+<em>reference spots</em> and <em>OMP</em> methods.</p>
+</details>
+<p>After we have found <span class="arithmatex">\(g_i\)</span>, we stop the algorithm if any of the following are satisfied:</p>
+<ul>
+<li><span class="arithmatex">\(|\Delta_{si}| = |\Delta_{sig_i}|\)</span> &lt; <code>config['dp_thresh']</code>.</li>
+<li><span class="arithmatex">\(g_i \geq n_g\)</span> i.e. <span class="arithmatex">\(g_i\)</span> is a background <em>gene</em>.</li>
+<li><span class="arithmatex">\(g_i\)</span> was found to be the best gene on a previous iteration.</li>
+</ul>
+<p>This second condition occurred for the third gene added in the <code>view_omp_fit</code> example shown 
+<a href="#why-bother-with-omp">earlier</a>. This case is quite rare though, since the background genes have already been fit.
+We include it because if there is an artificial gene being identified as the best one, then we are also likely to
+erroneously assign actual genes to the pixel which are not actually there. But stopping the algorithm prevents 
+this from happening. It may be more appropriate to recompute the background coefficient, for the background <em>gene</em>
+identified if this happens though.</p>
+<p>The third condition is just to stop getting in a loop where we are always fitting the same gene, but it is even rarer 
+than the second.</p>
+<h3 id="finding-gene-coefficients">Finding Gene Coefficients</h3>
+<p>Once we have decided that a gene is acceptable, in <em>Step 5</em> we find the coefficient of that gene as well
+as updating the coefficients of all genes previously fit. On iteration <span class="arithmatex">\(i\)</span>, there will be <span class="arithmatex">\(i+1\)</span> genes
+to find the coefficient of. The <a href="../../code/omp/coefs/#coppafish.omp.coefs.fit_coefs">coefficients are found</a> 
+through normal least squares:</p>
+<div class="arithmatex">\[
+\tilde{\pmb{\mu}}_{si} = (\pmb{G}_i^T\pmb{G}_i)^{-1}\pmb{G}_i^T\pmb{\zeta}_{s0}
+\]</div>
+<p>Where:</p>
+<ul>
+<li><span class="arithmatex">\(\tilde{\pmb{\mu}}_{si}\)</span> is a vector of <span class="arithmatex">\(i+1\)</span> values such that <span class="arithmatex">\(\mu_{sig_j} = \tilde{\mu}_{si_j}\)</span> where
+<span class="arithmatex">\(\mu_{sig_j}\)</span> is the coefficient found for gene <span class="arithmatex">\(g_j\)</span> on iteration <span class="arithmatex">\(i\)</span> for pixel <span class="arithmatex">\(s\)</span>.</li>
+<li><span class="arithmatex">\(\pmb{G}_i\)</span> is a matrix of shape <span class="arithmatex">\([n_{rounds}n_{channels} \times (i+1)]\)</span> such that column <span class="arithmatex">\(j\)</span>
+is the flattened <code>bled_code</code>, <span class="arithmatex">\(\pmb{b}_{g_j}\)</span>, for gene <span class="arithmatex">\(g_j\)</span>, added on iteration <span class="arithmatex">\(j\)</span>.</li>
+<li><span class="arithmatex">\(\pmb{\zeta}_{s0}\)</span> is the color for pixel <span class="arithmatex">\(s\)</span> after background removal flattened, so it has shape 
+<span class="arithmatex">\([n_{rounds}n_{channels} \times 1]\)</span>.</li>
+</ul>
+<details>
+<summary>Weighted Least Squares</summary>
+<p>If <code>config['weight_coef_fit'] = True</code>, then the coefficients are found through 
+<a href="../../code/omp/coefs/#coppafish.omp.coefs.fit_coefs_weight">weighted least squares</a>.</p>
+<p>In this case, both <span class="arithmatex">\(\pmb{\zeta}_{s0}\)</span> and every column of <span class="arithmatex">\(\pmb{G}_i\)</span> are multiplied by
+<span class="arithmatex">\(\pmb{\omega}_{si}\)</span> where <span class="arithmatex">\(\pmb{\omega}^2_{si}\)</span> is defined in the 
+<a href="../call_reference_spots/#dot-product-score">dot product score calculation</a>.</p>
+<p>The idea behind this is that for normal least squares, the coefficients will be
+overly influenced by outliers. In the <em>Least Squares</em> <a href="../../view_results/#shift-o-view_omp_fit"><code>view_omp_fit</code></a> 
+example below, when fitting <em>Plp1</em>, it is so concerned about getting rid of the very intense values in channel 4 
+that it makes lots of channel 2 and 6 values negative.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:4"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><input id="__tabbed_3_4" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Least Squares</label><label for="__tabbed_3_2">Weighted Least Squares</label><label for="__tabbed_3_3">Weight - Iteration 1</label><label for="__tabbed_3_4">Weight - Iteration 2</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/coef_fit.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/coef_fit_weight.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/weight1.png" width="600" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/why/weight2.png" width="600" /></p>
+</div>
+</div>
+</div>
+<p>In the <em>Weighted Least Squares</em>, we see that after <em>Aldoc</em> has been fit, the 
+channel 4 intensity is much larger than in the <em>Least Squares</em> case and the channel 6 intensities
+are much less negative.</p>
+<p>If we look at the <em>Weight - Iteration 1</em> <a href="../../code/plot/call_spots/#view_weight"><code>view_weight</code></a> plot,
+we see that this occurs because the contribution of the channel 4 rounds is very small.</p>
+<p>A problem with this though, is that the weight is re-computed at each iteration which can cause the coefficient
+of each gene to change drastically. For example, after <em>BG2</em> has been fit,
+we see that channel 6 has become very negative again. Looking at the <em>Weight - Iteration 2</em> plot, we see
+that this is because the weight of round 4, channel 4 has increased.</p>
+<p>The coefficient for <em>Plp1</em> in the <em>Weighted Least Squares</em> case changes from 0.84 to 0.93 after <em>BG2</em> has been 
+fit but in the <em>Least Squares</em> case, it changes from 1.00 to 1.01.</p>
+</details>
+<p>After we have found the coefficients on iteration <span class="arithmatex">\(i\)</span>, we compute the residual for the next iteration in
+<em>Step 6</em>:</p>
+<div class="arithmatex">\[
+\pmb{\zeta}_{si+1} = \pmb{\zeta}_{s0} - \sum_{g=0}^{n_g-1}\mu_{sig}\pmb{b}_g 
+= \pmb{\zeta}_s - \sum_{g=0}^{n_g+n_c-1}\mu_{sig}\pmb{b}_g 
+\]</div>
+<p>Where <span class="arithmatex">\(n_c\)</span> is the number of channels and <span class="arithmatex">\(n_g\)</span> is the number of genes. The second equation includes the combination
+from the background <em>genes</em>. In the first equation, <span class="arithmatex">\(\mu_{sig}\)</span> will only be non-zero for <span class="arithmatex">\(i+1\)</span> genes (in 
+the second equation, it will be for <span class="arithmatex">\(i+1+n_c\)</span> genes, because we include the <span class="arithmatex">\(n_c\)</span> background <em>genes</em>).</p>
+<p>We continue iterating between <em>Step 4</em> and <em>Step 6</em> until any of the <a href="#finding-best-gene">stopping criteria</a> are met, 
+or we fit <code>config['max_genes']</code> to the pixel.</p>
+<h3 id="weighting-in-dot-product-score">Weighting in Dot Product Score</h3>
+<p>The difference between this algorithm and the standard Orthogonal Matching Pursuit algorithm is
+the weight factor, <span class="arithmatex">\(\pmb{\omega}^2_{si}\)</span>, used when computing 
+<a href="../call_reference_spots/#dot-product-score"><span class="arithmatex">\(\Delta_{sig}\)</span></a>. Normal <em>OMP</em> would have 
+<span class="arithmatex">\(\alpha = 0\)</span> so <span class="arithmatex">\(\pmb{\omega}^2_{si}=1\)</span>. </p>
+<p>By using this weighting, we are trying to say that if a gene has already been fit with high intensity
+in round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span>, then the remaining intensity in round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span>, after it has been fit 
+is probably because the coefficient of that gene was not fit correctly, rather than because another gene is 
+present. As the example below shows, without it, genes are fit to really try and get rid of any anomalously 
+intense rounds/channels even if a gene has already been fit there.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:4"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><input id="__tabbed_4_4" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1"><code>view_omp_fit</code> - <span class="arithmatex">\(\alpha=120\)</span></label><label for="__tabbed_4_2"><code>view_omp_fit</code> - <span class="arithmatex">\(\alpha=0\)</span></label><label for="__tabbed_4_3"><code>view_weight</code> - <span class="arithmatex">\(\alpha=120\)</span>, Iteration 4</label><label for="__tabbed_4_4"><code>view_score</code> - <span class="arithmatex">\(\alpha=120\)</span>, Iteration 4</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/weight/fit.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/weight/fit_alpha0.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/weight/weight_calc.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/weight/dp_calc.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>If we compare the <a href="../../view_results/#shift-o-view_omp_fit"><code>view_omp_fit</code></a> plots, we see that 
+in the <span class="arithmatex">\(\alpha=0\)</span> case, <em>Rgs4</em> has been fit to explain the anomalously negative round 6, channel 5
+and <em>Aldoc</em> has been fit to explain the anomalously positive round 2, channel 1.</p>
+<p>The <a href="#view_weight"><code>view_weight</code></a> image shows the calculation of the weight
+factor for <span class="arithmatex">\(i=4\)</span> (all 4 of the actual genes shown have been added). This shows that round 2, channel 1 has a low
+weighting because <em>Lhx6</em> has already been fit and this gene has high intensity in round 2, channel 1.</p>
+<p>If we look the <a href="#view_score"><code>view_score</code></a> image, we see that in the top right, with <span class="arithmatex">\(\alpha=0\)</span>, we
+get a large score for <em>Aldoc</em> solely because of the contribution from round 2, channel 1.
+If we look at the bottom right though, we see that with <span class="arithmatex">\(\alpha=120\)</span>, the score for <em>Aldoc</em> is very small, as we 
+would expect it should be, when comparing the 2 plots in the second column of the <a href="#view_score"><code>view_score</code></a> image.</p>
+<p>Basically, we need the weighting because we know that the least squares 
+<a href="#finding-gene-coefficients">coefficient fitting</a> will produce some anomalously intense rounds and channels. 
+When selecting the <a href="#finding-best-gene">best gene</a>, we need to be robust to this.</p>
+<h2 id="finding-spots">Finding Spots</h2>
+<p><img align="right" alt="image" src="../../images/pipeline/omp/spots/coef_image.png#right" width="200," />
+After we have run the <em>OMP</em> algorithm on every pixel of a tile, we can 
+<a href="../../code/omp/spots/#coppafish.omp.spots.cropped_coef_image">produce an image</a> for each gene 
+based on the <span class="arithmatex">\(n_{pixels}\times n_{genes}\)</span> array of coefficients, <span class="arithmatex">\(\pmb{\mu}\)</span>.</p>
+<p>A <span class="arithmatex">\(200\times 200\)</span> pixel section of such an image for three genes is shown on the right.
+Clearly, most values in each image are zero because each pixel only has a non-zero coefficient
+for a very small fraction of genes.</p>
+<p><br clear="right"/></p>
+<p>We then take each gene in turn and <a href="../../code/omp/spots/#coppafish.omp.spots.get_spots">find spots</a>, 
+which are the local maxima in the coefficient image. These local maxima are 
+<a href="../../code/find_spots/detect/#coppafish.find_spots.detect.detect_spots">found</a> in exactly the same way
+as in the <a href="../find_spots/#spot-detection"><em>find spots</em></a> part of the pipeline. But here,
+the threshold intensity is 0 and the neighbourhood (kernel for dilation) is defined by the parameters
+<code>config['radius_xy']</code> and <code>config['radius_z']</code>.</p>
+<h3 id="spot-shape">Spot Shape</h3>
+<p>In the gene coefficient images above, the spots can clearly be seen as red (positive) circles surrounded by a blue 
+(negative) annulus. So to decide whether a particular spot is legitimate, we want to compare its shape to 
+the average spot shape.</p>
+<p>This average spot shape can be specified in advance (e.g. if you have already run an experiment, which is expected
+to be similar to the current one, and you want the same shape to be used) with a <em>npy</em> file in the output directory 
+with the name given by <code>config['file_names']['omp_spot_shape']</code>. This file must contain an image (axis in 
+the order z-y-x) indicating the expected sign of a coefficient (only values are 1, 0, -1) 
+in the neighbourhood of a spot.</p>
+<p>If the file indicated by <code>config['file_names']['omp_spot_shape']</code> does not exist, then it will be 
+<a href="../../code/omp/spots/#coppafish.omp.spots.spot_neighbourhood">computed</a>
+from the spots found on a specific tile. The tile used is the one for which the most spots were found with the 
+<a href="../call_reference_spots/"><em>reference spots</em></a> method, and it is saved as <code>nb.omp.shape_tile</code>. </p>
+<p>The psuedocode for <a href="../../code/omp/spots/#coppafish.omp.spots.spot_neighbourhood">obtaining the spot shape</a> is given below:</p>
+<p><div class="highlight"><pre><span></span><code>spot_yxz: yxz coordinates of all spots found on the tile
+    [n_spots x 3]
+gene_no: gene_no[s] is the gene whose coefficient image
+    spot s was found on.
+    [n_spots].
+tile_sz: nb.basic_info.tile_sz
+nz: nb.basic_info.nz
+gene_coef_im: gene_coef_im[g] is the gene coefficient image
+    for gene g, which can be made after running OMP on each pixel.
+    [n_genes x tile_sz x tile_sz x nz]
+
+for s in range(n_spots):
+    1. use = True if number of pixels neighbouring
+        spot_yxz[s] in gene_coef_im[gene_no[s]]
+        with a positive value equals use_thresh.
+    2. If use, then obtain the [shape_ny x shape_nx x shape_nz] image 
+        centered on spot_yxz[s] in gene_coef_im[gene_no[s]]. 
+
+3. We now have spot_images which is a 
+    [n_use x shape_ny x shape_nx x shape_nz] array.
+    We update this by only keeping images from isolated spots.
+    [n_use2 x shape_ny x shape_nx x shape_nz]
+4. Compute spot_sign_images by taking the sign of every value in spot_images 
+    so the only values are 1, 0, -1.
+    Next, we compute av_spot_sign_image which is the average of 
+    spot_sign_images across spots.
+    Where abs(av_spot_sign_image) &lt; sign_thresh, set it to 0.
+    Take sign of av_spot_sign_image so it only contains 1, 0, -1.
+    [shape_ny x shape_nx x shape_nz]
+</code></pre></div>
+There are a few parameters in the <a href="../../config/#omp">configuration file</a> which are used:</p>
+<ul>
+<li><code>shape_pos_neighbour_thresh</code>: In <em>2D</em>, this is <code>use_thresh</code> in the above code. In <em>3D</em>, this is
+<code>use_thresh - 2</code>.</li>
+<li><code>shape_max_size</code>: This is <code>[shape_ny, shape_nx, shape_nz]</code> in the above code.</li>
+<li><code>shape_sign_thresh</code>: This is <code>sign_thresh</code> in the above code.</li>
+</ul>
+<p><em>Step 1</em> is a thresholding procedure, so we only use spots we are quite confident are real for computing
+the average shape.
+For a spot to be used in computing the shape, on the z-plane of the gene coefficient image that it was found on, 
+within the <span class="arithmatex">\(n_{pos_{use}}\times n_{pos_{use}}\)</span> neighbourhood with the local maxima in the centre, all 
+<code>n_use =</code><span class="arithmatex">\(n_{pos_{use}}^2\)</span> coefficients must be positive. In <em>3D</em>, the coefficient at the same <span class="arithmatex">\(yx\)</span> coordinate
+as the local maxima but on 1 z-plane either side must be also positive (now require <code>n_use =</code><span class="arithmatex">\(n_{pos_{use}}^2 + 2\)</span> 
+positive coefficients in the neighbourhood of the spot). The value of <span class="arithmatex">\(n_{pos_{use}}^2\)</span> is given by 
+<code>config['shape_pos_neighbour_thresh']</code>, the default value is 9 meaning all pixels in a <span class="arithmatex">\(3\times 3\)</span> grid centered on
+the local maxima must be positive.</p>
+<details class="example">
+<summary>Example</summary>
+<p>The first image below shows a spot that would be used to compute the shape with 
+<code>config['shape_pos_neighbour_thresh'] = 3</code>because all 9 pixels in the central z-plane have 
+a positive coefficient, as do those on 1 z plane either side but in the middle yx pixel.</p>
+<p>The second image shows a spot that would not be used.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">✅</label><label for="__tabbed_5_2">❌</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/shape_use.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/shape_no_use.png" width="800" /></p>
+</div>
+</div>
+</div>
+</details>
+<p>In <em>Step 2</em>, we just <a href="../../code/utils/spot_images/#coppafish.utils.spot_images.get_spot_images">get the cropped</a> 
+gene coefficient image in the neighbourhood of the local maxima.
+3 examples are shown as <em>Spot 1</em>, <em>Spot 2</em> and <em>Spot 3</em> below.</p>
+<p>In <em>Step 3</em>, we are saying that most spots are probably not overlapping with any other genes so
+to get an estimate of what an average spot looks like, let us only use spots which are
+quite well isolated. Our definition of isolated here, is that the distance between each spot used in <em>Step 2</em>
+and any other spot used in <em>Step 2</em> must exceed <code>config[shape_isolation_dist]</code>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:5"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><input id="__tabbed_6_3" name="__tabbed_6" type="radio" /><input id="__tabbed_6_4" name="__tabbed_6" type="radio" /><input id="__tabbed_6_5" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Spot 1</label><label for="__tabbed_6_2">Spot 2</label><label for="__tabbed_6_3">Spot 3</label><label for="__tabbed_6_4">Average Sign</label><label for="__tabbed_6_5">Spot Shape</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/spot1.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/spot2.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/spot3.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/av_shape_float.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/av_shape.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>In <em>Step 4</em>, we first take the sign of the spot images and then compute the average of these using 
+<a href="../../code/utils/spot_images/#coppafish.utils.spot_images.get_average_spot_image"><code>get_average_spot_image</code></a>.
+We set <code>av_type = 'mean'</code> and <code>symmetry = 'annulus_3d'</code>. We use this symmetry because we assume that the 
+spot should be circular within a z-plane and symmetric in z. This procedure produces the <em>Average Sign</em> image
+shown above. This is saved to the <em>Notebook</em> as <code>nb.omp.spot_shape_float</code>.</p>
+<p>After we have this <code>av_sign_image</code>, we get our final <code>spot_shape</code> via:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">av_sign_image</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">av_sign_image</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;omp&#39;</span><span class="p">][</span><span class="s1">&#39;shape_sign_thresh&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">spot_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">av_sign_image</span><span class="p">)</span>
+</code></pre></div>
+<p>This is just saying that if the absolute value of the mean sign across all these spots was less than 
+<code>config['omp']['shape_sign_thresh']</code>, then we are not sure what sign these pixels 
+should be, so we won't assign them a sign in our final <code>spot_shape</code>. Otherwise, 
+we are fairly confident what sign they should be, so we do assign the sign to our final shape. The <em>Spot Shape</em>
+image above shows what this looks like.</p>
+<details class="question">
+<summary>Why does the spot shape indicate the expected sign of the coefficient?</summary>
+<p>The <code>spot_shape</code> indicates the expected sign of a coefficient, not the expected value.
+This is because, through the <a href="#omp-algorithm"><em>OMP</em> algorithm</a>, for a pixel to have a non-zero coefficient 
+for any gene, it has already gone through a <a href="#finding-best-gene">thresholding</a> procedure which has decided that 
+the gene <code>bled_code</code> is required to explain the pixel color.</p>
+<p>The idea behind <a href="#n_neighbours">counting</a> the number of coefficients with the correct sign is 
+that if there are lots of pixels in the neighbourhood of the spot which required a certain gene, then that gives
+us confidence that the gene is actually present. </p>
+<p>If we instead convolved the actual coefficent image (e.g. <em>Spot 1</em> image shown above) 
+with the expected coefficient kernel (e.g. mean of spot_images in <em>Step 4</em> of the pseudocode), it 
+would boost the score of intense pixels which we don't want to do.</p>
+</details>
+<p>The final <code>spot_shape</code> is saved to the <em>Notebook</em> as <code>nb.omp.spot_shape</code> and is also saved as a 
+<em>npy</em> file in the output directory with the name indicated by <code>config['file_names']['omp_spot_shape']</code>.
+The coordinates and corresponding gene of spots used to compute <code>nb.omp.spot_shape</code> are saved as
+<code>nb.shape_spot_local_yxz</code> and <code>nb.shape_spot_gene_no</code> respectively.</p>
+<h4 id="error-no-negative-values-in-nbompspot_shape">Error - No negative values in <code>nb.omp.spot_shape</code></h4>
+<p>If <code>config['shape_sign_thresh']</code> is too large, <code>nb.omp.spot_shape</code> will not have any -1 values.
+This will then raise an error because <a href="#n_neighbours"><code>nb.omp_n_neighbours_neg</code></a> cannot be computed.
+To get past this error, the <em>OMP</em> step needs to be re-run with either 
+<code>config['shape_sign_thresh']</code> set to a lower value or 
+<code>nb.omp.spot_shape</code> specified through <code>config['file_names']['omp_spot_shape']</code>.</p>
+<details class="example">
+<summary>Example</summary>
+<p>The following error was hit when running with <code>config['shape_sign_thresh'] = 0.7</code>:</p>
+<p><img alt="image" src="../../images/pipeline/omp/error.png" width="600" /></p>
+<p>The error saves the spot shape, <code>nb.omp.spot_shape_float</code>, which is converted to <code>nb.omp.spot_shape</code> through 
+thresholding with <code>config['shape_sign_thresh']</code> and then taking the sign.</p>
+<p>If we then load this file, we can get an idea of a suitable value of <code>config['shape_sign_thresh']</code>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Code</label><label for="__tabbed_7_2">napari Viewer</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">napari</span>
+<span class="n">im_file</span> <span class="o">=</span> <span class="s2">&quot;/Users/joshduffield/Documents/UCL/ISS/Python/play/B8S5_Slice001_npy/omp_spot_shape_float_ERROR.npy&quot;</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">im_file</span><span class="p">)</span>
+<span class="n">napari</span><span class="o">.</span><span class="n">view_image</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">contrast_limits</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">colormap</span><span class="o">=</span><span class="s2">&quot;PiYG&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/error_napari.png" width="400" /></p>
+</div>
+</div>
+</div>
+<p>Say we decide after looking at the image in <em>napari</em>, that we want values more negative than
+at the blue cross to be included in the final shape. Then we set <code>config['shape_sign_thresh']</code>
+to be just below the absolute value at this cross (0.336 as indicated in bottom left).</p>
+<p>The value of <code>config['shape_sign_thresh']</code> indicated in the error is the maximum allowed value
+such that <code>nb.omp.spot_shape</code> will contain at least one pixel with the value of -1.</p>
+<p>If the saved <code>nb.omp.spot_shape_float</code> image has no negative values, then <code>config['file_names']['omp_spot_shape']</code>
+must be used to specify <code>nb.omp.spot_shape</code>. The saved image can still be used as a guide 
+as to where <code>nb.omp.spot_shape=1</code> though.</p>
+</details>
+<h3 id="n_neighbours"><code>n_neighbours</code></h3>
+<p>Once we have found the <code>spot_shape</code>, we want to quantify how much each spot resembles it. To do this, 
+if spot <span class="arithmatex">\(s\)</span>, was found on the gene <span class="arithmatex">\(g\)</span> coefficient image, we first 
+<a href="../../code/utils/spot_images/#coppafish.utils.spot_images.get_spot_images">obtain</a> <code>coef_im_s</code> which is the gene 
+<span class="arithmatex">\(g\)</span> coefficient image centered on the coordinates of spot <span class="arithmatex">\(s\)</span>, with the same size as <code>spot_shape</code>.</p>
+<p>We then <a href="../../code/omp/spots/#coppafish.omp.spots.count_spot_neighbours">count</a> the number of pixels for which 
+<code>coef_im_s</code> and <code>spot_shape</code> both have positive coefficients. We also count the number of pixels for which 
+<code>coef_im_s</code> and <code>spot_shape</code> both have negative coefficients. Once this has been done for all spots, these 
+are saved as <code>nb.omp.n_neighbours_pos</code> and <code>nb.omp.n_neighbours_neg</code> respectively.</p>
+<p>To reduce the memory of the <em>Notebook</em> file, we only save spots to the <em>Notebook</em> if <code>n_neighbours_pos</code>
+exceeds <code>config['initial_pos_neighbour_thresh']</code>. If this is left blank, it will be set
+to the fraction <code>config['initial_pos_neighbour_thresh_param']</code> of the maximum possible value (i.e.
+<code>sum(spot_shape&gt;0)</code>). It will also be clipped between <code>config['initial_pos_neighbour_thresh_min']</code> and 
+<code>config['initial_pos_neighbour_thresh_max']</code>.</p>
+<h4 id="view_omp_score"><a href="../../code/plot/omp/#view_omp_score"><code>view_omp_score</code></a></h4>
+<p>The way <code>nb.omp.n_neighbours_pos</code> and <code>nb.omp.n_neighbours_neg</code> are obtained, can be visualised for a specific
+spot with the function <a href="../../code/plot/omp/#view_omp_score"><code>view_omp_score</code></a>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><input id="__tabbed_8_3" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1"><span class="arithmatex">\(\rho = 0.95\)</span></label><label for="__tabbed_8_2"><span class="arithmatex">\(\rho = 0.1\)</span></label><label for="__tabbed_8_3"><span class="arithmatex">\(\rho = 20\)</span></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/view_omp_score.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/view_omp_score2.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/spots/view_omp_score3.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>Here, the top plot shows <code>nb.omp.spot_shape</code> and the bottom plot shows the coefficient image for <em>Snca</em> in the 
+neighbourhood of spot <span class="arithmatex">\(371046\)</span> which has <span class="arithmatex">\(yxz\)</span> coordinates in the global coordinate system of 
+<span class="arithmatex">\([3970, 509, 25]\)</span>. </p>
+<p>The green hatching in the top plot indicates where both plots have the same sign. So <code>nb.omp.n_neighbours_pos[371046]</code>
+is the number of red pixels with green hatching (316) and <code>nb.omp.n_neighbours_neg[371046]</code> is the number of 
+blue pixels with green hatching (192).</p>
+<h4 id="omp-score"><em>OMP</em> Score</h4>
+<p>The final <a href="../../code/call_spots/qual_check/#coppafish.call_spots.qual_check.omp_spot_score">score</a>, <span class="arithmatex">\(\gamma\)</span>, used for 
+<a href="../../code/call_spots/qual_check/#coppafish.call_spots.qual_check.quality_threshold">thresholding</a> 
+<em>OMP</em> spots in <a href="../../view_results/"><code>coppafish.Viewer</code></a> and when exporting to 
+<a href="../../run_code/#exporting-to-pciseq"><em>pciSeq</em></a> is: </p>
+<div class="arithmatex">\[
+\gamma_s = \frac{n_{neg_s} + \rho n_{pos_s}}{n_{neg_{max}} + \rho n_{pos_{max}}}
+\]</div>
+<p>Where:</p>
+<ul>
+<li><span class="arithmatex">\(n_{neg_s}\)</span> is <code>nb.omp.n_neighbours_neg[s]</code></li>
+<li><span class="arithmatex">\(n_{neg_s}\)</span> is <code>nb.omp.n_neighbours_pos[s]</code></li>
+<li><span class="arithmatex">\(n_{neg_{max}}\)</span> is <code>sum(nb.omp.spot_shape&lt;0)</code></li>
+<li><span class="arithmatex">\(n_{pos_{max}}\)</span> is <code>sum(nb.omp.spot_shape&gt;0)</code></li>
+<li><span class="arithmatex">\(\rho\)</span> is <code>config['thresholds']['score_omp_multiplier']</code></li>
+</ul>
+<p>So if <span class="arithmatex">\(\rho = 1\)</span>, this would just be the fraction of pixels in the neighbourhood of spot <span class="arithmatex">\(s\)</span> with the correct
+sign. The larger <span class="arithmatex">\(\rho\)</span>, the greater the contribution of the positive pixels to <span class="arithmatex">\(\gamma_s\)</span>.</p>
+<p>With the <a href="#view_omp_score"><code>view_omp_score</code></a> function, the effect of varying <span class="arithmatex">\(\rho\)</span> on the score, can 
+be seen by using the textbox. The top row of plots are also normalised so <span class="arithmatex">\(\gamma_s\)</span> is equal to the sum 
+of the absolute value of the pixels with the green hatching. I.e. in the <span class="arithmatex">\(\rho=0.1\)</span> image, the negative pixels
+are much larger than the positive and in the <span class="arithmatex">\(\rho=20\)</span> image, the positive pixels are much larger than the negative.</p>
+<h2 id="saving-omp-results">Saving <em>OMP</em> results</h2>
+<p>Because the <em>OMP</em> section of the pipeline takes a long time, we want to save the results as we go along, so 
+we don't have to restart the whole thing if it crashes for some reason e.g. a memory error.</p>
+<p>Thus, after we have found the spots on a tile, we save the information for all of them in a npy file
+in the output directory with a name indicated by <code>config['file_names']['omp_spot_info']</code>. For each spot, <span class="arithmatex">\(s\)</span>, 
+this file contains 7 integer values. The first 3 are the local <span class="arithmatex">\(yxz\)</span> coordinates (z-coordinate in units of z-pixels) on 
+the tile it was found on. The fourth is the gene it was assigned to. The fifth is <code>n_neighbours_pos</code> and the sixth
+is <code>n_neighbours_neg</code>. The seventh is the tile it was found on.</p>
+<p>We also save the coefficients of each spot <span class="arithmatex">\(s\)</span> for each gene, <span class="arithmatex">\(\pmb{\mu}_s\)</span>, 
+found via the <a href="#omp-algorithm"><em>OMP</em> algorithm</a>. This <span class="arithmatex">\(n_{spots}\times n_{genes}\)</span> sparse array is saved as a 
+npz file in the output directory with a name indicated by <code>config['file_names']['omp_spot_coef']</code>. This 
+is not actually used anymore but may be useful for debugging purposes.</p>
+<p>If these files already exist, the <a href="../../code/pipeline/omp/"><code>call_spots_omp</code></a> function will simply skip over all tiles 
+for which spots have been saved and then load them all in after spots have been found on all the other tiles.</p>
+<p>After spots have been found on all tiles, duplicate spots are removed in the same way as in the 
+<a href="../get_reference_spots/#duplicates"><em>get reference spots</em></a> step of the pipeline.</p>
+<p>We then save details of each spot to the <em>OMP</em> <em>NotebookPage</em> i.e. <code>local_yxz</code>, <code>tile</code>, 
+<a href="../get_reference_spots/#reading-off-intensity"><code>colors</code></a>, <code>gene_no</code>, 
+<a href="../call_reference_spots/#intensity"><code>intensity</code></a>, <a href="#n_neighbours"><code>n_neighbours_neg</code></a> and 
+<a href="#n_neighbours"><code>n_neighbours_pos</code></a>.</p>
+<h2 id="diagnostics">Diagnostics</h2>
+<p>As well as <a href="#view_omp_score"><code>view_omp_score</code></a>, there are a few other functions using matplotlib which may help to 
+debug this section of the pipeline.</p>
+<p>The <a href="../call_reference_spots/#view_codes"><code>view_codes</code></a>, <a href="../call_reference_spots/#view_spot"><code>view_spot</code></a> 
+and <a href="../call_reference_spots/#view_intensity"><code>view_intensity</code></a> 
+functions can also be used for <em>OMP</em> spots if the argument <code>method</code> has the value <code>'omp'</code> when calling them.</p>
+<h3 id="histogram_score"><a href="../call_reference_spots/#histogram_score"><code>histogram_score</code></a></h3>
+<p>When <a href="../call_reference_spots/#histogram_score"><code>histogram_score</code></a> is run with <code>method = 'omp'</code>, the histogram 
+of the <a href="#omp-score"><em>OMP</em> score</a>, <span class="arithmatex">\(\gamma_s\)</span>, will be plotted:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">OMP Score</label><label for="__tabbed_9_2">All Plots</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/hist_counts.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/hist_counts_all.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>The <em>Score Multiplier</em> textbox can then be used to see how the value of <span class="arithmatex">\(\rho\)</span> affects the distribution.</p>
+<p>There is also the option to show the 5 histograms available when 
+<a href="../call_reference_spots/#histogram_score"><code>histogram_score</code></a> is run with <code>method = 'anchor'</code>.
+These show the distribution of the dot product score, <span class="arithmatex">\(\Delta_{s0g_s}\)</span>, of each spot, <span class="arithmatex">\(s\)</span>, with gene 
+<span class="arithmatex">\(g_s=\)</span> <code>nb.omp.gene_no[s]</code>, if gene <span class="arithmatex">\(g_s\)</span> was added on the first iteration. 
+I.e. this is the score the spot would have had if it was a reference spot instead of an <em>OMP</em> spot.
+Clearly, we see that <span class="arithmatex">\(\Delta_{s0g_s}\)</span> tends to be larger than <span class="arithmatex">\(\gamma_s\)</span>.</p>
+<h3 id="histogram_2d_score"><a href="../../code/plot/omp/#histogram_2d_score"><code>histogram_2d_score</code></a></h3>
+<p>The <a href="../../code/plot/omp/#histogram_2d_score"><code>histogram_2d_score</code></a> function shows the bivariate histogram to 
+see the correlation between the omp spot score, <span class="arithmatex">\(\gamma_s\)</span> and the dot product score, <span class="arithmatex">\(\Delta_{s0g_s}\)</span> 
+(between the orange <span class="arithmatex">\(\gamma_s\)</span> and cyan <em>Dot Product Score</em> line in the above plot):</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="10:3"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><input id="__tabbed_10_3" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1"><span class="arithmatex">\(\rho=0.95\)</span></label><label for="__tabbed_10_2"><span class="arithmatex">\(\rho=10\)</span></label><label for="__tabbed_10_3"><em>Plp1</em></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/hist_2d_counts.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/hist_2d_counts10.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/hist_2d_countsPlp1.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>Like with the <a href="../call_reference_spots/#histogram_score"><code>histogram_score</code></a> plot, you can use the textboxes
+to change the bin spacing, see how <span class="arithmatex">\(\rho\)</span> affects the distribution (compare first and second plots to see how
+a larger <span class="arithmatex">\(\rho\)</span> creates two clusters of spots, one at <span class="arithmatex">\(\Delta=0.4, \gamma=0.1\)</span> and one at <span class="arithmatex">\(\Delta=0.9, \gamma=0.8\)</span>) 
+and see the distribution of a single gene (see <em>Plp1</em> image above).</p>
+<h3 id="gene_counts"><a href="../call_reference_spots/#gene_counts"><code>gene_counts</code></a></h3>
+<p>If the <a href="../call_reference_spots/#gene_counts"><code>gene_counts</code></a> function is run and the <em>Notebook</em> contains the 
+<em>OMP</em> page, then the number of <em>OMP</em> spots with <span class="arithmatex">\(\gamma_s &gt;\)</span> <code>omp_score_thresh</code> and 
+<code>nb.omp.intensity &gt; intensity_thresh</code> assigned to each gene will also be shown:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">Default Score Thresholds</label><label for="__tabbed_11_2">Score Thresholds = 0</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/gene_counts.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/gene_counts_0thresh.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>The default <code>omp_score_thresh</code>, <code>omp_score_multiplier</code> and <code>intensity_thresh</code> 
+are <code>config['thresholds']['score_omp']</code>, <code>config['thresholds']['score_omp_multiplier']</code> and 
+<code>config['thresholds']['intensity']</code> respectively.</p>
+<p>Clearly, when all the score thresholds are set to 0, there are many more <em>OMP</em> spots because we can detect 
+multiple spots at the same location if they belong to different genes.</p>
+<p>The <em>Fake Genes</em> plot has nothing to do with the <em>OMP</em> spots.</p>
+<h3 id="view_omp"><a href="../../code/plot/omp/#view_omp"><code>view_omp</code></a></h3>
+<p><a href="../../view_results/#o-view_omp">This function</a> is useful for seeing all gene coefficients fit in the neighbourhood
+of a spot.</p>
+<h3 id="view_omp_fit"><a href="../../code/plot/omp/#view_omp_fit"><code>view_omp_fit</code></a></h3>
+<p><a href="../../view_results/#shift-o-view_omp_fit">This function</a> is useful for seeing how the <a href="#omp-algorithm"><em>OMP</em> algorithm</a> 
+proceeded on the single pixel at the location of the spot.</p>
+<p>If you right-click on a column, it will run the <a href="#view_score"><code>view_score</code></a> function to indicate how 
+the dot product was calculated for that gene at that iteration. For example, right cicking 
+the third column in the <code>view_omp_fit</code> image below, produces the <code>view_omp_score</code> image indicating how
+the dot product score for <em>Trp53i11</em> was calculated on iteration 1.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="12:4"><input checked="checked" id="__tabbed_12_1" name="__tabbed_12" type="radio" /><input id="__tabbed_12_2" name="__tabbed_12" type="radio" /><input id="__tabbed_12_3" name="__tabbed_12" type="radio" /><input id="__tabbed_12_4" name="__tabbed_12" type="radio" /><div class="tabbed-labels"><label for="__tabbed_12_1"><code>view_omp_fit</code></label><label for="__tabbed_12_2"><code>view_score</code></label><label for="__tabbed_12_3"><code>view_weight</code></label><label for="__tabbed_12_4"><code>view_background</code></label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/view_omp_fit.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/view_score.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/view_weight.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/view_background.png" width="800" /></p>
+</div>
+</div>
+</div>
+<h3 id="view_score"><a href="../../code/plot/call_spots/#view_score"><code>view_score</code></a></h3>
+<p>The <code>view_score</code> is the same as <a href="../call_reference_spots/#view_score">described for <em>reference spots</em> method</a>.
+However, for the <em>OMP</em> method, <span class="arithmatex">\(\Delta_s\)</span> is computed for each gene on each iteration. The calculation
+of all these different <span class="arithmatex">\(\Delta_s\)</span> values can be viewed by changing the gene/iteration in the textboxes.</p>
+<p>For example, the <code>view_score</code> image above shows the calculation for <em>Trp53i11</em> on iteration 1, but if you wanted 
+to know why <em>Pde1a</em> was not fit on iteration 1, you can type in <em>Pde1a</em> or 42 in the <em>Gene</em> textbox:</p>
+<p><img alt="image" src="../../images/pipeline/omp/diagnostics/view_score2.png" width="800" /></p>
+<p>To get back to the best gene on any iteration, just type in any invalid number/letter into the <em>Gene</em> textbox.</p>
+<p>After iteration 0, once actual genes have been fit, the role of the weighting becomes 
+<a href="#weighting-in-dot-product-score">much more important</a>. If the <em>Weight Squared</em> plot is clicked on, 
+it will run the <a href="#view_weight"><code>view_weight</code></a> function for the current iteration, as shown in the <code>view_weight</code>
+image <a href="#view_omp_fit">above</a>.</p>
+<h3 id="view_weight"><a href="../../code/plot/call_spots/#view_weight"><code>view_weight</code></a></h3>
+<p>The <code>view_weight</code> function produces a plot to indicate how the <em>weight squared</em> value for spot <span class="arithmatex">\(s\)</span>, 
+<span class="arithmatex">\(\pmb{\omega}^2_{si}\)</span>, is <a href="../call_reference_spots/#dot-product-score">calculated</a> 
+from the genes fit prior to iteration <span class="arithmatex">\(i\)</span>.</p>
+<p>The <code>view_weight</code> image <a href="#view_omp_fit">above</a> shows how the background and <em>Snca</em> gene combine to produce
+<span class="arithmatex">\(\pmb{\omega}^2_{si}\)</span> on iteration 1. Clearly, the rounds/channels where <em>Snca</em> is strong have an 
+extremely low weight, as does channel 0 where the strongest background has been fit.</p>
+<p>The <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta\)</span> textboxes can be used to see how these parameters affect the final weighting.
+The iteration textbox can be used to see how the weighting and gene coefficients (<span class="arithmatex">\(\mu\)</span> values in titles
+of bottom row plots) change once more or less genes have been added.</p>
+<p>If the <em>Background</em> plot is clicked on, it will run the <a href="#view_background"><code>view_background</code></a> function, as shown 
+in the <code>view_background</code> image <a href="#view_omp_fit">above</a>.</p>
+<h3 id="view_background"><a href="../../code/plot/call_spots/#view_background"><code>view_background</code></a></h3>
+<p>The <a href="../call_reference_spots/#background">background calculation</a> and <code>view_background</code> function are exactly the same as 
+<a href="../call_reference_spots/#view_background">described for <em>reference spots</em> method</a>.</p>
+<h2 id="psuedocode">Psuedocode</h2>
+<p>This is the pseudocode outlining the basics of this <a href="../../code/pipeline/omp/">step of the pipeline</a>.
+There is more detailed pseudocode about how <a href="#omp-algorithm"><em>OMP</em> was run on each pixel</a> and how the 
+<a href="#spot-shape"><code>spot_shape</code> was found</a>.</p>
+<div class="highlight"><pre><span></span><code>color_norm_factor: nb.call_spots.color_norm_factor
+    [n_rounds x n_channels]
+t_most_spots: tile with most spots found on it 
+    in the call_reference_spots function.
+tile_sz: nb.basic_info.tile_sz
+nz: nb.basic_info.nz
+
+Alter use_tiles so t_most_spots will be the first tile.
+
+for t in use_tiles:
+    for z in use_z:
+        Load in pixel_colors of all pixels on tile t, z-plane z.
+            [n_pixels_z x n_rounds x n_channels]
+        Normalise pixel_colors
+            pixel_colors = pixel_colors / color_norm_factor
+        Compute pixel_intensity from abs(pixel_colors)
+            [n_pixels_z]
+        Only keep pixels with intensity above threshold
+            pixel_colors = pixel_colors[pixel_intensity &gt; 
+                           initial_intensity_thresh
+            [n_keep x n_rounds x n_channels]
+        for s in range(n_keep):
+            Remove background from pixel_colors[s]
+
+            Run OMP algorithm to obtain coefficient of each gene.
+            Save coefficient for spot s, gene g as pixel_coefs_z[s, g]
+            [n_keep x n_genes]
+    Concatenate all pixel_coefs_z arrays into one big pixel_coefs array
+        containing all pixels across all z-planes.
+        [n_pixels x n_genes]
+
+    If t == use_tiles[0]:
+        Compute spot_shape from pixel_coefs on first tile if not provided.
+        Save spot_shape to output directory.
+
+    for g in range(n_genes):
+        Convert pixel_coefs[:, g] into coef_image
+            [tile_sz x tile_sz x nz]
+        Find yxz coordinates of local maxima in coef_image
+            [n_spots_g x 3]
+        Using spot_shape, find n_neighbours_pos
+            [n_spots_g]
+        Using spot_shape, find n_neighbours_neg
+            [n_spots_g]
+    Combine spots on all genes to create
+        spot_info_t [n_spots_t x 7]
+        Where:
+            spot_info_t[s, :3] are the yxz coordinates of spot s.
+            spot_info_t[s, 3] is the gene assigned to spot s.
+            spot_info_t[s, 4] is n_neighbours_pos for spot s.
+            spot_info_t[s, 5] is n_neighbours_neg for spot s.
+            spot_info_t[:, 6] = t
+
+    Threshold based on n_neighbours_pos so only keep spots for which
+        n_neighbours_pos &gt; n_pos_thresh:
+            spot_info_t = spot_info_t[spot_info_t[s, 4]&gt;n_pos_thresh, :]
+            [n_save_t x 7]
+
+    Save spot_info_t to output directory
+
+Load in spot_info_t from all tiles and combine into large spot_info array
+    [n_spots x 7]
+
+Remove duplicate spots from spot_info
+    [n_non_duplicate x 7]
+
+Load in spot_colors corresponding to the spots with yxz coordinates given 
+    by spot_info[:, :3]
+    [n_non_duplicate x n_rounds x n_channels]
+
+Save spot_info to Notebook:
+    nb.omp.local_yxz =          spot_info[:, :3]
+    nb.omp.gene_no =            spot_info[:, 3] 
+    nb.omp.n_neighbours_pos =   spot_info[:, 4] 
+    nb.omp.n_neighbours_neg =   spot_info[:, 5] 
+    nb.omp.tile =               spot_info[:, 6]  
+    nb.omp.colors =             spot_colors          
+</code></pre></div>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../call_reference_spots/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Call Reference Spots" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Call Reference Spots
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../../code/setup/notebook/" class="md-footer__link md-footer__link--next" aria-label="Next: Notebook" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Notebook
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

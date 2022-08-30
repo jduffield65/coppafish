@@ -1,0 +1,2979 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Notebook Comments - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#notebook-comments" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Notebook Comments
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../config_setup/" class="md-tabs__link md-tabs__link--active">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Notebook Comments
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Notebook Comments
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic_info" class="md-nav__link">
+    basic_info
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract" class="md-nav__link">
+    extract
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract_debug" class="md-nav__link">
+    extract_debug
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#find_spots" class="md-nav__link">
+    find_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stitch" class="md-nav__link">
+    stitch
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register_initial" class="md-nav__link">
+    register_initial
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register" class="md-nav__link">
+    register
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register_debug" class="md-nav__link">
+    register_debug
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ref_spots" class="md-nav__link">
+    ref_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#call_spots" class="md-nav__link">
+    call_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#omp" class="md-nav__link">
+    omp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    thresholds
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic_info" class="md-nav__link">
+    basic_info
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract" class="md-nav__link">
+    extract
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract_debug" class="md-nav__link">
+    extract_debug
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#find_spots" class="md-nav__link">
+    find_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stitch" class="md-nav__link">
+    stitch
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register_initial" class="md-nav__link">
+    register_initial
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register" class="md-nav__link">
+    register
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register_debug" class="md-nav__link">
+    register_debug
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ref_spots" class="md-nav__link">
+    ref_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#call_spots" class="md-nav__link">
+    call_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#omp" class="md-nav__link">
+    omp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    thresholds
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/notebook_comments.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="notebook-comments">Notebook Comments</h1>
+<h2 id="file_names">file_names</h2>
+<p><em>file_names</em> page contains all files that are used throughout the pipeline. <code>tile</code> is the only variable not included in the config file and is worked out automatically.  Page added to <em>Notebook</em> automatically as soon as <em>basic_info</em> page added.</p>
+<ul>
+<li>
+<p><strong>input_dir</strong>: <em>Directory</em>.</p>
+<p>Where raw <em>nd2</em> files are</p>
+</li>
+<li>
+<p><strong>output_dir</strong>: <em>Directory</em>.</p>
+<p>Where notebook is saved</p>
+</li>
+<li>
+<p><strong>tile_dir</strong>: <em>Directory</em>.</p>
+<p>Where tile <em>npy</em> files saved</p>
+</li>
+<li>
+<p><strong>round</strong>: <em>List [n_rounds]</em>.</p>
+<p>Names of <em>nd2</em> files for the imaging rounds. If not using, will be an empty list.</p>
+</li>
+<li>
+<p><strong>anchor</strong>: <em>String or None</em>.</p>
+<p>Name of <em>nd2</em> file for the anchor round. <code>None</code> if anchor not used</p>
+</li>
+<li>
+<p><strong>raw_extension</strong>: <em>String</em>.</p>
+<p><em>.nd2</em> or <em>.npy</em> indicating the data type of the raw data.</p>
+</li>
+<li>
+<p><strong>raw_metadata</strong>: <em>String or None</em>.</p>
+<p>If <code>raw_extension = .npy</code>, this is the name of the <em>json</em> file in <code>input_dir</code> which contains the   required metadata extracted from the initial <em>nd2</em> files. I.e. it is the output of <em>coppafish/utils/nd2/save_metadata</em></p>
+</li>
+<li>
+<p><strong>dye_camera_laser</strong>: <em>File</em>.</p>
+<p><em>csv</em> file giving the approximate raw intensity for each dye with each camera/laser combination</p>
+</li>
+<li>
+<p><strong>code_book</strong>: <em>File</em>.</p>
+<p>Text file which contains the codes indicating which dye to expect on each round for each gene</p>
+</li>
+<li>
+<p><strong>scale</strong>: <em>File</em>.</p>
+<p>Text file saved containing the <code>extract['scale']</code> and <code>extract['scale_anchor']</code> values used to create  the tile <em>npy</em> files in the <em>tile_dir</em>. If the second value is 0, it means <code>extract['scale_anchor']</code>  has not been calculated yet. </p>
+<p>If the extract step of the pipeline is re-run with <code>extract['scale']</code> or  <code>extract['scale_anchor']</code> different to values saved here, an error will be raised.</p>
+</li>
+<li>
+<p><strong>psf</strong>: <em>File or None</em>.</p>
+<p><em>npy</em> file indicating average spot shape (before padding and scaled to fill <em>uint16</em> range). Will be <code>None</code> if <em>2D</em> pipeline used. File won't exist/used if <code>config['extract']['deconvolve'] = False</code>. If <em>3D</em>, 1st axis in <em>npy</em> file is z.</p>
+</li>
+<li>
+<p><strong>omp_spot_shape</strong>: <em>File</em>.</p>
+<p><em>npy</em> file indicating average spot shape in <em>OMP</em> coefficient sign images. Saved image is <em>int8 npy</em> with only values being -1, 0, 1.</p>
+</li>
+<li>
+<p><strong>omp_spot_info</strong>: <em>File</em>.</p>
+<p>After each tile is finished in <em>OMP</em>, information about spots found is saved as array to <em>npy</em> file: <code>numpy int16 array [n_spots x 7]</code> containing <span class="arithmatex">\(y\)</span>, <span class="arithmatex">\(x\)</span>, <span class="arithmatex">\(z\)</span>, <code>gene_no</code>, <code>n_pos_neighb</code>, <code>n_neg_neighb</code>, <code>tile</code>. If <em>3D</em>, 1st axis in <em>npy</em> file is z.</p>
+</li>
+<li>
+<p><strong>omp_spot_coef</strong>: <em>File</em>.</p>
+<p>After each tile is finished in <em>OMP</em>, coefficients for all spots found is saved as sparse  <code>csr_matrix</code> to <em>npz</em> file:  </p>
+<p><code>CSR_matrix float [n_spots x n_genes]</code> </p>
+<p>giving coefficient found for each gene for each spot.</p>
+</li>
+<li>
+<p><strong>big_dapi_image</strong>: <em>File or None</em>.</p>
+<p><em>npz</em> file of stitched <em>DAPI</em> image. None if <code>nb.basic_info.dapi_channel = None</code> If <em>3D</em>, 1st axis in <em>npz</em> file is z.</p>
+</li>
+<li>
+<p><strong>big_anchor_image</strong>: <em>File</em>.</p>
+<p><em>npz</em> file of stitched image of <code>ref_round</code>/<code>ref_channel</code>. Will be stitched anchor if anchor used. If <em>3D</em>, 1st axis in <em>npz</em> file is z.</p>
+</li>
+<li>
+<p><strong>pciseq</strong>: <em>List of 2 files</em>.</p>
+<p><em>csv</em> files where plotting information for <em>pciSeq</em> is saved. </p>
+<p><code>pciseq[0]</code> is the path where the <em>OMP</em> method output will be saved. </p>
+<p><code>pciseq[1]</code> is the path where the <em>ref_spots</em> method output will be saved. </p>
+<p>If files don't exist, they will be created when the function <em>coppafish/export_to_pciseq</em> is run.</p>
+</li>
+<li>
+<p><strong>tile</strong>: <em>List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]</em>.</p>
+<p><em>2D</em>: <code>tile[t][r]</code> is the <em>npy</em> file containing all channels of tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>. </p>
+<p><em>3D</em>: <code>tile[t][r][c]</code> is the <em>npy</em> file containing all z planes for tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span></p>
+</li>
+</ul>
+<h2 id="basic_info">basic_info</h2>
+<p><em>basic_info</em> page contains information that is used at all stages of the pipeline.  Page added to <em>Notebook</em> in <em>pipeline/basic_info.py</em></p>
+<ul>
+<li>
+<p><strong>is_3d</strong>: <em>Boolean</em>.</p>
+<p><code>True</code> if <em>3D</em> pipeline used, <code>False</code> if <em>2D</em></p>
+</li>
+<li>
+<p><strong>anchor_round</strong>: <em>Integer or None</em>.</p>
+<p>Index of anchor round (typically the first round after imaging rounds so <code>anchor_round = n_rounds</code>). <code>None</code> if anchor not used.</p>
+</li>
+<li>
+<p><strong>anchor_channel</strong>: <em>Integer or None</em>.</p>
+<p>Channel in anchor round used as reference and to build coordinate system on. Usually channel with most spots. <code>None</code> if anchor not used.</p>
+</li>
+<li>
+<p><strong>dapi_channel</strong>: <em>Integer or None</em>.</p>
+<p>Channel in anchor round that contains <em>DAPI</em> images. <code>None</code> if no <em>DAPI</em>.</p>
+</li>
+<li>
+<p><strong>ref_round</strong>: <em>Integer</em>.</p>
+<p>Round to align all imaging rounds to. Will be anchor if using.</p>
+</li>
+<li>
+<p><strong>ref_channel</strong>: <em>Integer</em>.</p>
+<p>Channel in reference round used as reference and to build coordinate system on. Usually channel with most spots. Will be <code>anchor_channel</code> if using anchor round</p>
+</li>
+<li>
+<p><strong>use_channels</strong>: <em>Integer List [n_use_channels]</em>.</p>
+<p>Channels in imaging rounds to use throughout pipeline.</p>
+</li>
+<li>
+<p><strong>use_rounds</strong>: <em>Integer List [n_use_rounds]</em>.</p>
+<p>Imaging rounds to use throughout pipeline.</p>
+</li>
+<li>
+<p><strong>use_z</strong>: <em>Integer List [nz]</em>.</p>
+<p>z planes used to make tile <em>npy</em> files</p>
+</li>
+<li>
+<p><strong>use_tiles</strong>: <em>Integer List [n_use_tiles]</em>.</p>
+<p>Tiles to use throughout pipeline. For an experiment where the tiles are arranged in a <span class="arithmatex">\(4 \times 3\)</span> (<span class="arithmatex">\(n_y \times n_x\)</span>) grid,  tile indices are indicated as below: </p>
+<p>| 2  | 1  | 0  | </p>
+<p>| 5  | 4  | 3  | </p>
+<p>| 8  | 7  | 6  | </p>
+<p>| 11 | 10 | 9  |</p>
+</li>
+<li>
+<p><strong>use_dyes</strong>: <em>Integer List [n_use_dyes]</em>.</p>
+<p>Dyes to use when assigning spots to genes.</p>
+</li>
+<li>
+<p><strong>dye_names</strong>: <em>String List [n_dyes] or None</em>.</p>
+<p>Names of all dyes so for gene with code <span class="arithmatex">\(360...\)</span>, gene appears with <code>dye_names[3]</code> in round <span class="arithmatex">\(0\)</span>, <code>dye_names[6]</code> in round <span class="arithmatex">\(1\)</span>, <code>dye_names[0]</code> in round <span class="arithmatex">\(2\)</span> etc. <code>None</code> if each channel corresponds to a different dye.</p>
+</li>
+<li>
+<p><strong>channel_camera</strong>: <em>Integer List [n_channels] or None</em>.</p>
+<p><code>channel_camera[i]</code> is the wavelength in <em>nm</em> of the camera on channel <span class="arithmatex">\(i\)</span>. <code>None</code> if <code>dye_names = None</code>.</p>
+</li>
+<li>
+<p><strong>channel_laser</strong>: <em>Integer List [n_channels] or None</em>.</p>
+<p><code>channel_laser[i]</code> is the wavelength in <em>nm</em> of the laser on channel <span class="arithmatex">\(i\)</span>. <code>None</code> if <code>dye_names = None</code>.</p>
+</li>
+<li>
+<p><strong>tile_pixel_value_shift</strong>: <em>Integer</em>.</p>
+<p>This is added onto every tile (except <em>DAPI</em>) when it is saved and removed from every tile when loaded. Required so we can have negative pixel values when save to <em>npy</em> as <em>uint16</em>. </p>
+<p><em>Typical=15000</em></p>
+</li>
+<li>
+<p><strong>n_extra_rounds</strong>: <em>Integer</em>.</p>
+<p>Number of non-imaging rounds, typically 1 if using anchor and 0 if not.</p>
+</li>
+<li>
+<p><strong>n_rounds</strong>: <em>Integer</em>.</p>
+<p>Number of imaging rounds in the raw data</p>
+</li>
+<li>
+<p><strong>tile_sz</strong>: <em>Integer</em>.</p>
+<p><span class="arithmatex">\(yx\)</span> dimension of tiles in pixels</p>
+</li>
+<li>
+<p><strong>n_tiles</strong>: <em>Integer</em>.</p>
+<p>Number of tiles in the raw data</p>
+</li>
+<li>
+<p><strong>n_channels</strong>: <em>Integer</em>.</p>
+<p>Number of channels in the raw data</p>
+</li>
+<li>
+<p><strong>nz</strong>: <em>Integer</em>.</p>
+<p>Number of z-planes used to make the <em>npy</em> tile images (can be different from number in raw data).</p>
+</li>
+<li>
+<p><strong>n_dyes</strong>: <em>Integer</em>.</p>
+<p>Number of dyes used</p>
+</li>
+<li>
+<p><strong>tile_centre</strong>: <em>Numpy float array [3]</em>.</p>
+<p><code>[y, x, z]</code> location of tile centre in units of <code>[yx_pixels, yx_pixels, z_pixels]</code>. For <em>2D</em> pipeline, <code>tile_centre[2] = 0</code></p>
+</li>
+<li>
+<p><strong>tilepos_yx_nd2</strong>: <em>Numpy integer array [n_tiles x 2]</em>.</p>
+<p><code>tilepos_yx_nd2[i, :]</code> is the <span class="arithmatex">\(yx\)</span> position of tile with <em>fov</em> index <span class="arithmatex">\(i\)</span> in the <em>nd2</em> file. </p>
+<p>Index 0 refers to <code>YX = [0, 0]</code> </p>
+<p>Index 1 refers to <code>YX = [0, 1]</code> if <code>MaxX &gt; 0</code></p>
+</li>
+<li>
+<p><strong>tilepos_yx</strong>: <em>Numpy integer array [n_tiles x 2]</em>.</p>
+<p><code>tilepos_yx[i, :]</code> is the <span class="arithmatex">\(yx\)</span> position of tile with tile directory (<em>npy</em> files) index <span class="arithmatex">\(i\)</span>. Equally, <code>tilepos_yx[use_tiles[i], :]</code> is <span class="arithmatex">\(yx\)</span> position of tile <code>use_tiles[i]</code>. </p>
+<p>Index 0 refers to <code>YX = [MaxY, MaxX]</code> </p>
+<p>Index 1 refers to <code>YX = [MaxY, MaxX - 1]</code> if <code>MaxX &gt; 0</code></p>
+</li>
+<li>
+<p><strong>pixel_size_xy</strong>: <em>Float</em>.</p>
+<p><span class="arithmatex">\(yx\)</span> pixel size in microns</p>
+</li>
+<li>
+<p><strong>pixel_size_z</strong>: <em>Float</em>.</p>
+<p><span class="arithmatex">\(z\)</span> pixel size in microns</p>
+</li>
+<li>
+<p><strong>use_anchor</strong>: <em>Boolean</em>.</p>
+<p><code>True</code> if anchor round is used, <code>False</code> if not.</p>
+</li>
+</ul>
+<h2 id="extract">extract</h2>
+<p>The <em>extract</em> page contains variables from <code>extract_and_filter</code> step which are used later in the  pipeline. <code>auto_thresh</code> is used in <code>find_spots</code> step. <code>hist_values</code> and <code>hist_counts</code> are used for  normalisation between channels in the <code>call_reference_spots</code> step.  Page added to <em>Notebook</em> in <em>pipeline/extract_run.py</em></p>
+<ul>
+<li>
+<p><strong>auto_thresh</strong>: <em>Numpy float array <code>[n_tiles x (n_rounds + n_extra_rounds) x n_channels]</code></em>.</p>
+<p><code>auto_thresh[t, r, c]</code> is the threshold spot intensity for tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span> used for spot detection in the <code>find_spots</code> step of the pipeline.</p>
+</li>
+<li>
+<p><strong>hist_values</strong>: <em>Numpy integer array [n_pixel_values]</em>.</p>
+<p>All possible pixel values in saved <em>npy</em> images i.e. length is approx <code>np.iinfo(np.uint16).max</code></p>
+</li>
+<li>
+<p><strong>hist_counts</strong>: <em>Numpy integer array <code>[n_pixel_values x n_rounds x n_channels]</code></em>.</p>
+<p><code>hist_counts[i, r, c]</code> is the number of pixels across all tiles in round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span> which had the value <code>hist_values[i]</code>.</p>
+</li>
+</ul>
+<h2 id="extract_debug">extract_debug</h2>
+<p><em>extract_debug</em> page stores variables from <code>extract_and_filter</code> step which are not needed later in the pipeline but may be useful for debugging purposes.  Page added to <em>Notebook</em> in <em>pipeline/extract_run.py</em></p>
+<ul>
+<li>
+<p><strong>n_clip_pixels</strong>: <em>Numpy integer array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]</em>.</p>
+<p><code>n_clip_pixels[t, r, c]</code> is the number of pixels in the saved <em>npy</em> tile for tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span> which had intensity exceeding max <em>uint16</em> value and so had to be clipped.</p>
+</li>
+<li>
+<p><strong>clip_extract_scale</strong>: <em>Numpy float array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]</em>.</p>
+<p><code>clip_extract_scale[t, r, c]</code> is the recommended value for extract_scale such that for tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span> <code>n_clip_pixels[t, r, c]</code> would be 0. Only computed for images where <code>n_clip_pixels[t, r, c] &gt; 0</code></p>
+</li>
+<li>
+<p><strong>r1</strong>: <em>Integer</em>.</p>
+<p>Filtering is done with a <em>2D</em> difference of hanning filter with inner radius <code>r1</code> within which it is positive and outer radius <code>r2</code> so annulus between <code>r1</code> and <code>r2</code> is negative. Should be approx radius of spot. </p>
+<p>By default this is 0.5 micron converted to yx-pixel units which is typically 3.</p>
+</li>
+<li>
+<p><strong>r2</strong>: <em>Integer</em>.</p>
+<p>Filtering is done with a <em>2D</em> difference of hanning filter with inner radius <code>r1</code> within which it is positive and outer radius <code>r2</code> so annulus between <code>r1</code> and <code>r2</code> is negative. Units are yx-pixels and by default it will be twice r1. </p>
+<p><em>Typical: 6</em></p>
+</li>
+<li>
+<p><strong>r_dapi</strong>: <em>Integer or None</em>.</p>
+<p>Filtering for <em>DAPI</em> images is a tophat with <code>r_dapi</code> radius. Should be approx radius of object of interest. Typically this is 8 micron converted to yx-pixel units which is typically 48. By default, it is <code>None</code> meaning <em>DAPI</em> not filtered at all and <em>npy</em> file not saved.</p>
+</li>
+<li>
+<p><strong>psf</strong>: <em>Numpy float array [psf_shape[0] x psf_shape[1] x psf_shape[2]] or None (psf_shape is in config file)</em>.</p>
+<p>Average shape of spot from individual raw spot images normalised so max is 1 and min is 0. <code>None</code> if <code>config['deconvolve'] = False</code>.</p>
+</li>
+<li>
+<p><strong>psf_intensity_thresh</strong>: <em>Float</em>.</p>
+<p>Intensity threshold used to detect spots in raw images which were used to make the psf. None if <code>config['deconvolve'] = False</code> or psf provided without spot detection.</p>
+</li>
+<li>
+<p><strong>psf_tiles_used</strong>: <em>Integer list or None</em>.</p>
+<p>Tiles where spots for psf calculation came from. <code>None</code> if <code>config['deconvolve'] = False</code> or psf provided without spot detection.</p>
+</li>
+<li>
+<p><strong>scale</strong>: <em>Float</em>.</p>
+<p>Multiplier applied to filtered <em>nd2</em> imaging round images before saving as <em>npy</em> so full <em>uint16</em> occupied.</p>
+</li>
+<li>
+<p><strong>scale_tile</strong>: <em>Integer or None</em>.</p>
+<p>Tile of image that scale was found from. <code>None</code> if <code>config['extract']['scale']</code> provided.</p>
+</li>
+<li>
+<p><strong>scale_channel</strong>: <em>Integer or None</em>.</p>
+<p>Channel of image that scale was found from. <code>None</code> if <code>config['extract']['scale']</code> provided.</p>
+</li>
+<li>
+<p><strong>scale_z</strong>: <em>Integer or None</em>.</p>
+<p>z plane of image that scale was found from. <code>None</code> if <code>config['extract']['scale']</code> provided.</p>
+</li>
+<li>
+<p><strong>scale_anchor</strong>: <em>Float or None</em>.</p>
+<p>Multiplier applied to filtered <em>nd2</em> anchor round images before saving as <em>npy</em> so full <em>uint16</em> occupied. <code>None</code> if <code>use_anchor = False</code>.</p>
+</li>
+<li>
+<p><strong>scale_anchor_tile</strong>: <em>Integer or None</em>.</p>
+<p>Tile of image in anchor round/channel that <code>scale</code> was found from. <code>None</code> if <code>config['extract']['scale']</code> provided or <code>use_anchor = False</code>.</p>
+</li>
+<li>
+<p><strong>scale_anchor_z</strong>: <em>Integer or None</em>.</p>
+<p>z plane of image in anchor round/channel that <code>scale_anchor</code> was found from. <code>None</code> if <code>config['extract']['scale_anchor']</code> provided or <code>use_anchor = False</code>.</p>
+</li>
+<li>
+<p><strong>z_info</strong>: <em>Integer</em>.</p>
+<p>z plane in <em>npy</em> file from which <code>auto_thresh</code> and <code>hist_counts</code> were calculated. By default, this is the mid plane.</p>
+</li>
+</ul>
+<h2 id="find_spots">find_spots</h2>
+<p><em>find_spots</em> page contains information about spots found on all tiles, rounds and channels.  Page added to <em>Notebook</em> in <em>pipeline/find_spots.py</em></p>
+<ul>
+<li>
+<p><strong>isolation_thresh</strong>: <em>Numpy float array [n_tiles]</em>.</p>
+<p>Spots found on tile <span class="arithmatex">\(t\)</span>, <code>ref_round</code>, <code>ref_channel</code> are isolated if annular filtered image is below <code>isolation_thresh[t]</code> at spot location. </p>
+<p><em>Typical: 0</em></p>
+</li>
+<li>
+<p><strong>spot_no</strong>: <em>Numpy int32 array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]</em>.</p>
+<p><code>spot_no[t, r, c]</code> is the number of spots found on tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span></p>
+</li>
+<li>
+<p><strong>spot_details</strong>: <em>Numpy int16 array [n_total_spots x 7]</em>.</p>
+<p><code>spot_details[i,:]</code> is <code>[tile, round, channel, isolated, y, x, z]</code> for spot <span class="arithmatex">\(i\)</span> isolated is 0 for all non reference round/channel spots and is 1 for isolated reference spots. <span class="arithmatex">\(y\)</span>, <span class="arithmatex">\(x\)</span> gives the local tile coordinates in yx-pixels. <span class="arithmatex">\(z\)</span> gives local tile coordinate in z-pixels (0 if <em>2D</em>)</p>
+</li>
+</ul>
+<h2 id="stitch">stitch</h2>
+<p><em>stitch</em> page contains information about how tiles were stitched together to give global coordinates. Only <code>tile_origin</code> is used in later stages of the pipeline. Note that references to <em>south</em> in this section should really be <em>north</em> and <em>west</em> should be <em>east</em>.  Page added to <em>Notebook</em> in <em>pipeline/stitch.py</em></p>
+<ul>
+<li>
+<p><strong>tile_origin</strong>: <em>Numpy float array [n_tiles x 3]</em>.</p>
+<p><code>tile_origin[t,:]</code> is the bottom left <span class="arithmatex">\(yxz\)</span> coordinate of tile <span class="arithmatex">\(t\)</span>. <span class="arithmatex">\(yx\)</span> coordinates in yx-pixels and z coordinate in z-pixels.</p>
+</li>
+<li>
+<p><strong>south_start_shift_search</strong>: <em>Numpy integer array [3 x 3]</em>.</p>
+<p>Initial search range used to find overlap between south neighbouring tiles <code>[i, :]</code> is the <code>[min, max, step]</code> of the search in direction <span class="arithmatex">\(i\)</span> (0 is <span class="arithmatex">\(y\)</span>, 1 is <span class="arithmatex">\(x\)</span>, 2 is <span class="arithmatex">\(z\)</span>). <code>[2,:]</code> is in units of z-pixels and is 0 if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>west_start_shift_search</strong>: <em>Numpy integer array [3 x 3]</em>.</p>
+<p>Initial search range used to find overlap between west neighbouring tiles <code>[i, :]</code> is the <code>[min, max, step]</code> of the search in direction <span class="arithmatex">\(i\)</span> (0 is <span class="arithmatex">\(y\)</span>, 1 is <span class="arithmatex">\(x\)</span>, 2 is <span class="arithmatex">\(z\)</span>). <code>[2,:]</code> is in units of z-pixels and is 0 if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>south_final_shift_search</strong>: <em>Numpy integer array [3 x 3]</em>.</p>
+<p>Final search range used to find overlap between south neighbouring tiles <code>[i, :]</code> is the <code>[min, max, step]</code> of the search in direction <span class="arithmatex">\(i\)</span> (0 is <span class="arithmatex">\(y\)</span>, 1 is <span class="arithmatex">\(x\)</span>, 2 is <span class="arithmatex">\(z\)</span>). <code>[2,:]</code> is in units of z-pixels and is 0 if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>west_final_shift_search</strong>: <em>Numpy integer array [3 x 3]</em>.</p>
+<p>Final search range used to find overlap between west neighbouring tiles <code>[i, :]</code> is the <code>[min, max, step]</code> of the search in direction <span class="arithmatex">\(i\)</span> (0 is <span class="arithmatex">\(y\)</span>, 1 is <span class="arithmatex">\(x\)</span>, 2 is <span class="arithmatex">\(z\)</span>). <code>[2,:]</code> is in units of z-pixels and is 0 if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>south_pairs</strong>: <em>Numpy integer array [n_south_overlap x 2]</em>.</p>
+<p><code>south_pairs[i, 1]</code> is the tile to the north of <code>south_pairs[i, 0]</code></p>
+</li>
+<li>
+<p><strong>west_pairs</strong>: <em>Numpy integer array [n_west_overlap x 2]</em>.</p>
+<p><code>west_pairs[i, 1]</code> is the tile to the east of <code>west_pairs[i, 0]</code></p>
+</li>
+<li>
+<p><strong>south_shifts</strong>: <em>Numpy integer array [n_south_overlap x 3]</em>.</p>
+<p><code>south_shifts[i, :]</code> is the <span class="arithmatex">\(yxz\)</span> shift found that is applied to <code>south_pairs[i, 0]</code> to take it to <code>south_pairs[i, 1]</code> </p>
+<p>Units: <code>[yx_pixels, yx_pixels, z_pixels]</code>, <code>[:, 2] = 0</code> if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>west_shifts</strong>: <em>Numpy integer array [n_west_overlap x 3]</em>.</p>
+<p><code>west_shifts[i, :]</code> is the <span class="arithmatex">\(yxz\)</span> shift found that is applied to <code>west_pairs[i, 0]</code> to take it to <code>west_pairs[i, 1]</code> </p>
+<p>Units: <code>[yx_pixels, yx_pixels, z_pixels]</code>, <code>[:, 2] = 0</code> if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>south_score</strong>: <em>Numpy float array [n_south_overlap]</em>.</p>
+<p><code>south_score[i]</code> is approximately the number of matches found for <code>south_shifts[i, :]</code></p>
+</li>
+<li>
+<p><strong>west_score</strong>: <em>Numpy float array [n_west_overlap]</em>.</p>
+<p><code>west_score[i]</code> is approximately the number of matches found for <code>west_shifts[i, :]</code></p>
+</li>
+<li>
+<p><strong>south_score_thresh</strong>: <em>Numpy float array [n_south_overlap]</em>.</p>
+<p>If <code>south_score[i]</code> is below <code>south_score_thresh[i]</code>, it indicates <code>south_shifts[i]</code> may be incorrect.</p>
+</li>
+<li>
+<p><strong>west_score_thresh</strong>: <em>Numpy float array [n_west_overlap]</em>.</p>
+<p>If <code>west_score[i]</code> is below <code>west_score_thresh[i]</code>, it indicates <code>west_shifts[i]</code> found may be incorrect.</p>
+</li>
+<li>
+<p><strong>south_outlier_shifts</strong>: <em>Numpy integer array [n_south_overlap x 3]</em>.</p>
+<p>If <code>south_score[i]</code> was below <code>south_score_thresh[i]</code>, <code>south_shifts[i]</code> was found again and old shift recorded as <code>south_outlier_shifts[i]</code>. Will be zero if this did not happen.</p>
+</li>
+<li>
+<p><strong>west_outlier_shifts</strong>: <em>Numpy integer array [n_west_overlap x 3]</em>.</p>
+<p>If <code>west_score[i]</code> was below <code>west_score_thresh[i]</code>, <code>west_shifts[i]</code> was found again and old shift recorded as <code>west_outlier_shifts[i]</code>. Will be zero if this did not happen.</p>
+</li>
+<li>
+<p><strong>south_outlier_score</strong>: <em>Numpy float array [n_south_overlap]</em>.</p>
+<p>If <code>south_score[i]</code> was below <code>south_score_thresh[i]</code>, <code>south_shifts[i]</code> was found again and old score recorded as <code>south_outlier_score[i]</code>. Will be zero if this did not happen.</p>
+</li>
+<li>
+<p><strong>west_outlier_score</strong>: <em>Numpy float array [n_west_overlap]</em>.</p>
+<p>If <code>west_score[i]</code> was below <code>west_score_thresh[i]</code>, <code>west_shifts[i]</code> was found again and old score recorded as <code>west_outlier_score[i]</code>. Will be zero if this did not happen.</p>
+</li>
+</ul>
+<h2 id="register_initial">register_initial</h2>
+<p><em>register_initial</em> page contains information about how shift between ref round/channel to each imaging round for each tile was found. These are then used as the starting point for determining the affine transforms. Only <code>shift</code> is used in later stages of the pipeline.  Page added to <em>Notebook</em> in <em>pipeline/register_initial.py</em></p>
+<ul>
+<li>
+<p><strong>shift</strong>: <em>Numpy integer array [n_tiles x n_rounds x 3]</em>.</p>
+<p><code>shift[t, r, :]</code> is the <span class="arithmatex">\(yxz\)</span> shift found that is applied to tile <span class="arithmatex">\(t\)</span>, <code>ref_round</code> to take it to tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>. </p>
+<p>Units: <code>[yx_pixels, yx_pixels, z_pixels]</code>, <code>[:, :, 2] = 0</code> if <em>2D</em>. Same as <code>initial_shift</code> in <em>register</em> page.</p>
+</li>
+<li>
+<p><strong>shift_channel</strong>: <em>Integer</em>.</p>
+<p>Channel used to find find shifts between rounds to use as starting point for point cloud registration. Typically this is <code>ref_channel</code> or a channel with lots of spots.</p>
+</li>
+<li>
+<p><strong>start_shift_search</strong>: <em>Numpy integer array [n_rounds x 3 x 3]</em>.</p>
+<p><code>[r, :, :]</code> is the initial search range used to find shift from reference round to round <span class="arithmatex">\(r\)</span> for all tiles </p>
+<p><code>[r, i, :]</code> is the <code>[min, max, step]</code> of the search in direction <span class="arithmatex">\(i\)</span> (0 is <span class="arithmatex">\(y\)</span>, 1 is <span class="arithmatex">\(x\)</span>, 2 is <span class="arithmatex">\(z\)</span>). </p>
+<p><code>[r, 2,:]</code> is in units of z-pixels and is 0 if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>final_shift_search</strong>: <em>Numpy integer array [n_rounds x 3 x 3]</em>.</p>
+<p><code>[r, :, :]</code> is the final search range used to find shift from reference round to round <span class="arithmatex">\(r\)</span> for all tiles </p>
+<p><code>[r, i, :]</code> is the <code>[min, max, step]</code> of the search in direction <span class="arithmatex">\(i\)</span> (0 is <span class="arithmatex">\(y\)</span>, 1 is <span class="arithmatex">\(x\)</span>, 2 is <span class="arithmatex">\(z\)</span>). </p>
+<p><code>[r, 2,:]</code> is in units of z-pixels and is 0 if <em>2D</em>.</p>
+</li>
+<li>
+<p><strong>shift_score</strong>: <em>Numpy float array [n_tiles x n_rounds]</em>.</p>
+<p><code>shift_score[t, r]</code> is is approximately the number of matches found for <code>shift[t,r]</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh</strong>: <em>Numpy float array [n_tiles x n_rounds]</em>.</p>
+<p>If <code>shift_score[t, r]</code> is below <code>shift_score_thresh[t, r]</code>, it indicates <code>shift[t,r]</code> may be incorrect.</p>
+</li>
+<li>
+<p><strong>shift_outlier</strong>: <em>Numpy integer array [n_tiles x n_rounds x 3]</em>.</p>
+<p>If <code>shift_score[t, r]</code> was below <code>shift_score_thresh[t, r]</code>, <code>shift[t, r]</code> was found again and old shift recorded as <code>shift_outlier[t, r]</code>. Will be zero if this did not happen.</p>
+</li>
+<li>
+<p><strong>shift_score_outlier</strong>: <em>Numpy float array [n_tiles x n_rounds]</em>.</p>
+<p>If <code>shift_score[t, r]</code> was below <code>shift_score_thresh[t, r]</code>, <code>shift[t, r]</code> was found again and old score recorded as <code>shift_score_outlier[t, r]</code>. Will be zero if this did not happen.</p>
+</li>
+</ul>
+<h2 id="register">register</h2>
+<p><em>register</em> page contains the affine transforms to go from the ref round/channel to each imaging round/channel for every tile. Page added to <em>Notebook</em> in <em>pipeline/register.py</em></p>
+<ul>
+<li>
+<p><strong>initial_shift</strong>: <em>Numpy integer array [n_tiles x n_rounds x 3]</em>.</p>
+<p><code>shift[t, r, :]</code> is the <span class="arithmatex">\(yxz\)</span> shift found that is applied to tile <span class="arithmatex">\(t\)</span>, <code>ref_round</code> to take it to tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>. Units: <code>[yx_pixels, yx_pixels, z_pixels]</code>, <code>[:, :, 2] = 0</code> if <em>2D</em>. Same as shift in <em>register_initial</em> page. DON'T KNOW WHY COPIED THIS - PROBABLY SHOULD REMOVE</p>
+</li>
+<li>
+<p><strong>transform</strong>: <em>Numpy float array [n_tiles x n_rounds x n_channels x 4 x 3]</em>.</p>
+<p><code>transform[t, r, c]</code> is the affine transform to get from tile <span class="arithmatex">\(t\)</span>, <code>ref_round</code>, <code>ref_channel</code> to tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span> Before applying to coordinates, they must be centered and z coordinates put into units of yx-pixels. If <em>2D</em>, z scaling set to 1 while shift and rotation set to 0.</p>
+</li>
+</ul>
+<h2 id="register_debug">register_debug</h2>
+<p><em>register_debug</em> page contains information on how the affine transforms in <em>register</em> page were calculated. Page added to <em>Notebook</em> in <em>pipeline/register.py</em></p>
+<ul>
+<li>
+<p><strong>n_matches</strong>: <em>Numpy integer array [n_tiles x n_rounds x n_channels]</em>.</p>
+<p>Number of matches found for each transform. A match is when distance between points is less than <code>config['register']['neighb_dist_thresh']</code>.</p>
+</li>
+<li>
+<p><strong>n_matches_thresh</strong>: <em>Numpy integer array [n_tiles x n_rounds x n_channels]</em>.</p>
+<p><code>n_matches[t, r, c]</code> must exceed <code>n_matches_thresh[t, r, c]</code> otherwise <code>failed[t, r, c] = True</code> and transform found again using regularisation.</p>
+</li>
+<li>
+<p><strong>error</strong>: <em>Numpy float array [n_tiles x n_rounds x n_channels]</em>.</p>
+<p>Average distance between neighbours closer than <code>config['register']['neighb_dist_thresh']</code> for each transform.</p>
+</li>
+<li>
+<p><strong>failed</strong>: <em>Numpy boolean array [n_tiles x n_rounds x n_channels]</em>.</p>
+<p><code>failed[t, r, c] = True</code> if <code>transform[t, r, c]</code> had too few matches or was anomalous compared to average. <code>n_matches_thresh</code> in this page and <code>scale_dev_thresh</code>, <code>shift_dev_thresh</code> in config file quantify the required matches / deviation.</p>
+</li>
+<li>
+<p><strong>converged</strong>: <em>Numpy boolean array [n_tiles x n_rounds x n_channels]</em>.</p>
+<p>This is <code>False</code> for transforms where the <em>ICP</em> algorithm reached <code>config['register']['n_iter']</code> iterations before transform converged.</p>
+</li>
+<li>
+<p><strong>av_scaling</strong>: <em>Numpy float array [n_channels x 3]</em>.</p>
+<p><code>av_scaling[c]</code> is the <span class="arithmatex">\(yxz\)</span> chromatic aberration scale factor to channel <span class="arithmatex">\(c\)</span> from the <code>ref_channel</code> averaged over all rounds and tiles. Expect the <span class="arithmatex">\(y\)</span> and <span class="arithmatex">\(x\)</span> scaling to be the same and all scalings to be approx 1.</p>
+</li>
+<li>
+<p><strong>av_shifts</strong>: <em>Numpy float array [n_tiles x n_rounds x 3]</em>.</p>
+<p><code>av_shifts[t, r]</code> is the <span class="arithmatex">\(yxz\)</span> shift from tile <span class="arithmatex">\(t\)</span>, <code>ref_round</code> to tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span> averaged over all channels. All three directions are in yx-pixel units.</p>
+</li>
+<li>
+<p><strong>transform_outlier</strong>: <em>Numpy float array [n_tiles x n_rounds x n_channels x 4 x 3]</em>.</p>
+<p><code>[t, r, c]</code> is the final transform found for tile <span class="arithmatex">\(t\)</span>, round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span> without regularisation. Regularisation only used for <span class="arithmatex">\(t\)</span>,<span class="arithmatex">\(r\)</span>,<span class="arithmatex">\(c\)</span> indicated by failed and so <code>transform_outlier = 0</code> for others.</p>
+</li>
+</ul>
+<h2 id="ref_spots">ref_spots</h2>
+<p><em>ref_spots</em> page contains gene assignments and info for spots found on reference round.  Page added to <em>Notebook</em> in <em>pipeline/get_reference_spots.py</em>.  The variables <code>gene_no</code>, <code>score</code>, <code>score_diff</code>, <code>intensity</code> will be set to <code>None</code> after <code>get_reference_spots</code>.  <code>call_reference_spots</code> should then be run to give their actual values. This is so if there is an error in  <code>call_reference_spots</code>, <code>get_reference_spots</code> won't have to be re-run.</p>
+<ul>
+<li>
+<p><strong>local_yxz</strong>: <em>Numpy int16 array [n_spots x 3]</em>.</p>
+<p><code>local_yxz[s]</code> are the <span class="arithmatex">\(yxz\)</span> coordinates of spot <span class="arithmatex">\(s\)</span> found on <code>tile[s]</code>, <code>ref_round</code>, <code>ref_channel</code>. To get <code>global_yxz</code>, add <code>nb.stitch.tile_origin[tile[s]]</code>.</p>
+</li>
+<li>
+<p><strong>isolated</strong>: <em>Numpy boolean array [n_spots]</em>.</p>
+<p><code>True</code> for spots that are well isolated i.e. surroundings have low intensity so no nearby spots.</p>
+</li>
+<li>
+<p><strong>tile</strong>: <em>Numpy int16 array [n_spots]</em>.</p>
+<p>Tile each spot was found on.</p>
+</li>
+<li>
+<p><strong>colors</strong>: <em>Numpy int32 array [n_spots x n_rounds x n_channels]</em>.</p>
+<p><code>[s, r, c]</code> is the intensity of spot <span class="arithmatex">\(s\)</span> on round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span>. <code>-tile_pixel_value_shift</code> if that round/channel not used otherwise integer.</p>
+</li>
+<li>
+<p><strong>gene_no</strong>: <em>Numpy int16 array [n_spots]</em>.</p>
+<p><code>gene_no[s]</code> is the index of the gene assigned to spot <span class="arithmatex">\(s\)</span>.</p>
+</li>
+<li>
+<p><strong>score</strong>: <em>Numpy float32 array [n_spots]</em>.</p>
+<p><code>score[s]</code> is the dot product score, <span class="arithmatex">\(\Delta_{s0g}\)</span>, between <code>colors[s]</code> and <code>bled_codes[gene_no[s]]</code>. Normalisation depends on <code>config['call_spots']['dot_product_method']</code>.</p>
+</li>
+<li>
+<p><strong>score_diff</strong>: <em>Numpy float16 array [n_spots]</em>.</p>
+<p><code>score_diff[s]</code> is <code>score[s]</code> minus the score for the second best gene assignement for spot <span class="arithmatex">\(s\)</span>.</p>
+</li>
+<li>
+<p><strong>intensity</strong>: <em>Numpy float32 array [n_spots]</em>.</p>
+<p><span class="arithmatex">\(\chi_s = \underset{r}{\mathrm{median}}(\max_c\zeta_{s_{rc}})\)</span> where <span class="arithmatex">\(\pmb{\zeta}_s=\)</span> <code>colors[s, r]/color_norm_factor[r]</code>.</p>
+</li>
+</ul>
+<h2 id="call_spots">call_spots</h2>
+<p><em>call_spots</em> page contains <code>bleed_matrix</code> and expected code for each gene. Page added to <em>Notebook</em> in <em>pipeline/call_reference_spots.py</em></p>
+<ul>
+<li>
+<p><strong>gene_names</strong>: <em>Numpy string array [n_genes]</em>.</p>
+<p>Names of all genes in the code book provided.</p>
+</li>
+<li>
+<p><strong>gene_codes</strong>: <em>Numpy integer array [n_genes x n_rounds]</em>.</p>
+<p><code>gene_codes[g, r]</code> indicates the dye that should be present for gene <span class="arithmatex">\(g\)</span> in round <span class="arithmatex">\(r\)</span>.</p>
+</li>
+<li>
+<p><strong>color_norm_factor</strong>: <em>Numpy float array [n_rounds x n_channels]</em>.</p>
+<p>Normalisation such that dividing <code>colors</code> by <code>color_norm_factor</code> equalizes intensity of channels. <code>config['call_spots']['bleed_matrix_method']</code> indicates whether normalisation is for rounds and channels or just channels.</p>
+</li>
+<li>
+<p><strong>initial_raw_bleed_matrix</strong>: <em>Numpy float array [n_rounds x n_channels x n_dyes]</em>.</p>
+<p><code>initial_raw_bleed_matrix[r, c, d]</code> is the estimate of the raw intensity of dye <span class="arithmatex">\(d\)</span> in round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span>. All will be nan if separate dye for each channel.</p>
+</li>
+<li>
+<p><strong>initial_bleed_matrix</strong>: <em>Numpy float array [n_rounds x n_channels x n_dyes]</em>.</p>
+<p>Starting point for determination of bleed matrix. If separate dye for each channel, <code>initial_bleed_matrix[r]</code> will be the identity matrix for each <span class="arithmatex">\(r\)</span>. Otherwise, it will be <code>initial_raw_bleed_matrix</code> divided by <code>color_norm_factor</code>.</p>
+</li>
+<li>
+<p><strong>bleed_matrix</strong>: <em>Numpy float array [n_rounds x n_channels x n_dyes]</em>.</p>
+<p>For a spot, <span class="arithmatex">\(s\)</span>, which should be dye <span class="arithmatex">\(d\)</span> in round <span class="arithmatex">\(r\)</span>, we expect <code>color[s, r]/color_norm_factor[r]</code> to be a constant multiple of <code>bleed_matrix[r, :, d]</code></p>
+</li>
+<li>
+<p><strong>background_codes</strong>: <em>Numpy float array [n_channels x n_rounds x n_channels]</em>.</p>
+<p>These are the background codes for which each spot has a <code>background_coef</code>. <code>background_codes[C, r, c] = 1</code> if <code>c==C</code> and 0 otherwise for all rounds <span class="arithmatex">\(r\)</span>. <code>nan</code> if <span class="arithmatex">\(r\)</span>/<span class="arithmatex">\(c\)</span> outside <code>use_rounds</code>/<code>use_channels</code>.</p>
+</li>
+<li>
+<p><strong>bled_codes</strong>: <em>Numpy float array [n_genes x n_rounds x n_channels]</em>.</p>
+<p><code>color[s, r]/color_norm_factor[r]</code> of spot, <span class="arithmatex">\(s\)</span>, corresponding to gene <span class="arithmatex">\(g\)</span> is expected to be a constant multiple of <code>bled_codes[g, r]</code> in round <span class="arithmatex">\(r\)</span>. <code>nan</code> if <span class="arithmatex">\(r\)</span>/<span class="arithmatex">\(c\)</span> outside <code>use_rounds</code>/<code>use_channels</code> and 0 if <code>gene_codes[g,r]</code> outside <code>use_dyes</code>. All codes have L2 norm = 1 when summed across all <code>use_rounds</code> and <code>use_channels</code>.</p>
+</li>
+<li>
+<p><strong>gene_efficiency</strong>: <em>Numpy float array [n_genes x n_rounds]</em>.</p>
+<p><code>gene_efficiency[g,r]</code> gives the expected intensity of gene <span class="arithmatex">\(g\)</span> in round <span class="arithmatex">\(r\)</span> compared to that expected by the <code>bleed_matrix</code>. It is computed based on the average of isolated spot_colors assigned to that gene which exceed <code>score</code>, <code>score_diff</code> and <code>intensity</code> thresholds given in config file. For all <span class="arithmatex">\(g\)</span>, there is an <code>av_round[g]</code> such that <code>gene_efficiency[g, av_round[g]] = 1</code>. <code>nan</code> if <span class="arithmatex">\(r\)</span> outside <code>use_rounds</code> and 1 if <code>gene_codes[g,r]</code> outside <code>use_dyes</code>.</p>
+</li>
+<li>
+<p><strong>bled_codes_ge</strong>: <em>Numpy float array [n_genes x n_rounds x n_channels]</em>.</p>
+<p><code>bled_codes</code> using <code>gene_efficiency</code> information i.e. <code>bled_codes * gene_efficiency</code>. All codes have L2 norm = 1 when summed across all <code>use_rounds</code> and <code>use_channels</code>.</p>
+</li>
+<li>
+<p><strong>background_weight_shift</strong>: <em>Float</em>.</p>
+<p>Shift to apply to weighting of each background vector to limit boost of weak spots. The weighting of round <span class="arithmatex">\(r\)</span> for the fitting of the background vector for channel <span class="arithmatex">\(c\)</span> is <code>1 / (spot_color[r, c] + background_weight_shift)</code> so <code>background_weight_shift</code> ensures this does not go to infinity for small <code>spot_color[r, c]</code>. Typical <code>spot_color[r, c]</code> is 1 for intense spot so <code>background_weight_shift</code> is small fraction of this.</p>
+</li>
+<li>
+<p><strong>dp_norm_shift</strong>: <em>Float</em>.</p>
+<p>When calculating the dot product score, this is the small shift to apply when normalising <code>spot_colors</code> to ensure don't divide by zero. Value is for a single round and is multiplied by <code>sqrt(n_rounds_used)</code> when computing dot product score. Expected norm of a <code>spot_color</code> for a single round is 1 so <code>dp_norm_shift</code> is a small fraction of this.</p>
+</li>
+<li>
+<p><strong>abs_intensity_percentile</strong>: <em>Numpy float array [100] or None</em>.</p>
+<p><code>abs_intensity_percentile[i]</code> is the i% percentile of absolute <code>pixel_colors</code> on <code>norm_shift_tile</code>,  <code>norm_shift_z</code>. </p>
+<p>This is used to compute <code>nb.omp.initial_intensity_thresh</code> if not provided.</p>
+</li>
+<li>
+<p><strong>norm_shift_tile</strong>: <em>Integer</em>.</p>
+<p>Tile that is used to compute <code>abs_intensity_percentile</code> from which <code>dp_norm_shift</code>, <code>background_weight_shift</code>  and <code>intensity_thresh</code> are computed.</p>
+</li>
+<li>
+<p><strong>norm_shift_z</strong>: <em>Integer</em>.</p>
+<p>z-plane that is used to compute <code>abs_intensity_percentile</code> from which <code>dp_norm_shift</code>, <code>background_weight_shift</code>  and <code>intensity_thresh</code> are computed.</p>
+</li>
+<li>
+<p><strong>gene_efficiency_intensity_thresh</strong>: <em>Float</em>.</p>
+<p><code>gene_efficiency</code> is computed from spots with intensity greater than this. By default, it is set to the <code>config['call_spots']['gene_efficiency_intensity_thresh_percentile']</code>  percentile of the <code>intensity</code> computed for all pixels on the mid z-plane of the most central tile</p>
+</li>
+</ul>
+<h2 id="omp">omp</h2>
+<p><em>omp</em> page contains gene assignments and info for  spots located at the local maxima of the gene coefficients returned by <em>OMP</em>. Also contains info about <code>spot_shape</code> which indicates the expected sign of the <em>OMP</em> coefficient in a neighbourhood centered on a spot.  Page added to <em>Notebook</em> in <em>pipeline/call_spots_omp.py</em></p>
+<ul>
+<li>
+<p><strong>initial_intensity_thresh</strong>: <em>Float</em>.</p>
+<p>To save time in <code>call_spots_omp</code>, coefficients only found for pixels with <code>intensity</code>  of absolute <code>spot_colors</code> greater than <code>initial_intensity_thresh</code>. This threshold is set to the <code>config['omp']['initial_intensity_thresh_percentile']</code> percentile  of the absolute <code>intensity</code> of all pixels on the mid z-plane of the central tile (uses <code>nb.call_spots.abs_intensity_percentile</code>). It is also clamped between the min and max values given in config file.</p>
+</li>
+<li>
+<p><strong>shape_tile</strong>: <em>Integer or None</em>.</p>
+<p><code>spot_shape</code> was found from spots detected on this tile. <code>None</code> if <code>spot_shape</code> not computed in this experiment.</p>
+</li>
+<li>
+<p><strong>shape_spot_local_yxz</strong>: <em>Numpy integer array [n_shape_spots x 3] or None</em>.</p>
+<p><span class="arithmatex">\(yxz\)</span> coordinates on <code>shape_tile</code>, <code>ref_round</code>/<code>ref_channel</code> of spots used to compute <code>spot_shape</code> <code>None</code> if <code>spot_shape</code> not computed in this experiment.</p>
+</li>
+<li>
+<p><strong>shape_spot_gene_no</strong>: <em>Numpy integer array [n_shape_spots] or None</em>.</p>
+<p><code>shape_spot_gene_no[s]</code> is the gene that the spot at <code>shape_spot_local_yxz[s]</code> was assigned to. <code>None</code> if <code>spot_shape</code> not computed in this experiment.</p>
+</li>
+<li>
+<p><strong>spot_shape_float</strong>: <em>Numpy float array [shape_max_size[0] x shape_max_size[1] x shape_max_size[2]] or None</em>.</p>
+<p>Mean of <em>OMP</em> coefficient sign in neighbourhood centered on spot. <code>None</code> if <code>spot_shape</code> not computed in this experiment.</p>
+</li>
+<li>
+<p><strong>initial_pos_neighbour_thresh</strong>: <em>Integer</em>.</p>
+<p>Only spots with number of positive coefficient neighbours greater than this are saved to notebook. </p>
+<p>Typical = 4 in <em>2D</em> and 40 in <em>3D</em> (set to 10% of max number by default).</p>
+</li>
+<li>
+<p><strong>spot_shape</strong>: <em>Numpy integer array [shape_size_y x shape_size_y x shape_size_x]</em>.</p>
+<p>Expected sign of <em>OMP</em> coefficient in neighbourhood centered on spot. </p>
+<p>1 means expected positive coefficient. </p>
+<p>-1 means expected negative coefficient. </p>
+<p>0 means unsure of expected sign.</p>
+</li>
+<li>
+<p><strong>local_yxz</strong>: <em>Numpy int16 array [n_spots, 3]</em>.</p>
+<p><code>local_yxz[s]</code> are the <span class="arithmatex">\(yxz\)</span> coordinates of spot <span class="arithmatex">\(s\)</span> found on <code>tile[s]</code>, <code>ref_round</code>, <code>ref_channel</code>. To get <code>global_yxz</code>, add <code>nb.stitch.tile_origin[tile[s]]</code>.</p>
+</li>
+<li>
+<p><strong>tile</strong>: <em>Numpy int16 array [n_spots]</em>.</p>
+<p>Tile each spot was found on.</p>
+</li>
+<li>
+<p><strong>colors</strong>: <em>Numpy int32 array [n_spots x n_rounds x n_channels]</em>.</p>
+<p><code>[s, r, c]</code> is the intensity of spot <span class="arithmatex">\(s\)</span> on round <span class="arithmatex">\(r\)</span>, channel <span class="arithmatex">\(c\)</span>. It will be <code>-tile_pixel_value_shift</code> if that round/channel not used otherwise integer.</p>
+</li>
+<li>
+<p><strong>gene_no</strong>: <em>Numpy int16 array [n_spots]</em>.</p>
+<p><code>gene_no[s]</code> is the index of the gene assigned to spot <span class="arithmatex">\(s\)</span>.</p>
+</li>
+<li>
+<p><strong>n_neighbours_pos</strong>: <em>Numpy int16 array [n_spots]</em>.</p>
+<p>Number of positive pixels around each spot in neighbourhood given by <code>spot_shape==1</code>. Max is <code>sum(spot_shape==1)</code>.</p>
+</li>
+<li>
+<p><strong>n_neighbours_neg</strong>: <em>Numpy int16 array [n_spots]</em>.</p>
+<p>Number of negative pixels around each spot in neighbourhood given by <code>spot_shape==-1</code>. Max is <code>sum(spot_shape==-1)</code>.</p>
+</li>
+<li>
+<p><strong>intensity</strong>: <em>Numpy float32 array [n_spots]</em>.</p>
+<p><span class="arithmatex">\(\chi_s = \underset{r}{\mathrm{median}}(\max_c\zeta_{s_{rc}})\)</span> where <span class="arithmatex">\(\pmb{\zeta}_s=\)</span> <code>colors[s, r]/color_norm_factor[r]</code>.</p>
+</li>
+</ul>
+<h2 id="thresholds">thresholds</h2>
+<p><em>thresholds</em> page contains quality thresholds which affect which spots plotted and which are exported to <em>pciSeq</em>.  Page added to <em>Notebook</em> when <em>utils/pciseq/export_to_pciseq</em> is run.</p>
+<ul>
+<li>
+<p><strong>intensity</strong>: <em>Float</em>.</p>
+<p>Final accepted reference and OMP spots require <code>intensity &gt; thresholds[intensity]</code>. This is copied from <code>config[thresholds]</code> and if not given there, will be set to  <code>nb.call_spots.gene_efficiency_intensity_thresh</code>. intensity for a really intense spot is about 1 so intensity_thresh should be less than this.</p>
+</li>
+<li>
+<p><strong>score_ref</strong>: <em>Float</em>.</p>
+<p>Final accepted reference spots are those which pass <code>quality_threshold</code> which is: </p>
+<p><code>nb.ref_spots.score &gt; thresholds[score_ref]</code> and <code>intensity &gt; thresholds[intensity]</code>. </p>
+<p>This is copied from <code>config[thresholds]</code>. Max score is 1 so <code>score_ref</code> should be less than this.</p>
+</li>
+<li>
+<p><strong>score_omp</strong>: <em>Float</em>.</p>
+<p>Final accepted <em>OMP</em> spots are those which pass <code>quality_threshold</code> which is: </p>
+<p><code>score &gt; thresholds[score_omp]</code> and <code>intensity &gt; thresholds[intensity]</code>. </p>
+<p><code>score</code> is given by: </p>
+<p><code>score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /  (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)</code>. </p>
+<p>This is copied from <code>config[thresholds]</code>. Max score is 1 so <code>score_thresh</code> should be less than this.</p>
+</li>
+<li>
+<p><strong>score_omp_multiplier</strong>: <em>Float</em>.</p>
+<p>Final accepted OMP spots are those which pass quality_threshold which is: </p>
+<p><code>score &gt; thresholds[score_omp]</code> and <code>intensity &gt; thresholds[intensity]</code>. </p>
+<p>score is given by: </p>
+<p><code>score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /  (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)</code>. </p>
+<p>This is copied from <code>config[thresholds]</code>.</p>
+</li>
+</ul>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../config/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Config Default Settings" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Config Default Settings
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../pipeline/overview/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Overview
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,3949 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Base - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#coppafish.register.base.get_average_transform" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Base
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../config_setup/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../setup/notebook/" class="md-tabs__link md-tabs__link--active">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Base
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Base
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.get_average_transform" class="md-nav__link">
+    get_average_transform()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.get_single_affine_transform" class="md-nav__link">
+    get_single_affine_transform()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.get_transform" class="md-nav__link">
+    get_transform()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.icp" class="md-nav__link">
+    icp()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.mod_median" class="md-nav__link">
+    mod_median()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.transform_from_scale_shift" class="md-nav__link">
+    transform_from_scale_shift()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.get_average_transform" class="md-nav__link">
+    get_average_transform()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.get_single_affine_transform" class="md-nav__link">
+    get_single_affine_transform()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.get_transform" class="md-nav__link">
+    get_transform()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.icp" class="md-nav__link">
+    icp()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.mod_median" class="md-nav__link">
+    mod_median()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.register.base.transform_from_scale_shift" class="md-nav__link">
+    transform_from_scale_shift()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/code/register/base.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+  <h1>Base</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+  <div class="doc doc-contents first">
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.register.base.get_average_transform" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_average_transform</span><span class="p">(</span><span class="n">transforms</span><span class="p">,</span> <span class="n">n_matches</span><span class="p">,</span> <span class="n">matches_thresh</span><span class="p">,</span> <span class="n">scale_thresh</span><span class="p">,</span> <span class="n">shift_thresh</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>This finds all transforms which pass some thresholds and computes the average transform using them.
+<code>av_transforms[t, r, c]</code> is the average transform for tile <code>t</code>, round <code>r</code>, channel <code>c</code> and has:</p>
+<ul>
+<li>Zero rotation.</li>
+<li>Scaling given by median for channel <code>c</code> over all tiles and rounds.
+    I.e. <code>median(av_transforms[:, :, c, 0, 0])</code> for y scaling.</li>
+<li>shift given by median for tile <code>t</code>, round <code>r</code> over all channels.
+    I.e. <code>median(av_transforms[t, r, _, 4, 0])</code> for y shift if <code>dim=3</code>.</li>
+</ul>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>transforms</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_tiles x n_rounds x n_channels x dim+1 x dim]</code>.
+<code>transforms[t, r, c]</code> is the affine transform for tile <code>t</code> from the reference image to
+ round <code>r</code>, channel <code>c</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>n_matches</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_tiles x n_rounds x n_channels]</code>.
+Number of matches found by point cloud registration.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>matches_thresh</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[int, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>int [n_tiles x n_rounds x n_channels]</code> or single <code>int</code>.
+<code>n_matches</code> for a particular transform must exceed this to be used when computing <code>av_transforms</code>.
+Can specify a single threshold for all transforms or a different threshold for each.
+E.g. you may give a lower threshold if that tile/round/channel has fewer spots.
+Typical: <code>200</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>scale_thresh</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_dim]</code>.
+Specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.
+Typically, this threshold will be the same in all dimensions as expect
+chromatic aberration to be same in each.
+Threshold should be fairly large, it is just to get rid of crazy scalings which sometimes
+get a lot of matches.
+Typical: <code>0.01</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>shift_thresh</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_dim]</code>.
+Specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.
+Typically, this threshold will be the same in y and x but different in z.
+Typical: <code>10</code> xy pixels in xy direction, <code>2</code> z pixels in z direction
+(normalised to have same units as <code>yx_pixels</code>).</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>av_transforms</code> - <code>float [n_tiles x n_rounds x n_channels x dim+1 x dim]</code>.
+<code>av_transforms[t, r, c]</code> is the average transform for tile <code>t</code>, round <code>r</code>, channel <code>c</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>av_scaling</code> - <code>float [n_channels x dim]</code>.
+<code>av_scaling[c, d]</code> is the median scaling for channel <code>c</code>, dimension <code>d</code>, over all tiles and rounds.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>av_shifts</code> - <code>float [n_tiles x n_rounds x dim]</code>.
+<code>av_shifts[t, r, d]</code> is the median scaling for tile <code>t</code>, round <code>r</code>, dimension <code>d</code>, over all channels.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>failed</code> - <code>bool [n_tiles x n_rounds x n_channels]</code>.
+Indicates the tiles/rounds/channels to which transform had too few matches or transform was anomalous
+compared to median. These were not included when calculating <code>av_transforms</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>failed_non_matches</code> - <code>bool [n_tiles x n_rounds x n_channels]</code>.
+Indicates the tiles/rounds/channels to which transform was anomalous compared to median either due to shift
+or scaling in one or more directions.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/register/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_average_transform</span><span class="p">(</span><span class="n">transforms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_matches</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">matches_thresh</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                          <span class="n">scale_thresh</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                          <span class="n">shift_thresh</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                                             <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This finds all transforms which pass some thresholds and computes the average transform using them.</span>
+<span class="sd">    `av_transforms[t, r, c]` is the average transform for tile `t`, round `r`, channel `c` and has:</span>
+
+<span class="sd">    - Zero rotation.</span>
+<span class="sd">    - Scaling given by median for channel `c` over all tiles and rounds.</span>
+<span class="sd">        I.e. `median(av_transforms[:, :, c, 0, 0])` for y scaling.</span>
+<span class="sd">    - shift given by median for tile `t`, round `r` over all channels.</span>
+<span class="sd">        I.e. `median(av_transforms[t, r, _, 4, 0])` for y shift if `dim=3`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        transforms: ```float [n_tiles x n_rounds x n_channels x dim+1 x dim]```.</span>
+<span class="sd">            ```transforms[t, r, c]``` is the affine transform for tile ```t``` from the reference image to</span>
+<span class="sd">             round ```r```, channel ```c```.</span>
+<span class="sd">        n_matches: ```int [n_tiles x n_rounds x n_channels]```.</span>
+<span class="sd">            Number of matches found by point cloud registration.</span>
+<span class="sd">        matches_thresh: ```int [n_tiles x n_rounds x n_channels]``` or single ```int```.</span>
+<span class="sd">            ```n_matches``` for a particular transform must exceed this to be used when computing ```av_transforms```.</span>
+<span class="sd">            Can specify a single threshold for all transforms or a different threshold for each.</span>
+<span class="sd">            E.g. you may give a lower threshold if that tile/round/channel has fewer spots.</span>
+<span class="sd">            Typical: ```200```.</span>
+<span class="sd">        scale_thresh: ```float [n_dim]```.</span>
+<span class="sd">            Specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.</span>
+<span class="sd">            Typically, this threshold will be the same in all dimensions as expect</span>
+<span class="sd">            chromatic aberration to be same in each.</span>
+<span class="sd">            Threshold should be fairly large, it is just to get rid of crazy scalings which sometimes</span>
+<span class="sd">            get a lot of matches.</span>
+<span class="sd">            Typical: `0.01`.</span>
+<span class="sd">        shift_thresh: `float [n_dim]`.</span>
+<span class="sd">            Specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.</span>
+<span class="sd">            Typically, this threshold will be the same in y and x but different in z.</span>
+<span class="sd">            Typical: `10` xy pixels in xy direction, `2` z pixels in z direction</span>
+<span class="sd">            (normalised to have same units as `yx_pixels`).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - `av_transforms` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.</span>
+<span class="sd">            `av_transforms[t, r, c]` is the average transform for tile `t`, round `r`, channel `c`.</span>
+<span class="sd">        - `av_scaling` - `float [n_channels x dim]`.</span>
+<span class="sd">            `av_scaling[c, d]` is the median scaling for channel `c`, dimension `d`, over all tiles and rounds.</span>
+<span class="sd">        - `av_shifts` - `float [n_tiles x n_rounds x dim]`.</span>
+<span class="sd">            `av_shifts[t, r, d]` is the median scaling for tile `t`, round `r`, dimension `d`, over all channels.</span>
+<span class="sd">        - `failed` - `bool [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">            Indicates the tiles/rounds/channels to which transform had too few matches or transform was anomalous</span>
+<span class="sd">            compared to median. These were not included when calculating `av_transforms`.</span>
+<span class="sd">        - `failed_non_matches` - `bool [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">            Indicates the tiles/rounds/channels to which transform was anomalous compared to median either due to shift</span>
+<span class="sd">            or scaling in one or more directions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">failed_matches</span> <span class="o">=</span> <span class="n">n_matches</span> <span class="o">&lt;</span> <span class="n">matches_thresh</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="n">failed_matches</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># Assume scaling is the same for particular channel across all tile and rounds</span>
+    <span class="n">scaling</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">)]</span>
+    <span class="n">scaling</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">scaling</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">av_scaling</span> <span class="o">=</span> <span class="n">mod_median</span><span class="p">(</span><span class="n">scaling</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">failed</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="n">diff_to_av_scaling</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scaling</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">av_scaling</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]))</span>
+    <span class="n">failed_scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">diff_to_av_scaling</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">scale_thresh</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">failed</span><span class="p">,</span> <span class="n">failed_scale</span><span class="p">)</span>
+
+    <span class="c1"># Assume shift the same for particular tile and round across all channels</span>
+    <span class="n">shifts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">transforms</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">3</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">av_shifts</span> <span class="o">=</span> <span class="n">mod_median</span><span class="p">(</span><span class="n">shifts</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">failed</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">diff_to_av_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">shifts</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">av_shifts</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">failed_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">diff_to_av_shift</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shift_thresh</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">failed</span><span class="p">,</span> <span class="n">failed_shift</span><span class="p">)</span>
+
+    <span class="c1"># find average shifts and scaling again using final failed array</span>
+    <span class="n">av_scaling</span> <span class="o">=</span> <span class="n">mod_median</span><span class="p">(</span><span class="n">scaling</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">failed</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="n">av_shifts</span> <span class="o">=</span> <span class="n">mod_median</span><span class="p">(</span><span class="n">shifts</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">failed</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">all_failed_scale_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">av_scaling</span><span class="p">))[:,</span> <span class="mi">1</span><span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">n_failed</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_failed_scale_c</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n_failed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># to compute median scale to particular channel, at least one good tile/round.</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">No suitable scales found for the following channels across all tiles/rounds</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">[</span><span class="n">all_failed_scale_c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_failed</span><span class="p">)]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;Consider removing these from use_channels.&quot;</span><span class="p">)</span>
+    <span class="n">all_failed_shifts_tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">av_shifts</span><span class="p">))[:,</span> <span class="mi">1</span><span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">n_failed</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_failed_shifts_tr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">n_failed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># to compute median shift to particular tile/round, at least one good channel is required.</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">No suitable shifts found for the following tile/round combinations&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot; across all colour channels</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;t: </span><span class="si">{</span><span class="p">[</span><span class="n">all_failed_shifts_tr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_failed</span><span class="p">)]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;r: </span><span class="si">{</span><span class="p">[</span><span class="n">all_failed_shifts_tr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_failed</span><span class="p">)]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;Look at the following diagnostics to see why registration has few matches for these:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;coppafish.plot.view_register_shift_info</span><span class="se">\n</span><span class="s2">coppafish.plot.view_register_search</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;coppafish.plot.view_icp</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;If it seems to be a single tile/round that is the problem, maybe remove from &quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;use_tiles/use_rounds and re-run.&quot;</span><span class="p">)</span>
+
+    <span class="n">av_scaling</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">av_scaling</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># so get in order channel,dim</span>
+    <span class="n">av_shifts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">av_shifts</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># so get in order tile,round,dim</span>
+    <span class="n">av_transforms</span> <span class="o">=</span> <span class="n">transform_from_scale_shift</span><span class="p">(</span><span class="n">av_scaling</span><span class="p">,</span> <span class="n">av_shifts</span><span class="p">)</span>
+    <span class="c1"># indicates tiles/rounds/channels which have anomalous transform compared to median independent of number of matches</span>
+    <span class="n">failed_non_matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">failed_scale</span><span class="p">,</span> <span class="n">failed_shift</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">av_transforms</span><span class="p">,</span> <span class="n">av_scaling</span><span class="p">,</span> <span class="n">av_shifts</span><span class="p">,</span> <span class="n">failed</span><span class="p">,</span> <span class="n">failed_non_matches</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.register.base.get_single_affine_transform" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_single_affine_transform</span><span class="p">(</span><span class="n">spot_yxz_base</span><span class="p">,</span> <span class="n">spot_yxz_transform</span><span class="p">,</span> <span class="n">z_scale_base</span><span class="p">,</span> <span class="n">z_scale_transform</span><span class="p">,</span> <span class="n">start_transform</span><span class="p">,</span> <span class="n">neighb_dist_thresh</span><span class="p">,</span> <span class="n">tile_centre</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reg_transform</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Finds the affine transform taking <code>spot_yxz_base</code> to <code>spot_yxz_transform</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>spot_yxz_base</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p>Point cloud want to find the shift from.
+spot_yxz_base[:, 2] is the z coordinate in units of z-pixels.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_yxz_transform</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p>Point cloud want to find the shift to.
+spot_yxz_transform[:, 2] is the z coordinate in units of z-pixels.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>z_scale_base</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>z_scale_transform</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>start_transform</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [4 x 3]</code>.
+Start affine transform for iterative closest point.
+Typically, <code>start_transform[:3, :]</code> is identity matrix and
+<code>start_transform[3]</code> is approx yxz shift (z shift in units of xy pixels).</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>neighb_dist_thresh</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Distance between 2 points must be less than this to be constituted a match.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>tile_centre</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p>int [3].
+yxz coordinates of centre of image where spot_yxz found on.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>n_iter</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td><p>Max number of iterations to perform of ICP.</p></td>
+          <td>
+                <code>100</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_constant_scale</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[float]</code>
+          </td>
+          <td><p>Constant used for scaling and rotation when doing regularized least squares.
+<code>None</code> means no regularized least squares performed.
+Typical = <code>5e8</code>.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_constant_shift</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[float]</code>
+          </td>
+          <td><p>Constant used for shift when doing regularized least squares.
+<code>None</code> means no regularized least squares performed.
+Typical = <code>500</code></p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_transform</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>float [4 x 3]</code>.
+Transform to regularize to when doing regularized least squares.
+<code>None</code> means no regularized least squares performed.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>transform</code> - <code>float [4 x 3]</code>.
+<code>transform</code> is the final affine transform found.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code>int</code>
+          </td>
+          <td><ul>
+<li><code>n_matches</code> - Number of matches found for each transform.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code>float</code>
+          </td>
+          <td><ul>
+<li><code>error</code> - Average distance between neighbours below <code>neighb_dist_thresh</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code>bool</code>
+          </td>
+          <td><ul>
+<li><code>is_converged</code> - <code>False</code> if max iterations reached before transform converged.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/register/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_single_affine_transform</span><span class="p">(</span><span class="n">spot_yxz_base</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">spot_yxz_transform</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">z_scale_base</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                                <span class="n">z_scale_transform</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">start_transform</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">neighb_dist_thresh</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">tile_centre</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+                                <span class="n">reg_constant_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                <span class="n">reg_transform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds the affine transform taking `spot_yxz_base` to `spot_yxz_transform`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        spot_yxz_base: Point cloud want to find the shift from.</span>
+<span class="sd">            spot_yxz_base[:, 2] is the z coordinate in units of z-pixels.</span>
+<span class="sd">        spot_yxz_transform: Point cloud want to find the shift to.</span>
+<span class="sd">            spot_yxz_transform[:, 2] is the z coordinate in units of z-pixels.</span>
+<span class="sd">        z_scale_base: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.</span>
+<span class="sd">        z_scale_transform: Scaling to put z coordinates in same units as yx coordinates for spot_yxz_base.</span>
+<span class="sd">        start_transform: `float [4 x 3]`.</span>
+<span class="sd">            Start affine transform for iterative closest point.</span>
+<span class="sd">            Typically, `start_transform[:3, :]` is identity matrix and</span>
+<span class="sd">            `start_transform[3]` is approx yxz shift (z shift in units of xy pixels).</span>
+<span class="sd">        neighb_dist_thresh: Distance between 2 points must be less than this to be constituted a match.</span>
+<span class="sd">        tile_centre: int [3].</span>
+<span class="sd">            yxz coordinates of centre of image where spot_yxz found on.</span>
+<span class="sd">        n_iter: Max number of iterations to perform of ICP.</span>
+<span class="sd">        reg_constant_scale: Constant used for scaling and rotation when doing regularized least squares.</span>
+<span class="sd">            `None` means no regularized least squares performed.</span>
+<span class="sd">            Typical = `5e8`.</span>
+<span class="sd">        reg_constant_shift: Constant used for shift when doing regularized least squares.</span>
+<span class="sd">            `None` means no regularized least squares performed.</span>
+<span class="sd">            Typical = `500`</span>
+<span class="sd">        reg_transform: `float [4 x 3]`.</span>
+<span class="sd">            Transform to regularize to when doing regularized least squares.</span>
+<span class="sd">            `None` means no regularized least squares performed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - `transform` - `float [4 x 3]`.</span>
+<span class="sd">            `transform` is the final affine transform found.</span>
+<span class="sd">        - `n_matches` - Number of matches found for each transform.</span>
+<span class="sd">        - `error` - Average distance between neighbours below `neighb_dist_thresh`.</span>
+<span class="sd">        - `is_converged` - `False` if max iterations reached before transform converged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">spot_yxz_base</span> <span class="o">=</span> <span class="p">(</span><span class="n">spot_yxz_base</span> <span class="o">-</span> <span class="n">tile_centre</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">z_scale_base</span><span class="p">]</span>
+    <span class="n">spot_yxz_transform</span> <span class="o">=</span> <span class="p">(</span><span class="n">spot_yxz_transform</span> <span class="o">-</span> <span class="n">tile_centre</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">z_scale_transform</span><span class="p">]</span>
+    <span class="n">tree_transform</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">spot_yxz_transform</span><span class="p">)</span>
+    <span class="n">neighbour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">spot_yxz_base</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">transform</span> <span class="o">=</span> <span class="n">start_transform</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iter</span><span class="p">):</span>
+        <span class="n">neighbour_last</span> <span class="o">=</span> <span class="n">neighbour</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">transform</span><span class="p">,</span> <span class="n">neighbour</span><span class="p">,</span> <span class="n">n_matches</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> \
+            <span class="n">get_transform</span><span class="p">(</span><span class="n">spot_yxz_base</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">spot_yxz_transform</span><span class="p">,</span> <span class="n">neighb_dist_thresh</span><span class="p">,</span>
+                          <span class="n">tree_transform</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="p">,</span> <span class="n">reg_transform</span><span class="p">)</span>
+
+        <span class="n">is_converged</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">neighbour</span> <span class="o">-</span> <span class="n">neighbour_last</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_converged</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">transform</span><span class="p">,</span> <span class="n">n_matches</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">is_converged</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.register.base.get_transform" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_transform</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">,</span> <span class="n">transform_old</span><span class="p">,</span> <span class="n">yxz_target</span><span class="p">,</span> <span class="n">dist_thresh</span><span class="p">,</span> <span class="n">yxz_target_tree</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">reg_transform</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>This finds the affine transform that transforms <code>yxz_base</code> such that the distances between the neighbours
+with <code>yxz_target</code> are minimised.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>yxz_base</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_base_spots x 3]</code>.
+Coordinates of spots you want to transform.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>transform_old</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [4 x 3]</code>.
+Affine transform found for previous iteration of PCR algorithm.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>yxz_target</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_target_spots x 3]</code>.
+Coordinates of spots in image that you want to transform <code>yxz_base</code> to.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>dist_thresh</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>If neighbours closer than this, they are used to compute the new transform.
+Typical: <code>3</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>yxz_target_tree</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="scipy.spatial.KDTree">KDTree</span>]</code>
+          </td>
+          <td><p>KDTree produced from <code>yxz_target</code>.
+If <code>None</code>, it will be computed.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_constant_scale</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Constant used for scaling and rotation when doing regularized least squares.</p></td>
+          <td>
+                <code>30000</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_constant_shift</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Constant used for shift when doing regularized least squares.</p></td>
+          <td>
+                <code>9</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_transform</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>float [4 x 3]</code>.
+Affine transform which we want final transform to be near when doing regularized least squares.
+If <code>None</code>, then no regularization is performed.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>transform</code> - <code>float [4 x 3]</code>.
+Updated affine transform.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>neighbour</code> - <code>int [n_base_spots]</code>.
+<code>neighbour[i]</code> is index of coordinate in <code>yxz_target</code> to which transformation of
+<code>yxz_base[i]</code> is closest.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code>int</code>
+          </td>
+          <td><ul>
+<li><code>n_matches</code> - <code>int</code>.
+Number of neighbours which have distance less than <code>dist_thresh</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code>float</code>
+          </td>
+          <td><ul>
+<li><code>error</code> - <code>float</code>.
+Average distance between <code>neighbours</code> below <code>dist_thresh</code>.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/register/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_transform</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">transform_old</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">yxz_target</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dist_thresh</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                  <span class="n">yxz_target_tree</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">KDTree</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30000</span><span class="p">,</span>
+                  <span class="n">reg_constant_shift</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span>
+                  <span class="n">reg_transform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This finds the affine transform that transforms ```yxz_base``` such that the distances between the neighbours</span>
+<span class="sd">    with ```yxz_target``` are minimised.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        yxz_base: ```float [n_base_spots x 3]```.</span>
+<span class="sd">            Coordinates of spots you want to transform.</span>
+<span class="sd">        transform_old: ```float [4 x 3]```.</span>
+<span class="sd">            Affine transform found for previous iteration of PCR algorithm.</span>
+<span class="sd">        yxz_target: ```float [n_target_spots x 3]```.</span>
+<span class="sd">            Coordinates of spots in image that you want to transform ```yxz_base``` to.</span>
+<span class="sd">        dist_thresh: If neighbours closer than this, they are used to compute the new transform.</span>
+<span class="sd">            Typical: ```3```.</span>
+<span class="sd">        yxz_target_tree: KDTree produced from ```yxz_target```.</span>
+<span class="sd">            If ```None```, it will be computed.</span>
+<span class="sd">        reg_constant_scale: Constant used for scaling and rotation when doing regularized least squares.</span>
+<span class="sd">        reg_constant_shift: Constant used for shift when doing regularized least squares.</span>
+<span class="sd">        reg_transform: ```float [4 x 3]```.</span>
+<span class="sd">            Affine transform which we want final transform to be near when doing regularized least squares.</span>
+<span class="sd">            If ```None```, then no regularization is performed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - ```transform``` - ```float [4 x 3]```.</span>
+<span class="sd">            Updated affine transform.</span>
+<span class="sd">        - ```neighbour``` - ```int [n_base_spots]```.</span>
+<span class="sd">            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of</span>
+<span class="sd">            ```yxz_base[i]``` is closest.</span>
+<span class="sd">        - ```n_matches``` - ```int```.</span>
+<span class="sd">            Number of neighbours which have distance less than ```dist_thresh```.</span>
+<span class="sd">        - ```error``` - ```float```.</span>
+<span class="sd">            Average distance between ```neighbours``` below ```dist_thresh```.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">yxz_target_tree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">yxz_target_tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">)</span>
+    <span class="n">yxz_base_pad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">,</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">yxz_transform</span> <span class="o">=</span> <span class="n">yxz_base_pad</span> <span class="o">@</span> <span class="n">transform_old</span>
+    <span class="n">distances</span><span class="p">,</span> <span class="n">neighbour</span> <span class="o">=</span> <span class="n">yxz_target_tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">yxz_transform</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">dist_thresh</span><span class="p">)</span>
+    <span class="n">neighbour</span> <span class="o">=</span> <span class="n">neighbour</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">distances</span> <span class="o">=</span> <span class="n">distances</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">use</span> <span class="o">=</span> <span class="n">distances</span> <span class="o">&lt;</span> <span class="n">dist_thresh</span>
+    <span class="n">n_matches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">use</span><span class="p">))</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">distances</span><span class="p">[</span><span class="n">use</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">reg_transform</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">yxz_base_pad</span><span class="p">[</span><span class="n">use</span><span class="p">,</span> <span class="p">:],</span> <span class="n">yxz_target</span><span class="p">[</span><span class="n">neighbour</span><span class="p">[</span><span class="n">use</span><span class="p">],</span> <span class="p">:],</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">reg_constant_scale</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">yxz_base_regularised</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">yxz_base_pad</span><span class="p">[</span><span class="n">use</span><span class="p">,</span> <span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="n">scale</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">yxz_target_regularised</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">yxz_target</span><span class="p">[</span><span class="n">neighbour</span><span class="p">[</span><span class="n">use</span><span class="p">],</span> <span class="p">:],</span> <span class="n">reg_transform</span> <span class="o">*</span> <span class="n">scale</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">yxz_base_regularised</span><span class="p">,</span> <span class="n">yxz_target_regularised</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">transform</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">transform</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># if 2d transform, set scaling of z to 1 still</span>
+    <span class="k">return</span> <span class="n">transform</span><span class="p">,</span> <span class="n">neighbour</span><span class="p">,</span> <span class="n">n_matches</span><span class="p">,</span> <span class="n">error</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.register.base.icp" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">icp</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">,</span> <span class="n">yxz_target</span><span class="p">,</span> <span class="n">transforms_initial</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">,</span> <span class="n">dist_thresh</span><span class="p">,</span> <span class="n">matches_thresh</span><span class="p">,</span> <span class="n">scale_dev_thresh</span><span class="p">,</span> <span class="n">shift_dev_thresh</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>This gets the affine <code>transforms</code> from <code>yxz_base</code> to <code>yxz_target</code> using iterative closest point until
+all iterations used or convergence.
+For <code>transforms</code> that have matches below <code>matches_thresh</code> or are anomalous compared to <code>av_transform</code>,
+the <code>transforms</code> are recomputed using regularized least squares to ensure they are close to the <code>av_transform</code>.
+If either <code>reg_constant_rot = None</code> or <code>reg_constant_shift = None</code> then this is not done.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>yxz_base</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>object [n_tiles]</code>.
+<code>yxz_base[t]</code> is a numpy <code>float</code> array <code>[n_base_spots x dim]</code>.
+coordinates of spots on reference round of tile <code>t</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>yxz_target</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>object [n_tiles x n_rounds x n_channels]</code>.
+<code>yxz_target[t, r, c]</code> is a numpy <code>float</code> array <code>[n_target_spots x 3]</code>.
+coordinates of spots in tile <code>t</code>, round <code>r</code>, channel <code>c</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>transforms_initial</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_tiles x n_rounds x n_channels x dim+1 x dim]</code>.
+<code>transforms_initial[t, r, c]</code> is the starting affine transform for tile <code>t</code>
+from the reference image to round <code>r</code>, channel <code>c</code>.
+<code>transforms_initial[t, r, c, :dim, :dim]</code> is probably going to be the identity matrix.
+<code>transforms_initial[t, r, c, dim, :]</code> is the shift which needs to be pre-computed somehow to get a
+good result.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>n_iter</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td><p>Max number of iterations to perform of ICP.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>dist_thresh</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>If neighbours closer than this, they are used to compute the new transform.
+Typical: <code>3</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>matches_thresh</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[int, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>int [n_tiles x n_rounds x n_channels]</code> or single <code>int</code>.
+<code>n_matches</code> for a particular transform must exceed this to be used when computing <code>av_transform</code>.
+Can specify a single threshold for all transforms or a different threshold for each.
+E.g. you may give a lower threshold if that tile/round/channel has fewer spots.
+Typical: <code>200</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>scale_dev_thresh</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_dim]</code>.
+Specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.
+Typically, this threshold will be the same in all dimensions as expect chromatic aberration to be
+same in each.
+Threshold should be fairly large, it is just to get rid of crazy scalings which sometimes get
+a lot of matches.
+Typical: <code>0.01</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>shift_dev_thresh</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_dim]</code>.
+Specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.
+Typically, this threshold will be the same in y and x but different in z.
+Typical: <code>10</code> xy pixels in xy direction, <code>2</code> z pixels in z direction
+(normalised to have same units as <code>yx_pixels</code>).</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_constant_scale</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[float]</code>
+          </td>
+          <td><p>Constant used for scaling and rotation when doing regularized least squares.
+<code>None</code> means no regularized least squares performed.
+Typical = <code>5e8</code>.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>reg_constant_shift</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[float]</code>
+          </td>
+          <td><p>Constant used for shift when doing regularized least squares.
+<code>None</code> means no regularized least squares performed.
+Typical = <code>500</code></p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li><code>transforms</code> - <code>float [n_tiles x n_rounds x n_channels x dim+1 x dim]</code>.
+<code>transforms[t, r, c]</code> is the final affine transform found for tile <code>t</code>, round <code>r</code>, channel <code>c</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code>dict</code>
+          </td>
+          <td><ul>
+<li>
+<p><code>debug_info</code> - <code>dict</code> containing 7 <code>np.ndarray</code> -</p>
+</li>
+<li>
+<p><code>n_matches</code> - <code>int [n_tiles x n_rounds x n_channels]</code>.
+    Number of matches found for each transform.</p>
+</li>
+<li><code>error</code> - <code>float [n_tiles x n_rounds x n_channels]</code>.
+    Average distance between neighbours below <code>dist_thresh</code>.</li>
+<li><code>failed</code> - <code>bool [n_tiles x n_rounds x n_channels]</code>.
+    Indicates tiles/rounds/channels to which transform had too few matches or transform was
+    anomalous compared to median. These were not included when calculating <code>av_scalings</code> or <code>av_shifts</code>.</li>
+<li><code>is_converged</code> - <code>bool [n_tiles x n_rounds x n_channels]</code>.
+    <code>False</code> if max iterations reached before transform converged.</li>
+<li><code>av_scaling</code> - <code>float [n_channels x n_dim]</code>.
+    Chromatic aberration scaling factor to each channel from reference channel.
+    Made using all rounds and tiles.</li>
+<li><code>av_shift</code> - <code>float [n_tiles x n_rounds x dim]</code>.
+    <code>av_shift[t, r]</code> is the average shift from reference round to round <code>r</code> for tile <code>t</code> across all
+    colour channels.</li>
+<li><code>transforms_outlier</code> - <code>float [n_tiles x n_rounds x n_channels x dim+1 x dim]</code>.
+    <code>transforms_outlier[t, r, c]</code> is the final affine transform found for tile <code>t</code>, round <code>r</code>, channel <code>c</code>
+    without regularization for <code>t</code>, <code>r</code>, <code>c</code> indicated by failed otherwise it is <code>0</code>.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/register/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">icp</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">yxz_target</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">transforms_initial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dist_thresh</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">matches_thresh</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">scale_dev_thresh</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">shift_dev_thresh</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">reg_constant_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reg_constant_shift</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This gets the affine `transforms` from `yxz_base` to `yxz_target` using iterative closest point until</span>
+<span class="sd">    all iterations used or convergence.</span>
+<span class="sd">    For `transforms` that have matches below `matches_thresh` or are anomalous compared to `av_transform`,</span>
+<span class="sd">    the `transforms` are recomputed using regularized least squares to ensure they are close to the `av_transform`.</span>
+<span class="sd">    If either `reg_constant_rot = None` or `reg_constant_shift = None` then this is not done.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        yxz_base: `object [n_tiles]`.</span>
+<span class="sd">            `yxz_base[t]` is a numpy `float` array `[n_base_spots x dim]`.</span>
+<span class="sd">            coordinates of spots on reference round of tile `t`.</span>
+<span class="sd">        yxz_target: `object [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">            `yxz_target[t, r, c]` is a numpy `float` array `[n_target_spots x 3]`.</span>
+<span class="sd">            coordinates of spots in tile `t`, round `r`, channel `c`.</span>
+<span class="sd">        transforms_initial: `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.</span>
+<span class="sd">            `transforms_initial[t, r, c]` is the starting affine transform for tile `t`</span>
+<span class="sd">            from the reference image to round `r`, channel `c`.</span>
+<span class="sd">            `transforms_initial[t, r, c, :dim, :dim]` is probably going to be the identity matrix.</span>
+<span class="sd">            `transforms_initial[t, r, c, dim, :]` is the shift which needs to be pre-computed somehow to get a</span>
+<span class="sd">            good result.</span>
+<span class="sd">        n_iter: Max number of iterations to perform of ICP.</span>
+<span class="sd">        dist_thresh: If neighbours closer than this, they are used to compute the new transform.</span>
+<span class="sd">            Typical: `3`.</span>
+<span class="sd">        matches_thresh: `int [n_tiles x n_rounds x n_channels]` or single `int`.</span>
+<span class="sd">            `n_matches` for a particular transform must exceed this to be used when computing `av_transform`.</span>
+<span class="sd">            Can specify a single threshold for all transforms or a different threshold for each.</span>
+<span class="sd">            E.g. you may give a lower threshold if that tile/round/channel has fewer spots.</span>
+<span class="sd">            Typical: `200`.</span>
+<span class="sd">        scale_dev_thresh: `float [n_dim]`.</span>
+<span class="sd">            Specifies by how much it is acceptable for the scaling to differ from the average scaling in each dimension.</span>
+<span class="sd">            Typically, this threshold will be the same in all dimensions as expect chromatic aberration to be</span>
+<span class="sd">            same in each.</span>
+<span class="sd">            Threshold should be fairly large, it is just to get rid of crazy scalings which sometimes get</span>
+<span class="sd">            a lot of matches.</span>
+<span class="sd">            Typical: `0.01`.</span>
+<span class="sd">        shift_dev_thresh: `float [n_dim]`.</span>
+<span class="sd">            Specifies by how much it is acceptable for the shift to differ from the average shift in each dimension.</span>
+<span class="sd">            Typically, this threshold will be the same in y and x but different in z.</span>
+<span class="sd">            Typical: `10` xy pixels in xy direction, `2` z pixels in z direction</span>
+<span class="sd">            (normalised to have same units as `yx_pixels`).</span>
+<span class="sd">        reg_constant_scale: Constant used for scaling and rotation when doing regularized least squares.</span>
+<span class="sd">            `None` means no regularized least squares performed.</span>
+<span class="sd">            Typical = `5e8`.</span>
+<span class="sd">        reg_constant_shift: Constant used for shift when doing regularized least squares.</span>
+<span class="sd">            `None` means no regularized least squares performed.</span>
+<span class="sd">            Typical = `500`</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - `transforms` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.</span>
+<span class="sd">            `transforms[t, r, c]` is the final affine transform found for tile `t`, round `r`, channel `c`.</span>
+<span class="sd">        - `debug_info` - `dict` containing 7 `np.ndarray` -</span>
+
+<span class="sd">            - `n_matches` - `int [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">                Number of matches found for each transform.</span>
+<span class="sd">            - `error` - `float [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">                Average distance between neighbours below `dist_thresh`.</span>
+<span class="sd">            - `failed` - `bool [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">                Indicates tiles/rounds/channels to which transform had too few matches or transform was</span>
+<span class="sd">                anomalous compared to median. These were not included when calculating `av_scalings` or `av_shifts`.</span>
+<span class="sd">            - `is_converged` - `bool [n_tiles x n_rounds x n_channels]`.</span>
+<span class="sd">                `False` if max iterations reached before transform converged.</span>
+<span class="sd">            - `av_scaling` - `float [n_channels x n_dim]`.</span>
+<span class="sd">                Chromatic aberration scaling factor to each channel from reference channel.</span>
+<span class="sd">                Made using all rounds and tiles.</span>
+<span class="sd">            - `av_shift` - `float [n_tiles x n_rounds x dim]`.</span>
+<span class="sd">                `av_shift[t, r]` is the average shift from reference round to round `r` for tile `t` across all</span>
+<span class="sd">                colour channels.</span>
+<span class="sd">            - `transforms_outlier` - `float [n_tiles x n_rounds x n_channels x dim+1 x dim]`.</span>
+<span class="sd">                `transforms_outlier[t, r, c]` is the final affine transform found for tile `t`, round `r`, channel `c`</span>
+<span class="sd">                without regularization for `t`, `r`, `c` indicated by failed otherwise it is `0`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_tiles</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">,</span> <span class="n">n_channels</span> <span class="o">=</span> <span class="n">yxz_target</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">,</span> <span class="p">[</span><span class="n">n_tiles</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s2">&quot;yxz_base&quot;</span><span class="p">,</span> <span class="n">yxz_base</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="n">n_tiles</span><span class="p">,))</span>
+    <span class="n">tree_target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_tiles</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_channels</span><span class="p">):</span>
+                <span class="n">tree_target</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">])</span>
+
+    <span class="n">n_matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">neighbour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">)</span>
+    <span class="n">is_converged</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">yxz_target</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">transforms</span> <span class="o">=</span> <span class="n">transforms_initial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">transforms_outlier</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">transforms</span><span class="p">)</span>
+    <span class="n">finished_good_images</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">av_transforms</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">i_finished_good</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">n_tiles</span> <span class="o">*</span> <span class="n">n_rounds</span> <span class="o">*</span> <span class="n">n_channels</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+        <span class="n">pbar</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iterative Closest Point to find affine transforms&quot;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n_iter</span><span class="p">:</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">({</span><span class="s1">&#39;iter&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">n_iter</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;regularized&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">finished_good_images</span><span class="p">)})</span>
+            <span class="n">neighbour_last</span> <span class="o">=</span> <span class="n">neighbour</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_tiles</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_channels</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">is_converged</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]:</span>
+                            <span class="k">continue</span>
+                        <span class="k">if</span> <span class="n">finished_good_images</span><span class="p">:</span>
+                            <span class="n">reg_transform</span> <span class="o">=</span> <span class="n">av_transforms</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">reg_transform</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">transforms</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">neighbour</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">n_matches</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">error</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="n">get_transform</span><span class="p">(</span><span class="n">yxz_base</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">transforms</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">yxz_target</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">dist_thresh</span><span class="p">,</span>
+                                          <span class="n">tree_target</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">reg_constant_scale</span><span class="p">,</span> <span class="n">reg_constant_shift</span><span class="p">,</span> <span class="n">reg_transform</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">i_finished_good</span><span class="p">:</span>
+                            <span class="n">is_converged</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">neighbour</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">-</span> <span class="n">neighbour_last</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">])</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span>
+                            <span class="k">if</span> <span class="n">is_converged</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]:</span>
+                                <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">is_converged</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">finished_good_images</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">i</span> <span class="o">==</span> <span class="n">n_iter</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">finished_good_images</span><span class="p">):</span>
+                <span class="n">av_transforms</span><span class="p">,</span> <span class="n">av_scaling</span><span class="p">,</span> <span class="n">av_shifts</span><span class="p">,</span> <span class="n">failed</span><span class="p">,</span> <span class="n">failed_non_matches</span> <span class="o">=</span> \
+                    <span class="n">get_average_transform</span><span class="p">(</span><span class="n">transforms</span><span class="p">,</span> <span class="n">n_matches</span><span class="p">,</span> <span class="n">matches_thresh</span><span class="p">,</span> <span class="n">scale_dev_thresh</span><span class="p">,</span> <span class="n">shift_dev_thresh</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">reg_constant_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reg_constant_shift</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># reset transforms of those that failed to average transform as starting point for</span>
+                    <span class="c1"># regularised fitting</span>
+                    <span class="n">transforms_outlier</span><span class="p">[</span><span class="n">failed</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="n">failed</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">transforms</span><span class="p">[</span><span class="n">failed</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">av_transforms</span><span class="p">[</span><span class="n">failed</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                    <span class="n">is_converged</span><span class="p">[</span><span class="n">failed</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># Allow n_iter to find regularized best transforms as well.</span>
+                    <span class="n">finished_good_images</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">failed</span><span class="o">.</span><span class="n">flatten</span><span class="p">()))</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">is_converged</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="k">break</span>
+    <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">n_iter</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max number of iterations, </span><span class="si">{</span><span class="n">n_iter</span><span class="si">}</span><span class="s2"> reached but only &quot;</span>
+                      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">is_converged</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">is_converged</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2"> transforms converged&quot;</span><span class="p">)</span>
+
+    <span class="n">debug_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n_matches&#39;</span><span class="p">:</span> <span class="n">n_matches</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="n">error</span><span class="p">,</span> <span class="s1">&#39;failed&#39;</span><span class="p">:</span> <span class="n">failed</span><span class="p">,</span> <span class="s1">&#39;is_converged&#39;</span><span class="p">:</span> <span class="n">is_converged</span><span class="p">,</span>
+                  <span class="s1">&#39;av_scaling&#39;</span><span class="p">:</span> <span class="n">av_scaling</span><span class="p">,</span> <span class="s1">&#39;av_shifts&#39;</span><span class="p">:</span> <span class="n">av_shifts</span><span class="p">,</span> <span class="s1">&#39;transforms_outlier&#39;</span><span class="p">:</span> <span class="n">transforms_outlier</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">debug_info</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.register.base.mod_median" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">mod_median</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">ignore</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>This computes the median ignoring values indicated by <code>ignore</code>.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>array</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_dim_1 x n_dim_2 x ... x n_dim_N]</code>.
+array to compute median from.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>ignore</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>bool [n_dim_1 x n_dim_2 x ... x n_dim_N]</code>.
+True for values in array that should not be used to compute median.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>axis</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[int, <span title="typing.List">List</span>[int]]</code>
+          </td>
+          <td><p><code>int [n_axis_av]</code>.
+Which axis to average over.</p></td>
+          <td>
+                <code>0</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[float, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p>Median value without using those values indicated by <code>ignore</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/register/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">mod_median</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ignore</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This computes the median ignoring values indicated by ```ignore```.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        array: ```float [n_dim_1 x n_dim_2 x ... x n_dim_N]```.</span>
+<span class="sd">            array to compute median from.</span>
+<span class="sd">        ignore: ```bool [n_dim_1 x n_dim_2 x ... x n_dim_N]```.</span>
+<span class="sd">            True for values in array that should not be used to compute median.</span>
+<span class="sd">        axis: ```int [n_axis_av]```.</span>
+<span class="sd">            Which axis to average over.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Median value without using those values indicated by ```ignore```.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mod_array</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">mod_array</span><span class="p">[</span><span class="n">ignore</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">mod_array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.register.base.transform_from_scale_shift" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">transform_from_scale_shift</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">shift</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Gets <code>[dim+1 x dim]</code> affine transform from scale for each channel and shift for each tile/round.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>scale</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_channels x n_dims]</code>.
+<code>scale[c, d]</code> is the scaling to account for chromatic aberration from reference channel
+to channel <code>c</code> for dimension <code>d</code>.
+Typically, as an initial guess all values in scale will be <code>1</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>shift</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_tiles x n_rounds x n_dims]</code>.
+<code>shift[t, r, d]</code> is the shift to account for the shift between the reference round for tile <code>t</code> and
+round <code>r</code> for tile <code>t</code> in dimension <code>d</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_tiles x n_rounds x n_channels x dim+1 x dim]</code>.
+<code>[t, r, c]</code> is the affine transform for tile <code>t</code>, round <code>r</code>, channel <code>c</code> computed from
+<code>scale[c]</code> and <code>shift[t, r]</code>.</p></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/register/base.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">transform_from_scale_shift</span><span class="p">(</span><span class="n">scale</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">shift</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets ```[dim+1 x dim]``` affine transform from scale for each channel and shift for each tile/round.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        scale: ```float [n_channels x n_dims]```.</span>
+<span class="sd">            ```scale[c, d]``` is the scaling to account for chromatic aberration from reference channel</span>
+<span class="sd">            to channel ```c``` for dimension ```d```.</span>
+<span class="sd">            Typically, as an initial guess all values in scale will be ```1```.</span>
+<span class="sd">        shift: ```float [n_tiles x n_rounds x n_dims]```.</span>
+<span class="sd">            ```shift[t, r, d]``` is the shift to account for the shift between the reference round for tile ```t``` and</span>
+<span class="sd">            round ```r``` for tile ```t``` in dimension ```d```.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ```float [n_tiles x n_rounds x n_channels x dim+1 x dim]```.</span>
+<span class="sd">            ```[t, r, c]``` is the affine transform for tile ```t```, round ```r```, channel ```c``` computed from</span>
+<span class="sd">            ```scale[c]``` and ```shift[t, r]```.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_channels</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_tiles</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">,</span> <span class="n">dim</span> <span class="o">=</span> <span class="n">shift</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">transforms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_tiles</span><span class="p">,</span> <span class="n">n_rounds</span><span class="p">,</span> <span class="n">n_channels</span><span class="p">,</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_tiles</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_channels</span><span class="p">):</span>
+                <span class="n">transforms</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="p">:</span><span class="n">dim</span><span class="p">,</span> <span class="p">:,</span> <span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+                <span class="n">transforms</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">shift</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">transforms</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../../stitch/check_shifts/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Check Shifts" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Check Shifts
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../check_transforms/" class="md-footer__link md-footer__link--next" aria-label="Next: Check Transforms" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Check Transforms
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

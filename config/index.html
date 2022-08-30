@@ -1,0 +1,3191 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Config Default Settings - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#default-config-settings" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Config Default Settings
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../config_setup/" class="md-tabs__link md-tabs__link--active">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Config Default Settings
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Config Default Settings
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic_info" class="md-nav__link">
+    basic_info
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract" class="md-nav__link">
+    extract
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#find_spots" class="md-nav__link">
+    find_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stitch" class="md-nav__link">
+    stitch
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register_initial" class="md-nav__link">
+    register_initial
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register" class="md-nav__link">
+    register
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#call_spots" class="md-nav__link">
+    call_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#omp" class="md-nav__link">
+    omp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    thresholds
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic_info" class="md-nav__link">
+    basic_info
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extract" class="md-nav__link">
+    extract
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#find_spots" class="md-nav__link">
+    find_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stitch" class="md-nav__link">
+    stitch
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register_initial" class="md-nav__link">
+    register_initial
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register" class="md-nav__link">
+    register
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#call_spots" class="md-nav__link">
+    call_spots
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#omp" class="md-nav__link">
+    omp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    thresholds
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/config.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="default-config-settings">Default Config Settings</h1>
+<h2 id="file_names">file_names</h2>
+<p>The <em>file_names</em> section specifies the files that will be used throughout the pipeline. Variables in this section can be changed at any point in the pipeline, and the notebook created using it can still be loaded in.</p>
+<ul>
+<li>
+<p><strong>notebook_name</strong>: <em>str</em>.</p>
+<p>Name of notebook file in output directory will be <em>notebook_name</em>.npz </p>
+<p>Default: <code>notebook</code></p>
+</li>
+<li>
+<p><strong>input_dir</strong>: <em>str</em>.</p>
+<p>Directory where the raw .nd2 files or .npy stacks are </p>
+<p>Default: <code>MUST BE SPECIFIED</code></p>
+</li>
+<li>
+<p><strong>output_dir</strong>: <em>str</em>.</p>
+<p>Directory where notebook is saved </p>
+<p>Default: <code>MUST BE SPECIFIED</code></p>
+</li>
+<li>
+<p><strong>tile_dir</strong>: <em>str</em>.</p>
+<p>Directory where tile .npy files saved </p>
+<p>Default: <code>MUST BE SPECIFIED</code></p>
+</li>
+<li>
+<p><strong>round</strong>: <em>maybe_list_str</em>.</p>
+<p>Names of .nd2 files for the imaging rounds. Leave empty if only using anchor. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>anchor</strong>: <em>maybe_str</em>.</p>
+<p>Name of the file for the anchor round. Leave empty if not using anchor. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>raw_extension</strong>: <em>str</em>.</p>
+<p>.nd2 or .npy indicating the data type of the raw data. </p>
+<p>Default: <code>.nd2</code></p>
+</li>
+<li>
+<p><strong>raw_metadata</strong>: <em>maybe_str</em>.</p>
+<p>If .npy raw_extension, this is the name of the .json file in <em>input_dir</em> which contains the metadata required extracted from the initial .nd2 files. I.e. it contains the output of <em>coppafish/utils/nd2/save_metadata</em>: </p>
+<ul>
+<li>
+<p><code>xy_pos</code> - <code>List [n_tiles x 2]</code>. xy position of tiles in pixels. </p>
+</li>
+<li>
+<p><code>pixel_microns</code> - <code>float</code>. xy pixel size in microns. </p>
+</li>
+<li>
+<p><code>pixel_microns_z</code> - <code>float</code>. z pixel size in microns. </p>
+</li>
+<li>
+<p><code>sizes</code> - dict with fov (<code>t</code>), channels (<code>c</code>), y, x, z-planes (<code>z</code>) dimensions. </p>
+</li>
+</ul>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>dye_camera_laser</strong>: <em>maybe_file</em>.</p>
+<p>csv file giving the approximate raw intensity for each dye with each camera/laser combination. If not set, the file <em>coppafish/setup/dye_camera_laser_raw_intensity.csv</em> file will be used. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>code_book</strong>: <em>str</em>.</p>
+<p>Text file which contains the codes indicating which dye to expect on each round for each gene. </p>
+<p>Default: <code>MUST BE SPECIFIED</code></p>
+</li>
+<li>
+<p><strong>scale</strong>: <em>str</em>.</p>
+<p>Text file saved in <em>tile_dir</em> containing <code>extract['scale']</code> and <code>extract['scale_anchor']</code> values used to create the tile .npy files in the <em>tile_dir</em>. If the second value is 0, it means <code>extract['scale_anchor']</code> has not been calculated yet. </p>
+<p>If the extract step of the pipeline is re-run with <code>extract['scale']</code> or <code>extract['scale_anchor']</code> different to values saved here, an error will be raised. </p>
+<p>Default: <code>scale</code></p>
+</li>
+<li>
+<p><strong>psf</strong>: <em>str</em>.</p>
+<p>npy file in output directory indicating average spot shape. If deconvolution required and file does not exist, will be computed automatically in extract step. (this is psf before tapering and scaled to fill uint16 range). </p>
+<p>Default: <code>psf</code></p>
+</li>
+<li>
+<p><strong>omp_spot_shape</strong>: <em>str</em>.</p>
+<p>npy file in <em>output_dir</em> indicating average shape in omp coefficient image. It only indicates the sign of the coefficient i.e. only contains -1, 0, 1. If file does not exist, it is computed from the coefficient images of all genes of the central tile. </p>
+<p>Default: <code>omp_spot_shape</code></p>
+</li>
+<li>
+<p><strong>omp_spot_info</strong>: <em>str</em>.</p>
+<p>npy file in <em>output_dir</em> containing information about spots found in omp step. After each tile is completed, information will be saved to this file. If file does not exist, it will be saved after first tile of OMP step. </p>
+<p>Default: <code>omp_spot_info</code></p>
+</li>
+<li>
+<p><strong>omp_spot_coef</strong>: <em>str</em>.</p>
+<p>npz file in <em>output_dir</em> containing gene coefficients for all spots found in omp step. After each tile is completed, information will be saved to this file. If file does not exist, it will be saved after first tile of OMP step. </p>
+<p>Default: <code>omp_spot_coef</code></p>
+</li>
+<li>
+<p><strong>big_dapi_image</strong>: <em>maybe_str</em>.</p>
+<p>npz file in <em>output_dir</em> where stitched DAPI image is saved. If it does not exist, it will be saved if <code>basic_info['dapi_channel']</code> is not <code>None</code>. Leave blank to not save stitched anchor </p>
+<p>Default: <code>dapi_image</code></p>
+</li>
+<li>
+<p><strong>big_anchor_image</strong>: <em>maybe_str</em>.</p>
+<p>npz file in <em>output_dir</em> where stitched image of <code>ref_round</code>/<code>ref_channel</code> is saved. If it does not exist, it will be saved. Leave blank to not save stitched anchor </p>
+<p>Default: <code>anchor_image</code></p>
+</li>
+<li>
+<p><strong>pciseq</strong>: <em>list_str</em>.</p>
+<p>csv files in <em>output_dir</em> where plotting information for pciSeq will be saved. First file is name where <em>omp</em> method output will be saved. Second file is name where <em>ref_spots</em> method output will be saved. If files don't exist, they will be created when the function <em>coppafish/export_to_pciseq</em> is run. </p>
+<p>Default: <code>pciseq_omp, pciseq_anchor</code></p>
+</li>
+</ul>
+<h2 id="basic_info">basic_info</h2>
+<p>The <em>basic_info</em> section indicates information required throughout the pipeline.</p>
+<ul>
+<li>
+<p><strong>is_3d</strong>: <em>bool</em>.</p>
+<p>Whether to use the 3d pipeline. </p>
+<p>Default: <code>MUST BE SPECIFIED</code></p>
+</li>
+<li>
+<p><strong>anchor_channel</strong>: <em>maybe_int</em>.</p>
+<p>Channel in anchor round used as reference and to build coordinate system on. Usually channel with most spots. Leave blank if anchor not used. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>dapi_channel</strong>: <em>maybe_int</em>.</p>
+<p>Channel in anchor round that contains <em>DAPI</em> images. This does not have to be in <code>use_channels</code> as anchor round is dealt with separately. Leave blank if no <em>DAPI</em>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>ref_round</strong>: <em>maybe_int</em>.</p>
+<p>Round to align all imaging rounds to. Will be set to <code>anchor_round</code> if <code>anchor_channel</code> and <code>file_names['anchor']</code> specified. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>ref_channel</strong>: <em>maybe_int</em>.</p>
+<p>Channel in <code>ref_round</code> used as reference and to build coordinate system on. Usually channel with most spots. Will be set to <code>anchor_channel</code> if <code>anchor_channel</code> and <code>file_names['anchor']</code> specified. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>use_channels</strong>: <em>maybe_list_int</em>.</p>
+<p>Channels in imaging rounds to use throughout pipeline. Leave blank to use all. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>use_rounds</strong>: <em>maybe_list_int</em>.</p>
+<p>Imaging rounds to use throughout pipeline. Leave blank to use all. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>use_z</strong>: <em>maybe_list_int</em>.</p>
+<p>z planes used to make tile .npy files. Leave blank to use all. If 2 values provided, all z-planes between and including the values given will be used. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>use_tiles</strong>: <em>maybe_list_int</em>.</p>
+<p>Tiles used throughout pipeline. Leave blank to use all. For an experiment where the tiles are arranged in a 4 x 3 (ny x nx) grid, tile indices are indicated as below: </p>
+<p>| 2  | 1  | 0  | </p>
+<p>| 5  | 4  | 3  | </p>
+<p>| 8  | 7  | 6  | </p>
+<p>| 11 | 10 | 9  | </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>ignore_tiles</strong>: <em>maybe_list_int</em>.</p>
+<p>It is often easier to select tiles to remove than to use. All tiles listed here will be ignored. Leave blank to use all. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>use_dyes</strong>: <em>maybe_list_int</em>.</p>
+<p>Dyes to use when when assigning spots to genes. Leave blank to use all. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>dye_names</strong>: <em>maybe_list_str</em>.</p>
+<p>Name of dyes used in correct order. So for gene with code <code>360...</code>, gene appears with <code>dye_names[3]</code> in round 0, <code>dye_names[6]</code> in round 1, <code>dye_names[0]</code> in round 2 etc. If left blank, then assumes each channel corresponds to a different dye i.e. code 0 in code_book = channel 0. For quad_cam data, this needs to be specified. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>channel_camera</strong>: <em>maybe_list_int</em>.</p>
+<p><code>channel_camera[i]</code> is the wavelength in nm of the camera used for channel <code>i</code>. Only need to be provided if <code>dye_names</code> provided to help estimate dye intensity in each channel. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>channel_laser</strong>: <em>maybe_list_int</em>.</p>
+<p><code>channel_laser[i]</code> is the wavelengths in nm of the camera/laser used for channel <code>i</code>. Only need to be provided if <code>dye_names</code> provided to help estimate dye intensity in each channel. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>tile_pixel_value_shift</strong>: <em>int</em>.</p>
+<p>This is added onto every tile (except DAPI) when it is saved and removed from every tile when loaded. Required so we can have negative pixel values when save to .npy as uint16. </p>
+<p>Default: <code>15000</code></p>
+</li>
+<li>
+<p><strong>ignore_first_z_plane</strong>: <em>bool</em>.</p>
+<p>Previously had cases where first z plane in .nd2 file was in wrong place and caused focus stacking to be weird or identify lots of spots on first plane. Hence it is safest to not load first plane and this is done if <code>ignore_first_z_plane = True</code>. </p>
+<p>Default: <code>True</code></p>
+</li>
+</ul>
+<h2 id="extract">extract</h2>
+<p>The <em>extract</em> section contains parameters which specify how to filter the raw microscope images to produce the .npy files saved to <code>file_names['tile_dir']</code>.</p>
+<ul>
+<li>
+<p><strong>wait_time</strong>: <em>int</em>.</p>
+<p>Time to wait in seconds for raw data to come in before crashing. Assumes first round is already in the <code>file_names['input_dir']</code> Want this to be large so can run pipeline while collecting data. </p>
+<p>Default: <code>21600</code></p>
+</li>
+<li>
+<p><strong>r1</strong>: <em>maybe_int</em>.</p>
+<p>Filtering is done with a 2D difference of hanning filter with inner radius <code>r1</code> within which it is positive and outer radius <code>r2</code> so annulus between <code>r1</code> and <code>r2</code> is negative. Should be approx radius of spot. Typical = 3. </p>
+<p>For <code>r1 = 3</code> and <code>r2 = 6</code>, a <code>2048 x 2048 x 50</code> image took 4.1s. For <code>2 &lt;= r1 &lt;= 5</code> and <code>r2</code> double this, the time taken seemed to be constant. </p>
+<p>Leave blank to auto detect using <code>r1_auto_microns micron</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>r2</strong>: <em>maybe_int</em>.</p>
+<p>Filtering is done with a 2D difference of hanning filter with inner radius <code>r1</code> within which it is positive and outer radius <code>r2</code> so annulus between <code>r1</code> and <code>r2</code> is negative. Should be approx radius of spot. Typical = 6. Leave blank to set to twice <code>r1</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>r_dapi</strong>: <em>maybe_int</em>.</p>
+<p>Filtering for DAPI images is a tophat with r_dapi radius. Should be approx radius of object of interest. Typical = 48. Leave blank to auto detect using <code>r_dapi_auto_microns</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>r1_auto_microns</strong>: <em>number</em>.</p>
+<p>If <code>r1</code> not specified, will convert to units of pixels from this micron value. </p>
+<p>Default: <code>0.5</code></p>
+</li>
+<li>
+<p><strong>r_dapi_auto_microns</strong>: <em>maybe_number</em>.</p>
+<p>If <code>r_dapi</code> not specified. Will convert to units of pixels from this micron value. Typical = 8.0. If both this and <code>r_dapi</code> left blank, DAPI image will not be filtered and no .npy file saved. Instead DAPI will be loaded directly from raw data and then stitched. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>scale</strong>: <em>maybe_number</em>.</p>
+<p>Each filtered image is multiplied by scale. This is because the image is saved as uint16 so to gain information from the decimal points, should multiply image so max pixel number is in the 10,000s (less than 65,536). Leave empty to auto-detect using <code>scale_norm</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>scale_norm</strong>: <em>maybe_int</em>.</p>
+<p>If <code>scale</code> not given, <code>scale = scale_norm/max(scale_image)</code>. Where <code>scale_image</code> is the <code>n_channels x n_y x n_x x n_z</code> image belonging to the central tile (saved as <code>nb.extract_debug.scale_tile</code>) of round 0 after filtering and smoothing. </p>
+<p>Must be less than <code>np.iinfo(np.uint16).max - config['basic_info']['tile_pixel_value_shift']</code> which is typically <span class="arithmatex">\(65535 - 15000 = 50535\)</span>. </p>
+<p>Default: <code>35000</code></p>
+</li>
+<li>
+<p><strong>scale_anchor</strong>: <em>maybe_number</em>.</p>
+<p>Analogous to <code>scale</code> but have different normalisation for anchor round/anchor channel as not used in final spot_colors. Leave empty to auto-detect using <code>scale_norm</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>auto_thresh_multiplier</strong>: <em>number</em>.</p>
+<p><code>nb.extract.auto_thresh[t,r,c]</code> is default threshold to find spots on tile t, round r, channel c. Value is set to <code>auto_thresh_multiplier * median(abs(image))</code> where <code>image</code> is the image produced for tile t, round r, channel c in the extract step of the pipeline and saved to <code>file_names['tile_dir']</code>. </p>
+<p>Default: <code>10</code></p>
+</li>
+<li>
+<p><strong>deconvolve</strong>: <em>bool</em>.</p>
+<p>For 3D pipeline, whether to perform wiener deconvolution before hanning filtering. </p>
+<p>Default: <code>False</code></p>
+</li>
+<li>
+<p><strong>psf_detect_radius_xy</strong>: <em>int</em>.</p>
+<p>Need to detect spots to determine point spread function (psf) used in the wiener deconvolution. Only relevant if <code>deconvolve == True</code>. To detect spot, pixel needs to be above dilation with this radius in xy plane. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>psf_detect_radius_z</strong>: <em>int</em>.</p>
+<p>Need to detect spots to determine point spread function (psf) used in the wiener deconvolution. Only relevant if <code>deconvolve == True</code>. To detect spot, pixel needs to be above dilation with this radius in z direction. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>psf_intensity_thresh</strong>: <em>maybe_number</em>.</p>
+<p>Spots contribute to <code>psf</code> if they are above this intensity. If not given, will be computed the same as <code>auto_thresh</code> i.e. <code>median(image) + auto_thresh_multiplier*median(abs(image-median(image)))</code>. Note that for raw data, <code>median(image)</code> is not zero hence the difference. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>psf_isolation_dist</strong>: <em>number</em>.</p>
+<p>Spots contribute to <code>psf</code> if more than <code>psf_isolation_dist</code> from nearest spot. </p>
+<p>Default: <code>20</code></p>
+</li>
+<li>
+<p><strong>psf_min_spots</strong>: <em>int</em>.</p>
+<p>Need this many isolated spots to determine <code>psf</code>. </p>
+<p>Default: <code>300</code></p>
+</li>
+<li>
+<p><strong>psf_shape</strong>: <em>list_int</em>.</p>
+<p>Diameter of psf in y, x, z direction (in units of [xy_pixels, xy_pixels, z_pixels]). </p>
+<p>Default: <code>181, 181, 19</code></p>
+</li>
+<li>
+<p><strong>psf_annulus_width</strong>: <em>number</em>.</p>
+<p><code>psf</code> is assumed to be radially symmetric within each z-plane so assume all values within annulus of this size (in xy_pixels) to be the same. </p>
+<p>Default: <code>1.4</code></p>
+</li>
+<li>
+<p><strong>wiener_constant</strong>: <em>number</em>.</p>
+<p>Constant used to compute wiener filter from <code>psf</code>. </p>
+<p>Default: <code>50000</code></p>
+</li>
+<li>
+<p><strong>wiener_pad_shape</strong>: <em>list_int</em>.</p>
+<p>When applying the wiener filter, we pad the raw image to median value linearly with this many pixels at end of each dimension. </p>
+<p>Default: <code>20, 20, 3</code></p>
+</li>
+<li>
+<p><strong>r_smooth</strong>: <em>maybe_list_int</em>.</p>
+<p>Radius of averaging filter to do smoothing of filtered image. Provide two numbers to do 2D smoothing and three numbers to do 3D smoothing. Typical <em>2D</em>: <code>2, 2</code>. Typical <em>3D</em>: <code>1, 1, 2</code>. Recommended use is in <em>3D</em> only as it incorporates information between z-planes which filtering with difference of hanning kernels does not. </p>
+<p>Size of <code>r_smooth</code> has big influence on time taken for smoothing. For a <code>2048 x 2048 x 50</code> image: </p>
+<ul>
+<li>
+<p><code>r_smooth = 1, 1, 2</code>: 2.8 seconds </p>
+</li>
+<li>
+<p><code>r_smooth = 2, 2, 2</code>: 8.5 seconds </p>
+</li>
+</ul>
+<p>Leave empty to do no smoothing. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>n_clip_warn</strong>: <em>int</em>.</p>
+<p>If the number of pixels that are clipped when saving as uint16 is more than <code>n_clip_warn</code>, a warning message will occur. </p>
+<p>Default: <code>1000</code></p>
+</li>
+<li>
+<p><strong>n_clip_error</strong>: <em>maybe_int</em>.</p>
+<p>If the number of pixels that are clipped when saving as uint16 is more than <code>n_clip_error</code> for <code>n_clip_error_images_thresh</code> images, the extract and filter step will be halted. If left blank, n_clip_error will be set to 1% of pixels of a single z-plane. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>n_clip_error_images_thresh</strong>: <em>int</em>.</p>
+<p>If the number of pixels that are clipped when saving as uint16 is more than <code>n_clip_error</code> for <code>n_clip_error_images_thresh</code> images, the extract and filter step will be halted. </p>
+<p>Default: <code>3</code></p>
+</li>
+</ul>
+<h2 id="find_spots">find_spots</h2>
+<p>The <em>find_spots</em> section contains parameters which specify how to convert the images produced in the extract section to point clouds.</p>
+<ul>
+<li>
+<p><strong>radius_xy</strong>: <em>int</em>.</p>
+<p>To be detected as a spot, a pixel needs to be above dilation with structuring element which is a square (<code>np.ones</code>) of width <code>2*radius_xy-1</code> in the xy plane. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>radius_z</strong>: <em>int</em>.</p>
+<p>To be detected as a spot, a pixel needs to be above dilation with structuring element which is cuboid (<code>np.ones</code>) with width <code>2*radius_z-1</code> in z direction. Must be more than 1 to be 3D. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>max_spots_2d</strong>: <em>int</em>.</p>
+<p>If number of spots detected on particular z-plane of an imaging round is greater than this, then will only select the <code>max_spots_2d</code> most intense spots on that z-plane. I.e. PCR works better if trying to fit fewer more intense spots. This only applies to imaging rounds and not ref_round/ref_channel as need lots of spots then. In 2D, allow more spots as only 1 z-plane </p>
+<p>Default: <code>1500</code></p>
+</li>
+<li>
+<p><strong>max_spots_3d</strong>: <em>int</em>.</p>
+<p>Same as <code>max_spots_2d</code> for the 3D pipeline. In 3D, need to allow less spots on a z-plane as have many z-planes. </p>
+<p>Default: <code>500</code></p>
+</li>
+<li>
+<p><strong>isolation_radius_inner</strong>: <em>number</em>.</p>
+<p>To determine if spots are isolated, filter image with annulus between <code>isolation_radius_inner</code> and <code>isolation_radius</code>. <code>isolation_radius_inner</code> should be approx the radius where intensity of spot crosses from positive to negative. It is in units of xy-pixels. This filtering will only be applied to spots detected in the ref_round/ref_channel. </p>
+<p>Default: <code>4</code></p>
+</li>
+<li>
+<p><strong>isolation_radius_xy</strong>: <em>number</em>.</p>
+<p>Outer radius of annulus filtering kernel in xy direction in units of xy-pixels. </p>
+<p>Default: <code>14</code></p>
+</li>
+<li>
+<p><strong>isolation_radius_z</strong>: <em>number</em>.</p>
+<p>Outer radius of annulus filtering kernel in z direction in units of z-pixels. </p>
+<p>Default: <code>1</code></p>
+</li>
+<li>
+<p><strong>isolation_thresh</strong>: <em>maybe_number</em>.</p>
+<p>Spot is isolated if value of annular filtered image at spot location is below the <code>isolation_thresh</code> value. Leave blank to automatically determine value using <code>auto_isolation_thresh_multiplier</code>. multiplied by the threshold used to detect the spots i.e. the extract_auto_thresh value. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>auto_isolation_thresh_multiplier</strong>: <em>number</em>.</p>
+<p>If <code>isolation_thresh</code> left blank, it will be set to <code>isolation_thresh = auto_isolation_thresh_multiplier * nb.extract.auto_thresh[:, r, c]</code>. </p>
+<p>Default: <code>-0.2</code></p>
+</li>
+<li>
+<p><strong>n_spots_warn_fraction</strong>: <em>number</em>.</p>
+<p>Used in <em>coppafish/find_spots/base/check_n_spots</em> </p>
+<p>A warning will be raised if for any tile, round, channel the number of spots detected is less than: </p>
+<p><code>n_spots_warn = n_spots_warn_fraction * max_spots * nb.basic_info.nz</code> </p>
+<p>where <code>max_spots</code> is <code>max_spots_2d</code> if <em>2D</em> and <code>max_spots_3d</code> if <em>3D</em>. </p>
+<p>Default: <code>0.1</code></p>
+</li>
+<li>
+<p><strong>n_spots_error_fraction</strong>: <em>number</em>.</p>
+<p>Used in <em>coppafish/find_spots/base/check_n_spots</em>. An error is raised if any of the following are satisfied: </p>
+<ul>
+<li>
+<p>For any given channel, the number of spots found was less than <code>n_spots_warn</code> for at least the fraction <code>n_spots_error_fraction</code> of tiles/rounds. </p>
+</li>
+<li>
+<p>For any given tile, the number of spots found was less than <code>n_spots_warn</code> for at least the fraction <code>n_spots_error_fraction</code> of rounds/channels. </p>
+</li>
+<li>
+<p>For any given round, the number of spots found was less than <code>n_spots_warn</code> for at least the fraction <code>n_spots_error_fraction</code> of tiles/channels. </p>
+</li>
+</ul>
+<p>Default: <code>0.5</code></p>
+</li>
+</ul>
+<h2 id="stitch">stitch</h2>
+<p>The <em>stitch</em> section contains parameters which specify how the overlaps between neighbouring tiles are found. Note that references to south in this section should really be north and west should be east.</p>
+<ul>
+<li>
+<p><strong>expected_overlap</strong>: <em>number</em>.</p>
+<p>Expected fractional overlap between tiles. Used to get initial shift search if not provided. </p>
+<p>Default: <code>0.1</code></p>
+</li>
+<li>
+<p><strong>auto_n_shifts</strong>: <em>list_int</em>.</p>
+<p>If <code>shift_south_min/max</code> and/or <code>shift_west_min/max</code> not given, the initial shift search will have <code>auto_n_shifts</code> either side of the expected shift given the <code>expected_overlap</code> with step given by <code>shift_step</code>. First value gives <span class="arithmatex">\(n_{shifts}\)</span> in direction of overlap (y for south, x for west). Second value gives <span class="arithmatex">\(n_{shifts}\)</span> in other direction (x for south, y for west). Third value gives <span class="arithmatex">\(n_{shifts}\)</span> in z. </p>
+<p>Default: <code>20, 20, 1</code></p>
+</li>
+<li>
+<p><strong>shift_south_min</strong>: <em>maybe_list_int</em>.</p>
+<p>Can manually specify initial shifts. Exhaustive search will include all shifts between min and max with step given by <code>shift_step</code>. Each entry should be a list of 3 values: [y, x, z]. Typical: <code>-1900, -100, -2</code> </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_south_max</strong>: <em>maybe_list_int</em>.</p>
+<p>Can manually specify initial shifts. Exhaustive search will include all shifts between min and max with step given by <code>shift_step</code>. Each entry should be a list of 3 values: [y, x, z]. Typical: <code>-1700, 100, 2</code> </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_west_min</strong>: <em>maybe_list_int</em>.</p>
+<p>Can manually specify initial shifts. Exhaustive search will include all shifts between min and max with step given by <code>shift_step</code>. Each entry should be a list of 3 values: [y, x, z]. Typical: <code>-100, -1900, -2</code> </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_west_max</strong>: <em>maybe_list_int</em>.</p>
+<p>Can manually specify initial shifts. Shift range will run between min to max with step given by <code>shift_step</code>. Each entry should be a list of 3 values: [y, x, z]. Typical: <code>100, -1700, 2</code> </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_step</strong>: <em>list_int</em>.</p>
+<p>Step size to use in y, x, z when finding shift between tiles. </p>
+<p>Default: <code>5, 5, 3</code></p>
+</li>
+<li>
+<p><strong>shift_widen</strong>: <em>list_int</em>.</p>
+<p>If shift in initial search range has score which does not exceed <code>shift_score_thresh</code>, then range will be extrapolated with same step by <code>shift_widen</code> values in y, x, z direction. </p>
+<p>Default: <code>10, 10, 1</code></p>
+</li>
+<li>
+<p><strong>shift_max_range</strong>: <em>list_int</em>.</p>
+<p>The range of shifts searched over will continue to be increased according to <code>shift_widen</code> until the shift range in the y, x, z direction reaches <code>shift_max_range</code>. If a good shift is still not found, a warning will be printed. </p>
+<p>Default: <code>300, 300, 10</code></p>
+</li>
+<li>
+<p><strong>neighb_dist_thresh</strong>: <em>number</em>.</p>
+<p>Basically the distance in yx pixels below which neighbours are a good match. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh</strong>: <em>maybe_number</em>.</p>
+<p>A shift between tiles must have a number of close neighbours exceeding this. If not given, it will be worked using the <code>shift_score_thresh</code> parameters below using the function <em>coppafish/stitch/shift/get_score_thresh</em>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh_multiplier</strong>: <em>number</em>.</p>
+<p><code>shift_score_thresh</code> is set to <code>shift_score_thresh_multiplier</code> multiplied by the mean of scores of shifts a distance between <code>shift_score_thresh_min_dist</code> and <code>shift_score_thresh_max_dist</code> from the best shift. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh_min_dist</strong>: <em>number</em>.</p>
+<p><code>shift_score_thresh</code> is set to <code>shift_score_thresh_multiplier</code> multiplied by the mean of scores of shifts a distance between <code>shift_score_thresh_min_dist</code> and <code>shift_score_thresh_max_dist</code> from the best shift. </p>
+<p>Default: <code>11</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh_max_dist</strong>: <em>number</em>.</p>
+<p><code>shift_score_thresh</code> is set to <code>shift_score_thresh_multiplier</code> multiplied by the mean of scores of shifts a distance between <code>shift_score_thresh_min_dist</code> and <code>shift_score_thresh_max_dist</code> from the best shift. </p>
+<p>Default: <code>20</code></p>
+</li>
+<li>
+<p><strong>nz_collapse</strong>: <em>int</em>.</p>
+<p>3D data is converted into <code>np.ceil(nz / nz_collapse)</code> 2D slices for exhaustive shift search to quicken it up. I.e. this is the maximum number of z-planes to be collapsed to a 2D slice when searching for the best shift. </p>
+<p>Default: <code>30</code></p>
+</li>
+<li>
+<p><strong>n_shifts_error_fraction</strong>: <em>number</em>.</p>
+<p>Used in <em>coppafish/stitch/check_shifts/check_shifts_stitch</em> If more than this fraction of <code>shifts</code> found between neighbouring tiles have <code>score &lt; score_thresh</code>, an error will be raised. </p>
+<p>Default: <code>0.5</code></p>
+</li>
+<li>
+<p><strong>save_image_zero_thresh</strong>: <em>int</em>.</p>
+<p>When saving stitched images, all pixels with absolute value less than or equal to <code>save_image_zero_thresh</code> will be set to 0. This helps reduce size of the .npz files and does not lose any important information. </p>
+<p>Default: <code>20</code></p>
+</li>
+</ul>
+<h2 id="register_initial">register_initial</h2>
+<p>The <em>register_initial</em> section contains parameters which specify how the shifts from the ref_round/ref_channel to each imaging round/channel are found. These are then used as the starting point for determining the affine transforms in the <em>register</em> section.</p>
+<ul>
+<li>
+<p><strong>shift_channel</strong>: <em>maybe_int</em>.</p>
+<p>Channel to use to find shifts between rounds to use as starting point for PCR. Leave blank to set to <code>basic_info['ref_channel']</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_min</strong>: <em>list_int</em>.</p>
+<p>Exhaustive search range will include all shifts between min and max with step given by <code>shift_step</code>. Each entry should be a list of 3 values: [y, x, z]. Typical: [-100, -100, -1] </p>
+<p>Default: <code>-100, -100, -3</code></p>
+</li>
+<li>
+<p><strong>shift_max</strong>: <em>list_int</em>.</p>
+<p>Exhaustive search range will include all shifts between min and max with step given by <code>shift_step</code>. Each entry should be a list of 3 values: [y, x, z]. Typical: [100, 100, 1] </p>
+<p>Default: <code>100, 100, 3</code></p>
+</li>
+<li>
+<p><strong>shift_step</strong>: <em>list_int</em>.</p>
+<p>Step size to use in y, x, z when performing the exhaustive search to find the shift between tiles. </p>
+<p>Default: <code>5, 5, 3</code></p>
+</li>
+<li>
+<p><strong>shift_widen</strong>: <em>list_int</em>.</p>
+<p>If shift in initial search range has score which does not exceed <code>shift_score_thresh</code>, then the range will be extrapolated with same step by shift_widen values in y, x, z direction. </p>
+<p>Default: <code>10, 10, 1</code></p>
+</li>
+<li>
+<p><strong>shift_max_range</strong>: <em>list_int</em>.</p>
+<p>The range of shifts searched over will continue to be increased according to <code>shift_widen</code> until the shift range in the y, x, z direction reaches <code>shift_max_range</code>. If a good shift is still not found, a warning will be printed. </p>
+<p>Default: <code>500, 500, 10</code></p>
+</li>
+<li>
+<p><strong>neighb_dist_thresh</strong>: <em>number</em>.</p>
+<p>Basically the distance in yx pixels below which neighbours are a good match. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh</strong>: <em>maybe_number</em>.</p>
+<p>A shift between tiles must have a number of close neighbours exceeding this. If not given, it will be worked using the <code>shift_score_thresh</code> parameters below using the function <em>coppafish/stitch/shift/get_score_thresh</em>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh_multiplier</strong>: <em>number</em>.</p>
+<p><code>shift_score_thresh</code> is set to <code>shift_score_thresh_multiplier</code> multiplied by the mean of scores of shifts a distance between <code>shift_score_thresh_min_dist</code> and <code>shift_score_thresh_max_dist</code> from the best shift. </p>
+<p>Default: <code>1.5</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh_min_dist</strong>: <em>number</em>.</p>
+<p><code>shift_score_thresh</code> is set to <code>shift_score_thresh_multiplier</code> multiplied by the mean of scores of shifts a distance between <code>shift_score_thresh_min_dist</code> and <code>shift_score_thresh_max_dist</code> from the best shift. </p>
+<p>Default: <code>11</code></p>
+</li>
+<li>
+<p><strong>shift_score_thresh_max_dist</strong>: <em>number</em>.</p>
+<p><code>shift_score_thresh</code> is set to <code>shift_score_thresh_multiplier</code> multiplied by the mean of scores of shifts a distance between <code>shift_score_thresh_min_dist</code> and <code>shift_score_thresh_max_dist</code> from the best shift. </p>
+<p>Default: <code>20</code></p>
+</li>
+<li>
+<p><strong>nz_collapse</strong>: <em>int</em>.</p>
+<p>3D data is converted into <code>np.ceil(nz / nz_collapse)</code> 2D slices for exhaustive shift search to quicken it up. I.e. this is the maximum number of z-planes to be collapsed to a 2D slice when searching for the best shift. </p>
+<p>Default: <code>30</code></p>
+</li>
+<li>
+<p><strong>n_shifts_error_fraction</strong>: <em>number</em>.</p>
+<p>Used in <em>coppafish/stitch/check_shifts/check_shifts_register</em> If more than this fraction of <code>shifts</code> between the <code>ref_round</code>/<code>ref_channel</code> and each imaging round for each tile have <code>score &lt; score_thresh</code>, an error will be raised. </p>
+<p>Default: <code>0.5</code></p>
+</li>
+</ul>
+<h2 id="register">register</h2>
+<p>The <em>register</em> section contains parameters which specify how the affine transforms from the ref_round/ref_channel to each imaging round/channel are found from the shifts found in the <em>register_initial</em> section.</p>
+<ul>
+<li>
+<p><strong>n_iter</strong>: <em>int</em>.</p>
+<p>Maximum number iterations to run point cloud registration, PCR </p>
+<p>Default: <code>100</code></p>
+</li>
+<li>
+<p><strong>neighb_dist_thresh_2d</strong>: <em>number</em>.</p>
+<p>Basically the distance in yx pixels below which neighbours are a good match. PCR updates transforms by minimising distances between neighbours which are closer than this. </p>
+<p>Default: <code>3</code></p>
+</li>
+<li>
+<p><strong>neighb_dist_thresh_3d</strong>: <em>number</em>.</p>
+<p>The same as <code>neighb_dist_thresh_2d</code> but in 3D, we use a larger distance because the size of a z-pixel is greater than a xy pixel. </p>
+<p>Default: <code>5</code></p>
+</li>
+<li>
+<p><strong>matches_thresh_fract</strong>: <em>number</em>.</p>
+<p>If PCR produces transforms with fewer neighbours (pairs with distance between them less than <code>neighb_dist_thresh</code>) than <code>matches_thresh = np.clip(matches_thresh_fract * n_spots, matches_thresh_min, matches_thresh_max)</code>, the transform will be re-evaluated with regularization so it is near the average transform. </p>
+<p>Default: <code>0.25</code></p>
+</li>
+<li>
+<p><strong>matches_thresh_min</strong>: <em>int</em>.</p>
+<p>If PCR produces transforms with fewer neighbours (pairs with distance between them less than <code>neighb_dist_thresh</code>) than <code>matches_thresh = np.clip(matches_thresh_fract * n_spots, matches_thresh_min, matches_thresh_max)</code>, the transform will be re-evaluated with regularization so it is near the average transform. </p>
+<p>Default: <code>25</code></p>
+</li>
+<li>
+<p><strong>matches_thresh_max</strong>: <em>int</em>.</p>
+<p>If PCR produces transforms with fewer neighbours (pairs with distance between them less than <code>neighb_dist_thresh</code>) than <code>matches_thresh = np.clip(matches_thresh_fract * n_spots, matches_thresh_min, matches_thresh_max)</code>, the transform will be re-evaluated with regularization so it is near the average transform. </p>
+<p>Default: <code>300</code></p>
+</li>
+<li>
+<p><strong>scale_dev_thresh</strong>: <em>list_number</em>.</p>
+<p>If a transform has a chromatic aberration scaling that has an absolute deviation of more than <code>scale_dev_thresh[i]</code> from the median for that colour channel in dimension <code>i</code>, it will be re-evaluated with regularization. There is a threshold for the y, x, z scaling. </p>
+<p>Default: <code>0.01, 0.01, 0.1</code></p>
+</li>
+<li>
+<p><strong>shift_dev_thresh</strong>: <em>list_number</em>.</p>
+<p>If a transform has a <code>shift[i]</code> that has an absolute deviation of more than <code>shift_dev_thresh[i]</code> from the median for that tile and round in any dimension <code>i</code>, it will be re-evaluated with regularization. There is a threshold for the y, x, z shift. <code>shift_dev_thresh[2]</code> is in z pixels. </p>
+<p>Default: <code>15, 15, 5</code></p>
+</li>
+<li>
+<p><strong>regularize_constant</strong>: <em>int</em>.</p>
+<p>Constant used when doing regularized least squares. If the number of neighbours are above this, regularization will have little effect. If the number of neighbours is less than this, regularization will have significant effect, and final transform will be similar to transform being regularized towards. </p>
+<p>Default: <code>500</code></p>
+</li>
+<li>
+<p><strong>regularize_factor</strong>: <em>number</em>.</p>
+<p>The loss function for finding the transform through regularized least squares is: </p>
+<p><span class="arithmatex">\(\sum_s^{n_{neighb}}D_s^2 + 0.5\lambda (\mu D_{scale}^2 + D_{shift}^2)\)</span> </p>
+<p>Where: </p>
+<ul>
+<li>
+<p><span class="arithmatex">\(D_s^2\)</span> is the squared distance between the pair of neighbours indicated by <span class="arithmatex">\(s\)</span>. Only neighbours with distance between them on previous iteration les than <code>neighb_dist</code> are considered. </p>
+</li>
+<li>
+<p><span class="arithmatex">\(\lambda\)</span> is <code>regularize_constant</code>. </p>
+</li>
+<li>
+<p><span class="arithmatex">\(\mu\)</span> is <code>regularize_factor</code> such that when <span class="arithmatex">\(n_{neighb} = \lambda\)</span> and <span class="arithmatex">\(D_s^2 = D_{shift}^2\)</span> for all <span class="arithmatex">\(s\)</span>, the two contributions to the loss function are approximately equal i.e. <span class="arithmatex">\(\mu = D_{shift}^2/D_{scale}^2\)</span>. </p>
+</li>
+<li>
+<p><span class="arithmatex">\(D_{scale}^2\)</span> is the squared distance between <code>transform[:3, :]</code> and <code>transform_regularize[:3, :]</code>. I.e. the squared difference of the scaling/rotation part of the transform from the target. </p>
+</li>
+<li>
+<p><span class="arithmatex">\(D_{shift}^2\)</span> is the squared distance between <code>transform[3]</code> and <code>transform_regularize[3]</code>. I.e. the squared difference of the shift part of the transform from the target. </p>
+</li>
+</ul>
+<p>So if a typical value of <span class="arithmatex">\(D_{shift}\)</span> (or <span class="arithmatex">\(D_s\)</span>) is 2 and a typical value of <span class="arithmatex">\(D_{scale}\)</span> is 0.009, <span class="arithmatex">\(\mu = 5\times10^4\)</span>. </p>
+<p>Default: <code>5e4</code></p>
+</li>
+<li>
+<p><strong>n_transforms_error_fraction</strong>: <em>number</em>.</p>
+<p>Used in <em>coppafish/register/check_transforms/check_transforms</em> An error is raised if any of the following are satisfied where a failed transform is one with <code>nb.register_debug.n_matches &lt; nb.register_debug.n_matches_thresh</code>. </p>
+<ul>
+<li>
+<p>For any given channel, the fraction of failed transforms was greater than <code>n_transforms_error_fraction</code> of tiles/rounds. </p>
+</li>
+<li>
+<p>For any given tile, the fraction of failed transforms was greater than <code>n_transforms_error_fraction</code> of rounds/channels. </p>
+</li>
+<li>
+<p>For any given round, the fraction of failed transforms was greater than <code>n_transforms_error_fraction</code> of tiles/channels. </p>
+</li>
+</ul>
+<p>Default: <code>0.5</code></p>
+</li>
+</ul>
+<h2 id="call_spots">call_spots</h2>
+<p>The <em>call_spots</em> section contains parameters which determine how the <code>bleed_matrix</code> and <code>gene_efficiency</code> are computed, as well as how a gene is assigned to each spot found on the ref_round/ref_channel.</p>
+<ul>
+<li>
+<p><strong>bleed_matrix_method</strong>: <em>str</em>.</p>
+<p><code>bleed_matrix_method</code> can only be <code>single</code> or <code>separate</code>. <code>single</code>: a single bleed matrix is produced for all rounds. <code>separate</code>: a different bleed matrix is made for each round. </p>
+<p>Default: <code>single</code></p>
+</li>
+<li>
+<p><strong>color_norm_intensities</strong>: <em>list_number</em>.</p>
+<p>Parameter used to get color normalisation factor. <code>color_norm_intensities</code> should be ascending and <code>color_norm_probs</code> should be descending and they should be the same size. The probability of normalised spot color being greater than <code>color_norm_intensities[i]</code> must be less than <code>color_norm_probs[i]</code> for all <code>i</code>. </p>
+<p>Default: <code>0.5, 1, 5</code></p>
+</li>
+<li>
+<p><strong>color_norm_probs</strong>: <em>list_number</em>.</p>
+<p>Parameter used to get color normalisation factor. <code>color_norm_intensities</code> should be ascending and <code>color_norm_probs</code> should be descending and they should be the same size. The probability of normalised spot color being greater than <code>color_norm_intensities[i]</code> must be less than <code>color_norm_probs[i]</code> for all <code>i</code>. </p>
+<p>Default: <code>0.01, 5e-4, 1e-5</code></p>
+</li>
+<li>
+<p><strong>bleed_matrix_score_thresh</strong>: <em>number</em>.</p>
+<p>In <code>scaled_k_means</code> part of <code>bleed_matrix</code> calculation, a mean vector for each dye is computed from all spots with a dot product to that mean greater than this. </p>
+<p>Default: <code>0</code></p>
+</li>
+<li>
+<p><strong>bleed_matrix_min_cluster_size</strong>: <em>int</em>.</p>
+<p>If less than this many vectors are assigned to a dye cluster in the <code>scaled_k_means</code> part of <code>bleed_matrix</code> calculation, the expected code for that dye will be set to 0 for all color channels i.e. bleed matrix computation will have failed. </p>
+<p>Default: <code>10</code></p>
+</li>
+<li>
+<p><strong>bleed_matrix_n_iter</strong>: <em>int</em>.</p>
+<p>Maximum number of iterations allowed in the <code>scaled_k_means</code> part of <code>bleed_matrix</code> calculation. </p>
+<p>Default: <code>100</code></p>
+</li>
+<li>
+<p><strong>bleed_matrix_anneal</strong>: <em>bool</em>.</p>
+<p>If <code>True</code>, the <code>scaled_k_means</code> calculation will be performed twice. The second time starting with the output of the first and with <code>score_thresh</code> for cluster <code>i</code> set to the median of the scores assigned to cluster <code>i</code> in the first run. </p>
+<p>This limits the influence of bad spots to the bleed matrix. </p>
+<p>Default: <code>True</code></p>
+</li>
+<li>
+<p><strong>background_weight_shift</strong>: <em>maybe_number</em>.</p>
+<p>Shift to apply to weighting of each background vector to limit boost of weak spots. The weighting of round r for the fitting of the background vector for channel c is <code>1 / (spot_color[r, c] + background_weight_shift)</code> so <code>background_weight_shift</code> ensures this does not go to infinity for small <code>spot_color[r, c]</code>. Typical <code>spot_color[r, c]</code> is 1 for intense spot so <code>background_weight_shift</code> is small fraction of this. Leave blank to set to median absolute intensity of all pixels on the mid z-plane of the central tile. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>dp_norm_shift</strong>: <em>maybe_number</em>.</p>
+<p>When calculating the <code>dot_product_score</code>, this is the small shift to apply when normalising <code>spot_colors</code> to ensure don't divide by zero. Value is for a single round and is multiplied by <code>sqrt(n_rounds_used)</code> when computing <code>dot_product_score</code>. Expected norm of a spot_color for a single round is 1 so <code>dp_norm_shift</code> is a small fraction of this. Leave blank to set to median L2 norm for a single round of all pixels on the mid z-plane of the central tile. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>norm_shift_min</strong>: <em>number</em>.</p>
+<p>Minimum possible value of <code>dp_norm_shift</code> and <code>background_weight_shift</code>. </p>
+<p>Default: <code>0.001</code></p>
+</li>
+<li>
+<p><strong>norm_shift_max</strong>: <em>number</em>.</p>
+<p>Maximum possible value of <code>dp_norm_shift</code> and <code>background_weight_shift</code>. </p>
+<p>Default: <code>0.5</code></p>
+</li>
+<li>
+<p><strong>norm_shift_precision</strong>: <em>number</em>.</p>
+<p><code>dp_norm_shift</code> and <code>background_weight_shift</code> will be rounded to nearest <code>norm_shift_precision</code>. </p>
+<p>Default: <code>0.01</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_min_spots</strong>: <em>int</em>.</p>
+<p>If number of spots assigned to a gene less than or equal to this, <code>gene_efficiency[g]=1</code> for all rounds. </p>
+<p>Default: <code>25</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_max</strong>: <em>number</em>.</p>
+<p>Maximum allowed value of <code>gene_efficiency</code> i.e. any one round can be at most this times more important than the median round for every gene. </p>
+<p>Default: <code>6</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_min</strong>: <em>number</em>.</p>
+<p>At most <code>ceil(gene_efficiency_min_factor * n_rounds_use)</code> rounds can have <code>gene_efficiency</code> below <code>gene_efficiency_min</code> for any given gene. </p>
+<p>Default: <code>0.05</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_min_factor</strong>: <em>number</em>.</p>
+<p>At most <code>ceil(gene_efficiency_min_factor * n_rounds_use)</code> rounds can have <code>gene_efficiency</code> below <code>gene_efficiency_min</code> for any given gene. </p>
+<p>Default: <code>0.2</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_n_iter</strong>: <em>int</em>.</p>
+<p><code>gene_efficiency</code> is computed from spots which pass a quality thresholding based on the bled_codes computed with the gene_efficiency of the previous iteration. This process will continue until the <code>gene_effiency</code> converges or <code>gene_efficiency_n_iter</code> iterations are reached. 0 means <code>gene_efficiency</code> will not be used. </p>
+<p>Default: <code>10</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_score_thresh</strong>: <em>number</em>.</p>
+<p>Spots used to compute <code>gene_efficiency</code> must have <code>dot_product_score</code> greater than <code>gene_efficiency_score_thresh</code>, difference to second best score greater than <code>gene_efficiency_score_diff_thresh</code> and intensity greater than <code>gene_efficiency_intensity_thresh</code>. </p>
+<p>Default: <code>0.6</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_score_diff_thresh</strong>: <em>number</em>.</p>
+<p>Spots used to compute <code>gene_efficiency</code> must have <code>dot_product_score</code> greater than <code>gene_efficiency_score_thresh</code>, difference to second best score greater than <code>gene_efficiency_score_diff_thresh</code> and intensity greater than <code>gene_efficiency_intensity_thresh</code>. </p>
+<p>Default: <code>0.2</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_intensity_thresh</strong>: <em>maybe_number</em>.</p>
+<p>Spots used to compute <code>gene_efficiency</code> must have <code>dot_product_score</code> greater than <code>gene_efficiency_score_thresh</code>, difference to second best score greater than <code>gene_efficiency_score_diff_thresh</code> and intensity greater than <code>gene_efficiency_intensity_thresh</code>. Leave blank to determine from <code>gene_efficiency_intensity_thresh_percentile</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_intensity_thresh_percentile</strong>: <em>int</em>.</p>
+<p><code>gene_efficiency_intensity_thresh</code> will be set to this percentile of the intensity computed for all pixels on the mid z-plane of the most central tile if not specified. </p>
+<p>Default: <code>37</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_intensity_thresh_precision</strong>: <em>number</em>.</p>
+<p><code>gene_efficiency_intensity_thresh</code> will be rounded to nearest <code>gene_efficiency_intensity_thresh_precision</code> if not given. </p>
+<p>Default: <code>0.001</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_intensity_thresh_min</strong>: <em>number</em>.</p>
+<p>Min allowed value of <code>gene_efficiency_intensity_thresh</code>. </p>
+<p>Default: <code>0.001</code></p>
+</li>
+<li>
+<p><strong>gene_efficiency_intensity_thresh_max</strong>: <em>number</em>.</p>
+<p>Max allowed value of <code>gene_efficiency_intensity_thresh</code>. </p>
+<p>Default: <code>0.2</code></p>
+</li>
+<li>
+<p><strong>alpha</strong>: <em>number</em>.</p>
+<p>When computing the dot product score, <span class="arithmatex">\(\Delta_{s0g}\)</span> between spot <span class="arithmatex">\(s\)</span> and gene <span class="arithmatex">\(g\)</span>, rounds/channels with background already fit contribute less. The larger <span class="arithmatex">\(\alpha\)</span>, the lower the contribution. </p>
+<p>Set <span class="arithmatex">\(\alpha = 0\)</span> to use the normal dot-product with no weighting. </p>
+<p>Default: <code>120</code></p>
+</li>
+<li>
+<p><strong>beta</strong>: <em>number</em>.</p>
+<p>Constant used in weighting factor when computing dot product score, <span class="arithmatex">\(\Delta_{s0g}\)</span> between spot <span class="arithmatex">\(s\)</span> and gene <span class="arithmatex">\(g\)</span>. </p>
+<p>Default: <code>1</code></p>
+</li>
+</ul>
+<h2 id="omp">omp</h2>
+<p>The <em>omp</em> section contains parameters which are use to carry out orthogonal matching pursuit (omp) on every pixel, as well as how to convert the results of this to spot locations.</p>
+<ul>
+<li>
+<p><strong>use_z</strong>: <em>maybe_list_int</em>.</p>
+<p>Can specify z-planes to find spots on If 2 values provided, all z-planes between and including the values given will be used. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>weight_coef_fit</strong>: <em>bool</em>.</p>
+<p>If <code>False</code>, gene coefficients are found through omp with normal least squares fitting. If <code>True</code>, gene coefficients are found through omp with weighted least squares fitting with rounds/channels which already containing genes contributing less. </p>
+<p>Default: <code>False</code></p>
+</li>
+<li>
+<p><strong>initial_intensity_thresh</strong>: <em>maybe_number</em>.</p>
+<p>To save time in <code>call_spots_omp</code>, coefficients only found for pixels with intensity of absolute <code>spot_colors</code> greater than <code>initial_intensity_thresh</code>. Leave blank to set to determine using <code>initial_intensity_thresh_auto_param</code> It is also clamped between the <code>initial_intensity_thresh_min</code> and <code>initial_intensity_thresh_max</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>initial_intensity_thresh_percentile</strong>: <em>int</em>.</p>
+<p>If <code>initial_intensity_thresh</code> not given, it will be set to the <code>initial_intensity_thresh_percentile</code> percentile of the absolute intensity of all pixels on the mid z-plane of the central tile. It uses <code>nb.call_spots.abs_intensity_percentile</code> </p>
+<p>Default: <code>25</code></p>
+</li>
+<li>
+<p><strong>initial_intensity_thresh_min</strong>: <em>number</em>.</p>
+<p>Min allowed value of <code>initial_intensity_thresh</code>. </p>
+<p>Default: <code>0.001</code></p>
+</li>
+<li>
+<p><strong>initial_intensity_thresh_max</strong>: <em>number</em>.</p>
+<p>Max allowed value of <code>initial_intensity_thresh</code>. </p>
+<p>Default: <code>0.2</code></p>
+</li>
+<li>
+<p><strong>initial_intensity_precision</strong>: <em>number</em>.</p>
+<p><code>initial_intensity_thresh</code> will be rounded to nearest <code>initial_intensity_precision</code> if not given. </p>
+<p>Default: <code>0.001</code></p>
+</li>
+<li>
+<p><strong>max_genes</strong>: <em>int</em>.</p>
+<p>The maximum number of genes that can be assigned to each pixel i.e. number of iterations of omp. </p>
+<p>Default: <code>30</code></p>
+</li>
+<li>
+<p><strong>dp_thresh</strong>: <em>number</em>.</p>
+<p>Pixels only have coefficient found for a gene if that gene has absolute <code>dot_product_score</code> greater than this i.e. this is the stopping criterion for the OMP. </p>
+<p>Default: <code>0.225</code></p>
+</li>
+<li>
+<p><strong>alpha</strong>: <em>number</em>.</p>
+<p>When computing the dot product score, <span class="arithmatex">\(\Delta_{sig}\)</span> between spot <span class="arithmatex">\(s\)</span> and gene <span class="arithmatex">\(g\)</span> on iteration <span class="arithmatex">\(i\)</span> of <em>OMP</em>, rounds/channels with genes already fit to them, contribute less. The larger <span class="arithmatex">\(\alpha\)</span>, the lower the contribution. </p>
+<p>Set <span class="arithmatex">\(\alpha = 0\)</span> to use the normal dot-product with no weighting. </p>
+<p>Default: <code>120</code></p>
+</li>
+<li>
+<p><strong>beta</strong>: <em>number</em>.</p>
+<p>Constant used in weighting factor when computing dot product score, <span class="arithmatex">\(\Delta_{sig}\)</span> between spot <span class="arithmatex">\(s\)</span> and gene <span class="arithmatex">\(g\)</span> on iteration <span class="arithmatex">\(i\)</span> of <em>OMP</em>. </p>
+<p>Default: <code>1</code></p>
+</li>
+<li>
+<p><strong>initial_pos_neighbour_thresh</strong>: <em>maybe_int</em>.</p>
+<p>Only save spots with number of positive coefficient neighbours greater than <code>initial_pos_neighbour_thresh</code>. Leave blank to determine using <code>initial_pos_neighbour_thresh_param</code>. It is also clipped between <code>initial_pos_neighbour_thresh_min</code> and <code>initial_pos_neighbour_thresh_max</code>. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>initial_pos_neighbour_thresh_param</strong>: <em>number</em>.</p>
+<p>If <code>initial_pos_neighbour_thresh</code> not given, it is set to <code>initial_pos_neighbour_thresh_param</code> multiplied by number of positive values in nb.omp.spot_shape i.e. with <code>initial_pos_neighbour_thresh_param = 0.1</code>, it is set to 10% of the max value. </p>
+<p>Default: <code>0.1</code></p>
+</li>
+<li>
+<p><strong>initial_pos_neighbour_thresh_min</strong>: <em>int</em>.</p>
+<p>Min allowed value of <code>initial_pos_neighbour_thresh</code>. </p>
+<p>Default: <code>4</code></p>
+</li>
+<li>
+<p><strong>initial_pos_neighbour_thresh_max</strong>: <em>int</em>.</p>
+<p>Max allowed value of <code>initial_pos_neighbour_thresh</code>. </p>
+<p>Default: <code>40</code></p>
+</li>
+<li>
+<p><strong>radius_xy</strong>: <em>int</em>.</p>
+<p>To detect spot in coefficient image of each gene, pixel needs to be above dilation with structuring element which is a square (<code>np.ones</code>) of width <code>2*radius_xy-1</code> in the xy plane. </p>
+<p>Default: <code>3</code></p>
+</li>
+<li>
+<p><strong>radius_z</strong>: <em>int</em>.</p>
+<p>To detect spot in coefficient image of each gene, pixel needs to be above dilation with structuring element which is cuboid (<code>np.ones</code>) with width <code>2*radius_z-1</code> in z direction. Must be more than 1 to be 3D. </p>
+<p>Default: <code>2</code></p>
+</li>
+<li>
+<p><strong>shape_max_size</strong>: <em>list_int</em>.</p>
+<p>spot_shape specifies the neighbourhood about each spot in which we count coefficients which contribute to score. It is either given through <code>file_names['omp_spot_shape']</code> or computed using the below parameters with shape prefix. Maximum Y, X, Z size of spot_shape. Will be cropped if there are zeros at the extremities. </p>
+<p>Default: <code>27, 27, 9</code></p>
+</li>
+<li>
+<p><strong>shape_pos_neighbour_thresh</strong>: <em>int</em>.</p>
+<p>For spot to be used to find <code>spot_shape</code>, it must have this many pixels around it on the same z-plane that have a positive coefficient. If 3D, also, require 1 positive pixel on each neighbouring plane (i.e. 2 is added to this value). </p>
+<p>Default: <code>9</code></p>
+</li>
+<li>
+<p><strong>shape_isolation_dist</strong>: <em>number</em>.</p>
+<p>Spots are isolated if nearest neighbour (across all genes) is further away than this. Only isolated spots are used to find <code>spot_shape</code>. </p>
+<p>Default: <code>10</code></p>
+</li>
+<li>
+<p><strong>shape_sign_thresh</strong>: <em>number</em>.</p>
+<p>If the mean absolute coefficient sign is less than this in a region near a spot, we set the expected coefficient in <code>spot_shape</code> to be 0. Max mean absolute coefficient sign is 1 so must be less than this. </p>
+<p>Default: <code>0.15</code></p>
+</li>
+</ul>
+<h2 id="thresholds">thresholds</h2>
+<p>The <em>thresholds</em> section contains the thresholds used to determine which spots pass a quality thresholding process such that we consider their gene assignments legitimate.</p>
+<ul>
+<li>
+<p><strong>intensity</strong>: <em>maybe_number</em>.</p>
+<p>Final accepted reference and OMP spots both require <code>intensity &gt; thresholds[intensity]</code>. If not given, will be set to same value as <code>nb.call_spots.gene_efficiency_intensity_thresh</code>. intensity for a really intense spot is about 1 so <code>intensity_thresh</code> should be less than this. </p>
+<p>Default: <code>None</code></p>
+</li>
+<li>
+<p><strong>score_ref</strong>: <em>number</em>.</p>
+<p>Final accepted spots are those which pass quality_threshold which is <code>nb.ref_spots.score &gt; thresholds[score_ref]</code> and <code>nb.ref_spots.intensity &gt; intensity_thresh</code>. quality_threshold requires score computed with <em>coppafish/call_spots/dot_prodduct/dot_product_score</em> to exceed this. Max score is 1 so must be below this. </p>
+<p>Default: <code>0.25</code></p>
+</li>
+<li>
+<p><strong>score_omp</strong>: <em>number</em>.</p>
+<p>Final accepted OMP spots are those which pass quality_threshold which is: <code>score &gt; thresholds[score_omp]</code> and <code>intensity &gt; thresholds[intensity]</code>. <code>score</code> is given by: <code>score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /   (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)</code> Max score is 1 so <code>score_thresh</code> should be less than this. </p>
+<p>0.15 if more concerned for missed spots than false positives. </p>
+<p>Default: <code>0.263</code></p>
+</li>
+<li>
+<p><strong>score_omp_multiplier</strong>: <em>number</em>.</p>
+<p>Final accepted OMP spots are those which pass quality_threshold which is: <code>score &gt; thresholds[score_omp]</code> and <code>intensity &gt; thresholds[intensity]</code>. <code>score</code> is given by: <code>score = (score_omp_multiplier * n_neighbours_pos + n_neighbours_neg) /   (score_omp_multiplier * n_neighbours_pos_max + n_neighbours_neg_max)</code> </p>
+<p>0.45 if more concerned for missed spots than false positives. </p>
+<p>Default: <code>0.95</code></p>
+</li>
+</ul>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../notebook/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Notebook" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Notebook
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../notebook_comments/" class="md-footer__link md-footer__link--next" aria-label="Next: Notebook Comments" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Notebook Comments
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

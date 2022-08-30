@@ -1,0 +1,3081 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Stitch - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#stitch" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Stitch
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../config_setup/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Stitch
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#shift" class="md-nav__link">
+    Shift
+  </a>
+  
+    <nav class="md-nav" aria-label="Shift">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initial-range" class="md-nav__link">
+    Initial range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obtaining-best-shift" class="md-nav__link">
+    Obtaining best shift
+  </a>
+  
+    <nav class="md-nav" aria-label="Obtaining best shift">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#score" class="md-nav__link">
+    score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3d" class="md-nav__link">
+    3D
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#score-threshold" class="md-nav__link">
+    Score Threshold
+  </a>
+  
+    <nav class="md-nav" aria-label="Score Threshold">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch_search" class="md-nav__link">
+    view_stitch_search
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#widening-range" class="md-nav__link">
+    Widening range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refined-search" class="md-nav__link">
+    Refined search
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updating-initial-range" class="md-nav__link">
+    Updating initial range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#amend-low-score-shifts" class="md-nav__link">
+    Amend low score shifts
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-coordinates" class="md-nav__link">
+    Global coordinates
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-too-many-bad-shifts" class="md-nav__link">
+    Error - too many bad shifts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saving-stitched-images" class="md-nav__link">
+    Saving stitched images
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging" class="md-nav__link">
+    Debugging
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch_shift_info" class="md-nav__link">
+    view_stitch_shift_info
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch_overlap" class="md-nav__link">
+    view_stitch_overlap
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch" class="md-nav__link">
+    view_stitch
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pseudocode" class="md-nav__link">
+    Pseudocode
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#shift" class="md-nav__link">
+    Shift
+  </a>
+  
+    <nav class="md-nav" aria-label="Shift">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initial-range" class="md-nav__link">
+    Initial range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obtaining-best-shift" class="md-nav__link">
+    Obtaining best shift
+  </a>
+  
+    <nav class="md-nav" aria-label="Obtaining best shift">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#score" class="md-nav__link">
+    score
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3d" class="md-nav__link">
+    3D
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#score-threshold" class="md-nav__link">
+    Score Threshold
+  </a>
+  
+    <nav class="md-nav" aria-label="Score Threshold">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch_search" class="md-nav__link">
+    view_stitch_search
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#widening-range" class="md-nav__link">
+    Widening range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refined-search" class="md-nav__link">
+    Refined search
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updating-initial-range" class="md-nav__link">
+    Updating initial range
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#amend-low-score-shifts" class="md-nav__link">
+    Amend low score shifts
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-coordinates" class="md-nav__link">
+    Global coordinates
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-too-many-bad-shifts" class="md-nav__link">
+    Error - too many bad shifts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saving-stitched-images" class="md-nav__link">
+    Saving stitched images
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging" class="md-nav__link">
+    Debugging
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch_shift_info" class="md-nav__link">
+    view_stitch_shift_info
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch_overlap" class="md-nav__link">
+    view_stitch_overlap
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view_stitch" class="md-nav__link">
+    view_stitch
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pseudocode" class="md-nav__link">
+    Pseudocode
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/pipeline/stitch.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="stitch">Stitch</h1>
+<p>The <a href="../../code/pipeline/stitch/"><em>stitch</em> step of the pipeline</a> uses the reference point clouds
+(all tiles of <code>ref_round</code>/<code>ref_channel</code>) added to the <em>Notebook</em> during the <a href="../find_spots/"><code>find_spots</code></a> step
+to find the <a href="#shift">overlap</a> between neighbouring tiles in the form of shifts. It then uses these shifts to get
+the origin of each tile in a <a href="#global-coordinates">global coordinate system</a>. The tile origins are
+saved to the <em>Notebook</em> as <code>nb.stitch.tile_origins</code> and this is the only variable computed in 
+this section which is used later in the pipeline.</p>
+<p>The <a href="../../notebook_comments/#stitch"><code>stitch</code></a> <em>NotebookPage</em> is added to the <em>Notebook</em> after this stage
+is finished.</p>
+<h2 id="shift">Shift</h2>
+<p>We need to find the overlap between each pair of neighbouring tiles. To do this, for each tile, we
+ask whether there is a tile to the north of it, and if there is we 
+<a href="../../code/stitch/shift/#coppafish.stitch.shift.compute_shift">compute the shift</a> between the two.
+We then ask if there is a tile to the east of it, and if there is we compute the shift between the two.</p>
+<details class="example">
+<summary>Example</summary>
+<p>For a <span class="arithmatex">\(2\times3\)</span> (<span class="arithmatex">\(n_y \times n_x\)</span>) grid of tiles, the indices are:</p>
+<p>| 2  | 1  | 0  |</p>
+<p>| 5  | 4  | 3  |</p>
+<p>We consider each tile in turn:</p>
+<ul>
+<li>Tile 0 has no tiles to the north or east so we go to tile 1.</li>
+<li>Tile 1 has a tile to the east (0) so we find the shift between tile 1 and tile 0.</li>
+<li>Tile 2 has a tile to the east (1) so we find the shift between tile 2 and tile 1.</li>
+<li>Tile 3 has a tile to the north (0) so we find the shift between tile 3 and tile 0.</li>
+<li>Tile 4 has a tile to the north (1) so we find the shift between tile 4 and tile 1.
+Tile 4 also has a tile to the east (3) so we find the shift between tile 4 and tile 3.</li>
+<li>Tile 5 has a tile to the north (2) so we find the shift between tile 5 and tile 2.
+Tile 5 also has a tile to the east (4) so we find the shift between tile 5 and tile 4.</li>
+</ul>
+<p>We will always be finding the offset of a tile relative to a tile with a <a href="#global-coordinates">smaller index</a>.</p>
+</details>
+<p>The tile indices for neighbours for which we find the overlap in the north/south direction
+are saved as <code>nb.stitch.south_pairs</code>. The shift between tile <code>nb.stitch.south_pairs[i, 0]</code>
+and tile <code>nb.stitch.south_pairs[i, 1]</code> is saved as <code>nb.stitch.south_shifts[i]</code>.</p>
+<h3 id="initial-range">Initial range</h3>
+<p>We compute the shift through an exhaustive search in a given range. The initial range used for a tile to the north 
+can be specified through <code>config['stitch']['shift_south_min']</code> and <code>config['stitch']['shift_south_max']</code>.
+The range used for a tile to the east
+can be specified through <code>config['stitch']['shift_west_min']</code> and <code>config['stitch']['shift_west_max']</code>.</p>
+<details class="note">
+<summary>Confusion between north/south and east/west</summary>
+<p>For finding the shift to a tile in the north, the parameters used in the config file and saved to the 
+<em>NotebookPage</em> have the <code>south</code> prefix. This is because if tile B is to the north of tile A, the shift applied
+to tile A to get the correct overlap is to the south (i.e. negative in the y direction).</p>
+<p>Equally, for finding the shift to a tile in the east, the parameters used in the config file and saved to the 
+<em>NotebookPage</em> have the <code>west</code> prefix. This is because if tile B is to the east of tile A, the shift applied
+to tile A to get the correct overlap is to the west (i.e. negative in the x direction).</p>
+</details>
+<p>The range in the <span class="arithmatex">\(i\)</span> direction will then be between <code>shift_min[i]</code> and <code>shift_max[i]</code> with a spacing of 
+<code>config['stitch']['shift_step'][i]</code>.</p>
+<p>If these are left blank, the range will be computed automatically using <code>config['stitch']['expected_overlap']</code>
+and <code>config['stitch']['auto_n_shifts']</code>.</p>
+<details class="example">
+<summary>Example automatic range calculation</summary>
+<p>For an experiment with </p>
+<ul>
+<li><code>nb.basic_info.tile_sz = 2048</code></li>
+<li><code>config['stitch']['expected_overlap'] = 0.1</code></li>
+<li><code>config['stitch']['auto_n_shifts'] = 20, 20, 1</code></li>
+<li><code>config['stitch']['shift_step'] = 5, 5, 3</code></li>
+</ul>
+<p>the range used for a tile to the north is <a href="../../code/stitch/starting_shifts/">computed</a> as follows:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Code</label><label for="__tabbed_1_2">Output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">expected_overlap</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;stitch&#39;</span><span class="p">][</span><span class="s1">&#39;expected_overlap&#39;</span><span class="p">]</span>
+<span class="n">auto_n_shifts</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;stitch&#39;</span><span class="p">][</span><span class="s1">&#39;auto_n_shifts&#39;</span><span class="p">]</span>
+<span class="n">shift_step</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;stitch&#39;</span><span class="p">][</span><span class="s1">&#39;shift_step&#39;</span><span class="p">]</span>
+
+<span class="n">expected_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">expected_overlap</span><span class="p">])</span> <span class="o">*</span> <span class="p">[</span><span class="n">tile_sz</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected shift = </span><span class="si">{</span><span class="n">expected_shift</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">range_extent</span> <span class="o">=</span> <span class="n">auto_n_shifts</span> <span class="o">*</span> <span class="n">shift_step</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;YXZ range extent: </span><span class="si">{</span><span class="n">range_extent</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  
+<span class="n">range_min</span> <span class="o">=</span> <span class="n">expected_shift</span> <span class="o">-</span> <span class="n">range_extent</span>
+<span class="n">range_max</span> <span class="o">=</span> <span class="n">expected_shift</span> <span class="o">+</span> <span class="n">range_extent</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;YXZ range min: </span><span class="si">{</span><span class="n">range_min</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;YXZ range max: </span><span class="si">{</span><span class="n">range_max</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">shifts_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">range_min</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">range_max</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">shift_step</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">shift_step</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Y exhaustive search shifts:</span><span class="se">\n</span><span class="si">{</span><span class="n">shifts_y</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">shifts_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">range_min</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">range_max</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">shift_step</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">shift_step</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;X exhaustive search shifts:</span><span class="se">\n</span><span class="si">{</span><span class="n">shifts_x</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">shifts_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">range_min</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">range_max</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shift_step</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">shift_step</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Z exhaustive search shifts:</span><span class="se">\n</span><span class="si">{</span><span class="n">shifts_z</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>Expected shift = [-1843     0     0]
+YXZ range extent: [100 100   3]
+YXZ range min: [-1943  -100    -3]
+YXZ range max: [-1743   100     3]
+Y exhaustive search shifts:
+[-1943 -1938 -1933 -1928 -1923 -1918 -1913 -1908 -1903 -1898 -1893 -1888
+ -1883 -1878 -1873 -1868 -1863 -1858 -1853 -1848 -1843 -1838 -1833 -1828
+ -1823 -1818 -1813 -1808 -1803 -1798 -1793 -1788 -1783 -1778 -1773 -1768
+ -1763 -1758 -1753 -1748 -1743]
+X exhaustive search shifts:
+[-100  -95  -90  -85  -80  -75  -70  -65  -60  -55  -50  -45  -40  -35
+  -30  -25  -20  -15  -10   -5    0    5   10   15   20   25   30   35
+   40   45   50   55   60   65   70   75   80   85   90   95  100]
+Z exhaustive search shifts:
+[-3  0  3]
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>For a tile to the east, the calculation is exactly the same except
+<code>expected shift = [0     -1843     0]</code>.</p>
+</details>
+<p>The range used for north/south overlap is saved as <code>nb.stitch.south_start_shift_search</code>.</p>
+<h3 id="obtaining-best-shift">Obtaining best shift</h3>
+<p>Here is some pseudocode for how we 
+<a href="../../code/stitch/shift/#coppafish.stitch.shift.get_best_shift_3d">obtain the best shift</a> between tile 5
+and tile 4 from an exhaustive search. The comments (#) give the shape of the indicated array.</p>
+<div class="highlight"><pre><span></span><code>function find_neighbour_distances(yxz_0, yxz_1):
+    # yxz_0: [n_spots_0 x 3]
+    # yxz_1: [n_spots_1 x 3]
+    For i in range(n_spots_0):
+        find nearest spot in yxz_1 to yxz_0[i] to be the one at index j.
+        distances[i] = distance between yxz_0[i] and yxz_1[j].
+    return distances  # [n_spots_0]
+
+function get_score(distances, dist_thresh):
+    # distances: [n_spots]
+    This is a function that basically counts the number of values in 
+    distances which are below dist_thresh. 
+    I.e. the more close neighbours, the better the shift and thus the 
+    score should be larger.
+    The function used in the pipeline returns the float given by: 
+        score = sum(exp(-distances ** 2 / (2 * dist_thresh ** 2)))
+        If all values in distances where 0 (perfect), score = n_spots.
+        If all values in distances where infinity or much larger than 
+        dist_thresh (bad), score = 0.
+
+
+# tile_5_yxz: [n_spots_t5 x 3]
+# tile_4_yxz: [n_spots_t4 x 3]
+# exhaustive_search: [n_shifts x 3]
+
+for shift in exhaustive_search:
+    tile_5_yxz_shifted = tile_5_yxz + shift   # [n_spots_t5 x 3]
+    distances = find_neighbour_distances(tile_5_yxz_shifted, 
+                                         tile_4_yxz)  # [n_spots_t5]
+    score = get_score(distances, dist_thresh)  # float
+best_shift is the shift with the best score
+</code></pre></div>
+<h4 id="score"><code>score</code></h4>
+<p>In the <a href="../../code/stitch/shift/#coppafish.stitch.shift.shift_score">score function</a>, the <code>dist_thresh</code> parameter 
+thus specifies the distance below which neighbours are a good match. It is specified through
+<code>config['stitch']['neighb_dist_thresh']</code>. </p>
+<p>The <code>score</code> computed with this function is approximately the number of neighbouring points between
+the two point clouds with a distance between them less than <code>config['stitch']['neighb_dist_thresh']</code>.</p>
+<h4 id="3d">3D</h4>
+<p>For speed, rather than considering an exhaustive search in three dimensions, we first ignore any shift in <span class="arithmatex">\(z\)</span> and 
+just find the <a href="../../code/stitch/shift/#coppafish.stitch.shift.get_best_shift_2d">best <span class="arithmatex">\(yx\)</span> shift</a>.</p>
+<p>To do this, we <a href="../../code/stitch/shift/#coppafish.stitch.shift.get_2d_slices">split</a> 
+each <em>3D</em> point cloud into a number of <em>2D</em> point clouds. 
+The number is determined by <code>config['stitch']['nz_collapse']</code> to be:</p>
+<div class="highlight"><pre><span></span><code><span class="n">ceil</span><span class="p">(</span><span class="n">nb</span><span class="o">.</span><span class="n">basic_info</span><span class="o">.</span><span class="n">nz</span> <span class="o">/</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;stitch&#39;</span><span class="p">][</span><span class="s1">&#39;nz_collapse&#39;</span><span class="p">])</span>
+</code></pre></div>
+<p>We then consider the corresponding point clouds independently.</p>
+<details class="example">
+<summary>Pseudocode - <span class="arithmatex">\(yx\)</span> shift</summary>
+<p>Lets consider finding the best yx shift between tile 5 and tile 4 with:</p>
+<ul>
+<li><code>nb.basic_info.nz = 50</code></li>
+<li><code>config['stitch']['nz_collapse'] = 30</code></li>
+<li><code>config['stitch']['neighb_dist_thresh'] = 2</code></li>
+</ul>
+<p>The pseudocode is:</p>
+<div class="highlight"><pre><span></span><code># tile_5_yxz: [n_spots_t5 x 3]
+# tile_4_yxz: [n_spots_t4 x 3]
+# exhaustive_search_yx: [n_shifts_yx x 2]
+
+n_2d_point_clouds = ceil(50 / 30) = 2 so we need 2 2D point clouds
+split tile_5_yxz into tile_5A_yx and tile_5B_yx:
+    - tile_5A_yx are the yx coordinates of every spot in 
+      tile_5_yxz with z coordinate between 0 and 24 inclusive.
+      # [n_spots_t5A x 2]
+    - tile_5B_yx are the yx coordinates of every spot in 
+      tile_5_yxz with z coordinate between 25 and 49 inclusive.
+      # [n_spots_t5B x 2]
+split tile_4_yxz into tile_4A_yx and tile_4B_yx:
+    - tile_4A_yx are the yx coordinates of every spot in 
+      tile_4_yxz with z coordinate between 0 and 24 inclusive.
+      # [n_spots_t4A x 2]
+    - tile_4B_yx are the yx coordinates of every spot in 
+      tile_4_yxz with z coordinate between 25 and 49 inclusive.
+      # [n_spots_t4B x 2]
+
+for shift_yx in exhaustive_search_yx:
+    tile_5A_yx_shifted = tile_5A_yx + shift_yx   # [n_spots_t5A x 2]
+    distancesA = find_neighbour_distances(tile_5A_yx_shifted, 
+                                          tile_4A_yx)  # [n_spots_t5A]
+    scoreA = get_score(distancesA, 2)  # float
+
+    tile_5B_yx_shifted = tile_5B_yx + shift_yx   # [n_spots_t5B x 2]
+    distances = find_neighbour_distances(tile_5B_yx_shifted, 
+                                         tile_4B_yx)  # [n_spots_t5B]
+    scoreB = get_score(distancesB, 2)  # float
+    score = scoreA + scoreB
+best_shift_yx is the shift_yx with the best score
+</code></pre></div>
+</details>
+<p>Once the best <span class="arithmatex">\(yx\)</span> shift is found (and after any necessary <a href="#widening-range">widening</a> of the range),
+the shift in <span class="arithmatex">\(z\)</span> is found by using the full <em>3D</em> point clouds again
+but doing just an exhaustive search in <span class="arithmatex">\(z\)</span>. </p>
+<p>Before this is done, it is important that the <span class="arithmatex">\(z\)</span> coordinate of the point clouds is in the same unit 
+as the <span class="arithmatex">\(yx\)</span> coordinate so distances are computed correctly.
+The conversion from <span class="arithmatex">\(z\)</span> pixel units to <span class="arithmatex">\(yx\)</span> pixel units is achieved by multiplying 
+the <span class="arithmatex">\(z\)</span> coordinate by <code>nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy</code>. The <span class="arithmatex">\(z\)</span> shifts in the 
+exhaustive search must also be put into <span class="arithmatex">\(yx\)</span> pixel units.</p>
+<details class="example">
+<summary>Pseudocode - <span class="arithmatex">\(z\)</span> shift</summary>
+<p>If the previous example found the best <span class="arithmatex">\(yx\)</span> shift to be <code>best_shift_yx</code>, 
+the pseudocode below is what <a href="../../code/stitch/shift/#coppafish.stitch.shift.get_best_shift_3d">follows</a> 
+this to find the best <span class="arithmatex">\(yxz\)</span> shift.</p>
+<div class="highlight"><pre><span></span><code># tile_5_yxz: [n_spots_t5 x 3]
+# tile_4_yxz: [n_spots_t4 x 3]
+# exhaustive_search_z: [n_shifts_z]
+# best_shift_yx: [2]
+
+shift_yxz = [0, 0, 0]
+The yx shift is constant in this search, always set to the best 
+yx shift we found in the 2D search.
+shift_yxz[0] = best_shift_yx[0]
+shift_yxz[1] = best_shift_yx[1]
+for shift_z in exhaustive_search_z:
+    shift_yxz[2] = shift_z
+    tile_5_yxz_shifted = tile_5_yxz + shift_yxz   # [n_spots_t5 x 3]
+    distances = find_neighbour_distances(tile_5_yxz_shifted, 
+                                         tile_4_yxz)  # [n_spots_t5]
+    score = get_score(distances, 2)  # float
+best_shift is the shift with the best score
+</code></pre></div>
+</details>
+<h3 id="score-threshold">Score Threshold</h3>
+<p>Once we have found the best shift in the exhaustive search and its score, we need to determine if the score
+is large enough for us to accept the shift or if we should <a href="#widening-range">widen</a> the range. </p>
+<p>We accept the shift if the score is above a <code>score_thresh</code>. This can either be specified through 
+<code>config['stitch']['shift_score_thresh']</code> or if this is left empty, it is 
+<a href="../../code/stitch/shift/#coppafish.stitch.shift.get_score_thresh">computed</a> for each shift.
+This computation is done after we have <a href="#obtaining-best-shift">found</a> 
+the best <span class="arithmatex">\(yx\)</span> shift to be <code>best_shift_yx</code>, as explained by the following pseudocode (also shown
+with <a href="#view_stitch_search"><code>view_stitch_search</code></a>):</p>
+<div class="highlight"><pre><span></span><code># exhaustive_search_yx: [n_shifts_yx x 2]
+# best_shift_yx: [2]
+
+shifts_yx_use = all shifts between min_dist and max_dist from 
+                best_shift_yx in exhaustive_search_yx  # [n_shifts_use x 2]
+shift_yx_thresh = shift in shifts_yx_use with the max score.
+score_thresh = the score corresponding to shift_yx_thresh 
+               multiplied by thresh_multiplier.
+</code></pre></div>
+<p>Where various parameters are specified through the configuration file:</p>
+<ul>
+<li><code>min_dist</code>: <code>config['stitch']['shift_score_thresh_min_dist']</code></li>
+<li><code>max_dist</code>: <code>config['stitch']['shift_score_thresh_max_dist']</code></li>
+<li><code>thresh_multiplier</code>: <code>config['stitch']['shift_score_thresh_multiplier']</code></li>
+</ul>
+<h4 id="view_stitch_search"><a href="../../code/plot/stitch/#iss.plot.stitch.view_stitch_search"><code>view_stitch_search</code></a></h4>
+<p>A good debugging tool to visualise how the best shift was computed is 
+<a href="../../code/plot/stitch/#coppafish.plot.stitch.view_stitch_search"><code>view_stitch_search</code></a>. </p>
+<p>In <em>2D</em>, it shows the <a href="#score"><code>score</code></a> for all <span class="arithmatex">\(yx\)</span> shifts in the exhaustive search:</p>
+<p><img alt="image" src="../../images/pipeline/stitch/thresh_calc_2d.png" width="800" /></p>
+<p>White in the colorbar refers to the value of <code>score_thresh</code>. The green <strong>x</strong> indicates 
+the shift that was found after the initial exhaustive search. The black <strong>x</strong> indicates 
+the final shift found after the <a href="#refined-search">refined search</a>. </p>
+<p>This plot is also useful for understanding the <a href="#score-threshold"><code>score_thresh</code> computation</a>.
+The green <strong>+</strong> indicates the <code>shift_yx_thresh</code>, 
+the shift with the largest <code>score</code> between the two green circles. 
+The inner circle has a radius of <code>config['stitch']['shift_score_thresh_min_dist']</code> and 
+is centered on the green <strong>x</strong>. The outer circle has a radius of 
+<code>config['stitch']['shift_score_thresh_max_dist']</code> and is centered on the green <strong>x</strong>. </p>
+<p><code>score_thresh</code> is then set to <code>config['stitch']['shift_score_thresh_multiplier']</code> 
+multiplied by the score at the green <strong>+</strong>. In this case, this multiplier is 2 and thus the 
+<code>score</code> at the green <strong>+</strong> appears blue (<code>score</code> at the green <strong>+</strong> is approximately 150
+and so <code>score_thresh</code> and the white in the image is about 300).</p>
+<p>We use this method of determining <code>score_thresh</code> because the most striking feature of the plot
+is the sharp gradient near the global maxima in <code>score</code>. Requiring 
+the <code>score</code> for an acceptable shift to be much larger than the max nearby <code>score</code> is
+just saying we require a large gradient.</p>
+<details class="note">
+<summary><code>score_thresh</code> in <em>3D</em></summary>
+<p>For the <em>3D</em> pipeline, the <code>score_thresh</code> is computed in exactly the same way 
+to determine if the initial <span class="arithmatex">\(yx\)</span> shift found is acceptable or the <span class="arithmatex">\(yx\)</span> range needs 
+<a href="#widening-range">widening</a>:</p>
+<p><img alt="image" src="../../images/pipeline/stitch/thresh_calc_3d.png" width="800" /></p>
+<p>Once an acceptable <span class="arithmatex">\(yx\)</span> shift has been found, we set <code>score_thresh</code> for the <em>3D</em> search 
+to the max score at the <span class="arithmatex">\(yx\)</span> shift used to find <code>score_thresh</code> in <em>2D</em> across all z planes searched, multiplied
+by <code>config['stitch']['shift_score_thresh_multiplier']</code>.</p>
+<p>I.e. the green <strong>+</strong> in the <em>Z=0</em> plot is at the same <span class="arithmatex">\(yx\)</span> coordinate as the green <strong>+</strong> in the <em>2D</em> plot.
+The maximum score at this <span class="arithmatex">\(yx\)</span> coordinate across z-shifts between -6 and 6 occurs at <em>Z=0</em>.
+Thus, we set the <code>score_thresh</code> to be equal to the score at this <span class="arithmatex">\(yxz\)</span> shift multiplied by 
+<code>config['stitch']['shift_score_thresh_multiplier']</code>.</p>
+<p>The <code>score_thresh</code> is smaller when looking for the <span class="arithmatex">\(yxz\)</span> shift because
+we expect in <em>3D</em>, if neighbouring points are on slightly different z-planes but 
+very close in <span class="arithmatex">\(yx\)</span> they would have a small contribution to the <code>score</code>. 
+This is because the <span class="arithmatex">\(z\)</span> pixels are larger than the <span class="arithmatex">\(yx\)</span> pixels. 
+In <em>2D</em>, a pair such as this would give a large contribution to the <code>score</code>
+because only the <span class="arithmatex">\(yx\)</span> distance would matter.</p>
+<p>See the example in the <a href="#refined-search">refined search</a> section to see how a shift of 1 in 
+<span class="arithmatex">\(z\)</span> can almost double the score.</p>
+</details>
+<h3 id="widening-range">Widening range</h3>
+<p>If the best shift found has <code>score &lt; score_thresh</code>, then exhaustive search will continue 
+until either a shift with <code>score &gt; score_thresh</code> is found or the search range exceeds a <code>max_range</code>:</p>
+<div class="highlight"><pre><span></span><code>while best_score &lt; score_thresh:
+    extend exhaustive search
+    if range of exhaustive search &gt; max_range in all dimensions:
+        Return current best_shift and best_score.
+    else:
+        Find best_shift and corresponding best_score in new larger 
+        exhaustive_search.
+</code></pre></div>
+<p>The <code>max_range</code> in the <span class="arithmatex">\(y\)</span>, <span class="arithmatex">\(x\)</span>, <span class="arithmatex">\(z\)</span> direction is set to be <code>config['stitch']['shift_max_range']</code>.</p>
+<p>The exhaustive search is <a href="../../code/stitch/shift/#iss.stitch.shift.extend_array">extended</a> 
+using <code>config['stitch']['shift_widen']</code>. The possible shifts in dimension <span class="arithmatex">\(i\)</span> are extended
+by <code>config['stitch']['shift_widen'][i]</code> values either side of the current min/max values of the 
+shifts while maintaining the same spacing.</p>
+<details class="example">
+<summary>Example exhaustive search extension</summary>
+<p>Lets consider a single dimension with initial an initial exhaustive search
+containing the following shifts:
+<div class="highlight"><pre><span></span><code><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span>  <span class="o">-</span><span class="mi">5</span><span class="p">,</span>   <span class="mi">0</span><span class="p">,</span>   <span class="mi">5</span><span class="p">,</span>  <span class="mi">10</span><span class="p">])</span>
+</code></pre></div></p>
+<p>With <code>shift_widen = 10</code> in this dimension, the updated exhaustive search would
+contain the following shifts:
+<div class="highlight"><pre><span></span><code><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="o">-</span><span class="mi">55</span><span class="p">,</span> <span class="o">-</span><span class="mi">50</span><span class="p">,</span> <span class="o">-</span><span class="mi">45</span><span class="p">,</span> <span class="o">-</span><span class="mi">40</span><span class="p">,</span> <span class="o">-</span><span class="mi">35</span><span class="p">,</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="o">-</span><span class="mi">25</span><span class="p">,</span> <span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span>  <span class="o">-</span><span class="mi">5</span><span class="p">,</span>   <span class="mi">0</span><span class="p">,</span>
+         <span class="mi">5</span><span class="p">,</span>  <span class="mi">10</span><span class="p">,</span>  <span class="mi">15</span><span class="p">,</span>  <span class="mi">20</span><span class="p">,</span>  <span class="mi">25</span><span class="p">,</span>  <span class="mi">30</span><span class="p">,</span>  <span class="mi">35</span><span class="p">,</span>  <span class="mi">40</span><span class="p">,</span>  <span class="mi">45</span><span class="p">,</span>  <span class="mi">50</span><span class="p">,</span>  <span class="mi">55</span><span class="p">,</span>  <span class="mi">60</span><span class="p">])</span>
+</code></pre></div></p>
+<p>This new search has a range of 120 so if <code>max_range</code> in this dimension was 100, 
+the updated exhaustive search would not take place.</p>
+</details>
+<p>An example in <em>2D</em> where the widening worked successfully is shown below using <code>view_stitch_search</code>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Pre-widen</label><label for="__tabbed_2_2">Post-widen</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/pre_widen_2d.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/post_widen_2d.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>Here we see that before widening the search range, the maximum score is barely distinguishable from 
+the rest and thus falls below <code>score_thresh</code>.
+After widening though, we uncover a shift with a score far exceeding <code>score_thresh</code>.</p>
+<details class="note">
+<summary>3D</summary>
+<p>In <em>3D</em>, we do the <span class="arithmatex">\(yx\)</span> search first and then widen according to 
+<code>config['stitch']['shift_widen'][:2]</code> and <code>config['stitch']['shift_max_range'][:2]</code>
+to find the best <span class="arithmatex">\(yx\)</span> shift.</p>
+<p>Then we do the <span class="arithmatex">\(z\)</span> search keeping the <span class="arithmatex">\(yx\)</span> shift equal to the best <span class="arithmatex">\(yx\)</span> shift and 
+widen according to <code>config['stitch']['shift_widen'][2]</code> and <code>config['stitch']['shift_max_range'][2]</code>.
+This gives us the best <span class="arithmatex">\(yxz\)</span> shift.</p>
+<p>The example below shows a case where widening was required in <span class="arithmatex">\(z\)</span> but not in <span class="arithmatex">\(yx\)</span>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Pre-widen</label><label for="__tabbed_3_2">Post-widen</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/pre_widen_3d.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/post_widen_3d.png" width="800" /></p>
+</div>
+</div>
+</div>
+</details>
+<h3 id="refined-search">Refined search</h3>
+<p>After we have found the best <span class="arithmatex">\(yxz\)</span> shift from the exhaustive search, we find the 
+final shift by looking in the neighbourhood of this shift with a 
+<a href="../../code/stitch/shift/#coppafish.stitch.shift.refined_shifts">smaller spacing</a>.
+Initially, we halve the spacing, then we reduce the spacing to 1.</p>
+<details class="example">
+<summary>Example</summary>
+<p>Lets consider a <em>3D</em> example where an exhaustive search with <span class="arithmatex">\(yxz\)</span> spacing <code>[5, 5, 3]</code>
+found the best <span class="arithmatex">\(yxz\)</span> shift to be <code>[-1848, 20, 0]</code> with a <code>score</code> of 247.7.</p>
+<p>The refined search range in this neighbourhood with half the step size is set to:
+<div class="highlight"><pre><span></span><code><span class="n">Y</span> <span class="n">shifts</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1858</span> <span class="o">-</span><span class="mi">1855</span> <span class="o">-</span><span class="mi">1852</span> <span class="o">-</span><span class="mi">1849</span> <span class="o">-</span><span class="mi">1846</span> <span class="o">-</span><span class="mi">1843</span> <span class="o">-</span><span class="mi">1840</span> <span class="o">-</span><span class="mi">1837</span><span class="p">]</span>
+<span class="n">X</span> <span class="n">shifts</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span> <span class="mi">13</span> <span class="mi">16</span> <span class="mi">19</span> <span class="mi">22</span> <span class="mi">25</span> <span class="mi">28</span> <span class="mi">31</span><span class="p">]</span>
+<span class="n">Z</span> <span class="n">shifts</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">6</span> <span class="o">-</span><span class="mi">4</span> <span class="o">-</span><span class="mi">2</span>  <span class="mi">0</span>  <span class="mi">2</span>  <span class="mi">4</span>  <span class="mi">6</span><span class="p">]</span>
+</code></pre></div></p>
+<p>This search finds the best <span class="arithmatex">\(yxz\)</span> shift to be <code>[-1846, 19, 0]</code> with a <code>score</code> of 298.3.</p>
+<p>The final search with a spacing of 1 is set to:
+<div class="highlight"><pre><span></span><code><span class="n">Y</span> <span class="n">shifts</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1849</span> <span class="o">-</span><span class="mi">1848</span> <span class="o">-</span><span class="mi">1847</span> <span class="o">-</span><span class="mi">1846</span> <span class="o">-</span><span class="mi">1845</span> <span class="o">-</span><span class="mi">1844</span> <span class="o">-</span><span class="mi">1843</span><span class="p">]</span>
+<span class="n">X</span> <span class="n">shifts</span><span class="p">:</span> <span class="p">[</span><span class="mi">16</span> <span class="mi">17</span> <span class="mi">18</span> <span class="mi">19</span> <span class="mi">20</span> <span class="mi">21</span> <span class="mi">22</span><span class="p">]</span>
+<span class="n">Z</span> <span class="n">shifts</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span> <span class="o">-</span><span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">2</span><span class="p">]</span>
+</code></pre></div></p>
+<p>This search finds the best <span class="arithmatex">\(yxz\)</span> shift to be <code>[-1846, 20, 1]</code> with a <code>score</code> of 423.8.</p>
+</details>
+<p>This is why the <a href="../../code/plot/stitch/#coppafish.plot.stitch.view_stitch_search"><code>view_stitch_search</code></a>
+plot shows <a href="#view_stitch_search">more detail</a> near the black <strong>x</strong> and why the black <strong>x</strong> is in a 
+different location from the green <strong>x</strong> even when no widening is required.</p>
+<h3 id="updating-initial-range">Updating initial range</h3>
+<p>We assume that all tiles overlapping in the same direction should have approximately the same
+shift between them. So, after we have found at least 3 shifts in a given direction 
+which have <code>score &gt; score_thresh</code>, we <a href="../../code/stitch/shift/#coppafish.stitch.shift.update_shifts">update</a> 
+our initial exhaustive search range to save time for future tiles.</p>
+<details class="example">
+<summary>Example</summary>
+<p>The code below shows how <a href="../../code/stitch/shift/#coppafish.stitch.shift.update_shifts"><code>update_shifts</code></a> 
+works to refine the initial search 
+range, given that the following <span class="arithmatex">\(yxz\)</span> shifts have been found for north/south overlapping tiles
+(all with <code>score &gt; score_thresh</code>):</p>
+<ul>
+<li><code>[-1846, 20, 1]</code></li>
+<li><code>[-1853, 22, 0]</code></li>
+<li><code>[-1854, 20, 0]</code></li>
+</ul>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Code</label><label for="__tabbed_4_2">Output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">coppafish.stitch.shift</span> <span class="kn">import</span> <span class="n">update_shifts</span>
+<span class="n">y_shifts_found</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1846</span><span class="p">,</span> <span class="o">-</span><span class="mi">1853</span><span class="p">,</span> <span class="o">-</span><span class="mi">1854</span><span class="p">]</span>
+<span class="n">x_shifts_found</span> <span class="o">=</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">z_shifts_found</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="n">step</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">y_search</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1943</span><span class="p">,</span> <span class="o">-</span><span class="mi">1743</span><span class="o">+</span><span class="n">step</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">step</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">x_search</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="o">+</span><span class="n">step</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">step</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">z_search</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">step</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">step</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+<span class="c1"># y</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initial y search:</span><span class="se">\n</span><span class="si">{</span><span class="n">y_search</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">y_search_new</span> <span class="o">=</span> <span class="n">update_shifts</span><span class="p">(</span><span class="n">y_search</span><span class="p">,</span> <span class="n">y_shifts_found</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated y search:</span><span class="se">\n</span><span class="si">{</span><span class="n">y_search_new</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># x</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initial x search:</span><span class="se">\n</span><span class="si">{</span><span class="n">x_search</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">x_search_new</span> <span class="o">=</span> <span class="n">update_shifts</span><span class="p">(</span><span class="n">x_search</span><span class="p">,</span> <span class="n">x_shifts_found</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated x search:</span><span class="se">\n</span><span class="si">{</span><span class="n">x_search_new</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># z</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initial z search:</span><span class="se">\n</span><span class="si">{</span><span class="n">z_search</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">z_search_new</span> <span class="o">=</span> <span class="n">update_shifts</span><span class="p">(</span><span class="n">z_search</span><span class="p">,</span> <span class="n">z_shifts_found</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated z search:</span><span class="se">\n</span><span class="si">{</span><span class="n">z_search_new</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Number of shifts to search</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initial number of shifts in search: &quot;</span>
+      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">y_search</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">x_search</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">z_search</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated number of shifts in search: &quot;</span>
+      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">y_search_new</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">x_search_new</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">z_search_new</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> 
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>Initial y search:
+[-1943 -1938 -1933 -1928 -1923 -1918 -1913 -1908 -1903 -1898 -1893 -1888
+ -1883 -1878 -1873 -1868 -1863 -1858 -1853 -1848 -1843 -1838 -1833 -1828
+ -1823 -1818 -1813 -1808 -1803 -1798 -1793 -1788 -1783 -1778 -1773 -1768
+ -1763 -1758 -1753 -1748 -1743]
+Updated y search:
+[-1861 -1856 -1851 -1846 -1841]
+Initial x search:
+[-100  -95  -90  -85  -80  -75  -70  -65  -60  -55  -50  -45  -40  -35
+  -30  -25  -20  -15  -10   -5    0    5   10   15   20   25   30   35
+   40   45   50   55   60   65   70   75   80   85   90   95  100]
+Updated x search:
+[-1  4  9 14 19 24 29]
+Initial z search:
+[-3  0  3]
+Updated z search:
+[-3  0  3]
+Initial number of shifts in search: 5043
+Updated number of shifts in search: 105
+</code></pre></div>
+</div>
+</div>
+</div>
+</details>
+<h3 id="amend-low-score-shifts">Amend low score shifts</h3>
+<p>After all the shifts between neighbouring tiles have been found, the ones with <code>score &lt; score_thresh</code> are 
+amended.</p>
+<p>If for a particular pair of overlapping tiles in the north/south direction,
+the best shift found had a <code>score &lt; score_thresh</code>, 
+the shift and score are saved in the notebook in <code>nb.stitch.south_outlier_shifts</code> and 
+<code>nb.stitch.south_outlier_score</code> respectively.</p>
+<p>The shift is then re-computed using a new initial exhaustive search range 
+(saved as <code>nb.stitch.south_final_shift_search</code>). This range is computed using the 
+<a href="#updating-initial-range"><code>update_shifts</code></a> function to centre 
+it on all the shifts found in the <code>south</code> direction for which <code>score &gt; score_thresh</code>.
+For this re-computation, no <a href="#widening-range">widening</a> is allowed either. The idea behind this 
+is that it will force the shift to be within the range we expect based on the successful shifts. 
+I.e. a shift with a slightly lower <code>score</code> but with a shift
+more similar to the successful shifts is probably more reliable than a shift with 
+a slightly higher <code>score</code> but with a shift significantly different from the successful ones.</p>
+<p>The new shift and score will be saved in <code>nb.stitch.south_shifts</code> and 
+<code>nb.stitch.south_score</code> respectively.</p>
+<h2 id="global-coordinates">Global coordinates</h2>
+<p>After finding the overlap for the set of neighbouring tile pairs (<span class="arithmatex">\(\mathcal{R}\)</span>), we are left with a shift vector
+<span class="arithmatex">\(\pmb{\Delta}_{T_1, T_2}\)</span> for every pair of neighbouring tiles <span class="arithmatex">\(T_1\)</span> and <span class="arithmatex">\(T_2\)</span>, that specifies the <span class="arithmatex">\(yxz\)</span> offsets
+of tile <span class="arithmatex">\(T_2\)</span> relative to tile <span class="arithmatex">\(T_1\)</span>. </p>
+<p>We define a single global coordinate system by finding the coordinate origin <span class="arithmatex">\(\pmb{\mathrm{X}}_T\)</span> (bottom left corner) 
+for each tile <span class="arithmatex">\(T\)</span>. Note however that this problem is overdetermined as there are more neighbor pairs than there 
+are tiles. We therefore compute the offsets by minimizing the loss function:</p>
+<div class="arithmatex">\[
+L = \sum_{(T_1, T_2) \in \mathcal{R}} \pmb{|} \pmb{\mathrm{X}}_{T_1} - \pmb{\mathrm{X}}_{T_2} - \pmb{\Delta}_{T_1, T_2}
+\pmb{|}^2
+\]</div>
+<p>Differentiating this loss function with respect to <span class="arithmatex">\(\pmb{\mathrm{X}}_T\)</span> 
+yields a set of simultaneous linear equations, whose solution yields the origins of each 
+tile on the reference round/channel.</p>
+<p>This procedure is done with the <a href="../../code/stitch/tile_origin/"><code>get_tile_origin</code></a> function, with 
+the tile origins saved to the <em>Notebook</em> as <code>nb.stitch.tile_origin</code>.</p>
+<h2 id="error-too-many-bad-shifts">Error - too many bad shifts</h2>
+<p>After the <a href="../call_reference_spots/"><em>call reference spots</em></a> step, 
+<a href="../../code/stitch/check_shifts/#coppafish.stitch.check_shifts.check_shifts_stitch"><code>check_shifts_stitch</code></a> 
+will be run.</p>
+<p>This will produce a warning for any shift found with <code>score &lt; score_thresh</code>.</p>
+<p>An error will be raised if the fraction of shifts with <code>score &lt; score_thresh</code> exceeds 
+<code>config['stitch']['n_shifts_error_fraction']</code>.</p>
+<p>If this error does occur, it is probably worth looking at the <a href="../../view_results/"><code>Viewer</code></a> 
+and the <a href="#debugging">debugging plots</a> to see if the stitching
+looks good enough to continue with the rest of the pipeline or if it should be re-run with different configuration
+file parameters (e.g. smaller <code>config['stitch']['shift_step']</code> or larger <code>config['stitch']['shift_max_range']</code>).</p>
+<h2 id="saving-stitched-images">Saving stitched images</h2>
+<p><a href="../../code/pipeline/run/#coppafish.pipeline.run.run_stitch">After</a> 
+the <code>tile_origin</code> has been computed and the <code>stitch</code> <em>NotebookPage</em> has been added to the <em>Notebook</em>, 
+a stitched image of the <code>ref_round</code>/<code>ref_channel</code> will be <a href="../../code/utils/npy/#coppafish.utils.npy.save_stitched">saved</a> 
+to the <code>output_dir</code> as a npz file with the file name <code>nb.file_names.big_anchor_image</code>. </p>
+<p>To save memory, the stitched reference image will be saved as <em>int16</em> after rescaling to fill the range.
+We do this because the image is useful for plotting, but we do not care much about the actual pixel values.</p>
+<details class="note">
+<summary>DAPI</summary>
+<p>If <code>dapi_channel</code> is specified, a stitched image of the 
+<code>anchor_round</code>/<code>dapi_channel</code> will be <a href="../../code/utils/npy/#coppafish.utils.npy.save_stitched">saved</a> 
+to the <code>output_dir</code> as a npz file with the file name <code>nb.file_names.big_dapi_image</code>.</p>
+<p>If DAPI <a href="../../config_setup/#extractr_dapi">tophat filtering was specified</a>, the filtered images
+save to <code>tile_dir</code> will be loaded in and stitched together. Otherwise, the raw data will be 
+loading in from the <code>input_dir</code> and stitched together with no filtering. 
+I.e. <code>from_raw == True</code> in<a href="../../code/utils/npy/#coppafish.utils.npy.save_stitched"><code>save_stitched</code></a>.</p>
+<p>The stitched DAPI image will be saved as <em>uint16</em> with no rescaling.</p>
+</details>
+<p>Also, to save memory, all pixels with absolute value less than <code>config['stitch']['save_image_zero_thresh']</code>
+will have their pixel value set to <span class="arithmatex">\(0\)</span> before saving.</p>
+<h2 id="debugging">Debugging</h2>
+<p>There are a few functions using matplotlib which may help to debug this section of the pipeline.</p>
+<h3 id="view_stitch_shift_info"><a href="../../code/plot/stitch/#view_stitch_shift_info"><code>view_stitch_shift_info</code></a></h3>
+<p>The <a href="../../code/plot/stitch/#view_stitch_shift_info"><code>view_stitch_shift_info</code></a> function
+plots the shifts found for all neighbouring tiles in a given direction on the same plot
+(there are 3 plots for each direction).
+This allows you to see if they are similar, as we expect or if there are some outliers.</p>
+<p>It also includes a plot of <code>score</code> vs <code>score_thresh</code> for each pair of neighbouring tiles:</p>
+<p><img alt="image" src="../../images/pipeline/stitch/view_shift_info.png" width="800" /></p>
+<p>In this case, all the shifts seem reasonable as the top two plots show quite a small range,
+and the bottom plot shows <code>score &gt; score_thresh</code> for every shift (blue numbers are all above the green line).
+If a shift had <code>score &lt; score_thresh</code>, it would be shown in red in each of the three plots
+for that direction.</p>
+<p>The numbers refer to the tile with a neighbouring tile to either the north or east of it.
+This example is for a <span class="arithmatex">\(4\)</span> (<span class="arithmatex">\(n_y\)</span>) <span class="arithmatex">\(\times\)</span> <span class="arithmatex">\(3\)</span> (<span class="arithmatex">\(n_x\)</span>) grid of tiles, so the number <span class="arithmatex">\(1\)</span> in the <em>West</em> column 
+of plots refers to the shift found between tile <span class="arithmatex">\(1\)</span> and tile <span class="arithmatex">\(0\)</span>. 
+The number <span class="arithmatex">\(3\)</span> in the <em>South</em> column of plots refers to the shift found between tile <span class="arithmatex">\(3\)</span> and tile <span class="arithmatex">\(0\)</span>.</p>
+<p>This function can also be used to view <a href="#amend-low-score-shifts"><code>nb.stitch.outlier_shifts</code></a> by running 
+<a href="../register_initial/#view_register_shift_info"><code>view_stitch_shift_info(nb, True)</code></a>.</p>
+<h3 id="view_stitch_overlap"><a href="../../code/plot/stitch/#view_stitch_overlap"><code>view_stitch_overlap</code></a></h3>
+<p>For an experiment with tile <span class="arithmatex">\(0\)</span> to the north of tile <span class="arithmatex">\(1\)</span>, 
+<a href="../../code/plot/stitch/#view_stitch_overlap"><code>view_stitch_overlap(nb, 1, 'north')</code></a>
+will always show the global coordinates of the point cloud for tile <span class="arithmatex">\(0\)</span> in red 
+(<code>global_yxz = local_yxz + nb.stitch.tile_origin[0]</code>).</p>
+<p>There are then buttons to select which point cloud for tile <span class="arithmatex">\(1\)</span> is plotted in blue:</p>
+<ul>
+<li>No overlap: This is assuming there is <span class="arithmatex">\(0\%\)</span> overlap between the two tiles.</li>
+<li><span class="arithmatex">\(x\%\)</span> overlap: <span class="arithmatex">\(x\)</span> here will be <code>config['stitch']['expected_overlap']</code>.
+This is our starting guess, i.e. the expected overlap in <span class="arithmatex">\(y\)</span> and a shift of 0 in <span class="arithmatex">\(x\)</span> and <span class="arithmatex">\(z\)</span>.</li>
+<li>Shift: This is the best shift found, saved in <code>nb.stitch.south_shifts</code>.</li>
+<li>Final: This is the coordinates of tile <span class="arithmatex">\(1\)</span> spots in the global coordinate system 
+(<code>local_yxz + nb.stitch.tile_origin[1]</code>).</li>
+</ul>
+<p>An example is shown below:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:4"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><input id="__tabbed_5_4" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">No overlap</label><label for="__tabbed_5_2">10% overlap</label><label for="__tabbed_5_3">Shift</label><label for="__tabbed_5_4">Final</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/overlap_none.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/overlap_10.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/overlap_shift.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/overlap_final.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>The z-plane is changed by scrolling with the mouse. You can change the value of z-thick in the bottom right.
+Spots detected on the current z-plane and this many z-planes either side of it will be shown.</p>
+<p>The white lines (only really visible in the <em>Final</em> plot) indicate neighbouring points with 
+a distance between them of less than or equal to <code>config['stitch']['neighb_dist_thresh']</code>.
+The number of matches listed on the right is then the number of these white lines (across all z-planes), 
+this will be similar to the <a href="#score"><code>score</code></a>.</p>
+<h3 id="view_stitch"><a href="../../code/plot/stitch/#view_stitch"><code>view_stitch</code></a></h3>
+<p>Another useful function is <a href="../../code/plot/stitch/#view_stitch"><code>view_stitch</code></a>. 
+This plots all the spots found in the <code>ref_round</code>/<code>ref_channel</code> in the global coordinate system specified
+by <code>nb.stitch.tile_origin</code>.</p>
+<p>The example below is for a <span class="arithmatex">\(4\times3\)</span> grid of tiles in <em>2D</em>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Full</label><label for="__tabbed_6_2">Zoom</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/view_stitch.png" width="800" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../../images/pipeline/stitch/view_stitch_zoom.png" width="800" /></p>
+</div>
+</div>
+</div>
+<p>The blue spots are duplicate spots (detected on a tile which is not the tile whose centre they are closest to).
+For each duplicate spot, we expect there is a non-duplicate spot in red, detected on a different tile
+but with the same global coordinate. We can see this in the <em>Zoom</em> plot, showing the intersection between tile 1 and 
+tile 2 (indicated by a green box in the <em>Full</em> image).</p>
+<p>These duplicate spots will be removed in the <a href="../get_reference_spots/#duplicates"><em>get reference spots</em></a> 
+step of the pipeline, so we don't double count the same spot.</p>
+<p>The white lines and number of matches are the same as for <a href="#view_stitch_overlap"><code>view_stitch_overlap</code></a>.
+Also in <em>3D</em>, you can scroll between z-planes with the mouse and specify z-thick in the same way.</p>
+<h2 id="pseudocode">Pseudocode</h2>
+<p>This is the pseudocode outlining the basics of this <a href="../../code/pipeline/stitch/">step of the pipeline</a>.
+For more detailed pseudocode about how the best shift is found, see the <a href="#obtaining-best-shift">shift</a> section.</p>
+<div class="highlight"><pre><span></span><code>r_ref = reference round
+c_ref = reference round
+spot_yxz[t, r, c] = yxz coordinates for spots detected on tile t,
+                    round r, channel c.
+
+for t in use_tiles:
+    if tile to north of t:
+        Find best_shift between spot_yxz[t, r_ref, c_ref] and 
+                                spot_yxz[t_north, r_ref, c_ref].
+        If 3 or more north/south shifts with score &gt; score_thresh:
+            Update search range around these shifts.              
+    if tile to east of t:
+        Find best_shift between spot_yxz[t, r_ref, c_ref] and 
+                                spot_yxz[t_east, r_ref, c_ref].
+        If 3 or more east/west shifts with score &gt; score_thresh:
+            Update search range around these shifts.       
+
+Amend shifts with score &lt; score_thresh using new search range for 
+each direction.
+Find tile_origin specifying global coordinate system.
+
+Add tile_origin and debugging info to stitch NotebookPage.
+Add stitch NotebookPage to Notebook.         
+Use tile_origin to save stitched ref_channel (and DAPI) image to 
+output directory.
+</code></pre></div>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../find_spots/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Find Spots" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Find Spots
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../register_initial/" class="md-footer__link md-footer__link--next" aria-label="Next: Register Initial" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Register Initial
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

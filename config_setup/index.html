@@ -1,0 +1,2740 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Setting up the Config File - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#setting-up-the-config-file" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Setting up the Config File
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./" class="md-tabs__link md-tabs__link--active">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../code/setup/notebook/" class="md-tabs__link">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Setting up the Config File
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Setting up the Config File
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example-config-files" class="md-nav__link">
+    Example Config Files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+    <nav class="md-nav" aria-label="file_names">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input_dir" class="md-nav__link">
+    input_dir
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output_dir" class="md-nav__link">
+    output_dir
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tile_dir" class="md-nav__link">
+    tile_dir
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code_book" class="md-nav__link">
+    code_book
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic_info" class="md-nav__link">
+    basic_info
+  </a>
+  
+    <nav class="md-nav" aria-label="basic_info">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anchor_channel" class="md-nav__link">
+    anchor_channel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ref_round" class="md-nav__link">
+    ref_round
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ref_channel" class="md-nav__link">
+    ref_channel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dapi_channel" class="md-nav__link">
+    dapi_channel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specifying-dyes" class="md-nav__link">
+    Specifying Dyes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-additional-parameters" class="md-nav__link">
+    Common Additional Parameters
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Additional Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extractr_smooth" class="md-nav__link">
+    extract[r_smooth]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extractr_dapi" class="md-nav__link">
+    extract[r_dapi]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stitchexpected_overlap" class="md-nav__link">
+    stitch[expected_overlap]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    thresholds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-a-subset-of-the-raw-data" class="md-nav__link">
+    Using a subset of the raw data
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/omp/spots/" class="md-nav__link">
+        Spots
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example-config-files" class="md-nav__link">
+    Example Config Files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file_names" class="md-nav__link">
+    file_names
+  </a>
+  
+    <nav class="md-nav" aria-label="file_names">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input_dir" class="md-nav__link">
+    input_dir
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output_dir" class="md-nav__link">
+    output_dir
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tile_dir" class="md-nav__link">
+    tile_dir
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code_book" class="md-nav__link">
+    code_book
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic_info" class="md-nav__link">
+    basic_info
+  </a>
+  
+    <nav class="md-nav" aria-label="basic_info">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anchor_channel" class="md-nav__link">
+    anchor_channel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ref_round" class="md-nav__link">
+    ref_round
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ref_channel" class="md-nav__link">
+    ref_channel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dapi_channel" class="md-nav__link">
+    dapi_channel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specifying-dyes" class="md-nav__link">
+    Specifying Dyes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-additional-parameters" class="md-nav__link">
+    Common Additional Parameters
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Additional Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extractr_smooth" class="md-nav__link">
+    extract[r_smooth]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extractr_dapi" class="md-nav__link">
+    extract[r_dapi]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stitchexpected_overlap" class="md-nav__link">
+    stitch[expected_overlap]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    thresholds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-a-subset-of-the-raw-data" class="md-nav__link">
+    Using a subset of the raw data
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/config_setup.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="setting-up-the-config-file">Setting up the Config File</h1>
+<p>A config (.ini) file needs to be created for each experiment to run the pipeline. 
+All parameters not specified in this file will inherit the <a href="../config/">default values</a>.
+The parameters with Default = <code>MUST BE SPECIFIED</code> are the bare minimum parameters which need to be set in the experiment
+config file.
+If any section, or parameter within a section, is added to the config file 
+which is not included in the <a href="../config/">default file</a>, an error will be raised when it is loaded in.
+Some example config files for typical experiments are listed below.</p>
+<h2 id="example-config-files">Example Config Files</h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:6"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">3D</label><label for="__tabbed_1_2">2D</label><label for="__tabbed_1_3">.npy Raw Data</label><label for="__tabbed_1_4">No Anchor</label><label for="__tabbed_1_5">QuadCam</label><label for="__tabbed_1_6">Separate Round</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">False</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+<span class="na">raw_extension</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">.npy</span><span class="w"></span>
+<span class="na">raw_metadata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">metadata</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">ref_round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">2</span><span class="w"></span>
+<span class="na">ref_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_r0, Exp1_r1, Exp1_r2, Exp1_r3, Exp1_r4, Exp1_r5, Exp1_r6, Exp1_r7, Exp1_r8</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_anchor</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+<span class="na">dapi_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span><span class="w"></span>
+<span class="na">dye_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">DY405, CF405L, AF488, DY520XL, AF532, AF594, ATTO425, AF647, AF750</span><span class="w"></span>
+<span class="na">channel_camera</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">405, 555, 470, 470, 555, 640, 555, 640, 640</span><span class="w"></span>
+<span class="na">channel_laser</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">405, 405, 445, 470, 520, 520, 555, 640, 730</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">[file_names]</span><span class="w"></span>
+<span class="na">notebook_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sep_round_notebook</span><span class="w"></span>
+<span class="na">input_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/raw</span><span class="w"></span>
+<span class="na">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/output</span><span class="w"></span>
+<span class="na">tile_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/tiles</span><span class="w"></span>
+<span class="na">anchor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Exp1_sep_round</span><span class="w"></span>
+<span class="na">code_book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/.../experiment1/codebook.txt</span><span class="w"></span>
+
+<span class="k">[basic_info]</span><span class="w"></span>
+<span class="na">is_3d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span><span class="w"></span>
+<span class="na">anchor_channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<details class="note">
+<summary>Note on <em>Separate Round</em> Config File</summary>
+<p>The <em>Separate Round</em> config file above is used for registering an additional round to an experiment already run to 
+completion (using a config file like the <em>3D</em> one indicated above). The pipeline for the <em>Separate Round</em> case 
+cannot be run further that the stitching section.</p>
+<p>The <a href="../code/sep_round_reg/#docs.scripts.sep_round_reg.run_sep_round_reg"><code>run_sep_reg</code></a> function 
+(script is <a href="../scripts/sep_round_reg.py">here</a>) 
+runs the pipeline 
+for the 
+<em>Separate Round</em> case and then registers the <code>anchor_round</code>/<code>anchor_channel</code> to the <code>anchor_round</code>/<code>anchor_channel</code>
+of the full experiment.</p>
+</details>
+<p>These parameters are explained below and <a href="../config/">here</a>. </p>
+<h2 id="file_names"><a href="../config/#file_names">file_names</a></h2>
+<p>If the names of the files change during the pipeline or if they are being accessed from another computer,
+the <a href="../config/#file_names"><em>file_names</em></a> section of the configuration file can also be 
+changed as explained <a href="../notebook/#file_names">here</a>.</p>
+<h3 id="input_dir">input_dir</h3>
+<p>The input directory is the path to the folder which contains the raw data. 
+Examples for the two possible cases of <code>raw_extension</code> are given below (i.e. these are respectively what the input 
+directory looks like for the config files <em>3D</em> and <em>.npy Raw Data</em> listed above).</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">.nd2</label><label for="__tabbed_2_2">.npy</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../images/config/InputDirectory_nd2.png" width="400" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../images/config/InputDirectory_npy.png" width="400" /></p>
+</div>
+</div>
+</div>
+<details class="note">
+<summary>Differences with <code>raw_extension = .npy</code></summary>
+<p>It is assumed that when <code>raw_extension = .npy</code>, there were initial .nd2 files which contained excess information 
+(e.g. extra channels). These were then converted to .npy files to get rid of this.</p>
+<p>For the .npy case, input_dir must also contain a metadata .json file. 
+This contains the metadata extracted from the initial .nd2 files using the function 
+<a href="../code/utils/nd2/#coppafish.utils.nd2.save_metadata">save_metadata</a>.
+An example metadata file is given <a href="../files/metadata_example.json">here</a> for an experiment with 
+3 tiles and 7 channels.</p>
+<p>Also, each name listed in the <code>round</code> parameter indicates a folder not a file. 
+It is assumed these folders were produced using 
+<a href="https://docs.dask.org/en/stable/generated/dask.array.to_npy_stack.html"><code>dask.array.to_npy_stack</code></a>
+so the contents of each folder should contain a file named <em>info</em> and a .npy file for each tile, with the name 
+being the index of the tile in the initial .nd2 file. An example showing the folder for the first round of a 
+three tile experiment is given below:</p>
+<p><img alt="image" src="../images/config/InputDirectory_npy_tile_files.png" width="400" /></p>
+</details>
+<h3 id="output_dir">output_dir</h3>
+<p>The output directory is the path to the folder that you would like the <a href="../notebook/">notebook.npz</a> 
+file containing the experiment  results to be saved. 
+The image below shows what the output directory typically looks like at the end of the experiment.</p>
+<p><img align="left" alt="image" src="../images/config/OutputDirectory.png" width="400" /></p>
+<p>The names of the files produced can be changed by changing the parameters <code>big_anchor_image</code>, <code>big_dapi_image</code>, 
+<code>notebook_name</code>, <code>omp_spot_coef</code>, <code>omp_spot_info</code> and <code>omp_spot_shape</code> in the <a href="../config/#file_names">config file</a>. </p>
+<p><br clear="left"/></p>
+<h3 id="tile_dir">tile_dir</h3>
+<p>The tile directory is the path to the folder that you would like the filtered images for each tile, round and 
+colour channel to be saved to. </p>
+<p>If <code>is_3d == True</code>, a .npy file will be produced for each round, tile and channel with
+the name for round r, tile <em>T</em>, channel <em>C</em> being <code>config['file_names']['round'][r]</code>_t<em>T</em>c<em>C</em>.npy with axis in the 
+order z-y-x
+(the name for the anchor round, tile <em>T</em>, channel <em>C</em> will be <code>config['file_names']['anchor']</code>_t<em>T</em>c<em>C</em>.npy).
+If <code>is_3d == False</code>, a .npy file will be produced for each round and tile called 
+<code>config['file_names']['round'][r]</code>_t<em>T</em>.npy with axis in the order c-y-x. </p>
+<p>An example of what the tile directory looks like at the end of the experiment is shown below for a 
+3D and 2D experiment with 3 tiles and 7 channels:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">3D</label><label for="__tabbed_3_2">2D</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="image" src="../images/config/TileDirectory3D.png" width="400" /></p>
+</div>
+<div class="tabbed-block">
+<p><img alt="image" src="../images/config/TileDirectory2D.png" width="400" /></p>
+</div>
+</div>
+</div>
+<h3 id="code_book">code_book</h3>
+<p>This is the path to the file containing the code for each gene. 
+The file should be a text file containing two columns, the first being the gene name. 
+The second is the code specifying which dye that gene should appear in each round. 
+Thus it is of length <code>n_rounds</code>, containing numbers in the range from <code>0</code> to <code>n_dyes-1</code> inclusive. </p>
+<details class="example" open="open">
+<summary>Example</summary>
+<p>An example is given <a href="../files/codebook.txt">here</a> so that if</p>
+<p><code>config['basic_info'][dye_names] = DY405, CF405L, AF488, DY520XL, AF532, AF594, ATTO425</code></p>
+<p>the gene <em>Sst</em> with the code <em>6200265</em> will
+be expected to appear with the following dyes in each round:</p>
+<ul>
+<li>Round 0: <code>ATTO425</code></li>
+<li>Round 1: <code>AF488</code></li>
+<li>Round 2: <code>DY405</code></li>
+<li>Round 3: <code>DY405</code></li>
+<li>Round 4: <code>AF488</code></li>
+<li>Round 5: <code>ATTO425</code></li>
+<li>Round 6: <code>AF594</code></li>
+</ul>
+</details>
+<h2 id="basic_info"><a href="../config/#basic_info">basic_info</a></h2>
+<h3 id="anchor_channel">anchor_channel</h3>
+<p>The <code>anchor_channel</code> is the channel in the <code>anchor_round</code> which contains spots corresponding to all genes. 
+These spots are used for registration to the imaging rounds and to determine the expected <code>bled_code</code> for each gene.</p>
+<h3 id="ref_round">ref_round</h3>
+<p>If there is no <code>anchor_round</code>, <code>ref_round</code> must be specified instead and it should be a round which contains a lot 
+of spots in each channel. Spots in <code>ref_round</code> / <code>ref_channel</code> will then be used as reference spots for registration
+and to determine the expected <code>bled_code</code> for each gene. </p>
+<p>If the <code>anchor_round</code> is used and <code>ref_round</code> is specified, <code>ref_round</code> will be set to <code>anchor_round</code> (last round) 
+<a href="../code/pipeline/basic_info/#coppafish.pipeline.basic_info.set_basic_info">in the notebook</a>.</p>
+<details class="warning" open="open">
+<summary>Problem with not using anchor</summary>
+<p>With no anchor, the registration is likely to be worse because an imaging round is used as a reference.
+Thus, not all genes will appear in <code>ref_round</code> / <code>ref_channel</code>, but only those which appear with a dye
+in the <code>ref_round</code> which have high intensity in the <code>ref_channel</code>.
+Also, we would expect the final spots saved in nb.ref_spots to only correspond to genes appearing in 
+<code>ref_round</code> / <code>ref_channel</code> and thus lots of genes will be missing.</p>
+<p>With an anchor though, we expect all genes to show up in <code>anchor_round</code> / <code>anchor_channel</code>.</p>
+</details>
+<h3 id="ref_channel">ref_channel</h3>
+<p>If there is no <code>anchor_round</code>, <code>ref_channel</code> must be specified instead and it should be the channel in <code>ref_round</code> 
+which contains the most spots. If the <code>anchor_round</code> is used and both <code>anchor_channel</code> and <code>ref_channel</code> are specified,
+<code>ref_channel</code> will be set to <code>anchor_channel</code> 
+<a href="../code/pipeline/basic_info/#coppafish.pipeline.basic_info.set_basic_info">in the notebook</a>.</p>
+<h3 id="dapi_channel">dapi_channel</h3>
+<p>This is the channel in the <code>anchor_round</code> that contains the DAPI images. 
+The tiles of this channel will be stitched together and saved in the <code>config['file_names']['output_dir']</code> with a name 
+<code>config['file_names']['big_dapi_image']</code>. </p>
+<p><code>dapi_channel</code> does not have to be included in <code>config['basic_info']['use_channels']</code> as the anchor round is dealt with 
+separately.</p>
+<p>To tophat filter the raw DAPI images first, either 
+<a href="../config/#extract"><code>config['extract']['r_dapi']</code> or <code>config['extract']['r_dapi_auto_microns']</code></a> must be specified.</p>
+<h3 id="specifying-dyes">Specifying Dyes</h3>
+<p>It is expected that each gene will appear with a single dye in a given round as indicated by 
+<code>config['file_names']['code_book']</code>. If <code>dye_names</code> is not specified, it is assumed as a starting point for the 
+<a href="../code/call_spots/bleed_matrix/#coppafish.call_spots.bleed_matrix.get_bleed_matrix"><code>bleed_matrix</code> calculation</a> 
+that the number of dyes is equal to the number of channels and dye 0 will only appear in channel 0,
+dye 1 will only appear in channel 1 etc. </p>
+<p>If <code>dye_names</code> is specified, both <code>channel_camera</code> and <code>channel_laser</code> must also be specified. This is so that
+a starting point for the <code>bleed_matrix</code> calculation can be obtained by 
+<a href="../code/call_spots/bleed_matrix/#coppafish.call_spots.bleed_matrix.get_dye_channel_intensity_guess">reading off</a> 
+the expected intensity of each dye in each channel using the file <code>config['file_names']['dye_camera_laser']</code>. </p>
+<p>The default <code>config['file_names']['dye_camera_laser']</code> is given 
+<a href="../files/dye_camera_laser_raw_intensity.csv">here</a>
+but if a dye, camera or laser not indicated in this file are used in an experiment, a new version must be made.</p>
+<h2 id="common-additional-parameters">Common Additional Parameters</h2>
+<p>There are a few other parameters that may often need to be different to those given in the 
+<a href="../config/">default config file</a>.</p>
+<h3 id="extractr_smooth"><a href="../config/#extract"><code>extract[r_smooth]</code></a></h3>
+<p>The parameter <code>r_smooth</code> in the extract section specifies whether to smooth with an averaging kernel after
+the raw images have been convolved with a 
+<a href="../code/utils/morphology/#coppafish.utils.morphology.base.hanning_diff">difference of hanning kernel</a>.
+This will make the extract section of the pipeline slower but will reduce the influence
+of anomalously high or low intensity pixels. It may be particularly appropriate to <em>3D</em> data because
+the difference of hanning convolution is done independently on each z-plane but the smoothing
+can incorporate information between z-planes.</p>
+<details class="note">
+<summary>Time for smoothing</summary>
+<p>The size of <code>r_smooth</code> has big influence on time taken for smoothing. 
+For a <code>2048 x 2048 x 50</code> image:</p>
+<ul>
+<li><code>r_smooth = 1, 1, 2</code>: 2.8 seconds</li>
+<li><code>r_smooth = 2, 2, 2</code>: 8.5 seconds</li>
+</ul>
+<p>The convolution with the 
+<a href="../code/utils/morphology/#coppafish.utils.morphology.base.hanning_diff">difference of hanning kernel</a>
+takes 4.1 seconds on the same image so smoothing will make the extract section of the pipeline 
+significantly longer.</p>
+</details>
+<p>By default, this is not specified meaning no smoothing is done. If smoothing is needed, typical values are:</p>
+<ul>
+<li>2D: <code>r_smooth = 2, 2</code></li>
+<li>3D: <code>r_smooth = 1, 1, 2</code></li>
+</ul>
+<p>The kernel which the image is correlated with is then 
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">r_smooth</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">r_smooth</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+</code></pre></div>
+so for <code>r_smooth = 2, 2</code> it will be:</p>
+<div class="highlight"><pre><span></span><code><span class="n">array</span><span class="p">([[</span><span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">],</span>
+       <span class="p">[</span><span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">]])</span>
+</code></pre></div>
+<p>The effect of smoothing can be seen using <a href="../pipeline/extract/#viewer"><code>view_filter</code></a>.</p>
+<h3 id="extractr_dapi"><a href="../config/#extract"><code>extract[r_dapi]</code></a></h3>
+<p>By default, no filtering will be applied to the <a href="#dapi_channel"><em>dapi_channel</em></a> image of the <em>anchor_round</em> and thus 
+no .npy file
+will be saved to the <em>tile_dir</em>. This can be changed by specifying <code>r_dapi</code> which should be approximately
+the radius of a feature in the DAPI image (typical <code>r_dapi</code> is 48). In this case, a <em>2D</em> tophat filtering
+will be performed using a kernel of radius <code>r_dapi</code>. </p>
+<p>Alternatively, <code>r_dapi_auto_microns</code> can be specified to be the radius of the kernel in units of microns and <code>r_dapi</code>
+will be computed automatically by converting this into units of yx-pixels (typical <code>r_dapi_auto_microns</code> is 8).</p>
+<details class="note">
+<summary>Time for DAPI filtering</summary>
+<p>The size of <code>r_dapi</code> has big influence on time taken for tophat filtering. 
+For a <code>2048 x 2048 x 50</code> image:</p>
+<ul>
+<li><code>r_dapi = 48</code>: 142.4 seconds</li>
+<li><code>r_smooth = 12</code>: 3.9 seconds</li>
+</ul>
+<p>The tophat filtering is only done on one channel for each tile but it is quite slow so it may be best to avoid it,
+especially for experiments with lots of tiles.</p>
+</details>
+<p>The effect of DAPI filtering can be seen using <a href="../pipeline/extract/#viewer"><code>view_filter</code></a>.</p>
+<h3 id="stitchexpected_overlap"><a href="../config/#stitch"><code>stitch[expected_overlap]</code></a></h3>
+<p>This is the expected fractional overlap between neighbouring tiles. 
+By default, it is 0.1 meaning a 10% overlap is expected.</p>
+<h3 id="thresholds"><a href="../config/#thresholds"><em>thresholds</em></a></h3>
+<p>The parameters in the <a href="../config/#thresholds">thresholds</a> section of the config file contains the thresholds 
+used to determine which spots pass a quality thresholding process such that we consider their 
+gene assignments legitimate.</p>
+<p>The default values are based on an experiment run with ground truth data, but they will likely need adjusting 
+after investigating the effect of the thresholds using the <a href="../view_results/"><code>Viewer</code></a>.</p>
+<h3 id="using-a-subset-of-the-raw-data">Using a subset of the raw data</h3>
+<p>To run the pipeline with a subset of tiles, imaging rounds, channels or z-planes the following parameters 
+can be set in the <a href="../config/#basic_info"><em>basic_info</em></a> section of the configuration file:</p>
+<ul>
+<li><code>use_tiles</code></li>
+<li><code>ignore_tiles</code></li>
+<li><code>use_rounds</code></li>
+<li><code>use_channels</code></li>
+<li><code>use_z</code></li>
+</ul>
+<p>If midway through the pipeline, it is decided that a particular tile, round or channel is not worth using,
+it can be <a href="../notebook/#changing-basic_info-mid-pipeline">removed</a> 
+without re-running all the steps of the pipeline completed so far.</p>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Home
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../run_code/" class="md-footer__link md-footer__link--next" aria-label="Next: Running the code" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Running the code
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

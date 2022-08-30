@@ -1,0 +1,3461 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
+    
+    
+      
+        <title>Spots - coppafish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#000000">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#coppafish.omp.spots.count_spot_neighbours" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="coppafish" class="md-header__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            coppafish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Spots
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../config_setup/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../pipeline/overview/" class="md-tabs__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../setup/notebook/" class="md-tabs__link md-tabs__link--active">
+        Code
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="coppafish" class="md-nav__button md-logo" aria-label="coppafish" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    coppafish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jduffield65/coppafish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jduffield65/coppafish
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config_setup/" class="md-nav__link">
+        Setting up the Config File
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../run_code/" class="md-nav__link">
+        Running the code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../view_results/" class="md-nav__link">
+        Viewing the results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config/" class="md-nav__link">
+        Config Default Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebook_comments/" class="md-nav__link">
+        Notebook Comments
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/extract/" class="md-nav__link">
+        Extract and Filter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Code
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/notebook/" class="md-nav__link">
+        Notebook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/tile_details/" class="md-nav__link">
+        Tile Detail
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/file_names/" class="md-nav__link">
+        File Names
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Extract
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Extract" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Extract
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/deconvolution/" class="md-nav__link">
+        Deconvolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/fstack/" class="md-nav__link">
+        Fstack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extract/scale/" class="md-nav__link">
+        Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Find Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Find Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Find Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/check_spots/" class="md-nav__link">
+        Check Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../find_spots/detect/" class="md-nav__link">
+        Detect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Stitch
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stitch" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stitch
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/shift/" class="md-nav__link">
+        Shift
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/starting_shifts/" class="md-nav__link">
+        Starting Shifts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/tile_origin/" class="md-nav__link">
+        Tile Origin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stitch/check_shifts/" class="md-nav__link">
+        Check Shifts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Register
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Register" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Register
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../register/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../register/check_transforms/" class="md-nav__link">
+        Check Transforms
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Spot Colors
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Spot Colors" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Spot Colors
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../spot_colors/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Call Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Call Spots" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Call Spots
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/background/" class="md-nav__link">
+        Background
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/bleed_matrix/" class="md-nav__link">
+        Bleed Matrix
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/dot_product/" class="md-nav__link">
+        Dot Product
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../call_spots/qual_check/" class="md-nav__link">
+        Quality Check
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_8" type="checkbox" id="__nav_4_8" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_8">
+          OMP
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="OMP" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_8">
+          <span class="md-nav__icon md-icon"></span>
+          OMP
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coefs/" class="md-nav__link">
+        Coefficients
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Spots
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Spots
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.count_spot_neighbours" class="md-nav__link">
+    count_spot_neighbours()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.cropped_coef_image" class="md-nav__link">
+    cropped_coef_image()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.get_spots" class="md-nav__link">
+    get_spots()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.spot_neighbourhood" class="md-nav__link">
+    spot_neighbourhood()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_9" type="checkbox" id="__nav_4_9" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_9">
+          Pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_9">
+          <span class="md-nav__icon md-icon"></span>
+          Pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/run/" class="md-nav__link">
+        Run
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/basic_info/" class="md-nav__link">
+        Basic Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/extract_run/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/register_initial/" class="md-nav__link">
+        Register Initial
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/get_reference_spots/" class="md-nav__link">
+        Get Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/call_reference_spots/" class="md-nav__link">
+        Call Reference Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_10" type="checkbox" id="__nav_4_10" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_10">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Utils" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_10">
+          <span class="md-nav__icon md-icon"></span>
+          Utils
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/errors/" class="md-nav__link">
+        Errors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/pciseq/" class="md-nav__link">
+        pciSeq
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/matlab/" class="md-nav__link">
+        Matlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/morphology/" class="md-nav__link">
+        Morphology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/nd2/" class="md-nav__link">
+        nd2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/npy/" class="md-nav__link">
+        npy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/strel/" class="md-nav__link">
+        Strel
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_11" type="checkbox" id="__nav_4_11" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_11">
+          Plot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_11">
+          <span class="md-nav__icon md-icon"></span>
+          Plot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/viewer/" class="md-nav__link">
+        Viewer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/raw/" class="md-nav__link">
+        Raw
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/extract/" class="md-nav__link">
+        Extract
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/find_spots/" class="md-nav__link">
+        Find Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/stitch/" class="md-nav__link">
+        Stitch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/register/" class="md-nav__link">
+        Register
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/call_spots/" class="md-nav__link">
+        Call Spots
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot/omp/" class="md-nav__link">
+        OMP
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4_12" type="checkbox" id="__nav_4_12" checked>
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_12">
+          Separate Round Registration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Separate Round Registration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_12">
+          <span class="md-nav__icon md-icon"></span>
+          Separate Round Registration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sep_round_reg/" class="md-nav__link">
+        Sep round reg
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.count_spot_neighbours" class="md-nav__link">
+    count_spot_neighbours()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.cropped_coef_image" class="md-nav__link">
+    cropped_coef_image()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.get_spots" class="md-nav__link">
+    get_spots()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coppafish.omp.spots.spot_neighbourhood" class="md-nav__link">
+    spot_neighbourhood()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/jduffield65/coppafish/edit/master/docs/code/omp/spots.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+  <h1>Spots</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+  <div class="doc doc-contents first">
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.omp.spots.count_spot_neighbours" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">count_spot_neighbours</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Counts the number of positive (and negative) pixels in a neighbourhood about each spot.
+If <code>filter</code> contains only 1 and 0, then number of positive pixels returned near each spot.
+If <code>filter</code> contains only -1 and 0, then number of negative pixels returned near each spot.
+If <code>filter</code> contains -1, 0 and 1, then number of positive and negative pixels returned near each spot.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>image</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>float [n_y x n_x (x n_z)]</code>.
+image spots were found on.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_yxz</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_spots x image.ndim]</code>.
+yx or yxz location of spots found.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>kernel</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [filter_sz_y x filter_sz_x (x filter_sz_z)]</code>.
+Number of positive (and negative) pixels counted in this neighbourhood about each spot in image.
+Only contains values 0 and 1 (and -1).</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]]</code>
+          </td>
+          <td><ul>
+<li>n_pos_neighbours - <code>int [n_spots]</code> (Only if <code>filter</code> contains 1).
+Number of positive pixels around each spot in neighbourhood given by <code>pos_filter</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]]</code>
+          </td>
+          <td><ul>
+<li>n_neg_neighbours - <code>int [n_spots]</code> (Only if <code>filter</code> contains -1).
+Number of negative pixels around each spot in neighbourhood given by <code>neg_filter</code>.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/omp/spots.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">count_spot_neighbours</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                          <span class="n">kernel</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Counts the number of positive (and negative) pixels in a neighbourhood about each spot.</span>
+<span class="sd">    If `filter` contains only 1 and 0, then number of positive pixels returned near each spot.</span>
+<span class="sd">    If `filter` contains only -1 and 0, then number of negative pixels returned near each spot.</span>
+<span class="sd">    If `filter` contains -1, 0 and 1, then number of positive and negative pixels returned near each spot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image: `float [n_y x n_x (x n_z)]`.</span>
+<span class="sd">            image spots were found on.</span>
+<span class="sd">        spot_yxz: `int [n_spots x image.ndim]`.</span>
+<span class="sd">            yx or yxz location of spots found.</span>
+<span class="sd">        kernel: `int [filter_sz_y x filter_sz_x (x filter_sz_z)]`.</span>
+<span class="sd">            Number of positive (and negative) pixels counted in this neighbourhood about each spot in image.</span>
+<span class="sd">            Only contains values 0 and 1 (and -1).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - n_pos_neighbours - `int [n_spots]` (Only if `filter` contains 1).</span>
+<span class="sd">            Number of positive pixels around each spot in neighbourhood given by `pos_filter`.</span>
+<span class="sd">        - n_neg_neighbours - `int [n_spots]` (Only if `filter` contains -1).</span>
+<span class="sd">            Number of negative pixels around each spot in neighbourhood given by `neg_filter`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Correct for 2d cases where an empty dimension has been used for some variables.</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="n">spot_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">spot_yxz</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]):</span>
+        <span class="c1"># Image 2D but spots 3D</span>
+        <span class="n">spot_yxz</span> <span class="o">=</span> <span class="n">spot_yxz</span><span class="p">[:,</span> <span class="p">:</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="n">spot_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]):</span>
+        <span class="c1"># Image 3D but spots 2D</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># average over last dimension just means removing it.</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="n">kernel</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]):</span>
+        <span class="c1"># Image 2D but pos_filter 3D</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">kernel</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Check kernel contains right values.</span>
+    <span class="n">kernel_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">kernel_vals</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;filter contains values other than -1, 0 or 1.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check all spots in image</span>
+    <span class="n">max_yxz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">spot_oob</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">spot_yxz</span> <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">val</span> <span class="o">&gt;</span> <span class="n">max_yxz</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spot_oob</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">OutOfBoundsError</span><span class="p">(</span><span class="s2">&quot;spot_yxz&quot;</span><span class="p">,</span> <span class="n">spot_oob</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">image</span><span class="o">.</span><span class="n">ndim</span><span class="p">,</span> <span class="n">max_yxz</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">kernel_vals</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="c1"># Return positive and negative counts</span>
+        <span class="n">n_pos</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">morphology</span><span class="o">.</span><span class="n">imfilter_coords</span><span class="p">(</span><span class="n">image</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">)</span>
+        <span class="n">n_neg</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">morphology</span><span class="o">.</span><span class="n">imfilter_coords</span><span class="p">(</span><span class="n">image</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">n_pos</span><span class="p">,</span> <span class="n">n_neg</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">kernel_vals</span><span class="p">):</span>
+        <span class="c1"># Return negative counts</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">morphology</span><span class="o">.</span><span class="n">imfilter_coords</span><span class="p">(</span><span class="n">image</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">kernel_vals</span><span class="p">):</span>
+        <span class="c1"># Return positive counts</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">morphology</span><span class="o">.</span><span class="n">imfilter_coords</span><span class="p">(</span><span class="n">image</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;filter contains only 0.&#39;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.omp.spots.cropped_coef_image" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">cropped_coef_image</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">,</span> <span class="n">pixel_coefs</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Make cropped coef_image which is smallest possible image such that all non-zero pixel_coefs included.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>pixel_yxz</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_pixels x 3]</code>
+<code>pixel_yxz[s, :2]</code> are the local yx coordinates in <code>yx_pixels</code> for pixel <code>s</code>.
+<code>pixel_yxz[s, 2]</code> is the local z coordinate in <code>z_pixels</code> for pixel <code>s</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>pixel_coefs</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="scipy.sparse.csr_matrix">csr_matrix</span>, <span title="numpy">np</span>.<span title="numpy.array">array</span>]</code>
+          </td>
+          <td><p><code>float32 [n_pixels x 1]</code>.
+<code>pixel_coefs[s]</code> is the weighting of pixel <code>s</code> for a given gene found by the omp algorithm.
+ Most are zero hence sparse form used.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><ul>
+<li>coef_image - <code>float32 [im_size_y x im_size_x x im_size_z]</code>
+cropped omp coefficient.
+Will be <code>None</code> if there are no non-zero coefficients.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><ul>
+<li>coord_shift - <code>int [3]</code>.
+yxz shift subtracted from pixel_yxz to build coef_image.
+Will be <code>None</code> if there are no non-zero coefficients.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/omp/spots.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">cropped_coef_image</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                       <span class="n">pixel_coefs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">csr_matrix</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make cropped coef_image which is smallest possible image such that all non-zero pixel_coefs included.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pixel_yxz: `int [n_pixels x 3]`</span>
+<span class="sd">            ```pixel_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for pixel ```s```.</span>
+<span class="sd">            ```pixel_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for pixel ```s```.</span>
+<span class="sd">        pixel_coefs: `float32 [n_pixels x 1]`.</span>
+<span class="sd">            `pixel_coefs[s]` is the weighting of pixel `s` for a given gene found by the omp algorithm.</span>
+<span class="sd">             Most are zero hence sparse form used.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - coef_image - `float32 [im_size_y x im_size_x x im_size_z]`</span>
+<span class="sd">            cropped omp coefficient.</span>
+<span class="sd">            Will be `None` if there are no non-zero coefficients.</span>
+<span class="sd">        - coord_shift - `int [3]`.</span>
+<span class="sd">            yxz shift subtracted from pixel_yxz to build coef_image.</span>
+<span class="sd">            Will be `None` if there are no non-zero coefficients.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pixel_coefs</span><span class="p">,</span> <span class="n">csr_matrix</span><span class="p">):</span>
+        <span class="n">nz_ind</span> <span class="o">=</span> <span class="n">pixel_coefs</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">nz_pixel_coefs</span> <span class="o">=</span> <span class="n">pixel_coefs</span><span class="p">[</span><span class="n">nz_ind</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nz_ind</span> <span class="o">=</span> <span class="n">pixel_coefs</span> <span class="o">!=</span> <span class="mi">0</span>
+        <span class="n">nz_pixel_coefs</span> <span class="o">=</span> <span class="n">pixel_coefs</span><span class="p">[</span><span class="n">nz_ind</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">nz_pixel_coefs</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># If no non-zero coefficients, return nothing</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nz_pixel_yxz</span> <span class="o">=</span> <span class="n">pixel_yxz</span><span class="p">[</span><span class="n">nz_ind</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="c1"># shift nz_pixel_yxz so min is 0 in each axis so smaller image can be formed.</span>
+        <span class="n">coord_shift</span> <span class="o">=</span> <span class="n">nz_pixel_yxz</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">nz_pixel_yxz</span> <span class="o">=</span> <span class="n">nz_pixel_yxz</span> <span class="o">-</span> <span class="n">coord_shift</span>
+        <span class="n">n_y</span><span class="p">,</span> <span class="n">n_x</span><span class="p">,</span> <span class="n">n_z</span> <span class="o">=</span> <span class="n">nz_pixel_yxz</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># coef_image at pixels other than nz_pixel_yxz is set to 0.</span>
+        <span class="k">if</span> <span class="n">n_z</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">coef_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_y</span><span class="p">,</span> <span class="n">n_x</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">coef_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_y</span><span class="p">,</span> <span class="n">n_x</span><span class="p">,</span> <span class="n">n_z</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">coef_image</span><span class="p">[</span><span class="nb">tuple</span><span class="p">([</span><span class="n">nz_pixel_yxz</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">coef_image</span><span class="o">.</span><span class="n">ndim</span><span class="p">)])]</span> <span class="o">=</span> <span class="n">nz_pixel_coefs</span>
+        <span class="k">return</span> <span class="n">coef_image</span><span class="p">,</span> <span class="n">coord_shift</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.omp.spots.get_spots" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_spots</span><span class="p">(</span><span class="n">pixel_coefs</span><span class="p">,</span> <span class="n">pixel_yxz</span><span class="p">,</span> <span class="n">radius_xy</span><span class="p">,</span> <span class="n">radius_z</span><span class="p">,</span> <span class="n">coef_thresh</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spot_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pos_neighbour_thresh</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxzg</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Finds all local maxima in <code>coef_image</code> of each gene with coefficient exceeding <code>coef_thresh</code>
+and returns corresponding <code>yxz</code> position and <code>gene_no</code>.
+If provide <code>spot_shape</code>, also counts number of positive and negative pixels in neighbourhood of each spot.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>pixel_coefs</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="scipy.sparse.csr_matrix">csr_matrix</span>, <span title="numpy">np</span>.<span title="numpy.array">array</span>]</code>
+          </td>
+          <td><p><code>float [n_pixels x n_genes]</code>.
+<code>pixel_coefs[s, g]</code> is the weighting of pixel <code>s</code> for gene <code>g</code> found by the omp algorithm.
+ Most are zero hence sparse form used.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>pixel_yxz</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_pixels x 3]</code>.
+<code>pixel_yxz[s, :2]</code> are the local yx coordinates in <code>yx_pixels</code> for pixel <code>s</code>.
+<code>pixel_yxz[s, 2]</code> is the local z coordinate in <code>z_pixels</code> for pixel <code>s</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>radius_xy</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td><p>Radius of dilation structuring element in xy plane (approximately spot radius).</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>radius_z</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[int]</code>
+          </td>
+          <td><p>Radius of dilation structuring element in z direction (approximately spot radius).
+If <code>None</code>, 2D filter is used.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>coef_thresh</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Local maxima in <code>coef_image</code> exceeding this value are considered spots.</p></td>
+          <td>
+                <code>0</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_shape</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>int [shape_size_y x shape_size_x x shape_size_z]</code> or <code>None</code>.
+Indicates expected sign of coefficients in neighbourhood of spot.
+1 means expected positive coefficient.
+-1 means expected negative coefficient.
+0 means unsure of expected sign so ignore.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>pos_neighbour_thresh</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td><p>Only spots with number of positive neighbours exceeding this will be kept
+if <code>spot_shape</code> provided.</p></td>
+          <td>
+                <code>0</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_yxzg</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]</code>
+          </td>
+          <td><p><code>float [n_spots x 4]</code>.
+Can provide location and gene identity of spots if already computed.
+Where spots are local maxima above <code>coef_thresh</code> in <code>pixel_coefs</code> image for each gene.
+If None, spots are determined from <code>pixel_coefs</code>.
+<code>spot_yxzg[s, :2]</code> are the local yx coordinates in <code>yx_pixels</code> for spot <code>s</code>.
+<code>spot_yxzg[s, 2]</code> is the local z coordinate in <code>z_pixels</code> for spot <code>s</code>.
+<code>spot_yxzg[s, 3]</code> is the gene number of spot <code>s</code>.</p></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>], <span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]]</code>
+          </td>
+          <td><ul>
+<li>spot_yxz - <code>int [n_spots x 3]</code>
+<code>spot_yxz[s, :2]</code> are the local yx coordinates in <code>yx_pixels</code> for spot <code>s</code>.
+<code>spot_yxz[s, 2]</code> is the local z coordinate in <code>z_pixels</code> for spot <code>s</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>], <span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]]</code>
+          </td>
+          <td><ul>
+<li>spot_gene_no - <code>int [n_spots]</code>.
+<code>spot_gene_no[s]</code> is the gene that spot s is assigned to.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>], <span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]]</code>
+          </td>
+          <td><ul>
+<li>n_pos_neighbours - <code>int [n_spots]</code> (Only if <code>spot_shape</code> given).
+Number of positive pixels around each spot in neighbourhood given by <code>spot_shape==1</code>.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>], <span title="typing.Tuple">Tuple</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>]]</code>
+          </td>
+          <td><ul>
+<li>n_neg_neighbours - <code>int [n_spots]</code> (Only if <code>spot_shape</code> given).
+Number of negative pixels around each spot in neighbourhood given by <code>spot_shape==-1</code>.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/omp/spots.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_spots</span><span class="p">(</span><span class="n">pixel_coefs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">csr_matrix</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">],</span> <span class="n">pixel_yxz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">radius_xy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius_z</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+              <span class="n">coef_thresh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">pos_neighbour_thresh</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxzg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+              <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds all local maxima in `coef_image` of each gene with coefficient exceeding `coef_thresh`</span>
+<span class="sd">    and returns corresponding `yxz` position and `gene_no`.</span>
+<span class="sd">    If provide `spot_shape`, also counts number of positive and negative pixels in neighbourhood of each spot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pixel_coefs: `float [n_pixels x n_genes]`.</span>
+<span class="sd">            `pixel_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm.</span>
+<span class="sd">             Most are zero hence sparse form used.</span>
+<span class="sd">        pixel_yxz: ```int [n_pixels x 3]```.</span>
+<span class="sd">            ```pixel_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for pixel ```s```.</span>
+<span class="sd">            ```pixel_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for pixel ```s```.</span>
+<span class="sd">        radius_xy: Radius of dilation structuring element in xy plane (approximately spot radius).</span>
+<span class="sd">        radius_z: Radius of dilation structuring element in z direction (approximately spot radius).</span>
+<span class="sd">            If ```None```, 2D filter is used.</span>
+<span class="sd">        coef_thresh: Local maxima in `coef_image` exceeding this value are considered spots.</span>
+<span class="sd">        spot_shape: `int [shape_size_y x shape_size_x x shape_size_z]` or `None`.</span>
+<span class="sd">            Indicates expected sign of coefficients in neighbourhood of spot.</span>
+<span class="sd">            1 means expected positive coefficient.</span>
+<span class="sd">            -1 means expected negative coefficient.</span>
+<span class="sd">            0 means unsure of expected sign so ignore.</span>
+<span class="sd">        pos_neighbour_thresh: Only spots with number of positive neighbours exceeding this will be kept</span>
+<span class="sd">            if `spot_shape` provided.</span>
+<span class="sd">        spot_yxzg: `float [n_spots x 4]`.</span>
+<span class="sd">            Can provide location and gene identity of spots if already computed.</span>
+<span class="sd">            Where spots are local maxima above `coef_thresh` in `pixel_coefs` image for each gene.</span>
+<span class="sd">            If None, spots are determined from `pixel_coefs`.</span>
+<span class="sd">            ```spot_yxzg[s, :2]``` are the local yx coordinates in ```yx_pixels``` for spot ```s```.</span>
+<span class="sd">            ```spot_yxzg[s, 2]``` is the local z coordinate in ```z_pixels``` for spot ```s```.</span>
+<span class="sd">            ```spot_yxzg[s, 3]``` is the gene number of spot ```s```.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - spot_yxz - `int [n_spots x 3]`</span>
+<span class="sd">            ```spot_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for spot ```s```.</span>
+<span class="sd">            ```spot_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for spot ```s```.</span>
+<span class="sd">        - spot_gene_no - `int [n_spots]`.</span>
+<span class="sd">            ```spot_gene_no[s]``` is the gene that spot s is assigned to.</span>
+<span class="sd">        - n_pos_neighbours - `int [n_spots]` (Only if `spot_shape` given).</span>
+<span class="sd">            Number of positive pixels around each spot in neighbourhood given by `spot_shape==1`.</span>
+<span class="sd">        - n_neg_neighbours - `int [n_spots]` (Only if `spot_shape` given).</span>
+<span class="sd">            Number of negative pixels around each spot in neighbourhood given by `spot_shape==-1`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">n_pixels</span><span class="p">,</span> <span class="n">n_genes</span> <span class="o">=</span> <span class="n">pixel_coefs</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">,</span> <span class="p">[</span><span class="n">n_pixels</span><span class="p">,</span> <span class="mi">3</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;pixel_yxz&#39;</span><span class="p">,</span> <span class="n">pixel_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="p">(</span><span class="n">n_pixels</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">spot_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">spot_info</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spot_shape</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;spot_shape contains no pixels with a value of 1 which indicates the &quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;neighbourhood about a spot where we expect a positive coefficient.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spot_shape</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;spot_shape contains no pixels with a value of -1 which indicates the &quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;neighbourhood about a spot where we expect a negative coefficient.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos_neighbour_thresh</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">pos_neighbour_thresh</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spot_shape</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="c1"># Out of bounds if threshold for positive neighbours is above the maximum possible.</span>
+            <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">OutOfBoundsError</span><span class="p">(</span><span class="s2">&quot;pos_neighbour_thresh&quot;</span><span class="p">,</span> <span class="n">pos_neighbour_thresh</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                                                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spot_shape</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">spot_info</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">spot_yxzg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># check pixel coefficient is positive for random subset of 500 spots.</span>
+        <span class="n">spots_to_check</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">spot_yxzg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spot_yxzg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">pixel_index</span> <span class="o">=</span> <span class="n">numpy_indexed</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">,</span> <span class="n">spot_yxzg</span><span class="p">[</span><span class="n">spots_to_check</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+        <span class="n">spot_coefs_check</span> <span class="o">=</span> <span class="n">pixel_coefs</span><span class="p">[</span><span class="n">pixel_index</span><span class="p">,</span> <span class="n">spot_yxzg</span><span class="p">[</span><span class="n">spots_to_check</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">spot_coefs_check</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">coef_thresh</span><span class="p">:</span>
+            <span class="n">bad_spot</span> <span class="o">=</span> <span class="n">spots_to_check</span><span class="p">[</span><span class="n">spot_coefs_check</span><span class="o">.</span><span class="n">argmin</span><span class="p">()]</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;spot_yxzg provided but gene </span><span class="si">{</span><span class="n">spot_yxzg</span><span class="p">[</span><span class="n">bad_spot</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2"> coefficient for spot </span><span class="si">{</span><span class="n">bad_spot</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;at yxz = </span><span class="si">{</span><span class="n">spot_yxzg</span><span class="p">[</span><span class="n">bad_spot</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">spot_coefs_check</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;whereas it should be more than coef_thresh = </span><span class="si">{</span><span class="n">coef_thresh</span><span class="si">}</span><span class="s2"> as it is listed as a spot.&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">n_genes</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+        <span class="c1"># TODO: if 2D can do all genes together.</span>
+        <span class="n">pbar</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Finding spots for all </span><span class="si">{</span><span class="n">n_genes</span><span class="si">}</span><span class="s2"> genes from omp_coef images.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_genes</span><span class="p">):</span>
+            <span class="c1"># shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.</span>
+            <span class="c1"># Note size of image will be different for each gene.</span>
+            <span class="n">coef_image</span><span class="p">,</span> <span class="n">coord_shift</span> <span class="o">=</span> <span class="n">cropped_coef_image</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">,</span> <span class="n">pixel_coefs</span><span class="p">[:,</span> <span class="n">g</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">coef_image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># If no non-zero coefficients, go to next gene</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">spot_yxzg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">spot_yxz</span> <span class="o">=</span> <span class="n">detect_spots</span><span class="p">(</span><span class="n">coef_image</span><span class="p">,</span> <span class="n">coef_thresh</span><span class="p">,</span> <span class="n">radius_xy</span><span class="p">,</span> <span class="n">radius_z</span><span class="p">,</span> <span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.</span>
+                <span class="n">spot_yxz</span> <span class="o">=</span> <span class="n">spot_yxzg</span><span class="p">[</span><span class="n">spot_yxzg</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="n">g</span><span class="p">,</span> <span class="p">:</span><span class="n">coef_image</span><span class="o">.</span><span class="n">ndim</span><span class="p">]</span> <span class="o">-</span> <span class="n">coord_shift</span><span class="p">[:</span><span class="n">coef_image</span><span class="o">.</span><span class="n">ndim</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">spot_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">spot_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">spot_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+                    <span class="n">spot_info_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">keep</span><span class="p">),</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">n_pos_neighb</span><span class="p">,</span> <span class="n">n_neg_neighb</span> <span class="o">=</span> <span class="n">count_spot_neighbours</span><span class="p">(</span><span class="n">coef_image</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">,</span> <span class="n">spot_shape</span><span class="p">)</span>
+                    <span class="n">keep</span> <span class="o">=</span> <span class="n">n_pos_neighb</span> <span class="o">&gt;</span> <span class="n">pos_neighbour_thresh</span>
+                    <span class="n">spot_info_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">keep</span><span class="p">),</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+                    <span class="n">spot_info_g</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_pos_neighb</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
+                    <span class="n">spot_info_g</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_neg_neighb</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
+
+                <span class="n">spot_info_g</span><span class="p">[:,</span> <span class="p">:</span><span class="n">coef_image</span><span class="o">.</span><span class="n">ndim</span><span class="p">]</span> <span class="o">=</span> <span class="n">spot_yxz</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
+                <span class="n">spot_info_g</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">spot_info_g</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">coord_shift</span>  <span class="c1"># shift spot_yxz back</span>
+                <span class="n">spot_info_g</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span>
+                <span class="n">spot_info</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spot_info</span><span class="p">,</span> <span class="n">spot_info_g</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">spot_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">spot_info</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">spot_info</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">spot_info</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">spot_info</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">spot_info</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">spot_info</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="coppafish.omp.spots.spot_neighbourhood" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">spot_neighbourhood</span><span class="p">(</span><span class="n">pixel_coefs</span><span class="p">,</span> <span class="n">pixel_yxz</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">,</span> <span class="n">spot_gene_no</span><span class="p">,</span> <span class="n">max_size</span><span class="p">,</span> <span class="n">pos_neighbour_thresh</span><span class="p">,</span> <span class="n">isolation_dist</span><span class="p">,</span> <span class="n">z_scale</span><span class="p">,</span> <span class="n">mean_sign_thresh</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Finds the expected sign the coefficient should have in the neighbourhood about a spot.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>pixel_coefs</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="scipy.sparse.csr_matrix">csr_matrix</span>, <span title="numpy">np</span>.<span title="numpy.array">array</span>]</code>
+          </td>
+          <td><p><code>float [n_pixels x n_genes]</code>.
+<code>pixel_coefs[s, g]</code> is the weighting of pixel <code>s</code> for gene <code>g</code> found by the omp algorithm.
+ Most are zero hence sparse form used.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>pixel_yxz</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_pixels x 3]</code>.
+<code>pixel_yxz[s, :2]</code> are the local yx coordinates in <code>yx_pixels</code> for pixel <code>s</code>.
+<code>pixel_yxz[s, 2]</code> is the local z coordinate in <code>z_pixels</code> for pixel <code>s</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_yxz</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_spots x 3]</code>.
+<code>spot_yxz[s, :2]</code> are the local yx coordinates in <code>yx_pixels</code> for spot <code>s</code>.
+<code>spot_yxz[s, 2]</code> is the local z coordinate in <code>z_pixels</code> for spot <code>s</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>spot_gene_no</code></td>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><p><code>int [n_spots]</code>.
+<code>spot_gene_no[s]</code> is the gene that this spot is assigned to.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>max_size</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span>, <span title="typing.List">List</span>]</code>
+          </td>
+          <td><p><code>int [3]</code>.
+max YXZ size of spot shape returned. Zeros at extremities will be cropped in <code>av_spot_image</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>pos_neighbour_thresh</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td><p>For spot to be used to find av_spot_image, it must have this many pixels
+around it on the same z-plane that have a positive coefficient.
+If 3D, also, require 1 positive pixel on each neighbouring plane (i.e. 2 is added to this value).
+Typical = 9.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>isolation_dist</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Spots are isolated if nearest neighbour (across all genes) is further away than this.
+Only isolated spots are used to find av_spot_image.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>z_scale</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>Scale factor to multiply z coordinates to put them in units of yx pixels.
+I.e. <code>z_scale = pixel_size_z / pixel_size_yx</code> where both are measured in microns.
+typically, <code>z_scale &gt; 1</code> because <code>z_pixels</code> are larger than the <code>yx_pixels</code>.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>mean_sign_thresh</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td><p>If the mean absolute coefficient sign is less than this in a region near a spot,
+we set the expected coefficient in av_spot_image to be 0.</p></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li>av_spot_image - <code>int8 [av_shape_y x av_shape_x x av_shape_z]</code>
+Expected sign of omp coefficient in neighbourhood centered on spot.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li>spot_indices_used - <code>int [n_spots_used]</code>.
+indices of spots in <code>spot_yxzg</code> used to make av_spot_image.</li>
+</ul></td>
+        </tr>
+        <tr>
+          <td>
+                <code><span title="numpy">np</span>.<span title="numpy.ndarray">ndarray</span></code>
+          </td>
+          <td><ul>
+<li>av_spot_image_float - <code>float [max_size[0] x max_size[1] x max_size[2]]</code>
+Mean of omp coefficient sign in neighbourhood centered on spot.
+This is before cropping and thresholding.</li>
+</ul></td>
+        </tr>
+    </tbody>
+  </table>
+
+      <details class="quote">
+        <summary>Source code in <code>coppafish/omp/spots.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">spot_neighbourhood</span><span class="p">(</span><span class="n">pixel_coefs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">csr_matrix</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">],</span> <span class="n">pixel_yxz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                       <span class="n">spot_gene_no</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">],</span> <span class="n">pos_neighbour_thresh</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                       <span class="n">isolation_dist</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z_scale</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                       <span class="n">mean_sign_thresh</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds the expected sign the coefficient should have in the neighbourhood about a spot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pixel_coefs: `float [n_pixels x n_genes]`.</span>
+<span class="sd">            `pixel_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm.</span>
+<span class="sd">             Most are zero hence sparse form used.</span>
+<span class="sd">        pixel_yxz: ```int [n_pixels x 3]```.</span>
+<span class="sd">            ```pixel_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for pixel ```s```.</span>
+<span class="sd">            ```pixel_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for pixel ```s```.</span>
+<span class="sd">        spot_yxz: ```int [n_spots x 3]```.</span>
+<span class="sd">            ```spot_yxz[s, :2]``` are the local yx coordinates in ```yx_pixels``` for spot ```s```.</span>
+<span class="sd">            ```spot_yxz[s, 2]``` is the local z coordinate in ```z_pixels``` for spot ```s```.</span>
+<span class="sd">        spot_gene_no: ```int [n_spots]```.</span>
+<span class="sd">            ```spot_gene_no[s]``` is the gene that this spot is assigned to.</span>
+<span class="sd">        max_size: `int [3]`.</span>
+<span class="sd">            max YXZ size of spot shape returned. Zeros at extremities will be cropped in `av_spot_image`.</span>
+<span class="sd">        pos_neighbour_thresh: For spot to be used to find av_spot_image, it must have this many pixels</span>
+<span class="sd">            around it on the same z-plane that have a positive coefficient.</span>
+<span class="sd">            If 3D, also, require 1 positive pixel on each neighbouring plane (i.e. 2 is added to this value).</span>
+<span class="sd">            Typical = 9.</span>
+<span class="sd">        isolation_dist: Spots are isolated if nearest neighbour (across all genes) is further away than this.</span>
+<span class="sd">            Only isolated spots are used to find av_spot_image.</span>
+<span class="sd">        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.</span>
+<span class="sd">            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.</span>
+<span class="sd">            typically, ```z_scale &gt; 1``` because ```z_pixels``` are larger than the ```yx_pixels```.</span>
+<span class="sd">        mean_sign_thresh: If the mean absolute coefficient sign is less than this in a region near a spot,</span>
+<span class="sd">            we set the expected coefficient in av_spot_image to be 0.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - av_spot_image - `int8 [av_shape_y x av_shape_x x av_shape_z]`</span>
+<span class="sd">            Expected sign of omp coefficient in neighbourhood centered on spot.</span>
+<span class="sd">        - spot_indices_used - `int [n_spots_used]`.</span>
+<span class="sd">            indices of spots in `spot_yxzg` used to make av_spot_image.</span>
+<span class="sd">        - av_spot_image_float - `float [max_size[0] x max_size[1] x max_size[2]]`</span>
+<span class="sd">            Mean of omp coefficient sign in neighbourhood centered on spot.</span>
+<span class="sd">            This is before cropping and thresholding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO: Maybe provide pixel_coef_sign instead of pixel_coef as less memory or use csr_matrix.</span>
+    <span class="n">n_pixels</span><span class="p">,</span> <span class="n">n_genes</span> <span class="o">=</span> <span class="n">pixel_coefs</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">,</span> <span class="p">[</span><span class="n">n_pixels</span><span class="p">,</span> <span class="mi">3</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;pixel_yxz&#39;</span><span class="p">,</span> <span class="n">pixel_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="p">(</span><span class="n">n_pixels</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">n_spots</span> <span class="o">=</span> <span class="n">spot_gene_no</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">check_shape</span><span class="p">(</span><span class="n">spot_yxz</span><span class="p">,</span> <span class="p">[</span><span class="n">n_spots</span><span class="p">,</span> <span class="mi">3</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">utils</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ShapeError</span><span class="p">(</span><span class="s1">&#39;spot_yxz&#39;</span><span class="p">,</span> <span class="n">spot_yxz</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                      <span class="p">(</span><span class="n">n_spots</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+    <span class="n">n_z</span> <span class="o">=</span> <span class="n">pixel_yxz</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">pos_filter_shape_yx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pos_neighbour_thresh</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_filter_shape_yx</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Shape must be odd</span>
+        <span class="n">pos_filter_shape_yx</span> <span class="o">=</span> <span class="n">pos_filter_shape_yx</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">n_z</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">pos_filter_shape_z</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pos_filter_shape_z</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">pos_filter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">pos_filter_shape_yx</span><span class="p">,</span> <span class="n">pos_filter_shape_yx</span><span class="p">,</span> <span class="n">pos_filter_shape_z</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">pos_filter</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">pos_filter_shape_z</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">pos_filter_shape_z</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">mid_yx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">pos_filter_shape_yx</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">pos_filter</span><span class="p">[</span><span class="n">mid_yx</span><span class="p">,</span> <span class="n">mid_yx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">pos_filter</span><span class="p">[</span><span class="n">mid_yx</span><span class="p">,</span> <span class="n">mid_yx</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">max_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">max_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n_z</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">max_size</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">max_size_odd_loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">max_size</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">max_size_odd_loc</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">max_size</span><span class="p">[</span><span class="n">max_size_odd_loc</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># ensure shape is odd</span>
+
+    <span class="c1"># get image centred on each spot.</span>
+    <span class="c1"># Big image shape which will be cropped later.</span>
+    <span class="n">spot_images</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="o">*</span><span class="n">max_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">spots_used</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_spots</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_genes</span><span class="p">):</span>
+        <span class="n">use</span> <span class="o">=</span> <span class="n">spot_gene_no</span> <span class="o">==</span> <span class="n">g</span>
+        <span class="k">if</span> <span class="n">use</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="c1"># Note size of image will be different for each gene.</span>
+            <span class="n">coef_sign_image</span><span class="p">,</span> <span class="n">coord_shift</span> <span class="o">=</span> <span class="n">cropped_coef_image</span><span class="p">(</span><span class="n">pixel_yxz</span><span class="p">,</span> <span class="n">pixel_coefs</span><span class="p">[:,</span> <span class="n">g</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">coef_sign_image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Go to next gene if no non-zero coefficients for this gene</span>
+                <span class="k">continue</span>
+            <span class="n">coef_sign_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">coef_sign_image</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">g_spot_yxz</span> <span class="o">=</span> <span class="n">spot_yxz</span><span class="p">[</span><span class="n">use</span><span class="p">]</span> <span class="o">-</span> <span class="n">coord_shift</span>
+
+            <span class="c1"># Only keep spots with all neighbourhood having positive coefficient.</span>
+            <span class="n">n_pos_neighb</span> <span class="o">=</span> <span class="n">count_spot_neighbours</span><span class="p">(</span><span class="n">coef_sign_image</span><span class="p">,</span> <span class="n">g_spot_yxz</span><span class="p">,</span> <span class="n">pos_filter</span><span class="p">)</span>
+            <span class="n">g_use</span> <span class="o">=</span> <span class="n">n_pos_neighb</span> <span class="o">==</span> <span class="n">pos_filter</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">use</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">use</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">g_use</span><span class="p">)]]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">coef_sign_image</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">coef_sign_image</span> <span class="o">=</span> <span class="n">coef_sign_image</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">use</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="c1"># nan_to_num sets nan to zero i.e. if out of range of coef_sign_image, coef assumed zero.</span>
+                <span class="c1"># This is what we want as have cropped coef_sign_image to exclude zero coefficients.</span>
+                <span class="n">spot_images</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">spot_images</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">get_spot_images</span><span class="p">(</span><span class="n">coef_sign_image</span><span class="p">,</span> <span class="n">g_spot_yxz</span><span class="p">[</span><span class="n">g_use</span><span class="p">],</span> <span class="n">max_size</span><span class="p">)</span>
+                                               <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">spots_used</span><span class="p">[</span><span class="n">use</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">spots_used</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No spots found to make average spot image from.&quot;</span><span class="p">)</span>
+    <span class="c1"># Compute average spot image from all isolated spots</span>
+    <span class="n">isolated</span> <span class="o">=</span> <span class="n">get_isolated_points</span><span class="p">(</span><span class="n">spot_yxz</span><span class="p">[</span><span class="n">spots_used</span><span class="p">]</span> <span class="o">*</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">z_scale</span><span class="p">],</span> <span class="n">isolation_dist</span><span class="p">)</span>
+    <span class="c1"># get_average below ignores the nan values.</span>
+    <span class="n">av_spot_image</span> <span class="o">=</span> <span class="n">get_average_spot_image</span><span class="p">(</span><span class="n">spot_images</span><span class="p">[</span><span class="n">isolated</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;annulus_3d&#39;</span><span class="p">)</span>
+    <span class="n">av_spot_image_float</span> <span class="o">=</span> <span class="n">av_spot_image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">spot_indices_used</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spots_used</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="n">isolated</span><span class="p">]</span>
+
+    <span class="c1"># Where mean sign is low, set to 0.</span>
+    <span class="n">av_spot_image</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">av_spot_image</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">mean_sign_thresh</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">av_spot_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">av_spot_image</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+
+    <span class="c1"># Crop image to remove zeros at extremities</span>
+    <span class="c1"># may get issue here if there is a positive sign pixel further away than negative but think unlikely.</span>
+    <span class="n">av_spot_image</span> <span class="o">=</span> <span class="n">av_spot_image</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">av_spot_image</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))]</span>
+    <span class="n">av_spot_image</span> <span class="o">=</span> <span class="n">av_spot_image</span><span class="p">[:,</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">av_spot_image</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="p">:]</span>
+    <span class="n">av_spot_image</span> <span class="o">=</span> <span class="n">av_spot_image</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">av_spot_image</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="p">:,</span> <span class="p">:]</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">av_spot_image</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;In av_spot_image, no pixels have a value of 1.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                      <span class="sa">f</span><span class="s2">&quot;Maybe mean_sign_thresh = </span><span class="si">{</span><span class="n">mean_sign_thresh</span><span class="si">}</span><span class="s2"> is too high.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">av_spot_image</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;In av_spot_image, no pixels have a value of -1.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                      <span class="sa">f</span><span class="s2">&quot;Maybe mean_sign_thresh = </span><span class="si">{</span><span class="n">mean_sign_thresh</span><span class="si">}</span><span class="s2"> is too high.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">av_spot_image</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;In av_spot_image, no pixels have a value of 0.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                      <span class="sa">f</span><span class="s2">&quot;Maybe mean_sign_thresh = </span><span class="si">{</span><span class="n">mean_sign_thresh</span><span class="si">}</span><span class="s2"> is too low.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">av_spot_image</span><span class="p">,</span> <span class="n">spot_indices_used</span><span class="p">,</span> <span class="n">av_spot_image_float</span>
+</code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../coefs/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Coefficients" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Coefficients
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../../pipeline/run/" class="md-footer__link md-footer__link--next" aria-label="Next: Run" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Run
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://github.com/jduffield65/coppafish" target="_blank" rel="noopener" title="Github Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.expand", "content.tabs.link", "navigation.sections", "navigation.top"], "search": "../../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
