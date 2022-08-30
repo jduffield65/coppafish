@@ -112,11 +112,11 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                     spot_intensity = spot_intensity[no_negative_neighbour]
                     # If r is a reference round, we also get info about whether the spots are isolated
                     if r == nbp_basic.ref_round:
-                        isolated_spots = bool(fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
+                        isolated_spots = fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
                                                         spot_yxz, nbp.isolation_thresh[t],
                                                         config['isolation_radius_inner'],
                                                         config['isolation_radius_xy'],
-                                                        config['isolation_radius_z']))
+                                                        config['isolation_radius_z'])
 
                     else:
                         # if imaging round, only keep the highest intensity spots on each z plane
