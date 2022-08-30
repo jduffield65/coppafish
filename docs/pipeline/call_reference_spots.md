@@ -1,13 +1,13 @@
 # Call Reference Spots
 The [*call reference spots* step of the pipeline](../code/pipeline/call_reference_spots.md) uses the 
 $n_{rounds} \times n_{channels}$  `color` obtained for each reference spot 
-(detected on the reference round/reference channel ($r_{ref}$/$c_{ref}$) in the 
-[*get reference spots*](get_reference_spots.md) step of the pipeline to compute the `bleed_matrix` accounting
+(detected on the reference round/reference channel, $r_{ref}$/$c_{ref}$) in the 
+[*get reference spots*](get_reference_spots.md) step of the pipeline to compute the `bleed_matrix`, accounting
 for crosstalk between color channels. We then compute the `gene_efficiency` which allows for varying round
 strengths for each gene, before assigning each reference spot to a gene.
 
-These gene assignments are saved in the [`ref_spots`](../notebook_comments.md#ref_spots) *NotebookPage* 
-while the bleed_matrix and expected bled_code for each gene are saved in the 
+These gene assignments are saved in the [`ref_spots`](../notebook_comments.md#ref_spots) *NotebookPage*, 
+while the `bleed_matrix` and expected `bled_code` for each gene are saved in the 
 [`call_spots`](../notebook_comments.md#call_spots) *NotebookPage*. The distribution of the genes can be 
 seen using [`coppafish.Viewer`](../view_results.md) once these pages have been added.
 
@@ -152,7 +152,7 @@ normalisation factor, `nb.call_spots.color_norm_factor`.
 ??? question "Why do we need to normalise color channels?"
 
     The gene assignment of the spot below indicates why we need to normalise color channels.
-    With no normalisation, the gene assignment is overly influenced by channel 4 which 
+    With no normalisation, the gene assignment is overly influenced by channel 4, which 
     is one of the most intense channels (see `color_norm_factor` in example box below). Thus it matches 
     to *Reln* which appears in channel 4 in rounds 0, 1, 5 and 6. It also doesn't care at all about 
     channel 2 because it is the weakest channel and *Reln* does not appear in channel 2 in any rounds.
@@ -185,8 +185,8 @@ If `config[bleed_matrix_method] = 'single'`, then we combine all rounds for each
 ??? example
 
     With `config['color_norm_intensities'] = 0.5, 1, 5` and `config['color_norm_probs'] = 0.01, 5e-4, 1e-5`
-    and the [histograms](extract.md#hist_counts) shown in the *extract and filter* step, the two
-    methods of `config[bleed_matrix_method]` produce the following `color_norm_factor`:
+    and the [histograms](extract.md#hist_counts) shown in the [*extract and filter*](extract.md#hist_counts) step, 
+    the two methods of `config[bleed_matrix_method]` produce the following `color_norm_factor`:
     
     === "Single"
         ![image](../images/pipeline/call_spots/color_norm_factor.png){width="500"}
@@ -195,14 +195,14 @@ If `config[bleed_matrix_method] = 'single'`, then we combine all rounds for each
         ![image](../images/pipeline/call_spots/color_norm_factor_sep.png){width="500"}
 
     The [normalised histogram](extract.md#hist_counts) shown was normalised using the *Single* `color_norm_factor`
-    and you can see that for each round and channel there is a similar area under the curve
+    and you can see that for each round and channel, there is a similar area under the curve
     (probability) beyond $\zeta_{rc}=0.5$, as expected from `config['color_norm_intensities']`.
 
 ## Background
 After we have the normalised spot colors, $\pmb{\zeta}$, we 
 [remove](../code/call_spots/background.md#coppafish.call_spots.background.fit_background) some background *genes* from them. 
 There is one background *gene* for each channel, $\pmb{B}_C$. The background *gene* for channel $C$ is defined by:
-$\pmb{B}_{C_{rc}}$ if $c = C$ and 0 otherwise i.e. it is just a strip in channel $C$:
+$\pmb{B}_{C_{rc}}=1$ if $c = C$ and 0 otherwise i.e. it is just a strip in channel $C$:
 
 ![image](../images/pipeline/call_spots/background/channel1_background.png){width="300"}
 
@@ -220,17 +220,17 @@ It is also normalised to have an L2 norm of 1. These are saved as `nb.call_spots
     === "With Background Removal"
         ![image](../images/pipeline/call_spots/background/thsd7a_spot_background_remove.png){width="500"}
 
-    Now no gene in the codebook looks that much like a background gene but if the background genes have not
+    No gene in the codebook looks that much like a background gene but if the background genes have not
     been fit, as with the first image above, spots like this will match to the gene which has the most 
     rounds in the relavent channel/s. Here, *Thsd7a* has intensity in channel 2 in all rounds apart from round 2.
-    This problem will be exacerbated in the omp step, because at each iteration of the omp algorithm, 
-    it will just try and fit more and more genes to explain the intense channel.
+    This problem will be exacerbated in the omp step, because at each iteration of the [*OMP*](omp.md#omp-algorithm) 
+    algorithm, it will just try and fit more and more genes to explain the intense channel.
 
     If we do remove background though, as with the second image, the gene assignment will be based 
     on the other channels where not all rounds were intense. In this case, we get a match to *Sst* due
     to round 2 and 3 in channel 0.
 
-    If we look at [`histogram_score`](#histogram_score) for *Thsd7a*, we see that wihtout background removal
+    If we look at [`histogram_score`](#histogram_score) for *Thsd7a*, we see that without background removal
     (purple), the peak in score is significantly larger:
 
     ![image](../images/pipeline/call_spots/background/thsd7a_hist.png){width="500"}
@@ -262,10 +262,10 @@ Where, $\lambda_b$ is `config['background_weight_shift']` and the sum is over al
     as an average pixel. 
 
     If $\lambda_b = 0$, then $w_{rc}$ would go to $\infty$ for low intensity rounds and channels,
-    so the value of $\lambda_b$ chosen also provides an upper bound onthe contribution of low intensity 
+    so the value of $\lambda_b$ chosen also provides an upper bound on the contribution of low intensity 
     rounds and channels to the final coefficient.
 
-If the weighting, $w$, was a constant across rounds and channels ($\lambda_b = \infty$), this would just be 
+If the weighting, $\pmb{w}$, was a constant across rounds and channels ($\lambda_b = \infty$), this would just be 
 the least squares solution. After we have found the coefficients, we remove the background contribution
 from the spot colors to give $\pmb{\zeta}_{{s0}}$ which we use from now on.
 
@@ -277,7 +277,7 @@ $$
 ??? question "Why do we need a weighting?"
     
     We find $\mu_{sC}$ via weighted least squares, because it limits the influence of outliers. 
-    The example below shows that with $\lambda_b = \infty$ (normal least squares), really tries to remove
+    The example below shows that with $\lambda_b = \infty$ (normal least squares), it really tries to remove
     the outlier in round 4, channel 0. The result of this is that all the other rounds of channel 0 become 
     very negative.
     
@@ -288,7 +288,7 @@ $$
     === "$\pmb{\zeta}_{s0} (\lambda_b = \infty)$"
         ![image](../images/pipeline/call_spots/background/view_codes_infinite_weight.png){width="600"}
     
-    This spot should be *Slc6a1* as shown from the $\lambda_b = 0.08$ image but *Slc6a1* is expected to be 
+    This spot should be *Slc6a1* as shown from the $\lambda_b = 0.08$ image, but *Slc6a1* is expected to be 
     in 4 of the 6 rounds that were set to negative by the background fitting with $\lambda_b = \infty$.
     Thus, this spot can no longer be assigned to the correct gene after $\lambda_b = \infty$ background fitting.
     
@@ -307,12 +307,12 @@ The background coefficient calculation can be visualised by using the
 For each plot, each row corresponds to a different background *gene* coefficient calculation i.e. a different 
 channel. There is no overlap between the background codes hence we can view all the calculations at the same time.
 
-In the bottom row, round $r$, channel $c$ in the *Weighted Dot Product* plot refers to the value
+Round $r$, channel $c$ in the *Weighted Dot Product* plot refers to the value
 of $\frac{w^2_{rc}\zeta_{s_{rc}}B_{C_{rc}}}{\sum_rw^2_{rC}B^2_{C_{rC}}}$. 
-In the top row, the *Dot Product* plot is the same as the *Weighted Dot Product* plot except $\lambda_b = \infty$.
+The *Dot Product* plot is the same as the *Weighted Dot Product* plot except $\lambda_b = \infty$.
 
-The bottom row *Weighted Coef* plot thus shows the coefficient computed for the current value of $\lambda_b$ 
-(0.08 here, but can be specified with in the textbox). The top row *Coef* plot shows the coefficient that would
+The *Weighted Coef* plot thus shows the coefficient computed for the current value of $\lambda_b$ 
+(0.08 here, but can be specified in the textbox). The *Coef* plot shows the coefficient that would
 be computed with $\lambda_b = \infty$.
 
 The main difference between the two in this case is that the channel 0 coefficient is much larger for the
@@ -335,7 +335,7 @@ not affected by spatial overlap of spots corresponding to different genes.
 
 Crosstalk is then estimated by running a 
 [scaled k-means](../code/call_spots/bleed_matrix.md#coppafish.call_spots.bleed_matrix.scaled_k_means) 
-algorithm on these vectors, which finds a set of $n_{dye}$ vectors, $\pmb{c}_d$, such that the error function:
+algorithm on these vectors, which finds a set of $n_{dyes}$ vectors, $\pmb{c}_d$, such that the error function:
 
 $$
 \sum_i\min_{\lambda_i, d(i)}|\pmb{v}_i - \lambda_i\pmb{c}_{d(i)}|^2
@@ -429,14 +429,14 @@ can be visualised using the [`view_scaled_k_means`](../code/plot/call_spots.md#s
 
 ![image](../images/pipeline/call_spots/bleed_matrix/scaled_k_means.png){width="800"}
 
-In each column, the top row, boxplot $d$, is for `top_score[dye_ind == d]` (only showing scores above
-`score_thresh`, which is 0 for the first two plots) with the dye vectors, $\pmb{c}_d$, indicated in the second
+In each column, in the top row, boxplot $d$ is for `top_score[dye_ind == d]` (only showing scores above
+`score_thresh` - 0 for the first two columns). The dye vectors, $\pmb{c}_d$, are indicated in the second
 row. The number of vectors assigned to each dye is indicated by the number within each boxplot.
 
 The first column is for the first iteration i.e. with the initial guess of the bleed matrix.
 The second column is after the first `scaled_k_means` algorithm has finished.
 The third column is after the second `scaled_k_means` algorithm has finished (only shown if `bleed_matrix_anneal=True`).
-The bottom whisked of the boxplots in the third column indicate the `score_thresh` used for each dye.
+The bottom whisker of the boxplots in the third column indicate the `score_thresh` used for each dye.
 
 This is useful for debugging the `bleed_matrix` computation, as you want the boxplots to show high scores and for those
 scores to increase from left to right as the algorithm is run.
@@ -460,7 +460,7 @@ Each `bled_code` is also normalised to have an L2 norm of 1. They are saved as `
     ![image](../images/pipeline/call_spots/bleed_matrix/bled_code.png){width="800"}
 
 ## Dot Product Score
-To assign spot $s$, with spot color (post background), $\pmb{\zeta}_{{si}}$, to a gene, we compute a dot product
+To assign spot $s$, with spot color, $\pmb{\zeta}_{{si}}$, to a gene, we compute a dot product
 score, $\Delta_{sig}$ to each gene, $g$, with `bled_code` $\pmb{b}_g$. This is 
 [defined](../code/call_spots/dot_product.md#coppafish.call_spots.dot_product.dot_product_score) to be:
 
@@ -495,7 +495,7 @@ were introduced in the [background](#background) section.
 * $i$ refers to the number of actual genes fit prior to this iteration of *OMP*. Here, because we are
 only fitting one gene, $i=0$, meaning only background has been fit ($\sum_{g=0}^{n_g-1}\mu^2_{sig}b^2_{g_{rc}}=0$).
 
-So if $\lambda_d = 0$ and $\pmb{\omega}^2_{si}$ was 1 for each round and channel (achieved through $\alpha=0$), then 
+So if $\lambda_d = 0$ and $\pmb{\omega}^2_{si}=1$ for each round and channel (achieved through $\alpha=0$), then 
 this would just be the normal dot product between two vectors with L2 norm of one. 
 The min value is 0 and max value is 1. 
 
@@ -524,10 +524,10 @@ term such that the max possible value of $\Delta_{sig}$ is approximately 1 (it c
     computed from the colors of all pixels in the middle z-plane 
     (`nb.call_spots.norm_shift_tile`) of the central tile (`nb.call_spots.norm_shift_z`).
     
-    The idea behind this is that, the L2 norm of an average background pixel would be 
+    The idea behind this, is that the L2 norm of an average background pixel would be 
     `config['dp_norm_shift'] * sqrt(n_rounds)`. So if $\lambda_d$ was set to this, it is giving 
     a penalty to any spot which is less intense than the average background pixel. This is 
-    desirable since any pixels of such a low intensity are unlikely to be spots.
+    desirable since any pixels of such low intensity are unlikely to be spots.
 
 The spot $s$, is assigned to the gene $g$, for which $\Delta_{sig}$ is the largest.
 
@@ -568,7 +568,7 @@ where they are most intense. The mode score does not change though:
 ![image](../images/pipeline/call_spots/hist_weight.png){width="800"}
 
 ## Gene Efficiency
-Once we have a [score](#dot-product-score) and gene assigned to each spot, we can update the bled_codes
+Once we have a [score](#dot-product-score) and gene assigned to each spot, we can update the `bled_codes`
 for each gene, $\pmb{b}_g$ based on all the spot colors assigned to them, $\pmb{\zeta}_{{s0}}$. 
 We do this by determining `nb.call_spots.gene_efficiency`. `gene_efficiency[g, r]` gives the expected intensity
 of gene $g$ in round $r$, as determined by the spots assigned to it, compared to that expected by the `bleed_matrix`.
@@ -664,7 +664,8 @@ but this round will be different for each gene.
 
 ??? question "Why do we need `gene_efficiency`?"
         
-    We need `gene_efficiency` because there is a high variance in the strength each gene appears with in each round.
+    We need `gene_efficiency` because there is a high variance in the strength with which each gene appears in
+    each round.
     For example, in the the `bled_code` plot below, we see that the effect of incorporating gene_efficiency
     is to reduce the strength of rounds 0, 5 and 6 while boosting rounds 2 and 3.
 
@@ -733,12 +734,12 @@ for g in range (n_genes):
 ```
 
 We then re-compute the [dot product score](#dot-product-score) and gene assignment 
-for each spot with the new `bled_codes`. We continue this process of computing the gene_efficiency, 
+for each spot with the new `bled_codes`. We continue this process of computing the gene efficiency, 
 updating the [dot product score](#dot-product-score) until the same spots
 have been used to compute the gene efficiency in two subsequent iterations or until
 `config[gene_efficiency_n_iter]` iterations have been run.
 
-The bled_codes computed from the final iteration will be saved as `nb.call_spots.bled_codes_ge`. This will
+The `bled_codes` computed from the final iteration will be saved as `nb.call_spots.bled_codes_ge`. This will
 be the same as `nb.call_spots.bled_codes` if `config[gene_efficiency_n_iter] = 0`.
 These are the ones used to compute dot product score to the best gene, $g_0$, $\Delta_{s0g_0}$.
 These are saved as `nb.ref_spots.gene_no` and `nb.ref_spots.score` respectively.
@@ -787,7 +788,7 @@ assigned to every reference spot:
 === "All Plots"
     ![image](../images/pipeline/call_spots/hist_all.png){width="800"}
 
-This is useful for checking how well that the gene assignment worked. The higher the score where the distribution 
+This is useful for checking how well the gene assignment worked. The higher the score where the distribution 
 peaks, the better. Certainly, if the peak is around 0.8, as with this example, then it probably worked well.
 
 The *Dot Product Score* image above is showing the histogram of `nb.ref_spots.score`, but there are 4 other plots 
@@ -810,13 +811,13 @@ or the gene name can be entered. To go back to viewing all genes, type in *all* 
 The Histogram Spacing textbox can be used to change the bin size of the histogram.
 
 ### [`gene_counts`](../code/plot/call_spots.md#gene_counts)
-This plot indicates the number of spots assigned to each gene which also have `nb.call_spots.score > score_thresh`
-and `nb.call_spots.intensity > intensity_thresh`. The default `score_thresh` and `intensity_thresh` 
+This plot indicates the number of spots assigned to each gene which also have `nb.ref_spots.score > score_thresh`
+and `nb.ref_spots.intensity > intensity_thresh`. The default `score_thresh` and `intensity_thresh` 
 are `config['thresholds']['score_ref']` and `config['thresholds']['intensity']` respectively. They can be changed
 with the textboxes though. This 
 [thresholding](../code/call_spots/qual_check.md#coppafish.call_spots.qual_check.quality_threshold) 
-is the same that is done in the [results viewer](../view_results.md#score-range) 
-and when [exporting to pciSeq](../code/utils/pciseq.md). 
+is the same that is done in the [results `Viewer`](../view_results.md#score-range) 
+and when [exporting to *pciSeq*](../code/utils/pciseq.md). 
 
 === "Gene Counts"
     ![image](../images/pipeline/call_spots/gene_counts/gene_count.png){width="800"}
@@ -826,16 +827,16 @@ and when [exporting to pciSeq](../code/utils/pciseq.md).
 There is also a second *Ref Spots - Fake Genes* plot which can be shown in yellow. This shows the results 
 of the gene assignment if we added some fake `bled_codes` as well as the ones corresponding to genes.
 The idea is to choose fake `bled_codes` which are well separated from the actual `bled_codes`. If spots then match to
-these fake genes then it probably means the initial gene assignment is not reliable.
+these fake genes, then it probably means the initial gene assignment is not reliable.
 
-The fake `bled_codes` can be specified, but by default there is one fake bled_code added for each round, $r$, and
+The fake `bled_codes` can be specified, but by default there is one fake `bled_code` added for each round, $r$, and
 channel $c$, which is 1 in round $r$, channel $c$ and 0 everywhere else. In the second image above, we see that 
 there is not much change in the gene counts when we add the fake genes, indicating the initial assignment is probably
 reliable.
 
 ??? example "Example Dataset with lots of *Fake Genes*"
 
-    The example below indicates a case when the fake genes functionality may be useful.
+    The example below indicates a case where the fake genes functionality may be useful.
         
     When we open `coppafish.Viewer`, we see that there seems to be too many spots assigned to *Penk* and 
     *Vip*.
@@ -852,12 +853,12 @@ reliable.
     If we then look at the `gene_counts`, we see that when we include fake genes, the number of spots
     assigned to *Penk* and *Vip* decreases drastically because they have been assigned to the $r0c18$ fake gene.
     
-    When we look at the *Penk* and *Vip* bled_codes, we see that they are very intense in round 0, channel 18.
+    When we look at the *Penk* and *Vip* `bled_codes`, we see that they are very intense in round 0, channel 18.
     So most spots seem to only have been assigned to these genes on the basis of this one round and channel.
 
 ### [`view_bleed_matrix`](../code/plot/call_spots.md#view_bleed_matrix)
 [This function](../view_results.md#b-view_bleed_matrix) is useful for seeing if the dye vectors in the 
-bleed_matrix are easily distinguished.
+`bleed_matrix` are easily distinguished.
 
 ### [`view_bled_codes`](../code/plot/call_spots.md#view_bled_codes)
 [This function](../view_results.md#g-view_bled_codes) is useful for seeing how the `gene_efficiency` 

@@ -5,7 +5,7 @@ to explain the $n_{rounds} \times n_{channels}$ [intensity vector](get_reference
 at each pixel. This gives us a coefficient, $\mu_{sg}$ for every pixel, $s$, and gene, $g$, and thus we can 
 create a coefficient image for every gene.
 
-By doing a local maxima search on these images, we can obtain another estimate of the distribution of genes which 
+By doing a local maxima search on these images, we can obtain another estimate of the distribution of genes, which 
 we can compare to that obtained from the [reference spots](get_reference_spots.md). The number and location of spots
 found by the *OMP* method will be different though.
 
@@ -89,7 +89,7 @@ $$
 
     We use $|\pmb{\zeta}_s|$ because we are also interested in whether a pixel has a negative gene coefficient. We
     expect a negative coefficient in an annulus around a spot, as shown in the 
-    [`view_omp_fit`](../view_results.md#shift-o-view_omp_fit) plots, as a result of the 
+    [`view_omp`](../view_results.md#o-view_omp) plots, as a result of the 
     [difference of hanning kernel](extract.md#effect-of-filtering) used in the initial filtering. If a gene has a
     negative coefficient annulus around the local maxima, then it boosts our confidence that it is legitimate.
 
@@ -187,8 +187,8 @@ is $\pmb{\mu}_{si}$ ($i=0$ means just background has been fit) but $\mu_{sig=n_g
 as the background coefficients are never updated.
 
 ### Finding Best Gene
-*Step 4* is finding the gene, $g_i$, with the bled_code, $b_{g_i}$ which best represents residual after $i$ actual genes
-have been added, $\pmb{\zeta}_{si}$. 
+*Step 4* is finding the gene, $g_i$, with the `bled_code`, $b_{g_i}$ which best represents the residual after $i$ 
+actual genes have been added, $\pmb{\zeta}_{si}$. 
 
 We determine $g_i$ to be the gene for which $|\Delta_{sig}|$ is the largest, where $\Delta_{sig}$ is exactly 
 the same dot product score used in [`call_reference_spots`](call_reference_spots.md#dot-product-score). We use 
@@ -197,7 +197,7 @@ the absolute score here because negative gene coefficients also provide useful i
 
 ??? note "Dot Product Score Parameters"
 
-    In the configuration file, `alpha` and `beta` specified in both the `call_spots` and `omp` sections
+    In the configuration file, `alpha` and `beta` are specified in both the `call_spots` and `omp` sections,
     so different values of these parameters can be used for each method.
 
     The value of $\lambda_d$ in the $\tilde{\zeta}_{{si}_{rc}}$
@@ -205,18 +205,18 @@ the absolute score here because negative gene coefficients also provide useful i
     to `nb.call_spots.dp_norm_shift * sqrt(n_rounds)` so the same value is used for the 
     *reference spots* and *OMP* methods.
     
-After we have found the $g_i$, we stop the algorithm if any of the following are satisfied:
+After we have found $g_i$, we stop the algorithm if any of the following are satisfied:
 
 * $|\Delta_{si}| = |\Delta_{sig_i}|$ < `config['dp_thresh']`.
 * $g_i \geq n_g$ i.e. $g_i$ is a background *gene*.
 * $g_i$ was found to be the best gene on a previous iteration.
 
-This second condition occurred for the third gene added in the view_omp_fit example shown 
+This second condition occurred for the third gene added in the `view_omp_fit` example shown 
 [earlier](#why-bother-with-omp). This case is quite rare though, since the background genes have already been fit.
 We include it because if there is an artificial gene being identified as the best one, then we are also likely to
 erroneously assign actual genes to the pixel which are not actually there. But stopping the algorithm prevents 
-this from happening. It may be more appropriate to recompute the background coefficient for the background *gene*
-identified, if this happens though.
+this from happening. It may be more appropriate to recompute the background coefficient, for the background *gene*
+identified if this happens though.
 
 The third condition is just to stop getting in a loop where we are always fitting the same gene, but it is even rarer 
 than the second.
@@ -287,7 +287,7 @@ $$
 $$
 
 Where $n_c$ is the number of channels and $n_g$ is the number of genes. The second equation includes the combination
-from the background *genes*. In the first equation, only $\mu_{sig}$ will only be non-zero for $i+1$ genes (in 
+from the background *genes*. In the first equation, $\mu_{sig}$ will only be non-zero for $i+1$ genes (in 
 the second equation, it will be for $i+1+n_c$ genes, because we include the $n_c$ background *genes*).
 
 We continue iterating between *Step 4* and *Step 6* until any of the [stopping criteria](#finding-best-gene) are met, 
@@ -318,7 +318,7 @@ If we compare the [`view_omp_fit`](../view_results.md#shift-o-view_omp_fit) plot
 in the $\alpha=0$ case, *Rgs4* has been fit to explain the anomalously negative round 6, channel 5
 and *Aldoc* has been fit to explain the anomalously positive round 2, channel 1.
 
-The [`view_weight`](#view_weight) shows the calculation of the weight
+The [`view_weight`](#view_weight) image shows the calculation of the weight
 factor for $i=4$ (all 4 of the actual genes shown have been added). This shows that round 2, channel 1 has a low
 weighting because *Lhx6* has already been fit and this gene has high intensity in round 2, channel 1.
 
@@ -343,7 +343,7 @@ for a very small fraction of genes.
 
 <br clear="right"/>
 
-We then take each gene in turn and [find spots](../code/omp/spots.md#coppafish.omp.spots.get_spots) 
+We then take each gene in turn and [find spots](../code/omp/spots.md#coppafish.omp.spots.get_spots), 
 which are the local maxima in the coefficient image. These local maxima are 
 [found](../code/find_spots/detect.md#coppafish.find_spots.detect.detect_spots) in exactly the same way
 as in the [*find spots*](find_spots.md#spot-detection) part of the pipeline. But here,
@@ -364,7 +364,7 @@ in the neighbourhood of a spot.
 If the file indicated by `config['file_names']['omp_spot_shape']` does not exist, then it will be 
 [computed](../code/omp/spots.md#coppafish.omp.spots.spot_neighbourhood)
 from the spots found on a specific tile. The tile used is the one for which the most spots were found with the 
-*reference spots* method, and it is saved as `nb.omp.shape_tile`. 
+[*reference spots*](call_reference_spots.md) method, and it is saved as `nb.omp.shape_tile`. 
 
 
 The psuedocode for [obtaining the spot shape](../code/omp/spots.md#coppafish.omp.spots.spot_neighbourhood) is given below:
@@ -457,7 +457,7 @@ We set `av_type = 'mean'` and `symmetry = 'annulus_3d'`. We use this symmetry be
 spot should be circular within a z-plane and symmetric in z. This procedure produces the *Average Sign* image
 shown above. This is saved to the *Notebook* as `nb.omp.spot_shape_float`.
 
-After we have this `av_sign_image`, we get our final spot_shape via:
+After we have this `av_sign_image`, we get our final `spot_shape` via:
 
 ``` python
 import numpy as np
@@ -532,7 +532,7 @@ To get past this error, the *OMP* step needs to be re-run with either
     as to where `nb.omp.spot_shape=1` though.
     
 ### `n_neighbours`
-Once we have found the `spot_shape`, we want to see how each spot resembles this. To do this, 
+Once we have found the `spot_shape`, we want to quantify how much each spot resembles it. To do this, 
 if spot $s$, was found on the gene $g$ coefficient image, we first 
 [obtain](../code/utils/spot_images.md#coppafish.utils.spot_images.get_spot_images) `coef_im_s` which is the gene 
 $g$ coefficient image centered on the coordinates of spot $s$, with the same size as `spot_shape`.
@@ -598,7 +598,7 @@ are much larger than the positive and in the $\rho=20$ image, the positive pixel
 Because the *OMP* section of the pipeline takes a long time, we want to save the results as we go along, so 
 we don't have to restart the whole thing if it crashes for some reason e.g. a memory error.
 
-Thus, after we have found the spots on a tile, we save the information for all of them to a npy file
+Thus, after we have found the spots on a tile, we save the information for all of them in a npy file
 in the output directory with a name indicated by `config['file_names']['omp_spot_info']`. For each spot, $s$, 
 this file contains 7 integer values. The first 3 are the local $yxz$ coordinates (z-coordinate in units of z-pixels) on 
 the tile it was found on. The fourth is the gene it was assigned to. The fifth is `n_neighbours_pos` and the sixth
@@ -706,10 +706,10 @@ the dot product score for *Trp53i11* was calculated on iteration 1.
 
 ### [`view_score`](../code/plot/call_spots.md#view_score)
 The `view_score` is the same as [described for *reference spots* method](call_reference_spots.md#view_score).
-However, for the *OMP* method though, $\Delta_s$ is computed for each gene on each iteration. The calculation
+However, for the *OMP* method, $\Delta_s$ is computed for each gene on each iteration. The calculation
 of all these different $\Delta_s$ values can be viewed by changing the gene/iteration in the textboxes.
 
-For example, the `view_score` above shows the calculation for *Trp53i11* on iteration 1 but if you wanted 
+For example, the `view_score` image above shows the calculation for *Trp53i11* on iteration 1, but if you wanted 
 to know why *Pde1a* was not fit on iteration 1, you can type in *Pde1a* or 42 in the *Gene* textbox:
 
 ![image](../images/pipeline/omp/diagnostics/view_score2.png){width="800"}
@@ -739,7 +739,7 @@ in the `view_background` image [above](#view_omp_fit).
 
 
 ### [`view_background`](../code/plot/call_spots.md#view_background)
-The [background calculation](call_reference_spots.md#background) and `view_background` function is exactly the same as 
+The [background calculation](call_reference_spots.md#background) and `view_background` function are exactly the same as 
 [described for *reference spots* method](call_reference_spots.md#view_background).
 
 ## Psuedocode
