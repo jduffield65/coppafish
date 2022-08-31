@@ -112,11 +112,11 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                     spot_intensity = spot_intensity[no_negative_neighbour]
                     # If r is a reference round, we also get info about whether the spots are isolated
                     if r == nbp_basic.ref_round:
-                        isolated_spots = bool(fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
+                        isolated_spots = fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
                                                         spot_yxz, nbp.isolation_thresh[t],
                                                         config['isolation_radius_inner'],
                                                         config['isolation_radius_xy'],
-                                                        config['isolation_radius_z']))
+                                                        config['isolation_radius_z'])
 
                     else:
                         # if imaging round, only keep the highest intensity spots on each z plane
@@ -139,8 +139,11 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                                 keep[np.logical_and(in_z, spot_intensity < intensity_thresh)] = False
                         spot_yxz = spot_yxz[keep]
 
-                    # Now save the spot_details and spot_no and update the progress bar
-                    spot_details = spot_yxz
+                    # We are still within the channels loop. We'd like to store info about spots found on this [t,r,c]
+                    # Since we create a new layer of the spot_no matrix for each tile, the first index of spot_no will
+                    # be 0. We also need to append the spot_details (ie: the yxz coords) of the spots we have found
+                    # on this [t,r,c] to the spot_details we have found so far
+                    spot_details = np.vstack((spot_details, spot_yxz))
                     spot_no[0, r, c] = spot_yxz.shape[0]
                     pbar.update(1)
 

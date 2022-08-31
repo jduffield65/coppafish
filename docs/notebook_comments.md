@@ -44,6 +44,10 @@
 
 	 If the extract step of the pipeline is re-run with `extract['scale']` or  `extract['scale_anchor']` different to values saved here, an error will be raised.
 
+* **spot_details_info**: *File*.
+
+	After each tile is finished in find_spots, information about spots found is saved as array to *npz* file: We save this info as an npz because we're saving a collection of arrays. We have an int16 array [n_spots x 3] containing $y$, $x$, $z$, called spot_details. We have an int16 array called spot_no [n_tiles * n_rounds *  n_channels] which gives number of spots found on that [t,r,c]. We also have an [n_anchor_spots * 1] boolean array named isolated_spots which gives 1 if anchor_spot[s] isolated, 0 o/w
+
 * **psf**: *File or None*.
 
 	*npy* file indicating average spot shape (before padding and scaled to fill *uint16* range). Will be `None` if *2D* pipeline used. File won't exist/used if `config['extract']['deconvolve'] = False`. If *3D*, 1st axis in *npy* file is z.
@@ -320,9 +324,13 @@ The *extract* page contains variables from `extract_and_filter` step which are u
 
 	`spot_no[t, r, c]` is the number of spots found on tile $t$, round $r$, channel $c$
 
-* **spot_details**: *Numpy int16 array [n_total_spots x 7]*.
+* **spot_details**: *Numpy int16 array [n_total_spots x 3]*.
 
-	`spot_details[i,:]` is `[tile, round, channel, isolated, y, x, z]` for spot $i$ isolated is 0 for all non reference round/channel spots and is 1 for isolated reference spots. $y$, $x$ gives the local tile coordinates in yx-pixels. $z$ gives local tile coordinate in z-pixels (0 if *2D*)
+	`spot_details[i,:]` is `[y, x, z]` for spot $i$ $y$, $x$ gives the local tile coordinates in yx-pixels. $z$ gives local tile coordinate in z-pixels (0 if *2D*)
+
+* **isolated_spots**: *Boolean Array [n_anchor_spots x 1]*.
+
+	isolated spots[s] returns a 1 if anchor spot s is isolated and 0 o/w
 
 ## stitch
 *stitch* page contains information about how tiles were stitched together to give global coordinates. Only `tile_origin` is used in later stages of the pipeline. Note that references to *south* in this section should really be *north* and *west* should be *east*.  Page added to *Notebook* in *pipeline/stitch.py*

@@ -78,6 +78,12 @@ The *file_names* section specifies the files that will be used throughout the pi
 
 	Default: `scale`
 
+* **spot_details_info**: *str*.
+
+	npz file in *output_dir* containing coords of spots found in find_spots step as well as spot_no and isolated_spots. After each tile is completed, information will be saved to this file. If file does not exist, it will be saved after first tile of find_spots step. 
+
+	Default: `spot_details_info`
+
 * **psf**: *str*.
 
 	npy file in output directory indicating average spot shape. If deconvolution required and file does not exist, will be computed automatically in extract step. (this is psf before tapering and scaled to fill uint16 range). 
