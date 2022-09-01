@@ -53,14 +53,16 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         info = np.load(nbp_file.spot_details_info)
         # Extract the spot_no array
         spot_no = info.f.arr_1
-        # The number of tiles is given by the length of dimension 0 of this matrix
-        found_tiles_no = spot_no.shape[0]
-        # Now save the previously found tiles
-        prev_found_tiles = use_tiles[0:found_tiles_no]
-        # New use_tiles os the set diff of use_tiles and prev_found_tiles
+        if spot_no.shape[0] != nbp_basic.n_tiles:
+            warnings.warn(f'spot_no matrix should have info for {nbp_basic.n_tiles} tiles, but only has '
+                          f''f'{spot_no.shape} tiles. This may cause an index error.')
+        # Now find the previously found tiles
+        prev_found_tiles = [i for i in range(nbp_basic.n_tiles) if np.sum(spot_no[i]) > 0]
+        # Now use_tiles os the set diff of use_tiles and prev_found_tiles
         use_tiles = np.setdiff1d(use_tiles, prev_found_tiles)
         # Give user a warning
-        warnings.warn(f'Already have find_spots results for tiles {prev_found_tiles} so now just running on tiles 'f'{use_tiles}.')
+        warnings.warn(f'Already have find_spots results for tiles {prev_found_tiles} so now just running on tiles '
+                      f''f'{use_tiles}.')
         # Delete this info as it's large and we want to save memory
         del info, spot_no, prev_found_tiles
 
@@ -68,7 +70,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     n_images = len(use_rounds) * len(use_tiles) * len(nbp_basic.use_channels)
 
     # The use_rounds doesn't include the anchor round, so if we are going to use the anchor round, we must tell the
-    # program to include this in the rounds, and do some different analysis on this
+    # program to include this in the rounds, and do some different analysis on this. This can't be included in the
+    # calculation of n_images above because the anchor_round has only one channel
     if nbp_basic.use_anchor:
         use_rounds = use_rounds + [nbp_basic.anchor_round]
         # Since there's only one channel for this round, we get len(use_tiles) extra images
@@ -78,6 +81,12 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     # the same as the 3D case but with 1 z-plane
     n_z = np.max([1, nbp_basic.is_3d * nbp_basic.nz])
 
+    # spot_no will be an n_tiles by n_rounds by n_channels matrix, anchor_spots per round are approx 30,000 so use int32
+    # The dimension for tiles needs to be total number of tiles, not just tiles used. If we tried to remove certain
+    # tiles and this only had length len(use_tiles) for the first argument, this would throw an index error
+    spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                        nbp_basic.n_channels), dtype=np.int32)
+
     with tqdm(total=n_images) as pbar:
         pbar.set_description(f"Detecting spots on filtered images saved as npy")
         # Loop over tiles
@@ -85,11 +94,6 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             # columns of spot_details are: y, x, z
             # max value is y or x coordinate of around 2048 hence can use int16.
             spot_details = np.empty((0, 3), dtype=np.int16)
-            # spot_no will be an n_tiles by n_rounds by n_channels matrix, but we add layers throughout the tile for
-            # loop so just set first dim = 1, anchor_spots per round are approx 30,000 so use int32
-            spot_no = np.zeros((1, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
-                                nbp_basic.n_channels), dtype=np.int32)
-            # isolated_spots will be appended to but need to initialise
 
             for r in use_rounds:
 
@@ -140,11 +144,10 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                         spot_yxz = spot_yxz[keep]
 
                     # We are still within the channels loop. We'd like to store info about spots found on this [t,r,c]
-                    # Since we create a new layer of the spot_no matrix for each tile, the first index of spot_no will
-                    # be 0. We also need to append the spot_details (ie: the yxz coords) of the spots we have found
+                    # We also need to append the spot_details (ie: the yxz coords) of the spots we have found
                     # on this [t,r,c] to the spot_details we have found so far
                     spot_details = np.vstack((spot_details, spot_yxz))
-                    spot_no[0, r, c] = spot_yxz.shape[0]
+                    spot_no[t, r, c] = spot_yxz.shape[0]
                     pbar.update(1)
 
             # Now that we've gotten through a complete tile we will
@@ -157,8 +160,10 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                 spot_no_read = info.f.arr_1
                 isolated_spots_read = info.f.arr_2
 
+                # This concatenation is along the 0th axis by default
                 spot_details = np.concatenate((spot_details_read, spot_details))
-                spot_no = np.concatenate((spot_no_read, spot_no))
+                # spot_details
+                spot_no = spot_no_read + spot_no
                 isolated_spots = np.concatenate((isolated_spots_read, isolated_spots))
 
                 np.savez(nbp_file.spot_details_info, spot_details, spot_no, isolated_spots)
