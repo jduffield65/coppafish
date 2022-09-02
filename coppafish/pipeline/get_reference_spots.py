@@ -1,4 +1,4 @@
-from ..spot_colors import get_spot_colors
+from coppafish.spot_colors import get_spot_colors
 from ..call_spots import get_non_duplicate
 from .. import find_spots as fs
 import numpy as np
@@ -7,6 +7,7 @@ try:
 except ImportError:
     import numpy as jnp
 from ..setup.notebook import NotebookPage
+
 
 
 def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_find_spots: NotebookPage,
@@ -47,7 +48,11 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     Returns:
         `NotebookPage[ref_spots]` - Page containing intensity of each reference spot on each imaging round/channel.
     """
+    # We create a notebook page for ref_spots which stores information like local coords, isolated info, tile_no of each
+    # spot and much more.
     nbp = NotebookPage("ref_spots")
+    # The code is going to loop through all tiles, as we expect some anchor spots on each tile but r and c should stay
+    # fixed as the value of the reference round and reference channel
     r = nbp_basic.ref_round
     c = nbp_basic.ref_channel
 
@@ -56,9 +61,15 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     all_isolated = np.zeros(0, dtype=bool)
     all_local_tile = np.zeros(0, dtype=np.int16)
 
+    # Now we start looping through tiles and recording the local_yxz spots on this tile and the isolated status of each
+    # We then append this to our all_local_yxz, ... arrays
     for t in range(nbp_basic.n_tiles):
         t_local_yxz = fs.spot_yxz(nbp_find_spots.spot_details, t, r, c, nbp_find_spots.spot_no)
-        t_isolated = nbp_find_spots.isolated_spots
+        t_isolated = fs.spot_isolated(nbp_find_spots.isolated_spots, t, r, c, nbp_find_spots.spot_no)
+        # np.shape(t_local_yxz)[0] is the number of spots found on this tile. If there's a nonzero number of spots found
+        # then we append the local_yxz info and isolated info to our arrays.
+        # The all_local_tiles array SHOULD be the same length (ie have same number of elements as all_local_yxz has
+        # rows) as all_local_yxz
         if np.shape(t_local_yxz)[0] > 0:
             all_local_yxz = np.append(all_local_yxz, t_local_yxz, axis=0)
             all_isolated = np.append(all_isolated, t_isolated.astype(bool), axis=0)

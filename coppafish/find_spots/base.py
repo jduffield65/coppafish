@@ -39,6 +39,38 @@ def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int, spot
 
     return spot_details[use]
 
+def spot_isolated(isolated_spots: np.ndarray, tile: int, ref_round: int, ref_channel: int, spot_no: np.ndarray) \
+        -> np.ndarray:
+    """
+    Exactly same rational as spot_yxz but now return isolated status of spots in t,r,c
+
+    Args:
+        isolated_spots: ```int16 [n_ref_spots x 3]```.
+            ```isolated_spots[s]``` is ```true ``` if spot ```s``` is isolated, ```false``` o/w.
+        tile: Tile of desired spots.
+
+        spot_no: num_tile * num_rounds * num_channels array containing num_spots on each [t,r,c]
+
+    Returns:
+        - ```isolated_spots``` - ```bool [n_ref_spots on this channel * 1]```.
+            Isolated status of each reference spot on this tile.
+
+    """
+    #     Function which gets yxz positions of spots on a particular ```tile```, ```round```,
+    #     ```channel``` from ```spot_details``` in find_spots notebook page.
+
+    # spots are read in by looping over rounds, channels, then tiles we need to sum up to but not including the number
+    # of spots in all rounds before r, then sum round r with all tiles up to (but not incl) tile t, then sum round r,
+    # tile t and all channels up to (but not including) channel c. This gives number of spots found before [t,r,c] ie:
+    # start index. To get end_index, just add number of spots on [t,r,c]
+
+    start_index = np.sum(spot_no[:tile, ref_round, ref_channel])
+    end_index = start_index + spot_no[tile, ref_round, ref_channel]
+
+    use = range(start_index, end_index)
+
+    return isolated_spots[use]
+
 
 def get_isolated(image: np.ndarray, spot_yxz: np.ndarray, thresh: float, radius_inner: float, radius_xy: float,
                  radius_z: Optional[float] = None) -> np.ndarray:
