@@ -8,6 +8,7 @@ from coppafish.find_spots import get_isolated_points
 from coppafish.pipeline import stitch
 from coppafish.spot_colors import apply_transform
 from coppafish.plot.register.shift import view_shifts
+from ..sep_round_reg import rotate
 import numpy as np
 import os
 import warnings
@@ -75,6 +76,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     else:
         image_centre = np.append(np.floor(yx_size/2).astype(int), 0)
 
+
     if not nb.has_page('reg_to_anchor_info'):
         nbp = setup.NotebookPage('reg_to_anchor_info')
         if transform is not None:
@@ -97,6 +99,21 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             isolated_full = get_isolated_points(global_yxz_full * [1, 1, z_scale_full], 2 * neighb_dist_thresh)
             global_yxz = global_yxz[isolated, :]
             global_yxz_full = global_yxz_full[isolated_full, :]
+
+            patched_anchor = rotate.patch_together(nb_full.get_config(), nb_full.basic_info, nb_full.stitch.tile_origin,
+                                                   int(len(nb_full.basic_info.use_z)/2))
+            patched_extra = rotate.patch_together(nb.get_config(), nb.basic_info, nb.stitch.tile_origin,
+                                                   int(len(nb.basic_info.use_z) / 2))
+            square_length = min(patched_anchor.shape[0], patched_anchor.shape[1], patched_extra.shape[0],
+                                patched_extra.shape[0])
+            patched_anchor = rotate.process_image(patched_anchor, z_planes=None, gamma=4, y=0, x=0, len=square_length)
+            patched_extra = rotate.process_image(patched_extra, z_planes=None, gamma=3, y=0, x=0, len=square_length)
+            angle = -rotate.detect_shift(patched_anchor, patched_extra)
+            angle_rad = angle * 2 * np.pi / 360
+            rotation_matrix = np.zeros((4,3))
+            rotation_matrix[0:2,0:2] = \
+                    np.array([[np.cos(angle_rad), -np.sin(angle_rad)], [np.sin(angle_rad), np.cos(angle_rad)]])
+            global_yxz = transform_image(global_yxz, image_centre, z_scale)
 
             # get initial shift from separate round to the full anchor image
             nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info = \
