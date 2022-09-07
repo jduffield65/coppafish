@@ -9,7 +9,6 @@ except ImportError:
 from ..setup.notebook import NotebookPage
 
 
-
 def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_find_spots: NotebookPage,
                         tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
 

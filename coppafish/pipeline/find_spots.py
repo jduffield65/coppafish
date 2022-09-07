@@ -47,7 +47,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     use_tiles = nbp_basic.use_tiles
     use_rounds = nbp_basic.use_rounds
 
-    # Deal with case where algorithm has been run for some tiles and data saved
+    # Deal with case where algorithm has been run for some tiles and data saved. Whole point od this is to get rid of
+    # tiles that we have already run find_spots on.
     if os.path.isfile(nbp_file.spot_details_info):
         # Load in the saved data
         info = np.load(nbp_file.spot_details_info)
@@ -81,12 +82,6 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     # the same as the 3D case but with 1 z-plane
     n_z = np.max([1, nbp_basic.is_3d * nbp_basic.nz])
 
-    # spot_no will be an n_tiles by n_rounds by n_channels matrix, anchor_spots per round are approx 30,000 so use int32
-    # The dimension for tiles needs to be total number of tiles, not just tiles used. If we tried to remove certain
-    # tiles and this only had length len(use_tiles) for the first argument, this would throw an index error
-    spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
-                        nbp_basic.n_channels), dtype=np.int32)
-
     with tqdm(total=n_images) as pbar:
         pbar.set_description(f"Detecting spots on filtered images saved as npy")
         # Loop over tiles
@@ -94,6 +89,14 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             # columns of spot_details are: y, x, z
             # max value is y or x coordinate of around 2048 hence can use int16.
             spot_details = np.empty((0, 3), dtype=np.int16)
+            # spot_no will be an n_tiles by n_rounds by n_channels matrix, anchor_spots per round are approx 30,000 so
+            # use int32. The dimension for tiles needs to be total number of tiles, not just tiles used. If we tried to
+            # remove certain tiles and this only had length len(use_tiles) for the first argument, this would throw
+            # an index error. All values should be set to 0 at the start of searching through a new tile because after
+            # completing one tile, we add this array to the previous spot_no array, so any nonzero values from previous
+            # tiles would be counted several times.
+            spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                                nbp_basic.n_channels), dtype=np.int32)
 
             for r in use_rounds:
 
@@ -168,11 +171,13 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
 
                 np.savez(nbp_file.spot_details_info, spot_details, spot_no, isolated_spots)
 
+                # Delete all these variables to save memory
                 del info, spot_details_read, spot_no_read, isolated_spots_read, spot_details, spot_no, isolated_spots
             # If none then need to create a file. Do that now!
             else:
                 # 1st tile, need to create files to save to
                 np.savez(nbp_file.spot_details_info, spot_details, spot_no, isolated_spots)
+                # Delete all these variables to save memory
                 del spot_details, spot_no, isolated_spots
 
     # Once all tiles have been run, we load the complete spot_details_info file and save it to the notebook

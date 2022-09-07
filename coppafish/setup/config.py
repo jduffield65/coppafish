@@ -219,6 +219,14 @@ _options = {
             'score_ref': 'number',
             'score_omp': 'number',
             'score_omp_multiplier': 'number'
+        },
+    'reg_to_anchor_info':
+        {
+            'full_anchor_y0': 'maybe_number',
+            'full_anchor_x0': 'maybe_number',
+            'partial_anchor_y0': 'maybe_number',
+            'partial_anchor_x0': 'maybe_number',
+            'side_length': 'maybe_number'
         }
 }
 

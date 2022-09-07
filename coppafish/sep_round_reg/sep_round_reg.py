@@ -1,18 +1,18 @@
 from typing import List, Tuple, Optional
 from coppafish.register import get_single_affine_transform
-from coppafish.pipeline.run import initialize_nb, run_extract, run_find_spots
-from coppafish import setup, utils
+from coppafish.pipeline.run import initialize_nb, run_extract, run_find_spots, run_stitch
+from coppafish import setup, utils, Notebook
 from coppafish.call_spots import get_non_duplicate
 from coppafish.stitch import compute_shift
 from coppafish.find_spots import get_isolated_points
-from coppafish.pipeline import stitch
 from coppafish.spot_colors import apply_transform
 from coppafish.plot.register.shift import view_shifts
-from ..sep_round_reg import rotate
+from ..sep_round_reg import rotation_detection as rd
 import numpy as np
 import os
 import warnings
 import matplotlib
+
 try:
     import jax.numpy as jnp
 except ImportError:
@@ -44,6 +44,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
 
     # Full notebook for the experiment we've already run
     nb_full = initialize_nb(config_file_full)
+    # nb_full = Notebook(config_file_full)
     # Both elements in the sum below are 3 columns (y,x,z positions) by num_ref_spots rows, one for each spot found on
     # the anchor channel. The first term we are summing is just the local spot position, while the second is the shift
     # to be applied to the tile it's found on
@@ -53,12 +54,14 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     nb = initialize_nb(config_file)
     run_extract(nb)
     run_find_spots(nb)
+    run_stitch(nb)
     config = nb.get_config()
-    if not nb.has_page("stitch"):
-        nbp_stitch = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details)
-        nb += nbp_stitch
-    else:
-        warnings.warn('stitch', utils.warnings.NotebookPageWarning)
+
+    # if not nb.has_page("stitch"):
+    #     nbp_stitch = stitch(config['stitch'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no)
+    #     nb += nbp_stitch
+    # else:
+    #     warnings.warn('stitch', utils.warnings.NotebookPageWarning)
 
     # scale z coordinate so in units of xy pixels as other 2 coordinates are.
     z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
@@ -72,10 +75,9 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     yx_size = np.max(yx_origin, axis=0) + nb.basic_info.tile_sz
     if nb.basic_info.is_3d:
         z_size = z_origin.max() + nb.basic_info.nz
-        image_centre = np.floor(np.append(yx_size, z_size)/2).astype(int)
+        image_centre = np.floor(np.append(yx_size, z_size) / 2).astype(int)
     else:
-        image_centre = np.append(np.floor(yx_size/2).astype(int), 0)
-
+        image_centre = np.append(np.floor(yx_size / 2).astype(int), 0)
 
     if not nb.has_page('reg_to_anchor_info'):
         nbp = setup.NotebookPage('reg_to_anchor_info')
@@ -83,8 +85,26 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             nbp.transform = transform
         else:
             # remove duplicate spots
-            spot_local_yxz = nb.find_spots.spot_details[:, -3:]
-            spot_tile = nb.find_spots.spot_details[:, 0]
+
+            # Start by reading in all spots
+            spot_local_yxz = nb.find_spots.spot_details
+            # Next we create an array which is of length n_spots which will tell us which tile we are on
+            spot_tile = np.zeros(spot_local_yxz.shape[0]).astype(dtype=int)
+            # This will contain num_spots per tile
+            spots_per_tile = np.zeros(nb.basic_info.n_tiles).astype(dtype=int)
+            # This will start with a 0 and contain the row index of spot_details where a new tile begins
+            new_tile_indices = np.zeros(nb.basic_info.n_tiles + 1).astype(dtype=int)
+            for i in range(nb.basic_info.n_tiles):
+                spots_per_tile[i] = np.sum(nb.find_spots.spot_no[i, :, :])
+                new_tile_indices[i + 1] = np.sum(spots_per_tile[0:i + 1])
+            # Now loop through all spots and see which interval of new_tile_indices they lie between
+            for i in range(spot_local_yxz.shape[0]):
+                for j in range(nb.basic_info.n_tiles):
+                    if new_tile_indices[j] <= i <= new_tile_indices[j + 1]:
+                        spot_tile[i] = j
+                        break
+
+            # Some tiles will be double counted, get all those which are not
             not_duplicate = get_non_duplicate(nb.stitch.tile_origin, nb.basic_info.use_tiles,
                                               nb.basic_info.tile_centre, spot_local_yxz, spot_tile)
             global_yxz = spot_local_yxz[not_duplicate] + nb.stitch.tile_origin[spot_tile[not_duplicate]]
@@ -100,22 +120,52 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             global_yxz = global_yxz[isolated, :]
             global_yxz_full = global_yxz_full[isolated_full, :]
 
-            patched_anchor = rotate.patch_together(nb_full.get_config(), nb_full.basic_info, nb_full.stitch.tile_origin,
-                                                   int(len(nb_full.basic_info.use_z)/2))
-            patched_extra = rotate.patch_together(nb.get_config(), nb.basic_info, nb.stitch.tile_origin,
-                                                   int(len(nb.basic_info.use_z) / 2))
-            square_length = min(patched_anchor.shape[0], patched_anchor.shape[1], patched_extra.shape[0],
-                                patched_extra.shape[0])
-            patched_anchor = rotate.process_image(patched_anchor, z_planes=None, gamma=4, y=0, x=0, len=square_length)
-            patched_extra = rotate.process_image(patched_extra, z_planes=None, gamma=3, y=0, x=0, len=square_length)
-            angle = -rotate.detect_shift(patched_anchor, patched_extra)
-            angle_rad = angle * 2 * np.pi / 360
-            rotation_matrix = np.zeros((4,3))
-            rotation_matrix[0:2,0:2] = \
-                    np.array([[np.cos(angle_rad), -np.sin(angle_rad)], [np.sin(angle_rad), np.cos(angle_rad)]])
-            global_yxz = transform_image(global_yxz, image_centre, z_scale)
+            # Get the stitched anchor directories for both the full and the partial notebook
+            # stitched_anchor_full_dir = '//128.40.224.65/SoyonHong/Christina Maat/ISS Data + Analysis/E-2207-001_full/' \
+            #                            'Cp/output/anchor_image.npz'
+            # stitched_anchor_dir = '//128.40.224.65/Shared Projects/ISS/MG/Reilly/Dataset 1/anchor_image.npz'
+            stitched_anchor_full_dir = nb_full.file_names.big_anchor_image
+            stitched_anchor_dir = nb.file_names.big_anchor_image
 
-            # get initial shift from separate round to the full anchor image
+            # Get the stitched anchor image for the full notebook
+            mid_z_plane = int(len(nb_full.basic_info.use_z) / 2)
+            stitched_anchor_full_read = np.load(stitched_anchor_full_dir)
+            stitched_anchor_full = stitched_anchor_full_read.f.arr_0
+            stitched_anchor_full = stitched_anchor_full[mid_z_plane-5:mid_z_plane+5, :, :]
+
+            # Get the stitched anchor image for the partial notebook
+            mid_z_plane = int(len(nb.basic_info.use_z) / 2)
+            stitched_anchor_read = np.load(stitched_anchor_dir)
+            stitched_anchor = stitched_anchor_read.f.arr_0
+            stitched_anchor = stitched_anchor[mid_z_plane-5:mid_z_plane+5, :, :]
+
+            # Find the side length of the maximal square which fits in both images
+            square_length = min(stitched_anchor_full.shape[0], stitched_anchor_full.shape[1], stitched_anchor.shape[0],
+                                stitched_anchor.shape[0])
+
+            # Process the images to make them easier to analyse
+            stitched_anchor_full = rd.process_image(stitched_anchor_full,
+                                                    z_planes=np.arange(stitched_anchor_full.shape[0]), gamma=4, y=0,
+                                                    x=0, length=square_length)
+            stitched_anchor = rd.process_image(stitched_anchor,
+                                                    z_planes=np.arange(stitched_anchor.shape[0]), gamma=4, y=0,
+                                                    x=0, length=square_length)
+            # Return the angle and the error associated with detection which we must rotate the partial anchor by to
+            # get the full anchor (angle is anticlockwise and in degrees)
+            angle, error = rd.detect_rotation(stitched_anchor, stitched_anchor_full)
+            # Convert angle to radians
+            angle_rad = angle * 2 * np.pi / 360
+            # Create rotation matrix to apply to the anchor spots in the partial notebook
+            rotation_matrix = np.zeros((3, 3))
+            rotation_matrix[0:2, 0:2] = \
+                np.array([[np.cos(angle_rad), -np.sin(angle_rad)], [np.sin(angle_rad), np.cos(angle_rad)]])
+            # Next, shift origin to centre of image, apply rotation and then transform back
+            for i in range(global_yxz.shape[0]):
+                global_yxz[i] = global_yxz[i] - image_centre
+                global_yxz[i] = np.matmul(rotation_matrix, global_yxz[i])
+                global_yxz[i] = global_yxz[i] + image_centre
+
+            # get initial shift from separate round to the full image
             nbp.shift, nbp.shift_score, nbp.shift_score_thresh, debug_info = \
                 get_shift(config['register_initial'], global_yxz, global_yxz_full,
                           z_scale, z_scale_full, nb.basic_info.is_3d)
@@ -123,7 +173,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             # view_shifts(debug_info['shifts_2d'], debug_info['scores_2d'], debug_info['shifts_3d'],
             #             debug_info['scores_3d'], nbp.shift, nbp.shift_score_thresh)
 
-            # Get affine transform from separate round to full anchor image
+            # Get affine transform from separate round to full image
             start_transform = np.eye(4, 3)  # no scaling just shift to start off icp
             start_transform[3] = nbp.shift * [1, 1, z_scale]
             nbp.transform, nbp.n_matches, nbp.error, nbp.is_converged = \
@@ -236,10 +286,9 @@ def transform_image(image: np.ndarray, transform: np.ndarray, image_centre: np.n
     im_transformed[tuple([yxz_transform[:, i] for i in range(image.ndim)])] = image_values
     return im_transformed
 
-
-if __name__ == "__main__":
-    channels = [0, 18]
-
-    run_sep_round_reg(config_file='sep_round_settings_example.ini',
-                      config_file_full='experiment_settings_example.ini',
-                      channels_to_save=channels)
+# if __name__ == "__main__":
+#     channels = [0, 18]
+#
+#     run_sep_round_reg(config_file='sep_round_settings_example.ini',
+#                       config_file_full='experiment_settings_example.ini',
+#                       channels_to_save=channels)

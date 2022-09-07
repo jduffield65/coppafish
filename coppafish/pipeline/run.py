@@ -126,6 +126,9 @@ def run_stitch(nb: setup.Notebook):
         nb += nbp_debug
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
+    # Two conditions below:
+    # 1. Check if there is a big dapi_image
+    # 2. Check if there is NOT a file in the path directory for the dapi image
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
         # save stitched dapi
         # Will load in from nd2 file if nb.extract_debug.r_dapi is None i.e. if no DAPI filtering performed.

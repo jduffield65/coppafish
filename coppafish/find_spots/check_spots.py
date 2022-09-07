@@ -29,8 +29,13 @@ def check_n_spots(nb: Notebook):
     use_tiles = np.asarray(nb.basic_info.use_tiles)
     use_rounds = np.asarray(nb.basic_info.use_rounds)  # don't consider anchor in this analysis
     use_channels = np.asarray(nb.basic_info.use_channels)
-    spot_no = nb.find_spots.spot_no[np.ix_(use_tiles, use_rounds, use_channels)]
+    # If we have no non anchor rounds, just quit the function
+    if use_rounds.shape[0] > 0:
+        spot_no = nb.find_spots.spot_no[np.ix_(use_tiles, use_rounds, use_channels)]
+    else:
+        return
     error_message = ""
+
 
     # Consider bad channels first as most likely to have consistently low spot counts in a channel
     n_images = len(use_tiles) * len(use_rounds)
