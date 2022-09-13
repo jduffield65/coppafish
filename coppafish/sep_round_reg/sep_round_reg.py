@@ -156,7 +156,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             # Convert angle to radians
             angle_rad = angle * 2 * np.pi / 360
             # Create rotation matrix to apply to the anchor spots in the partial notebook
-            rotation_matrix = np.zeros((3, 3))
+            rotation_matrix = np.eye(3, dtype=int)
             rotation_matrix[0:2, 0:2] = \
                 np.array([[np.cos(angle_rad), -np.sin(angle_rad)], [np.sin(angle_rad), np.cos(angle_rad)]])
             # Next, shift origin to centre of image, apply rotation and then transform back

@@ -33,6 +33,8 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Reilly\PycharmProjects\iss_python-main\coppafish\utils" />
+      <recent name="C:\Users\Reilly\PycharmProjects\iss_python-main\docs\scripts" />
       <recent name="C:\Users\Reilly\PycharmProjects\iss_python-main\coppafish\sep_round_reg" />
     </key>
   </component>
@@ -148,6 +150,11 @@
           <url>file://$PROJECT_DIR$/coppafish/find_spots/check_spots.py</url>
           <line>30</line>
           <option name="timeStamp" value="19" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/utils/spot_details_conversion.py</url>
+          <line>14</line>
+          <option name="timeStamp" value="31" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
