@@ -2,6 +2,7 @@ from coppafish.setup.notebook import Notebook, NotebookPage
 import os
 import numpy as np
 import warnings
+from coppafish.pipeline.run import run_find_spots
 
 
 def spot_details_conversion(nb: Notebook):
@@ -53,15 +54,6 @@ def spot_details_conversion(nb: Notebook):
     # Delete old find_spots page
     del nb.find_spots
 
-    # Create new find_spots page
-    nbp = NotebookPage("find_spots")
-
-    # Add all updated variables
-    nbp.spot_details = spot_details_new
-    nbp.spot_no = spot_no
-    nbp.isolated_spots = isolated_spots
-
-    # Add the new page
-    nb += nbp
+    run_find_spots(nb)
 
     return nb
