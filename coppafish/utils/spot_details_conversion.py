@@ -45,7 +45,7 @@ def spot_details_conversion(nb: Notebook):
         warnings.warn(f'We should have found {num_ref_spots} anchor indices, but we have '
                       f''f'{len(anchor_indices)} tiles. This may cause an index error.')
     # Read out isolated_spot info for these rows
-    isolated_spots = spot_details_old[anchor_indices, 3]
+    isolated_spots = np.array(spot_details_old[anchor_indices, 3], dtype=bool)
 
     # Now save the spot_details_info
     np.savez(spot_details_info_dir, spot_details_new, spot_no, isolated_spots)
