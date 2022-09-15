@@ -53,7 +53,7 @@ def spot_details_conversion(nb: Notebook):
 
     # Delete old find_spots page
     del nb.find_spots
-
+    # Run find_spots again, but this time with new spot_details_info saved
     run_find_spots(nb)
 
     return nb
