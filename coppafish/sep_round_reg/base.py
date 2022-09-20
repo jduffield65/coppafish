@@ -105,7 +105,7 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
 
     # Create log-polar transformed FFT mag images and register
     shape = ref_ft.shape
-    radius = shape[0] // 8  # only take lower frequencies
+    radius = shape[0] // 2  # only take lower frequencies
     warped_ref_ft = warp_polar(ref_ft, radius=radius, scaling='log')
     warped_extra_ft = warp_polar(extra_ft, radius=radius, scaling='log')
 
@@ -121,7 +121,7 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
     warped_extra_ft = warped_extra_ft[:shape[0] // 2, :]
     shifts, error, phasediff = phase_cross_correlation(warped_ref_ft,
                                                        warped_extra_ft,
-                                                       upsample_factor=10,
+                                                       upsample_factor=100,
                                                        normalization=None)
 
     # Use translation parameters to calculate rotation parameter

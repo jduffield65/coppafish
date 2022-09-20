@@ -72,6 +72,8 @@ def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
     target_image_mid = target_image[target_image.shape[0] // 2]
     offset_image_mid = offset_image[offset_image.shape[0] // 2]
     initial_shift, ref_points_target, ref_points_offset = base.manual_shift(target_image_mid, offset_image_mid)
+    ref_points_target = np.array(ref_points_offset, dtype='int')
+    ref_points_offset = np.array(ref_points_offset, dtype='int')
     # Convert initial shift into 3D
     initial_shift = np.insert(initial_shift, 0, 0)
     # Apply this shift using scipy ndimage package
@@ -116,6 +118,38 @@ def register_detect_rotation(target_image: np.ndarray, offset_image: np.ndarray,
     return angle, error, target_image, offset_image, radius
 
 
+def register_detect_rotation2(target_image: np.ndarray, offset_image: np.ndarray, ref_points_target, ref_points_offset):
+    # since input images are 3D volumes, we must take the mid z_plane
+    target_image_mid = target_image[target_image.shape[0] // 2]
+    offset_image_mid = offset_image[offset_image.shape[0] // 2]
+
+    # Dimensions are same for both images
+    image_dims = np.array(target_image_mid.shape, dtype=int)
+    # Now we choose the biggest circle fitting in full target, biggest circle fitting in offset, then take smaller one
+    radius = 250
+    angle_vec = np.zeros(ref_points_target.shape[0])
+    # Now we'll detect rotations at each of our ref_points
+    for i in range(ref_points_target.shape[0]):
+        target_sample = target_image_mid[ref_points_target[i, 0]-radius: ref_points_target[i, 0]+radius,
+                        ref_points_target[i, 1]-radius: ref_points_target[i, 1]+radius] * \
+                        (window('hann', [2*radius, 2*radius]) ** 0.1)
+        offset_sample = offset_image_mid[ref_points_offset[i, 0] - radius: ref_points_offset[i, 0] + radius,
+                        ref_points_offset[i, 1] - radius: ref_points_offset[i, 1] + radius] * \
+                        (window('hann', [2 * radius, 2 * radius]) ** 0.1)
+        angle_vec[i], error = base.detect_rotation(target_sample, offset_sample)
+
+    angle = np.mean(angle_vec)
+
+    # rotate each z-plane by this amount
+    for z in range(offset_image.shape[0]):
+        offset_image[z] = rotate(offset_image[z], -angle)
+
+    # This normalises offset_image so we must also normalise target_image
+    target_image = target_image/np.max(target_image)
+
+    return angle, error, target_image, offset_image, radius
+
+
 def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
     # target_image and offset_image will be cropped, mid 20% of z planes
     # 1.) Have the user manually select an initial shift in yx, apply this shift to the sep round
@@ -139,7 +173,7 @@ def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
     # Step 2.)
     # Detect rotation between DAPI iamges. We take the biggest circle centred around the centre of the three points
     # chosen in step 1
-    angle, error, target_image, offset_image, radius = register_detect_rotation(target_image, offset_image,
+    angle, error, target_image, offset_image, radius = register_detect_rotation2(target_image, offset_image,
                                                                                 ref_points_target, ref_points_offset)
 
     # Step 3:
