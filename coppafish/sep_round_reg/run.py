@@ -6,8 +6,11 @@ import scipy.ndimage as snd
 from skimage.transform import rotate
 from skimage.filters import window
 from skimage.registration import phase_cross_correlation
+from skimage.exposure import equalize_hist
+from skimage.color import rgb2gray
 import matplotlib
 import matplotlib.pyplot as plt
+from skimage import data
 
 try:
     import jax.numpy as jnp
@@ -66,29 +69,24 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
 def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
     # Target and offset are both 3D volumes but detection only uses mid z_plane
     # Manually find shift between mid z_planes
-    target_image_mid = target_image[target_image.shape[0]//2]
-    offset_image_mid = offset_image[offset_image.shape[0]//2]
+    target_image_mid = target_image[target_image.shape[0] // 2]
+    offset_image_mid = offset_image[offset_image.shape[0] // 2]
     initial_shift, ref_points_target, ref_points_offset = base.manual_shift(target_image_mid, offset_image_mid)
     # Convert initial shift into 3D
     initial_shift = np.insert(initial_shift, 0, 0)
     # Apply this shift using scipy ndimage package
-    offset_image = snd.shift(offset_image, initial_shift)
+    offset_image = snd.shift(offset_image, -initial_shift)
     return offset_image, ref_points_target, ref_points_offset
 
 
 def register_detect_rotation(target_image: np.ndarray, offset_image: np.ndarray, ref_points_target, ref_points_offset):
-
-    # num z_planes
-    num_z = target_image.shape[0]
     # since input images are 3D volumes, we must take the mid z_plane
-    target_image_mid = target_image[num_z//2]
-    offset_image_mid = offset_image[num_z//2]
+    target_image_mid = target_image[target_image.shape[0] // 2]
+    offset_image_mid = offset_image[offset_image.shape[0] // 2]
 
-    # Define centre of circle we will be registering
-    centre = np.mean(ref_points_target)
     # Radius is determined to be the min distance from both centroids to their respective boundaries
-    centroid_target = np.mean(ref_points_target)
-    centroid_offset = np.mean(ref_points_offset)
+    centroid_target = np.mean(ref_points_target, axis=0, dtype='int')
+    centroid_offset = np.mean(ref_points_offset, axis=0, dtype='int')
     # Dimensions are same for both images
     image_dims = np.array(target_image_mid.shape, dtype=int)
     # Now we choose the biggest circle fitting in full target, biggest circle fitting in offset, then take smaller one
@@ -96,8 +94,10 @@ def register_detect_rotation(target_image: np.ndarray, offset_image: np.ndarray,
     radius_offset = np.min([centroid_offset, image_dims - centroid_offset])
     radius = int(np.min([radius_target, radius_offset]))
     # Now crop the images around this centre with this min radius
-    target_image_mid = target_image_mid[centre[0] - radius:centre[0] + radius, centre[1] - radius:centre[1] + radius]
-    offset_image_mid = offset_image_mid[centre[0] - radius:centre[0] + radius, centre[1] - radius:centre[1] + radius]
+    target_image_mid = target_image_mid[centroid_target[0] - radius:centroid_target[0] + radius,
+                       centroid_target[1] - radius:centroid_target[1] + radius]
+    offset_image_mid = offset_image_mid[centroid_offset[0] - radius:centroid_offset[0] + radius,
+                       centroid_offset[1] - radius:centroid_offset[1] + radius]
 
     # Now apply the rotation detection algorithm on these. As these are 2 DAPIs, we shouldn't need
     # to do any processing on them. The only thing we should do is window them.
@@ -105,25 +105,32 @@ def register_detect_rotation(target_image: np.ndarray, offset_image: np.ndarray,
     target_image_mid = target_image_mid * (window('hann', target_image_mid.shape) ** 0.1)
     offset_image_mid = offset_image_mid * (window('hann', offset_image_mid.shape) ** 0.1)
     angle, error = base.detect_rotation(target_image_mid, offset_image_mid)
-    angle_rad = angle * 2 * np.pi / 360
 
-    # Now we apply this to this yx shift to the 3D volume. We'll only need about 20% of the volume around the middle to
-    # do the next step so crop before we rotate
-    target_image_cropped = target_image[int(0.4 * num_z):int(0.6 * num_z)]
-    offset_image_cropped = offset_image[int(0.4 * num_z):int(0.6 * num_z)]
-    # Update num_z
-    num_z = target_image_cropped.shape[0]
-    for z in range(num_z):
-        offset_image_cropped[z] = rotate(offset_image_cropped[z], -angle_rad)
+    # rotate each z-plane by this amount
+    for z in range(offset_image.shape[0]):
+        offset_image[z] = rotate(offset_image[z], -angle)
 
-    return angle, target_image_cropped, offset_image_cropped
+    # This normalises offset_image so we must also normalise target_image
+    target_image = target_image/np.max(target_image)
+
+    return angle, error, target_image, offset_image, radius
 
 
 def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
-
+    # target_image and offset_image will be cropped, mid 20% of z planes
     # 1.) Have the user manually select an initial shift in yx, apply this shift to the sep round
     # 2.) Detect the rotation between the first and second image, apply this rotation to the sep round
     # 3.) Use phase correlation to find optimal shift in 3D between two images and apply to sep round
+
+    # Start by cropping z- planes
+    #  We'll only need about 10% of the volume around the middle
+    z_range = range(int(0.45 * target_image.shape[0]), int(0.55 * target_image.shape[0]))
+    target_image = target_image[z_range]
+    offset_image = offset_image[z_range]
+
+    # Rescale so max = 1
+    target_image = target_image/np.max(target_image)
+    offset_image = offset_image/np.max(offset_image)
 
     # Step 1.)
     # Manual Shift
@@ -132,20 +139,37 @@ def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
     # Step 2.)
     # Detect rotation between DAPI iamges. We take the biggest circle centred around the centre of the three points
     # chosen in step 1
-    target_cropped, offset_cropped, angle = register_detect_rotation(target_image, offset_image, ref_points_target,
-                                                                     ref_points_offset)
+    angle, error, target_image, offset_image, radius = register_detect_rotation(target_image, offset_image,
+                                                                                ref_points_target, ref_points_offset)
 
     # Step 3:
-    # 3D shift detection
-    shift, error = phase_cross_correlation(target_cropped, offset_cropped, upsample_factor=1, normalization=None)
-    offset_cropped = snd.shift(offset_cropped, shift)
+    # 3D shift detection.
+    centroid_target = np.mean(ref_points_target, axis=0, dtype='int')
+    centroid_offset = np.mean(ref_points_offset, axis=0, dtype='int')
 
-anchor_partial = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Sep/anchor_image.npz')
-anchor_partial = anchor_partial.f.arr_0
-anchor_partial = anchor_partial[20:30]
-anchor_partial = base.process_image(anchor_partial, 4, 0, 0, 500)
-anchor_full = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Full/anchor_image.npz')
-anchor_full = anchor_full.f.arr_0
-anchor_full = anchor_full[20:30]
-anchor_full = base.process_image(anchor_full, 4, 0, 0, 500)
-register_manual_shift(anchor_full, anchor_partial)
+    shift, error, phase = phase_cross_correlation(target_image[:, centroid_target[0]-radius:centroid_target[0]+radius,
+                                           centroid_target[1]-radius:centroid_target[1]+radius],
+                                           offset_image[:, centroid_offset[0]-radius:centroid_offset[0]+radius,
+                                           centroid_offset[1]-radius:centroid_offset[1]+radius], upsample_factor=1,
+                                           normalization=None)
+
+    offset_image = snd.shift(offset_image, -shift)
+    rgb_overlay = np.zeros((4090, 5967, 3))
+    rgb_overlay[:, :, 0] = target_image[3, :4090, :5967]
+    rgb_overlay[:, :, 2] = offset_image[3, :4090, :5967]
+    plt.imshow(rgb_overlay)
+
+    return offset_image, target_image, shift, angle, error
+
+
+dapi_partial = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Sep/dapi_image.npz')
+dapi_partial = dapi_partial.f.arr_0
+dapi_full = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Full/dapi_image.npz')
+dapi_full = dapi_full.f.arr_0
+dapi_partial, dapi_full, shift, angle, error = rigid_transform(target_image=dapi_full, offset_image=dapi_partial)
+print(shift, angle, error)
+# astro = rgb2gray(data.astronaut())
+# astro_new = snd.shift(astro, [10, 20])
+# astro_new = rotate(astro_new, 7)
+#
+# base.manual_shift(astro, astro_new)

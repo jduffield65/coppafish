@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.fft import fft2, fftshift
 from skimage import exposure
@@ -7,6 +8,11 @@ from skimage.filters import window
 from skimage.registration import phase_cross_correlation
 from coppafish.setup.notebook import NotebookPage
 from coppafish.setup.notebook import Notebook
+from skimage import data
+from skimage.color import rgb2gray
+import scipy.ndimage as snd
+matplotlib.use('QtAgg')
+matplotlib.pyplot.style.use('dark_background')
 
 
 def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
@@ -52,25 +58,24 @@ def manual_shift(image1: np.ndarray, image2: np.ndarray):
     # plot 2:
     plt.subplot(122)
     plt.imshow(image2, cmap=plt.cm.gray)
-    plt.show()
-    plt.pause(0.0001)
+    plt.pause(0.01)
 
     # Now require 6 inputs from user, 3 for each image and give a timer of 2 mins
     ref_points_1 = np.array(plt.ginput(3, 60))
     # plot 1
     plt.subplot(121)
-    plt.scatter(ref_points_1[:, 0], ref_points_1[:, 1], s=image1.shape[0]//20, c='red')
-    plt.show()
-    plt.pause(0.0001)
+    plt.scatter(ref_points_1[:, 0], ref_points_1[:, 1], s=100, c='red')
+    plt.pause(0.01)
 
     ref_points_2 = np.array(plt.ginput(3, 60))
     # plot 2:
     plt.subplot(122)
-    plt.scatter(ref_points_2[:, 0], ref_points_2[:, 1], s=image2.shape[0]//20, c='red')
-    plt.pause(0.0001)
-    plt.show()
+    plt.scatter(ref_points_2[:, 0], ref_points_2[:, 1], s=100, c='red')
+    plt.pause(0.01)
 
     # Average across these shifts
+    ref_points_1 = np.flip(ref_points_1)
+    ref_points_2 = np.flip(ref_points_2)
     shift = np.mean(ref_points_2-ref_points_1, axis=0)
 
     return shift, ref_points_1, ref_points_2
@@ -100,7 +105,7 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
 
     # Create log-polar transformed FFT mag images and register
     shape = ref_ft.shape
-    radius = shape[0] // 4  # only take lower frequencies
+    radius = shape[0] // 8  # only take lower frequencies
     warped_ref_ft = warp_polar(ref_ft, radius=radius, scaling='log')
     warped_extra_ft = warp_polar(extra_ft, radius=radius, scaling='log')
 
@@ -212,3 +217,16 @@ def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarra
 # nb = Notebook('C://Users/Reilly/Desktop/Sample Notebooks/Anne/new_notebook.npz')
 # image = patch_together(nb.get_config(), nb.basic_info, nb.stitch.tile_origin, [24, 25, 26])
 # plt.imshow(image, cmap=plt.cm.gray)
+# astro = rgb2gray(data.astronaut())
+# astro_new = snd.shift(astro, [10, 20])
+# shift, error, phase = phase_cross_correlation(astro, astro_new)
+# astro_new = rotate(astro_new, 7)
+# shift, rp1, rp2 = manual_shift(astro, astro_new)
+# plt.show()
+# print(shift)
+# astro_new = snd.shift(astro_new, shift)
+# rgb_overlay = np.zeros((512, 512, 3))
+# rgb_overlay[:, :, 0] = astro[:512, :512]
+# rgb_overlay[:, :, 2] = astro_new[:512, :512]
+# plt.imshow(rgb_overlay)
+# plt.show()
