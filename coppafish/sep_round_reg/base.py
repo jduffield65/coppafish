@@ -9,7 +9,7 @@ from coppafish.setup.notebook import NotebookPage
 from coppafish.setup.notebook import Notebook
 
 
-def process_image(image: np.ndarray, z_planes: np.ndarray, gamma: int, y: int, x: int, length: int):
+def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
     """ This function takes in an image and filters it to make it easier for the rotation detection to get results
     Args:
         image: image to be filtered
@@ -24,15 +24,8 @@ def process_image(image: np.ndarray, z_planes: np.ndarray, gamma: int, y: int, x
         image: Filtered image
     """
 
-    if z_planes is not None:
-        # First, collapse some z-planes
-        flattened_img = np.zeros((image.shape[1], image.shape[2]))
-        for i in z_planes:
-            flattened_img += image[i]
-        image = flattened_img
-
     # Crop the image
-    image = image[y:y+length, x:x+length]
+    image = image[:, y:y+length, x:x+length]
     # Next, make sure the contrast is well-adjusted
     image = exposure.equalize_hist(image)
     # Rescale so max = 1
@@ -43,7 +36,8 @@ def process_image(image: np.ndarray, z_planes: np.ndarray, gamma: int, y: int, x
     # Now apply the gamma transformation
     image = image ** gamma
     # Apply Hann Window to Images 1 and 2
-    image = image * (window('hann', image.shape) ** 0.1)
+    # for i in range(image.shape[0]):
+    #     image[i] = image[i] * (window('hann', image[i].shape) ** 0.1)
 
     return image
 
@@ -65,19 +59,19 @@ def manual_shift(image1: np.ndarray, image2: np.ndarray):
     ref_points_1 = np.array(plt.ginput(3, 60))
     # plot 1
     plt.subplot(121)
-    plt.scatter(ref_points_1[:, 0], ref_points_1[:, 1], s=100, c='red')
+    plt.scatter(ref_points_1[:, 0], ref_points_1[:, 1], s=image1.shape[0]//20, c='red')
     plt.show()
     plt.pause(0.0001)
 
     ref_points_2 = np.array(plt.ginput(3, 60))
     # plot 2:
     plt.subplot(122)
-    plt.scatter(ref_points_2[:, 0], ref_points_2[:, 1], s=100, c='red')
+    plt.scatter(ref_points_2[:, 0], ref_points_2[:, 1], s=image2.shape[0]//20, c='red')
     plt.pause(0.0001)
     plt.show()
 
     # Average across these shifts
-    shift = np.mean(ref_points_2-ref_points_1)
+    shift = np.mean(ref_points_2-ref_points_1, axis=0)
 
     return shift, ref_points_1, ref_points_2
 
@@ -97,12 +91,12 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
     extra_ft = np.log2(np.abs(fftshift(fft2(extra))))
 
     # Plot image 1 and image 2 side by side
-    # plt.subplot(1, 2, 1)
-    # plt.imshow(ref_ft, cmap=plt.cm.gray)
+    plt.subplot(1, 2, 1)
+    plt.imshow(ref_ft, cmap=plt.cm.gray)
     # plot 2:
-    # plt.subplot(1, 2, 2)
-    # plt.imshow(extra_ft, cmap=plt.cm.gray)
-    # plt.show()
+    plt.subplot(1, 2, 2)
+    plt.imshow(extra_ft, cmap=plt.cm.gray)
+    plt.show()
 
     # Create log-polar transformed FFT mag images and register
     shape = ref_ft.shape
@@ -111,12 +105,12 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
     warped_extra_ft = warp_polar(extra_ft, radius=radius, scaling='log')
 
     # Plot image 1 and image 2 side by side
-    # plt.subplot(1, 2, 1)
-    # plt.imshow(warped_ref_ft, cmap=plt.cm.gray)
+    plt.subplot(1, 2, 1)
+    plt.imshow(warped_ref_ft, cmap=plt.cm.gray)
     # plot 2:
-    # plt.subplot(1, 2, 2)
-    # plt.imshow(warped_extra_ft, cmap=plt.cm.gray)
-    # plt.show()
+    plt.subplot(1, 2, 2)
+    plt.imshow(warped_extra_ft, cmap=plt.cm.gray)
+    plt.show()
 
     warped_ref_ft = warped_ref_ft[:shape[0] // 2, :]  # only use half of FFT
     warped_extra_ft = warped_extra_ft[:shape[0] // 2, :]

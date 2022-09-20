@@ -1,20 +1,11 @@
 from typing import List, Tuple, Optional
-from coppafish.register import get_single_affine_transform
 from coppafish.pipeline.run import initialize_nb, run_extract, run_find_spots, run_stitch
-from coppafish import setup, utils, Notebook
-from coppafish.call_spots import get_non_duplicate
-from coppafish.stitch import compute_shift
-from coppafish.find_spots import get_isolated_points
-from coppafish.spot_colors import apply_transform
-from coppafish.plot.register.shift import view_shifts
-from ..sep_round_reg import base
+from coppafish.sep_round_reg import base
 import numpy as np
 import scipy.ndimage as snd
 from skimage.transform import rotate
 from skimage.filters import window
 from skimage.registration import phase_cross_correlation
-import os
-import warnings
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -50,14 +41,11 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     # Full notebook for the experiment we've already run
     nb_full = initialize_nb(config_file_full)
 
-    # run pipeline to get as far as a DAPI image for the separate round
+    # run pipeline to get as far as a stitched DAPI image for the separate round
     nb_sep = initialize_nb(config_file)
     run_extract(nb_sep)
     run_find_spots(nb_sep)
     run_stitch(nb_sep)
-
-    # Number of z planes is roughly the same in both nb sep and nb full
-    num_z = nb_full.basic_info.use_z
 
     # Import both DAPI's from both notebooks:
     # Import dapi from full notebook
@@ -70,37 +58,16 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     dapi_sep_read = np.load(dapi_sep_dir)
     dapi_sep = dapi_sep_read.f.arr_0
 
-    # Take mid z-planes as first 2 registration steps are done in 2D
-    dapi_full_mid = dapi_full[int(num_z / 2)]
-    dapi_sep_mid = dapi_sep[int(num_z/2)]
-
-    # Now that we have the dapi image for both we can begin registration on these images. Look at central z-planes.
-    # We'll split this up into 3 steps:
-    # 1.) Have the user manually select an initial shift, apply this shift to the sep round
-    # 2.) Detect the rotation between the first and second image, apply this rotation to the sep round
-    # 3.) Use phase correlation to find optimal shift in 3D between two images and apply to sep round
-
-    # Step 1.)
-    # Manual Shift
-    dapi_sep, ref_points_full, ref_points_sep = register_manual_shift(dapi_full, dapi_sep)
-
-    # Step 2.)
-    # Detect rotation between DAPI iamges. We take the biggest circle centred around the centre of the three points
-    # chosen in step 1
-    dapi_full_cropped, dapi_sep_cropped = register_detect_rotation(dapi_full, dapi_sep, ref_points_full, ref_points_sep)
-
-    # Step 3:
-    # 3D shift detection
-    shift, error = phase_cross_correlation(dapi_full_cropped, dapi_sep_cropped, upsample_factor=1, normalization=None)
-    dapi_sep = snd.shift(dapi_sep, shift)
+    # Now that we have the dapi image for both we can begin registration on these images. Look at central z-planes for
+    # of registration (parts 1 and 2)
+    rigid_transform(dapi_full, dapi_sep)
 
 
 def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
     # Target and offset are both 3D volumes but detection only uses mid z_plane
-    num_z = target_image.shape[0]
     # Manually find shift between mid z_planes
-    target_image_mid = target_image[int(num_z/2)]
-    offset_image_mid = offset_image[int(num_z / 2)]
+    target_image_mid = target_image[target_image.shape[0]//2]
+    offset_image_mid = offset_image[offset_image.shape[0]//2]
     initial_shift, ref_points_target, ref_points_offset = base.manual_shift(target_image_mid, offset_image_mid)
     # Convert initial shift into 3D
     initial_shift = np.insert(initial_shift, 0, 0)
@@ -114,8 +81,8 @@ def register_detect_rotation(target_image: np.ndarray, offset_image: np.ndarray,
     # num z_planes
     num_z = target_image.shape[0]
     # since input images are 3D volumes, we must take the mid z_plane
-    target_image_mid = target_image[int(num_z/2)]
-    offset_image_mid = offset_image[int(num_z/2)]
+    target_image_mid = target_image[num_z//2]
+    offset_image_mid = offset_image[num_z//2]
 
     # Define centre of circle we will be registering
     centre = np.mean(ref_points_target)
@@ -149,4 +116,36 @@ def register_detect_rotation(target_image: np.ndarray, offset_image: np.ndarray,
     for z in range(num_z):
         offset_image_cropped[z] = rotate(offset_image_cropped[z], -angle_rad)
 
-    return target_image_cropped, offset_image_cropped
+    return angle, target_image_cropped, offset_image_cropped
+
+
+def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
+
+    # 1.) Have the user manually select an initial shift in yx, apply this shift to the sep round
+    # 2.) Detect the rotation between the first and second image, apply this rotation to the sep round
+    # 3.) Use phase correlation to find optimal shift in 3D between two images and apply to sep round
+
+    # Step 1.)
+    # Manual Shift
+    offset_image, ref_points_target, ref_points_offset = register_manual_shift(target_image, offset_image)
+
+    # Step 2.)
+    # Detect rotation between DAPI iamges. We take the biggest circle centred around the centre of the three points
+    # chosen in step 1
+    target_cropped, offset_cropped, angle = register_detect_rotation(target_image, offset_image, ref_points_target,
+                                                                     ref_points_offset)
+
+    # Step 3:
+    # 3D shift detection
+    shift, error = phase_cross_correlation(target_cropped, offset_cropped, upsample_factor=1, normalization=None)
+    offset_cropped = snd.shift(offset_cropped, shift)
+
+anchor_partial = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Sep/anchor_image.npz')
+anchor_partial = anchor_partial.f.arr_0
+anchor_partial = anchor_partial[20:30]
+anchor_partial = base.process_image(anchor_partial, 4, 0, 0, 500)
+anchor_full = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Full/anchor_image.npz')
+anchor_full = anchor_full.f.arr_0
+anchor_full = anchor_full[20:30]
+anchor_full = base.process_image(anchor_full, 4, 0, 0, 500)
+register_manual_shift(anchor_full, anchor_partial)
