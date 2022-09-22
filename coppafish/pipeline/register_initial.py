@@ -1,8 +1,8 @@
 import numpy as np
 from tqdm import tqdm
-from ..stitch import compute_shift, update_shifts
-from ..find_spots import spot_yxz
-from ..setup.notebook import NotebookPage
+from coppafish.stitch import compute_shift, update_shifts
+from coppafish.find_spots import spot_yxz
+from coppafish.setup.notebook import NotebookPage, Notebook
 import warnings
 
 
@@ -65,6 +65,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     with tqdm(total=len(nbp_basic.use_rounds) * len(nbp_basic.use_tiles)) as pbar:
         pbar.set_description(f"Finding shift from ref_round({r_ref})/ref_channel({c_ref}) to channel {c_imaging} "
                              f"of all imaging rounds")
+
         for r in nbp_basic.use_rounds:
             for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'round': r, 'tile': t})
@@ -128,3 +129,8 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     nbp_debug.shift_score_outlier = shift_score_outlier
 
     return nbp_debug
+
+# nb = Notebook('//ZARU/Subjects/ISS/Izzie/220825 8x8/output/notebook.npz')
+# config = nb.get_config()
+# config = config['register_initial']
+# register_initial(config, nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no)

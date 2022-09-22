@@ -421,7 +421,10 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score_2d:
     if min_score_2d is None:
         min_score_2d, shift_thresh = get_score_thresh(all_shifts_2d, all_scores_2d, shift_2d, min_score_min_dist,
                                                       min_score_max_dist, min_score_multiplier)
-        shift_thresh = np.pad(shift_thresh, (0, 1))  # add z shift = 0
+        # Shift_thresh can return None and if it does there are mechanisms to deal with this later in the code, but
+        # it cannot be detected as None if we pad it with a 0, as this returns the ndarray [None] which is not None!
+        if shift_thresh is not None:
+            shift_thresh = np.pad(shift_thresh, (0, 1))  # add z shift = 0
     else:
         shift_thresh = None
     if score_2d <= min_score_2d and np.max(widen[:2]) > 0:

@@ -7,12 +7,14 @@ from skimage.transform import warp_polar, rotate
 from skimage.filters import window
 from skimage.registration import phase_cross_correlation
 from coppafish.setup.notebook import NotebookPage
+import napari
 from coppafish.setup.notebook import Notebook
 from skimage import data
 from skimage.color import rgb2gray
 import scipy.ndimage as snd
 matplotlib.use('QtAgg')
 matplotlib.pyplot.style.use('dark_background')
+import time
 
 
 def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
@@ -49,8 +51,11 @@ def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
 
 
 def manual_shift(image1: np.ndarray, image2: np.ndarray):
-    """This function takes in 2 images and allows the user to select 3 points on each, then returns the mean shift
-    between corresponding points"""
+
+    """
+    This function takes in 2 images and allows the user to select 3 points on eac using Matplotlib then returns the
+    mean shift between corresponding points
+    """
     # Plot image 1 and image 2 side by side
     # plot 1
     plt.subplot(121)
@@ -79,6 +84,34 @@ def manual_shift(image1: np.ndarray, image2: np.ndarray):
     shift = np.mean(ref_points_2-ref_points_1, axis=0)
 
     return shift, ref_points_1, ref_points_2
+
+
+def manual_shift2(im1: np.ndarray, im2: np.ndarray):
+    """
+    This function takes in 2 images and allows the user to select points on each using Napari and return the mean diff
+    of this set of points. These points are the basis of the rigid transform detection later. This is currently not
+    working. Speak to Matthieu or Max about this.
+    """
+
+    # Create Napari viewer
+    viewer = napari.Viewer()
+
+    # Add image 1 and image 2 as image layers in Napari
+    viewer.add_image(im1, name='Image1', blending='additive', colormap='bop orange')
+    viewer.add_image(im2, name='Image2', blending='additive', colormap='bop blue')
+
+    # Add point layers for ref points in image 1 and image 2
+    viewer.add_points(name='img1_ref')
+    viewer.add_points(name='img2_ref')
+
+    time.sleep(60)
+
+    ref_points1 = viewer.layers['img1_ref'].data
+    ref_points2 = viewer.layers['img2_ref'].data
+
+    shift = ref_points2 - ref_points1
+
+    return shift, ref_points1, ref_points2
 
 
 def detect_rotation(ref: np.ndarray, extra: np.ndarray):
@@ -221,7 +254,7 @@ def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarra
 # astro_new = snd.shift(astro, [10, 20])
 # shift, error, phase = phase_cross_correlation(astro, astro_new)
 # astro_new = rotate(astro_new, 7)
-# shift, rp1, rp2 = manual_shift(astro, astro_new)
+# shift, rp1, rp2 = manual_shift2(astro, astro_new)
 # plt.show()
 # print(shift)
 # astro_new = snd.shift(astro_new, shift)
