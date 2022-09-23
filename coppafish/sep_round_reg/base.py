@@ -90,26 +90,31 @@ def manual_shift2(im1: np.ndarray, im2: np.ndarray):
     """
     This function takes in 2 images and allows the user to select points on each using Napari and return the mean diff
     of this set of points. These points are the basis of the rigid transform detection later. This is currently not
-    working. Speak to Matthieu or Max about this.
+    working.
     """
+    # Firstly, we need to make sure that the histograms match between images. This is a fancy way of saying that we'll
+    # ensure they have the same amount of pixels of each brightness in [0,1]
+    im2 = exposure.match_histograms(im2, im1)
 
     # Create Napari viewer
     viewer = napari.Viewer()
 
     # Add image 1 and image 2 as image layers in Napari
-    viewer.add_image(im1, name='Image1', blending='additive', colormap='bop orange')
-    viewer.add_image(im2, name='Image2', blending='additive', colormap='bop blue')
+    viewer.add_image(im1, blending='additive', colormap='bop orange')
+    viewer.add_image(im2, blending='additive', colormap='bop blue')
 
     # Add point layers for ref points in image 1 and image 2
     viewer.add_points(name='img1_ref')
     viewer.add_points(name='img2_ref')
 
-    time.sleep(60)
+    # Run Napari
+    napari.run()
 
+    # Read input points
     ref_points1 = viewer.layers['img1_ref'].data
     ref_points2 = viewer.layers['img2_ref'].data
 
-    shift = ref_points2 - ref_points1
+    shift = np.mean(ref_points2 - ref_points1, axis=0)
 
     return shift, ref_points1, ref_points2
 
@@ -263,3 +268,13 @@ def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarra
 # rgb_overlay[:, :, 2] = astro_new[:512, :512]
 # plt.imshow(rgb_overlay)
 # plt.show()
+# dapi_partial = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Sep/dapi_image.npz')
+# dapi_partial = dapi_partial.f.arr_0
+# dapi_full = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Full/dapi_image.npz')
+# dapi_full = dapi_full.f.arr_0
+# dapi_full = dapi_full[25]
+# dapi_partial = dapi_partial[25]
+# viewer = napari.Viewer()
+# viewer.add_image(dapi_full)
+# viewer.add_image(dapi_partial)
+# napari.run()

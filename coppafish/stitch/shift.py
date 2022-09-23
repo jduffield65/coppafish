@@ -340,7 +340,7 @@ def compute_shift(yxz_base: np.ndarray, yxz_transform: np.ndarray, min_score_2d:
             Typical = `1.5` (definitely more than `1`).
         min_score_min_dist: `min_score_2d` is set to max score of those scores for shifts a distance between `min_dist`
             and `max_dist` from the best_shift.
-        min_score_max_dist: `min_score_2d` is set to max score of those scores for shifts a distance between `min_dist`
+        min_score_max_dist: `min_score_max_dist` is set to max score of those scores for shifts a distance between `min_dist`
             and `max_dist` from the best_shift.
         neighb_dist_thresh: Basically the distance below which neighbours are a good match.
             Typical = `2`.

@@ -71,8 +71,12 @@ def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
     # Manually find shift between mid z_planes
     target_image_mid = target_image[target_image.shape[0] // 2]
     offset_image_mid = offset_image[offset_image.shape[0] // 2]
-    initial_shift, ref_points_target, ref_points_offset = base.manual_shift(target_image_mid, offset_image_mid)
-    ref_points_target = np.array(ref_points_offset, dtype='int')
+    # Normalise middle z-planes
+    target_image_mid = target_image_mid / np.max(target_image_mid)
+    offset_image_mid = offset_image_mid / np.max(offset_image_mid)
+    # open napari interface and allow user to input data
+    initial_shift, ref_points_target, ref_points_offset = base.manual_shift2(target_image_mid, offset_image_mid)
+    ref_points_target = np.array(ref_points_target, dtype='int')
     ref_points_offset = np.array(ref_points_offset, dtype='int')
     # Convert initial shift into 3D
     initial_shift = np.insert(initial_shift, 0, 0)
@@ -187,7 +191,7 @@ def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
                                            centroid_offset[1]-radius:centroid_offset[1]+radius], upsample_factor=1,
                                            normalization=None)
 
-    offset_image = snd.shift(offset_image, -shift)
+    offset_image = snd.shift(offset_image, shift)
     rgb_overlay = np.zeros((4090, 5967, 3))
     rgb_overlay[:, :, 0] = target_image[3, :4090, :5967]
     rgb_overlay[:, :, 2] = offset_image[3, :4090, :5967]
@@ -201,7 +205,7 @@ dapi_partial = dapi_partial.f.arr_0
 dapi_full = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Full/dapi_image.npz')
 dapi_full = dapi_full.f.arr_0
 dapi_partial, dapi_full, shift, angle, error = rigid_transform(target_image=dapi_full, offset_image=dapi_partial)
-print(shift, angle, error)
+# print(shift, angle, error)
 # astro = rgb2gray(data.astronaut())
 # astro_new = snd.shift(astro, [10, 20])
 # astro_new = rotate(astro_new, 7)
