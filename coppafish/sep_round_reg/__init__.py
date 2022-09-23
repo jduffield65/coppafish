@@ -1,1 +1,1 @@
-from .run import run_sep_round_reg
+from coppafish.sep_round_reg import base
