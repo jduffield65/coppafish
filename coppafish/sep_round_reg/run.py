@@ -193,6 +193,7 @@ def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
     
     # commenting out this shift as it doesn't seem very good
     # offset_image = snd.shift(offset_image, shift)
+    # TODO: Replace this with a 3D Napari overlay
     rgb_overlay = np.zeros((4090, 5967, 3))
     rgb_overlay[:, :, 0] = target_image[3, :4090, :5967]
     rgb_overlay[:, :, 2] = offset_image[3, :4090, :5967]
