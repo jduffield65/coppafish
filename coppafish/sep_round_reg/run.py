@@ -204,7 +204,7 @@ dapi_partial = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep R
 dapi_partial = dapi_partial.f.arr_0
 dapi_full = np.load('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Sep Round/Full/dapi_image.npz')
 dapi_full = dapi_full.f.arr_0
-dapi_partial, dapi_full, shift, angle, error = rigid_transform(target_image=dapi_full, offset_image=dapi_partial)
+rigid_transform(target_image=dapi_full, offset_image=dapi_partial)
 # print(shift, angle, error)
 # astro = rgb2gray(data.astronaut())
 # astro_new = snd.shift(astro, [10, 20])
