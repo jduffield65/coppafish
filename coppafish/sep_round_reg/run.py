@@ -190,8 +190,9 @@ def rigid_transform(target_image: np.ndarray, offset_image: np.ndarray):
                                            offset_image[:, centroid_offset[0]-radius:centroid_offset[0]+radius,
                                            centroid_offset[1]-radius:centroid_offset[1]+radius], upsample_factor=1,
                                            normalization=None)
-
-    offset_image = snd.shift(offset_image, shift)
+    
+    # commenting out this shift as it doesn't seem very good
+    # offset_image = snd.shift(offset_image, shift)
     rgb_overlay = np.zeros((4090, 5967, 3))
     rgb_overlay[:, :, 0] = target_image[3, :4090, :5967]
     rgb_overlay[:, :, 2] = offset_image[3, :4090, :5967]
