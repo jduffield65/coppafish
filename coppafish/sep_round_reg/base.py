@@ -8,13 +8,14 @@ from skimage.filters import window
 from skimage.registration import phase_cross_correlation
 from coppafish.setup.notebook import NotebookPage
 import napari
+from scipy import interpolate
 from coppafish.setup.notebook import Notebook
 from skimage import data
 from skimage.color import rgb2gray
 import scipy.ndimage as snd
+
 matplotlib.use('QtAgg')
 matplotlib.pyplot.style.use('dark_background')
-import time
 
 
 def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
@@ -33,14 +34,14 @@ def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
     """
 
     # Crop the image
-    image = image[:, y:y+length, x:x+length]
+    image = image[:, y:y + length, x:x + length]
     # Next, make sure the contrast is well-adjusted
     image = exposure.equalize_hist(image)
     # Rescale so max = 1
     max = np.array(image).max()
-    image = image/max
+    image = image / max
     # Invert the image
-    image = np.ones(image.shape)-image
+    image = np.ones(image.shape) - image
     # Now apply the gamma transformation
     image = image ** gamma
     # Apply Hann Window to Images 1 and 2
@@ -51,7 +52,6 @@ def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
 
 
 def manual_shift(image1: np.ndarray, image2: np.ndarray):
-
     """
     This function takes in 2 images and allows the user to select 3 points on eac using Matplotlib then returns the
     mean shift between corresponding points
@@ -81,7 +81,7 @@ def manual_shift(image1: np.ndarray, image2: np.ndarray):
     # Average across these shifts
     ref_points_1 = np.flip(ref_points_1)
     ref_points_2 = np.flip(ref_points_2)
-    shift = np.mean(ref_points_2-ref_points_1, axis=0)
+    shift = np.mean(ref_points_2 - ref_points_1, axis=0, dtype='int')
 
     return shift, ref_points_1, ref_points_2
 
@@ -114,13 +114,12 @@ def manual_shift2(im1: np.ndarray, im2: np.ndarray):
     ref_points1 = viewer.layers['img1_ref'].data
     ref_points2 = viewer.layers['img2_ref'].data
 
-    shift = np.mean(ref_points2 - ref_points1, axis=0)
+    shift = np.mean(ref_points2 - ref_points1, axis=0, dtype=int)
 
     return shift, ref_points1, ref_points2
 
 
 def detect_rotation(ref: np.ndarray, extra: np.ndarray):
-
     """
     Function which takes in 2 images which are rotated and translated with respect to one another and returns the
     rotation angle in degrees between them.
@@ -134,12 +133,12 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
     extra_ft = np.log2(np.abs(fftshift(fft2(extra))))
 
     # Plot image 1 and image 2 side by side
-    plt.subplot(1, 2, 1)
-    plt.imshow(ref_ft, cmap=plt.cm.gray)
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(ref_ft, cmap=plt.cm.gray)
     # plot 2:
-    plt.subplot(1, 2, 2)
-    plt.imshow(extra_ft, cmap=plt.cm.gray)
-    plt.show()
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(extra_ft, cmap=plt.cm.gray)
+    # plt.show()
 
     # Create log-polar transformed FFT mag images and register
     shape = ref_ft.shape
@@ -148,24 +147,27 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
     warped_extra_ft = warp_polar(extra_ft, radius=radius, scaling='log')
 
     # Plot image 1 and image 2 side by side
-    plt.subplot(1, 2, 1)
-    plt.imshow(warped_ref_ft, cmap=plt.cm.gray)
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(warped_ref_ft, cmap=plt.cm.gray)
     # plot 2:
-    plt.subplot(1, 2, 2)
-    plt.imshow(warped_extra_ft, cmap=plt.cm.gray)
-    plt.show()
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(warped_extra_ft, cmap=plt.cm.gray)
+    # plt.show()
 
     warped_ref_ft = warped_ref_ft[:shape[0] // 2, :]  # only use half of FFT
     warped_extra_ft = warped_extra_ft[:shape[0] // 2, :]
-    shifts, error, phasediff = phase_cross_correlation(warped_ref_ft,
-                                                       warped_extra_ft,
-                                                       upsample_factor=100,
-                                                       normalization=None)
+    warped_ref_ft[np.isnan(warped_extra_ft)] = 0
+    warped_extra_ft[np.isnan(warped_extra_ft)] = 0
+
+    shifts = phase_cross_correlation(warped_ref_ft, warped_extra_ft, upsample_factor=100,
+                                     reference_mask=np.ones(warped_ref_ft.shape, dtype=int) - np.isnan(warped_ref_ft),
+                                     moving_mask=np.ones(warped_ref_ft.shape, dtype=int) - np.isnan(warped_extra_ft),
+                                     normalization=None)
 
     # Use translation parameters to calculate rotation parameter
     shift_angle = shifts[0]
 
-    return shift_angle, error
+    return shift_angle
 
 
 def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarray, z_planes: np.ndarray):
@@ -252,17 +254,112 @@ def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarra
     patchwork = patchwork[border[1]:-border[3], border[2]:-border[0]]
     return patchwork
 
+
+def simple_z_interp(image: np.ndarray):
+    # Since z-pixels are 3 times as large as xy, we interpolate
+    num_z = image.shape[0]
+    z = np.arange(0, num_z, 1)
+    new_image = np.zeros((len(z), image.shape[1] // 3, image.shape[2] // 3))
+    for i in range(new_image.shape[1]):
+        for j in range(new_image.shape[2]):
+            f = interpolate.interp1d(z, image[:, 3 * i, 3 * j])
+            new_image[:, i, j] = f(z)
+    return new_image
+
+
+def overlay_3d(im1: np.ndarray, im2=np.ndarray):
+    # Since z-pixels are 3 times as large as xy, we interpolate
+    im1 = simple_z_interp(im1, 3)
+    im2 = simple_z_interp(im2, 3)
+
+    for i in range(im1.shape[0]):
+        im1[i] = im1[i] * (window('hann', im1[i].shape) ** 0.1)
+    for i in range(im2.shape[0]):
+        im2[i] = im2[i] * (window('hann', im2[i].shape) ** 0.1)
+
+    # Create Napari viewer
+    viewer = napari.Viewer()
+
+    # Add image 1 and image 2 as image layers in Napari
+    viewer.add_image(im1, blending='additive', colormap='bop orange')
+    viewer.add_image(im2, blending='additive', colormap='bop blue')
+
+    napari.run()
+
+    return im1, im2
+
+
+def shift(array, offset, constant_values=0):
+    """Returns copy of array shifted by offset, with fill using constant."""
+    array = np.asarray(array)
+    offset = np.atleast_1d(offset)
+    assert len(offset) == array.ndim
+    new_array = np.empty_like(array)
+
+    def slice1(o):
+        return slice(o, None) if o >= 0 else slice(0, o)
+
+    new_array[tuple(slice1(o) for o in offset)] = (
+        array[tuple(slice1(-o) for o in offset)])
+
+    for axis, o in enumerate(offset):
+        new_array[(slice(None),) * axis +
+                  (slice(0, o) if o >= 0 else slice(o, None),)] = constant_values
+
+    return new_array
+
+
+def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: np.ndarray):
+    """
+    Function which places a 3d image (small_image) into a large 3d image (large_image) without double covering.
+    Args:
+        small_image: smaller image which will be placed into available region of large_image (np.ndarray)
+        large_image: large_image which we are placing smaller image inside (np.ndarray)
+        starting_point: bottom left corner in large_image where we want to place small_image
+    Returns:
+        large_image: large_image with smaller image placed inside appropriately (np.ndarray)
+    """
+    # First we compute the starting and ending z, y and x coord. First deal with the case that the coordinates
+    # are out of the image boundary
+    starting_point = np.maximum(starting_point, [0, 0, 0])
+    ending_point = np.minimum(starting_point + small_image.shape, large_image.shape)
+
+    # Now deal with the case where there is already something inside the desired region which we would like to avoid
+    # double covering. Search for first x,y coord after which there are only zeros in the desired region of large_image
+    region = large_image[starting_point[0]:ending_point[0], starting_point[1]:ending_point[1],
+             starting_point[2]:ending_point[2]]
+    positive_indices = np.argwhere(region)
+    if np.min(positive_indices.shape) > 0:
+        y_shift = np.max(positive_indices[:, 1])
+        x_shift = np.max(positive_indices[:, 0])
+    else:
+        y_shift = 0
+        x_shift = 0
+    # Finally, we can populate the large image with the small image. We must disregard the x_shift and y_shift first
+    # x and y entries though.
+    z_len = ending_point[0] - starting_point[0]
+    y_len = ending_point[1] - starting_point[1]
+    x_len = ending_point[2] - starting_point[2]
+    # Next we crop the small image
+    small_image = small_image[:z_len, y_shift:y_shift + y_len, x_shift:x_shift + x_len]
+
+    # Next we place small image inside large image
+    large_image[starting_point[0]:ending_point[0], starting_point[1]:ending_point[1], starting_point[2]:ending_point[2]] \
+        = small_image
+
+    return large_image
+
 # nb = Notebook('C://Users/Reilly/Desktop/Sample Notebooks/Anne/new_notebook.npz')
 # image = patch_together(nb.get_config(), nb.basic_info, nb.stitch.tile_origin, [24, 25, 26])
 # plt.imshow(image, cmap=plt.cm.gray)
 # astro = rgb2gray(data.astronaut())
-# astro_new = snd.shift(astro, [10, 20])
+# astro_new = shift(astro, [10, 20])
 # shift, error, phase = phase_cross_correlation(astro, astro_new)
 # astro_new = rotate(astro_new, 7)
 # shift, rp1, rp2 = manual_shift2(astro, astro_new)
 # plt.show()
 # print(shift)
-# astro_new = snd.shift(astro_new, shift)
+# astro_new = shift(astro_new, shift)
 # rgb_overlay = np.zeros((512, 512, 3))
 # rgb_overlay[:, :, 0] = astro[:512, :512]
 # rgb_overlay[:, :, 2] = astro_new[:512, :512]
@@ -274,7 +371,5 @@ def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarra
 # dapi_full = dapi_full.f.arr_0
 # dapi_full = dapi_full[25]
 # dapi_partial = dapi_partial[25]
-# viewer = napari.Viewer()
-# viewer.add_image(dapi_full)
-# viewer.add_image(dapi_partial)
-# napari.run()
+# brain = data.brain()
+# overlay_3d(brain, brain)
