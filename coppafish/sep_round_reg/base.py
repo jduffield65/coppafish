@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib
+
 import matplotlib.pyplot as plt
 from scipy.fft import fft2, fftshift
 from skimage import exposure
@@ -12,11 +12,153 @@ from scipy import interpolate
 from coppafish.setup.notebook import Notebook
 from skimage import data
 from skimage.color import rgb2gray
-import scipy.ndimage as snd
 
-matplotlib.use('QtAgg')
-matplotlib.pyplot.style.use('dark_background')
 
+def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: np.ndarray):
+    """
+    Function which places a 3d image (small_image) into a large 3d image (large_image) without double covering.
+    Args:
+        small_image: smaller image which will be placed into available region of large_image (np.ndarray)
+        large_image: large_image which we are placing smaller image inside (np.ndarray)
+        starting_point: bottom left corner in large_image where we want to place small_image
+    Returns:
+        large_image: large_image with smaller image placed inside appropriately (np.ndarray)
+    """
+    # There are 2 complications here:
+    # 1.) Starting point may be out of range
+    # 2.) Staring point may already be filled in
+    # In both cases we must update the starting point and specify the new position we will start reading the small
+    # image from.
+    # CASE 1.
+    # First update starting point, then find shift
+    starting_point_old = starting_point
+    starting_point = np.maximum(starting_point, [0, 0, 0], dtype=int)
+    # Now if the old starting point was outside of the boundary of the image, we must only lay down the part of
+    # small_image that should be included. So define shift to be the difference between starting points and we will
+    # only start reading small image from z_coord shift[0], y_coord shift[1] and x_coord shift[2]
+    shift1 = starting_point - starting_point_old
+    # Now define the ending_point. This prevents the small image from spilling over at the end.
+    ending_point = np.minimum(starting_point + small_image.shape, large_image.shape)
+
+    # CASE 2.
+    # First find shift, then update starting point.
+    # Search for first x,y coord after which there are only zeros in the desired region of large_image
+    shift2 = np.zeros(3)
+    region = large_image[starting_point[0]:ending_point[0], starting_point[1]:ending_point[1],
+             starting_point[2]:ending_point[2]]
+    # pos_indices is 3 row by num_positive_indices cols
+    zero_indices = np.argwhere(region == 0)
+    # if this is nonempty then for y_shift, we look for the largest pos y index, x_shift is largest pos x index,
+    # don't bother doing this for z_index though.
+    if np.min(zero_indices.shape) > 0:
+        shift2[1] = np.min(zero_indices[:, 1]).astype(int)
+        shift2[2] = np.min(zero_indices[:, 2]).astype(int)
+
+    # Now find total shift (sum of shift1 and shift 2) and update starting point. This concludes case 2.
+    shift_total = np.array(shift1 + shift2, dtype=int)
+    starting_point = np.array(starting_point + shift2, dtype=int)
+
+    # Now we have the information that we need and we can populate the large image with the small image.
+    # We must disregard the 0:shift[0] z entries, 0:shift[1] y entries, 0:shift[2] x entries of small_image.
+    small_image = small_image[shift_total[0]:, shift_total[1]:, shift_total[2]:]
+    # This still may spill over at the edge, so crop it at the end to ensure this doesn't happen
+    if starting_point[0] + small_image.shape[0] > large_image.shape[0]:
+        small_image = small_image[:(large_image.shape[0] - starting_point[0]), :, :]
+    if starting_point[1] + small_image.shape[1] > large_image.shape[1]:
+        small_image = small_image[:, :(large_image.shape[1] - starting_point[1]), :]
+    if starting_point[2] + small_image.shape[2] > large_image.shape[2]:
+        small_image = small_image[:, :, :(large_image.shape[2] - starting_point[2])]
+
+    # Next we place small image inside large image. Since starting point has been updated, dimensions should match
+    large_image[starting_point[0]:starting_point[0] + small_image.shape[0],
+    starting_point[1]:starting_point[1] + small_image.shape[1],
+    starting_point[2]:starting_point[2] + small_image.shape[2]] = small_image
+
+    return large_image
+
+
+def populate2(small_image: np.ndarray, large_image: np.ndarray, starting_point: np.ndarray):
+    """
+    Function which places a 3d image (small_image) into a large 3d image (large_image) without double covering.
+    This function computes way too many checks and is very slow.
+    Args:
+        small_image: smaller image which will be placed into available region of large_image (np.ndarray)
+        large_image: large_image which we are placing smaller image inside (np.ndarray)
+        starting_point: bottom left corner in large_image where we want to place small_image
+    Returns:
+        large_image: large_image with smaller image placed inside appropriately (np.ndarray)
+    """
+
+    for i in range(small_image.shape[0]):
+        for j in range(small_image.shape[1]):
+            for k in range(small_image.shape[2]):
+                global_coord = starting_point + [i, j, k]
+                if (0 <= global_coord[0] < large_image.shape[0] and 0 <= global_coord[1] < large_image.shape[1] and
+                        0 <= global_coord[2] < large_image.shape[2]):
+                    if large_image[global_coord[0], global_coord[1], global_coord[2]] == 0:
+                        large_image[global_coord[0], global_coord[1], global_coord[2]] = small_image[i, j, k]
+
+    return large_image
+
+
+def populate3(new_tile: np.ndarray, working_canvas: np.ndarray, ref_image: np.ndarray, starting_point: np.ndarray,
+              padding: np.ndarray):
+    """
+    This function populates the large image without double covering.
+
+    Args:
+        new_tile: small image to be added
+        ref_image: padded binary image which will be multiplied by the new_tile to get rid of redundant info
+        working_canvas: current stage
+        starting_point: coord of top left corner of new_tile
+        padding: This is a 3d vector which specifies how much padding we want in z, y, x
+
+    Returns:
+        working_canvas: updated working canvas
+        ref_image: updated ref_image
+    """
+    # Ensure padding is ndarray and not list
+    padding = np.array(padding)
+    # First, we will use the ref_image, which is 0 outside the range of the image, 0 wherever a previous tile has
+    # been laid down and 1 otherwise. We will multiply this elementwise with an array of the same size which contains
+    # 0's everywhere except where we would like to place our new_tile, where it takes the value of the tile.
+    # Create large padded image of 0s except where we'd like our new tile. In those places store the value of the new_
+    # tile
+    image = np.zeros(ref_image.shape + 2*padding, dtype=int)
+    image[padding[0] + starting_point[0]: padding[0] + starting_point[0] + new_tile.shape[0],
+        padding[1] + starting_point[1]: padding[1] + starting_point[1] + new_tile.shape[1],
+        padding[2] + starting_point[2]: padding[2] + starting_point[2] + new_tile.shape[2]] = new_tile
+    # Now pad our ref_image
+    ref_image_padded = np.zeros(ref_image.shape + 2*padding, dtype=bool)
+    ref_image_padded[padding[0]:padding[0]+ref_image.shape[0],
+                    padding[1]:padding[1]+ref_image.shape[1],
+                    padding[2]:padding[2]+ref_image.shape[2]] = ref_image
+    # Now multiply these 2 together elementwise. This will yield something which is 0 outside the boundary or
+    # there is already a value at that point. Otherwise it takes the value of the new_tile in its desired position
+    image = ref_image_padded * image
+    # Now that the only nonzero elements of image are where the new_tile is, we can add this to our working_canvas,
+    # which is 0 everywhere other than where we have already laid down the image.
+    # First pad the working canvas
+    working_canvas_padded = np.zeros(ref_image.shape + 2*padding)
+    working_canvas_padded[padding[0]:padding[0]+ref_image.shape[0],
+                    padding[1]:padding[1]+ref_image.shape[1],
+                    padding[2]:padding[2]+ref_image.shape[2]] = working_canvas
+    working_canvas_padded += image
+    # Now update our reference_image to have 0s in the new places we have added a tile. Create an indicator array which
+    # takes value 1 when image = 0 and 0 otherwise.
+    indicator = image == 0
+    # To get the new ref_image, multiply these elementwise. This is 0 wherever the ref_image is and 0 wherever the new
+    # tile is that we've laid down and 1 otherwise. Since this is padded, it's also zero in the padding region.
+    ref_image_padded = ref_image_padded * indicator
+    # now remove padding on both ref_image and working_canvas
+    working_canvas = working_canvas_padded[padding[0]:padding[0]+ref_image.shape[0],
+                    padding[1]:padding[1]+ref_image.shape[1],
+                    padding[2]:padding[2]+ref_image.shape[2]]
+    ref_image = ref_image_padded[padding[0]:padding[0]+ref_image.shape[0],
+                    padding[1]:padding[1]+ref_image.shape[1],
+                    padding[2]:padding[2]+ref_image.shape[2]]
+
+    return working_canvas, ref_image
 
 def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
     """ This function takes in an image and filters it to make it easier for the rotation detection to get results
@@ -51,46 +193,19 @@ def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
     return image
 
 
-def manual_shift(image1: np.ndarray, image2: np.ndarray):
-    """
-    This function takes in 2 images and allows the user to select 3 points on eac using Matplotlib then returns the
-    mean shift between corresponding points
-    """
-    # Plot image 1 and image 2 side by side
-    # plot 1
-    plt.subplot(121)
-    plt.imshow(image1, cmap=plt.cm.gray)
-    # plot 2:
-    plt.subplot(122)
-    plt.imshow(image2, cmap=plt.cm.gray)
-    plt.pause(0.01)
-
-    # Now require 6 inputs from user, 3 for each image and give a timer of 2 mins
-    ref_points_1 = np.array(plt.ginput(3, 60))
-    # plot 1
-    plt.subplot(121)
-    plt.scatter(ref_points_1[:, 0], ref_points_1[:, 1], s=100, c='red')
-    plt.pause(0.01)
-
-    ref_points_2 = np.array(plt.ginput(3, 60))
-    # plot 2:
-    plt.subplot(122)
-    plt.scatter(ref_points_2[:, 0], ref_points_2[:, 1], s=100, c='red')
-    plt.pause(0.01)
-
-    # Average across these shifts
-    ref_points_1 = np.flip(ref_points_1)
-    ref_points_2 = np.flip(ref_points_2)
-    shift = np.mean(ref_points_2 - ref_points_1, axis=0, dtype='int')
-
-    return shift, ref_points_1, ref_points_2
-
-
-def manual_shift2(im1: np.ndarray, im2: np.ndarray):
+def manual_shift(im1: np.ndarray, im2: np.ndarray):
     """
     This function takes in 2 images and allows the user to select points on each using Napari and return the mean diff
     of this set of points. These points are the basis of the rigid transform detection later. This is currently not
     working.
+    Args:
+        im1: image 1 (np.ndarray)
+        im2:  image 2 (np.ndarray)
+
+    Returns:
+        shift: mean diff between ref_points2 - ref_points1
+        ref_points1: manually selected coords of features from image 1
+        ref_points2: manually selected coords of features from image 2
     """
     # Firstly, we need to make sure that the histograms match between images. This is a fancy way of saying that we'll
     # ensure they have the same amount of pixels of each brightness in [0,1]
@@ -126,7 +241,8 @@ def detect_rotation(ref: np.ndarray, extra: np.ndarray):
     Args:
         ref: reference image from the full notebook
         extra: new image from the partial notebook
-    Returns: Anticlockwise angle which, upon application to ref, yields extra.
+    Returns:
+        angle: Anticlockwise angle which, upon application to ref, yields extra.
     """
     # work with shifted FFT log-magnitudes
     ref_ft = np.log2(np.abs(fftshift(fft2(ref))))
@@ -256,6 +372,13 @@ def patch_together(config: dict, nbp_basic: NotebookPage, tile_origin: np.ndarra
 
 
 def simple_z_interp(image: np.ndarray):
+    """
+    Function to interpolate z-planes as these are z-pixels are 3 times larger than xy pixels.
+    Args:
+        image: 3d image whose z planes are to be interpolated (np.ndarray)
+    Returns:
+        new_image: image with 3 times as many z_planes, interpolated
+    """
     # Since z-pixels are 3 times as large as xy, we interpolate
     num_z = image.shape[0]
     z = np.arange(0, num_z, 1)
@@ -268,6 +391,15 @@ def simple_z_interp(image: np.ndarray):
 
 
 def overlay_3d(im1: np.ndarray, im2=np.ndarray):
+    """
+    Function to view subsection of image1 and image2 overlayed in 3D.
+    Args:
+        im1:
+        im2:
+
+    Returns:
+        ima
+    """
     # Since z-pixels are 3 times as large as xy, we interpolate
     im1 = simple_z_interp(im1, 3)
     im2 = simple_z_interp(im2, 3)
@@ -289,8 +421,17 @@ def overlay_3d(im1: np.ndarray, im2=np.ndarray):
     return im1, im2
 
 
-def shift(array, offset, constant_values=0):
-    """Returns copy of array shifted by offset, with fill using constant."""
+def shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
+    """
+    Custom-built function to compute array shifted by a certain offset
+    Args:
+        array: array to be shifted
+        offset: shift value
+        constant_values: by default this is 0
+
+    Returns:
+        new_array: array shifted by offset with constant value 0
+    """
     array = np.asarray(array)
     offset = np.atleast_1d(offset)
     assert len(offset) == array.ndim
@@ -308,47 +449,6 @@ def shift(array, offset, constant_values=0):
 
     return new_array
 
-
-def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: np.ndarray):
-    """
-    Function which places a 3d image (small_image) into a large 3d image (large_image) without double covering.
-    Args:
-        small_image: smaller image which will be placed into available region of large_image (np.ndarray)
-        large_image: large_image which we are placing smaller image inside (np.ndarray)
-        starting_point: bottom left corner in large_image where we want to place small_image
-    Returns:
-        large_image: large_image with smaller image placed inside appropriately (np.ndarray)
-    """
-    # First we compute the starting and ending z, y and x coord. First deal with the case that the coordinates
-    # are out of the image boundary
-    starting_point = np.maximum(starting_point, [0, 0, 0])
-    ending_point = np.minimum(starting_point + small_image.shape, large_image.shape)
-
-    # Now deal with the case where there is already something inside the desired region which we would like to avoid
-    # double covering. Search for first x,y coord after which there are only zeros in the desired region of large_image
-    region = large_image[starting_point[0]:ending_point[0], starting_point[1]:ending_point[1],
-             starting_point[2]:ending_point[2]]
-    positive_indices = np.argwhere(region)
-    if np.min(positive_indices.shape) > 0:
-        y_shift = np.max(positive_indices[:, 1])
-        x_shift = np.max(positive_indices[:, 0])
-    else:
-        y_shift = 0
-        x_shift = 0
-    # Finally, we can populate the large image with the small image. We must disregard the x_shift and y_shift first
-    # x and y entries though.
-    z_len = ending_point[0] - starting_point[0]
-    y_len = ending_point[1] - starting_point[1]
-    x_len = ending_point[2] - starting_point[2]
-    # Next we crop the small image
-    small_image = small_image[:z_len, y_shift:y_shift + y_len, x_shift:x_shift + x_len]
-
-    # Next we place small image inside large image
-    large_image[starting_point[0]:ending_point[0], starting_point[1]:ending_point[1], starting_point[2]:ending_point[2]] \
-        = small_image
-
-    return large_image
-
 # nb = Notebook('C://Users/Reilly/Desktop/Sample Notebooks/Anne/new_notebook.npz')
 # image = patch_together(nb.get_config(), nb.basic_info, nb.stitch.tile_origin, [24, 25, 26])
 # plt.imshow(image, cmap=plt.cm.gray)
@@ -356,7 +456,7 @@ def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: n
 # astro_new = shift(astro, [10, 20])
 # shift, error, phase = phase_cross_correlation(astro, astro_new)
 # astro_new = rotate(astro_new, 7)
-# shift, rp1, rp2 = manual_shift2(astro, astro_new)
+# shift, rp1, rp2 = manual_shift(astro, astro_new)
 # plt.show()
 # print(shift)
 # astro_new = shift(astro_new, shift)

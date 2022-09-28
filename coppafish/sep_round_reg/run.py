@@ -67,7 +67,7 @@ def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
     target_image_mid = target_image_mid / np.max(target_image_mid)
     offset_image_mid = offset_image_mid / np.max(offset_image_mid)
     # open napari interface and allow user to choose points
-    initial_shift, ref_points_target, ref_points_offset = base.manual_shift2(target_image_mid, offset_image_mid)
+    initial_shift, ref_points_target, ref_points_offset = base.manual_shift(target_image_mid, offset_image_mid)
     ref_points_target = np.array(ref_points_target, dtype='int')
     ref_points_offset = np.array(ref_points_offset, dtype='int')
     # Convert initial shift into 3D
@@ -317,12 +317,13 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
         rows: The number of rows we want in our retiling (int)
         cols: The number of cols we want in our retiling (int)
     Returns:
-        registered_image: The offset volume after the application of subtile registration
-
+        registered_image: The offset volume after the application of subtile registration.
     """
     # Store the phase cross correlation shifts found for each subtile in the array pcc_shifts. pcc_shifts[:,i,j] stores
     # the 3D vector for row i col j.
     pcc_shifts = np.zeros((3, rows, cols), dtype=int)
+    d_old = np.zeros((rows, cols))
+    d_new = np.zeros((rows, cols))
     # Find width of both volumes (as images have been expanded to have same dimensions)
     width = target_image.shape[2]
     # Find height of both volumes (as images have been expanded to have same dimensions)
@@ -364,23 +365,38 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
                 pbar.update(1)
 
     # Now apply this shift and populate the registered image array
-    for i in range(rows):
-        for j in range(cols):
-            # Extract the cropped subtile
-            new_ifr_tile = offset_image[:, i * height // rows: (i + 1) * height // rows,
-                           j * width // cols: (j + 1) * width // cols]
-            # Apply the shift. To eliminate a boundary of zeros around every subtile, we don't compute the shifted
-            # image using the base.shift function but rather overlay the image onto the new registered_image array.
-            # Watch out for double covering!
+    with tqdm(total=rows * cols) as pbar:
+        pbar.set_description(f'Applying transformations on subtiles and computing scores')
+        for i in range(rows):
+            for j in range(cols):
+                pbar.set_postfix({'subrow': i, 'subcol': j})
+                # Extract the cropped subtile
+                dapi_full_tile = dapi_full[:, i * height // rows: (i + 1) * height // rows,
+                                 j * width // cols: (j + 1) * width // cols]
+                new_ifr_tile = offset_image[:, i * height // rows: (i + 1) * height // rows,
+                               j * width // cols: (j + 1) * width // cols]
 
-            # This isn't working at the moment so fix tomorrow!
-            # starting_point = [0, i * height // rows, j * width // cols] + pcc_shifts[:, i, j]
-            # registered_image = populate(new_ifr_tile, registered_image, starting_point)
-            new_ifr_tile = base.shift(new_ifr_tile, pcc_shifts[:, i, j])
-            registered_image[:, i * height // rows: (i + 1) * height // rows,
-                           j * width // cols: (j + 1) * width // cols] = new_ifr_tile
+                # Get distance between unshifted old tile and full dapi tile. First normalise, then take diff
+                if np.minimum(np.max(new_ifr_tile), np.max(dapi_full_tile)) > 0:
+                    d_old[i, j] = np.linalg.norm(new_ifr_tile/np.linalg.norm(new_ifr_tile) -
+                                                 dapi_full_tile/np.linalg.norm(dapi_full_tile))
+                else:
+                    d_old[i, j] = np.nan
+                # Apply the shift. To eliminate a boundary of zeros around every subtile, we don't compute the shifted
+                # image using the base.shift function but rather overlay the image onto the new registered_image array.
+                # Watch out for double covering!
+                starting_point = [0, i * height // rows, j * width // cols] + pcc_shifts[:, i, j]
+                registered_image = populate(new_ifr_tile, registered_image, starting_point)
+                # Get distance between shifted old tile and full dapi tile
+                if np.minimum(np.max(new_ifr_tile), np.max(dapi_full_tile)) > 0:
+                    d_new[i, j] = np.linalg.norm(new_ifr_tile / np.linalg.norm(new_ifr_tile) -
+                                                 dapi_full_tile / np.linalg.norm(dapi_full_tile))
+                else:
+                    d_new[i, j] = np.nan
+                # Update progress bar
+                pbar.update(1)
 
-    return registered_image
+    return registered_image, d_old, d_new, pcc_shifts
 
 # Load in our data
 dapi_partial_temp = np.load('C:/Users/Reilly/Desktop/dapi_partial_unreg.npy')
@@ -412,7 +428,7 @@ dapi_partial = apply_rigid_transform(image=dapi_partial, angle=angle, initial_sh
 
 # Keep ratio of rows to columns the same as in the original notebook
 
-dapi_partial_new = register_retile(dapi_full, dapi_partial, 16, 24)
+dapi_partial_new, d_old, d_new, pcc_shifts = register_retile(dapi_full, dapi_partial, 16, 24)
 
 viewer = napari.Viewer()
 # Add image 1 and image 2 as image layers in Napari
