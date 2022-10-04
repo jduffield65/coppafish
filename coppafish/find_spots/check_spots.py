@@ -107,7 +107,7 @@ def check_n_spots(nb: Notebook):
                 f"\nAnchor - {n_bad_images} tiles with n_spots < {n_spots_warn}:\n"
                 f"{bad_images}")
 
-        if n_bad_images >= n_images_error:
+        if n_bad_images > n_images_error:
             error_message = error_message + f"\nAnchor - tiles {bad_images} all had n_spots < {n_spots_warn}. " \
                                             f"{n_bad_images}/{n_images} tiles failed which is more than the " \
                                             f"error threshold of {n_images_error}.\n" \

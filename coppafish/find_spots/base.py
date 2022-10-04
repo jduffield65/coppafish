@@ -39,6 +39,7 @@ def spot_yxz(spot_details: np.ndarray, tile: int, round: int, channel: int, spot
 
     return spot_details[use]
 
+
 def spot_isolated(isolated_spots: np.ndarray, tile: int, ref_round: int, ref_channel: int, spot_no: np.ndarray) \
         -> np.ndarray:
     """

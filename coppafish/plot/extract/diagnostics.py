@@ -15,9 +15,9 @@ def thresh_box_plots(nb: Notebook):
     Args:
         nb: Notebook containing the extract NotebookPage.
     """
-    box_data = [nb.extract.auto_thresh[:, r, c] for c in nb.basic_info.use_channels for r in nb.basic_info.use_rounds]
+    box_data = [nb.extract.auto_thresh[nb.basic_info.use_tiles, r, c] for c in nb.basic_info.use_channels for r in nb.basic_info.use_rounds]
     if nb.basic_info.use_anchor:
-        box_data = box_data + [nb.extract.auto_thresh[:, nb.basic_info.anchor_round, nb.basic_info.anchor_channel]]
+        box_data = box_data + [nb.extract.auto_thresh[nb.basic_info.use_tiles, nb.basic_info.anchor_round, nb.basic_info.anchor_channel]]
     fig, ax1 = plt.subplots(figsize=(10, 6))
     fig.subplots_adjust(left=0.075, right=0.95, bottom=0.15)
     n_use_channels = len(nb.basic_info.use_channels)

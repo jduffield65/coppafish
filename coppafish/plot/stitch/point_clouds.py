@@ -3,9 +3,9 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.widgets import TextBox, RadioButtons
 from scipy.spatial import KDTree
-from ...find_spots import spot_yxz
-from ...call_spots import get_non_duplicate
-from ...setup import Notebook
+from coppafish.find_spots import spot_yxz
+from coppafish.call_spots import get_non_duplicate
+from coppafish.setup import Notebook
 import warnings
 import numpy_indexed
 from typing import List, Optional
@@ -265,12 +265,21 @@ def view_stitch(nb: Notebook):
     Args:
         nb: *Notebook* containing at least `stitch` page.
     """
-    is_ref = np.all((nb.find_spots.spot_details[:, 1] == nb.basic_info.ref_round,
-                     nb.find_spots.spot_details[:, 2] == nb.basic_info.ref_channel), axis=0)
-    local_yxz = nb.find_spots.spot_details[is_ref, -3:]
-    tile = nb.find_spots.spot_details[is_ref, 0]
-    local_yxz = local_yxz[np.isin(tile, nb.basic_info.use_tiles)]
-    tile = tile[np.isin(tile, nb.basic_info.use_tiles)]
+    # Create a num_ref_spots * 3 array of local coords of spot positions of the reference spots across all tiles used
+    local_yxz = np.zeros((0, 3), dtype=int)
+    for t in nb.basic_info.use_tiles:
+        local_yxz = np.vstack((local_yxz, spot_yxz(spot_details=nb.find_spots.spot_details,
+                              spot_no=nb.find_spots.spot_no, tile=t, round=nb.basic_info.ref_round,
+                               channel=nb.basic_info.ref_channel)))
+    # Recreate tile array from spot_no matrix
+    anchor_spots = nb.find_spots.spot_no[:, nb.basic_info.ref_round, nb.basic_info.ref_channel]
+    cumulative_spots = np.zeros(len(nb.basic_info.use_tiles))
+    for i in range(len(nb.basic_info.use_tiles)):
+        cumulative_spots[i] = np.sum(anchor_spots[:(i+1)], dtype=int)
+    tile = np.zeros(local_yxz.shape[0], dtype=int)
+    for i in range(tile.shape[0]):
+        possible_tiles = [j for j in range(len(nb.basic_info.use_tiles)) if cumulative_spots[j] >= i]
+        tile[i] = min(possible_tiles)
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
     tile_origin = nb.stitch.tile_origin
@@ -309,7 +318,7 @@ def view_stitch(nb: Notebook):
     # Sometimes can be empty point cloud, so remove these
     use_pc = [len(pc) > 0 for pc in point_clouds]
     pc_labels = [pc_labels[i] for i in range(len(use_pc)) if use_pc[i]]
-    point_clouds= [point_clouds[i] for i in range(len(use_pc)) if use_pc[i]]
+    point_clouds = [point_clouds[i] for i in range(len(use_pc)) if use_pc[i]]
     vpc = view_point_clouds(point_clouds, pc_labels, neighb_dist_thresh, z_scale,
                             "Reference Spots in the Global Coordinate System")
 
