@@ -229,7 +229,7 @@ def manual_shift(im1: np.ndarray, im2: np.ndarray):
     ref_points1 = viewer.layers['img1_ref'].data
     ref_points2 = viewer.layers['img2_ref'].data
 
-    shift = np.mean(ref_points2 - ref_points1, axis=0, dtype=int)
+    shift = np.mean(ref_points1 - ref_points2, axis=0, dtype=int)
 
     return shift, ref_points1, ref_points2
 
@@ -401,8 +401,8 @@ def overlay_3d(im1: np.ndarray, im2=np.ndarray):
         ima
     """
     # Since z-pixels are 3 times as large as xy, we interpolate
-    im1 = simple_z_interp(im1, 3)
-    im2 = simple_z_interp(im2, 3)
+    im1 = simple_z_interp(im1)
+    im2 = simple_z_interp(im2)
 
     for i in range(im1.shape[0]):
         im1[i] = im1[i] * (window('hann', im1[i].shape) ** 0.1)

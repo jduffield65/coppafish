@@ -1,12 +1,9 @@
-from typing import List, Tuple, Optional
-from coppafish.pipeline.run import initialize_nb, run_extract, run_find_spots, run_stitch
 from coppafish.sep_round_reg import base
 import numpy as np
 from base import detect_rotation, populate
 from skimage.transform import rotate
-from skimage.filters import window
+from skimage.filters import window, gaussian
 from skimage.registration import phase_cross_correlation
-import tifffile as tf
 import napari
 from PIL import Image
 from tqdm import tqdm
@@ -17,35 +14,68 @@ except ImportError:
     import numpy as jnp
 
 
-def run_sep_round_reg(config_file: str, config_file_full: str):
+def run_sep_round_reg(target_volume: np.ndarray, offset_volume: np.ndarray, subtile_rows: np.ndarray,
+                      subtile_cols: np.ndarray, ref_points_target=None, ref_points_offset=None):
     """
-    Bridge function to run everything. Currently incomplete.
+    Bridge Fun
+    Args:
+        target_volume: Full 3D volume of the target image, whose domain is the coordinate system we would like to
+        register to
+        offset_volume: Full 3D volume of the offset image, whose domain we intend to match to the domain of target_vol
+        by a locally rigid transformation
+        subtile_rows: the number of rows we'd like to have in our retiling
+        subtile_cols: the number of columns we'd like in our retiling
+        ref_points_target: the reference points on the target image, if not included then these will be manually
+        selected by the user once the program is run
+        ref_points_offset:the reference points on the offset image, if not included then these will be manually
+        selected by the user once the program is run
+
+    Returns:
+        initial_shift: the mean of the differences between the reference points, initial shift guess
+        global_angle: the angle that the images are rotated with respect to each other
+        corrected_shift: the shift computed on the rotated image after the rotation has been detected. This is 3D
+        and computed with phase cross correlation algorithm
+        pcc_shifts: the best shift to register subtile of the offset volume with the corresponding subtile of the
+        target volume after retiling
+        old_distances: the normalised L2 distance between corresponding subtiles of the offset vol and target vol
+        before shifting
+        new_distancs: the normalised L2 distance between corresponding subtiles of the offset vol and target vol
+        after shifting
+        new_offset_image: offset_image after all transformations have been applied
+
     """
-    # Get all information from full pipeline results - global spot positions and z scaling
+    # We need to ensure that the volumes have the same dimensions, take the biggest of each dimension across image 1
+    # and 2, create an array of zeros with these dimensions and populate the array as much as possible
+    big_container = np.maximum(target_volume.shape, offset_volume.shape)
+    new_target_volume = np.zeros(big_container)
+    new_offset_volume = np.zeros(big_container)
+    # now put these into the bigger arrays
+    new_target_volume[:target_volume.shape[0], :target_volume.shape[1], :target_volume.shape[2]] = target_volume
+    new_offset_volume[:offset_volume.shape[0], :offset_volume.shape[1], :offset_volume.shape[2]] = offset_volume
+    # Delete the input files to free up memory
+    del target_volume, offset_volume
 
-    # Full notebook for the experiment we've already run
-    nb_full = initialize_nb(config_file_full)
+    # Detect the initial shift, global rotation and final global correction shift
+    initial_shift, corrected_shift, global_angle = detect_rigid_transform(target_image=new_target_volume,
+                                                                          offset_image=new_offset_volume,
+                                                                          ref_points_target=ref_points_target,
+                                                                          ref_points_offset=ref_points_offset)
 
-    # run pipeline to get as far as a stitched DAPI image for the separate round
-    nb_sep = initialize_nb(config_file)
-    run_extract(nb_sep)
-    run_find_spots(nb_sep)
-    run_stitch(nb_sep)
+    # Apply the rigid transformation we have detected
+    new_offset_volume = apply_rigid_transform(image=new_offset_volume, angle=global_angle, initial_shift=initial_shift,
+                                              shift=corrected_shift)
 
-    # Import both DAPI's from both notebooks:
-    # Import dapi from full notebook
-    dapi_full_dir = nb_full.file_names.big_dapi_image
-    dapi_full_read = np.load(dapi_full_dir)
-    dapi_full = dapi_full_read.f.arr_0
+    # Now do the retiling registration
+    new_offset_volume, old_distances, new_distances, pcc_shifts = register_retile(new_target_volume, new_offset_volume,
+                                                                                  subtile_rows, subtile_cols)
 
-    # Import dapi from sep round notebook
-    dapi_sep_dir = nb_sep.file_names.big_dapi_image
-    dapi_sep_read = np.load(dapi_sep_dir)
-    dapi_sep = dapi_sep_read.f.arr_0
+    viewer = napari.Viewer()
+    # Add image 1 and image 2 as image layers in Napari
+    viewer.add_image(new_target_volume, blending='additive', colormap='bop orange')
+    viewer.add_image(new_offset_volume, blending='additive', colormap='bop blue')
+    napari.run()
 
-    # Now that we have the dapi image for both we can begin registration on these images. Look at central z-planes for
-    # of registration (parts 1 and 2)
-    detect_rigid_transform(dapi_full, dapi_sep)
+    return initial_shift, global_angle, corrected_shift, pcc_shifts, old_distances, new_distances, new_offset_volume
 
 
 def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
@@ -73,7 +103,7 @@ def register_manual_shift(target_image: np.ndarray, offset_image: np.ndarray):
     # Convert initial shift into 3D
     initial_shift = np.insert(initial_shift, 0, 0)
     # Apply this shift using custom-built shift function
-    offset_image = base.shift(offset_image, -initial_shift)
+    offset_image = base.shift(offset_image, initial_shift)
     return offset_image, ref_points_target, ref_points_offset, initial_shift
 
 
@@ -318,6 +348,9 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
         cols: The number of cols we want in our retiling (int)
     Returns:
         registered_image: The offset volume after the application of subtile registration.
+        d_old: dot product similarity score between old registered image
+        d_new: dot product similarity score between newly registered image
+        pcc_shifts: new shifts for subtiles
     """
     # Store the phase cross correlation shifts found for each subtile in the array pcc_shifts. pcc_shifts[:,i,j] stores
     # the 3D vector for row i col j.
@@ -333,11 +366,9 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
     # Find mid z-plane (as an integer)
     mid_z = target_image.shape[0] // 2
 
-    # Next we split up the work of detection and application of the shifts among the subtiles.
-
     # Create a progress bar to keep track of algorithms stage when running
     with tqdm(total=rows * cols) as pbar:
-        pbar.set_description(f'Computing registration on subtiles')
+        pbar.set_description(f'Computing and applying registration on subtiles')
         for i in range(rows):
             for j in range(cols):
                 pbar.set_postfix({'subrow': i, 'subcol': j})
@@ -345,52 +376,71 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
                 # if this changes the shifts found but intuitively it seems it would. In any case, it makes the code
                 # run faster and is probably sufficient information
 
-                new_iss_tile = target_image[mid_z - 5:mid_z + 5, i * height // rows: (i + 1) * height // rows: 3,
-                               j * width // cols: (j + 1) * width // cols: 3]
+                # We also make the subtiles bigger so that we don't have any gaps when we restitch
+                dy = height // rows
+                dx = width // cols
 
-                new_ifr_tile = offset_image[mid_z - 5:mid_z + 5, i * height // rows: (i + 1) * height // rows: 3,
-                               j * width // cols: (j + 1) * width // cols: 3]
+                # Set y limits to 10% of each side of the expected tile size, corrected for the boundary
+                y_low = max(int((i-0.1) * dy), 0)
+                y_high = min(int((i+1.1) * dy), height)
+
+                # Set x limits to 10% of each side of the expected tile size, corrected for the boundary
+                x_low = max(int((j-0.1) * dx), 0)
+                x_high = min(int((j+1.1) * dx), width)
+
+                iss_tile_subset = target_image[mid_z - 15: mid_z + 15:, y_low: y_high: 3, x_low: x_high: 3]
+
+                ifr_tile_subset = offset_image[mid_z - 15: mid_z + 15:, y_low: y_high: 3, x_low: x_high: 3]
 
                 # Detect the shift between subtile[i,j] on the offset image and on the target image using the pcc
                 # algorithm
-                pcc_shift = phase_cross_correlation(new_iss_tile, new_ifr_tile,
-                                                    reference_mask=np.ones(new_iss_tile.shape, dtype=int) - np.isnan(
-                                                        new_iss_tile),
-                                                    moving_mask=np.ones(new_ifr_tile.shape, dtype=int) - np.isnan(
-                                                        new_ifr_tile))
+                pcc_shift = phase_cross_correlation(iss_tile_subset, ifr_tile_subset,
+                                                    reference_mask=np.ones(iss_tile_subset.shape, dtype=int) - np.isnan(
+                                                        iss_tile_subset),
+                                                    moving_mask=np.ones(ifr_tile_subset.shape, dtype=int) - np.isnan(
+                                                        ifr_tile_subset))
                 # Next multiply the yx shift by the factor by which we downsampled. Don't do this to the z-shift though
                 pcc_shifts[:, i, j] = np.array(3 * pcc_shift, dtype=int)
                 pcc_shifts[0, i, j] = pcc_shifts[0, i, j] // 3
-                # Update progress bar
-                pbar.update(1)
 
-    # Now apply this shift and populate the registered image array
-    with tqdm(total=rows * cols) as pbar:
-        pbar.set_description(f'Applying transformations on subtiles and computing scores')
-        for i in range(rows):
-            for j in range(cols):
-                pbar.set_postfix({'subrow': i, 'subcol': j})
-                # Extract the cropped subtile
-                dapi_full_tile = dapi_full[:, i * height // rows: (i + 1) * height // rows,
-                                 j * width // cols: (j + 1) * width // cols]
-                new_ifr_tile = offset_image[:, i * height // rows: (i + 1) * height // rows,
-                               j * width // cols: (j + 1) * width // cols]
+                # Extract the whole cropped subtile before applying shift
+                iss_tile = target_image[:, y_low: y_high, x_low: x_high]
+                ifr_tile = np.copy(offset_image[:, y_low: y_high, x_low: x_high])
 
                 # Get distance between unshifted old tile and full dapi tile. First normalise, then take diff
-                if np.minimum(np.max(new_ifr_tile), np.max(dapi_full_tile)) > 0:
-                    d_old[i, j] = np.linalg.norm(new_ifr_tile/np.linalg.norm(new_ifr_tile) -
-                                                 dapi_full_tile/np.linalg.norm(dapi_full_tile))
+                if np.minimum(np.max(ifr_tile), np.max(iss_tile)) > 0:
+                    d_old[i, j] = np.linalg.norm(ifr_tile/np.linalg.norm(ifr_tile) -
+                                                 iss_tile/np.linalg.norm(iss_tile))
                 else:
                     d_old[i, j] = np.nan
+
                 # Apply the shift. To eliminate a boundary of zeros around every subtile, we don't compute the shifted
                 # image using the base.shift function but rather overlay the image onto the new registered_image array.
                 # Watch out for double covering!
-                starting_point = [0, i * height // rows, j * width // cols] + pcc_shifts[:, i, j]
-                registered_image = populate(new_ifr_tile, registered_image, starting_point)
+
+                # Before pasting new image down, blur edges
+                subtile_height = ifr_tile.shape[1]
+                subtile_width = ifr_tile.shape[2]
+                edge = 0.1
+                ifr_tile[:, :, :int(edge*subtile_width)] = gaussian(ifr_tile[:, :, :int(edge*subtile_width)], 0.5)
+                ifr_tile[:, :, int((1-edge)*subtile_width):subtile_width] = \
+                    gaussian(ifr_tile[:, :, int((1-edge)*subtile_width):subtile_width], 0.5)
+                ifr_tile[:, :int(edge*subtile_height), int(edge*subtile_width):int((1-edge)*subtile_width)] = \
+                    gaussian(ifr_tile[:, :int(edge*subtile_height), int(edge*subtile_width):int((1-edge)*subtile_width)]
+                             , 0.5)
+                ifr_tile[:, int((1-edge)*subtile_height):subtile_height,
+                    int(edge*subtile_width):int((1-edge)*subtile_width)] \
+                    = gaussian(ifr_tile[:, int((1-edge)*subtile_height):subtile_height,
+                    int(edge*subtile_width):int((1-edge)*subtile_width)], 0.5)
+
+                starting_point = [0, y_low, x_low] + pcc_shifts[:, i, j]
+                registered_image = populate(ifr_tile, registered_image, starting_point)
+                new_ifr_tile = registered_image[:, y_low: y_high, x_low: x_high]
+
                 # Get distance between shifted old tile and full dapi tile
-                if np.minimum(np.max(new_ifr_tile), np.max(dapi_full_tile)) > 0:
+                if np.minimum(np.max(new_ifr_tile), np.max(iss_tile)) > 0:
                     d_new[i, j] = np.linalg.norm(new_ifr_tile / np.linalg.norm(new_ifr_tile) -
-                                                 dapi_full_tile / np.linalg.norm(dapi_full_tile))
+                                                 iss_tile / np.linalg.norm(iss_tile))
                 else:
                     d_new[i, j] = np.nan
                 # Update progress bar
@@ -398,48 +448,3 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
 
     return registered_image, d_old, d_new, pcc_shifts
 
-# Load in our data
-dapi_partial_temp = np.load('C:/Users/Reilly/Desktop/dapi_partial_unreg.npy')
-dapi_full_temp = np.load('C:/Users/Reilly/Desktop/dapi_full.npy')
-# Now we need to ensure that the volumes have the same dimensions, take the biggest of each dimension across image 1
-# and 2, create an array of zeros with these dimensions and populate the array as much as possible
-big_container = np.maximum(dapi_full_temp.shape, dapi_partial_temp.shape)
-dapi_partial = np.zeros(big_container)
-dapi_full = np.zeros(big_container)
-# now put these into the bigger arrays
-dapi_partial[:dapi_partial_temp.shape[0], :dapi_partial_temp.shape[1], :dapi_partial_temp.shape[2]] = dapi_partial_temp
-dapi_full[:dapi_full_temp.shape[0], :dapi_full_temp.shape[1], :dapi_full_temp.shape[2]] = dapi_full_temp
-# Delete the temporary files to free up memory
-del dapi_partial_temp, dapi_full_temp
-
-# These are our saved reference points, if you don't have any, the code will select them manually
-rp_target = np.load('C:/Users/Reilly/Desktop/ref_points_target.npy')
-rp_offset = np.load('C:/Users/Reilly/Desktop/ref_points_offset.npy')
-
-# Detect the initial shift, global rotation and final global correction shift
-initial_shift, shift, angle = detect_rigid_transform(target_image=dapi_full, offset_image=dapi_partial,
-                                                     ref_points_target=rp_target, ref_points_offset=rp_offset)
-
-# Apply the rigid transformation we have detected
-dapi_partial = apply_rigid_transform(image=dapi_partial, angle=angle, initial_shift=initial_shift, shift=shift)
-
-# Now start the retiling procedure. This will allow us to bypass stitching irregularities and take care of rotation in
-# z, by simply applying different vertical shifts at different subtiles!
-
-# Keep ratio of rows to columns the same as in the original notebook
-
-dapi_partial_new, d_old, d_new, pcc_shifts = register_retile(dapi_full, dapi_partial, 16, 24)
-
-viewer = napari.Viewer()
-# Add image 1 and image 2 as image layers in Napari
-viewer.add_image(dapi_full, blending='additive', colormap='bop orange')
-viewer.add_image(dapi_partial, blending='additive', colormap='bop blue')
-viewer.add_image(dapi_partial_new, blending='additive')
-napari.run()
-
-# print(shift, angle, error)
-# astro = rgb2gray(data.astronaut())
-# astro_new = base.shift(astro, [10, 20])
-# astro_new = rotate(astro_new, 7)
-#
-# base.manual_shift(astro, astro_new)
