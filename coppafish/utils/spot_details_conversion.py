@@ -1,20 +1,19 @@
-from coppafish.setup.notebook import Notebook, NotebookPage
-import os
+from coppafish import Notebook
 import numpy as np
-import warnings
 from coppafish.pipeline.run import run_find_spots
 
 
-def spot_details_conversion(nb: Notebook):
+def spot_details_conversion(nb: Notebook, spot_details_info_dir: str):
     """
     Function to reformat old find_spots pages into new format.
     :param nb: Notebook with old format of find_spots page
+    spot_details_info_dir: directory where spot_details_info should be saved
     :return nb_updated: Notebook with updated format of find_spots page
+
+    Args:
+        spot_details_info_dir:
     """
 
-    # First create output directory to save spot_details_info to
-    config = nb.get_config()
-    spot_details_info_dir = os.path.join(config['file_names']['output_dir'], 'spot_details_info' + '.npz')
     # First convert the old spot_details into the new spot_details
     # Need this to be ordered by t,r,c but its currently ordered r,t,c
     spot_details_old = nb.find_spots.spot_details
@@ -42,9 +41,9 @@ def spot_details_conversion(nb: Notebook):
     anchor_indices = [i for i in range(spot_details_old.shape[0]) if spot_details_old[i, 1] == ref_round]
     num_ref_spots = np.sum(spot_no[:, ref_round, ref_channel])
     # Chuck warning if len(anchor_indices) != num_ref_spots
-    if len(anchor_indices) != num_ref_spots:
-        warnings.warn(f'We should have found {num_ref_spots} anchor indices, but we have '
-                      f''f'{len(anchor_indices)} tiles. This may cause an index error.')
+    # if len(anchor_indices) != num_ref_spots:
+    #     warnings.warn(f'We should have found {num_ref_spots} anchor indices, but we have '
+    #                   f''f'{len(anchor_indices)} tiles. This may cause an index error.')
     # Read out isolated_spot info for these rows
     isolated_spots = np.array(spot_details_old[anchor_indices, 3], dtype=bool)
 
@@ -57,3 +56,4 @@ def spot_details_conversion(nb: Notebook):
     run_find_spots(nb)
 
     return nb
+

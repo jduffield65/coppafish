@@ -1,6 +1,6 @@
 from coppafish.sep_round_reg import base
 import numpy as np
-from base import detect_rotation, populate
+from coppafish.sep_round_reg.base import detect_rotation, populate
 from skimage.transform import rotate
 from skimage.filters import window, gaussian
 from skimage.registration import phase_cross_correlation
@@ -14,8 +14,8 @@ except ImportError:
     import numpy as jnp
 
 
-def run_sep_round_reg(target_volume: np.ndarray, offset_volume: np.ndarray, subtile_rows: np.ndarray,
-                      subtile_cols: np.ndarray, ref_points_target=None, ref_points_offset=None):
+def run_sep_round_reg(target_volume: np.ndarray, offset_volume: np.ndarray, subtile_rows=None,
+                      subtile_cols=None, ref_points_target=None, ref_points_offset=None):
     """
     Bridge Fun
     Args:
@@ -23,8 +23,10 @@ def run_sep_round_reg(target_volume: np.ndarray, offset_volume: np.ndarray, subt
         register to
         offset_volume: Full 3D volume of the offset image, whose domain we intend to match to the domain of target_vol
         by a locally rigid transformation
-        subtile_rows: the number of rows we'd like to have in our retiling
-        subtile_cols: the number of columns we'd like in our retiling
+        subtile_rows: the number of rows we'd like to have in our retiling, if not given then this will be set to 4 *
+        number of rows of original image
+        subtile_cols: the number of columns we'd like in our retiling, if not given then this will be set to 4 *
+        number of cols of original image
         ref_points_target: the reference points on the target image, if not included then these will be manually
         selected by the user once the program is run
         ref_points_offset:the reference points on the offset image, if not included then these will be manually
@@ -308,7 +310,7 @@ def detect_rigid_transform(target_image: np.ndarray, offset_image: np.ndarray, r
 def apply_rigid_transform(image: np.ndarray, angle: float, initial_shift: np.ndarray, shift: np.ndarray):
     """
 
-    Function to apply the rigid transform to the offset colume
+    Function to apply the rigid transform to the offset volume
     Args:
         image:  offset image to be rotated and translated (np.ndarray)
         angle: detected angle taking target to offset in yx (float)
@@ -335,6 +337,60 @@ def apply_rigid_transform(image: np.ndarray, angle: float, initial_shift: np.nda
     return new_image
 
 
+def apply_register_transform(image: np.ndarray, angle: float, initial_shift: np.ndarray, shift: np.ndarray,
+                             pcc_shifts: np.ndarray):
+    """
+    Function to apply the rigid transform to the offset volume
+    Args:
+        image:  offset image to be rotated and translated (np.ndarray)
+        angle: detected angle taking target to offset in yx (float)
+        initial_shift: initial shift detected in register_detect_manual_shift (np.ndarray)
+        shift: Final correction 3D shift (np.ndarray)
+        pcc_shifts: shifts for each newly generated subtile
+
+    Returns:
+        registered_image: The transformed image.
+    """
+    # First, ensure pcc_shifts is stored as an int
+    pcc_shifts = pcc_shifts.astype(int)
+    # Now apply the rigid transformation obtained prior to retiling
+    image = apply_rigid_transform(image, angle, initial_shift, shift)
+
+    # Define width and number of rows of the volume
+    width = image.shape[2]
+    rows = pcc_shifts.shape[1]
+    # Define height and number of rows of the volumes
+    height = image.shape[1]
+    cols = pcc_shifts.shape[2]
+    # Create a zero array to be populated by the registered image.
+    registered_image = np.zeros(image.shape)
+
+    # Now loop through each subtile and apply the shifts to image
+    for i in range(rows):
+        for j in range(cols):
+
+            # Define the step sizes dx and dy which we'd have without any overlap
+            dy = height // rows
+            dx = width // cols
+
+            # Set y limits to 10% of each side of the expected tile size, corrected for the boundary
+            y_low = max(int((i - 0.1) * dy), 0)
+            y_high = min(int((i + 1.1) * dy), height)
+
+            # Set x limits to 10% of each side of the expected tile size, corrected for the boundary
+            x_low = max(int((j - 0.1) * dx), 0)
+            x_high = min(int((j + 1.1) * dx), width)
+
+            # Now take the cropped subtile of the image in question
+            image_subtile = image[:, y_low:y_high, x_low:x_high]
+            # Define the starting point, ie: the top left corner of the image in coords
+            starting_point = [0, y_low, x_low] + pcc_shifts[:, i, j]
+            # Now populate the registered_image with the shifted subtiles
+            registered_image = populate(image_subtile, registered_image, starting_point)
+
+    return registered_image
+
+
 def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: int, cols: int):
     """
     This function takes in the target image and an offset image which has already been registered using the rigid
@@ -344,8 +400,8 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
     Args:
         target_image: The volume that we are trying to register to. (np.ndarray)
         offset_image: The offset volume. (np.ndarray)
-        rows: The number of rows we want in our retiling (int)
-        cols: The number of cols we want in our retiling (int)
+        rows: The number of rows we want in our retiling. If left blank, set to height//256. (int)
+        cols: The number of cols we want in our retiling. If left blank, set to width//256. (int)
     Returns:
         registered_image: The offset volume after the application of subtile registration.
         d_old: dot product similarity score between old registered image
@@ -365,6 +421,12 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
     registered_image = np.zeros(target_image.shape)
     # Find mid z-plane (as an integer)
     mid_z = target_image.shape[0] // 2
+    # Now deal with case where rows are left empty. Scale things so that a subtile has side length approx 256 and image
+    # has at least 16 subtiles
+    if rows is None:
+        rows = int(max(4, height//256))
+    if cols is None:
+        cols = int(max(4, height//256))
 
     # Create a progress bar to keep track of algorithms stage when running
     with tqdm(total=rows * cols) as pbar:
@@ -435,6 +497,8 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
 
                 starting_point = [0, y_low, x_low] + pcc_shifts[:, i, j]
                 registered_image = populate(ifr_tile, registered_image, starting_point)
+
+                # Calculate this newly registered ifr tile so that we can compute its similarity
                 new_ifr_tile = registered_image[:, y_low: y_high, x_low: x_high]
 
                 # Get distance between shifted old tile and full dapi tile
@@ -447,4 +511,3 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
                 pbar.update(1)
 
     return registered_image, d_old, d_new, pcc_shifts
-
