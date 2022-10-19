@@ -411,4 +411,5 @@ def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: n
         is_converged = np.abs(neighbour - neighbour_last).max() == 0
         if is_converged:
             break
+
     return transform, n_matches, error, is_converged

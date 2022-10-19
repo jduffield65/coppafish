@@ -2,8 +2,13 @@ import numpy as np
 from tqdm import tqdm
 from coppafish.stitch import compute_shift, update_shifts
 from coppafish.find_spots import spot_yxz
-from coppafish.setup.notebook import NotebookPage, Notebook
 import warnings
+from coppafish.setup import Notebook, NotebookPage
+from coppafish.plot.raw import get_raw_images
+from skimage.registration import phase_cross_correlation
+from skimage.filters import sobel
+from scipy.fft import fft2, fftshift
+from skimage.transform import warp_polar
 
 
 def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray) \
@@ -130,7 +135,163 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
 
     return nbp_debug
 
-# nb = Notebook('//ZARU/Subjects/ISS/Izzie/220825 8x8/output/notebook.npz')
-# config = nb.get_config()
-# config = config['register_initial']
-# register_initial(config, nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no)
+
+def register_cameras(nb: Notebook, t: int) -> np.ndarray:
+    """
+    Initial shifts are computed based on a single shift_channel. This channel can be found in
+    nb.register_initial.shift_channel. When the cameras are offset from one another, the initial shift should be
+    different for channels inherited from different cameras than that belonging to the shift_channel.
+    For this reason, we first align cameras.
+
+    Args:
+        nb: Notebook we're rperformeing registration on
+        t: tile we'd like to compute this registration on.
+
+    Returns:
+        shifts: The shifts from each camera to the reference channel camera (np.ndarray (3 x 3))
+        angles: The yx acw rotation from each camera to the reference channel camera (np.ndarray ( 1 x 3))
+    """
+
+    # Load in basic_info page
+    nbp_basic = nb.basic_info
+    # First check there is indeed an anchor channel
+    if not nbp_basic.anchor_channel:
+        raise Exception('No anchor round to align to!')
+
+    # Now that we've established these exist, lets define the anchor round and channel as variables
+    anchor_round = nbp_basic.anchor_round
+    anchor_channel = nbp_basic.anchor_channel
+
+    # Now, let us list the channels and lasers associated with each camera
+    blue_camera_channels = [i for i in range(len(nbp_basic.channel_camera)) if nbp_basic.channel_camera[i] == 405]
+    blue_lasers = [nbp_basic.channel_laser[i] for i in blue_camera_channels]
+    green_camera_channels = [i for i in range(len(nbp_basic.channel_camera)) if nbp_basic.channel_camera[i] == 470]
+    green_lasers = [nbp_basic.channel_laser[i] for i in green_camera_channels]
+    orange_camera_channels = [i for i in range(len(nbp_basic.channel_camera)) if nbp_basic.channel_camera[i] == 555]
+    orange_lasers = [nbp_basic.channel_laser[i] for i in orange_camera_channels]
+    red_camera_channels = [i for i in range(len(nbp_basic.channel_camera)) if nbp_basic.channel_camera[i] == 640]
+    red_lasers = [nbp_basic.channel_laser[i] for i in red_camera_channels]
+
+    # Define a cameras list showing which cameras are in use
+    index = 0
+    cameras = []
+    anchor_cam = []
+    # For each camera, the corresponding channel will be stored in sample_channels
+    sample_channels = []
+    # Next, we know from ground truth data that good camera channels all have the same excitation and camera freq. If
+    # these channels are contained, use them. Else, use the first that shows up.
+    if red_camera_channels:
+        cameras.append(index)
+        if 640 in red_lasers:
+            sample_channels.append(red_camera_channels[red_lasers.index(640)])
+        else:
+            sample_channels.append(red_camera_channels[0])
+        if anchor_channel in red_camera_channels:
+            anchor_cam = index
+        index = index + 1
+    if blue_camera_channels:
+        cameras.append(index)
+        if 405 in blue_lasers:
+            sample_channels.append(blue_camera_channels[blue_lasers.index(405)])
+        else:
+            sample_channels.append(blue_camera_channels[0])
+        if anchor_channel in blue_camera_channels:
+            anchor_cam = index
+        index = index + 1
+    if green_camera_channels:
+        cameras.append(index)
+        if 470 in green_lasers:
+            sample_channels.append(green_camera_channels[green_lasers.index(470)])
+        else:
+            sample_channels.append(green_camera_channels[0])
+        if anchor_channel in green_camera_channels:
+            anchor_cam = index
+        index = index + 1
+    if orange_camera_channels:
+        cameras.append(index)
+        if 555 in orange_lasers:
+            sample_channels.append(orange_camera_channels[orange_lasers.index(555)])
+        else:
+            sample_channels.append(orange_camera_channels[0])
+        if anchor_channel in orange_camera_channels:
+            anchor_cam = index
+
+    # Now define the non_anchor channels and cameras
+    non_anchor_channels = [i for i in sample_channels if i != sample_channels[anchor_cam]]
+    non_anchor_cam = [i for i in cameras if i != anchor_cam]
+
+    # Now that we have a channel for each camera, we'd like to load in a volume corresponding to each of those channels.
+    # Round 0 is always a bit dodgy. So let's use the first nonzero round
+    if len(nbp_basic.use_rounds) == 1:
+        raise Exception('Need more than just the reference round!')
+
+    sample_round = min([i for i in nbp_basic.use_rounds if i > 0])
+
+    # Now look at all the cameras in use and load in the middle of the sample images
+    sample_image = get_raw_images(nb, [t], [sample_round], non_anchor_channels,
+                                  list(np.arange(nbp_basic.nz//2 - 10, nbp_basic.nz//2 + 10)))[0, 0]
+    anchor_image = get_raw_images(nb, [t], [sample_round], [anchor_channel],
+                                  list(np.arange(nbp_basic.nz//2 - 10, nbp_basic.nz//2 + 10)))[0, 0, 0]
+
+    # Initialise filtered_sample_image
+    filtered_sample_image = np.zeros(sample_image.shape)
+
+    # Filter each image with a Sobel filter to improve registration
+    for i in range(sample_image.shape[0]):
+        filtered_sample_image[i] = sobel(sample_image[i])
+
+    anchor_image = sobel(anchor_image)
+
+    # Now create an array to store all the shifts to the anchor camera.
+    cam_shift = np.zeros((len(cameras), 3), dtype=int)
+    error = np.zeros(len(cameras))
+    phase_diff = np.zeros(len(cameras))
+    angle = np.zeros(len(cameras))
+
+    for i in non_anchor_cam:
+        cam_shift[i], error[i], phase_diff[i] = phase_cross_correlation(anchor_image, filtered_sample_image[i])
+        angle[i] = detect_rotation(anchor_image[:, :, 10], filtered_sample_image[i, :, :, 10])
+
+    return cam_shift, error, angle
+
+
+def detect_rotation(ref: np.ndarray, extra: np.ndarray):
+    """
+    Function which takes in 2 2D images which are rotated and translated with respect to one another and returns the
+    rotation angle in degrees between them.
+    Args:
+        ref: reference image
+        extra: moving image
+    Returns:
+        angle: Anticlockwise angle which, upon application to ref, yields extra.
+    """
+    # work with shifted FFT log-magnitudes
+    ref_ft = np.abs(fftshift(fft2(ref)))
+    extra_ft = np.abs(fftshift(fft2(extra)))
+
+    # Create log-polar transformed FFT mag images and register
+    shape = ref_ft.shape
+    radius = shape[0] // 2  # only take lower frequencies
+    warped_ref_ft = warp_polar(ref_ft, radius=radius, scaling='log')
+    warped_extra_ft = warp_polar(extra_ft, radius=radius, scaling='log')
+
+    warped_ref_ft = warped_ref_ft[:shape[0] // 2, :]  # only use half of FFT
+    warped_extra_ft = warped_extra_ft[:shape[0] // 2, :]
+    warped_ref_ft[np.isnan(warped_extra_ft)] = 0
+    warped_extra_ft[np.isnan(warped_extra_ft)] = 0
+
+    shifts = phase_cross_correlation(warped_ref_ft, warped_extra_ft, upsample_factor=100,
+                                     reference_mask=np.ones(warped_ref_ft.shape, dtype=int) - np.isnan(warped_ref_ft),
+                                     moving_mask=np.ones(warped_ref_ft.shape, dtype=int) - np.isnan(warped_extra_ft),
+                                     normalization=None)
+
+    # Use translation parameters to calculate rotation parameter
+    shift_angle = shifts[0]
+
+    return shift_angle
+
+
+nb1 = Notebook('C:/Users/Reilly/Desktop/Sample Notebooks/Izzie/notebook_single_tile.npz')
+cam_shift, error, angle = register_cameras(nb1, 55)
+
+print("Hello World")

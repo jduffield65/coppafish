@@ -11,7 +11,9 @@ def spot_details_conversion(nb: Notebook, spot_details_info_dir: str):
     :return nb_updated: Notebook with updated format of find_spots page
 
     Args:
-        spot_details_info_dir:
+        nb: notebook with old spot_details format
+    Returns:
+        nb: Notebook
     """
 
     # First convert the old spot_details into the new spot_details
