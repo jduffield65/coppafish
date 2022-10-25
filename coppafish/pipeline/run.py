@@ -5,6 +5,7 @@ from . import set_basic_info, extract_and_filter, find_spots, stitch, register_i
 from ..find_spots import check_n_spots
 from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
+from ..register.register_cameras import register_cameras
 from ..call_spots import get_non_duplicate, quality_threshold
 import warnings
 import numpy as np
@@ -167,11 +168,12 @@ def run_register(nb: setup.Notebook):
         nbp_initial = register_initial(config['register_initial'], nb.basic_info,
                                              nb.find_spots.spot_details, nb.find_spots.spot_no)
         nb += nbp_initial
+        cam_shift = register_cameras(nb.basic_info, nb.file_names, config['register_initial'])
     else:
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
         nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
-                                  nb.register_initial.shift)
+                                  nb.register_initial.shift + cam_shift)
         nb += nbp
         nb += nbp_debug
     else:

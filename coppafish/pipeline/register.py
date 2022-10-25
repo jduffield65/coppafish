@@ -23,9 +23,9 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
         spot_no: 'int[n_tiles x n_rounds x n_channels]'
             'spot_no[t,r,c]' is num_spots found on that [t,r,c]
-        initial_shift: `int [n_tiles x n_rounds x 3]`.
-            `initial_shift[t, r]` is the yxz shift found that is applied to tile `t`, `ref_round` to take it to
-            tile `t`, round `r`. Units: `[yx_pixels, yx_pixels, z_pixels]`.
+        initial_shift: `int [n_tiles x n_rounds x n_channels x 3]`.
+            `initial_shift[t, r, c]` is the yxz shift found that is applied to tile `t`, `ref_round` to take it to
+            tile `t`, round `r`, channel 'c'. Units: `[yx_pixels, yx_pixels, z_pixels]`.
             This is saved in the `register_initial_debug` notebook page i.e. `nb.register_initial_debug.shift`.
 
     Returns:
@@ -53,8 +53,8 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
                                    spot_no)
         spot_yxz_ref[t] = (spot_yxz_ref[t] - nbp_basic.tile_centre) * z_scale
         for r in nbp_basic.use_rounds:
-            initial_shift[t, r] = initial_shift[t, r] * z_scale  # put z initial shift into xy pixel units
             for c in nbp_basic.use_channels:
+                initial_shift[t, r, c] = initial_shift[t, r, c] * z_scale  # put z initial shift into xy pixel units
                 spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no)
                 spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - nbp_basic.tile_centre) * z_scale
                 if neighb_dist_thresh < 50:
@@ -80,7 +80,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     failed = np.zeros_like(spot_yxz_imaging, dtype=bool)
     converged = np.zeros_like(spot_yxz_imaging, dtype=bool)
     av_scaling = np.zeros((nbp_basic.n_channels, 3), dtype=float)
-    av_shifts = np.zeros_like(initial_shift)
+    av_shifts = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds, 3))
     transform_outliers = np.zeros_like(start_transform)
 
     # Deviation in scale/rotation is much less than permitted deviation in shift so boost scale reg constant.

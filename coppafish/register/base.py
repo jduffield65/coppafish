@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import KDTree
-from .. import utils
+from coppafish import utils
 from tqdm import tqdm
 from typing import Optional, Tuple, Union, List
 import warnings
@@ -82,14 +82,13 @@ def transform_from_scale_shift(scale: np.ndarray, shift: np.ndarray) -> np.ndarr
             ```[t, r, c]``` is the affine transform for tile ```t```, round ```r```, channel ```c``` computed from
             ```scale[c]``` and ```shift[t, r]```.
     """
-    n_channels = scale.shape[0]
-    n_tiles, n_rounds, dim = shift.shape
+    n_tiles, n_rounds, n_channels, dim = shift.shape
     transforms = np.zeros((n_tiles, n_rounds, n_channels, dim + 1, dim))
     for t in range(n_tiles):
         for r in range(n_rounds):
             for c in range(n_channels):
                 transforms[t, r, c, :dim, :, ] = np.eye(dim) * scale[c]
-                transforms[t, r, c, dim, :] = shift[t, r]
+                transforms[t, r, c, dim, :] = shift[t, r, c]
     return transforms
 
 

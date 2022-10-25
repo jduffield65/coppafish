@@ -1,11 +1,14 @@
 import numpy as np
 import nd2
+from ..setup import NotebookPage
+from ..utils import raw
 import os
 from . import errors
 from typing import Optional, List, Union
 import json
 import numpy_indexed
 import numbers
+from tqdm import tqdm
 
 
 # bioformats ssl certificate error solution:
@@ -136,6 +139,57 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
         return nd2_index
     # return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_npy[tile_ind_npy], 1) == 2)[0][0]
 
+
+def get_raw_images(nbp_basic: NotebookPage, nbp_file: NotebookPage, tiles: List[int], rounds: List[int],
+                   channels: List[int], use_z: List[int]) -> np.ndarray:
+    """
+    This loads in raw images for the experiment corresponding to the *Notebook*.
+
+    Args:
+        nbp_basic: basic info page of relevant notebook (NotebookPage)
+        nbp_file: File names info page of relevant notebook (NotebookPage)
+        tiles: npy (as opposed to nd2 fov) tile indices to view.
+            For an experiment where the tiles are arranged in a 4 x 3 (ny x nx) grid, tile indices are indicated as
+            below:
+
+            | 2  | 1  | 0  |
+
+            | 5  | 4  | 3  |
+
+            | 8  | 7  | 6  |
+
+            | 11 | 10 | 9  |
+        rounds: Rounds to view.
+        channels: Channels to view.
+        use_z: Which z-planes to load in from raw data.
+
+    Returns:
+        `raw_images` - `[len(tiles) x len(rounds) x len(channels) x n_y x n_x x len(use_z)]` uint16 array.
+        `raw_images[t, r, c]` is the `[n_y x n_x x len(use_z)]` image for tile `tiles[t]`, round `rounds[r]` and channel
+        `channels[c]`.
+    """
+    n_tiles = len(tiles)
+    n_rounds = len(rounds)
+    n_channels = len(channels)
+    n_images = n_rounds * n_tiles * n_channels
+    ny = nbp_basic.tile_sz
+    nx = ny
+    nz = len(use_z)
+
+    raw_images = np.zeros((n_tiles, n_rounds, n_channels, ny, nx, nz), dtype=np.uint16)
+    with tqdm(total=n_images) as pbar:
+        pbar.set_description(f'Loading in raw data')
+        for r in range(n_rounds):
+            round_dask_array = raw.load(nbp_file, nbp_basic, r=rounds[r])
+            # TODO: Can get rid of these two for loops, when round_dask_array is always a dask array.
+            #  At the moment though, is not dask array when using nd2_reader (On Mac M1).
+            for t in range(n_tiles):
+                for c in range(n_channels):
+                    pbar.set_postfix({'round': rounds[r], 'tile': tiles[t], 'channel': channels[c]})
+                    raw_images[t, r, c] = raw.load(nbp_file, nbp_basic, round_dask_array,
+                                                   rounds[r], tiles[t], channels[c], use_z)
+                    pbar.update(1)
+    return raw_images
 
 # '''with nd2reader'''
 # # Does not work with QuadCam data hence the switch to nd2 package
