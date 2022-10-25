@@ -172,7 +172,6 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
         return npy_index
 
 
-
 def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
                   r: int, c: int, from_raw: bool = False, zero_thresh: int = 0):
     """

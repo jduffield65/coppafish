@@ -168,10 +168,10 @@ def run_register(nb: setup.Notebook):
         nbp_initial = register_initial(config['register_initial'], nb.basic_info,
                                              nb.find_spots.spot_details, nb.find_spots.spot_no)
         nb += nbp_initial
-        cam_shift = register_cameras(nb.basic_info, nb.file_names, config['register_initial'])
     else:
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
+        cam_shift = register_cameras(nb.basic_info, nb.file_names, config['register_initial'])
         nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
                                   nb.register_initial.shift + cam_shift)
         nb += nbp

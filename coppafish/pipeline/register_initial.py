@@ -6,8 +6,8 @@ import warnings
 from coppafish.setup import NotebookPage
 
 
-def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray) \
-        -> NotebookPage:
+def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray,
+                     spot_no: np.ndarray) -> NotebookPage:
     """
     This finds the shift between ref round/channel to each imaging round for each tile.
     These are then used as the starting point for determining the affine transforms in `pipeline/register.py`.
@@ -18,6 +18,8 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
     Args:
         config: Dictionary obtained from `'register_initial'` section of config file.
         nbp_basic: `basic_info` notebook page
+        cam_shift: [n_tiles x n_rounds x n_channels x 3] shifts which just account for shifts from the anchor camera to
+        other cameras
         spot_details: `int [n_spots x 3]`.
             `spot_details[s]` is `[ y, x, z]` of spot `s`.
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
