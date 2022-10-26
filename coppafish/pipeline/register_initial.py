@@ -124,9 +124,9 @@ def register_initial(config: dict, nbp_basic: NotebookPage, spot_details: np.nda
 
     # Reformat the shifts into an array of size (n_tiles x n_rounds x n_channels x 3) by copying the array across
     # each channel in use
-    reformatted_shift = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels,3), dtype=int)
+    reformatted_shift = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels, 3), dtype=int)
     for c in nbp_basic.use_channels:
-        reformatted_shift[:, :, c, 3] = shift
+        reformatted_shift[:, :, c, :] = shift
 
     nbp_debug.shift = reformatted_shift
     nbp_debug.start_shift_search = start_shift_search

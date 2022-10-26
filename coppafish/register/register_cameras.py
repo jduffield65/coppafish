@@ -93,5 +93,5 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
     return shift
 
 
-nb = Notebook('C:/Users/Reilly/Desktop/Sample Notebooks/Izzie/notebook_single_tile.npz')
-shift = register_cameras(nb.basic_info, nb.file_names, nb.get_config()['register_initial'])
+# nb = Notebook('C:/Users/Reilly/Desktop/Sample Notebooks/Izzie/notebook_single_tile.npz')
+# shift = register_cameras(nb.basic_info, nb.file_names, nb.get_config()['register_initial'])
