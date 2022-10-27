@@ -69,28 +69,40 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
 def transform_from_scale_shift(scale: np.ndarray, shift: np.ndarray) -> np.ndarray:
     """
     Gets ```[dim+1 x dim]``` affine transform from scale for each channel and shift for each tile/round.
-
     Args:
         scale: ```float [n_channels x n_dims]```.
             ```scale[c, d]``` is the scaling to account for chromatic aberration from reference channel
             to channel ```c``` for dimension ```d```.
             Typically, as an initial guess all values in scale will be ```1```.
-        shift: ```float [n_tiles x n_rounds x n_dims]```.
+        shift: ```float [n_tiles x n_rounds x n_dims]``` or ```float [n_tiles x n_rounds x n_channels x n_dims]```
             ```shift[t, r, d]``` is the shift to account for the shift between the reference round for tile ```t``` and
             round ```r``` for tile ```t``` in dimension ```d```.
-
+            or:
+            ``shift[t, r, c, d]``` is the shift to account for the shift between the reference round for tile ```t```
+            and round ```r``` channel ```c``` for tile ```t``` in dimension ```d```.
     Returns:
         ```float [n_tiles x n_rounds x n_channels x dim+1 x dim]```.
             ```[t, r, c]``` is the affine transform for tile ```t```, round ```r```, channel ```c``` computed from
             ```scale[c]``` and ```shift[t, r]```.
     """
-    n_tiles, n_rounds, n_channels, dim = shift.shape
-    transforms = np.zeros((n_tiles, n_rounds, n_channels, dim + 1, dim))
-    for t in range(n_tiles):
-        for r in range(n_rounds):
-            for c in range(n_channels):
-                transforms[t, r, c, :dim, :, ] = np.eye(dim) * scale[c]
-                transforms[t, r, c, dim, :] = shift[t, r, c]
+    if shift.ndim == 3:
+        n_channels = scale.shape[0]
+        n_tiles, n_rounds, dim = shift.shape
+        transforms = np.zeros((n_tiles, n_rounds, n_channels, dim + 1, dim))
+        for t in range(n_tiles):
+            for r in range(n_rounds):
+                for c in range(n_channels):
+                    transforms[t, r, c, :dim, :, ] = np.eye(dim) * scale[c]
+                    transforms[t, r, c, dim, :] = shift[t, r]
+    elif shift.ndim == 4:
+        n_tiles, n_rounds, n_channels, dim = shift.shape
+        transforms = np.zeros((n_tiles, n_rounds, n_channels, dim + 1, dim))
+        for t in range(n_tiles):
+            for r in range(n_rounds):
+                for c in range(n_channels):
+                    transforms[t, r, c, :dim, :, ] = np.eye(dim) * scale[c]
+                    transforms[t, r, c, dim, :] = shift[t, r, c]
+
     return transforms
 
 
