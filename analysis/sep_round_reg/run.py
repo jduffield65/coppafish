@@ -169,10 +169,16 @@ def register_detect_rotation_loc(target_image: np.ndarray, offset_image: np.ndar
 
     # Dimensions are same for both images
     image_dims = np.array(target_image_mid.shape, dtype=int)
-    # Now we choose the radius of the neighbourhoods we'll be registering
-    radius = 250
+
+    # Now we choose the radius of the neighbourhoods we'll be registering. Take the biggest radius fitting around the
+    # ref points in both target and offset image. Then take the smaller of these 2. (Note radius bounded by 250)
+    rad_target = np.min([ref_points_target, np.repeat(image_dims, 3, axis=0) - ref_points_target])
+    rad_offset = np.min([ref_points_offset, np.repeat(image_dims, 3, axis=0) - ref_points_offset])
+    radius = np.min([250,rad_target, rad_offset])
+
     # create a vector to store all the angles found
     angle_vec = np.zeros(ref_points_target.shape[0])
+
     # Now we'll detect rotations at each of our ref_points
     for i in range(ref_points_target.shape[0]):
         # crop the images and apply Hann windows
@@ -186,7 +192,7 @@ def register_detect_rotation_loc(target_image: np.ndarray, offset_image: np.ndar
         angle_vec[i] = base.detect_rotation(target_sample, offset_sample)
 
     # Average across all these rotations
-    angle = np.mean(angle_vec)
+    angle = np.median(angle_vec)
 
     # Now rotate each z-plane by this angle
     for z in range(offset_image.shape[0]):
