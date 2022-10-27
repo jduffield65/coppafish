@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.spatial import KDTree
 from coppafish import utils
+from coppafish.setup import Notebook
+from coppafish.find_spots.base import spot_yxz
 from tqdm import tqdm
 from typing import Optional, Tuple, Union, List
 import warnings
@@ -412,3 +414,4 @@ def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: n
             break
 
     return transform, n_matches, error, is_converged
+

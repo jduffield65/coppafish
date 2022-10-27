@@ -46,7 +46,7 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
 
     # Add shifted reference point cloud
     if nb.has_page('register_initial'):
-        shift = nb.register_initial.shift[t, r]
+        shift = nb.register_initial.shift[t, r, c]
     else:
         shift = view_register_search(nb, t, r, return_shift=True)
     point_clouds = point_clouds + [point_clouds[1] + shift]
@@ -166,7 +166,7 @@ def view_icp_reg(nb: Notebook, t: int, r: int, c: int, reg_constant: Optional[Li
     # 3rd is ref point cloud transformed according to affine transform with no regularisation
     if start_transform is None:
         # no scaling just shift to start off icp as used in pipeline if no start_transform given
-        shift = nb.register_initial.shift[t, r]
+        shift = nb.register_initial.shift[t, r, c]
         start_transform = np.eye(4, 3)
         start_transform[3] = shift * [1, 1, z_scale]
     transform_no_reg = get_single_affine_transform(point_clouds[1], point_clouds[0], z_scale, z_scale,

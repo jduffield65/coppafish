@@ -78,7 +78,7 @@ def check_shifts_register(nb: Notebook):
             fail_info_r = np.zeros((len(fail_tiles), 7), dtype=int)
             fail_info_r[:, 0] = r
             fail_info_r[:, 1] = fail_tiles
-            fail_info_r[:, 2:5] = shift[fail_tiles, r]
+            fail_info_r[:, 2:5] = shift[fail_tiles, r, c_shift]
             fail_info_r[:, 5] = score[fail_tiles, r].flatten()
             fail_info_r[:, 6] = score_thresh[fail_tiles, r].flatten()
             fail_info = np.append(fail_info, fail_info_r, axis=0)
