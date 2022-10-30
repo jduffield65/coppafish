@@ -49,8 +49,8 @@ def run_sep_round_reg(target_volume: np.ndarray, offset_volume: np.ndarray, subt
     # We need to ensure that the volumes have the same dimensions, take the biggest of each dimension across image 1
     # and 2, create an array of zeros with these dimensions and populate the array as much as possible
     big_container = np.maximum(target_volume.shape, offset_volume.shape)
-    new_target_volume = np.zeros(big_container)
-    new_offset_volume = np.zeros(big_container)
+    new_target_volume = np.zeros(big_container, dtype=int)
+    new_offset_volume = np.zeros(big_container, dtype=int)
     # now put these into the bigger arrays
     new_target_volume[:target_volume.shape[0], :target_volume.shape[1], :target_volume.shape[2]] = target_volume
     new_offset_volume[:offset_volume.shape[0], :offset_volume.shape[1], :offset_volume.shape[2]] = offset_volume
@@ -172,9 +172,9 @@ def register_detect_rotation_loc(target_image: np.ndarray, offset_image: np.ndar
 
     # Now we choose the radius of the neighbourhoods we'll be registering. Take the biggest radius fitting around the
     # ref points in both target and offset image. Then take the smaller of these 2. (Note radius bounded by 250)
-    rad_target = np.min([ref_points_target, np.repeat(image_dims, 3, axis=0) - ref_points_target])
-    rad_offset = np.min([ref_points_offset, np.repeat(image_dims, 3, axis=0) - ref_points_offset])
-    radius = np.min([250,rad_target, rad_offset])
+    rad_target = np.min([ref_points_target, np.repeat(image_dims[np.newaxis, :], 3, axis=0) - ref_points_target])
+    rad_offset = np.min([ref_points_offset, np.repeat(image_dims[np.newaxis, :], 3, axis=0) - ref_points_offset])
+    radius = np.min([250, rad_target, rad_offset])
 
     # create a vector to store all the angles found
     angle_vec = np.zeros(ref_points_target.shape[0])
@@ -236,8 +236,8 @@ def detect_rigid_transform(target_image: np.ndarray, offset_image: np.ndarray, r
     mid_z = len(z_range) // 2
 
     # Rescale so max = 1
-    target_image = target_image / np.max(target_image)
-    offset_image = offset_image / np.max(offset_image)
+    # target_image = target_image // np.max(target_image)
+    # offset_image = offset_image // np.max(offset_image)
 
     # Step 1.) Manual Shift
     # If we have no reference points, then have the user select them
@@ -414,25 +414,28 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
         d_new: dot product similarity score between newly registered image
         pcc_shifts: new shifts for subtiles
     """
+
+    # Find width of both volumes (as images have been expanded to have same dimensions)
+    width = target_image.shape[2]
+    # Find height of both volumes (as images have been expanded to have same dimensions)
+    height = target_image.shape[1]
+
+    # First, deal with case where rows are left empty. Scale things so that a subtile has side length approx 256 and
+    # image has at least 16 subtiles
+    if rows is None:
+        rows = int(max(4, height // 256))
+    if cols is None:
+        cols = int(max(4, width // 256))
+
     # Store the phase cross correlation shifts found for each subtile in the array pcc_shifts. pcc_shifts[:,i,j] stores
     # the 3D vector for row i col j.
     pcc_shifts = np.zeros((3, rows, cols), dtype=int)
     d_old = np.zeros((rows, cols))
     d_new = np.zeros((rows, cols))
-    # Find width of both volumes (as images have been expanded to have same dimensions)
-    width = target_image.shape[2]
-    # Find height of both volumes (as images have been expanded to have same dimensions)
-    height = target_image.shape[1]
     # Create a zero array to be populated by the registered image.
     registered_image = np.zeros(target_image.shape)
     # Find mid z-plane (as an integer)
     mid_z = target_image.shape[0] // 2
-    # Now deal with case where rows are left empty. Scale things so that a subtile has side length approx 256 and image
-    # has at least 16 subtiles
-    if rows is None:
-        rows = int(max(4, height//256))
-    if cols is None:
-        cols = int(max(4, height//256))
 
     # Create a progress bar to keep track of algorithms stage when running
     with tqdm(total=rows * cols) as pbar:
@@ -467,9 +470,12 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
                                                         iss_tile_subset),
                                                     moving_mask=np.ones(ifr_tile_subset.shape, dtype=int) - np.isnan(
                                                         ifr_tile_subset))
-                # Next multiply the yx shift by the factor by which we downsampled. Don't do this to the z-shift though
-                pcc_shifts[:, i, j] = np.array(3 * pcc_shift, dtype=int)
-                pcc_shifts[0, i, j] = pcc_shifts[0, i, j] // 3
+                # Next multiply the yx shift by the factor by which we downsampled. Don't do this to the z-shift though.
+                # As the yx shifts are consistently bad at the boundary, disregard yx shift found at the boundary
+                if min(i, j, rows-i-1, cols-j-1) != 0:
+                    pcc_shifts[1:, i, j] = np.array(3 * pcc_shift[1:], dtype=int)
+                # Still jot down z-shift at boundary subtiles
+                pcc_shifts[0, i, j] = pcc_shift[0]
 
                 # Extract the whole cropped subtile before applying shift
                 iss_tile = target_image[:, y_low: y_high, x_low: x_high]
@@ -485,21 +491,6 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
                 # Apply the shift. To eliminate a boundary of zeros around every subtile, we don't compute the shifted
                 # image using the base.shift function but rather overlay the image onto the new registered_image array.
                 # Watch out for double covering!
-
-                # Before pasting new image down, blur edges
-                subtile_height = ifr_tile.shape[1]
-                subtile_width = ifr_tile.shape[2]
-                edge = 0.1
-                ifr_tile[:, :, :int(edge*subtile_width)] = gaussian(ifr_tile[:, :, :int(edge*subtile_width)], 0.5)
-                ifr_tile[:, :, int((1-edge)*subtile_width):subtile_width] = \
-                    gaussian(ifr_tile[:, :, int((1-edge)*subtile_width):subtile_width], 0.5)
-                ifr_tile[:, :int(edge*subtile_height), int(edge*subtile_width):int((1-edge)*subtile_width)] = \
-                    gaussian(ifr_tile[:, :int(edge*subtile_height), int(edge*subtile_width):int((1-edge)*subtile_width)]
-                             , 0.5)
-                ifr_tile[:, int((1-edge)*subtile_height):subtile_height,
-                    int(edge*subtile_width):int((1-edge)*subtile_width)] \
-                    = gaussian(ifr_tile[:, int((1-edge)*subtile_height):subtile_height,
-                    int(edge*subtile_width):int((1-edge)*subtile_width)], 0.5)
 
                 starting_point = [0, y_low, x_low] + pcc_shifts[:, i, j]
                 registered_image = populate(ifr_tile, registered_image, starting_point)
@@ -517,3 +508,11 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
                 pbar.update(1)
 
     return registered_image, d_old, d_new, pcc_shifts
+
+
+dapi_iss = np.load('C:/Users/Reilly/Desktop/Registration Software/Izzie Data/dapi_iss.npy')[:60, 2500:4500, 2500:4500]
+dapi_ifr = np.load('C:/Users/Reilly/Desktop/Registration Software/Izzie Data/dapi_ifr.npy')[:60, 2500:4500, 2500:4500]
+
+run_sep_round_reg(dapi_iss, dapi_ifr, 10, 10)
+
+print("Hello Freaks")

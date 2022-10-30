@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.fft import fft2, fftshift
 from skimage import exposure
 from skimage.transform import warp_polar, rotate
-from skimage.filters import window
+from skimage.filters import window, gaussian
 from skimage.registration import phase_cross_correlation
 from coppafish.setup.notebook import NotebookPage
 import napari
@@ -25,7 +25,7 @@ def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: n
     """
     # There are 2 complications here:
     # 1.) Starting point may be out of range
-    # 2.) Staring point may already be filled in
+    # 2.) Starting point may already be filled in
     # In both cases we must update the starting point and specify the new position we will start reading the small
     # image from.
     # CASE 1.
@@ -67,6 +67,9 @@ def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: n
         small_image = small_image[:, :(large_image.shape[1] - starting_point[1]), :]
     if starting_point[2] + small_image.shape[2] > large_image.shape[2]:
         small_image = small_image[:, :, :(large_image.shape[2] - starting_point[2])]
+
+    # Now taper the small image at the edges, this helps reduce harsh lines
+    small_image = edge_taper(small_image)
 
     # Next we place small image inside large image. Since starting point has been updated, dimensions should match
     large_image[starting_point[0]:starting_point[0] + small_image.shape[0],
@@ -158,6 +161,55 @@ def populate3(new_tile: np.ndarray, working_canvas: np.ndarray, ref_image: np.nd
                     padding[2]:padding[2]+ref_image.shape[2]]
 
     return working_canvas, ref_image
+
+
+def edge_taper(image: np.ndarray):
+    """
+    Blurring with a gradient towards the edges.
+    Args:
+        image: 3D Image whose edges we want blurred. Coords are in (z,y,x) format. (np.ndarray)
+    Returns:
+        image: 3D image with blurred edges. Coords are in (z,y,x) format. (np.ndarray)
+    """
+    # Initialise the blurred_image
+    blurred_image = np.zeros(image.shape)
+    # Since we'd like to taper the edges, we need to make a function that interpolates the image from 0 at the edges to
+    # 1 in the middle
+    z_len = image.shape[0]
+    y_len = image.shape[1]
+    x_len = image.shape[2]
+    dy = y_len // 5
+    dx = x_len // 5
+    # Initialise x and y masks, these will be repeated so won't have this size for much longer
+    y_mask = np.zeros(y_len)
+    x_mask = np.zeros(x_len)
+    for i in range(y_len):
+        if i <= dy:
+            y_mask[i] = i/dy
+        elif dy < i <= y_len - dy:
+            y_mask[i] = 1
+        else:
+            y_mask[i] = -(i-y_len)/dy
+    y_mask = np.repeat(y_mask[:, np.newaxis], x_len, axis=1)
+    for i in range(x_len):
+        if i <= dx:
+            x_mask[i] = i/dx
+        elif dx < i <= x_len - dx:
+            x_mask[i] = 1
+        else:
+            x_mask[i] = -(i-x_len)/dx
+    x_mask = np.repeat(x_mask[np.newaxis, :], y_len, axis=0)
+
+    original_mask = x_mask * y_mask
+    blur_mask = 1 - original_mask
+    blur_mask_binary = np.ceil(blur_mask)
+
+    # everything so far has been done in yx, so now we must apply to each z-plane
+    for i in range(z_len):
+        blurred_image[i] = gaussian(image[i]*blur_mask_binary, 5)
+        image[i] = image[i] * original_mask + blurred_image[i] * blur_mask
+
+    return image
 
 
 def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
@@ -471,5 +523,9 @@ def shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
 # dapi_full = dapi_full.f.arr_0
 # dapi_full = dapi_full[25]
 # dapi_partial = dapi_partial[25]
-# brain = data.brain()
-# overlay_3d(brain, brain)
+# astro = rgb2gray(data.astronaut())
+# astro = astro[np.newaxis, :, :]
+# moon = data.moon()
+# moon = moon[np.newaxis, :, :]
+# new_moon = edge_taper(moon)
+# print("Hello Freaks")
