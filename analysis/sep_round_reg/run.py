@@ -338,7 +338,7 @@ def apply_rigid_transform(image: np.ndarray, angle: float, initial_shift: np.nda
             image2d = np.array(image2d)
             new_image[i] = image2d
 
-    if shift != 0:
+    if np.max(np.abs(shift)) != 0:
         # Apply corrected shift
         new_image = base.shift(new_image, shift)
 
