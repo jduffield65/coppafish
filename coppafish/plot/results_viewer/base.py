@@ -19,12 +19,12 @@ from PyQt5.QtWidgets import QPushButton, QMainWindow
 from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
 import warnings
-from typing import Optional, Union
+from typing import Optional
 
 
 class Viewer:
-    def __init__(self, nb: Notebook, background_image: Optional[Union[str, np.ndarray]] = 'dapi',
-                 gene_marker_file: Optional[str] = None):
+    def __init__(self, nb: Notebook, background_image: Optional[list] = ['dapi'], background_image_colour:
+    Optional[list] = ['bop blue'], gene_marker_file: Optional[str] = None):
         """
         This is the function to view the results of the pipeline
         i.e. the spots found and which genes they were assigned to.
@@ -95,43 +95,47 @@ class Viewer:
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
         self.viewer.window.qt_viewer.dockLayerControls.setVisible(False)
 
-        # Add background image if given
+        # Add background image/s if given
         self.diagnostic_layer_ind = 0
         self.image_layer_ind = None
+        self.image_contrast_slider = list(np.repeat(None, len(background_image)))
         if background_image is not None:
-            if isinstance(background_image, str):
-                if background_image.lower() == 'dapi':
-                    file_name = nb.file_names.big_dapi_image
-                elif background_image.lower() == 'anchor':
-                    file_name = nb.file_names.big_anchor_image
-                else:
-                    file_name = background_image
-                if file_name is not None and os.path.isfile(file_name):
-                    background_image = np.load(file_name)
-                    if file_name.endswith('.npz'):
-                        # Assume image is first array if .npz file
-                        background_image = background_image[background_image._files[0]]
-                else:
-                    background_image = None
-                    warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
-            if background_image is not None:
-                self.viewer.add_image(background_image)
-                self.diagnostic_layer_ind = 1
-                self.image_layer_ind = 0
-                self.viewer.layers[self.image_layer_ind].contrast_limits_range = [background_image.min(),
-                                                                                  background_image.max()]
-                self.image_contrast_slider = QRangeSlider(Qt.Orientation.Horizontal)  # Slider to change score_thresh
-                self.image_contrast_slider.setRange(background_image.min(), background_image.max())
-                # Make starting lower bound contrast the 95th percentile value so most appears black
-                # Use mid_z to quicken up calculation
-                mid_z = int(background_image.shape[0]/2)
-                start_contrast = np.percentile(background_image[mid_z], [95, 99.99]).astype(int).tolist()
-                self.image_contrast_slider.setValue(start_contrast)
-                self.change_image_contrast()
-                # When dragging, status will show contrast values.
-                self.image_contrast_slider.valueChanged.connect(lambda x: self.show_image_contrast(x[0], x[1]))
-                # On release of slider, genes shown will change
-                self.image_contrast_slider.sliderReleased.connect(self.change_image_contrast)
+            for i in range(len(background_image)):
+                if isinstance(background_image[i], str):
+                    if background_image[i].lower() == 'dapi':
+                        file_name = nb.file_names.big_dapi_image
+                    elif background_image[i].lower() == 'anchor':
+                        file_name = nb.file_names.big_anchor_image
+                    else:
+                        file_name = background_image[i]
+                    if file_name is not None and os.path.isfile(file_name):
+                        background_image[i] = np.load(file_name)
+                        if file_name.endswith('.npz'):
+                            # Assume image is first array if .npz file
+                            background_image[i] = background_image[i][background_image[i]._files[0]]
+                    else:
+                        background_image[i] = None
+                        warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
+                if background_image[i] is not None:
+                    self.viewer.add_image(background_image[i], blending='additive', colormap=background_image_colour[i])
+
+                    self.viewer.layers[i].contrast_limits_range = [background_image[i].min(), background_image[i].max()]
+                    self.image_contrast_slider[i] = QRangeSlider(
+                        Qt.Orientation.Horizontal)  # Slider to change score_thresh
+                    self.image_contrast_slider[i].setRange(background_image[i].min(), background_image[i].max())
+                    # Make starting lower bound contrast the 95th percentile value so most appears black
+                    # Use mid_z to quicken up calculation
+                    mid_z = int(background_image[i].shape[0] / 2)
+                    start_contrast = np.percentile(background_image[i][mid_z], [95, 99.99]).astype(int).tolist()
+                    self.image_contrast_slider[i].setValue(start_contrast)
+                    self.change_image_contrast(i)
+                    # When dragging, status will show contrast values.
+                    self.image_contrast_slider[i].valueChanged.connect(lambda x: self.show_image_contrast(x[0], x[1]))
+                    # On release of slider, genes shown will change
+                    self.image_contrast_slider[i].sliderReleased.connect(lambda j=i: self.change_image_contrast(j))
+
+        self.diagnostic_layer_ind = len(background_image)
+        self.image_layer_ind = slice(len(background_image))
 
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
@@ -155,7 +159,8 @@ class Viewer:
 
         if background_image is not None:
             # Slider to change background image contrast
-            self.viewer.window.add_dock_widget(self.image_contrast_slider, area="left", name='Image Contrast')
+            for i in range(len(background_image)):
+                self.viewer.window.add_dock_widget(self.image_contrast_slider[i], area="left", name='Image Contrast')
 
         # Add all spots in layer as transparent white spots.
         point_size = 10  # with size=4, spots are too small to see
@@ -308,7 +313,7 @@ class Viewer:
             if i == self.diagnostic_layer_ind:
                 self.viewer.layers[i].shown = spots_shown
             elif self.label_prefix in self.viewer.layers[i].name:
-                s = self.viewer.layers[i].name.replace(self.label_prefix,'')
+                s = self.viewer.layers[i].name.replace(self.label_prefix, '')
                 spots_correct_gene = np.isin(self.spot_gene_no,
                                              self.legend_gene_no[self.legend_gene_symbol == s])
                 self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
@@ -374,10 +379,10 @@ class Viewer:
         # Show contrast of background image while dragging
         self.viewer.status = 'Image Contrast Limits: [{:.0f}, {:.0f}]'.format(low_value, high_value)
 
-    def change_image_contrast(self):
+    def change_image_contrast(self, i):
         # Change contrast of background image
-        self.viewer.layers[self.image_layer_ind].contrast_limits = [self.image_contrast_slider.value()[0],
-                                                                    self.image_contrast_slider.value()[1]]
+        self.viewer.layers[i].contrast_limits = [self.image_contrast_slider[i].value()[0],
+                                                                    self.image_contrast_slider[i].value()[1]]
 
     def button_anchor_clicked(self):
         # Only allow one button pressed

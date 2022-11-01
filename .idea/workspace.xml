@@ -14,6 +14,12 @@
       </list>
     </option>
   </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file:////ZARU/Subjects/ISS/Izzie/221020_IF_primary_then_seq/output/IF_npy_tiles/6E10/tiff/stitch.yml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/analysis/sep_round_reg/base.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/analysis/sep_round_reg/run.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/image_stitcher.py" root0="FORCE_HIGHLIGHTING" />
+  </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -180,11 +186,6 @@
           <option name="timeStamp" value="122" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/analysis/sep_round_reg/run.py</url>
-          <line>392</line>
-          <option name="timeStamp" value="147" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/neighbour_check.py</url>
           <line>32</line>
           <option name="timeStamp" value="158" />
@@ -196,13 +197,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/analysis/sep_round_reg/run.py</url>
-          <line>517</line>
-          <option name="timeStamp" value="184" />
+          <line>75</line>
+          <option name="timeStamp" value="201" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/analysis/sep_round_reg/base.py</url>
-          <line>71</line>
-          <option name="timeStamp" value="191" />
+          <url>file://$PROJECT_DIR$/coppafish/plot/results_viewer/base.py</url>
+          <line>250</line>
+          <option name="timeStamp" value="210" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

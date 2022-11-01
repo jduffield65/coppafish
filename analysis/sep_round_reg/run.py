@@ -510,9 +510,39 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
     return registered_image, d_old, d_new, pcc_shifts
 
 
-dapi_iss = np.load('C:/Users/Reilly/Desktop/Registration Software/Izzie Data/dapi_iss.npy')[:60, 2500:4500, 2500:4500]
-dapi_ifr = np.load('C:/Users/Reilly/Desktop/Registration Software/Izzie Data/dapi_ifr.npy')[:60, 2500:4500, 2500:4500]
-
-run_sep_round_reg(dapi_iss, dapi_ifr, 10, 10)
-
-print("Hello Freaks")
+# initial_shift = np.array([0, -6, 127])
+# global_angle = 0
+# corrected_shift = np.array([0, 0, 0])
+# pcc_shifts = np.load('C:/Users/Reilly/Desktop/pcc.npy')
+#
+# image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/6E10/tiff/6e10.npy')
+# mid_z = image.shape[0]//2
+#
+# if mid_z > 27:
+#     image = image[mid_z-27:mid_z+27]
+#
+# registered_image = apply_register_transform(image, initial_shift, global_angle, corrected_shift, pcc_shifts)
+#
+# np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/6E10/tiff/6e10.npy', registered_image)
+#
+# image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Gfap/tiff/gfap.npy')
+# mid_z = image.shape[0]//2
+#
+# if mid_z > 27:
+#     image = image[mid_z-27:mid_z+27]
+#
+# registered_image = apply_register_transform(image, initial_shift, global_angle, corrected_shift, pcc_shifts)
+#
+# np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Gfap/tiff/gfap.npy', registered_image)
+#
+# image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Iba1/tiff/iba1.npy')
+# mid_z = image.shape[0]//2
+#
+# if mid_z > 27:
+#     image = image[mid_z-27:mid_z+27]
+#
+# registered_image = apply_register_transform(image, initial_shift, global_angle, corrected_shift, pcc_shifts)
+#
+# np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Iba1/tiff/iba1.npy', registered_image)
+#
+# print("Hello Freaks")

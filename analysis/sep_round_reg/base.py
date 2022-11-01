@@ -41,17 +41,18 @@ def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: n
 
     # CASE 2.
     # First find shift, then update starting point.
-    # Search for first x,y coord after which there are only zeros in the desired region of large_image
+    # Search for first x,y coord after which there are only zeros in the desired region of large_image. Look only at
+    # mid z-plane
     shift2 = np.zeros(3)
-    region = large_image[starting_point[0]:ending_point[0], starting_point[1]:ending_point[1],
-             starting_point[2]:ending_point[2]]
+    region = large_image[(starting_point[0] + ending_point[0])//2, starting_point[1]:ending_point[1], starting_point[2]:
+                                                                                                      ending_point[2]]
     # pos_indices is 3 row by num_positive_indices cols
     zero_indices = np.argwhere(region == 0)
     # if this is nonempty then for y_shift, we look for the largest pos y index, x_shift is largest pos x index,
     # don't bother doing this for z_index though.
     if np.min(zero_indices.shape) > 0:
-        shift2[1] = np.min(zero_indices[:, 1]).astype(int)
-        shift2[2] = np.min(zero_indices[:, 2]).astype(int)
+        shift2[1] = np.min(zero_indices[:, 0]).astype(int)
+        shift2[2] = np.min(zero_indices[:, 1]).astype(int)
 
     # Now find total shift (sum of shift1 and shift 2) and update starting point. This concludes case 2.
     shift_total = np.array(shift1 + shift2, dtype=int)
@@ -69,7 +70,7 @@ def populate(small_image: np.ndarray, large_image: np.ndarray, starting_point: n
         small_image = small_image[:, :, :(large_image.shape[2] - starting_point[2])]
 
     # Now taper the small image at the edges, this helps reduce harsh lines
-    small_image = edge_taper(small_image)
+    # small_image = edge_taper(small_image)
 
     # Next we place small image inside large image. Since starting point has been updated, dimensions should match
     large_image[starting_point[0]:starting_point[0] + small_image.shape[0],
@@ -126,25 +127,25 @@ def populate3(new_tile: np.ndarray, working_canvas: np.ndarray, ref_image: np.nd
     # 0's everywhere except where we would like to place our new_tile, where it takes the value of the tile.
     # Create large padded image of 0s except where we'd like our new tile. In those places store the value of the new_
     # tile
-    image = np.zeros(ref_image.shape + 2*padding, dtype=int)
+    image = np.zeros(ref_image.shape + 2 * padding, dtype=int)
     image[padding[0] + starting_point[0]: padding[0] + starting_point[0] + new_tile.shape[0],
-        padding[1] + starting_point[1]: padding[1] + starting_point[1] + new_tile.shape[1],
-        padding[2] + starting_point[2]: padding[2] + starting_point[2] + new_tile.shape[2]] = new_tile
+    padding[1] + starting_point[1]: padding[1] + starting_point[1] + new_tile.shape[1],
+    padding[2] + starting_point[2]: padding[2] + starting_point[2] + new_tile.shape[2]] = new_tile
     # Now pad our ref_image
-    ref_image_padded = np.zeros(ref_image.shape + 2*padding, dtype=bool)
-    ref_image_padded[padding[0]:padding[0]+ref_image.shape[0],
-                    padding[1]:padding[1]+ref_image.shape[1],
-                    padding[2]:padding[2]+ref_image.shape[2]] = ref_image
+    ref_image_padded = np.zeros(ref_image.shape + 2 * padding, dtype=bool)
+    ref_image_padded[padding[0]:padding[0] + ref_image.shape[0],
+    padding[1]:padding[1] + ref_image.shape[1],
+    padding[2]:padding[2] + ref_image.shape[2]] = ref_image
     # Now multiply these 2 together elementwise. This will yield something which is 0 outside the boundary or
     # there is already a value at that point. Otherwise it takes the value of the new_tile in its desired position
     image = ref_image_padded * image
     # Now that the only nonzero elements of image are where the new_tile is, we can add this to our working_canvas,
     # which is 0 everywhere other than where we have already laid down the image.
     # First pad the working canvas
-    working_canvas_padded = np.zeros(ref_image.shape + 2*padding)
-    working_canvas_padded[padding[0]:padding[0]+ref_image.shape[0],
-                    padding[1]:padding[1]+ref_image.shape[1],
-                    padding[2]:padding[2]+ref_image.shape[2]] = working_canvas
+    working_canvas_padded = np.zeros(ref_image.shape + 2 * padding)
+    working_canvas_padded[padding[0]:padding[0] + ref_image.shape[0],
+    padding[1]:padding[1] + ref_image.shape[1],
+    padding[2]:padding[2] + ref_image.shape[2]] = working_canvas
     working_canvas_padded += image
     # Now update our reference_image to have 0s in the new places we have added a tile. Create an indicator array which
     # takes value 1 when image = 0 and 0 otherwise.
@@ -153,12 +154,12 @@ def populate3(new_tile: np.ndarray, working_canvas: np.ndarray, ref_image: np.nd
     # tile is that we've laid down and 1 otherwise. Since this is padded, it's also zero in the padding region.
     ref_image_padded = ref_image_padded * indicator
     # now remove padding on both ref_image and working_canvas
-    working_canvas = working_canvas_padded[padding[0]:padding[0]+ref_image.shape[0],
-                    padding[1]:padding[1]+ref_image.shape[1],
-                    padding[2]:padding[2]+ref_image.shape[2]]
-    ref_image = ref_image_padded[padding[0]:padding[0]+ref_image.shape[0],
-                    padding[1]:padding[1]+ref_image.shape[1],
-                    padding[2]:padding[2]+ref_image.shape[2]]
+    working_canvas = working_canvas_padded[padding[0]:padding[0] + ref_image.shape[0],
+                     padding[1]:padding[1] + ref_image.shape[1],
+                     padding[2]:padding[2] + ref_image.shape[2]]
+    ref_image = ref_image_padded[padding[0]:padding[0] + ref_image.shape[0],
+                padding[1]:padding[1] + ref_image.shape[1],
+                padding[2]:padding[2] + ref_image.shape[2]]
 
     return working_canvas, ref_image
 
@@ -173,43 +174,45 @@ def edge_taper(image: np.ndarray):
     """
     # Initialise the blurred_image
     blurred_image = np.zeros(image.shape)
+    new_image = np.zeros(image.shape)
     # Since we'd like to taper the edges, we need to make a function that interpolates the image from 0 at the edges to
     # 1 in the middle
     z_len = image.shape[0]
     y_len = image.shape[1]
     x_len = image.shape[2]
-    dy = y_len // 5
-    dx = x_len // 5
+    dy = y_len // 7
+    dx = x_len // 7
     # Initialise x and y masks, these will be repeated so won't have this size for much longer
     y_mask = np.zeros(y_len)
     x_mask = np.zeros(x_len)
     for i in range(y_len):
         if i <= dy:
-            y_mask[i] = i/dy
+            y_mask[i] = i / dy
         elif dy < i <= y_len - dy:
             y_mask[i] = 1
         else:
-            y_mask[i] = -(i-y_len)/dy
+            y_mask[i] = -(i - y_len) / dy
     y_mask = np.repeat(y_mask[:, np.newaxis], x_len, axis=1)
     for i in range(x_len):
         if i <= dx:
-            x_mask[i] = i/dx
+            x_mask[i] = i / dx
         elif dx < i <= x_len - dx:
             x_mask[i] = 1
         else:
-            x_mask[i] = -(i-x_len)/dx
+            x_mask[i] = -(i - x_len) / dx
     x_mask = np.repeat(x_mask[np.newaxis, :], y_len, axis=0)
 
-    original_mask = x_mask * y_mask
+    original_mask = (x_mask * y_mask)**0.5
     blur_mask = 1 - original_mask
-    blur_mask_binary = np.ceil(blur_mask)
 
     # everything so far has been done in yx, so now we must apply to each z-plane
     for i in range(z_len):
-        blurred_image[i] = gaussian(image[i]*blur_mask_binary, 5)
-        image[i] = image[i] * original_mask + blurred_image[i] * blur_mask
+        blurred_image[i] = gaussian(image[i], 5)
+        # Normalise
+        blurred_image[i] = (blurred_image[i] / np.max(blurred_image[i])) * np.median(image[i])
+        new_image[i] = image[i] * original_mask + blurred_image[i] * blur_mask
 
-    return image
+    return new_image
 
 
 def process_image(image: np.ndarray, gamma: int, y: int, x: int, length: int):
@@ -525,7 +528,12 @@ def shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
 # dapi_partial = dapi_partial[25]
 # astro = rgb2gray(data.astronaut())
 # astro = astro[np.newaxis, :, :]
+
 # moon = data.moon()
 # moon = moon[np.newaxis, :, :]
 # new_moon = edge_taper(moon)
+# viewer = napari.Viewer()
+# viewer.add_image(new_moon)
+# viewer.add_image(moon)
+# napari.run()
 # print("Hello Freaks")
