@@ -157,9 +157,9 @@ class Viewer:
         self.viewer.window.add_dock_widget(self.legend['fig'], area='left', name='Genes')
         self.active_genes = np.arange(len(nb.call_spots.gene_names))  # start with all genes shown
 
-        if background_image is not None:
+        for i in range(len(background_image)):
             # Slider to change background image contrast
-            for i in range(len(background_image)):
+            if background_image[i] is not None:
                 self.viewer.window.add_dock_widget(self.image_contrast_slider[i], area="left", name='Image Contrast')
 
         # Add all spots in layer as transparent white spots.
