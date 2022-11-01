@@ -329,16 +329,18 @@ def apply_rigid_transform(image: np.ndarray, angle: float, initial_shift: np.nda
     # Apply initial shift. SKImage is slow so use custom-built shift function found in base
     new_image = base.shift(image, initial_shift)
 
-    # Apply yx rotation. SKImage is slow so use Pillow rotation which involves extraction to PIL, rotation and writing
-    # back to ndarray
-    for i in range(image.shape[0]):
-        image2d = Image.fromarray(new_image[i])
-        image2d = image2d.rotate(-angle)
-        image2d = np.array(image2d)
-        new_image[i] = image2d
+    if angle != 0:
+        # Apply yx rotation. SKImage is slow so use Pillow rotation which involves extraction to PIL, rotation and writing
+        # back to ndarray
+        for i in range(image.shape[0]):
+            image2d = Image.fromarray(new_image[i])
+            image2d = image2d.rotate(-angle)
+            image2d = np.array(image2d)
+            new_image[i] = image2d
 
-    # Apply corrected shift
-    new_image = base.shift(new_image, shift)
+    if shift != 0:
+        # Apply corrected shift
+        new_image = base.shift(new_image, shift)
 
     return new_image
 
@@ -510,39 +512,45 @@ def register_retile(target_image: np.ndarray, offset_image: np.ndarray, rows: in
     return registered_image, d_old, d_new, pcc_shifts
 
 
-# initial_shift = np.array([0, -6, 127])
-# global_angle = 0
-# corrected_shift = np.array([0, 0, 0])
-# pcc_shifts = np.load('C:/Users/Reilly/Desktop/pcc.npy')
-#
-# image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/6E10/tiff/6e10.npy')
-# mid_z = image.shape[0]//2
-#
-# if mid_z > 27:
-#     image = image[mid_z-27:mid_z+27]
-#
-# registered_image = apply_register_transform(image, initial_shift, global_angle, corrected_shift, pcc_shifts)
-#
-# np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/6E10/tiff/6e10.npy', registered_image)
-#
-# image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Gfap/tiff/gfap.npy')
-# mid_z = image.shape[0]//2
-#
-# if mid_z > 27:
-#     image = image[mid_z-27:mid_z+27]
-#
-# registered_image = apply_register_transform(image, initial_shift, global_angle, corrected_shift, pcc_shifts)
-#
-# np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Gfap/tiff/gfap.npy', registered_image)
-#
-# image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Iba1/tiff/iba1.npy')
-# mid_z = image.shape[0]//2
-#
-# if mid_z > 27:
-#     image = image[mid_z-27:mid_z+27]
-#
-# registered_image = apply_register_transform(image, initial_shift, global_angle, corrected_shift, pcc_shifts)
-#
-# np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Iba1/tiff/iba1.npy', registered_image)
-#
+initial_shift = np.array([0, -6, 127])
+global_angle = 0
+corrected_shift = np.array([0, 0, 0])
+pcc_shifts = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\pcc.npy')
+
+image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/6E10/tiff/6e10.npy').astype(int)
+mid_z = image.shape[0]//2
+
+if mid_z > 27:
+    image = image[mid_z-27:mid_z+27]
+
+image = apply_register_transform(image, global_angle, initial_shift, corrected_shift, pcc_shifts).astype(int)
+
+np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/6E10/tiff/6e10.npy', image)
+
+del image
+
+image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Gfap/tiff/gfap.npy').astype(int)
+mid_z = image.shape[0]//2
+
+if mid_z > 27:
+    image = image[mid_z-27:mid_z+27]
+
+image = apply_register_transform(image, global_angle, initial_shift, corrected_shift, pcc_shifts).astype(int)
+
+np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Gfap/tiff/gfap.npy', image)
+
+del image
+
+image = np.load('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Iba1/tiff/iba1.npy').astype(int)
+mid_z = image.shape[0]//2
+
+if mid_z > 27:
+    image = image[mid_z-27:mid_z+27]
+
+image = apply_register_transform(image, global_angle, initial_shift, corrected_shift, pcc_shifts).astype(int)
+
+np.save('//ZARU\Subjects\ISS\Izzie/221020_IF_primary_then_seq\output\IF_npy_tiles/Iba1/tiff/iba1.npy', image)
+
+del image
+
 # print("Hello Freaks")
