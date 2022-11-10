@@ -229,7 +229,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
             for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'round': r, 'tile': t})
                 shift[t, r], shift_score[t, r], shift_score_thresh[t, r] = \
-                    compute_shift(spot_yxz(spot_details, t, r_ref, c_ref, spot_no) * [1, 1, z_expansion],
+                    compute_shift(spot_yxz(spot_details, t, r_ref, c_ref, spot_no) * [1, 1, z_expansion[r]],
                                   spot_yxz(spot_details, t, r, c_imaging, spot_no),
                                   config['shift_score_thresh'], config['shift_score_thresh_multiplier'],
                                   config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
