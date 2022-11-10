@@ -1,6 +1,6 @@
 import numpy as np
 from coppafish import utils
-from coppafish.setup import NotebookPage, Notebook
+from coppafish.setup import NotebookPage
 from skimage.registration import phase_cross_correlation
 from skimage.filters import sobel
 

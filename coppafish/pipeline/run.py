@@ -165,15 +165,14 @@ def run_register(nb: setup.Notebook):
         # "register_initial". This will trigger a save after name change too.
         nb.change_page_name("register_initial_debug", "register_initial")
     if not nb.has_page("register_initial"):
-        nbp_initial = register_initial(config['register_initial'], nb.basic_info,
+        nbp_initial = register_initial(config['register_initial'], nb.basic_info, nb.file_names,
                                              nb.find_spots.spot_details, nb.find_spots.spot_no)
         nb += nbp_initial
     else:
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
-        cam_shift = register_cameras(nb.basic_info, nb.file_names, config['register_initial'])
         nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
-                                  nb.register_initial.shift + cam_shift)
+                                  nb.register_initial.shift)
         nb += nbp
         nb += nbp_debug
     else:

@@ -1,5 +1,5 @@
 # from .. import register
-from ..register import icp, transform_from_scale_shift
+from ..register import icp, transform_from_scale_shift, transform_from_round_scale_shift
 from ..find_spots import spot_yxz, get_isolated_points
 import numpy as np
 from ..setup.notebook import NotebookPage
@@ -7,7 +7,7 @@ from typing import Tuple
 
 
 def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray,
-             initial_shift: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
+             initial_shift: np.ndarray, initial_scale: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
     """
     This finds the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
     It uses iterative closest point and the starting shifts found in `pipeline/register_initial.py`.
@@ -26,7 +26,11 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
         initial_shift: `int [n_tiles x n_rounds x n_channels x 3]`.
             `initial_shift[t, r, c]` is the yxz shift found that is applied to tile `t`, `ref_round` to take it to
             tile `t`, round `r`, channel 'c'. Units: `[yx_pixels, yx_pixels, z_pixels]`.
-            This is saved in the `register_initial_debug` notebook page i.e. `nb.register_initial_debug.shift`.
+            This is saved in the `register_initial` notebook page i.e. `nb.register_initial.shift`.
+        initial_scale: `float [n_rounds]`.
+            `initial_shift[r]` is the z scale found that is applied to tile `ref_round` to take it to
+             round `r`. Units: `z_pixels`.
+            This is saved in the `register_initial` notebook page i.e. `nb.register_initial.z_expansion_factor`.
 
     Returns:
         - `NotebookPage[register]` - Page contains the affine transforms to go from the ref round/channel to
@@ -73,7 +77,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     n_matches_thresh = n_matches_thresh.astype(int)
 
     # Initialise variables obtain from PCR algorithm. This includes spaces for tiles/rounds/channels not used
-    start_transform = transform_from_scale_shift(np.ones((nbp_basic.n_channels, 3)), initial_shift)
+    start_transform = transform_from_round_scale_shift(initial_scale, initial_shift)
     final_transform = np.zeros_like(start_transform)
     n_matches = np.zeros_like(spot_yxz_imaging, dtype=int)
     error = np.zeros_like(spot_yxz_imaging, dtype=float)

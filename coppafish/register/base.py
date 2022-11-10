@@ -100,8 +100,34 @@ def transform_from_scale_shift(scale: np.ndarray, shift: np.ndarray) -> np.ndarr
         for t in range(n_tiles):
             for r in range(n_rounds):
                 for c in range(n_channels):
-                    transforms[t, r, c, :dim, :, ] = np.eye(dim) * scale[c]
+                    transforms[t, r, c, :dim, :] = np.eye(dim) * scale[c]
                     transforms[t, r, c, dim, :] = shift[t, r, c]
+
+    return transforms
+
+
+def transform_from_round_scale_shift(z_expansion_factor: np.ndarray, shift: np.ndarray) -> np.ndarray:
+    """
+    Function to initialise affine transforms given a starting z_scale for each round and shift for each t,r,c.
+    Args:
+        z_expansion_factor: (n_rounds) ndarray which specifies the expansion of the z coord needed to register r_ref
+        with round r for each r in use_rounds.
+        shift: (n_tiles x n_rounds x n_channels x 3)
+        ``shift[t, r, c, d]``` is the shift to account for the shift between the reference round for tile ```t```
+            and round ```r``` channel ```c``` for tile ```t``` in dimension ```d```.
+
+    Returns:
+        transforms: (n_tiles x n_rounds x n_channels x 4 x 3)  Affine transform for each t,r,c
+    """
+
+    n_tiles, n_rounds, n_channels, dim = shift.shape
+    transforms = np.zeros((n_tiles, n_rounds, n_channels, dim + 1, dim))
+    for t in range(n_tiles):
+        for r in range(n_rounds):
+            for c in range(n_channels):
+                transforms[t, r, c, :dim, :] = np.eye(dim)
+                transforms[t, r, c, 2, 2] = z_expansion_factor[r]
+                transforms[t, r, c, dim, :] = shift[t, r, c]
 
     return transforms
 
