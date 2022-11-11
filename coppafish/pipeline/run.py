@@ -172,7 +172,7 @@ def run_register(nb: setup.Notebook):
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     if not all(nb.has_page(["register", "register_debug"])):
         nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
-                                  nb.register_initial.shift)
+                                  nb.register_initial.shift, nb.register_initial.z_expansion_factor)
         nb += nbp
         nb += nbp_debug
     else:
