@@ -15,7 +15,7 @@ from napari.qt import thread_worker
 import time
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
-from PyQt5.QtWidgets import QPushButton, QMainWindow
+from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
 from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
 import warnings
@@ -46,6 +46,7 @@ class Viewer:
         """
         # TODO: flip y axis so origin bottom left
         self.nb = nb
+        self.is_3d = nb.basic_info.is_3d
         if gene_marker_file is None:
             gene_marker_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gene_color.csv')
         gene_legend_info = pd.read_csv(gene_marker_file)
@@ -94,6 +95,8 @@ class Viewer:
         self.viewer = napari.Viewer()
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
         self.viewer.window.qt_viewer.dockLayerControls.setVisible(False)
+        self.z_thick = 1  # show +/- 1 plane initially
+        self.nz = self.nb.basic_info.nz
 
         # Add background image/s if given
         self.diagnostic_layer_ind = 0
@@ -163,9 +166,16 @@ class Viewer:
                 self.viewer.window.add_dock_widget(self.image_contrast_slider[i], area="left", name='Image Contrast')
 
         # Add all spots in layer as transparent white spots.
-        point_size = 10  # with size=4, spots are too small to see
-        self.viewer.add_points(spot_zyx, name='Diagnostic', face_color='w', size=point_size + 2, opacity=0,
-                               shown=show_spots)
+        self.point_size = [self.z_thick, 10, 10]  # with size=4, spots are too small to see
+        self.viewer.add_points(spot_zyx, name='Diagnostic', face_color='w', size=np.array(self.point_size)+np.array([0, 2, 2]),
+                               opacity=0, shown=show_spots)
+
+        if self.is_3d:
+            self.z_thick_slider = QSlider(Qt.Orientation.Horizontal)
+            self.z_thick_slider.setRange(0, self.nz)
+            self.z_thick_slider.setValue(self.z_thick)
+            self.z_thick_slider.valueChanged.connect(lambda x: self.change_z_thick(x))
+            self.viewer.window.add_dock_widget(self.z_thick_slider, area="left", name='Z Thickness')
 
         # Add gene spots with coppafish color code - different layer for each symbol
         if self.nb.has_page('omp'):
@@ -180,16 +190,8 @@ class Viewer:
                 spotcolor_to_plot = gene_color[self.spot_gene_no[spots_correct_gene]]
                 symb_to_plot = np.unique(gene_legend_info[self.legend_gene_symbol == s]['napari_symbol'])[0]
                 self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
-                                       name=f'{self.label_prefix}{s}', size=point_size,
-                                       shown=show_spots[spots_correct_gene])
-                # TODO: showing multiple z-planes at once is possible using out_of_slice_display=True,
-                #  but at the moment cannot use at same time as show.
-                #  When this works, can change n_z shown by changing z-dimension of point_size i.e.
-                #  point_size = [z_size, 10, 10] and z_size changes.
-                #  On next napari, release should be able to change thickness of spots in z-direction i.e. control what
-                #  number of z-planes can be seen at any one time:
-                #  https://github.com/napari/napari/issues/4816#issuecomment-1186600574.
-                #  Then see find_spots viewer for how I added a z-thick slider
+                                       name=f'{self.label_prefix}{s}', size=self.point_size,
+                                       shown=show_spots[spots_correct_gene], out_of_slice_display=True)
 
         self.viewer.layers.selection.active = self.viewer.layers[self.diagnostic_layer_ind]
         # so indicates when a spot is selected in viewer status
@@ -318,6 +320,25 @@ class Viewer:
                                              self.legend_gene_no[self.legend_gene_symbol == s])
                 self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
 
+        if self.is_3d:
+            self.spot_zyx = self.spot_zyx[:, [2, 0, 1]]
+        if len(self.viewer.layers) == 1:
+            if self.is_3d:
+                point_size = [self.z_thick_list[self.z_thick], self.point_size, self.point_size]
+            else:
+                point_size = self.point_size
+            self.viewer.add_points(self.spot_zyx, edge_color=self.normal_color, face_color=self.normal_color,
+                                   symbol='x', opacity=0.8, edge_width=0, out_of_slice_display=True,
+                                   size=point_size, name='Spots Found')
+        else:
+            self.viewer.layers[1].data = self.spot_zyx
+        self.viewer.layers[1].face_color[self.no_negative_neighbour] = self.normal_color
+        self.viewer.layers[1].face_color[np.invert(self.no_negative_neighbour)] = self.neg_neighb_color
+        self.viewer.layers[1].visible = 1  # no idea why, but seem to need this line to update colors
+        if self.show_isolated:
+            self.update_isolated_spots()
+        self.viewer.layers[1].selected_data = set()  # sometimes it selects points at random when change thresh
+
     def update_genes(self, event):
         # When click on a gene in the legend will remove/add that gene to plot.
         # When right-click on a gene, it will only show that gene.
@@ -383,6 +404,13 @@ class Viewer:
         # Change contrast of background image
         self.viewer.layers[i].contrast_limits = [self.image_contrast_slider[i].value()[0],
                                                                     self.image_contrast_slider[i].value()[1]]
+
+    def change_z_thick(self, z_thick):
+        # Show spots from different z-planes
+        # Only makes a difference when size is 1, 3, 5, 7 so make sure it is odd with z_thick_list
+        self.viewer.status = f"Z-thickness = {z_thick}"
+        for i in range(len(self.viewer.layers)):
+            self.viewer.layers[i].size = [z_thick, 10, 10]
 
     def button_anchor_clicked(self):
         # Only allow one button pressed
