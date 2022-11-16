@@ -68,14 +68,14 @@ class Viewer:
             self.n_spots = self.omp_0_ind + self.nb.omp.tile.size  # number of anchor + number of omp spots
         else:
             self.n_spots = self.omp_0_ind
-        spot_zyx = np.zeros((self.n_spots, 3))
-        spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + self.nb.stitch.tile_origin[self.nb.ref_spots.tile]
+        self.spot_zyx = np.zeros((self.n_spots, 3))
+        self.spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + self.nb.stitch.tile_origin[self.nb.ref_spots.tile]
                                      )[:, [2, 0, 1]]
         if self.nb.has_page('omp'):
-            spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + self.nb.stitch.tile_origin[self.nb.omp.tile]
+            self.spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + self.nb.stitch.tile_origin[self.nb.omp.tile]
                                          )[:, [2, 0, 1]]
         if not self.nb.basic_info.is_3d:
-            spot_zyx = spot_zyx[:, 1:]
+            self.spot_zyx = self.spot_zyx[:, 1:]
 
         # indicate spots shown when plot first opened - omp if exists, else anchor
         if self.nb.has_page('omp'):
@@ -167,7 +167,7 @@ class Viewer:
 
         # Add all spots in layer as transparent white spots.
         self.point_size = [self.z_thick, 10, 10]  # with size=4, spots are too small to see
-        self.viewer.add_points(spot_zyx, name='Diagnostic', face_color='w', size=np.array(self.point_size)+np.array([0, 2, 2]),
+        self.viewer.add_points(self.spot_zyx, name='Diagnostic', face_color='w', size=np.array(self.point_size)+np.array([0, 2, 2]),
                                opacity=0, shown=show_spots)
 
         if self.is_3d:
@@ -186,7 +186,7 @@ class Viewer:
         for s in np.unique(self.legend_gene_symbol):
             spots_correct_gene = np.isin(self.spot_gene_no, self.legend_gene_no[self.legend_gene_symbol == s])
             if spots_correct_gene.any():
-                coords_to_plot = spot_zyx[spots_correct_gene]
+                coords_to_plot = self.spot_zyx[spots_correct_gene]
                 spotcolor_to_plot = gene_color[self.spot_gene_no[spots_correct_gene]]
                 symb_to_plot = np.unique(gene_legend_info[self.legend_gene_symbol == s]['napari_symbol'])[0]
                 self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
@@ -320,25 +320,6 @@ class Viewer:
                                              self.legend_gene_no[self.legend_gene_symbol == s])
                 self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
 
-        if self.is_3d:
-            self.spot_zyx = self.spot_zyx[:, [2, 0, 1]]
-        if len(self.viewer.layers) == 1:
-            if self.is_3d:
-                point_size = [self.z_thick_list[self.z_thick], self.point_size, self.point_size]
-            else:
-                point_size = self.point_size
-            self.viewer.add_points(self.spot_zyx, edge_color=self.normal_color, face_color=self.normal_color,
-                                   symbol='x', opacity=0.8, edge_width=0, out_of_slice_display=True,
-                                   size=point_size, name='Spots Found')
-        else:
-            self.viewer.layers[1].data = self.spot_zyx
-        self.viewer.layers[1].face_color[self.no_negative_neighbour] = self.normal_color
-        self.viewer.layers[1].face_color[np.invert(self.no_negative_neighbour)] = self.neg_neighb_color
-        self.viewer.layers[1].visible = 1  # no idea why, but seem to need this line to update colors
-        if self.show_isolated:
-            self.update_isolated_spots()
-        self.viewer.layers[1].selected_data = set()  # sometimes it selects points at random when change thresh
-
     def update_genes(self, event):
         # When click on a gene in the legend will remove/add that gene to plot.
         # When right-click on a gene, it will only show that gene.
@@ -407,7 +388,6 @@ class Viewer:
 
     def change_z_thick(self, z_thick):
         # Show spots from different z-planes
-        # Only makes a difference when size is 1, 3, 5, 7 so make sure it is odd with z_thick_list
         self.viewer.status = f"Z-thickness = {z_thick}"
         for i in range(len(self.viewer.layers)):
             self.viewer.layers[i].size = [z_thick, 10, 10]

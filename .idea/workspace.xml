@@ -157,11 +157,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.run" />
         <item itemvalue="Python.register_initial" />
+        <item itemvalue="Python.find_spots" />
         <item itemvalue="Python.base" />
         <item itemvalue="Python.base (1)" />
-        <item itemvalue="Python.run" />
-        <item itemvalue="Python.find_spots" />
       </list>
     </recent_temporary>
   </component>
@@ -193,6 +193,11 @@
           <url>file://$PROJECT_DIR$/analysis/sep_round_reg/run.py</url>
           <line>75</line>
           <option name="timeStamp" value="201" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/utils/nd2.py</url>
+          <line>83</line>
+          <option name="timeStamp" value="202" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
