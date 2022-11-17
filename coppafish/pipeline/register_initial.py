@@ -290,8 +290,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
     if nbp_basic.channel_camera is not None:
         cam_shift = register_cameras(nbp_basic, nbp_file, config)
 
-    if nbp_basic.channel_camera is not None:
-        nbp_debug.cam_shift = cam_shift
+    nbp_debug.cam_shift = cam_shift
     nbp_debug.shift = reformatted_shift + cam_shift
     nbp_debug.z_expansion_factor = z_expansion
     nbp_debug.start_shift_search = start_shift_search
