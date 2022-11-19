@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
@@ -10,6 +11,10 @@
     </content>
     <orderEntry type="jdk" jdkName="Python 3.8 (coppafish) (2)" jdkType="Python SDK" />
 >>>>>>> Stashed changes
+=======
+    <content url="file://$MODULE_DIR$" />
+    <orderEntry type="jdk" jdkName="Python 3.9 (venv)" jdkType="Python SDK" />
+>>>>>>> 15483a8e76a5245cf845c56ab64786b338d6525a
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">

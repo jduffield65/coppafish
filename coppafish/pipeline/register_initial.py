@@ -279,17 +279,20 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"
                           f"{shift_outlier[t, r]} to {shift[t, r]}.")
 
-    # Now compute the camera shifts
-    cam_shift = register_cameras(nbp_basic, nbp_file, config)
     # Reformat the shifts into an array of size (n_tiles x n_rounds x n_channels x 3) by copying the array across
     # each channel in use
     reformatted_shift = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels, 3), dtype=int)
     for c in nbp_basic.use_channels:
         reformatted_shift[:, :, c, :] = shift
 
-    nbp_debug.z_expansion_factor = z_expansion
+    cam_shift = np.zeros(reformatted_shift.shape)
+    # Now if we're in a quad-cam experiment, compute the camera shifts
+    if nbp_basic.channel_camera is not None:
+        cam_shift = register_cameras(nbp_basic, nbp_file, config)
+
     nbp_debug.cam_shift = cam_shift
     nbp_debug.shift = reformatted_shift + cam_shift
+    nbp_debug.z_expansion_factor = z_expansion
     nbp_debug.start_shift_search = start_shift_search
     nbp_debug.final_shift_search = final_shift_search
     nbp_debug.shift_score = shift_score
