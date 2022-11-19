@@ -49,7 +49,11 @@
       <recent name="C:\Users\Reilly\PycharmProjects\iss_python-main\coppafish\sep_round_reg" />
     </key>
   </component>
+<<<<<<< Updated upstream
   <component name="RunManager" selected="Python.register_initial">
+=======
+  <component name="RunManager" selected="Python.base">
+>>>>>>> Stashed changes
     <configuration name="base (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="iss_python-main" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -191,8 +195,18 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/analysis/sep_round_reg/run.py</url>
+<<<<<<< Updated upstream
           <line>75</line>
           <option name="timeStamp" value="201" />
+=======
+          <line>508</line>
+          <option name="timeStamp" value="184" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/analysis/sep_round_reg/base.py</url>
+          <line>71</line>
+          <option name="timeStamp" value="191" />
+>>>>>>> Stashed changes
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
