@@ -63,6 +63,7 @@ def register_ft(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_register_in
     z_scale = nbp_basic.pixel_size_z/nbp_basic.pixel_size_xy
     z_expansion_factor = nbp_register_initial.z_expansion_factor
     initial_shift = nbp_register_initial.shift
+    cam_shift = nbp_register_initial.cam_shift.astype(int)
     alpha = 0.3     # This determines how much of the boundary we use in the top, bottom, left and right shift
 
     # The shifts for each tile and channel, calculated at the top, bottom, left and right will be kept here
@@ -86,8 +87,7 @@ def register_ft(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_register_in
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Correct for camera offsets so that the shift between channels is not influenced by this systematic
                 # shift (this is already accounted for in register initial, and not what this stage is trying to fix)
-                channel_image_raw = shift(sobel(load(nbp_file, nbp_basic, r=3, t=t, c=c)),
-                                          -nbp_register_initial.cam_shift[t, 3, c])
+                channel_image_raw = shift(sobel(load(nbp_file, nbp_basic, r=3, t=t, c=c)), cam_shift[t, 3, c])
                 # Now we'll do the registration on each tile. We do the registration on each end of the image in x and
                 # in y. Finding the difference in shifts will allow us to determine the scale as well!
                 left_shift[t, c], _, _ = pcc(channel_image_raw[:, :int(tile_sz * alpha)],
