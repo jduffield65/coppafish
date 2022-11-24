@@ -1,12 +1,14 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from coppafish import utils
+import napari
 from coppafish.setup import Notebook
 from coppafish.find_spots.base import spot_yxz
 from tqdm import tqdm
 from typing import Optional, Tuple, Union, List
 import warnings
-
+import matplotlib
 
 def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: np.ndarray, dist_thresh: float,
                   yxz_target_tree: Optional[KDTree] = None, reg_constant_scale: float = 30000,
@@ -51,9 +53,16 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
     distances, neighbour = yxz_target_tree.query(yxz_transform, distance_upper_bound=dist_thresh)
     neighbour = neighbour.flatten()
     distances = distances.flatten()
+    unique_neighb = list(set(neighbour))
+    loner = np.zeros(len(neighbour), dtype=bool)
+    for i in range(len(unique_neighb)):
+        if list(neighbour).count(unique_neighb[i]) == 1:
+            loner[list(neighbour).index(unique_neighb[i])] = True
     use = distances < dist_thresh
+    use = use * loner
     n_matches = np.sum(use)
     error = np.sqrt(np.mean(distances[use] ** 2))
+
     if reg_transform is None:
         transform = np.linalg.lstsq(yxz_base_pad[use, :], yxz_target[neighbour[use], :], rcond=None)[0]
     else:
@@ -354,8 +363,11 @@ def icp(yxz_base: np.ndarray, yxz_target: np.ndarray, transforms_initial: np.nda
         while i < n_iter:
             pbar.set_postfix({'iter': f'{i + 1}/{n_iter}', 'regularized': str(finished_good_images)})
             neighbour_last = neighbour.copy()
+            # for t in [0]:
             for t in range(n_tiles):
+                # for r in [0]:
                 for r in range(n_rounds):
+                    # for c in [0]:
                     for c in range(n_channels):
                         if is_converged[t, r, c]:
                             continue
@@ -453,3 +465,90 @@ def get_single_affine_transform(spot_yxz_base: np.ndarray, spot_yxz_transform: n
 
     return transform, n_matches, error, is_converged
 
+
+def napari_viewer():
+    from magicgui import magicgui
+    prevlayer = None
+    @magicgui(layout="vertical", auto_call=True,
+            x_offset={'max': 10000, 'min': -10000, 'step': 1, 'adaptive_step': False},
+            y_offset={'max': 10000, 'min': -10000, 'step': 1, 'adaptive_step': False},
+            z_offset={'max': 10000, 'min': -10000, 'step': 1, 'adaptive_step': False},
+            x_scale={'max': 5, 'min': .2, 'value': 1.0, 'adaptive_step': False, 'step': .1},
+            y_scale={'max': 5, 'min': .2, 'value': 1.0, 'adaptive_step': False, 'step': .1},
+            z_scale={'max': 5, 'min': .2, 'value': 1.0, 'adaptive_step': False, 'step': .1},
+            x_rotate={'max': 180, 'min': -180, 'step': 1.0, 'adaptive_step': False},
+            y_rotate={'max': 180, 'min': -180, 'step': 1.0, 'adaptive_step': False},
+            z_rotate={'max': 180, 'min': -180, 'step': 1.0, 'adaptive_step': False},
+    )
+    def _napari_extension_move_points(layer: napari.layers.Layer, x_offset: float, y_offset: float, z_offset: float, x_scale: float, y_scale: float, z_scale: float, x_rotate: float, y_rotate: float, z_rotate: float, use_defaults: bool) -> None:
+        """Add, subtracts, multiplies, or divides to image layers with equal shape."""
+        nonlocal prevlayer
+        if not hasattr(layer, "_true_rotate"):
+            layer._true_rotate = [0, 0, 0]
+            layer._true_translate = [0, 0, 0]
+            layer._true_scale = [1, 1, 1]
+        if prevlayer != layer:
+            prevlayer = layer
+            on_layer_change(layer)
+            return
+        if use_defaults:
+            z_offset = y_offset = x_offset = 0
+            z_scale = y_scale = x_scale = 1
+            z_rotate = y_rotate = x_rotate = 0
+        layer._true_rotate = [z_rotate, y_rotate, x_rotate]
+        layer._true_translate = [z_offset, y_offset, x_offset]
+        layer._true_scale = [z_scale, y_scale, x_scale]
+        layer.affine = napari.utils.transforms.Affine(rotate=layer._true_rotate, scale=layer._true_scale, translate=layer._true_translate)
+        layer.refresh()
+    def on_layer_change(layer):
+        e = _napari_extension_move_points
+        widgets = [e.z_scale, e.y_scale, e.x_scale, e.z_offset, e.y_offset, e.x_offset, e.z_rotate, e.y_rotate, e.x_rotate]
+        for w in widgets:
+            w.changed.pause()
+        e.z_scale.value, e.y_scale.value, e.x_scale.value = layer._true_scale
+        e.z_offset.value, e.y_offset.value, e.x_offset.value = layer._true_translate
+        e.z_rotate.value, e.y_rotate.value, e.x_rotate.value = layer._true_rotate
+        for w in widgets:
+            w.changed.resume()
+        print("Called change layer")
+    #_napari_extension_move_points.layer.changed.connect(on_layer_change)
+    v = napari.Viewer()
+    # add our new magicgui widget to the viewer
+    v.window.add_dock_widget(_napari_extension_move_points, area="right")
+    v.axes.visible = True
+    return v
+
+
+def viewer_3d(anchor_pc: np.ndarray, imaging_pc: np.ndarray, anchor_match_id: np.ndarray, neighbour: np.ndarray,
+              y_range: np.ndarray, x_range: np.ndarray, radius: float):
+
+    viewer = napari_viewer()
+
+    anchor_match_tree = KDTree(anchor_pc[anchor_match_id])
+    imaging_match_tree = KDTree(imaging_pc[neighbour[anchor_match_id]])
+    anchor_dist, anchor_neighb = anchor_match_tree.query(anchor_pc, distance_upper_bound=radius)
+    im_dist, im_neighb = imaging_match_tree.query(imaging_pc, distance_upper_bound=radius)
+
+    anchor_dist = anchor_dist.flatten()
+    im_dist = im_dist.flatten()
+
+    anchor_closeness_window = anchor_dist < radius
+    im_closeness_window = im_dist < radius
+
+    y_low, y_high = y_range
+    x_low, x_high = x_range
+
+    anchor_window = (anchor_pc[:, 0] > y_low) * (anchor_pc[:, 0] < y_high) * (anchor_pc[:, 1] > x_low) * (
+                anchor_pc[:, 1] < x_high) * anchor_closeness_window
+    imaging_window = (imaging_pc[:, 0] > y_low) * (imaging_pc[:, 0] < y_high) * (imaging_pc[:, 1] > x_low) * (
+                imaging_pc[:, 1] < x_high) * im_closeness_window
+
+    viewer.add_points(anchor_pc[anchor_window], face_color='white', symbol='o', size=3, name='Anchor Spots',
+                      out_of_slice_display=True)
+    viewer.add_points(imaging_pc[imaging_window], face_color='blue', symbol='o', size=3, name='Image Spots',
+                      out_of_slice_display=True)
+
+    viewer.add_points(anchor_pc[anchor_match_id * anchor_window], face_color='red', symbol='x', size=3,
+                      name='Anchor matches', out_of_slice_display=True)
+    viewer.add_points(imaging_pc[neighbour[anchor_match_id * anchor_window]], face_color='green', symbol='x', size=3,
+                      name='Image matches', out_of_slice_display=True)

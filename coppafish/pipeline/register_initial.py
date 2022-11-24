@@ -33,6 +33,7 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
         shift_channel = nbp_basic.anchor_channel
     sample_tile = min(nbp_basic.use_tiles)
     sample_round = min([i for i in nbp_basic.use_rounds if i > 0])
+
     # Load and filter anchor image
     shift_channel_image = sobel(utils.nd2.get_raw_images(nbp_basic, nbp_file, [sample_tile], [sample_round],
                                                          [shift_channel], list(np.arange(nbp_basic.nz // 2 - 10,

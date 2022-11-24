@@ -2,7 +2,7 @@
 from ..register import icp, transform_from_scale_shift, transform_from_round_scale_shift
 from ..find_spots import spot_yxz, get_isolated_points
 import numpy as np
-from ..setup.notebook import NotebookPage
+from ..setup.notebook import Notebook, NotebookPage
 from typing import Tuple
 
 
@@ -41,10 +41,11 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     nbp_debug = NotebookPage("register_debug")
     nbp.initial_shift = initial_shift.copy()
 
-    if nbp_basic.is_3d:
-        neighb_dist_thresh = config['neighb_dist_thresh_3d']
-    else:
-        neighb_dist_thresh = config['neighb_dist_thresh_2d']
+    # if nbp_basic.is_3d:
+    #     neighb_dist_thresh = config['neighb_dist_thresh_3d']
+    # else:
+    #     neighb_dist_thresh = config['neighb_dist_thresh_2d']
+    neighb_dist_thresh = 5
 
     # centre and scale spot yxz coordinates
     z_scale = [1, 1, nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy]
@@ -55,12 +56,13 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     for t in nbp_basic.use_tiles:
         spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
                                    spot_no)
-        spot_yxz_ref[t] = (spot_yxz_ref[t] - nbp_basic.tile_centre) * z_scale
+        spot_yxz_ref[t] = (spot_yxz_ref[t] - np.append(nbp_basic.tile_centre[:2], 0)) * z_scale
         for r in nbp_basic.use_rounds:
             for c in nbp_basic.use_channels:
-                initial_shift[t, r, c] = initial_shift[t, r, c] * z_scale  # put z initial shift into xy pixel units
+                initial_shift[t, r, c] = initial_shift[t, r, c] * z_scale
                 spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no)
-                spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - nbp_basic.tile_centre) * z_scale
+                spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - np.append(nbp_basic.tile_centre[:2], 0)) * \
+                                            z_scale
                 if neighb_dist_thresh < 50:
                     # only keep isolated spots, those whose second neighbour is far away
                     isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
@@ -119,3 +121,8 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     nbp_debug.transform_outlier = transform_outliers
 
     return nbp, nbp_debug
+
+# nb = Notebook('C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Initial scaling test/output/notebook.npz',
+#               'C:/Users/Reilly/Desktop/Sample Notebooks/Christina/Initial scaling test/E-2210-001_CP_settings_v2_z-scale.ini')
+# register(nb.get_config()['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
+#                                   nb.register_initial.shift, nb.register_initial.z_expansion_factor)
