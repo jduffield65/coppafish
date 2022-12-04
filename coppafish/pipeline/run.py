@@ -1,7 +1,7 @@
 import os
 from .. import setup, utils
-from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register, get_reference_spots, \
-    call_reference_spots, call_spots_omp
+from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
+    get_reference_spots, call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
 from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
@@ -170,11 +170,10 @@ def run_register(nb: setup.Notebook):
         nb += nbp_initial
     else:
         warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
-    if not all(nb.has_page(["register", "register_debug"])):
-        nbp, nbp_debug = register(config['register'], nb.basic_info, nb.find_spots.spot_details, nb.find_spots.spot_no,
-                                  nb.register_initial.shift, nb.register_initial.z_expansion_factor)
+    # if not all(nb.has_page(["register", "register_debug"])):
+    if not nb.has_page("register"):
+        nbp = register_ft(nb.basic_info, nb.file_names, nb.register_initial)
         nb += nbp
-        nb += nbp_debug
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
@@ -218,11 +217,11 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
         nb += nbp
         # Raise errors if stitch, register_initial or register section failed
         # Do that at this stage, so can still run viewer to see what spots look like
-        check_shifts_stitch(nb)  # error if too many bad shifts between tiles
-        check_shifts_register(nb)  # error if too many bad shifts between rounds
-        check_transforms(nb)  # error if affine transforms found have low number of matches
+        # check_shifts_stitch(nb)  # error if too many bad shifts between tiles
+        # check_shifts_register(nb)  # error if too many bad shifts between rounds
+        # check_transforms(nb)  # error if affine transforms found have low number of matches
         # only raise error after saving to notebook if spot_colors have nan in wrong places.
-        utils.errors.check_color_nan(nb.ref_spots.colors, nb.basic_info)
+        # utils.errors.check_color_nan(nb.ref_spots.colors, nb.basic_info)
     else:
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
 
