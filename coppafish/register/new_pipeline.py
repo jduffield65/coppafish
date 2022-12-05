@@ -1,7 +1,10 @@
 import numpy as np
+from tqdm import tqdm
 from skimage.registration import phase_cross_correlation
-from coppafish.setup import NotebookPage
+from skimage.filters import sobel
+from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
+
 
 def split_3d_image(image, y_subvolumes, x_subvolumes, z_subvolumes):
     """
@@ -85,19 +88,19 @@ def find_affine_transform(shift, position):
     """
 
     # First, pad the position array
-    position = np.pad(position, ((0,0),(0,1)), constant_values=1)
+    position = np.pad(position, ((0, 0), (0, 0), (0, 0), (0, 1)), constant_values=1)
 
     # Now, get rid of outliers in the shifts
-    shift_abs = np.linalg.norm(shift, axis=1)
+    shift_abs = np.linalg.norm(shift, axis=3)
     use = (shift_abs > np.mean(shift_abs) - np.std(shift_abs)) * (shift_abs < np.mean(shift_abs) + np.std(shift_abs))
 
     # Complete regression on shifts that we intend to use
     position = position[use]
     shift = shift[use]
-    omega = np.linalg.lstsq(position.T, shift.T)
+    omega_t = np.linalg.lstsq(position, shift)
 
     # Compute the transform from the regression matrix
-    transform = omega.T + np.pad(np.eye(3), ((0,0),(0,1)))
+    transform = omega_t[0].T + np.pad(np.eye(3), ((0, 0), (0, 1)))
 
     return transform
 
@@ -127,49 +130,61 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
     # These will then be combined into a single array by composition
     transform = np.zeros((n_tiles, n_rounds, n_channels, 3, 4))
 
-    # Find the inter round transforms and inter channel transforms
-    for t in use_tiles:
-        # Load in the anchor npy volume, only need to do this once per tile
-        anchor_image = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
-        for r in use_rounds:
-            # Load in imaging npy volume
-            target_image = load_tile(nbp_file, nbp_basic, t, r, c_ref)
+    with tqdm(total=1 * (n_rounds + len(use_channels))) as pbar:
+        pbar.set_description(f"Inter Round and Inter Channel Transforms")
+        # Find the inter round transforms and inter channel transforms
+        for t in [0]:
+            # Load in the anchor npy volume, only need to do this once per tile
+            # Filter with sobel edge detection algorithm to improve feature recognition
+            anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+            for r in use_rounds:
+                pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
+                # Load in imaging npy volume. Filter with sobel edge detection algorithm to improve feature recognition
+                target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
 
-            # Split up the anchor and target into subvolumes. As we're not trying to calculate chromatic aberration, we
-            # don't need many yx sub_volumes
-            anchor_subvolume, position = split_3d_image(anchor_image, 4, 4, 3)
-            target_subvolume, _ = split_3d_image(target_image, 4, 4, 3)
+                # Split up the anchor and target into subvolumes. As we're not trying to calculate chromatic aberration,
+                # we don't need many yx sub_volumes.
+                anchor_subvolume, position = split_3d_image(anchor_image, 10, 10, 4)
+                target_subvolume, _ = split_3d_image(target_image, 10, 10, 4)
 
-            # Find the best shifts from each of these subvolumes to their corresponding subvolume
-            shift = find_shift_array(anchor_subvolume, target_subvolume)
+                # Find the best shifts from each of these subvolumes to their corresponding subvolume
+                shift = find_shift_array(anchor_subvolume, target_subvolume)
 
-            # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
-            # (t, r, c_ref)
-            round_transform[t, r] = find_affine_transform(shift, position)
+                # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
+                # (t, r, c_ref)
+                round_transform[t, r] = find_affine_transform(shift, position)
+                pbar.update(1)
 
-        # Begin the channel transformation calculations. This requires us to use a central round.
-        r = n_rounds // 2
-        for c in use_channels:
-            # Load in imaging npy volume
-            target_image = load_tile(nbp_file, nbp_basic, t, r, c_ref)
-
-            # Split up the anchor and target into subvolumes. As we're trying to calculate chromatic aberration,
-            # increase the yx precision now by adding more subvolumes
-            anchor_subvolume, position = split_3d_image(anchor_image, 10, 10, 3)
-            target_subvolume, _ = split_3d_image(target_image, 10, 10, 3)
-
-            # Find the best shifts from each of these subvolumes to their corresponding subvolume
-            shift = find_shift_array(anchor_subvolume, target_subvolume)
-
-            # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
-            # (t, r, c)
-            channel_transform[t, c] = find_affine_transform(shift, position)
-
-        # Combine all transforms
-        for r in use_rounds:
+            # Begin the channel transformation calculations. This requires us to use a central round.
+            r = n_rounds // 2
+            ref_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
             for c in use_channels:
-                # Compose the linear part of both of these first
-                transform[t, r, c, :, :3] = channel_transform[t, c, :, :3] @ round_transform[r, c, :, :3]
-                # Compose the shifts next
-                transform[t, r, c, :, 4] = channel_transform[t, c, :, 4] + round_transform[r, c, :, 4]
-        
+                pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
+                # Load in imaging npy volume
+                target_image = load_tile(nbp_file, nbp_basic, t, r, c)
+
+                # Split up the anchor and target into subvolumes. As we're trying to calculate chromatic aberration,
+                # increase the yx precision now by adding more subvolumes
+                ref_subvolume, position = split_3d_image(ref_image, 10, 10, 3)
+                target_subvolume, _ = split_3d_image(target_image, 10, 10, 3)
+
+                # Find the best shifts from each of these subvolumes to their corresponding subvolume
+                shift = find_shift_array(ref_subvolume, target_subvolume)
+
+                # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
+                # (t, r, c)
+                channel_transform[t, c] = find_affine_transform(shift, position)
+                pbar.update(1)
+
+            # Combine all transforms
+            for r in use_rounds:
+                for c in use_channels:
+                    # Compose the linear part of both of these first
+                    transform[t, r, c, :, :3] = channel_transform[t, c, :, :3] @ round_transform[t, r, :, :3]
+                    # Compose the shifts next
+                    transform[t, r, c, :, 3] = channel_transform[t, c, :, 3] + round_transform[t, r, :, 3]
+
+
+nb = Notebook('//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v5_24NOV22\output/notebook.npz',
+              'C:/Users\Reilly\Desktop\Sample Notebooks\Christina/New Registration Test/E-2210-001_CP_settings_v3_22NOV22.ini')
+register(nbp_basic=nb.basic_info, nbp_file=nb.file_names)
