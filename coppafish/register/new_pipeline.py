@@ -1,9 +1,13 @@
 import numpy as np
 from tqdm import tqdm
+import matplotlib
+import matplotlib.pyplot as plt
+from scipy import stats
 from skimage.registration import phase_cross_correlation
 from skimage.filters import sobel
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
+matplotlib.use('Qt5Agg')
 
 
 def split_3d_image(image, y_subvolumes, x_subvolumes, z_subvolumes):
@@ -92,12 +96,11 @@ def find_affine_transform(shift, position):
 
     # Now, get rid of outliers in the shifts
     shift_abs = np.linalg.norm(shift, axis=3)
-    use = (shift_abs > np.mean(shift_abs) - np.std(shift_abs)) * (shift_abs < np.mean(shift_abs) + np.std(shift_abs))
+    use = (np.median(shift_abs) - stats.iqr(shift_abs) < shift_abs) * \
+          (shift_abs < np.median(shift_abs) + stats.iqr(shift_abs))
 
     # Complete regression on shifts that we intend to use
-    position = position[use]
-    shift = shift[use]
-    omega_t = np.linalg.lstsq(position, shift)
+    omega_t = np.linalg.lstsq(position[use], shift[use])
 
     # Compute the transform from the regression matrix
     transform = omega_t[0].T + np.pad(np.eye(3), ((0, 0), (0, 1)))
@@ -130,17 +133,20 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
     # These will then be combined into a single array by composition
     transform = np.zeros((n_tiles, n_rounds, n_channels, 3, 4))
 
+    round_transform_shift = np.zeros((n_tiles, n_rounds, 10, 10, 4, 3))
+    channel_transform_shift = np.zeros((n_tiles, n_channels, 10, 10, 4, 3))
+
     with tqdm(total=1 * (n_rounds + len(use_channels))) as pbar:
         pbar.set_description(f"Inter Round and Inter Channel Transforms")
         # Find the inter round transforms and inter channel transforms
         for t in [0]:
             # Load in the anchor npy volume, only need to do this once per tile
             # Filter with sobel edge detection algorithm to improve feature recognition
-            anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+            anchor_image = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
             for r in use_rounds:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
                 # Load in imaging npy volume. Filter with sobel edge detection algorithm to improve feature recognition
-                target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
+                target_image = load_tile(nbp_file, nbp_basic, t, r, c_ref)
 
                 # Split up the anchor and target into subvolumes. As we're not trying to calculate chromatic aberration,
                 # we don't need many yx sub_volumes.
@@ -149,6 +155,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
 
                 # Find the best shifts from each of these subvolumes to their corresponding subvolume
                 shift = find_shift_array(anchor_subvolume, target_subvolume)
+                round_transform_shift[t, r] = shift
+
+                view_shift_hist(shift)
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
                 # (t, r, c_ref)
@@ -165,11 +174,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
 
                 # Split up the anchor and target into subvolumes. As we're trying to calculate chromatic aberration,
                 # increase the yx precision now by adding more subvolumes
-                ref_subvolume, position = split_3d_image(ref_image, 10, 10, 3)
-                target_subvolume, _ = split_3d_image(target_image, 10, 10, 3)
+                ref_subvolume, position = split_3d_image(ref_image, 10, 10, 4)
+                target_subvolume, _ = split_3d_image(target_image, 10, 10, 4)
 
                 # Find the best shifts from each of these subvolumes to their corresponding subvolume
                 shift = find_shift_array(ref_subvolume, target_subvolume)
+                channel_transform_shift[t, c] = shift
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
                 # (t, r, c)
@@ -180,9 +190,52 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
             for r in use_rounds:
                 for c in use_channels:
                     # Compose the linear part of both of these first
-                    transform[t, r, c, :, :3] = channel_transform[t, c, :, :3] @ round_transform[t, r, :, :3]
-                    # Compose the shifts next
-                    transform[t, r, c, :, 3] = channel_transform[t, c, :, 3] + round_transform[t, r, :, 3]
+                    transform[t, r, c, :, :3] = channel_transform[t, c, :, :3] @ round_transform[t, r] + \
+                                                channel_transform[t, c, :, 3]
+
+
+def view_shift_hist(shift):
+    """
+        View histograms for shift array.
+    Args:
+        shift: Shift array for subvolumes.
+    """
+
+    shift_abs = np.linalg.norm(shift, axis=-1)
+
+    plt.subplot(2, 2, 1)
+    plt.hist(np.reshape(shift_abs, 400), 100)
+    plt.vlines(x=np.median(shift_abs), ymin=0, ymax=200, colors='y', linestyles='dotted')
+    plt.vlines(x=np.median(shift_abs) - 2 * stats.iqr(shift_abs), ymin=0, ymax=200, color='red')
+    plt.vlines(x=np.median(shift_abs) + 2 * stats.iqr(shift_abs), ymin=0, ymax=200, color='red')
+    plt.title(label='Histogram of absolute value of the shifts. Median = ' + str(np.median(shift_abs)) + '. IQR = ' +
+                    str(stats.iqr(shift_abs)))
+
+    plt.subplot(2, 2, 2)
+    plt.hist(np.reshape(shift, (400, 3))[:, 0], 100)
+    plt.vlines(x=np.median(shift[:, :, :, 0]), ymin=0, ymax=200, colors='y', linestyles='dotted')
+    plt.vlines(x=np.median(shift[:, :, :, 0]) - 2 * stats.iqr(shift[:, :, :, 0]), ymin=0, ymax=200, color='red')
+    plt.vlines(x=np.median(shift[:, :, :, 0]) + 2 * stats.iqr(shift[:, :, :, 0]), ymin=0, ymax=200, color='red')
+    plt.title(label='Histogram of the y shifts. Median = ' + str(np.median(shift[:, :, :, 0])) + '. IQR = ' +
+                    str(stats.iqr(shift[:, :, :, 0])))
+
+    plt.subplot(2, 2, 3)
+    plt.hist(np.reshape(shift, (400, 3))[:, 1], 100)
+    plt.vlines(x=np.median(shift[:, :, :, 1]), ymin=0, ymax=200, colors='y', linestyles='dotted')
+    plt.vlines(x=np.median(shift[:, :, :, 1]) - 2 * stats.iqr(shift[:, :, :, 1]), ymin=0, ymax=200, color='red')
+    plt.vlines(x=np.median(shift[:, :, :, 1]) + 2 * stats.iqr(shift[:, :, :, 1]), ymin=0, ymax=200, color='red')
+    plt.title(label='Histogram of the y shifts. Median = ' + str(np.median(shift[:, :, :, 1])) + '. IQR = ' +
+                    str(stats.iqr(shift[:, :, :, 1])))
+
+    plt.subplot(2, 2, 4)
+    plt.hist(np.reshape(shift, (400, 3))[:, 2], 100)
+    plt.vlines(x=np.median(shift[:, :, :, 2]), ymin=0, ymax=200, colors='y', linestyles='dotted')
+    plt.vlines(x=np.median(shift[:, :, :, 2]) - 2 * stats.iqr(shift[:, :, :, 2]), ymin=0, ymax=200, color='red')
+    plt.vlines(x=np.median(shift[:, :, :, 2]) + 2 * stats.iqr(shift[:, :, :, 2]), ymin=0, ymax=200, color='red')
+    plt.title(label='Histogram of the y shifts. Median = ' + str(np.median(shift[:, :, :, 2])) + '. IQR = ' +
+                    str(stats.iqr(shift[:, :, :, 2])))
+
+    plt.show()
 
 
 nb = Notebook('//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v5_24NOV22\output/notebook.npz',
