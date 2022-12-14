@@ -5,13 +5,14 @@ from tqdm import tqdm
 from scipy import stats
 from skimage.registration import phase_cross_correlation
 from skimage.filters import sobel
+from skimage.exposure import match_histograms
 from sklearn.linear_model import RANSACRegressor
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
-matplotlib.use('MacOSX')
+matplotlib.use('Qt5Agg')
 
 
-def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes):
+def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
     """
     Splits a 3D image into y_subvolumes * x_subvolumes * z_subvolumes subvolumes.
 
@@ -28,29 +29,39 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes):
 
     Returns
     -------
-    subvolumes : ndarray
+    subvolume : ndarray
         An array of subvolumes. The first three dimensions index the subvolume, the rest store the actual data.
-    positions: ndarray
+    position: ndarray
         (y_subvolumes * x_subvolumes * z_sub_volumes) The middle coord of each subtile
     """
+    z_image, y_image, x_image = image.shape
 
-    # Calculate the size of each subvolume in each dimension
-    z_size = int(image.shape[0] / z_subvolumes)
-    y_size = int(image.shape[1] / y_subvolumes)
-    x_size = int(image.shape[2] / x_subvolumes)
+    # Allow 0.5 of a box either side and then split the middle with subvols evenly spaced points, ie into subvols - 1
+    # intervals. Then use integer division. e.g actual unit distance is 12.5, this gives a unit distance of 12 so
+    # should never overshoot
+    z_unit = (z_image - z_box) // (z_subvolumes - 1)
+    y_unit = (y_image - y_box) // (y_subvolumes - 1)
+    x_unit = (x_image - x_box) // (x_subvolumes - 1)
 
     # Create an array to store the subvolumes in
-    subvolumes = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, z_size, y_size, x_size))
-    positions = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
+    subvolume = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box))
+
+    # Create an array to store the positions in
+    position = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
 
     # Split the image into subvolumes and store them in the array
     for z in range(z_subvolumes):
         for y in range(y_subvolumes):
             for x in range(x_subvolumes):
-                subvolumes[z, y, x] = image[ z * z_size:(z + 1) * z_size, y * y_size:(y + 1) * y_size, x * x_size:(x + 1) * x_size]
-                positions[z, y, x] = [(z + 1/2) * z_size, (y + 1/2) * y_size, (x + 1/2) * x_size]
+                z_centre, y_centre, x_centre = z_box//2 + z * z_unit, y_box//2 + y * y_unit, x_box//2 + x * x_unit
+                z_start, z_end = z_centre - z_box//2, z_centre + z_box//2
+                y_start, y_end = y_centre - y_box//2, y_centre + y_box//2
+                x_start, x_end = x_centre - x_box//2, x_centre + x_box//2
 
-    return subvolumes, positions
+                subvolume[z, y, x] = image[z_start:z_end, y_start:y_end, x_start:x_end]
+                position[z, y, x] = np.array([(z_start + z_end)//2, (y_start + y_end)//2, (x_start + x_end)//2])
+
+    return subvolume, position
 
 
 def find_shift_array(subvol_base, subvol_target):
@@ -80,7 +91,8 @@ def find_shift_array(subvol_base, subvol_target):
     return shift
 
 
-def find_random_shift_array(base_image, target_image, num_samples, z_box_size, y_box_size, x_box_size):
+def find_random_shift_array(base_image, target_image, num_samples, z_box_size, y_box_size, x_box_size,
+                            boundary_erosion_yx, boundary_erosion_z):
     """
     This function takes in 2 images and finds num_samples random boxes uniformly across the target_image, each of size
     z_box, y_box, x_box. The corresponding box is found in the base image and the shift between these computed with
@@ -93,6 +105,8 @@ def find_random_shift_array(base_image, target_image, num_samples, z_box_size, y
         z_box_size: The z-dimension of the random boxes
         y_box_size: The y-dimension of the random boxes
         x_box_size: The x-dimension of the random boxes
+        boundary_origin_yx: The number of pixels we slice off at the boundaries in yx
+        boundary_erosion_z: Number of pixels we slice off at the boundaries in z
 
     Returns:
         shift: num_samples x 3 array of shift in zyx coords
@@ -104,8 +118,9 @@ def find_random_shift_array(base_image, target_image, num_samples, z_box_size, y
     z_image_size, y_image_size, x_image_size = base_image.shape
 
     for i in range(num_samples):
-        origin = np.array([np.random.randint(z_image_size - z_box_size), np.random.randint(y_image_size - y_box_size),
-                           np.random.randint(x_image_size - x_box_size)])
+        origin = np.array([np.random.randint(boundary_erosion_z, z_image_size - z_box_size - boundary_erosion_z),
+                           np.random.randint(boundary_erosion_yx, y_image_size - y_box_size - boundary_erosion_yx),
+                           np.random.randint(boundary_erosion_yx, x_image_size - x_box_size - boundary_erosion_yx)])
         position[i] = origin + np.array([z_box_size, y_box_size, x_box_size])/2
         random_base = base_image[origin[0]:origin[0] + z_box_size, origin[1]:origin[1] + y_box_size,
                       origin[2]:origin[2] + x_box_size]
@@ -149,14 +164,20 @@ def find_affine_transform_robust(shift, position):
     """
     Uses RANSAC to find optimal affine transform matching the shifts to their positions.
     Args:
-        shift: n_samples x 3 array which of shifts in zyx format
-        position: n_samples x 3 array which of positions in zyx format
+        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
 
     Returns:
         transform: 3 x 4 affine transform in yxz format with final col being shift
     """
+    z_subvols, y_subvols, x_subvols = shift.shape[:3]
+
     # Define the regressor
-    ransac = RANSACRegressor()
+    ransac = RANSACRegressor(min_samples=50)
+
+    # Convert shift and position arrays into 2D array
+    shift = shift.reshape(z_subvols * y_subvols * x_subvols, 3)
+    position = position.reshape(z_subvols * y_subvols * x_subvols, 3)
 
     ransac.fit(position, shift)
 
@@ -165,12 +186,13 @@ def find_affine_transform_robust(shift, position):
     return transform
 
 
-def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
+def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
     """
     Registration pipeline. Returns register Notebook Page.
     Args:
         nbp_basic: (NotebookPage) Basic Info notebook page
         nbp_file: (NotebookPage) File Names notebook page
+        match_hist: (Bool) Optional, Use histogram matching. Default = False.
 
     Returns:
         nbp: (NotebookPage) Register notebook page
@@ -192,10 +214,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
     # their shifts using a phase cross correlation algorithm. We then use a phase cross correlation algorithm to
     # find the shift from each of these cuboids to its corresponding cuboid in the target image.
     # We then use a robust regression algorithm (RANSAC) to find the affine transform that best fits these shifts.
-    round_shift = np.zeros((n_tiles, n_rounds, 500, 3))
-    round_position = np.zeros((n_tiles, n_rounds, 500, 3))
-    channel_shift = np.zeros((n_tiles, n_channels, 500, 3))
-    channel_position = np.zeros((n_tiles, n_channels, 500, 3))
+    round_shift = []
+    round_position = []
+    channel_shift = []
+    channel_position = []
 
     with tqdm(total=1 * (n_rounds + len(use_channels))) as pbar:
         pbar.set_description(f"Inter Round and Inter Channel Transforms")
@@ -203,43 +225,85 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage):
         for t in use_tiles:
             # Load in the anchor npy volume, only need to do this once per tile
             anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+            # Software was written for z y x, so change it from y x z
+            anchor_image = np.swapaxes(anchor_image, 0, 2)
+            anchor_image = np.swapaxes(anchor_image, 1, 2)
             for r in use_rounds:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
                 # Load in imaging npy volume.
                 target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
+                target_image = np.swapaxes(target_image, 0, 2)
+                target_image = np.swapaxes(target_image, 1, 2)
 
-                # next we generate random cuboids from each of these images and obtain our shift arrays
-                round_shift[t, r], round_position[t, r] = find_random_shift_array(anchor_image, target_image, 500, 10,
-                                                                                  200, 200)
+                # next we split image into overlapping cuboids
+                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
+                                                       z_box=12, y_box=300, x_box=300)
+                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
+                                                  z_box=12, y_box=300, x_box=300)
+
+                # Find the subvolume shifts
+                shift = find_shift_array(subvol_base, subvol_target)
+
+                # Append these arrays to the round_shift and round_position storage
+                round_shift.append(shift)
+                round_position.append(position)
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
                 # (t, r, c_ref)
-                round_transform[t, r] = find_affine_transform_robust(round_shift[t,r], round_position[t,r])
+                round_transform[t, r] = find_affine_transform_robust(shift, position)
                 pbar.update(1)
 
             # Begin the channel transformation calculations. This requires us to use a central round.
             r = n_rounds // 2
-            ref_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
+            ref_image = load_tile(nbp_file, nbp_basic, t, r, c_ref)
+            ref_image = np.swapaxes(ref_image, 0, 2)
+            ref_image = np.swapaxes(ref_image, 1, 2)
+            # Remove reference channel from comparison
+            use_channels.remove(c_ref)
             for c in use_channels:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
-                target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c))
+                target_image = load_tile(nbp_file, nbp_basic, t, r, c)
+                target_image = np.swapaxes(target_image, 0, 2)
+                target_image = np.swapaxes(target_image, 1, 2)
 
-                # next we generate random cuboids from each of these images and obtain our shift arrays
-                channel_shift[t, c], channel_position[t, c] = find_random_shift_array(anchor_image, target_image, 500,
-                                                                                      10, 200, 200)
+                if match_hist:
+                    # Match histogram of the target image to reference image
+                    target_image = match_histograms(target_image, ref_image)
+
+                # Sobel filter both of these
+                ref_image = sobel(ref_image)
+                target_image = sobel(target_image)
+
+                # next we split image into overlapping cuboids
+                subvol_base, position = split_3d_image(image=ref_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
+                                                       z_box=12, y_box=300, x_box=300)
+                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
+                                                  z_box=12, y_box=300, x_box=300)
+
+                # Find the subvolume shifts
+                shift = find_shift_array(subvol_base, subvol_target)
+
+                # Append these arrays to the round_shift and round_position storage
+                channel_shift.append(shift)
+                channel_position.append(position)
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
                 # (t, r, c)
-                channel_transform[t, c] = find_affine_transform_robust(channel_shift[t, c], channel_position[t, c])
+                channel_transform[t, c] = find_affine_transform_robust(shift, position)
                 pbar.update(1)
 
+            # Add reference channel back to use_channels
+            use_channels.append(c_ref)
             # Combine all transforms
             for r in use_rounds:
                 for c in use_channels:
-                    # Next we need to compose these affine transforms.
+                    # Next we need to compose these affine transforms. Remember, affine transforms cannot be composed
+                    # by simple matrix multiplication
                     transform[t, r, c] = channel_transform[t, c, :3, :3] @ round_transform[t, r] + \
-                                         channel_transform[t, c, :, 3]
+                                         np.hstack((np.zeros((3, 3)), (channel_transform[t, c, :, 3])[:, np.newaxis]))
+
+    return transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position
 
 
 def view_shift_hist(shift):
@@ -398,7 +462,7 @@ def view_shift_scatter(shift, position, z_box, y_box, x_box, alpha = 1.0, score 
 
 
 def view_shift_scatter_multivariate(shift, position, z_box, y_box, x_box, alpha = 1.0, score = None, save_robust_regression = False,
-                       view_robust_regression = False):
+                                    view_robust_regression = False):
     """
         Function which shows the regression in x, y and z. Works similarly to view_shift_scatter but now regression is
         done in 3D instead of independently.
@@ -511,14 +575,14 @@ def view_shift_scatter_multivariate(shift, position, z_box, y_box, x_box, alpha 
                                                                      ransac.estimator_.intercept_[2]])
 
 
-def view_robust_custom_regressor(X: np.ndarray, Y: np.ndarray, z_box, y_box, x_box, num_pairs = None, alpha = 1.0,
-                            save_robust_regression = False, view_robust_regression = False):
+def view_robust_custom_regressor(X: np.ndarray, Y: np.ndarray, z_box, y_box, x_box, bins, num_pairs=None, alpha = 1.0,
+                                 save_robust_regression=False, view_robust_regression=False):
     """
     Robust regression algorithm for inputs X (num_samples * num_features) and Y (num_responses * num_features).
     This assumes a diagonal affine relation relating Y and X. So need num_samples = num_response.
     Args:
-        X: input data (n_samples, n_features)
-        Y: output data (n_responses, n_features)
+        X: input data (z_subvols, y_subvols, x_subvols, positions)
+        Y: output data (z_subvols, y_subvols, x_subvols, shifts)
         num_pairs: Number of pairs to randomly select. If left blank, we'll simply pick all pairs.
 
     Returns:
@@ -535,81 +599,85 @@ def view_robust_custom_regressor(X: np.ndarray, Y: np.ndarray, z_box, y_box, x_b
     intercept = np.zeros((num_pairs, num_features))
 
     # Now randomly select num_pairs pairs and compute the scales and intercepts
-    for i in range(num_pairs):
+    i = 0
+    while i < num_pairs:
         # Generate random indices
-        index1 = np.random.randint(0,num_samples)
-        index2 = np.random.randint(0,num_samples)
+        index1 = np.random.randint(0, num_samples)
+        index2 = np.random.randint(0, num_samples)
         # Use this to generate scales and intercepts
-        scale[i] = (Y[index2] - Y[index1])/(X[index2] - X[index1])
-        intercept[i] = Y[index1] - scale[i] * X[index1]
+        # I think that shifts are given as 0,0,0 if they don't pass a certain threshold, so let's remove these and see
+        # Also, let's remove points too close together and boundary points
+        in_range_1 = (5 < X[index1, 0] < 60) * (300 < X[index1, 1] < 2000) * (300 < X[index1, 2] < 2000)
+        in_range_2 = (5 < X[index2, 0] < 60) * (300 < X[index2, 1] < 2000) * (300 < X[index2, 2] < 2000)
+        if min(abs(Y[index1]*Y[index2])) > 0 and abs(X[index1, 1] - X[index2, 1]) > 250 \
+                and abs(X[index1, 2] - X[index2, 2]) > 250 and abs(X[index1, 0] - X[index2, 0]) > 10 \
+                and in_range_1 * in_range_2:
+            scale[i] = np.ones(3) + (Y[index2] - Y[index1])/(X[index2] - X[index1])
+            intercept[i] = Y[index1] - (scale[i] - 1) * X[index1]
+            i += 1
 
-    median_scale = np.nanmedian(scale,axis=0)
-    iqr_scale = stats.iqr(scale, axis=0,nan_policy='omit')
+    median_scale = np.nanmedian(scale, axis=0)
+    iqr_scale = stats.iqr(scale, axis=0, nan_policy='omit')
     median_intercept = np.nanmedian(intercept, axis=0)
-    iqr_intercept = stats.iqr(intercept, axis=0,nan_policy='omit')
-
+    iqr_intercept = stats.iqr(intercept, axis=0, nan_policy='omit')
 
     # Now plot the histograms and scatter plots.
     # First, histograms
-    plt.subplot(3,3,1)
-    s1, t1, _ = plt.hist((scale[:, 0]+1)[abs(scale[:,0])<np.inf],bins=1000,
-                         range=(median_scale[0]-iqr_scale[0],median_scale[0]+iqr_scale[0]))
-    plt.vlines(x=t1[np.argmax(s1)],ymin=0,ymax=np.max(s1),colors='r',label='Scale='+str(t1[np.argmax(s1)]))
-    plt.legend(loc='upper right', prop={'size': 6})
+    plt.subplot(3, 3, 1)
+    s1, t1, _ = plt.hist(scale[:, 0], bins=bins,
+                         range=(median_scale[0]-iqr_scale[0], median_scale[0]+iqr_scale[0]))
+    plt.vlines(median_scale[0], 0, s1.max(), label='Scale z')
+    plt.legend(loc='upper right', prop={'size': 10})
     plt.title('Histogram of scale factors for the z-component')
 
-    plt.subplot(3,3,4)
-    s4, t4, _ = plt.hist((scale[:, 1]+1)[abs(scale[:,1])<np.inf],bins=1000,
+    plt.subplot(3, 3, 4)
+    s4, t4, _ = plt.hist(scale[:, 1], bins=bins,
                          range=(median_scale[1]-iqr_scale[1],median_scale[1]+iqr_scale[1]))
-    plt.vlines(x=t4[np.argmax(s4)],ymin=0,ymax=np.max(s4),colors='r',label='Scale='+str(t4[np.argmax(s4)]))
-    plt.legend(loc='upper right', prop={'size': 6})
+    plt.vlines(median_scale[1], 0, s4.max(), label='Scale y')
+    plt.legend(loc='upper right', prop={'size': 10})
     plt.title('Histogram of scale factors for the y-component')
 
-
     plt.subplot(3,3,7)
-    s7, t7, _ = plt.hist((scale[:, 2]+1)[abs(scale[:,2])<np.inf],bins=1000,
+    s7, t7, _ = plt.hist(scale[:, 2], bins=bins,
                          range=(median_scale[2] - iqr_scale[2], median_scale[2] + iqr_scale[2]))
-    plt.vlines(x=t7[np.argmax(s7)],ymin=0,ymax=np.max(s7),colors='r',label='Scale='+str(t7[np.argmax(s7)]))
-    plt.legend(loc='upper right', prop={'size': 6})
+    plt.vlines(median_scale[2], 0, s7.max(), label='Scale x')
+    plt.legend(loc='upper right', prop={'size': 10})
     plt.title('Histogram of scale factors for the x-component')
 
     plt.subplot(3, 3, 2)
-    s2, t2, _ = plt.hist((intercept[:, 0])[abs(intercept[:,0])<np.inf], bins=1000,
+    s2, t2, _ = plt.hist(intercept[:, 0], bins=bins,
                          range=(median_intercept[0]-iqr_intercept[0],median_intercept[0]+iqr_intercept[0]))
-    plt.vlines(x=t2[np.argmax(s2)],ymin=0,ymax=np.max(s2),colors='r',label='Scale='+str(t2[np.argmax(s2)]))
-    plt.legend(loc='upper right', prop={'size': 6})
+    plt.vlines(median_intercept[0], 0, s2.max(), label='Intecept z')
+    plt.legend(loc='upper right', prop={'size': 10})
     plt.title('Histogram of intercepts (shifts) for the z-component')
 
     plt.subplot(3, 3, 5)
-    s5, t5, _ = plt.hist((intercept[:, 1])[abs(intercept[:,1])<np.inf], bins=1000,
+    s5, t5, _ = plt.hist(intercept[:, 1], bins=bins,
                          range=(median_intercept[1]-iqr_intercept[1],median_intercept[1]+iqr_intercept[1]))
-    plt.vlines(x=t5[np.argmax(s5)],ymin=0,ymax=np.max(s5),colors='r',label='Scale='+str(t5[np.argmax(s5)]))
-    plt.legend(loc='upper right', prop={'size': 6})
+    plt.vlines(median_intercept[1], 0, s5.max(), label='Intecept y')
+    plt.legend(loc='upper right', prop={'size': 10})
     plt.title('Histogram of intercepts (shifts) for the y-component')
 
     plt.subplot(3, 3, 8)
-    s8, t8, _ = plt.hist((intercept[:, 2])[abs(intercept[:,2])<np.inf],bins=1000,
+    s8, t8, _ = plt.hist(intercept[:, 2], bins=bins,
                          range=(median_intercept[2]-iqr_intercept[2],median_intercept[2]+iqr_intercept[2]))
-    plt.vlines(x=t8[np.argmax(s8)],ymin=0,ymax=np.max(s8),colors='r',label='Scale='+str(t8[np.argmax(s8)]))
-    plt.legend(loc='upper right', prop={'size': 6})
+    plt.vlines(median_intercept[2], 0, s8.max(), label='Intecept x')
+    plt.legend(loc='upper right', prop={'size': 10})
     plt.title('Histogram of intercepts (shifts) for the x-component')
-
-    scale_guess = np.zeros(3)
-    intercept_guess = np.zeros(3)
 
     #  Now the scatter plots
     plt.subplot(3, 3, 3)
-    plt.plot(X[:,0], (scale_guess[0] - 1) * X[:,0] + intercept_guess[0])
+    plt.plot(X[:,0], (median_scale[0] -1) * X[:, 0] + median_intercept[0])
     plt.scatter(X[:, 0], Y[:, 0], alpha=alpha, c='blue')
     plt.title('z shifts against z positions')
 
     plt.subplot(3, 3, 6)
-    plt.plot(X[:,1], (scale_guess[1] - 1) * X[:,1] + intercept_guess[1])
+    plt.plot(X[:, 1], (median_scale[1] - 1) * X[:, 1] + median_intercept[1])
     plt.scatter(X[:, 1], Y[:, 1], alpha=alpha, c='blue')
     plt.title('y shifts against y positions')
 
     plt.subplot(3, 3, 9)
-    plt.plot(X[:,2], (scale_guess[2] - 1) * X[:,2] + intercept_guess[2])
+    plt.plot(X[:, 2], (median_scale[2] - 1) * X[:, 2] + median_intercept[2])
     plt.scatter(X[:, 2], Y[:, 2], alpha=alpha, c='blue')
     plt.title('x shifts against x positions')
 
@@ -629,7 +697,10 @@ def view_robust_custom_regressor(X: np.ndarray, Y: np.ndarray, z_box, y_box, x_b
     if view_robust_regression:
         plt.show()
 
-    return scale_guess, intercept_guess
+    best_scale = np.array([t1[np.argmax(s1)], t4[np.argmax(s4)], t7[np.argmax(s7)]])
+    best_shift = np.array([t2[np.argmax(s2)], t5[np.argmax(s5)], t8[np.argmax(s8)]])
+
+    return best_scale, best_shift
 
 
 def view_random_cuboids(num_samples: int, target_image: np.ndarray, base_image: np.ndarray, z_box_size: int, y_box_size: int,
@@ -686,10 +757,37 @@ def view_random_cuboids(num_samples: int, target_image: np.ndarray, base_image: 
 # (t, r, c_ref)
 # transform = find_affine_transform_robust(shift, position)
 
-# nb = Notebook('//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v5_24NOV22\output/notebook.npz',
-#               'C:/Users\Reilly\Desktop\Sample Notebooks\Christina/New Registration Test/E-2210-001_CP_settings_v3_22NOV22.ini')
-# register(nbp_basic=nb.basic_info, nbp_file=nb.file_names)
+# Load in notebook
+# nb = Notebook("//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v6_1tile_28NOV22\output/notebook_1tile.npz",
+#               "C:/Users\Reilly\Desktop\E-2210-001_CP_1tile_v6_settings.ini")
 
+# Run first with no histogram matching
+# transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
+#     register(nb.basic_info, nb.file_names, False)
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_position.npy', np.array(channel_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_shift.npy', np.array(channel_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_transform.npy', np.array(channel_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_position.npy', np.array(round_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_shift.npy', np.array(round_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_transform.npy', np.array(round_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/transform.npy', np.array(transform))
+#
+# Run second with histogram matching
+# transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
+#     register(nb.basic_info, nb.file_names, True)
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/channel_position.npy', np.array(channel_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/channel_shift.npy', np.array(channel_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/channel_transform.npy', np.array(channel_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_position.npy', np.array(round_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_shift.npy', np.array(round_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_transform.npy', np.array(round_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/transform.npy', np.array(transform))
+
+anchor_image = sobel(np.load('C:/Users/Reilly/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
+r0c23_image = sobel(np.load('C:/Users/Reilly/Desktop/Tile 0/round_Cp_r0_t0c23.npy'))
+shift, pos = find_random_shift_array(anchor_image, r0c23_image, 1000, 10, 400, 400, 200, 5)
+view_robust_custom_regressor(pos, shift, 10, 400, 400, 100, int(1e6), alpha=0.3, save_robust_regression=False,
+                             view_robust_regression=True)
 # shift = np.zeros((5, 4, 4, 3))
 # scale = np.zeros((5, 4, 4, 3))
 # sample = [100, 200, 300, 500, 1000]
@@ -708,3 +806,4 @@ def view_random_cuboids(num_samples: int, target_image: np.ndarray, base_image: 
 # np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/scale.npy', scale)
 #
 # print('Hello')
+
