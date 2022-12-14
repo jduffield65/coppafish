@@ -9,7 +9,7 @@ from skimage.exposure import match_histograms
 from sklearn.linear_model import RANSACRegressor
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
-matplotlib.use('Qt5Agg')
+matplotlib.use('MacOSX')
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -131,35 +131,6 @@ def find_random_shift_array(base_image, target_image, num_samples, z_box_size, y
     return shift, position
 
 
-def find_affine_transform(shift, position):
-    """
-    Function which finds the best affine transform taking coords position[z,y,x] to position[z,y,x] + shift[z,y,x] for
-    all subvolumes [z,y,x].
-    Args:
-        shift:(z_subvolumes * y_subvolumes * x_subvolumes * 3) array of shifts
-        position: (z_subvolumes * y_subvolumes * x_subvolumes * 3) array of positions of base points
-
-    Returns:
-        transform: (3 x 4) Best affine transform fitting the transform.
-    """
-
-    # First, pad the position array
-    position = np.pad(position, ((0, 0), (0, 0), (0, 0), (0, 1)), constant_values=1)
-
-    # Now, get rid of outliers in the shifts
-    shift_abs = np.linalg.norm(shift, axis=3)
-    use = (np.median(shift_abs) - stats.iqr(shift_abs) < shift_abs) * \
-          (shift_abs < np.median(shift_abs) + stats.iqr(shift_abs))
-
-    # Complete regression on shifts that we intend to use
-    omega_t = np.linalg.lstsq(position[use], shift[use])
-
-    # Compute the transform from the regression matrix
-    transform = omega_t[0].T + np.pad(np.eye(3), ((0, 0), (0, 1)))
-
-    return transform
-
-
 def find_affine_transform_robust(shift, position):
     """
     Uses RANSAC to find optimal affine transform matching the shifts to their positions.
@@ -184,6 +155,128 @@ def find_affine_transform_robust(shift, position):
     transform = np.hstack((ransac.estimator_.coef_ + np.eye(3), ransac.estimator_.intercept_[:, np.newaxis]))
 
     return transform
+
+
+def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_erosion, image_dims, dist_thresh,
+                                        resolution):
+    """
+    Uses a custom Theil-Stein variant to find optimal affine transform matching the shifts to their positions.
+    Args:
+        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        num_pairs: Number of pairs to consider. Must be in range [0, num_samples choose 2]
+        boundary_erosion: 3 x 1 array of z, y, x boundary erosion terms
+        image_dims: 3 x 1 array of z, y, x image dims
+        dist_thresh 3 x 1 array of distance thresholds of z, y and x points that pairs of points must be apart if
+        we use them in the algorithm
+    Returns:
+        transform: 3 x 4 affine transform in yxz format with final col being shift
+    """
+
+    # Initialise returned variable
+    transform = np.zeros((3, 4))
+
+    # Ensure that num_pairs is an integer and all inputted arrays are ndarrays
+    num_pairs = int(num_pairs)
+    boundary_erosion = np.array(boundary_erosion)
+    image_dims = np.array(image_dims)
+    dist_thresh = np.array(dist_thresh)
+    z_subvols, y_subvols, x_subvols = shift.shape[:3]
+    scale = np.zeros((num_pairs, 3))
+    intercept = np.zeros((num_pairs, 3))
+
+    # Now start looping through pairs of shifts randomly, subject to following constraints:
+    # Exclude [0, 0, 0] shifts as these are only returned when the program fails to find a shift
+    # Exclude shifts too close together, as these have too low a resolution to detect a difference
+    # Exlude shifts too close to boundary
+    i = 0
+    while i < num_pairs:
+        # Generate random indices
+        z1, y1, x1 = np.random.randint(0, z_subvols), np.random.randint(0, y_subvols), np.random.randint(0, x_subvols)
+        z2, y2, x2 = np.random.randint(0, z_subvols), np.random.randint(0, y_subvols), np.random.randint(0, x_subvols)
+        # Use this to generate scales and intercepts
+        in_range = (boundary_erosion < position[z1, y1, x1] < image_dims - boundary_erosion) * \
+                   (boundary_erosion < position[z2, y2, x2] < image_dims - boundary_erosion)
+        both_shifts_nonzero = np.min(shift[z1, y1, x1] * shift[z2, y2, x2]) > 0
+        points_sufficiently_far = abs(position[z1, y1, x1] - position[z2, y2, x2]) > dist_thresh
+        if in_range and both_shifts_nonzero and points_sufficiently_far:
+            scale[i] = np.ones(3) + (shift[z2, y2, x2] - shift[z1, y1, x1]) / (position[z2, y2, x2] - position[z1, y1, x1])
+            intercept[i] = shift[z1, y1, x1] - (scale[i] - 1) * position[z1, y1, x1]
+            i += 1
+
+    # Now that we have these randomly sampled scales and intercepts, let's robustly estimate their parameters
+    scale_median, scale_iqr = np.median(scale, axis=0), stats.iqr(scale, axis=0)
+    intercept_median, intercept_iqr = np.median(intercept, axis=0), stats.iqr(intercept, axis=0)
+
+    # Now create histograms within 1 IQR of each median and take the top value as our estimate
+    scale_bin_z_val, scale_bin_z_index, _ = plt.hist(scale[:, 0], bins=resolution,
+                                                     range=(
+                                                     scale_median[0] - scale_iqr[0], scale_median[0] + scale_iqr[0]))
+    scale_bin_y_val, scale_bin_y_index, _ = plt.hist(scale[:, 1], bins=resolution,
+                                                     range=(
+                                                     scale_median[1] - scale_iqr[1], scale_median[1] + scale_iqr[1]))
+    scale_bin_x_val, scale_bin_x_index, _ = plt.hist(scale[:, 2], bins=resolution,
+                                                     range=(
+                                                     scale_median[2] - scale_iqr[2], scale_median[2] + scale_iqr[2]))
+    intercept_bin_z_val, intercept_bin_z_index, _ = plt.hist(scale[:, 0], bins=resolution,
+                                                     range=(intercept_median[0] - intercept_iqr[0],
+                                                            intercept_median[0] + intercept_iqr[0]))
+    intercept_bin_y_val, intercept_bin_y_index, _ = plt.hist(scale[:, 1], bins=resolution,
+                                                             range=(intercept_median[1] - intercept_iqr[1],
+                                                                    intercept_median[1] + intercept_iqr[1]))
+    intercept_bin_x_val, intercept_bin_x_index, _ = plt.hist(scale[:, 2], bins=resolution,
+                                                             range=(intercept_median[2] - intercept_iqr[2],
+                                                                    intercept_median[2] + intercept_iqr[2]))
+
+    # Finally, obtain our estimates
+    scale_estimate = np.array([scale_bin_z_index[scale_bin_z_val.arg_max()],
+                               scale_bin_y_index[scale_bin_y_val.arg_max()],
+                               scale_bin_x_index[scale_bin_x_val.arg_max()]])
+    intercept_estimate = np.array([intercept_bin_z_index[intercept_bin_z_val.arg_max()],
+                                   intercept_bin_y_index[intercept_bin_y_val.arg_max()],
+                                   intercept_bin_x_index[intercept_bin_x_val.arg_max()]])
+
+    # Populate the transform array
+    np.fill_diagonal(transform, scale_estimate)
+    transform[:, 3] = intercept_estimate
+
+    return transform
+
+
+def compose_affine(A1, A2):
+    """
+    Function to compose 2 affine transfroms
+    Args:
+        A1: 3 x 4 affine transform
+        A2: 3 x 4 affine transform
+    Returns:
+        A1 * A2: Composed Affine transform
+    """
+    # Add Final row, compose and then get rid of final row
+    A1 = np.vstack((A1, np.array([0, 0, 0, 1])))
+    A2 = np.vstack((A2, np.array([0, 0, 0, 1])))
+
+    composition = (A1 @ A2)[:3, :4]
+
+    return composition
+
+
+def invert_affine(A):
+    """
+    Function to invert affine transform.
+    Args:
+        A: 3 x 4 affine transform
+
+    Returns:
+        inverse: 3 x 4 affine inverse transform
+    """
+    inverse = np.zeros((3, 4))
+
+    inverse[:3, :3] = np.linalg.inv(A[:3, :3])
+    inverse[:, 4] = -np.linalg.inv(A[:3, :3]) @ A[:, 4]
+    inverse[3, 4] = 1
+
+    return inverse
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
@@ -250,7 +343,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
                 # (t, r, c_ref)
-                round_transform[t, r] = find_affine_transform_robust(shift, position)
+                round_transform[t, r] = find_affine_transform_robust_custom(shift=shift, position=position,
+                                                                            num_pairs=1e5, boundary_erosion=[5,200,200],
+                                                                            image_dims=anchor_image.shape,
+                                                                            dist_thresh=[5,200,200], resolution=50)
                 pbar.update(1)
 
             # Begin the channel transformation calculations. This requires us to use a central round.
@@ -290,7 +386,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
                 # (t, r, c)
-                channel_transform[t, c] = find_affine_transform_robust(shift, position)
+                aux_transform = find_affine_transform_robust_custom(shift=shift, position=position,
+                                                                    num_pairs=1e5,
+                                                                    boundary_erosion=[5, 200, 200],
+                                                                    image_dims=anchor_image.shape,
+                                                                    dist_thresh=[5, 200, 200], resolution=50)
+                # Now correct for the round shift to get a round independent affine transform
+                channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r]))
                 pbar.update(1)
 
             # Add reference channel back to use_channels
@@ -783,11 +885,12 @@ def view_random_cuboids(num_samples: int, target_image: np.ndarray, base_image: 
 # np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_transform.npy', np.array(round_transform))
 # np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/transform.npy', np.array(transform))
 
-anchor_image = sobel(np.load('C:/Users/Reilly/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
-r0c23_image = sobel(np.load('C:/Users/Reilly/Desktop/Tile 0/round_Cp_r0_t0c23.npy'))
-shift, pos = find_random_shift_array(anchor_image, r0c23_image, 1000, 10, 400, 400, 200, 5)
-view_robust_custom_regressor(pos, shift, 10, 400, 400, 100, int(1e6), alpha=0.3, save_robust_regression=False,
-                             view_robust_regression=True)
+# anchor_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
+# target_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c5.npy'))
+# anchor_subvolume, pos = split_3d_image(anchor_image, 5, 15, 15, 12, 300, 300)
+# target_subvolume, _ = split_3d_image(target_image, 5, 15, 15, 12, 300, 300)
+# shift = find_shift_array(subvol_base=anchor_subvolume, subvol_target=target_subvolume)
+# find_affine_transform_robust_custom(shift, pos, 1e5, [5,200,200], [64,2304,2304], [5,200,200], 100)
 # shift = np.zeros((5, 4, 4, 3))
 # scale = np.zeros((5, 4, 4, 3))
 # sample = [100, 200, 300, 500, 1000]
