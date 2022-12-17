@@ -1,4 +1,5 @@
 import matplotlib
+import napari
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -6,7 +7,6 @@ from scipy import stats
 from skimage.registration import phase_cross_correlation
 from skimage.filters import sobel
 from skimage.exposure import match_histograms
-from sklearn.linear_model import RANSACRegressor
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
 matplotlib.use('MacOSX')
@@ -91,74 +91,8 @@ def find_shift_array(subvol_base, subvol_target):
     return shift
 
 
-def find_random_shift_array(base_image, target_image, num_samples, z_box_size, y_box_size, x_box_size,
-                            boundary_erosion_yx, boundary_erosion_z):
-    """
-    This function takes in 2 images and finds num_samples random boxes uniformly across the target_image, each of size
-    z_box, y_box, x_box. The corresponding box is found in the base image and the shift between these computed with
-    a phase cross correlation algorithm.
-
-    Args:
-        base_image: Base image array
-        target_image: Target image array
-        num_samples: The number of random boxes we intend to create
-        z_box_size: The z-dimension of the random boxes
-        y_box_size: The y-dimension of the random boxes
-        x_box_size: The x-dimension of the random boxes
-        boundary_origin_yx: The number of pixels we slice off at the boundaries in yx
-        boundary_erosion_z: Number of pixels we slice off at the boundaries in z
-
-    Returns:
-        shift: num_samples x 3 array of shift in zyx coords
-        position: num_samples x 3 array of position of centre of box in zyx coords
-    """
-
-    position = np.zeros((num_samples, 3))
-    shift = np.zeros((num_samples, 3))
-    z_image_size, y_image_size, x_image_size = base_image.shape
-
-    for i in range(num_samples):
-        origin = np.array([np.random.randint(boundary_erosion_z, z_image_size - z_box_size - boundary_erosion_z),
-                           np.random.randint(boundary_erosion_yx, y_image_size - y_box_size - boundary_erosion_yx),
-                           np.random.randint(boundary_erosion_yx, x_image_size - x_box_size - boundary_erosion_yx)])
-        position[i] = origin + np.array([z_box_size, y_box_size, x_box_size])/2
-        random_base = base_image[origin[0]:origin[0] + z_box_size, origin[1]:origin[1] + y_box_size,
-                      origin[2]:origin[2] + x_box_size]
-        random_target = target_image[origin[0]:origin[0] + z_box_size, origin[1]:origin[1] + y_box_size,
-                        origin[2]:origin[2] + x_box_size]
-        shift[i], _, _ = phase_cross_correlation(random_target, random_base, upsample_factor=10)
-
-    return shift, position
-
-
-def find_affine_transform_robust(shift, position):
-    """
-    Uses RANSAC to find optimal affine transform matching the shifts to their positions.
-    Args:
-        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
-        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
-
-    Returns:
-        transform: 3 x 4 affine transform in yxz format with final col being shift
-    """
-    z_subvols, y_subvols, x_subvols = shift.shape[:3]
-
-    # Define the regressor
-    ransac = RANSACRegressor(min_samples=50)
-
-    # Convert shift and position arrays into 2D array
-    shift = shift.reshape(z_subvols * y_subvols * x_subvols, 3)
-    position = position.reshape(z_subvols * y_subvols * x_subvols, 3)
-
-    ransac.fit(position, shift)
-
-    transform = np.hstack((ransac.estimator_.coef_ + np.eye(3), ransac.estimator_.intercept_[:, np.newaxis]))
-
-    return transform
-
-
 def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_erosion, image_dims, dist_thresh,
-                                        resolution):
+                                        resolution, view=False):
     """
     Uses a custom Theil-Stein variant to find optimal affine transform matching the shifts to their positions.
     Args:
@@ -169,6 +103,8 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
         image_dims: 3 x 1 array of z, y, x image dims
         dist_thresh 3 x 1 array of distance thresholds of z, y and x points that pairs of points must be apart if
         we use them in the algorithm
+        Resolution: number of bins in histogram whose mode we return (range = median +/- iqr)
+        view: option to view the regression
     Returns:
         transform: 3 x 4 affine transform in yxz format with final col being shift
     """
@@ -195,11 +131,11 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
         z1, y1, x1 = np.random.randint(0, z_subvols), np.random.randint(0, y_subvols), np.random.randint(0, x_subvols)
         z2, y2, x2 = np.random.randint(0, z_subvols), np.random.randint(0, y_subvols), np.random.randint(0, x_subvols)
         # Use this to generate scales and intercepts
-        in_range = (boundary_erosion < position[z1, y1, x1] < image_dims - boundary_erosion) * \
-                   (boundary_erosion < position[z2, y2, x2] < image_dims - boundary_erosion)
+        in_range = (boundary_erosion < position[z1, y1, x1]) * (position[z1, y1, x1] < image_dims - boundary_erosion) * \
+                   (boundary_erosion < position[z2, y2, x2]) * (position[z2, y2, x2] < image_dims - boundary_erosion)
         both_shifts_nonzero = np.min(shift[z1, y1, x1] * shift[z2, y2, x2]) > 0
         points_sufficiently_far = abs(position[z1, y1, x1] - position[z2, y2, x2]) > dist_thresh
-        if in_range and both_shifts_nonzero and points_sufficiently_far:
+        if all(in_range) and both_shifts_nonzero and all(points_sufficiently_far):
             scale[i] = np.ones(3) + (shift[z2, y2, x2] - shift[z1, y1, x1]) / (position[z2, y2, x2] - position[z1, y1, x1])
             intercept[i] = shift[z1, y1, x1] - (scale[i] - 1) * position[z1, y1, x1]
             i += 1
@@ -218,23 +154,75 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
     scale_bin_x_val, scale_bin_x_index, _ = plt.hist(scale[:, 2], bins=resolution,
                                                      range=(
                                                      scale_median[2] - scale_iqr[2], scale_median[2] + scale_iqr[2]))
-    intercept_bin_z_val, intercept_bin_z_index, _ = plt.hist(scale[:, 0], bins=resolution,
-                                                     range=(intercept_median[0] - intercept_iqr[0],
-                                                            intercept_median[0] + intercept_iqr[0]))
-    intercept_bin_y_val, intercept_bin_y_index, _ = plt.hist(scale[:, 1], bins=resolution,
+    intercept_bin_z_val, intercept_bin_z_index, _ = plt.hist(intercept[:, 0], bins=resolution,
+                                                             range=(intercept_median[0] - intercept_iqr[0],
+                                                                    intercept_median[0] + intercept_iqr[0]))
+    intercept_bin_y_val, intercept_bin_y_index, _ = plt.hist(intercept[:, 1], bins=resolution,
                                                              range=(intercept_median[1] - intercept_iqr[1],
                                                                     intercept_median[1] + intercept_iqr[1]))
-    intercept_bin_x_val, intercept_bin_x_index, _ = plt.hist(scale[:, 2], bins=resolution,
+    intercept_bin_x_val, intercept_bin_x_index, _ = plt.hist(intercept[:, 2], bins=resolution,
                                                              range=(intercept_median[2] - intercept_iqr[2],
                                                                     intercept_median[2] + intercept_iqr[2]))
 
     # Finally, obtain our estimates
-    scale_estimate = np.array([scale_bin_z_index[scale_bin_z_val.arg_max()],
-                               scale_bin_y_index[scale_bin_y_val.arg_max()],
-                               scale_bin_x_index[scale_bin_x_val.arg_max()]])
-    intercept_estimate = np.array([intercept_bin_z_index[intercept_bin_z_val.arg_max()],
-                                   intercept_bin_y_index[intercept_bin_y_val.arg_max()],
-                                   intercept_bin_x_index[intercept_bin_x_val.arg_max()]])
+    scale_estimate = np.array([scale_bin_z_index[np.argmax(scale_bin_z_val)],
+                               scale_bin_y_index[np.argmax(scale_bin_y_val)],
+                               scale_bin_x_index[np.argmax(scale_bin_x_val)]])
+    intercept_estimate = np.array([intercept_bin_z_index[np.argmax(intercept_bin_z_val)],
+                                   intercept_bin_y_index[np.argmax(intercept_bin_y_val)],
+                                   intercept_bin_x_index[np.argmax(intercept_bin_x_val)]])
+
+    # Finally, build the viewer
+    if view:
+        plt.subplot(3, 2, 1)
+        plt.plot(scale_bin_z_index[:-1], scale_bin_z_val, 'b')
+        plt.vlines(scale_estimate[0], 0, np.max(scale_bin_z_val), colors='r',label='z-scale estimate='+
+                                                                                   str(np.round(scale_estimate[0], 5)))
+        plt.title('Histogram of z-scale estimates')
+        plt.legend()
+
+        plt.subplot(3, 2, 2)
+        plt.plot(intercept_bin_z_index[:-1], intercept_bin_z_val, 'g')
+        plt.vlines(intercept_estimate[0], 0, np.max(intercept_bin_z_val), colors='r', label='z-intercept estimate=' +
+                                                                        str(np.round(intercept_estimate[0], 5)))
+        plt.title('Histogram of z-intercept estimates')
+        plt.legend()
+
+        plt.subplot(3, 2, 3)
+        plt.plot(scale_bin_y_index[:-1], scale_bin_y_val, 'b')
+        plt.vlines(scale_estimate[1], 0, np.max(scale_bin_y_val), colors='r', label='y-scale estimate=' +
+                                                                                    str(np.round(scale_estimate[1],5)))
+        plt.title('Histogram of y-scale estimates')
+        plt.legend()
+
+        plt.subplot(3, 2, 4)
+        plt.plot(intercept_bin_y_index[:-1], intercept_bin_y_val, 'g')
+        plt.vlines(intercept_estimate[1], 0, np.max(intercept_bin_y_val), colors='r', label='y-intercept estimate=' +
+                                                                                str(np.round(intercept_estimate[1], 5)))
+        plt.title('Histogram of y-intercept estimates')
+        plt.legend()
+
+        plt.subplot(3, 2, 5)
+        plt.plot(scale_bin_x_index[:-1], scale_bin_x_val, 'b')
+        plt.vlines(scale_estimate[2], 0, np.max(scale_bin_x_val), colors='r', label='x-scale estimate=' +
+                                                                                    str(np.round(scale_estimate[2],5)))
+        plt.title('Histogram of x-scale estimates')
+        plt.legend()
+
+        plt.subplot(3, 2, 6)
+        plt.plot(intercept_bin_x_index[:-1], intercept_bin_x_val, 'g')
+        plt.vlines(intercept_estimate[2], 0, np.max(intercept_bin_x_val), colors='r', label='x-intercept estimate=' +
+                                                                                str(np.round(intercept_estimate[2], 5)))
+        plt.title('Histogram of x-intercept estimates')
+        plt.legend()
+
+        plt.suptitle('Robust Theil Stein Estimation with Parameters: num_pairs = ' + str(num_pairs) +
+                     ' (' + str(int(100*num_pairs/(0.5*(z_subvols*y_subvols*x_subvols)**2))) + '%), boundary_erosion = ' +
+                     str(boundary_erosion) +
+                     ' (' + str((100*boundary_erosion/image_dims).astype(int)) + '%), ' +
+                     'image_dims = ' + str(image_dims)  + ', dist_thresh = ' + str(dist_thresh) + ', resolution = ' +
+                     str(resolution), fontsize=12)
+        plt.show()
 
     # Populate the transform array
     np.fill_diagonal(transform, scale_estimate)
@@ -273,8 +261,7 @@ def invert_affine(A):
     inverse = np.zeros((3, 4))
 
     inverse[:3, :3] = np.linalg.inv(A[:3, :3])
-    inverse[:, 4] = -np.linalg.inv(A[:3, :3]) @ A[:, 4]
-    inverse[3, 4] = 1
+    inverse[:, 3] = -np.linalg.inv(A[:3, :3]) @ A[:, 3]
 
     return inverse
 
@@ -321,7 +308,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
             # Software was written for z y x, so change it from y x z
             anchor_image = np.swapaxes(anchor_image, 0, 2)
             anchor_image = np.swapaxes(anchor_image, 1, 2)
-            for r in use_rounds:
+            for r in [0, 3]:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
                 # Load in imaging npy volume.
                 target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
@@ -330,9 +317,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
 
                 # next we split image into overlapping cuboids
                 subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                       z_box=12, y_box=300, x_box=300)
+                                                       z_box=15, y_box=300, x_box=300)
                 subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                  z_box=12, y_box=300, x_box=300)
+                                                  z_box=15, y_box=300, x_box=300)
 
                 # Find the subvolume shifts
                 shift = find_shift_array(subvol_base, subvol_target)
@@ -344,19 +331,17 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
                 # (t, r, c_ref)
                 round_transform[t, r] = find_affine_transform_robust_custom(shift=shift, position=position,
-                                                                            num_pairs=1e5, boundary_erosion=[5,200,200],
+                                                                            num_pairs=1e5,
+                                                                            boundary_erosion=[5, 100, 100],
                                                                             image_dims=anchor_image.shape,
-                                                                            dist_thresh=[5,200,200], resolution=50)
+                                                                            dist_thresh=[5, 250, 250], resolution=30)
                 pbar.update(1)
 
             # Begin the channel transformation calculations. This requires us to use a central round.
             r = n_rounds // 2
-            ref_image = load_tile(nbp_file, nbp_basic, t, r, c_ref)
-            ref_image = np.swapaxes(ref_image, 0, 2)
-            ref_image = np.swapaxes(ref_image, 1, 2)
             # Remove reference channel from comparison
             use_channels.remove(c_ref)
-            for c in use_channels:
+            for c in [5, 23]:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
                 target_image = load_tile(nbp_file, nbp_basic, t, r, c)
@@ -364,15 +349,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
                 target_image = np.swapaxes(target_image, 1, 2)
 
                 if match_hist:
-                    # Match histogram of the target image to reference image
-                    target_image = match_histograms(target_image, ref_image)
+                    # Match histogram of the target image to anchor image
+                    target_image = match_histograms(target_image, anchor_image)
 
-                # Sobel filter both of these
-                ref_image = sobel(ref_image)
                 target_image = sobel(target_image)
 
                 # next we split image into overlapping cuboids
-                subvol_base, position = split_3d_image(image=ref_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
+                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
                                                        z_box=12, y_box=300, x_box=300)
                 subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
                                                   z_box=12, y_box=300, x_box=300)
@@ -388,9 +371,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
                 # (t, r, c)
                 aux_transform = find_affine_transform_robust_custom(shift=shift, position=position,
                                                                     num_pairs=1e5,
-                                                                    boundary_erosion=[5, 200, 200],
+                                                                    boundary_erosion=[5, 100, 100],
                                                                     image_dims=anchor_image.shape,
-                                                                    dist_thresh=[5, 200, 200], resolution=50)
+                                                                    dist_thresh=[5, 250, 250], resolution=30)
                 # Now correct for the round shift to get a round independent affine transform
                 channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r]))
                 pbar.update(1)
@@ -402,511 +385,268 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
                 for c in use_channels:
                     # Next we need to compose these affine transforms. Remember, affine transforms cannot be composed
                     # by simple matrix multiplication
-                    transform[t, r, c] = channel_transform[t, c, :3, :3] @ round_transform[t, r] + \
-                                         np.hstack((np.zeros((3, 3)), (channel_transform[t, c, :, 3])[:, np.newaxis]))
+                    transform[t, r, c] = compose_affine(channel_transform[t, c], round_transform[t, r])
 
     return transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position
 
 
-def view_shift_hist(shift):
+# From this point, we only have viewers.
+
+
+def view_overlay(base_image, target_image, transform):
     """
-        View histograms for shift array.
+    Function to overlay 2 images in napari.
     Args:
-        shift: Shift array for subvolumes.
+        base_image: base image
+        target_image: target image
+        transform: 3 x 4 array
     """
 
-    shift_abs = np.linalg.norm(shift, axis=-1)
+    def napari_viewer():
+        from magicgui import magicgui
+        prevlayer = None
 
-    plt.subplot(2, 2, 1)
-    plt.hist(np.reshape(shift_abs, 400), 100)
-    plt.vlines(x=np.median(shift_abs), ymin=0, ymax=200, colors='y', linestyles='dotted')
-    plt.vlines(x=np.median(shift_abs) - 2 * stats.iqr(shift_abs), ymin=0, ymax=200, color='red')
-    plt.vlines(x=np.median(shift_abs) + 2 * stats.iqr(shift_abs), ymin=0, ymax=200, color='red')
-    plt.title(label='Histogram of absolute value of the shifts. Median = ' + str(np.median(shift_abs)) + '. IQR = ' +
-                    str(stats.iqr(shift_abs)))
+        @magicgui(layout="vertical", auto_call=True,
+                  x_offset={'max': 10000, 'min': -10000, 'step': 1, 'adaptive_step': False},
+                  y_offset={'max': 10000, 'min': -10000, 'step': 1, 'adaptive_step': False},
+                  z_offset={'max': 10000, 'min': -10000, 'step': 1, 'adaptive_step': False},
+                  x_scale={'max': 5, 'min': .2, 'value': 1.0, 'adaptive_step': False, 'step': .001},
+                  y_scale={'max': 5, 'min': .2, 'value': 1.0, 'adaptive_step': False, 'step': .001},
+                  z_scale={'max': 5, 'min': .2, 'value': 1.0, 'adaptive_step': False, 'step': .1},
+                  x_rotate={'max': 180, 'min': -180, 'step': 1.0, 'adaptive_step': False},
+                  y_rotate={'max': 180, 'min': -180, 'step': 1.0, 'adaptive_step': False},
+                  z_rotate={'max': 180, 'min': -180, 'step': 1.0, 'adaptive_step': False},
+                  )
+        def _napari_extension_move_points(layer: napari.layers.Layer, x_offset: float, y_offset: float, z_offset: float,
+                                          x_scale: float, y_scale: float, z_scale: float, x_rotate: float,
+                                          y_rotate: float, z_rotate: float, use_defaults: bool) -> None:
+            """Add, subtracts, multiplies, or divides to image layers with equal shape."""
+            nonlocal prevlayer
+            if not hasattr(layer, "_true_rotate"):
+                layer._true_rotate = [0, 0, 0]
+                layer._true_translate = [0, 0, 0]
+                layer._true_scale = [1, 1, 1]
+            if prevlayer != layer:
+                prevlayer = layer
+                on_layer_change(layer)
+                return
+            if use_defaults:
+                z_offset = y_offset = x_offset = 0
+                z_scale = y_scale = x_scale = 1
+                z_rotate = y_rotate = x_rotate = 0
+            layer._true_rotate = [z_rotate, y_rotate, x_rotate]
+            layer._true_translate = [z_offset, y_offset, x_offset]
+            layer._true_scale = [z_scale, y_scale, x_scale]
+            layer.affine = napari.utils.transforms.Affine(rotate=layer._true_rotate, scale=layer._true_scale,
+                                                          translate=layer._true_translate)
+            layer.refresh()
 
-    plt.subplot(2, 2, 2)
-    plt.hist(np.reshape(shift, (400, 3))[:, 0], 100)
-    plt.vlines(x=np.median(shift[:, :, :, 0]), ymin=0, ymax=200, colors='y', linestyles='dotted')
-    plt.vlines(x=np.median(shift[:, :, :, 0]) - 2 * stats.iqr(shift[:, :, :, 0]), ymin=0, ymax=200, color='red')
-    plt.vlines(x=np.median(shift[:, :, :, 0]) + 2 * stats.iqr(shift[:, :, :, 0]), ymin=0, ymax=200, color='red')
-    plt.title(label='Histogram of the z shifts. Median = ' + str(np.median(shift[:, :, :, 0])) + '. IQR = ' +
-                    str(stats.iqr(shift[:, :, :, 0])))
+        def on_layer_change(layer):
+            e = _napari_extension_move_points
+            widgets = [e.z_scale, e.y_scale, e.x_scale, e.z_offset, e.y_offset, e.x_offset, e.z_rotate, e.y_rotate,
+                       e.x_rotate]
+            for w in widgets:
+                w.changed.pause()
+            e.z_scale.value, e.y_scale.value, e.x_scale.value = layer._true_scale
+            e.z_offset.value, e.y_offset.value, e.x_offset.value = layer._true_translate
+            e.z_rotate.value, e.y_rotate.value, e.x_rotate.value = layer._true_rotate
+            for w in widgets:
+                w.changed.resume()
+            print("Called change layer")
 
-    plt.subplot(2, 2, 3)
-    plt.hist(np.reshape(shift, (400, 3))[:, 1], 100)
-    plt.vlines(x=np.median(shift[:, :, :, 1]), ymin=0, ymax=200, colors='y', linestyles='dotted')
-    plt.vlines(x=np.median(shift[:, :, :, 1]) - 2 * stats.iqr(shift[:, :, :, 1]), ymin=0, ymax=200, color='red')
-    plt.vlines(x=np.median(shift[:, :, :, 1]) + 2 * stats.iqr(shift[:, :, :, 1]), ymin=0, ymax=200, color='red')
-    plt.title(label='Histogram of the y shifts. Median = ' + str(np.median(shift[:, :, :, 1])) + '. IQR = ' +
-                    str(stats.iqr(shift[:, :, :, 1])))
+        # _napari_extension_move_points.layer.changed.connect(on_layer_change)
+        v = napari.Viewer()
+        # add our new magicgui widget to the viewer
+        v.window.add_dock_widget(_napari_extension_move_points, area="right")
+        v.axes.visible = True
+        return v
+    # Create a napari viewer and add and transform first image and overlay this with second image
+    viewer = napari_viewer()
+    viewer.add_image(base_image, blending='additive', colormap='bop_red',
+                     affine=np.vstack((transform, np.array([0, 0, 0, 1])[:, np.newaxis])),
+                     contrast_limits=(0, 0.3 * np.max(base_image)))
+    viewer.add_image(target_image, blending='additive', colormap='bop_red',
+                     contrast_limits=(0, 0.3 * np.max(target_image)))
 
-    plt.subplot(2, 2, 4)
-    plt.hist(np.reshape(shift, (400, 3))[:, 2], 100)
-    plt.vlines(x=np.median(shift[:, :, :, 2]), ymin=0, ymax=200, colors='y', linestyles='dotted')
-    plt.vlines(x=np.median(shift[:, :, :, 2]) - 2 * stats.iqr(shift[:, :, :, 2]), ymin=0, ymax=200, color='red')
-    plt.vlines(x=np.median(shift[:, :, :, 2]) + 2 * stats.iqr(shift[:, :, :, 2]), ymin=0, ymax=200, color='red')
-    plt.title(label='Histogram of the x shifts. Median = ' + str(np.median(shift[:, :, :, 2])) + '. IQR = ' +
-                    str(stats.iqr(shift[:, :, :, 2])))
+
+def view_round_regression(shift, position, tile, round, num_pairs, boundary_erosion, image_dims, dist_thresh, resolution):
+    """
+    Wrapper function for above regression on rounds with viewer set to true
+
+    Args:
+        shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        tile: tile under consideration
+        round: round under consideration
+        num_pairs: Number of pairs to consider. Must be in range [0, num_samples choose 2]
+        boundary_erosion: 3 x 1 array of z, y, x boundary erosion terms
+        image_dims: 3 x 1 array of z, y, x image dims
+        dist_thresh 3 x 1 array of distance thresholds of z, y and x points that pairs of points must be apart if
+        we use them in the algorithm
+        Resolution: number of bins in histogram whose mode we return (range = median +/- iqr)
+
+    """
+
+    find_affine_transform_robust_custom(shift[tile, round], position[tile, round], num_pairs, boundary_erosion,
+                                        image_dims, dist_thresh, resolution, view=True)
+
+
+def view_channel_regression(shift, position, tile, channel, num_pairs, boundary_erosion, image_dims, dist_thresh,
+                          resolution):
+    """
+    Wrapper function for above regression on channels with viewer set to true
+
+    Args:
+        shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        tile: tile under consideration
+        channel: channel under consideration
+        num_pairs: Number of pairs to consider. Must be in range [0, num_samples choose 2]
+        boundary_erosion: 3 x 1 array of z, y, x boundary erosion terms
+        image_dims: 3 x 1 array of z, y, x image dims
+        dist_thresh 3 x 1 array of distance thresholds of z, y and x points that pairs of points must be apart if
+        we use them in the algorithm
+        Resolution: number of bins in histogram whose mode we return (range = median +/- iqr)
+
+    """
+
+    find_affine_transform_robust_custom(shift[tile, channel], position[tile, channel], num_pairs, boundary_erosion,
+                                        image_dims, dist_thresh, resolution, view=True)
+
+
+def view_regression_scatter(shift, position, transform):
+    """
+    view 3 scatter plots for each data set shift vs positions
+    Args:
+        shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        transform: 3 x 4 affine transform obtained by previous robust regression
+    """
+
+    shift = shift.reshape((shift.shape[0] * shift.shape[1] * shift.shape[2], 3)).T
+    position = position.reshape((position.shape[0] * position.shape[1] * position.shape[2], 3)).T
+
+    z_range = np.arange(np.min(position[0]), np.max(position[0]))
+    yx_range = np.arange(np.min(position[1]), np.max(position[1]))
+
+    plt.sublpot(1, 3, 1)
+    plt.scatter(position[0], shift[0], alpha=1e3/shift.shape[1])
+    plt.plot(z_range, (transform[0, 0] - 1) * z_range + transform[0,3])
+    plt.title('Z-Shifts vs Z-Positions')
+
+    plt.sublpot(1, 3, 2)
+    plt.scatter(position[1], shift[1], alpha=1e3 / shift.shape[1])
+    plt.plot(yx_range, (transform[1, 1] - 1) * yx_range + transform[1, 3])
+    plt.title('Y-Shifts vs Y-Positions')
+
+    plt.sublpot(1, 3, 3)
+    plt.scatter(position[2], shift[2], alpha=1e3 / shift.shape[1])
+    plt.plot(yx_range, (transform[2, 2] - 1) * yx_range + transform[2, 3])
+    plt.title('X-Shifts vs X-Positions')
 
     plt.show()
 
 
-def view_shift_scatter(shift, position, z_box, y_box, x_box, alpha = 1.0, score = None, save_robust_regression = False,
-                       view_robust_regression = False):
+def vector_field_plotter(shift, position, scale, intercept):
     """
-    Function which shows the regression in x, y and z.
-    Args:
-        shift: (y_subvols, x_subvols, z_subvols, 3) or (n_shifts, 3)
-        position: (y_subvols, x_subvols, z_subvols, 3) or (n_points, 3)
-        alpha: (float) opacity of points in scatter plot
-        score: (y_subvols, x_subvols, z_subvols, 1) or (n_shifts, 1) score of shifts
-        view_robust_regression: option to view RANSAC algorithms robust linear regression prediction
-    Returns:
-        scale: (3 x 1 ) z, y, x scales
-        shift (3 x 1)  z, y, x shift
-    """
-    if np.ndim(shift) == 4:
-        z_subvols, y_subvols, x_subvols, _ = shift.shape
-
-        z_shift = np.reshape(shift[:, :, :, 0], y_subvols * x_subvols * z_subvols)
-        y_shift = np.reshape(shift[:, :, :, 1], y_subvols * x_subvols * z_subvols)
-        x_shift = np.reshape(shift[:, :, :, 2], y_subvols * x_subvols * z_subvols)
-
-        z_pos = np.reshape(position[:, :, :, 0], y_subvols * x_subvols * z_subvols)
-        y_pos = np.reshape(position[:, :, :, 1], y_subvols * x_subvols * z_subvols)
-        x_pos = np.reshape(position[:, :, :, 2], y_subvols * x_subvols * z_subvols)
-
-    else:
-        z_shift = shift[:, 0]
-        y_shift = shift[:, 1]
-        x_shift = shift[:, 2]
-
-        z_pos = position[:, 0]
-        y_pos = position[:, 1]
-        x_pos = position[:, 2]
-
-    if score is not None:
-        q1 = np.quantile(score, 0.02)
-        plt.subplot(3, 1, 1)
-        plt.scatter(z_pos[score > q1], z_shift[score > q1], alpha=alpha, c='blue')
-        plt.scatter(z_pos[score < q1], z_shift[score < q1], alpha=alpha, c='red')
-        plt.title('z shifts against z positions')
-
-        plt.subplot(3, 1, 2)
-        plt.scatter(y_pos[score > q1], y_shift[score > q1], alpha=alpha, c='blue')
-        plt.scatter(y_pos[score < q1], y_shift[score < q1], alpha=alpha, c='red')
-        plt.title('y shifts against y positions')
-
-        plt.subplot(3, 1, 3)
-        plt.scatter(x_pos[score > q1], x_shift[score > q1], alpha=alpha, c='blue')
-        plt.scatter(x_pos[score < q1], x_shift[score < q1], alpha=alpha, c='red')
-        plt.title('x shifts against x positions')
-
-    else:
-        plt.subplot(3, 1, 1)
-        plt.scatter(z_pos, z_shift, alpha=alpha, c='blue')
-        plt.title('z shifts against z positions')
-
-        plt.subplot(3, 1, 2)
-        plt.scatter(y_pos, y_shift, alpha=alpha, c='blue')
-        plt.title('y shifts against y positions')
-
-        plt.subplot(3, 1, 3)
-        plt.scatter(x_pos, x_shift, alpha=alpha, c='blue')
-        plt.title('x shifts against x positions')
-
-    ransac_z = RANSACRegressor()
-    ransac_x = RANSACRegressor()
-    ransac_y = RANSACRegressor()
-    ransac_z.fit(z_pos[:, np.newaxis], z_shift)
-    ransac_y.fit(y_pos[:, np.newaxis], y_shift)
-    ransac_x.fit(x_pos[:, np.newaxis], x_shift)
-
-    line_input_z = np.arange(z_pos.min(), z_pos.max())[:, np.newaxis]
-    line_z_ransac = ransac_z.predict(line_input_z)
-    line_input_y = np.arange(y_pos.min(), y_pos.max())[:, np.newaxis]
-    line_y_ransac = ransac_y.predict(line_input_y)
-    line_input_x = np.arange(x_pos.min(), x_pos.max())[:, np.newaxis]
-    line_x_ransac = ransac_x.predict(line_input_x)
-
-    plt.subplot(3, 1, 1)
-    plt.plot(line_input_z, line_z_ransac,label='Scale ='+str((ransac_z.estimator_.coef_ + 1)[0]) +
-                                               '. Intercept = ' + str(ransac_z.estimator_.intercept_))
-    plt.legend(loc='upper right', prop={'size': 6})
-
-    plt.subplot(3, 1, 2)
-    plt.plot(line_input_y, line_y_ransac,label='Scale ='+str((ransac_y.estimator_.coef_ + 1)[0]) +
-                                               '. Intercept = ' + str(ransac_y.estimator_.intercept_))
-    plt.legend(loc='upper right', prop={'size': 6})
-
-    plt.subplot(3, 1, 3)
-    plt.plot(line_input_x, line_x_ransac,label='Scale ='+str((ransac_x.estimator_.coef_ + 1)[0]) +
-                                               '. Intercept = ' + str(ransac_x.estimator_.intercept_))
-    plt.legend(loc='upper right', prop={'size': 6})
-
-    plt.subplots_adjust(hspace=1)
-
-    plt.suptitle('samples='+str(y_shift.shape[0])+', z_box='+str(z_box)+',y_box='+str(y_box)+', x_box='+str(x_box),
-                 fontsize=14)
-
-    if save_robust_regression:
-        plt.savefig('/Users/reillytilbury/Desktop/Tile 0/Registration Images/samples='+str(y_shift.shape[0])+
-                    ', z_box='+str(z_box)+',y_box='+str(y_box)+', x_box='+str(x_box)+'.png',dpi=400,bbox_inches='tight')
-
-    if view_robust_regression:
-        plt.show()
-
-    return np.array([(ransac_z.estimator_.coef_ + 1)[0], (ransac_y.estimator_.coef_ + 1)[0],
-                     (ransac_x.estimator_.coef_ + 1)[0]]) , np.array([ransac_z.estimator_.intercept_,
-                                                                      ransac_y.estimator_.intercept_,
-                                                                      ransac_x.estimator_.intercept_])
-
-
-def view_shift_scatter_multivariate(shift, position, z_box, y_box, x_box, alpha = 1.0, score = None, save_robust_regression = False,
-                                    view_robust_regression = False):
-    """
-        Function which shows the regression in x, y and z. Works similarly to view_shift_scatter but now regression is
-        done in 3D instead of independently.
-        Args:
-            shift: (y_subvols, x_subvols, z_subvols, 3) or (n_shifts, 3)
-            position: (y_subvols, x_subvols, z_subvols, 3) or (n_points, 3)
-            alpha: (float) opacity of points in scatter plot
-            score: (y_subvols, x_subvols, z_subvols, 1) or (n_shifts, 1) score of shifts
-            view_robust_regression: option to view RANSAC algorithms robust linear regression prediction
-        Returns:
-            scale: (3 x 1 ) z, y, x scales
-            shift (3 x 1)  z, y, x shift
-        """
-    if np.ndim(shift) == 4:
-        z_subvols, y_subvols, x_subvols, _ = shift.shape
-
-        z_shift = np.reshape(shift[:, :, :, 0], y_subvols * x_subvols * z_subvols)
-        y_shift = np.reshape(shift[:, :, :, 1], y_subvols * x_subvols * z_subvols)
-        x_shift = np.reshape(shift[:, :, :, 2], y_subvols * x_subvols * z_subvols)
-
-        z_pos = np.reshape(position[:, :, :, 0], y_subvols * x_subvols * z_subvols)
-        y_pos = np.reshape(position[:, :, :, 1], y_subvols * x_subvols * z_subvols)
-        x_pos = np.reshape(position[:, :, :, 2], y_subvols * x_subvols * z_subvols)
-
-    else:
-        z_shift = shift[:, 0]
-        y_shift = shift[:, 1]
-        x_shift = shift[:, 2]
-
-        z_pos = position[:, 0]
-        y_pos = position[:, 1]
-        x_pos = position[:, 2]
-
-    if score is not None:
-        q1 = np.quantile(score, 0.02)
-        plt.subplot(3, 1, 1)
-        plt.scatter(z_pos[score > q1], z_shift[score > q1], alpha=alpha, c='blue')
-        plt.scatter(z_pos[score < q1], z_shift[score < q1], alpha=alpha, c='red')
-        plt.title('z shifts against z positions')
-
-        plt.subplot(3, 1, 2)
-        plt.scatter(y_pos[score > q1], y_shift[score > q1], alpha=alpha, c='blue')
-        plt.scatter(y_pos[score < q1], y_shift[score < q1], alpha=alpha, c='red')
-        plt.title('y shifts against y positions')
-
-        plt.subplot(3, 1, 3)
-        plt.scatter(x_pos[score > q1], x_shift[score > q1], alpha=alpha, c='blue')
-        plt.scatter(x_pos[score < q1], x_shift[score < q1], alpha=alpha, c='red')
-        plt.title('x shifts against x positions')
-
-    else:
-        plt.subplot(3, 1, 1)
-        plt.scatter(z_pos, z_shift, alpha=alpha, c='blue')
-        plt.title('z shifts against z positions')
-
-        plt.subplot(3, 1, 2)
-        plt.scatter(y_pos, y_shift, alpha=alpha, c='blue')
-        plt.title('y shifts against y positions')
-
-        plt.subplot(3, 1, 3)
-        plt.scatter(x_pos, x_shift, alpha=alpha, c='blue')
-        plt.title('x shifts against x positions')
-
-    ransac = RANSACRegressor()
-    ransac.fit(np.hstack((z_pos[:, np.newaxis],y_pos[:, np.newaxis], x_pos[:, np.newaxis])),
-               np.hstack((z_shift[:,np.newaxis], y_shift[:,np.newaxis], x_shift[:, np.newaxis])))
-
-    line_input_z = np.arange(z_pos.min(), z_pos.max())[:, np.newaxis]
-    zeros_z = np.zeros(line_input_z.shape[0])[:, np.newaxis]
-    line_z_ransac = ransac.predict(np.hstack((line_input_z, zeros_z, zeros_z)))[:, 0]
-    line_input_y = np.arange(y_pos.min(), y_pos.max())[:, np.newaxis]
-    zeros_y = np.zeros(line_input_y.shape[0])[:, np.newaxis]
-    line_y_ransac = ransac.predict(np.hstack((zeros_y, line_input_y, zeros_y)))[:, 1]
-    line_input_x = np.arange(x_pos.min(), x_pos.max())[:, np.newaxis]
-    zeros_x = np.zeros(line_input_x.shape[0])[:, np.newaxis]
-    line_x_ransac = ransac.predict(np.hstack((zeros_x, zeros_x, line_input_x)))[:, 2]
-
-    plt.subplot(3, 1, 1)
-    plt.plot(line_input_z, line_z_ransac, label='Scale =' + str((ransac.estimator_.coef_ + 1)[0,0]) +
-                                                '. Intercept = ' + str(ransac.estimator_.intercept_[0]))
-    plt.legend(loc='upper right', prop={'size': 6})
-
-    plt.subplot(3, 1, 2)
-    plt.plot(line_input_y, line_y_ransac, label='Scale =' + str((ransac.estimator_.coef_ + 1)[1,1]) +
-                                                '. Intercept = ' + str(ransac.estimator_.intercept_[1]))
-    plt.legend(loc='upper right', prop={'size': 6})
-
-    plt.subplot(3, 1, 3)
-    plt.plot(line_input_x, line_x_ransac, label='Scale =' + str((ransac.estimator_.coef_ + 1)[2,2]) +
-                                                '. Intercept = ' + str(ransac.estimator_.intercept_[2]))
-    plt.legend(loc='upper right', prop={'size': 6})
-
-    plt.subplots_adjust(hspace=1)
-
-    plt.suptitle(
-        'samples=' + str(y_shift.shape[0]) + ', z_box=' + str(z_box) + ',y_box=' + str(y_box) + ', x_box=' + str(x_box),
-        fontsize=14)
-
-    if save_robust_regression:
-        plt.savefig('/Users/reillytilbury/Desktop/Tile 0/Registration Images/Multivariate/samples=' + str(y_shift.shape[0]) +
-                    ', z_box=' + str(z_box) + ',y_box=' + str(y_box) + ', x_box=' + str(x_box) + '.png', dpi=400,
-                    bbox_inches='tight')
-
-    if view_robust_regression:
-        plt.show()
-
-    return np.array([(ransac.estimator_.coef_ + 1)[0,0], (ransac.estimator_.coef_ + 1)[1,1],
-                     (ransac.estimator_.coef_ + 1)[2,2]]), np.array([ransac.estimator_.intercept_[0],
-                                                                     ransac.estimator_.intercept_[1],
-                                                                     ransac.estimator_.intercept_[2]])
-
-
-def view_robust_custom_regressor(X: np.ndarray, Y: np.ndarray, z_box, y_box, x_box, bins, num_pairs=None, alpha = 1.0,
-                                 save_robust_regression=False, view_robust_regression=False):
-    """
-    Robust regression algorithm for inputs X (num_samples * num_features) and Y (num_responses * num_features).
-    This assumes a diagonal affine relation relating Y and X. So need num_samples = num_response.
-    Args:
-        X: input data (z_subvols, y_subvols, x_subvols, positions)
-        Y: output data (z_subvols, y_subvols, x_subvols, shifts)
-        num_pairs: Number of pairs to randomly select. If left blank, we'll simply pick all pairs.
-
-    Returns:
-        scale: (n_features) diagonal of the matrix relating Y and X
-        shift: (n_features) shift between Y and X
-
-    """
-    num_samples = X.shape[0]
-    num_features = X.shape[1]
-    # Initialise number of pairings
-    if num_pairs is None or num_pairs > num_samples * (num_samples - 1) / 2:
-        num_pairs = int(num_samples * (num_samples - 1) / 2)
-    scale = np.zeros((num_pairs, num_features))
-    intercept = np.zeros((num_pairs, num_features))
-
-    # Now randomly select num_pairs pairs and compute the scales and intercepts
-    i = 0
-    while i < num_pairs:
-        # Generate random indices
-        index1 = np.random.randint(0, num_samples)
-        index2 = np.random.randint(0, num_samples)
-        # Use this to generate scales and intercepts
-        # I think that shifts are given as 0,0,0 if they don't pass a certain threshold, so let's remove these and see
-        # Also, let's remove points too close together and boundary points
-        in_range_1 = (5 < X[index1, 0] < 60) * (300 < X[index1, 1] < 2000) * (300 < X[index1, 2] < 2000)
-        in_range_2 = (5 < X[index2, 0] < 60) * (300 < X[index2, 1] < 2000) * (300 < X[index2, 2] < 2000)
-        if min(abs(Y[index1]*Y[index2])) > 0 and abs(X[index1, 1] - X[index2, 1]) > 250 \
-                and abs(X[index1, 2] - X[index2, 2]) > 250 and abs(X[index1, 0] - X[index2, 0]) > 10 \
-                and in_range_1 * in_range_2:
-            scale[i] = np.ones(3) + (Y[index2] - Y[index1])/(X[index2] - X[index1])
-            intercept[i] = Y[index1] - (scale[i] - 1) * X[index1]
-            i += 1
-
-    median_scale = np.nanmedian(scale, axis=0)
-    iqr_scale = stats.iqr(scale, axis=0, nan_policy='omit')
-    median_intercept = np.nanmedian(intercept, axis=0)
-    iqr_intercept = stats.iqr(intercept, axis=0, nan_policy='omit')
-
-    # Now plot the histograms and scatter plots.
-    # First, histograms
-    plt.subplot(3, 3, 1)
-    s1, t1, _ = plt.hist(scale[:, 0], bins=bins,
-                         range=(median_scale[0]-iqr_scale[0], median_scale[0]+iqr_scale[0]))
-    plt.vlines(median_scale[0], 0, s1.max(), label='Scale z')
-    plt.legend(loc='upper right', prop={'size': 10})
-    plt.title('Histogram of scale factors for the z-component')
-
-    plt.subplot(3, 3, 4)
-    s4, t4, _ = plt.hist(scale[:, 1], bins=bins,
-                         range=(median_scale[1]-iqr_scale[1],median_scale[1]+iqr_scale[1]))
-    plt.vlines(median_scale[1], 0, s4.max(), label='Scale y')
-    plt.legend(loc='upper right', prop={'size': 10})
-    plt.title('Histogram of scale factors for the y-component')
-
-    plt.subplot(3,3,7)
-    s7, t7, _ = plt.hist(scale[:, 2], bins=bins,
-                         range=(median_scale[2] - iqr_scale[2], median_scale[2] + iqr_scale[2]))
-    plt.vlines(median_scale[2], 0, s7.max(), label='Scale x')
-    plt.legend(loc='upper right', prop={'size': 10})
-    plt.title('Histogram of scale factors for the x-component')
-
-    plt.subplot(3, 3, 2)
-    s2, t2, _ = plt.hist(intercept[:, 0], bins=bins,
-                         range=(median_intercept[0]-iqr_intercept[0],median_intercept[0]+iqr_intercept[0]))
-    plt.vlines(median_intercept[0], 0, s2.max(), label='Intecept z')
-    plt.legend(loc='upper right', prop={'size': 10})
-    plt.title('Histogram of intercepts (shifts) for the z-component')
-
-    plt.subplot(3, 3, 5)
-    s5, t5, _ = plt.hist(intercept[:, 1], bins=bins,
-                         range=(median_intercept[1]-iqr_intercept[1],median_intercept[1]+iqr_intercept[1]))
-    plt.vlines(median_intercept[1], 0, s5.max(), label='Intecept y')
-    plt.legend(loc='upper right', prop={'size': 10})
-    plt.title('Histogram of intercepts (shifts) for the y-component')
-
-    plt.subplot(3, 3, 8)
-    s8, t8, _ = plt.hist(intercept[:, 2], bins=bins,
-                         range=(median_intercept[2]-iqr_intercept[2],median_intercept[2]+iqr_intercept[2]))
-    plt.vlines(median_intercept[2], 0, s8.max(), label='Intecept x')
-    plt.legend(loc='upper right', prop={'size': 10})
-    plt.title('Histogram of intercepts (shifts) for the x-component')
-
-    #  Now the scatter plots
-    plt.subplot(3, 3, 3)
-    plt.plot(X[:,0], (median_scale[0] -1) * X[:, 0] + median_intercept[0])
-    plt.scatter(X[:, 0], Y[:, 0], alpha=alpha, c='blue')
-    plt.title('z shifts against z positions')
-
-    plt.subplot(3, 3, 6)
-    plt.plot(X[:, 1], (median_scale[1] - 1) * X[:, 1] + median_intercept[1])
-    plt.scatter(X[:, 1], Y[:, 1], alpha=alpha, c='blue')
-    plt.title('y shifts against y positions')
-
-    plt.subplot(3, 3, 9)
-    plt.plot(X[:, 2], (median_scale[2] - 1) * X[:, 2] + median_intercept[2])
-    plt.scatter(X[:, 2], Y[:, 2], alpha=alpha, c='blue')
-    plt.title('x shifts against x positions')
-
-    plt.suptitle(
-        'samples=' + str(num_samples) + ', z_box=' + str(z_box) + ',y_box=' + str(y_box) + ', x_box=' + str(x_box),
-        fontsize=12)
-
-    plt.subplots_adjust(hspace=0.75)
-    plt.subplots_adjust(wspace=0.75)
-
-    if save_robust_regression:
-        plt.savefig(
-            '/Users/reillytilbury/Desktop/Tile 0/Registration Images/Custom/samples=' + str(num_samples) +
-            ', z_box=' + str(z_box) + ',y_box=' + str(y_box) + ', x_box=' + str(x_box) + '.png', dpi=400,
-            bbox_inches='tight')
-
-    if view_robust_regression:
-        plt.show()
-
-    best_scale = np.array([t1[np.argmax(s1)], t4[np.argmax(s4)], t7[np.argmax(s7)]])
-    best_shift = np.array([t2[np.argmax(s2)], t5[np.argmax(s5)], t8[np.argmax(s8)]])
-
-    return best_scale, best_shift
-
-
-def view_random_cuboids(num_samples: int, target_image: np.ndarray, base_image: np.ndarray, z_box_size: int, y_box_size: int,
-                   x_box_size: int, alpha, custom: False):
-    """
-    Function to view relationship between random sample of cuboids and their optimal shifts.
+    Function to plot a simple vector field of shifts, scaled up, if they are not outliers, as a function of position.
 
     Args:
-        num_samples: number of random samples
-        target_image: imaging round image
-        base_image: anchor image
-        z_box_size: z random cuboid size
-        y_box_size: y random cuboid size
-        x_box_size: x random cuboid size
+        shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        scale_range: 3 x 2 array with each row giving +/- 1 iqr of median scale
+        intercept_range: 3 x 2 array with each row giving +/- 1 iqr of median intercept
 
     """
-    position = np.zeros((num_samples, 3))
-    shift = np.zeros((num_samples, 3))
-    score = np.zeros(num_samples)
-    z_image_size, y_image_size, x_image_size = base_image.shape
 
-    for i in range(num_samples):
-        plt.clf()
-        origin = np.array([np.random.randint(z_image_size - z_box_size), np.random.randint(y_image_size - y_box_size),
-                           np.random.randint(x_image_size - x_box_size)])
-        position[i] = origin + np.array([z_box_size, y_box_size, x_box_size])
-        random_base = base_image[origin[0]:origin[0] + z_box_size, origin[1]:origin[1] + y_box_size,
-                      origin[2]:origin[2] + x_box_size]
-        random_target = target_image[origin[0]:origin[0] + z_box_size, origin[1]:origin[1] + y_box_size,
-                        origin[2]:origin[2] + x_box_size]
-        shift[i], score[i], _ = phase_cross_correlation(random_target, random_base, upsample_factor=10)
+    # To attempt to get rid of outliers we'll just say that a point is an inlier if its shift lies in the prediction
+    # range between the 2 possible values of the scale and intercept
+    z_subvols, y_subvols, x_subvols = shift.shape[:3]
+    inlier = np.zeros((z_subvols, y_subvols, x_subvols), dtype=bool)
 
-    # Now plot the shifts against the positions
-    if not custom:
-        scale_zyx, shift_zyx = view_shift_scatter_multivariate(shift, position, z_box=z_box_size,y_box=y_box_size,
-                                                               x_box=x_box_size, alpha=alpha, score=score,
-                                                               save_robust_regression=True, view_robust_regression=False)
-    else:
-        scale_zyx, shift_zyx = view_robust_custom_regressor(position, shift, z_box=z_box_size, y_box=y_box_size,
-                                                               x_box=x_box_size, num_pairs=10000, alpha=alpha,
-                                                               save_robust_regression=True,
-                                                               view_robust_regression=False)
+    # Set outlier shifts to 0
+    for z in range(z_subvols):
+        for y in range(y_subvols):
+            for x in range(x_subvols):
+                linear_part = np.zeros((3,3))
+                np.fill_diagonal(linear_part, scale[:, 0])
+                lower_bound = np.hstack((linear_part, intercept[:, 0][:, np.newaxis]))
+                np.fill_diagonal(linear_part, scale[:, 1])
+                upper_bound = np.hstack((linear_part, intercept[:, 1][:, np.newaxis]))
+                in_range = (lower_bound @ np.pad(position[z,y,x], (0,1)) < shift[z, y, x]) * \
+                           (shift[z, y, x] < upper_bound @ np.pad(position[z,y,x], (0,1)))
+                inlier[z, y, x] = all(in_range)
+                if not inlier[z, y, x]:
+                    shift[z, y, x] = np.array([0, 0, 0])
 
-    return  scale_zyx, shift_zyx
+    # Now make the 3D viewer.
+    ax = plt.figure().add_subplot(projection='3d')
+    # Make the grid
+    z, y, x = np.meshgrid(np.arange(y_subvols), np.arange(z_subvols), np.arange(x_subvols))
+    # Make the direction data for the arrows
+    u, v, w = shift[:,:, :, 0], shift[:,:, :, 1], shift[:,:, :, 2]
+    ax.quiver(z, y, x, u, v, w)
+    plt.show()
 
 
-# anchor_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
-# r0c18_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c18.npy'))
-
-# next we generate random cuboids from each of these images and obtain our shift arrays
-# shift, position = find_random_shift_array(anchor_image, r0c18_image, 500, 10, 200, 200)
-
-# Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
-# (t, r, c_ref)
-# transform = find_affine_transform_robust(shift, position)
-
-# Load in notebook
-# nb = Notebook("//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v6_1tile_28NOV22\output/notebook_1tile.npz",
-#               "C:/Users\Reilly\Desktop\E-2210-001_CP_1tile_v6_settings.ini")
-
-# Run first with no histogram matching
-# transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
-#     register(nb.basic_info, nb.file_names, False)
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_position.npy', np.array(channel_position))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_shift.npy', np.array(channel_shift))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_transform.npy', np.array(channel_transform))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_position.npy', np.array(round_position))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_shift.npy', np.array(round_shift))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_transform.npy', np.array(round_transform))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/transform.npy', np.array(transform))
+# # anchor_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
+# # r0c18_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c18.npy'))
 #
-# Run second with histogram matching
-# transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
-#     register(nb.basic_info, nb.file_names, True)
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/channel_position.npy', np.array(channel_position))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/channel_shift.npy', np.array(channel_shift))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/channel_transform.npy', np.array(channel_transform))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_position.npy', np.array(round_position))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_shift.npy', np.array(round_shift))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/round_transform.npy', np.array(round_transform))
-# np.save('C:/Users/Reilly/Desktop/Diagnostics/With Histogram Matching/transform.npy', np.array(transform))
-
-# anchor_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
-# target_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c5.npy'))
-# anchor_subvolume, pos = split_3d_image(anchor_image, 5, 15, 15, 12, 300, 300)
-# target_subvolume, _ = split_3d_image(target_image, 5, 15, 15, 12, 300, 300)
-# shift = find_shift_array(subvol_base=anchor_subvolume, subvol_target=target_subvolume)
-# find_affine_transform_robust_custom(shift, pos, 1e5, [5,200,200], [64,2304,2304], [5,200,200], 100)
-# shift = np.zeros((5, 4, 4, 3))
-# scale = np.zeros((5, 4, 4, 3))
-# sample = [100, 200, 300, 500, 1000]
-# z_box = [5, 8, 10, 15]
-# xy_box = [20, 50, 100, 200]
+# # next we generate random cuboids from each of these images and obtain our shift arrays
+# # shift, position = find_random_shift_array(anchor_image, r0c18_image, 500, 10, 200, 200)
 #
-# for i in range(5):
-#     for j in range(4):
-#         for k in range(4):
-#             plt.clf()
-#             scale[i, j, k], shift[i, j, k] = random_cuboids(sample[i], r0c18_image, anchor_image,
-#                                                             z_box[j],xy_box[k],xy_box[k], 50/sample[i],custom=True)
-#             print(sample[i],z_box[j],xy_box[k])
+# # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
+# # (t, r, c_ref)
+# # transform = find_affine_transform_robust(shift, position)
 #
-# np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/shift.npy', shift)
-# np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/scale.npy', scale)
+# # Load in notebook
+# # nb = Notebook("//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v6_1tile_28NOV22\output/notebook_1tile.npz",
+# #               "C:/Users\Reilly\Desktop\E-2210-001_CP_1tile_v6_settings.ini")
 #
-# print('Hello')
+# # Run first with no histogram matching
+# # transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
+# #     register(nb.basic_info, nb.file_names, False)
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_position.npy', np.array(channel_position))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_shift.npy', np.array(channel_shift))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_transform.npy', np.array(channel_transform))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_position.npy', np.array(round_position))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_shift.npy', np.array(round_shift))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_transform.npy', np.array(round_transform))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/transform.npy', np.array(transform))
+# #
+# # Run second with histogram matching
+# # transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
+# #     register(nb.basic_info, nb.file_names, True)
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_position.npy', np.array(channel_position))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_shift.npy', np.array(channel_shift))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_transform.npy', np.array(channel_transform))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_position.npy', np.array(round_position))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_shift.npy', np.array(round_shift))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_transform.npy', np.array(round_transform))
+# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/transform.npy', np.array(transform))
+#
+# # anchor_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
+# # target_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c5.npy'))
+# # anchor_subvolume, pos = split_3d_image(anchor_image, 5, 15, 15, 12, 300, 300)
+# # target_subvolume, _ = split_3d_image(target_image, 5, 15, 15, 12, 300, 300)
+# # shift = find_shift_array(subvol_base=anchor_subvolume, subvol_target=target_subvolume)
+# # find_affine_transform_robust_custom(shift, pos, 1e5, [5,200,200], [64,2304,2304], [5,200,200], 100)
+# # shift = np.zeros((5, 4, 4, 3))
+# # scale = np.zeros((5, 4, 4, 3))
+# # sample = [100, 200, 300, 500, 1000]
+# # z_box = [5, 8, 10, 15]
+# # xy_box = [20, 50, 100, 200]
+# #
+# # for i in range(5):
+# #     for j in range(4):
+# #         for k in range(4):
+# #             plt.clf()
+# #             scale[i, j, k], shift[i, j, k] = random_cuboids(sample[i], r0c18_image, anchor_image,
+# #                                                             z_box[j],xy_box[k],xy_box[k], 50/sample[i],custom=True)
+# #             print(sample[i],z_box[j],xy_box[k])
+# #
+# # np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/shift.npy', shift)
+# # np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/scale.npy', scale)
+# #
+# # print('Hello')
 
