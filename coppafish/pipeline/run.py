@@ -5,7 +5,7 @@ from . import set_basic_info, extract_and_filter, find_spots, stitch, register_i
 from ..find_spots import check_n_spots
 from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
-from ..register.register_cameras import register_cameras
+from ..register.new_pipeline import register
 from ..call_spots import get_non_duplicate, quality_threshold
 import warnings
 import numpy as np
@@ -160,19 +160,9 @@ def run_register(nb: setup.Notebook):
 
     """
     config = nb.get_config()
-    if nb.has_page("register_initial_debug"):
-        # deal with old notebook files where page was called "register_initial_debug" instead of
-        # "register_initial". This will trigger a save after name change too.
-        nb.change_page_name("register_initial_debug", "register_initial")
-    if not nb.has_page("register_initial"):
-        nbp_initial = register_initial(config['register_initial'], nb.basic_info, nb.file_names,
-                                             nb.find_spots.spot_details, nb.find_spots.spot_no)
-        nb += nbp_initial
-    else:
-        warnings.warn('register_initial', utils.warnings.NotebookPageWarning)
     # if not all(nb.has_page(["register", "register_debug"])):
     if not nb.has_page("register"):
-        nbp = register_ft(nb.basic_info, nb.file_names, nb.register_initial)
+        nbp = register(nb.basic_info, nb.file_names, config)
         nb += nbp
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)

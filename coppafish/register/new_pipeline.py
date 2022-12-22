@@ -9,7 +9,7 @@ from skimage.filters import sobel
 from skimage.exposure import match_histograms
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
-matplotlib.use('MacOSX')
+matplotlib.use('Qt5Agg')
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -228,7 +228,7 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
     np.fill_diagonal(transform, scale_estimate)
     transform[:, 3] = intercept_estimate
 
-    return transform
+    return transform, scale_median, scale_iqr, intercept_median, intercept_iqr
 
 
 def compose_affine(A1, A2):
@@ -266,22 +266,61 @@ def invert_affine(A):
     return inverse
 
 
-def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
+def reformat_affine(A, z_scale):
+    """
+    Function to convert 3 x 4 matrix in z, y, x coords into a 4 x 3 matrix of y, x, z coords and rescale the shift
+
+    Args:
+        A: Original transform in old format (3 x 4)
+        z_scale: How much to scale z-components by (float)
+
+    Returns:
+        A_reformatted: 4 x 3 transform with associated changes
+
+    """
+    # Append to A a bottom row
+    A = np.vstack((A, np.array([0,0,0,1])))
+
+    # First, convert everything into z, y, x by multiplying by a matrix that swaps rows
+    row_shuffler = np.zeros((4,4))
+    row_shuffler[0, 2] = 1
+    row_shuffler[1, 0] = 1
+    row_shuffler[2, 1] = 1
+    row_shuffler[3, 3] = 1
+
+    # Finally, compute the matrix in the new basis
+    A = np.linalg.inv(row_shuffler) @ A @ row_shuffler
+
+    # Next, multiply the shift part of A by the expansion factor
+    A[2, 3] = z_scale * A[2, 3]
+
+    # Remove the final row
+    A = A[:3,:4]
+
+    # Finally, transpose the matrix
+    A = A.T
+
+    return A
+
+
+def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     """
     Registration pipeline. Returns register Notebook Page.
     Args:
         nbp_basic: (NotebookPage) Basic Info notebook page
         nbp_file: (NotebookPage) File Names notebook page
-        match_hist: (Bool) Optional, Use histogram matching. Default = False.
+        config: Register part of the config dictionary
 
     Returns:
         nbp: (NotebookPage) Register notebook page
     """
 
     # Initialise frequently used variables
+    nbp = NotebookPage("register")
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
     r_ref, c_ref = nbp_basic.ref_round, nbp_basic.ref_channel
+    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
 
     # First we'll compute the transforms from (r_ref, c_ref) to (r, c_ref)
     round_transform = np.zeros((n_tiles, n_rounds, 3, 4))
@@ -299,17 +338,22 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
     channel_shift = []
     channel_position = []
 
-    with tqdm(total=1 * (n_rounds + len(use_channels))) as pbar:
+    with tqdm(total=1 * (n_rounds + len(use_channels) - 1)) as pbar:
         pbar.set_description(f"Inter Round and Inter Channel Transforms")
         # Find the inter round transforms and inter channel transforms
         for t in use_tiles:
+
             # Load in the anchor npy volume, only need to do this once per tile
             anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+            anchor_image_unfiltered = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
+
             # Software was written for z y x, so change it from y x z
             anchor_image = np.swapaxes(anchor_image, 0, 2)
             anchor_image = np.swapaxes(anchor_image, 1, 2)
-            for r in [0, 3]:
+
+            for r in use_rounds:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
+
                 # Load in imaging npy volume.
                 target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
                 target_image = np.swapaxes(target_image, 0, 2)
@@ -339,19 +383,17 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
 
             # Begin the channel transformation calculations. This requires us to use a central round.
             r = n_rounds // 2
-            # Remove reference channel from comparison
+            # Remove reference channel from comparison as the shift from C18 to C18 is identity
             use_channels.remove(c_ref)
-            for c in [5, 23]:
+            for c in use_channels:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
                 target_image = load_tile(nbp_file, nbp_basic, t, r, c)
                 target_image = np.swapaxes(target_image, 0, 2)
                 target_image = np.swapaxes(target_image, 1, 2)
 
-                if match_hist:
-                    # Match histogram of the target image to anchor image
-                    target_image = match_histograms(target_image, anchor_image)
-
+                # Match histograms to unfiltered anchor and then sobel filter
+                target_image = match_histograms(target_image, anchor_image_unfiltered)
                 target_image = sobel(target_image)
 
                 # next we split image into overlapping cuboids
@@ -374,6 +416,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
                                                                     boundary_erosion=[5, 100, 100],
                                                                     image_dims=anchor_image.shape,
                                                                     dist_thresh=[5, 250, 250], resolution=30)
+
                 # Now correct for the round shift to get a round independent affine transform
                 channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r]))
                 pbar.update(1)
@@ -385,9 +428,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
                 for c in use_channels:
                     # Next we need to compose these affine transforms. Remember, affine transforms cannot be composed
                     # by simple matrix multiplication
-                    transform[t, r, c] = compose_affine(channel_transform[t, c], round_transform[t, r])
+                    transform[t, r, c] = reformat_affine(compose_affine(channel_transform[t, c], round_transform[t, r]),
+                                                         z_scale)
 
-    return transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position
+    nbp.transform = transform
+
+    return nbp
 
 
 # From this point, we only have viewers.
@@ -547,15 +593,15 @@ def view_regression_scatter(shift, position, transform):
     plt.show()
 
 
-def vector_field_plotter(shift, position, scale, intercept):
+def vector_field_plotter(shift, position, transform, eps):
     """
     Function to plot a simple vector field of shifts, scaled up, if they are not outliers, as a function of position.
 
     Args:
         shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
         position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
-        scale_range: 3 x 2 array with each row giving +/- 1 iqr of median scale
-        intercept_range: 3 x 2 array with each row giving +/- 1 iqr of median intercept
+        transform: 3 x 4 transform as given by registration algorithm
+        eps: float > 0 defining the multiplying factor for the error threshold. error threshold = eps * iqr(shift)
 
     """
 
@@ -563,29 +609,29 @@ def vector_field_plotter(shift, position, scale, intercept):
     # range between the 2 possible values of the scale and intercept
     z_subvols, y_subvols, x_subvols = shift.shape[:3]
     inlier = np.zeros((z_subvols, y_subvols, x_subvols), dtype=bool)
+    thresh = eps * stats.iqr(shift)
 
     # Set outlier shifts to 0
     for z in range(z_subvols):
         for y in range(y_subvols):
             for x in range(x_subvols):
-                linear_part = np.zeros((3,3))
-                np.fill_diagonal(linear_part, scale[:, 0])
-                lower_bound = np.hstack((linear_part, intercept[:, 0][:, np.newaxis]))
-                np.fill_diagonal(linear_part, scale[:, 1])
-                upper_bound = np.hstack((linear_part, intercept[:, 1][:, np.newaxis]))
-                in_range = (lower_bound @ np.pad(position[z,y,x], (0,1)) < shift[z, y, x]) * \
-                           (shift[z, y, x] < upper_bound @ np.pad(position[z,y,x], (0,1)))
+                in_range = (transform @ np.pad(position[z,y,x], (0,1)) > position[z,y,x] + shift[z, y, x] - thresh * np.ones(3)) * \
+                           (transform @ np.pad(position[z,y,x], (0,1)) < position[z,y,x] + shift[z, y, x] + thresh * np.ones(3))
                 inlier[z, y, x] = all(in_range)
                 if not inlier[z, y, x]:
                     shift[z, y, x] = np.array([0, 0, 0])
-
+                else:
+                    # Make the direction data for the arrows. As we'd like to see how the shifts vary,
+                    # subtract the actual shift
+                    shift[z, y, x] = shift[z, y, x] - transform[:, 3]
     # Now make the 3D viewer.
     ax = plt.figure().add_subplot(projection='3d')
     # Make the grid
     z, y, x = np.meshgrid(np.arange(y_subvols), np.arange(z_subvols), np.arange(x_subvols))
-    # Make the direction data for the arrows
     u, v, w = shift[:,:, :, 0], shift[:,:, :, 1], shift[:,:, :, 2]
-    ax.quiver(z, y, x, u, v, w)
+    q = ax.quiver(x, y, z, u, v, w, length=0.1, cmap='Reds', normalize=True)
+    q.set_array(np.random.rand(np.prod(x.shape)))
+
     plt.show()
 
 
@@ -593,7 +639,7 @@ def vector_field_plotter(shift, position, scale, intercept):
 # # r0c18_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c18.npy'))
 #
 # # next we generate random cuboids from each of these images and obtain our shift arrays
-# # shift, position = find_random_shift_array(anchor_image, r0c18_image, 500, 10, 200, 200)
+# # shift, position = find_random_shift_array(  anchor_image, r0c18_image, 500, 10, 200, 200)
 #
 # # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
 # # (t, r, c_ref)
