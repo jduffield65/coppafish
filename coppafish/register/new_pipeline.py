@@ -9,7 +9,7 @@ from skimage.filters import sobel
 from skimage.exposure import match_histograms
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
-matplotlib.use('MacOSX')
+matplotlib.use('Qt5Agg')
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -126,20 +126,23 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
     # Exclude shifts too close together, as these have too low a resolution to detect a difference
     # Exlude shifts too close to boundary
     i = 0
-    while i < num_pairs:
-        # Generate random indices
-        z1, y1, x1 = np.random.randint(0, z_subvols), np.random.randint(0, y_subvols), np.random.randint(0, x_subvols)
-        z2, y2, x2 = np.random.randint(0, z_subvols), np.random.randint(0, y_subvols), np.random.randint(0, x_subvols)
-        # Use this to generate scales and intercepts
-        in_range = (boundary_erosion < position[z1, y1, x1]) * (position[z1, y1, x1] < image_dims - boundary_erosion) * \
-                   (boundary_erosion < position[z2, y2, x2]) * (position[z2, y2, x2] < image_dims - boundary_erosion)
-        both_shifts_nonzero = np.min(shift[z1, y1, x1] * shift[z2, y2, x2]) > 0
-        points_sufficiently_far = abs(position[z1, y1, x1] - position[z2, y2, x2]) > dist_thresh
-        if all(in_range) and both_shifts_nonzero and all(points_sufficiently_far):
-            scale[i] = np.ones(3) + (shift[z2, y2, x2] - shift[z1, y1, x1]) / (position[z2, y2, x2] - position[z1, y1, x1])
-            intercept[i] = shift[z1, y1, x1] - (scale[i] - 1) * position[z1, y1, x1]
-            i += 1
+    with tqdm(total=num_pairs) as pbar:
+        pbar.set_description(f"Robust Estimation of scale and shift parameters")
+        while i < num_pairs:
+            # Generate random indices
+            z1, y1, x1 = np.random.randint(0, z_subvols), np.random.randint(1, y_subvols-1), np.random.randint(1, x_subvols-1)
+            z2, y2, x2 = np.random.randint(0, z_subvols), np.random.randint(1, y_subvols-1), np.random.randint(1, x_subvols-1)
+            # Use this to generate scales and intercepts
+            # in_range = (boundary_erosion < position[z1, y1, x1]) * (position[z1, y1, x1] < image_dims - boundary_erosion) * \
+            #            (boundary_erosion < position[z2, y2, x2]) * (position[z2, y2, x2] < image_dims - boundary_erosion)
+            both_shifts_nonzero = np.min(shift[z1, y1, x1] * shift[z2, y2, x2]) > 0
+            points_sufficiently_far = abs(position[z1, y1, x1] - position[z2, y2, x2]) > dist_thresh
+            if both_shifts_nonzero and all(points_sufficiently_far):
+                scale[i] = np.ones(3) + (shift[z2, y2, x2] - shift[z1, y1, x1]) / (position[z2, y2, x2] - position[z1, y1, x1])
+                intercept[i] = shift[z1, y1, x1] - (scale[i] - 1) * position[z1, y1, x1]
+                i += 1
 
+                pbar.update(1)
     # Now that we have these randomly sampled scales and intercepts, let's robustly estimate their parameters
     scale_median, scale_iqr = np.median(scale, axis=0), stats.iqr(scale, axis=0)
     intercept_median, intercept_iqr = np.median(intercept, axis=0), stats.iqr(intercept, axis=0)
@@ -266,6 +269,26 @@ def invert_affine(A):
     return inverse
 
 
+def reformat_affine(A, z_scale):
+    """
+    Function to convert 3 x 4 matrix in z, y, x coords into a 4 x 3 matrix of y, x, z coords and rescale the shift
+
+    Args:
+        A: Original transform in old format (3 x 4)
+        z_scale: How much to scale z-components by (float)
+
+    Returns:
+        A_reformatted: 4 x 3 transform with associated changes
+
+    """
+    # First, convert everything into z, y, x by multiplying by a matrix that swaps rows
+    row_shuffler = np.zeros((4,4))
+    row_shuffler[0, 2] = 1
+    row_shuffler[1, 0] = 1
+    row_shuffler[2, 1] = 1
+    row_shuffler[3, 3] = 1
+
+
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
     """
     Registration pipeline. Returns register Notebook Page.
@@ -299,7 +322,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
     channel_shift = []
     channel_position = []
 
-    with tqdm(total=1 * (n_rounds + len(use_channels))) as pbar:
+    with tqdm(total=(n_rounds + len(use_channels))) as pbar:
         pbar.set_description(f"Inter Round and Inter Channel Transforms")
         # Find the inter round transforms and inter channel transforms
         for t in use_tiles:
@@ -308,7 +331,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
             # Software was written for z y x, so change it from y x z
             anchor_image = np.swapaxes(anchor_image, 0, 2)
             anchor_image = np.swapaxes(anchor_image, 1, 2)
-            for r in [0, 3]:
+            for r in use_rounds:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
                 # Load in imaging npy volume.
                 target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
@@ -317,9 +340,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
 
                 # next we split image into overlapping cuboids
                 subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                       z_box=15, y_box=300, x_box=300)
+                                                       z_box=12, y_box=300, x_box=300)
                 subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                  z_box=15, y_box=300, x_box=300)
+                                                  z_box=12, y_box=300, x_box=300)
 
                 # Find the subvolume shifts
                 shift = find_shift_array(subvol_base, subvol_target)
@@ -341,7 +364,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, match_hist=False):
             r = n_rounds // 2
             # Remove reference channel from comparison
             use_channels.remove(c_ref)
-            for c in [5, 23]:
+            for c in use_channels:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
                 target_image = load_tile(nbp_file, nbp_basic, t, r, c)
@@ -463,7 +486,7 @@ def view_overlay(base_image, target_image, transform):
     # Create a napari viewer and add and transform first image and overlay this with second image
     viewer = napari_viewer()
     viewer.add_image(base_image, blending='additive', colormap='bop_red',
-                     affine=np.vstack((transform, np.array([0, 0, 0, 1])[:, np.newaxis])),
+                     affine=np.vstack((transform, np.array([0, 0, 0, 1]))),
                      contrast_limits=(0, 0.3 * np.max(base_image)))
     viewer.add_image(target_image, blending='additive', colormap='bop_red',
                      contrast_limits=(0, 0.3 * np.max(target_image)))
@@ -529,17 +552,17 @@ def view_regression_scatter(shift, position, transform):
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
     yx_range = np.arange(np.min(position[1]), np.max(position[1]))
 
-    plt.sublpot(1, 3, 1)
+    plt.subplot(1, 3, 1)
     plt.scatter(position[0], shift[0], alpha=1e3/shift.shape[1])
     plt.plot(z_range, (transform[0, 0] - 1) * z_range + transform[0,3])
     plt.title('Z-Shifts vs Z-Positions')
 
-    plt.sublpot(1, 3, 2)
+    plt.subplot(1, 3, 2)
     plt.scatter(position[1], shift[1], alpha=1e3 / shift.shape[1])
     plt.plot(yx_range, (transform[1, 1] - 1) * yx_range + transform[1, 3])
     plt.title('Y-Shifts vs Y-Positions')
 
-    plt.sublpot(1, 3, 3)
+    plt.subplot(1, 3, 3)
     plt.scatter(position[2], shift[2], alpha=1e3 / shift.shape[1])
     plt.plot(yx_range, (transform[2, 2] - 1) * yx_range + transform[2, 3])
     plt.title('X-Shifts vs X-Positions')
@@ -547,15 +570,15 @@ def view_regression_scatter(shift, position, transform):
     plt.show()
 
 
-def vector_field_plotter(shift, position, scale, intercept):
+def vector_field_plotter(shift, position, transform, eps):
     """
     Function to plot a simple vector field of shifts, scaled up, if they are not outliers, as a function of position.
 
     Args:
         shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
         position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
-        scale_range: 3 x 2 array with each row giving +/- 1 iqr of median scale
-        intercept_range: 3 x 2 array with each row giving +/- 1 iqr of median intercept
+        transform: 3 x 4 transform as given by registration algorithm
+        eps: float > 0 defining the multiplying factor for the error threshold. error threshold = eps * iqr(shift)
 
     """
 
@@ -563,29 +586,29 @@ def vector_field_plotter(shift, position, scale, intercept):
     # range between the 2 possible values of the scale and intercept
     z_subvols, y_subvols, x_subvols = shift.shape[:3]
     inlier = np.zeros((z_subvols, y_subvols, x_subvols), dtype=bool)
+    thresh = eps * stats.iqr(shift)
 
     # Set outlier shifts to 0
     for z in range(z_subvols):
         for y in range(y_subvols):
             for x in range(x_subvols):
-                linear_part = np.zeros((3,3))
-                np.fill_diagonal(linear_part, scale[:, 0])
-                lower_bound = np.hstack((linear_part, intercept[:, 0][:, np.newaxis]))
-                np.fill_diagonal(linear_part, scale[:, 1])
-                upper_bound = np.hstack((linear_part, intercept[:, 1][:, np.newaxis]))
-                in_range = (lower_bound @ np.pad(position[z,y,x], (0,1)) < shift[z, y, x]) * \
-                           (shift[z, y, x] < upper_bound @ np.pad(position[z,y,x], (0,1)))
+                in_range = (transform @ np.pad(position[z,y,x], (0,1)) > position[z,y,x] + shift[z, y, x] - thresh * np.ones(3)) * \
+                           (transform @ np.pad(position[z,y,x], (0,1)) < position[z,y,x] + shift[z, y, x] + thresh * np.ones(3))
                 inlier[z, y, x] = all(in_range)
                 if not inlier[z, y, x]:
                     shift[z, y, x] = np.array([0, 0, 0])
-
+                else:
+                    # Make the direction data for the arrows. As we'd like to see how the shifts vary,
+                    # subtract the actual shift
+                    shift[z, y, x] = shift[z, y, x] - transform[:, 3]
     # Now make the 3D viewer.
     ax = plt.figure().add_subplot(projection='3d')
     # Make the grid
     z, y, x = np.meshgrid(np.arange(y_subvols), np.arange(z_subvols), np.arange(x_subvols))
-    # Make the direction data for the arrows
     u, v, w = shift[:,:, :, 0], shift[:,:, :, 1], shift[:,:, :, 2]
-    ax.quiver(z, y, x, u, v, w)
+    q = ax.quiver(x, y, z, u, v, w, length=0.1, cmap='Reds', normalize=True)
+    q.set_array(np.random.rand(np.prod(x.shape)))
+
     plt.show()
 
 
@@ -593,38 +616,38 @@ def vector_field_plotter(shift, position, scale, intercept):
 # # r0c18_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c18.npy'))
 #
 # # next we generate random cuboids from each of these images and obtain our shift arrays
-# # shift, position = find_random_shift_array(anchor_image, r0c18_image, 500, 10, 200, 200)
+# # shift, position = find_random_shift_array(  anchor_image, r0c18_image, 500, 10, 200, 200)
 #
 # # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
 # # (t, r, c_ref)
 # # transform = find_affine_transform_robust(shift, position)
 #
-# # Load in notebook
-# # nb = Notebook("//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v6_1tile_28NOV22\output/notebook_1tile.npz",
-# #               "C:/Users\Reilly\Desktop\E-2210-001_CP_1tile_v6_settings.ini")
-#
+# Load in notebook
+# nb = Notebook("//128.40.224.65\SoyonHong\Christina Maat\ISS Data + Analysis\E-2210-001 6mo CP vs Dry\CP/v6_1tile_28NOV22\output/notebook_1tile.npz",
+#               "C:/Users\Reilly\Desktop\E-2210-001_CP_1tile_v6_settings.ini")
+
 # # Run first with no histogram matching
-# # transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
-# #     register(nb.basic_info, nb.file_names, False)
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_position.npy', np.array(channel_position))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_shift.npy', np.array(channel_shift))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_transform.npy', np.array(channel_transform))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_position.npy', np.array(round_position))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_shift.npy', np.array(round_shift))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_transform.npy', np.array(round_transform))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/transform.npy', np.array(transform))
-# #
-# # Run second with histogram matching
-# # transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
-# #     register(nb.basic_info, nb.file_names, True)
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_position.npy', np.array(channel_position))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_shift.npy', np.array(channel_shift))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_transform.npy', np.array(channel_transform))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_position.npy', np.array(round_position))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_shift.npy', np.array(round_shift))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_transform.npy', np.array(round_transform))
-# # np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/transform.npy', np.array(transform))
+# transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
+#     register(nb.basic_info, nb.file_names, False)
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_position.npy', np.array(channel_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_shift.npy', np.array(channel_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/channel_transform.npy', np.array(channel_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_position.npy', np.array(round_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_shift.npy', np.array(round_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/round_transform.npy', np.array(round_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/No Hist Matching/transform.npy', np.array(transform))
 #
+# Run second with histogram matching
+# transform, round_transform, channel_transform, round_shift, round_position, channel_shift, channel_position = \
+#     register(nb.basic_info, nb.file_names, True)
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_position.npy', np.array(channel_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_shift.npy', np.array(channel_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/channel_transform.npy', np.array(channel_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_position.npy', np.array(round_position))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_shift.npy', np.array(round_shift))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/round_transform.npy', np.array(round_transform))
+# np.save('C:/Users/Reilly/Desktop/Diagnostics/Custom/transform.npy', np.array(transform))
+
 # # anchor_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_anchor_t0c18.npy'))
 # # target_image = sobel(np.load('/Users/reillytilbury/Desktop/Tile 0/round_Cp_r0_t0c5.npy'))
 # # anchor_subvolume, pos = split_3d_image(anchor_image, 5, 15, 15, 12, 300, 300)
@@ -649,4 +672,3 @@ def vector_field_plotter(shift, position, scale, intercept):
 # # np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/scale.npy', scale)
 # #
 # # print('Hello')
-

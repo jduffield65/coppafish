@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import yaml
 from ...call_spots.qual_check import quality_threshold
 from .legend import add_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
@@ -13,6 +14,7 @@ from ...utils import round_any
 import napari
 from napari.qt import thread_worker
 import time
+from skimage import io
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
@@ -24,15 +26,16 @@ from typing import Optional
 
 class Viewer:
     def __init__(self, nb: Notebook, background_image: Optional[list] = ['dapi'], background_image_colour:
-    Optional[list] = ['bop blue'], gene_marker_file: Optional[str] = None):
+    Optional[list] = ['bop blue'], gene_marker_file: Optional[str] = None, zeta_tile_path: str = None):
         """
         This is the function to view the results of the pipeline
         i.e. the spots found and which genes they were assigned to.
         Args:
             nb: Notebook containing at least the `ref_spots` page.
-            background_image: Optional file_name or image that will be plotted as the background image.
-                If image, z dimension needs to be first i.e. `n_z x n_y x n_x` if 3D or `n_y x n_x` if 2D.
+            background_image: Optional list of file_names or images that will be plotted as the background image.
+                If images, z dimensions need to be first i.e. `n_z x n_y x n_x` if 3D or `n_y x n_x` if 2D.
                 If pass *2D* image for *3D* data, will show same image as background on each z-plane.
+            background_image_color: list of names of background colours. Must be same length as background_image
             gene_marker_file: Path to csv file containing marker and color for each gene. There must be 6 columns
                 in the csv file with the following headers:
                 * GeneNames - str, name of gene with first letter capital
@@ -62,6 +65,13 @@ class Viewer:
             if len(gene_ind) > 0:
                 self.legend_gene_no[i] = gene_ind[0]
 
+        if zeta_tile_path:
+            with open(zeta_tile_path, 'r') as file:
+                zeta_stitch = yaml.safe_load(file)['filematrix']
+            tile_origin = zeta_to_coppa(zeta_stitch)
+        else:
+            tile_origin = self.nb.stitch.tile_origin
+
         # concatenate anchor and omp spots so can use button to switch between them.
         self.omp_0_ind = self.nb.ref_spots.tile.size  # number of anchor spots
         if self.nb.has_page('omp'):
@@ -69,10 +79,10 @@ class Viewer:
         else:
             self.n_spots = self.omp_0_ind
         self.spot_zyx = np.zeros((self.n_spots, 3))
-        self.spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + self.nb.stitch.tile_origin[self.nb.ref_spots.tile]
+        self.spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + tile_origin[self.nb.ref_spots.tile]
                                      )[:, [2, 0, 1]]
         if self.nb.has_page('omp'):
-            self.spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + self.nb.stitch.tile_origin[self.nb.omp.tile]
+            self.spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + tile_origin[self.nb.omp.tile]
                                          )[:, [2, 0, 1]]
         if not self.nb.basic_info.is_3d:
             self.spot_zyx = self.spot_zyx[:, 1:]
@@ -103,6 +113,7 @@ class Viewer:
         self.image_layer_ind = None
         self.image_contrast_slider = list(np.repeat(None, len(background_image)))
         if background_image is not None:
+            # Loop through all background images which should be paths to their directories
             for i in range(len(background_image)):
                 if isinstance(background_image[i], str):
                     if background_image[i].lower() == 'dapi':
@@ -112,10 +123,14 @@ class Viewer:
                     else:
                         file_name = background_image[i]
                     if file_name is not None and os.path.isfile(file_name):
-                        background_image[i] = np.load(file_name)
                         if file_name.endswith('.npz'):
-                            # Assume image is first array if .npz file
-                            background_image[i] = background_image[i][background_image[i]._files[0]]
+                            # Assume image is first array if .npz file. Now replace the string with the actual image.
+                            background_image[i] = np.load(background_image[i]).f.arr_0
+                        elif file_name.endswith('.npy'):
+                            # Assume image is first array if .npz file. Now replace the string with the actual image.
+                            background_image[i] = np.load(background_image[i])
+                        elif file_name.endswith('.tif'):
+                            background_image[i] = io.imread(background_image[i])
                     else:
                         background_image[i] = None
                         warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
@@ -555,3 +570,33 @@ class ButtonMethodWindow(QMainWindow):
             self.method = 'Anchor'
         else:
             raise ValueError(f"active_button should be 'Anchor' or 'OMP' but {active_button} was given.")
+
+
+def zeta_to_coppa(zeta_list) -> np.ndarray:
+    """
+    coppafish numbers tiles in a particular convention. yml uses another. Need to marry these.
+    Args:
+        zeta_list: list generated by zetastitcher
+
+    Returns:
+        tile_origin: (3, n_rows * n_cols) np.ndarray tile origins in same form as coppafish
+    """
+    n_tiles = len(zeta_list)
+    tile_origin = np.zeros((n_tiles, 3))
+    x_index = []
+    y_index = []
+
+    for t in range(n_tiles):
+        x_index.append(zeta_list[t]['X'])
+        y_index.append(zeta_list[t]['Y'])
+
+    n_rows = max(y_index) + 1
+    n_cols = max(x_index) + 1
+
+    for t in range(n_tiles):
+        x = zeta_list[t]['X']
+        y = zeta_list[t]['Y']
+        tile_index = int(n_cols * (n_rows - 1 - y) + (n_cols - 1 - x))
+        tile_origin[tile_index] = np.array([zeta_list[t]['Ys'], zeta_list[t]['Xs'], zeta_list[t]['Zs']])
+
+    return tile_origin
