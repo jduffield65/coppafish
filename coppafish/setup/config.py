@@ -158,7 +158,12 @@ _options = {
             'shift_dev_thresh': 'list_number',
             'regularize_constant': 'int',
             'regularize_factor': 'number',
-            'n_transforms_error_fraction': 'number'
+            'n_transforms_error_fraction': 'number',
+            'num_pairs': 'number',
+            'boundary_erosion': 'list_number',
+            'image_dims': 'list_number',
+            'dist_thresh': 'list_number',
+            'resolution': 'int'
         },
     'call_spots':
         {
