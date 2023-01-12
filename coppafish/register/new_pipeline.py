@@ -336,7 +336,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     # In order to determine these transforms, we take 500 random cuboids at teh same point in both images, and examine
     # their shifts using a phase cross correlation algorithm. We then use a phase cross correlation algorithm to
     # find the shift from each of these cuboids to its corresponding cuboid in the target image.
-    # We then use a robust regression algorithm (RANSAC) to find the affine transform that best fits these shifts.
+    # We then use a robust regression algorithm (Theil-Sen) to find the affine transform that best fits these shifts.
     round_shift = []
     round_position = []
     channel_shift = []
@@ -410,7 +410,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                 # Find the subvolume shifts
                 shift = find_shift_array(subvol_base, subvol_target)
 
-                # Append these arrays to the round_shift and round_position storage
+                # Append these arrays to the chsnnel_shift and channel_position storage
                 channel_shift.append(shift)
                 channel_position.append(position)
 
@@ -435,8 +435,18 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                     # by simple matrix multiplication
                     transform[t, r, c] = reformat_affine(compose_affine(channel_transform[t, c], round_transform[t, r]),
                                                          z_scale)
+    round_shift, round_position, round_transform = np.array(round_shift), np.array(round_position), \
+                                                   np.array((round_transform))
+    channel_shift, channel_position, channel_transform = np.array(channel_shift), np.array(channel_position), \
+                                                   np.array((channel_transform))
 
     nbp.transform = transform
+    nbp.round_shift = round_shift
+    nbp.round_position = round_position
+    nbp.round_transform = round_transform
+    nbp.channel_shift = channel_shift
+    nbp.channel_position = channel_position
+    nbp.channel_transform = channel_transform
 
     return nbp
 
