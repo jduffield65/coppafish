@@ -393,8 +393,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
             # r = 0
             # Remove reference channel from comparison as the shift from C18 to C18 is identity
             use_channels.remove(c_ref)
-            # for c in use_channels:
-            for c in [5]:
+            for c in use_channels:
+            # for c in [5]:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
                 target_image = load_tile(nbp_file, nbp_basic, t, r, c)
