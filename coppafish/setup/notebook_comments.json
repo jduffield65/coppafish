@@ -351,14 +351,25 @@
       "to each imaging round/channel for every tile.",
       "Page added to *Notebook* in *pipeline/register.py*"],
 
-    "initial_shift": ["Numpy integer array [n_tiles x n_rounds x 3]",
-      "`shift[t, r, :]` is the $yxz$ shift found that is applied to tile $t$, `ref_round` to take it to tile $t$, round $r$.",
-      "Units: `[yx_pixels, yx_pixels, z_pixels]`, `[:, :, 2] = 0` if *2D*.",
-      "Same as shift in *register_initial* page. DON'T KNOW WHY COPIED THIS - PROBABLY SHOULD REMOVE"],
-    "transform": ["Numpy float array [n_tiles x n_rounds x n_channels x 4 x 3]",
-      "`transform[t, r, c]` is the affine transform to get from tile $t$, `ref_round`, `ref_channel` to tile $t$, round $r$, channel $c$",
-      "Before applying to coordinates, they must be centered and z coordinates put into units of yx-pixels.",
-      "If *2D*, z scaling set to 1 while shift and rotation set to 0."]
+    "transform": [" n_tiles x n_rounds x n_channels x 4 x 3 ndarray",
+      "affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c)$ for each tile $t$, round $r $ and channel $c$.",
+      " These are computed from the round_transform and channel_transform."],
+    "round_transform": [" n_tiles x n_rounds x 4 x 3 ndarray:",
+      " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
+    "channel_transform": ["n_tiles x n_channels x 4 x 3 ndarray:",
+      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."],
+    "round_position": ["n_tiles x n_rounds x z_subvols x y_subvols x x_subvols x 3:",
+      " Position of centre of sub-volumes used for the round registration. Specifically, round_position[t, r, z, y, x]",
+      " is the centre of the [z, y, x] sub-volume used for the registration from $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$."],
+    "round_shift": ["n_tiles x n_rounds x z_subvols x y_subvols x x_subvols x 3:",
+      " Shift of sub-volumes used for the round registration. Specifically, round_shift[t, r, z, y, x] is the shift",
+      " taking sub-volume  [z, y, x] from $(t, r_{ref}, c_{ref})$ to its corresponding sub-volume in $(t, r, c_{ref})$."],
+    "channel_position": ["n_tiles x n_rounds x z_subvols x y_subvols x x_subvols x 3:",
+      " Position of centre of sub-volumes used for the channel registration. Specifically, channel_position[t, r, z, y, x]",
+      " is the centre of the [z, y, x] sub-volume used for the registration from $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$."],
+    "channel_shift": ["n_tiles x n_rounds x z_subvols x y_subvols x x_subvols x 3:",
+      " Shift of sub-volumes used for the sub-volume round registration. Specifically, round_shift[t, r, z, y, x] is ",
+      "the shift taking sub-volume  [z, y, x] from $(t, r_{ref}, c_{ref})$ to its corresponding sub-volume in $(t, r, c_{ref})$."]
   },
 
   "register_debug":

@@ -9,7 +9,6 @@ from skimage.filters import sobel
 from skimage.exposure import match_histograms
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
-matplotlib.use('Qt5Agg')
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -150,22 +149,22 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
     # Now create histograms within 1 IQR of each median and take the top value as our estimate
     scale_bin_z_val, scale_bin_z_index, _ = plt.hist(scale[:, 0], bins=resolution,
                                                      range=(
-                                                     scale_median[0] - scale_iqr[0], scale_median[0] + scale_iqr[0]))
+                                                     scale_median[0] - scale_iqr[0]/2, scale_median[0] + scale_iqr[0]/2))
     scale_bin_y_val, scale_bin_y_index, _ = plt.hist(scale[:, 1], bins=resolution,
                                                      range=(
-                                                     scale_median[1] - scale_iqr[1], scale_median[1] + scale_iqr[1]))
+                                                     scale_median[1] - scale_iqr[1]/2, scale_median[1] + scale_iqr[1]/2))
     scale_bin_x_val, scale_bin_x_index, _ = plt.hist(scale[:, 2], bins=resolution,
                                                      range=(
-                                                     scale_median[2] - scale_iqr[2], scale_median[2] + scale_iqr[2]))
+                                                     scale_median[2] - scale_iqr[2]/2, scale_median[2] + scale_iqr[2]/2))
     intercept_bin_z_val, intercept_bin_z_index, _ = plt.hist(intercept[:, 0], bins=resolution,
-                                                             range=(intercept_median[0] - intercept_iqr[0],
-                                                                    intercept_median[0] + intercept_iqr[0]))
+                                                             range=(intercept_median[0] - intercept_iqr[0]/2,
+                                                                    intercept_median[0] + intercept_iqr[0]/2))
     intercept_bin_y_val, intercept_bin_y_index, _ = plt.hist(intercept[:, 1], bins=resolution,
-                                                             range=(intercept_median[1] - intercept_iqr[1],
-                                                                    intercept_median[1] + intercept_iqr[1]))
+                                                             range=(intercept_median[1] - intercept_iqr[1]/2,
+                                                                    intercept_median[1] + intercept_iqr[1]/2))
     intercept_bin_x_val, intercept_bin_x_index, _ = plt.hist(intercept[:, 2], bins=resolution,
-                                                             range=(intercept_median[2] - intercept_iqr[2],
-                                                                    intercept_median[2] + intercept_iqr[2]))
+                                                             range=(intercept_median[2] - intercept_iqr[2]/2,
+                                                                    intercept_median[2] + intercept_iqr[2]/2))
 
     # Finally, obtain our estimates
     scale_estimate = np.array([scale_bin_z_index[np.argmax(scale_bin_z_val)],
@@ -331,7 +330,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     # After this, we'll compute the transforms from (n_rounds // 2, c_ref) to (n_rounds // 2, c) for all c in use
     channel_transform = np.zeros((n_tiles, n_channels, 3, 4))
     # These will then be combined into a single array by composition
-    transform = np.zeros((n_tiles, n_rounds, n_channels, 3, 4))
+    transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
 
     # In order to determine these transforms, we take 500 random cuboids at teh same point in both images, and examine
     # their shifts using a phase cross correlation algorithm. We then use a phase cross correlation algorithm to
@@ -342,12 +341,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     channel_shift = []
     channel_position = []
 
-    with tqdm(total=(n_rounds + len(use_channels))) as pbar:
+    with tqdm(total=n_tiles*(n_rounds + len(use_channels) - 1)) as pbar:
 
         pbar.set_description(f"Inter Round and Inter Channel Transforms")
         # Find the inter round transforms and inter channel transforms
         for t in use_tiles:
-
+        # for t in [0]:
             # Load in the anchor npy volume, only need to do this once per tile
             anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
             anchor_image_unfiltered = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
@@ -355,8 +354,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
             # Software was written for z y x, so change it from y x z
             anchor_image = np.swapaxes(anchor_image, 0, 2)
             anchor_image = np.swapaxes(anchor_image, 1, 2)
+            anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 0, 2)
+            anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 1, 2)
 
             for r in use_rounds:
+            # for r in [0]:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
 
                 # Load in imaging npy volume.
@@ -379,18 +381,20 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
                 # (t, r, c_ref)
-                round_transform[t, r] = find_affine_transform_robust_custom(shift=shift, position=position,
+                round_transform[t, r], _, _ , _, _ = find_affine_transform_robust_custom(shift=shift, position=position,
                                                                             num_pairs=1e5,
                                                                             boundary_erosion=[5, 100, 100],
                                                                             image_dims=anchor_image.shape,
-                                                                            dist_thresh=[5, 250, 250], resolution=30)
+                                                                            dist_thresh=[10, 300, 300], resolution=15)
                 pbar.update(1)
 
             # Begin the channel transformation calculations. This requires us to use a central round.
             r = n_rounds // 2
+            # r = 0
             # Remove reference channel from comparison as the shift from C18 to C18 is identity
             use_channels.remove(c_ref)
-            for c in use_channels:
+            # for c in use_channels:
+            for c in [5]:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
                 target_image = load_tile(nbp_file, nbp_basic, t, r, c)
@@ -416,11 +420,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
 
                 # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
                 # (t, r, c)
-                aux_transform = find_affine_transform_robust_custom(shift=shift, position=position,
-                                                                    num_pairs=1e5,
-                                                                    boundary_erosion=[5, 100, 100],
-                                                                    image_dims=anchor_image.shape,
-                                                                    dist_thresh=[5, 250, 250], resolution=30)
+                aux_transform, _, _, _, _ = find_affine_transform_robust_custom(shift=shift, position=position,
+                                                                                num_pairs=1e5,
+                                                                                boundary_erosion=[5, 100, 100],
+                                                                                image_dims=anchor_image.shape,
+                                                                                dist_thresh=[10, 300, 300],
+                                                                                resolution=15)
 
                 # Now correct for the round shift to get a round independent affine transform
                 channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r]))
@@ -430,7 +435,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
             use_channels.append(c_ref)
             # Combine all transforms
             for r in use_rounds:
+            # for r in [0]:
                 for c in use_channels:
+                # for c in [5]:
                     # Next we need to compose these affine transforms. Remember, affine transforms cannot be composed
                     # by simple matrix multiplication
                     transform[t, r, c] = reformat_affine(compose_affine(channel_transform[t, c], round_transform[t, r]),
@@ -523,10 +530,10 @@ def view_overlay(base_image, target_image, transform):
         return v
     # Create a napari viewer and add and transform first image and overlay this with second image
     viewer = napari_viewer()
-    viewer.add_image(base_image, blending='additive', colormap='bop_red',
+    viewer.add_image(base_image, blending='additive', colormap='red',
                      affine=np.vstack((transform, np.array([0, 0, 0, 1]))),
                      contrast_limits=(0, 0.3 * np.max(base_image)))
-    viewer.add_image(target_image, blending='additive', colormap='bop_red',
+    viewer.add_image(target_image, blending='additive', colormap='green',
                      contrast_limits=(0, 0.3 * np.max(target_image)))
 
 

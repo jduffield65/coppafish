@@ -1,5 +1,5 @@
 import os
-from .. import setup, utils
+from coppafish import setup, utils
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
     get_reference_spots, call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
@@ -253,3 +253,6 @@ def run_omp(nb: setup.Notebook):
         utils.errors.check_color_nan(nbp.colors, nb.basic_info)
     else:
         warnings.warn('omp', utils.warnings.NotebookPageWarning)
+
+
+# run_pipeline('C:/Users/Reilly/Downloads/primary_before_seq.ini')
