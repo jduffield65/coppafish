@@ -125,12 +125,13 @@ class Viewer:
                     if file_name is not None and os.path.isfile(file_name):
                         if file_name.endswith('.npz'):
                             # Assume image is first array if .npz file. Now replace the string with the actual image.
-                            background_image[i] = np.load(background_image[i]).f.arr_0
+                            background_image[i] = np.load(file_name)
+                            background_image[i] = background_image[i].f.arr_0
                         elif file_name.endswith('.npy'):
                             # Assume image is first array if .npz file. Now replace the string with the actual image.
-                            background_image[i] = np.load(background_image[i])
+                            background_image[i] = np.load(file_name)
                         elif file_name.endswith('.tif'):
-                            background_image[i] = io.imread(background_image[i])
+                            background_image[i] = io.imread(file_name)
                     else:
                         background_image[i] = None
                         warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')

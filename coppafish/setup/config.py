@@ -164,7 +164,13 @@ _options = {
             'image_dims': 'list_number',
             'dist_thresh': 'list_number',
             'resolution': 'int',
-            'spread': 'list_number'
+            'spread': 'list_number',
+            'z_subvols': 'int',
+            'y_subvols': 'int',
+            'x_subvols': 'int',
+            'z_box': 'int',
+            'y_box': 'int',
+            'x_box': 'int',
         },
     'call_spots':
         {
