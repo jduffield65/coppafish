@@ -233,6 +233,40 @@ def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_ero
     return transform, scale_median, scale_iqr, intercept_median, intercept_iqr
 
 
+def ols_regression_robust(shift, position, spread):
+    """
+    Uses OLS regression on data points within 1 IQR of the mean.
+    Args:
+        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        spread: number of iqrs away from the median which we intend to use in dataset
+    Returns:
+        transform: 3 x 4 affine transform in yxz format with final col being shift
+    """
+    # First reshape the shift and position array to the point where their first 3 axes become 1 and final axis untouched
+    shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
+    position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
+
+    # Now take median and IQR to filter inliers from outliers
+    median = np.median(shift, axis=0)
+    iqr = stats.iqr(shift, axis=0)
+    # valid would be n_shifts x 3 array, we want the columns to get collapsed into 1 where all 3 conditions hold,
+    # so collapse by setting all along the first axis
+    valid = (shift <= median + iqr * spread).all(axis=1) * (shift >= median - iqr * spread).all(axis=1)
+
+    # Disregard outlier shifts, then pad the position to accommodate for global shift
+    shift = shift[valid]
+    position = position[valid]
+    new_position = position + shift
+    position = np.vstack((position.T, np.ones(sum(valid)))).T
+
+    # Now compute the regression
+    transform, _, _, _ = np.linalg.lstsq(position, new_position, rcond=None)
+
+    # Unsure what taking transpose means for off diagonals here
+    return transform.T
+
+
 def compose_affine(A1, A2):
     """
     Function to compose 2 affine transfroms
@@ -281,10 +315,10 @@ def reformat_affine(A, z_scale):
 
     """
     # Append to A a bottom row
-    A = np.vstack((A, np.array([0,0,0,1])))
+    A = np.vstack((A, np.array([0, 0, 0, 1])))
 
     # First, convert everything into z, y, x by multiplying by a matrix that swaps rows
-    row_shuffler = np.zeros((4,4))
+    row_shuffler = np.zeros((4, 4))
     row_shuffler[0, 2] = 1
     row_shuffler[1, 0] = 1
     row_shuffler[2, 1] = 1
@@ -297,12 +331,49 @@ def reformat_affine(A, z_scale):
     A[2, 3] = z_scale * A[2, 3]
 
     # Remove the final row
-    A = A[:3,:4]
+    A = A[:3, :4]
 
     # Finally, transpose the matrix
     A = A.T
 
     return A
+
+
+def reformat_array(A, nbp_basic, round):
+    """
+    Reformatting function to send A from (n_tiles * n_rounds) x z_subvol x x_subvol x y_subvol x 3 array to a new array
+    with dimensions n_tiles x n_rounds x z_subvol x x_subvol x y_subvol x 3 and equivalently with channels
+    Args:
+        A: round, pos arrays for shift and position need to be reformatted
+        nbp_basic: basic info page of notebook
+        round: boolean option (True if working with round_shifts, False if working with channel_shifts)
+
+    Returns:
+        B: Reformatted array
+    """
+
+    n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
+    use_rounds, use_channels = nbp_basic.use_rounds, nbp_basic.use_channels
+    c_ref = nbp_basic.anchor_channel
+    counter = 0
+
+    if round:
+        B = np.zeros((n_tiles, n_rounds, A.shape[1], A.shape[2], A.shape[3], A.shape[4]))
+        for t in range(n_tiles):
+            for r in use_rounds:
+                B[t, r] = A[counter]
+                counter += 1
+    else:
+        # This scenario arises if we don't save the transforms for the anchor channel (identity)
+        use_channels.remove(c_ref)
+        B = np.zeros((n_tiles, n_channels, A.shape[1], A.shape[2], A.shape[3], A.shape[4]))
+        for t in range(n_tiles):
+            for c in use_channels:
+                B[t, c] = A[counter]
+                counter += 1
+        use_channels.append(c_ref)
+
+    return B
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
@@ -455,19 +526,31 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     nbp.channel_position = channel_position
     nbp.channel_transform = channel_transform
 
+    # nbp = NotebookPage("register")
+    # nbp.transform = np.load('C:/Users/Reilly/Desktop/transform.npy')
+    # nbp.round_shift = np.load('C:/Users/Reilly/Desktop/round_shift.npy')
+    # nbp.round_position = np.load('C:/Users/Reilly/Desktop/round_pos.npy')
+    # nbp.round_transform = np.load('C:/Users/Reilly/Desktop/round_transform.npy')
+    # nbp.channel_shift = np.load('C:/Users/Reilly/Desktop/channel_shift.npy')
+    # nbp.channel_position = np.load('C:/Users/Reilly/Desktop/channel_pos.npy')
+    # nbp.channel_transform = np.load('C:/Users/Reilly/Desktop/channel_transform.npy')
+
     return nbp
 
 
 # From this point, we only have viewers.
 
 
-def view_overlay(base_image, target_image, transform):
+def view_overlay(nbp_file, nbp_basic, transform, t, r, c):
     """
-    Function to overlay 2 images in napari.
+    Function to overlay tile, round and channel with the anchor in napari and view the registration.
     Args:
-        base_image: base image
-        target_image: target image
-        transform: 3 x 4 array
+        nbp_file: file names page
+        nbp_basic: basic info page
+        transform: n_tiles x n_rounds x n_channels x 4 x 3 array of affine transforms
+        t: common tile
+        r: target image round
+        c: target image channel
     """
 
     def napari_viewer():
@@ -528,10 +611,32 @@ def view_overlay(base_image, target_image, transform):
         v.window.add_dock_widget(_napari_extension_move_points, area="right")
         v.axes.visible = True
         return v
+
+    r_ref, c_ref = nbp_basic.anchor_round, nbp_basic.anchor_channel
+    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
     # Create a napari viewer and add and transform first image and overlay this with second image
+    # Images are saved as yxz but our viewer sees them as zyx. Convert to zyx
+    base_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+    base_image = np.swapaxes(base_image, 0, 2)
+    base_image = np.swapaxes(base_image, 1, 2)
+    target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c))
+    target_image = np.swapaxes(target_image, 0, 2)
+    target_image = np.swapaxes(target_image, 1, 2)
+    # Transform saved as yxz * yxz but needs to be zyx * zyx. Convert this to something napari will understand. I think
+    # this includes making the shift the final column as opposed to our convention of making the shift the final row
+    affine_transform = np.vstack(((transform[t, r, c]).T, np.array([0, 0, 0, 1])))
+    row_shuffler = np.zeros((4, 4))
+    row_shuffler[0, 1] = 1
+    row_shuffler[1, 2] = 1
+    row_shuffler[2, 0] = 1
+    row_shuffler[3, 3] = 1
+    # Now compute the affine transform, in the new basis
+    affine_transform = np.linalg.inv(row_shuffler) @ affine_transform @ row_shuffler
+    # Finally, z shift needs to be converted to z-pixels as opposed to yx
+    affine_transform[0, 3] = affine_transform[0, 3] / z_scale
     viewer = napari_viewer()
     viewer.add_image(base_image, blending='additive', colormap='red',
-                     affine=np.vstack((transform, np.array([0, 0, 0, 1]))),
+                     affine=affine_transform,
                      contrast_limits=(0, 0.3 * np.max(base_image)))
     viewer.add_image(target_image, blending='additive', colormap='green',
                      contrast_limits=(0, 0.3 * np.max(target_image)))
@@ -716,4 +821,4 @@ def vector_field_plotter(shift, position, transform, eps):
 # # np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/shift.npy', shift)
 # # np.save('/Users/reillytilbury/Desktop/Tile 0/Registration Images/scale.npy', scale)
 # #
-# # print('Hello')
+# # print('Hello'@)
