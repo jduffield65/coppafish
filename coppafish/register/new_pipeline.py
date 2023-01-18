@@ -392,7 +392,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     Returns:
         nbp: (NotebookPage) Register notebook page
     """
-    
+
     # Break algorithm up into 2 parts.
 
     # Part 1: Generate the positions and their associated shifts for the round and channel registration. Save these in
@@ -491,7 +491,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                                                   z_box=z_box, y_box=y_box, x_box=x_box)
 
                 # Find the subvolume shifts
-                shift = find_shift_array(subvol_base, subvol_target)
+                if c != c_ref:
+                    shift = find_shift_array(subvol_base, subvol_target)
+                else:
+                    # We have already computed this set of shifts for c_ref
+                    shift = round_shift[t, r_mid]
 
                 # Append these arrays to the channel_shift and channel_position storage.
                 # Reminder that these are not what will be used to directly compute the shift from (t, r_mid, c_ref) to
@@ -517,11 +521,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                 pbar.update(1)
             for c in use_channels:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
-                if c != c_ref:
-                    aux_transform = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
-                    channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r_mid]))
-                else:
-                    channel_transform[t, c] = np.eye(3, 4)
+                aux_transform = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
+                channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r_mid]))
                 pbar.update(1)
 
             # Now combine these into total transforms
