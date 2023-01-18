@@ -163,7 +163,8 @@ _options = {
             'boundary_erosion': 'list_number',
             'image_dims': 'list_number',
             'dist_thresh': 'list_number',
-            'resolution': 'int'
+            'resolution': 'int',
+            'spread': 'list_number'
         },
     'call_spots':
         {

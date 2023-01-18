@@ -380,6 +380,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
 
     """
     Registration pipeline. Returns register Notebook Page.
+    Finds affine transforms by using linear regression to find the best matrix (in the least squares sense) taking a
+    bunch of points in one image to corresponding points in another. These shifts are found with a phase cross
+    correlation algorithm.
+
     Args:
         nbp_basic: (NotebookPage) Basic Info notebook page
         nbp_file: (NotebookPage) File Names notebook page
@@ -388,38 +392,52 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     Returns:
         nbp: (NotebookPage) Register notebook page
     """
+    
+    # Break algorithm up into 2 parts.
+
+    # Part 1: Generate the positions and their associated shifts for the round and channel registration. Save these in
+    # the notebook.
+    # Part 2: Compute the affine transform from this data, using our regression method of choice
+
+    # Part 1: Compute shifts
 
     # Initialise frequently used variables
     nbp = NotebookPage("register")
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
     r_ref, c_ref = nbp_basic.ref_round, nbp_basic.ref_channel
+    # Next it's important to include z-scale as our affine transform will need to have the z-shift saved in units of xy
+    # pixels
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
+    # Also note the round we use for the channel shifts
+    r_mid = n_rounds//2
+    # Now initialise the registration parameters specified in the config file
+    z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
+    z_box, y_box, x_box = config['z_box'], config['y_box'], config['x_box']
+    spread = config['spread']
 
-    # First we'll compute the transforms from (r_ref, c_ref) to (r, c_ref)
+    # Finally, initialise all data to be saved to the notebook page.
+    # round_transforms is the affine transform from (r_ref, c_ref) to (r, c_ref) for all r in use
     round_transform = np.zeros((n_tiles, n_rounds, 3, 4))
-    # After this, we'll compute the transforms from (n_rounds // 2, c_ref) to (n_rounds // 2, c) for all c in use
+    # channel_transform is the affine transforms from (r_mid, c_ref) to (r_mid c) for all c in use
     channel_transform = np.zeros((n_tiles, n_channels, 3, 4))
-    # These will then be combined into a single array by composition
+    # These will then be combined into a single array by affine composition, reformatted for compatibility later in code
     transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
+    # The next 4 arrays store the shifts and positions of the subvolumes between the images we are registering
+    round_shift = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
+    round_position = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
+    channel_shift = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
+    channel_position = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
 
-    # In order to determine these transforms, we take 500 random cuboids at teh same point in both images, and examine
-    # their shifts using a phase cross correlation algorithm. We then use a phase cross correlation algorithm to
-    # find the shift from each of these cuboids to its corresponding cuboid in the target image.
-    # We then use a robust regression algorithm (Theil-Sen) to find the affine transform that best fits these shifts.
-    round_shift = []
-    round_position = []
-    channel_shift = []
-    channel_position = []
-
+    # For each tile, only need to do this for the n_rounds + channels not equal to ref channel
     with tqdm(total=n_tiles*(n_rounds + len(use_channels) - 1)) as pbar:
 
-        pbar.set_description(f"Inter Round and Inter Channel Transforms")
-        # Find the inter round transforms and inter channel transforms
+        pbar.set_description(f"Computing shifts for all subvolumes")
+
         for t in use_tiles:
-        # for t in [0]:
             # Load in the anchor npy volume, only need to do this once per tile
             anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+            # Save the unfiltered version as well for histogram matching later
             anchor_image_unfiltered = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
 
             # Software was written for z y x, so change it from y x z
@@ -429,7 +447,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
             anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 1, 2)
 
             for r in use_rounds:
-            # for r in [0]:
                 pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
 
                 # Load in imaging npy volume.
@@ -438,37 +455,26 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                 target_image = np.swapaxes(target_image, 1, 2)
 
                 # next we split image into overlapping cuboids
-                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                       z_box=12, y_box=300, x_box=300)
-                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                  z_box=12, y_box=300, x_box=300)
+                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
+                                                       y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                       z_box=z_box, y_box=y_box, x_box=x_box)
+                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
+                                                  x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
 
                 # Find the subvolume shifts
                 shift = find_shift_array(subvol_base, subvol_target)
 
                 # Append these arrays to the round_shift and round_position storage
-                round_shift.append(shift)
-                round_position.append(position)
+                round_shift[t, r] = shift
+                round_position[t, r] = position
 
-                # Use these subvolumes shifts to find the affine transform taking the volume (t, r_ref, c_ref) to
-                # (t, r, c_ref)
-                round_transform[t, r], _, _ , _, _ = find_affine_transform_robust_custom(shift=shift, position=position,
-                                                                            num_pairs=1e5,
-                                                                            boundary_erosion=[5, 100, 100],
-                                                                            image_dims=anchor_image.shape,
-                                                                            dist_thresh=[10, 300, 300], resolution=15)
                 pbar.update(1)
 
-            # Begin the channel transformation calculations. This requires us to use a central round.
-            r = n_rounds // 2
-            # r = 0
-            # Remove reference channel from comparison as the shift from C18 to C18 is identity
-            use_channels.remove(c_ref)
+            # Now generate shifts and positions for channels
             for c in use_channels:
-            # for c in [5]:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Load in imaging npy volume
-                target_image = load_tile(nbp_file, nbp_basic, t, r, c)
+                target_image = load_tile(nbp_file, nbp_basic, t, r_mid, c)
                 target_image = np.swapaxes(target_image, 0, 2)
                 target_image = np.swapaxes(target_image, 1, 2)
 
@@ -477,47 +483,54 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                 target_image = sobel(target_image)
 
                 # next we split image into overlapping cuboids
-                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                       z_box=12, y_box=300, x_box=300)
-                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=5, y_subvolumes=15, x_subvolumes=15,
-                                                  z_box=12, y_box=300, x_box=300)
+                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
+                                                       y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                       z_box=z_box, y_box=y_box, x_box=x_box)
+                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols,
+                                                  y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                  z_box=z_box, y_box=y_box, x_box=x_box)
 
                 # Find the subvolume shifts
                 shift = find_shift_array(subvol_base, subvol_target)
 
-                # Append these arrays to the chsnnel_shift and channel_position storage
-                channel_shift.append(shift)
-                channel_position.append(position)
+                # Append these arrays to the channel_shift and channel_position storage.
+                # Reminder that these are not what will be used to directly compute the shift from (t, r_mid, c_ref) to
+                # (t, r_mid, c) but these will rather be used to compute the transform from (t, r_ref, c_ref) to
+                # (t, r_mid, c). Given that we know the transform from (t, r_ref, c_ref) to (t, r_mid, c_ref), the
+                # desired transform can be easily computed
+                channel_shift[t, c] = shift
+                channel_position[t, c] = position
 
-                # Use these subvolumes shifts to find the affine transform taking the volume (t, r, c_ref) to
-                # (t, r, c)
-                aux_transform, _, _, _, _ = find_affine_transform_robust_custom(shift=shift, position=position,
-                                                                                num_pairs=1e5,
-                                                                                boundary_erosion=[5, 100, 100],
-                                                                                image_dims=anchor_image.shape,
-                                                                                dist_thresh=[10, 300, 300],
-                                                                                resolution=15)
-
-                # Now correct for the round shift to get a round independent affine transform
-                channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r]))
                 pbar.update(1)
 
-            # Add reference channel back to use_channels
-            use_channels.append(c_ref)
-            # Combine all transforms
+    # Part 2: Compute the regression
+
+    # For each tile, only need to do this for the n_rounds + channels not equal to ref channel
+    with tqdm(total=n_tiles * (n_rounds + len(use_channels) - 1)) as pbar:
+
+        pbar.set_description(f"Computing regression for all transforms")
+
+        for t in use_tiles:
             for r in use_rounds:
-            # for r in [0]:
+                pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
+                round_transform[t, r] = ols_regression_robust(round_shift[t, r], round_position[t, r], spread)
+                pbar.update(1)
+            for c in use_channels:
+                pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
+                if c != c_ref:
+                    aux_transform = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
+                    channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r_mid]))
+                else:
+                    channel_transform[t, c] = np.eye(3, 4)
+                pbar.update(1)
+
+            # Now combine these into total transforms
+            for r in use_rounds:
                 for c in use_channels:
-                # for c in [5]:
-                    # Next we need to compose these affine transforms. Remember, affine transforms cannot be composed
-                    # by simple matrix multiplication
                     transform[t, r, c] = reformat_affine(compose_affine(channel_transform[t, c], round_transform[t, r]),
                                                          z_scale)
-    round_shift, round_position, round_transform = np.array(round_shift), np.array(round_position), \
-                                                   np.array((round_transform))
-    channel_shift, channel_position, channel_transform = np.array(channel_shift), np.array(channel_position), \
-                                                   np.array((channel_transform))
 
+    # Finally, save all relevant variables to the notebook page
     nbp.transform = transform
     nbp.round_shift = round_shift
     nbp.round_position = round_position
@@ -525,15 +538,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     nbp.channel_shift = channel_shift
     nbp.channel_position = channel_position
     nbp.channel_transform = channel_transform
-
-    # nbp = NotebookPage("register")
-    # nbp.transform = np.load('C:/Users/Reilly/Desktop/transform.npy')
-    # nbp.round_shift = np.load('C:/Users/Reilly/Desktop/round_shift.npy')
-    # nbp.round_position = np.load('C:/Users/Reilly/Desktop/round_pos.npy')
-    # nbp.round_transform = np.load('C:/Users/Reilly/Desktop/round_transform.npy')
-    # nbp.channel_shift = np.load('C:/Users/Reilly/Desktop/channel_shift.npy')
-    # nbp.channel_position = np.load('C:/Users/Reilly/Desktop/channel_pos.npy')
-    # nbp.channel_transform = np.load('C:/Users/Reilly/Desktop/channel_transform.npy')
 
     return nbp
 
