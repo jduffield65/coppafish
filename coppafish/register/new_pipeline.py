@@ -399,10 +399,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     # the notebook.
     # Part 2: Compute the affine transform from this data, using our regression method of choice
 
-    # Part 1: Compute shifts
+    # Part 0: Initialisation
 
     # Initialise frequently used variables
     nbp = NotebookPage("register")
+    config = config["register"]
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
     r_ref, c_ref = nbp_basic.ref_round, nbp_basic.ref_channel
@@ -414,7 +415,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     # Now initialise the registration parameters specified in the config file
     z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
     z_box, y_box, x_box = config['z_box'], config['y_box'], config['x_box']
-    spread = config['spread']
+    spread = np.array(config['spread'])
 
     # Finally, initialise all data to be saved to the notebook page.
     # round_transforms is the affine transform from (r_ref, c_ref) to (r, c_ref) for all r in use
@@ -429,6 +430,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     channel_shift = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
     channel_position = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
 
+    # Part 1: Compute subvolume shifts
+
     # For each tile, only need to do this for the n_rounds + channels not equal to ref channel
     with tqdm(total=n_tiles*(n_rounds + len(use_channels) - 1)) as pbar:
 
@@ -436,9 +439,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
 
         for t in use_tiles:
             # Load in the anchor npy volume, only need to do this once per tile
-            anchor_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
-            # Save the unfiltered version as well for histogram matching later
             anchor_image_unfiltered = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
+            # Save the unfiltered version as well for histogram matching later
+            anchor_image = sobel(anchor_image_unfiltered)
 
             # Software was written for z y x, so change it from y x z
             anchor_image = np.swapaxes(anchor_image, 0, 2)
