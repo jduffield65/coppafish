@@ -184,7 +184,7 @@ class Viewer:
         # Add all spots in layer as transparent white spots.
         self.point_size = [self.z_thick, 10, 10]  # with size=4, spots are too small to see
         self.viewer.add_points(self.spot_zyx, name='Diagnostic', face_color='w', size=np.array(self.point_size)+np.array([0, 2, 2]),
-                               opacity=0, shown=show_spots)
+                               opacity=0, shown=show_spots, out_of_slice_display=True)
 
         if self.is_3d:
             self.z_thick_slider = QSlider(Qt.Orientation.Horizontal)

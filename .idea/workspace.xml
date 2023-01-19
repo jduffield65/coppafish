@@ -268,7 +268,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>631</line>
+          <line>634</line>
           <option name="timeStamp" value="303" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -277,9 +277,24 @@
           <option name="timeStamp" value="313" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/pipeline/run.py</url>
+          <line>161</line>
+          <option name="timeStamp" value="316" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
+          <line>404</line>
+          <option name="timeStamp" value="317" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
+          <line>441</line>
+          <option name="timeStamp" value="318" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/plot/results_viewer/base.py</url>
-          <line>114</line>
-          <option name="timeStamp" value="315" />
+          <line>53</line>
+          <option name="timeStamp" value="320" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
