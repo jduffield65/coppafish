@@ -43,9 +43,9 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndar
     """
     if (utils.round_any(tile_centre, 0.5) == tile_centre).min() == False:
         raise ValueError(f"tile_centre given, {tile_centre}, is not a multiple of 0.5 in each dimension.")
-    yxz_pad = np.pad((yxz - tile_centre) * [1, 1, z_scale], [(0, 0), (0, 1)], constant_values=1)
+    yxz_pad = np.pad(yxz * [1, 1, z_scale], [(0, 0), (0, 1)], constant_values=1)
     yxz_transform = yxz_pad @ transform
-    yxz_transform = np.round((yxz_transform / [1, 1, z_scale]) + tile_centre).astype(np.int16)
+    yxz_transform = np.round(yxz_transform / [1, 1, z_scale]).astype(np.int16)
     in_range = np.logical_and((yxz_transform >= np.array([0, 0, 0])).all(axis=1),
                               (yxz_transform < tile_sz).all(axis=1))  # set color to nan if out range
     return yxz_transform, in_range
