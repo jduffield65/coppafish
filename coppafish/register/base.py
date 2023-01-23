@@ -72,6 +72,7 @@ def get_transform(yxz_base: np.ndarray, transform_old: np.ndarray, yxz_target: n
         transform = np.linalg.lstsq(yxz_base_regularised, yxz_target_regularised, rcond=None)[0]
     if np.sum(transform[2, :] == 0) == 3:
         transform[2, 2] = 1  # if 2d transform, set scaling of z to 1 still
+
     return transform, neighbour, n_matches, error
 
 

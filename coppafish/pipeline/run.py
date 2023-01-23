@@ -160,10 +160,12 @@ def run_register(nb: setup.Notebook):
 
     """
     config = nb.get_config()
-    # if not all(nb.has_page(["register", "register_debug"])):
-    if not nb.has_page("register"):
-        nbp = register(nb.basic_info, nb.file_names, config)
+    if not all(nb.has_page(["register", "register_debug"])):
+    # if not nb.has_page("register"):
+        nbp, nbp_debug = register(nb.basic_info, nb.file_names, config, nb.find_spots.spot_details,
+                                  nb.find_spots.spot_no)
         nb += nbp
+        nb += nbp_debug
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)

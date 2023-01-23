@@ -1,4 +1,6 @@
 import matplotlib
+from coppafish.register.base import icp
+from ..find_spots import spot_yxz, get_isolated_points
 import napari
 import numpy as np
 import matplotlib.pyplot as plt
@@ -376,7 +378,8 @@ def reformat_array(A, nbp_basic, round):
     return B
 
 
-def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
+def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot_details: np.ndarray,
+             spot_no: np.ndarray,):
 
     """
     Registration pipeline. Returns register Notebook Page.
@@ -384,13 +387,21 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     bunch of points in one image to corresponding points in another. These shifts are found with a phase cross
     correlation algorithm.
 
+    To get greater precision with this algorithm, we update these transforms with an iterative closest point algorithm.
+
     Args:
         nbp_basic: (NotebookPage) Basic Info notebook page
         nbp_file: (NotebookPage) File Names notebook page
         config: Register part of the config dictionary
+        spot_details: `int [n_spots x 3]`.
+            `spot_details[s]` is `[ y, x, z]` of spot `s`.
+            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+        spot_no: 'int[n_tiles x n_rounds x n_channels]'
+            'spot_no[t,r,c]' is num_spots found on that [t,r,c]
 
     Returns:
         nbp: (NotebookPage) Register notebook page
+        nbp_debug: (NotebookPage) Register_debug notebook page
     """
 
     # Break algorithm up into 2 parts.
@@ -403,6 +414,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
 
     # Initialise frequently used variables
     nbp = NotebookPage("register")
+    nbp_debug = NotebookPage("register_debug")
+
     config = config["register"]
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
@@ -417,6 +430,16 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     z_box, y_box, x_box = config['z_box'], config['y_box'], config['x_box']
     spread = np.array(config['spread'])
 
+    # Initialise variables for ICP step
+    if nbp_basic.is_3d:
+        neighb_dist_thresh = config['neighb_dist_thresh_3d']
+    else:
+        neighb_dist_thresh = config['neighb_dist_thresh_2d']
+    # Load and scale spot yxz coordinates
+    spot_yxz_ref = np.zeros(n_tiles, dtype=object)
+    spot_yxz_imaging = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
+    n_matches_thresh = np.zeros_like(spot_yxz_imaging, dtype=float)
+
     # Finally, initialise all data to be saved to the notebook page.
     # round_transforms is the affine transform from (r_ref, c_ref) to (r, c_ref) for all r in use
     round_transform = np.zeros((n_tiles, n_rounds, 3, 4))
@@ -424,6 +447,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     channel_transform = np.zeros((n_tiles, n_channels, 3, 4))
     # These will then be combined into a single array by affine composition, reformatted for compatibility later in code
     transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
+    # Not sure if we will keep this
+    final_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
     # The next 4 arrays store the shifts and positions of the subvolumes between the images we are registering
     round_shift = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
     round_position = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
@@ -534,8 +559,66 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
                     transform[t, r, c] = reformat_affine(compose_affine(channel_transform[t, c], round_transform[t, r]),
                                                          z_scale)
 
+    # This algorithm works well, but we need pixel level registration. For this reason, we use this transform as an
+    # initial guess for an ICP algorithm
+
+    # Initialise variables. This includes spaces for tiles/rounds/channels not used
+    n_matches = np.zeros_like(spot_yxz_imaging, dtype=int)
+    error = np.zeros_like(spot_yxz_imaging, dtype=float)
+    failed = np.zeros_like(spot_yxz_imaging, dtype=bool)
+    converged = np.zeros_like(spot_yxz_imaging, dtype=bool)
+    av_scaling = np.zeros((n_channels, 3), dtype=float)
+    av_shifts = np.zeros((n_tiles, n_rounds, 3))
+    transform_outliers = np.zeros_like(transform)
+
+    for t in use_tiles:
+        spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
+                                   spot_no) * np.array([1, 1, z_scale])
+        for r in use_rounds:
+            for c in use_channels:
+                spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no) * np.array([1, 1, z_scale])
+                if neighb_dist_thresh < 50:
+                    # only keep isolated spots, those whose second neighbour is far away
+                    isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
+                    spot_yxz_imaging[t, r, c] = spot_yxz_imaging[t, r, c][isolated, :]
+                n_matches_thresh[t, r, c] = (config['matches_thresh_fract'] *
+                                             np.min([spot_yxz_ref[t].shape[0], spot_yxz_imaging[t, r, c].shape[0]]))
+
+    # get indices of tiles/rounds/channels used
+    trc_ind = np.ix_(use_tiles, use_rounds, use_channels)
+    tr_ind = np.ix_(use_tiles, use_rounds)
+    n_matches_thresh[trc_ind] = np.clip(n_matches_thresh[trc_ind], config['matches_thresh_min'],
+                                        config['matches_thresh_max'])
+    n_matches_thresh = n_matches_thresh.astype(int)
+    final_transform[trc_ind], pcr_debug = icp(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
+                                              transform[trc_ind], config['n_iter'], neighb_dist_thresh,
+                                              n_matches_thresh[trc_ind], config['scale_dev_thresh'],
+                                              config['shift_dev_thresh'], None, None)
+
     # Finally, save all relevant variables to the notebook page
-    nbp.transform = transform
+
+    # save debug info at correct tile, round, channel index
+    n_matches[trc_ind] = pcr_debug['n_matches']
+    error[trc_ind] = pcr_debug['error']
+    failed[trc_ind] = pcr_debug['failed']
+    converged[trc_ind] = pcr_debug['is_converged']
+    av_scaling[use_channels] = pcr_debug['av_scaling']
+    av_shifts[tr_ind] = pcr_debug['av_shifts']
+    transform_outliers[trc_ind] = pcr_debug['transforms_outlier']
+
+    # add to debug page of notebook
+    nbp_debug.n_matches = n_matches
+    nbp_debug.n_matches_thresh = n_matches_thresh
+    nbp_debug.error = error
+    nbp_debug.failed = failed
+    nbp_debug.converged = converged
+    nbp_debug.av_scaling = av_scaling
+    nbp_debug.av_shifts = av_shifts
+    nbp_debug.transform_outlier = transform_outliers
+
+    # add to register page of notebook
+    nbp.start_transform = transform
+    nbp.transform = final_transform
     nbp.round_shift = round_shift
     nbp.round_position = round_position
     nbp.round_transform = round_transform
@@ -543,7 +626,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
     nbp.channel_position = channel_position
     nbp.channel_transform = channel_transform
 
-    return nbp
+    return nbp, nbp_debug
 
 
 # From this point, we only have viewers.

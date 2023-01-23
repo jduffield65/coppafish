@@ -7,7 +7,7 @@ from typing import Tuple
 
 
 def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray,
-             initial_shift: np.ndarray, initial_scale: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
+             start_transform: np.ndarray) -> Tuple[NotebookPage, NotebookPage]:
     """
     This finds the affine transforms to go from the ref round/channel to each imaging round/channel for every tile.
     It uses iterative closest point and the starting shifts found in `pipeline/register_initial.py`.
@@ -23,14 +23,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
             This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
         spot_no: 'int[n_tiles x n_rounds x n_channels]'
             'spot_no[t,r,c]' is num_spots found on that [t,r,c]
-        initial_shift: `int [n_tiles x n_rounds x n_channels x 3]`.
-            `initial_shift[t, r, c]` is the yxz shift found that is applied to tile `t`, `ref_round` to take it to
-            tile `t`, round `r`, channel 'c'. Units: `[yx_pixels, yx_pixels, z_pixels]`.
-            This is saved in the `register_initial` notebook page i.e. `nb.register_initial.shift`.
-        initial_scale: `float [n_rounds]`.
-            `initial_shift[r]` is the z scale found that is applied to tile `ref_round` to take it to
-             round `r`. Units: `z_pixels`.
-            This is saved in the `register_initial` notebook page i.e. `nb.register_initial.z_expansion_factor`.
+        start_transform: n_tiles x n_rounds x n_channels x 4 x 3 array of initial starting affine fits.
 
     Returns:
         - `NotebookPage[register]` - Page contains the affine transforms to go from the ref round/channel to
@@ -39,30 +32,24 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     """
     nbp = NotebookPage("register")
     nbp_debug = NotebookPage("register_debug")
-    nbp.initial_shift = initial_shift.copy()
 
-    # if nbp_basic.is_3d:
-    #     neighb_dist_thresh = config['neighb_dist_thresh_3d']
-    # else:
-    #     neighb_dist_thresh = config['neighb_dist_thresh_2d']
-    neighb_dist_thresh = 5
+    if nbp_basic.is_3d:
+        neighb_dist_thresh = config['neighb_dist_thresh_3d']
+    else:
+        neighb_dist_thresh = config['neighb_dist_thresh_2d']
 
-    # centre and scale spot yxz coordinates
-    z_scale = [1, 1, nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy]
+    # scale spot yxz coordinates
+    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
     spot_yxz_ref = np.zeros(nbp_basic.n_tiles, dtype=object)
     spot_yxz_imaging = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels), dtype=object)
     n_matches_thresh = np.zeros_like(spot_yxz_imaging, dtype=float)
-    initial_shift = initial_shift.astype(float)
+
     for t in nbp_basic.use_tiles:
         spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
-                                   spot_no)
-        spot_yxz_ref[t] = (spot_yxz_ref[t] - np.append(nbp_basic.tile_centre[:2], 0)) * z_scale
+                                   spot_no) * np.array([1, 1, z_scale])
         for r in nbp_basic.use_rounds:
             for c in nbp_basic.use_channels:
-                initial_shift[t, r, c] = initial_shift[t, r, c] * z_scale
-                spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no)
-                spot_yxz_imaging[t, r, c] = (spot_yxz_imaging[t, r, c] - np.append(nbp_basic.tile_centre[:2], 0)) * \
-                                            z_scale
+                spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no) * np.array([1, 1, z_scale])
                 if neighb_dist_thresh < 50:
                     # only keep isolated spots, those whose second neighbour is far away
                     isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
@@ -78,8 +65,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
                                         config['matches_thresh_max'])
     n_matches_thresh = n_matches_thresh.astype(int)
 
-    # Initialise variables obtain from PCR algorithm. This includes spaces for tiles/rounds/channels not used
-    start_transform = transform_from_round_scale_shift(initial_scale, initial_shift)
+    # Initialise variables. This includes spaces for tiles/rounds/channels not used
     final_transform = np.zeros_like(start_transform)
     n_matches = np.zeros_like(spot_yxz_imaging, dtype=int)
     error = np.zeros_like(spot_yxz_imaging, dtype=float)
