@@ -1,6 +1,6 @@
 import matplotlib
-from coppafish.register.base import icp
 from ..find_spots import spot_yxz, get_isolated_points
+from scipy.spatial import KDTree
 import napari
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +11,7 @@ from skimage.filters import sobel
 from skimage.exposure import match_histograms
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
+from typing import Optional, Tuple, Union, List
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -378,6 +379,99 @@ def reformat_array(A, nbp_basic, round):
     return B
 
 
+def get_transform(yxz_base: np.ndarray, yxz_target: np.ndarray, transform_old: np.ndarray, dist_thresh: float,
+                  robust=False):
+    """
+    This finds the affine transform that transforms ```yxz_base``` such that the distances between the neighbours
+    with ```yxz_target``` are minimised.
+
+    Args:
+        yxz_base: ```float [n_base_spots x 3]```.
+            Coordinates of spots you want to transform.
+        transform_old: ```float [4 x 3]```.
+            Affine transform found for previous iteration of PCR algorithm.
+        yxz_target: ```float [n_target_spots x 3]```.
+            Coordinates of spots in image that you want to transform ```yxz_base``` to.
+        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
+            Typical: ```5```.
+        robust: Boolean option to make regression robust. Selecting true will result in the algorithm maximising
+            correntropy as opposed to minimising mse.
+
+    Returns:
+        - ```transform``` - ```float [4 x 3]```.
+            Updated affine transform.
+        - ```neighbour``` - ```int [n_base_spots]```.
+            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of
+            ```yxz_base[i]``` is closest.
+        - ```n_matches``` - ```int```.
+            Number of neighbours which have distance less than ```dist_thresh```.
+        - ```error``` - ```float```.
+            Average distance between ```neighbours``` below ```dist_thresh```.
+    """
+    # Step 1 computes matching, since yxz_target is a subset of yxz_base, we will loop through yxz_target and find
+    # their nearest neighbours within yxz_transform, which is the initial transform applied to yxz_base
+    yxz_base_pad = np.pad(yxz_base, [(0, 0), (0, 1)], constant_values=1)
+    yxz_transform = yxz_base_pad @ transform_old
+    yxz_transform_tree = KDTree(yxz_transform)
+    # the next query works the following way. For each point in yxz_target, we look for the closest neighbour in the
+    # anchor, which we have now applied the initial transform to. If this is below dist_thresh, we append its distance
+    # to distances and append the index of this neighbour to neighbour
+    distances, neighbour = yxz_transform_tree.query(yxz_target, distance_upper_bound=dist_thresh)
+    neighbour = neighbour.flatten()
+    distances = distances.flatten()
+    use = distances < dist_thresh
+    n_matches = np.sum(use)
+    error = np.sqrt(np.mean(distances[use] ** 2))
+
+    base_pad_use = yxz_base_pad[neighbour[use], :]
+    target_use = yxz_target[use, :]
+
+    if not robust:
+        transform = np.linalg.lstsq(base_pad_use, target_use, rcond=None)[0]
+    else:
+        sigma = dist_thresh / 2
+        target_pad_use = np.pad(target_use, [(0, 0), (0, 1)], constant_values=1)
+        D = np.diag(np.exp(-0.5 * (np.linalg.norm(base_pad_use @ transform_old - target_use, axis=1)/sigma) ** 2))
+        transform = (target_pad_use.T @ D @ base_pad_use @ np.linalg.inv(base_pad_use.T @ D @ base_pad_use))[:3, :4].T
+
+    return transform, neighbour, n_matches, error
+
+
+def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust):
+    """
+    Applies n_iters rrounds of the above least squares regression
+Args:
+        yxz_base: ```float [n_base_spots x 3]```.
+            Coordinates of spots you want to transform.
+        yxz_target: ```float [n_target_spots x 3]```.
+            Coordinates of spots in image that you want to transform ```yxz_base``` to.
+        start_transform: initial transform
+        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
+            Typical: ```3```.
+        n_iters: number of times to compute regression
+
+
+    Returns:
+        - ```transform``` - ```float [4 x 3]```.
+            Updated affine transform.
+        - ```neighbour``` - ```int [n_base_spots]```.
+            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of
+            ```yxz_base[i]``` is closest.
+        - ```n_matches``` - ```int```.
+            Number of neighbours which have distance less than ```dist_thresh```.
+        - ```error``` - ```float```.
+            Average distance between ```neighbours``` below ```dist_thresh```.
+    """
+
+    # initialise transform
+    transform = start_transform
+
+    for i in range(n_iters):
+        transform, neighbour, n_matches, error = get_transform(yxz_base, yxz_target, transform, dist_thresh, robust)
+
+    return transform, neighbour, n_matches, error
+
+
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot_details: np.ndarray,
              spot_no: np.ndarray,):
 
@@ -438,7 +532,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
     # Load and scale spot yxz coordinates
     spot_yxz_ref = np.zeros(n_tiles, dtype=object)
     spot_yxz_imaging = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
-    n_matches_thresh = np.zeros_like(spot_yxz_imaging, dtype=float)
 
     # Finally, initialise all data to be saved to the notebook page.
     # round_transforms is the affine transform from (r_ref, c_ref) to (r, c_ref) for all r in use
@@ -562,15 +655,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
     # This algorithm works well, but we need pixel level registration. For this reason, we use this transform as an
     # initial guess for an ICP algorithm
 
-    # Initialise variables. This includes spaces for tiles/rounds/channels not used
-    n_matches = np.zeros_like(spot_yxz_imaging, dtype=int)
-    error = np.zeros_like(spot_yxz_imaging, dtype=float)
-    failed = np.zeros_like(spot_yxz_imaging, dtype=bool)
-    converged = np.zeros_like(spot_yxz_imaging, dtype=bool)
-    av_scaling = np.zeros((n_channels, 3), dtype=float)
-    av_shifts = np.zeros((n_tiles, n_rounds, 3))
-    transform_outliers = np.zeros_like(transform)
-
     for t in use_tiles:
         spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
                                    spot_no) * np.array([1, 1, z_scale])
@@ -581,40 +665,14 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
                     # only keep isolated spots, those whose second neighbour is far away
                     isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
                     spot_yxz_imaging[t, r, c] = spot_yxz_imaging[t, r, c][isolated, :]
-                n_matches_thresh[t, r, c] = (config['matches_thresh_fract'] *
-                                             np.min([spot_yxz_ref[t].shape[0], spot_yxz_imaging[t, r, c].shape[0]]))
 
-    # get indices of tiles/rounds/channels used
-    trc_ind = np.ix_(use_tiles, use_rounds, use_channels)
-    tr_ind = np.ix_(use_tiles, use_rounds)
-    n_matches_thresh[trc_ind] = np.clip(n_matches_thresh[trc_ind], config['matches_thresh_min'],
-                                        config['matches_thresh_max'])
-    n_matches_thresh = n_matches_thresh.astype(int)
-    final_transform[trc_ind], pcr_debug = icp(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
-                                              transform[trc_ind], config['n_iter'], neighb_dist_thresh,
-                                              n_matches_thresh[trc_ind], config['scale_dev_thresh'],
-                                              config['shift_dev_thresh'], None, None)
-
-    # Finally, save all relevant variables to the notebook page
-
-    # save debug info at correct tile, round, channel index
-    n_matches[trc_ind] = pcr_debug['n_matches']
-    error[trc_ind] = pcr_debug['error']
-    failed[trc_ind] = pcr_debug['failed']
-    converged[trc_ind] = pcr_debug['is_converged']
-    av_scaling[use_channels] = pcr_debug['av_scaling']
-    av_shifts[tr_ind] = pcr_debug['av_shifts']
-    transform_outliers[trc_ind] = pcr_debug['transforms_outlier']
-
-    # add to debug page of notebook
-    nbp_debug.n_matches = n_matches
-    nbp_debug.n_matches_thresh = n_matches_thresh
-    nbp_debug.error = error
-    nbp_debug.failed = failed
-    nbp_debug.converged = converged
-    nbp_debug.av_scaling = av_scaling
-    nbp_debug.av_shifts = av_shifts
-    nbp_debug.transform_outlier = transform_outliers
+    # Don't import ICP as this is slow, instead, just run 25 iterations or so off each transform
+    for t in use_tiles:
+        for r in use_rounds:
+            for c in use_channels:
+                final_transform[t, r, c], _, _, _ = icp(yxz_base=spot_yxz_ref[t], yxz_target=spot_yxz_imaging[t, r, c],
+                                                        dist_thresh=neighb_dist_thresh,start_transform=transform[t,r,c],
+                                                        n_iters=30, robust=False)
 
     # add to register page of notebook
     nbp.start_transform = transform
@@ -707,10 +765,10 @@ def view_overlay(nbp_file, nbp_basic, transform, t, r, c):
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
     # Create a napari viewer and add and transform first image and overlay this with second image
     # Images are saved as yxz but our viewer sees them as zyx. Convert to zyx
-    base_image = sobel(load_tile(nbp_file, nbp_basic, t, r_ref, c_ref))
+    base_image = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
     base_image = np.swapaxes(base_image, 0, 2)
     base_image = np.swapaxes(base_image, 1, 2)
-    target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c))
+    target_image = load_tile(nbp_file, nbp_basic, t, r, c)
     target_image = np.swapaxes(target_image, 0, 2)
     target_image = np.swapaxes(target_image, 1, 2)
     # Transform saved as yxz * yxz but needs to be zyx * zyx. Convert this to something napari will understand. I think
