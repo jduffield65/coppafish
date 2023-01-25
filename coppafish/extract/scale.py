@@ -114,14 +114,14 @@ def get_z_plane(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, t: int,
         - ```image``` - ```int [tile_sz x tile_sz]```.
             Corresponding image.
     """
-    round_dask_array = utils.raw.load(nbp_file, nbp_basic, r=r)
+    round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
     image_max = np.zeros((len(use_channels), len(use_z)))
     for i in range(len(use_channels)):
-        image_max[i, :] = np.max(np.max(utils.raw.load(nbp_file, nbp_basic, round_dask_array, r,
-                                                       t, use_channels[i], use_z), axis=0), axis=0)
+        image_max[i, :] = np.max(np.max(utils.raw.load_image(nbp_file, nbp_basic, t, use_channels[i],
+                                                             round_dask_array, r, use_z), axis=0), axis=0)
     max_channel = use_channels[np.max(image_max, axis=1).argmax()]
     max_z = use_z[np.max(image_max, axis=0).argmax()]
-    return max_channel, max_z, utils.raw.load(nbp_file, nbp_basic, round_dask_array, r, t, max_channel, max_z)
+    return max_channel, max_z, utils.raw.load_image(nbp_file, nbp_basic, t, max_channel, round_dask_array, r, max_z)
 
 
 def get_scale(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, use_tiles: List[int],

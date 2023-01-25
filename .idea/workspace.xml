@@ -243,37 +243,37 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>232</line>
+          <line>231</line>
           <option name="timeStamp" value="296" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>175</line>
+          <line>174</line>
           <option name="timeStamp" value="298" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>148</line>
+          <line>147</line>
           <option name="timeStamp" value="299" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>783</line>
+          <line>782</line>
           <option name="timeStamp" value="303" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>253</line>
+          <line>252</line>
           <option name="timeStamp" value="313" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>509</line>
+          <line>508</line>
           <option name="timeStamp" value="317" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>561</line>
+          <line>560</line>
           <option name="timeStamp" value="318" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

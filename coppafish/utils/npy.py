@@ -204,7 +204,7 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
         z_size = 1
         stitched_image = np.zeros(yx_size, dtype=np.uint16)
     if from_raw:
-        round_dask_array = utils.raw.load(nbp_file, nbp_basic, r=r)
+        round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
         shift = 0  # if from nd2 file, data type is already un-shifted uint16
     else:
         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
@@ -218,7 +218,7 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for t in nbp_basic.use_tiles:
             if from_raw:
-                image_t = utils.raw.load(nbp_file, nbp_basic, round_dask_array, r, t, c, nbp_basic.use_z)
+                image_t = utils.raw.load_image(nbp_file, nbp_basic, t, c,round_dask_array, r, nbp_basic.use_z)
                 # replicate non-filtering procedure in extract_and_filter
                 if not nbp_basic.is_3d:
                     image_t = extract.focus_stack(image_t)

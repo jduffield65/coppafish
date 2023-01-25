@@ -195,7 +195,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 extract.wait_for_data(im_file, config['wait_time'], dir=True)
             else:
                 extract.wait_for_data(im_file + nbp_file.raw_extension, config['wait_time'])
-            round_dask_array = utils.raw.load(nbp_file, nbp_basic, r=r)
+            round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
             if r == nbp_basic.anchor_round:
                 n_clip_error_images = 0  # reset for anchor as different scale used.
                 if config['scale_anchor'] is None:
@@ -255,7 +255,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     else:
-                        im = utils.raw.load(nbp_file, nbp_basic, round_dask_array, r, t, c, nbp_basic.use_z)
+                        im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
                         if not nbp_basic.is_3d:
                             im = extract.focus_stack(im)
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns

@@ -72,33 +72,102 @@ def metadata_sanity_check(metadata: dict, round_folder_path: str) -> List:
     return tiles
 
 
-def load(nbp_file: NotebookPage, nbp_basic: NotebookPage, round_dask_array: Optional[dask.array.Array] = None,
-         r: Optional[int] = None, t: Optional[int] = None,
-         c: Optional[int] = None, use_z: Optional[List[int]] = None) -> Union[dask.array.Array, np.ndarray]:
+def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.array.Array:
     """
-    Loads in raw data either from npy stack or nd2 file.
-    If tile and channel specified, will return corresponding image.
-    If not, will return the memmap round_dask_array containing images for all tiles/channels in the round.
+    Loads in the memmap round_dask_array containing images for all tiles/channels in the round.
     This can later be used to load in more quickly.
 
     Args:
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
+        r: Round considering (anchor will be assumed to be the last round if using).
+    Returns:
+        Dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
+
+    """
+
+    n_tiles, tile_sz, nz = nbp_basic.n_tiles, nbp_basic.tile_sz, nbp_basic.nz
+
+    if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy']):
+        raise ValueError(f"nbp_file.raw_extension must be '.nd2' or '.npy' but it is {nbp_file.raw_extension}.")
+
+    # Problem arises if the raw nd2 data is split by laser. In this case, we have (n_rounds + 1) * 7 nd2 files named
+    # as round_0001, round_0002, ... round_00((n_rounds + 1) * 7). The first 7 files are a preimaging round and
+    # do not need to be read, then round 1 is the union of round_0008, ... round_0014 with the earliest file containing
+    # channels 0, 1, 2, 3, the next containing, 4, 5, 6, 7 and so on up to channel 28.
+    # First cover the case in which the data is stored in a single nd2 file for each round
+    final_file_split_lasers = os.path.join(nbp_file.input_dir, 'round_00' + str((nbp_basic.n_rounds + 1) * 7) +
+                                           nbp_file.raw_extension)
+    if not os.path.isfile(final_file_split_lasers):
+        if nbp_basic.use_anchor:
+            # always have anchor as first round after imaging rounds
+            round_files = nbp_file.round + [nbp_file.anchor]
+        else:
+            round_files = nbp_file.round
+        round_file = os.path.join(nbp_file.input_dir, round_files[r])
+        if nbp_file.raw_extension == '.nd2':
+            round_dask_array = nd2.load(round_file + nbp_file.raw_extension)
+        elif nbp_file.raw_extension == '.npy':
+            round_dask_array = dask.array.from_npy_stack(round_file + nbp_file.raw_extension)
+    else:
+        # Now deal with the case where files are split by laser
+        channel_laser = list(set(nbp_basic.channel_laser)).sort()
+        channel_cam = list(set(nbp_basic.channel_camera)).sort()
+        n_lasers = len(channel_laser)
+        n_cams = len(channel_cam)
+        round_laser_dask_array = []
+        if r != nbp_basic.anchor_round:
+            initial_file_num = n_lasers * r + 1
+            for i in range(n_lasers):
+                round_laser_file = os.path.join(nbp_file.input_dir, 'round_00' + str(initial_file_num + i) +
+                                           nbp_file.raw_extension)
+                if nbp_file.raw_extension == '.nd2':
+                    round_laser_dask_array.append(nd2.load(round_laser_file))
+                elif nbp_file.raw_extension == '.npy':
+                    round_laser_dask_array.append(dask.array.from_npy_stack(round_laser_file))
+            # Now that we have all the lasers dask arrays stored, we concatenate them
+            round_dask_array = dask.array.concatenate(round_laser_dask_array, axis=1)
+        else:
+            # If we're dealing with the anchor round, then we need to pad the array with zeros for the missing lasers
+            # as typically there will only be 2 lasers provided so 2 files
+            anchor_laser_index = channel_laser.index(nbp_basic.channel_laser[nbp_basic.anchor_channel])
+            dapi_laser_index = channel_laser.index(nbp_basic.channel_laser[nbp_basic.dapi_channel])
+            for i in range(n_lasers):
+                if i == anchor_laser_index or i == dapi_laser_index:
+                    round_laser_file = os.path.join(nbp_file.input_dir, 'anchor_' + str(channel_laser[i]) +
+                                           nbp_file.raw_extension)
+                    if nbp_file.raw_extension == '.nd2':
+                        round_laser_dask_array.append(nd2.load(round_laser_file))
+                    elif nbp_file.raw_extension == '.npy':
+                        round_laser_dask_array.append(dask.array.from_npy_stack(round_laser_file))
+                else:
+                    round_laser_dask_array.append(dask.array.zeros((n_tiles, n_cams, tile_sz, tile_sz, nz)))
+            # now concatenate dask arrays
+            round_dask_array = dask.array.concatenate(round_laser_dask_array, axis=1)
+
+    return round_dask_array
+
+
+def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
+               round_dask_array: Optional[dask.array.Array] = None, r: Optional[int] = None,
+               use_z: Optional[List[int]] = None) -> np.ndarray:
+    """
+    Loads in raw data either from npy stack or nd2 file for tile and channel specified. If no round dask array specified
+    we load one in.
+
+    Args:
+        nbp_file: `file_names` notebook page
+        nbp_basic: `basic_info` notebook page
+        t: npy tile index considering.
+        c: Channel considering.
         round_dask_array: Dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
             If None, will load it in first.
         r: Round considering (anchor will be assumed to be the last round if using).
             Don't need to provide if give round_dask_array.
-        t: npy tile index considering.
-            Don't need to provide if want to get round_dask_array.
-        c: Channel considering.
-            Don't need to provide if want to get round_dask_array.
         use_z: z-planes to load in.
-            Don't need to provide if want to get round_dask_array.
-            If t and c given, but use_z = None, will load in all z-planes.
+            If use_z = None, will load in all z-planes.
     Returns:
-        Two options:
-            - Dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
-            - numpy array [n_y x n_x x len(use_z)].
+        numpy array [n_y x n_x x len(use_z)].
     """
     if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy']):
         raise ValueError(f"nbp_file.raw_extension must be '.nd2' or '.npy' but it is {nbp_file.raw_extension}.")
@@ -113,19 +182,16 @@ def load(nbp_file: NotebookPage, nbp_basic: NotebookPage, round_dask_array: Opti
             round_dask_array = nd2.load(round_file + nbp_file.raw_extension)
         elif nbp_file.raw_extension == '.npy':
             round_dask_array = dask.array.from_npy_stack(round_file)
-    if t is None and c is None:
-        # Return dask array if no tile, channel specified.
-        return round_dask_array
-    else:
-        # Return a tile/channel/z-planes from the dask array.
-        if use_z is None:
-            use_z = nbp_basic.use_z
-        t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
-        if nbp_file.raw_extension == '.nd2':
-            # Only need this if statement because nd2.get_image will be different if use nd2reader not nd2 module
-            # which is needed on M1 mac.
-            return nd2.get_image(round_dask_array, t_nd2, c, use_z)
-        elif nbp_file.raw_extension == '.npy':
-            # Need the with below to silence warning
-            with dask.config.set(**{'array.slicing.split_large_chunks': False}):
-                return np.asarray(round_dask_array[t_nd2, c, :, :, use_z])
+
+    # Return a tile/channel/z-planes from the dask array.
+    if use_z is None:
+        use_z = nbp_basic.use_z
+    t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
+    if nbp_file.raw_extension == '.nd2':
+        # Only need this if statement because nd2.get_image will be different if use nd2reader not nd2 module
+        # which is needed on M1 mac.
+        return nd2.get_image(round_dask_array, t_nd2, c, use_z)
+    elif nbp_file.raw_extension == '.npy':
+        # Need the with below to silence warning
+        with dask.config.set(**{'array.slicing.split_large_chunks': False}):
+            return np.asarray(round_dask_array[t_nd2, c, :, :, use_z])

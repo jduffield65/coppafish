@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from coppafish.setup import NotebookPage, Notebook
-from coppafish.utils.raw import load
+from coppafish.utils.raw import load_image
 from skimage.filters import sobel
 from skimage.registration import phase_cross_correlation as pcc
 
@@ -82,12 +82,12 @@ def register_ft(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_register_in
             # channel to other channels to be constant across rounds, it makes sense to compute the shifts from the
             # shift channel to the imaging channels.
             # Sobel filter these to improve registration
-            reference_image_raw = sobel(load(nbp_file, nbp_basic, r=3, t=t, c=shift_channel))
+            reference_image_raw = sobel(load_image(nbp_file, nbp_basic, t=t, c=shift_channel, r=3))
             for c in use_channels:
                 pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
                 # Correct for camera offsets so that the shift between channels is not influenced by this systematic
                 # shift (this is already accounted for in register initial, and not what this stage is trying to fix)
-                channel_image_raw = shift(sobel(load(nbp_file, nbp_basic, r=3, t=t, c=c)), -cam_shift[t, 3, c])
+                channel_image_raw = shift(sobel(load_image(nbp_file, nbp_basic, t=t, c=c, r=3)), -cam_shift[t, 3, c])
                 # Now we'll do the registration on each tile. We do the registration on each end of the image in x and
                 # in y. Finding the difference in shifts will allow us to determine the scale as well!
                 left_shift[t, c], _, _ = pcc(channel_image_raw[:, :int(tile_sz * alpha)],

@@ -11,7 +11,6 @@ from skimage.filters import sobel
 from skimage.exposure import match_histograms
 from coppafish.setup import NotebookPage, Notebook
 from coppafish.utils.npy import load_tile
-from typing import Optional, Tuple, Union, List
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
