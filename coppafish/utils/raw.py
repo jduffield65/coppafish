@@ -87,6 +87,9 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
     """
 
     n_tiles, tile_sz, nz = nbp_basic.n_tiles, nbp_basic.tile_sz, nbp_basic.nz
+    channel_laser = list(set(nbp_basic.channel_laser)).sort()
+    channel_cam = list(set(nbp_basic.channel_camera)).sort()
+    n_lasers, n_cams = len(channel_laser), len(channel_cam)
 
     if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy']):
         raise ValueError(f"nbp_file.raw_extension must be '.nd2' or '.npy' but it is {nbp_file.raw_extension}.")
@@ -96,7 +99,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
     # do not need to be read, then round 1 is the union of round_0008, ... round_0014 with the earliest file containing
     # channels 0, 1, 2, 3, the next containing, 4, 5, 6, 7 and so on up to channel 28.
     # First cover the case in which the data is stored in a single nd2 file for each round
-    final_file_split_lasers = os.path.join(nbp_file.input_dir, 'round_00' + str((nbp_basic.n_rounds + 1) * 7) +
+    final_file_split_lasers = os.path.join(nbp_file.input_dir, 'round_00' + str((nbp_basic.n_rounds + 1) * n_lasers) +
                                            nbp_file.raw_extension)
     if not os.path.isfile(final_file_split_lasers):
         if nbp_basic.use_anchor:
@@ -111,13 +114,9 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             round_dask_array = dask.array.from_npy_stack(round_file + nbp_file.raw_extension)
     else:
         # Now deal with the case where files are split by laser
-        channel_laser = list(set(nbp_basic.channel_laser)).sort()
-        channel_cam = list(set(nbp_basic.channel_camera)).sort()
-        n_lasers = len(channel_laser)
-        n_cams = len(channel_cam)
         round_laser_dask_array = []
         if r != nbp_basic.anchor_round:
-            initial_file_num = n_lasers * r + 1
+            initial_file_num = n_lasers * (r + 1) + 1
             for i in range(n_lasers):
                 round_laser_file = os.path.join(nbp_file.input_dir, 'round_00' + str(initial_file_num + i) +
                                            nbp_file.raw_extension)
