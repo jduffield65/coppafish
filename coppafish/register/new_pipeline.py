@@ -454,9 +454,6 @@ Args:
     Returns:
         - ```transform``` - ```float [4 x 3]```.
             Updated affine transform.
-        - ```neighbour``` - ```int [n_base_spots]```.
-            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of
-            ```yxz_base[i]``` is closest.
         - ```n_matches``` - ```int```.
             Number of neighbours which have distance less than ```dist_thresh```.
         - ```error``` - ```float```.
@@ -465,11 +462,14 @@ Args:
 
     # initialise transform
     transform = start_transform
+    n_matches = np.zeros(n_iters)
+    error = np.zeros(n_iters)
 
     for i in range(n_iters):
-        transform, neighbour, n_matches, error = get_transform(yxz_base, yxz_target, transform, dist_thresh, robust)
+        transform, _, n_matches[i], error[i] = get_transform(yxz_base, yxz_target, transform,
+                                                                     dist_thresh, robust)
 
-    return transform, neighbour, n_matches, error
+    return transform, n_matches, error
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot_details: np.ndarray,
@@ -498,22 +498,24 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
         nbp_debug: (NotebookPage) Register_debug notebook page
     """
 
-    # Break algorithm up into 2 parts.
+    # Break algorithm up into 3 parts.
 
     # Part 1: Generate the positions and their associated shifts for the round and channel registration. Save these in
     # the notebook.
     # Part 2: Compute the affine transform from this data, using our regression method of choice
+    # Part 3: correct these guesses with an ICP algorithm
 
     # Part 0: Initialisation
-
     # Initialise frequently used variables
     nbp = NotebookPage("register")
     nbp_debug = NotebookPage("register_debug")
-
     config = config["register"]
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
     r_ref, c_ref = nbp_basic.ref_round, nbp_basic.ref_channel
+    n_iters = config['n_iter']
+    n_matches, error = np.zeros((n_tiles, n_rounds, n_channels, n_iters)), \
+                       np.zeros((n_tiles, n_rounds, n_channels, n_iters))
     # Next it's important to include z-scale as our affine transform will need to have the z-shift saved in units of xy
     # pixels
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
@@ -652,6 +654,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
                     transform[t, r, c] = reformat_affine(compose_affine(channel_transform[t, c], round_transform[t, r]),
                                                          z_scale)
 
+    # Part 3: ICP
     # This algorithm works well, but we need pixel level registration. For this reason, we use this transform as an
     # initial guess for an ICP algorithm
 
@@ -670,9 +673,14 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
     for t in use_tiles:
         for r in use_rounds:
             for c in use_channels:
-                final_transform[t, r, c], _, _, _ = icp(yxz_base=spot_yxz_ref[t], yxz_target=spot_yxz_imaging[t, r, c],
-                                                        dist_thresh=neighb_dist_thresh,start_transform=transform[t,r,c],
-                                                        n_iters=30, robust=False)
+                final_transform[t, r, c], n_matches[t, r, c], error[t, r, c] = icp(yxz_base=spot_yxz_ref[t],
+                                                                                   yxz_target=spot_yxz_imaging[t, r, c],
+                                                                                   dist_thresh=neighb_dist_thresh,
+                                                                                   start_transform=transform[t, r, c],
+                                                                                   n_iters=30, robust=False)
+    # Add convergence statistics to the debug notebook page.
+    nbp_debug.n_matches = n_matches
+    nbp_debug.error = error
 
     # add to register page of notebook
     nbp.start_transform = transform
