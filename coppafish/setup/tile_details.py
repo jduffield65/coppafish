@@ -24,26 +24,40 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
             Index 0 refers to ```YX = [MaxY, MaxX]```.
             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
     """
-    tilepos_yx_nd2 = np.zeros_like(xy_pos, dtype=int)
-    tilepos_yx_npy = np.zeros_like(xy_pos, dtype=int)
-    if np.shape(xy_pos)[0] != 1:
-        # say y coordinate changes when successive tiles have pixel separation of more than tile_sz/2
-        change_y_coord = np.abs(np.ediff1d(xy_pos[:, 1])) > tile_sz / 2
-        if False in change_y_coord:
-            # sometimes get faulty first xy_pos
-            # know that if there are more than one y coordinates, then the first
-            # and second tile must have the same y coordinate.
-            change_y_coord[0] = False
-        ny = sum(change_y_coord) + 1
-        nx = np.shape(xy_pos)[0] / ny
-        if round(nx) != nx:
-            raise ValueError('nx is not an integer')
-        tilepos_yx_nd2[:, 0] = np.arange(ny).repeat(nx)
-        tilepos_yx_nd2[:, 1] = np.tile(np.concatenate((np.arange(nx), np.flip(np.arange(nx)))),
-                                       np.ceil(ny / 2).astype(int))[:np.shape(xy_pos)[0]]
-        tilepos_yx_npy[:, 0] = np.flip(np.arange(ny).repeat(nx))
-        tilepos_yx_npy[:, 1] = np.tile(np.concatenate((np.flip(np.arange(nx)), np.flip(np.arange(nx)))),
-                                        np.ceil(ny / 2).astype(int))[:np.shape(xy_pos)[0]]
+    n_tiles = xy_pos.shape[0]
+    tilepos_yx_nd2 = []
+    tilepos_yx_npy = []
+
+    # This should get rid of rounding errors
+    xy_pos = xy_pos.astype(int)
+
+    # List all the lattice points, np unique sorts them nicely
+    x_coord = list(np.unique(xy_pos[:, 0]))
+    nx = len(x_coord)
+    y_coord = list(np.unique(xy_pos[:, 1]))
+    ny = len(y_coord)
+    # Reverse the order of these mfs as this is more convenient for reads
+    x_coord.sort(reverse=True)
+    y_coord.sort(reverse=True)
+
+    # Fill in nd2 tile positions. This is easy, just read the indices (we reversed these because nd2 reads from right to
+    # left and from up to down). So it calls the top right tile [0,0] and top second from right [0,1] and so on. Also,
+    # instead of starting at the beginning of the cols when we move to the next row, nd2 tiling snakes
+    for t in range(n_tiles):
+        tilepos_yx_nd2.append([y_coord.index(xy_pos[t, 1]), x_coord.index(xy_pos[t, 0])])
+
+    # Fill in the npy tile positions. Tile 0 is top right, tile 1 is top 2nd from right, and so on. Does not snake.
+    # Big difference is that this doesn't call the top right [0,0] but does the sensible thing making indices increase
+    # rightwards and upwards
+    for i in range(ny):
+        for j in range(nx):
+            if np.array([x_coord[j], y_coord[i]]) in xy_pos:
+                tilepos_yx_npy.append([ny - i - 1, nx - j - 1])
+
+    # Convert lists back to ndarrays
+    tilepos_yx_npy = np.array(tilepos_yx_npy)
+    tilepos_yx_nd2 = np.array(tilepos_yx_nd2)
+
     return tilepos_yx_nd2, tilepos_yx_npy
 
 

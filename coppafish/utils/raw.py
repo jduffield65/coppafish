@@ -115,6 +115,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
     else:
         # Now deal with the case where files are split by laser
         round_laser_dask_array = []
+        # Deal with non anchor round first as this follows a different format to anchor round
         if r != nbp_basic.anchor_round:
             initial_file_num = n_lasers * (r + 1) + 1
             for i in range(n_lasers):
@@ -126,9 +127,9 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
                     round_laser_dask_array.append(dask.array.from_npy_stack(round_laser_file))
             # Now that we have all the lasers dask arrays stored, we concatenate them
             round_dask_array = dask.array.concatenate(round_laser_dask_array, axis=1)
+        # If we're dealing with the anchor round, then we need to pad the array with zeros for the missing lasers
+        # as typically there will only be 2 lasers provided so 2 files
         else:
-            # If we're dealing with the anchor round, then we need to pad the array with zeros for the missing lasers
-            # as typically there will only be 2 lasers provided so 2 files
             anchor_laser_index = channel_laser.index(nbp_basic.channel_laser[nbp_basic.anchor_channel])
             dapi_laser_index = channel_laser.index(nbp_basic.channel_laser[nbp_basic.dapi_channel])
             for i in range(n_lasers):
