@@ -47,7 +47,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     use_tiles = nbp_basic.use_tiles
     use_rounds = nbp_basic.use_rounds
 
-    # Deal with case where algorithm has been run for some tiles and data saved. Whole point od this is to get rid of
+    # Deal with case where algorithm has been run for some tiles and data saved. Whole point of this is to get rid of
     # tiles that we have already run find_spots on.
     if os.path.isfile(nbp_file.spot_details_info):
         # Load in the saved data
@@ -57,8 +57,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         if spot_no.shape[0] != nbp_basic.n_tiles:
             warnings.warn(f'spot_no matrix should have info for {nbp_basic.n_tiles} tiles, but only has '
                           f''f'{spot_no.shape} tiles. This may cause an index error.')
-        # Now find the previously found tiles
-        prev_found_tiles = [i for i in range(nbp_basic.n_tiles) if np.sum(spot_no[i]) > 0]
+        # Now find the previously found tiles that are relevant to us
+        prev_found_tiles = [i for i in use_tiles if np.sum(spot_no[i]) > 0]
         # Now use_tiles os the set diff of use_tiles and prev_found_tiles
         use_tiles = np.setdiff1d(use_tiles, prev_found_tiles)
         # Give user a warning
@@ -187,7 +187,25 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     spot_no = info.f.arr_1
     isolated_spots = info.f.arr_2
 
-    nbp.spot_details = spot_details
-    nbp.spot_no = spot_no
-    nbp.isolated_spots = isolated_spots
+    # A problem arises if these arrays contain more info than just the tiles relevant to the user. This happens for
+    # example when find spots is run initially with all tiles and then just a subset. To get rid of this issue is easy
+    spot_details_new = np.zeros((0, 3), dtype=int)
+    spot_no_new = np.zeros_like(spot_no, dtype=int)
+    isolated_spots_new = np.zeros(0, dtype=bool)
+    for t in use_tiles:
+        for r in use_rounds:
+            for c in use_channels:
+                # spot_no is easy to update
+                spot_no_new[t, r, c] = spot_no[t, r, c]
+                # Now load in all the spot positions for this t, r, c
+                spot_yxz = fs.spot_yxz(spot_details, t, r, c, spot_no)
+                # Now append these to the new spot details
+                spot_details_new = np.vstack((spot_details_new, spot_yxz))
+                # Do the same with isolated spots
+                spot_isolated = fs.spot_isolated(isolated_spots, t, nbp_basic.ref_round, nbp_basic.ref_channel, spot_no)
+                isolated_spots_new = np.append(isolated_spots_new, spot_isolated)
+
+    nbp.spot_details = spot_details_new
+    nbp.spot_no = spot_no_new
+    nbp.isolated_spots = isolated_spots_new
     return nbp

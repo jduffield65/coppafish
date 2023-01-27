@@ -311,6 +311,16 @@
           <line>31</line>
           <option name="timeStamp" value="346" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/call_spots/base.py</url>
+          <line>35</line>
+          <option name="timeStamp" value="352" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/call_spots/base.py</url>
+          <line>38</line>
+          <option name="timeStamp" value="353" />
+        </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
