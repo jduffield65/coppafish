@@ -676,7 +676,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
                                                                                    yxz_target=spot_yxz_imaging[t, r, c],
                                                                                    dist_thresh=neighb_dist_thresh,
                                                                                    start_transform=transform[t, r, c],
-                                                                                   n_iters=30, robust=False)
+                                                                                   n_iters=50, robust=False)
     # Add convergence statistics to the debug notebook page.
     nbp_debug.n_matches = n_matches
     nbp_debug.error = error
