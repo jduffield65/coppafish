@@ -87,9 +87,19 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
     """
 
     n_tiles, tile_sz, nz = nbp_basic.n_tiles, nbp_basic.tile_sz, nbp_basic.nz
-    channel_laser = list(set(nbp_basic.channel_laser)).sort()
-    channel_cam = list(set(nbp_basic.channel_camera)).sort()
-    n_lasers, n_cams = len(channel_laser), len(channel_cam)
+    if nbp_basic.channel_laser is not None:
+        channel_laser = list(set(nbp_basic.channel_laser))
+    else:
+        channel_laser = []
+    channel_laser.sort()
+    if nbp_basic.channel_camera is not None:
+        channel_cam = list(set(nbp_basic.channel_camera))
+    else:
+        channel_cam = []
+    channel_cam.sort()
+    # If the camera argument is left blank in the notebook, this just means we only have one camera
+    # Not sure how this applies to lasers
+    n_lasers, n_cams = max(1, len(channel_laser)), max(1, len(channel_cam))
 
     if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy']):
         raise ValueError(f"nbp_file.raw_extension must be '.nd2' or '.npy' but it is {nbp_file.raw_extension}.")
