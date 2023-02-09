@@ -326,6 +326,16 @@
           <line>88</line>
           <option name="timeStamp" value="354" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/plot/results_viewer/base.py</url>
+          <line>419</line>
+          <option name="timeStamp" value="355" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/plot/results_viewer/base.py</url>
+          <line>314</line>
+          <option name="timeStamp" value="365" />
+        </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
