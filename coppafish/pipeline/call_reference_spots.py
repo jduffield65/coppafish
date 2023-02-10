@@ -268,7 +268,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     bled_codes_ge = np.moveaxis(bled_codes_ge, -1, 0)
     nbp.bled_codes_ge = bled_codes_ge
 
-    ge_fail_genes = np.where(np.min(gene_efficiency_use,axis=1) == 1)[0]
+    ge_fail_genes = np.where(np.min(gene_efficiency_use, axis=1) == 1)[0]
     n_fail_ge = len(ge_fail_genes)
     if n_fail_ge > 0:
         fail_genes_str = [str(ge_fail_genes[i]) + ': ' + gene_names[ge_fail_genes][i] for i in range(n_fail_ge)]
