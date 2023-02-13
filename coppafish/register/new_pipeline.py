@@ -680,6 +680,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
     # Add convergence statistics to the debug notebook page.
     nbp_debug.n_matches = n_matches
     nbp_debug.error = error
+    # These are not in use now but may be useful in the future
+    nbp_debug.converged = None
+    nbp_debug.failed = None
+    nbp_debug.av_scaling = None
+    nbp_debug.av_shifts = None
+    nbp_debug.transform_outlier = None
 
     # add to register page of notebook
     nbp.start_transform = transform
