@@ -6,7 +6,8 @@ from typing import Tuple, Optional, List
 def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Using `xy_pos` from nd2 metadata, this obtains the yx position of each tile.
-    I.e. how tiles are arranged with respect to each other.
+    I.e. how tiles are arranged with respect to each other. So the output is an n_tiles by 2 matrix where each row
+    is the yx index of that tile.
     Note that this is indexed differently in nd2 file and npy files in the tile directory.
 
     Args:
@@ -24,6 +25,7 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
             Index 0 refers to ```YX = [MaxY, MaxX]```.
             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
     """
+    # NOTE: Tile t as an npy does not correspond to tile t as an nd2. This is why we have to handle these separately.
     n_tiles = xy_pos.shape[0]
     tilepos_yx_nd2 = []
     tilepos_yx_npy = []
@@ -31,32 +33,54 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
     # This should get rid of rounding errors
     xy_pos = xy_pos.astype(int)
 
-    # List all the lattice points, np unique sorts them nicely
-    x_coord = list(np.unique(xy_pos[:, 0]))
-    nx = len(x_coord)
+    # Next we will try to split tiles up into rows and columns.
     y_coord = list(np.unique(xy_pos[:, 1]))
-    ny = len(y_coord)
-    # Reverse the order of these mfs as this is more convenient for reads
-    x_coord.sort(reverse=True)
     y_coord.sort(reverse=True)
+    x_coord = list(np.unique(xy_pos[:, 0]))
+    x_coord.sort(reverse=True)
 
-    # Fill in nd2 tile positions. This is easy, just read the indices (we reversed these because nd2 reads from right to
-    # left and from up to down). So it calls the top right tile [0,0] and top second from right [0,1] and so on. Also,
-    # instead of starting at the beginning of the cols when we move to the next row, nd2 tiling snakes
+    # Refine these to get rid of any coords that correspond to same row/column. We take 2 x coords to correspond to
+    # same col if they are within 10% of a tile width
+    y_coord = [y_coord[i] for i in range(len(y_coord)-1) if y_coord[i] - y_coord[i+1] > 0.1 * tile_sz] + [y_coord[-1]]
+    x_coord = [x_coord[i] for i in range(len(x_coord) - 1) if x_coord[i] - x_coord[i + 1] > 0.1 * tile_sz] + [x_coord[-1]]
+
+    # Now update xy_pos and replace the values that we've got rid of representing a tile with the new values
+    for t in range(n_tiles):
+        if xy_pos[t, 0] not in x_coord:
+            # Find the closest thing to this
+            for x in x_coord:
+                if abs(x - xy_pos[t, 0]) < 0.1 * tile_sz:
+                    x_representative = x
+                    break
+            xy_pos[t, 0] = x_representative
+        if xy_pos[t, 1] not in y_coord:
+            # Find the closest thing to this
+            for y in y_coord:
+                if abs(y - xy_pos[t, 1]) < 0.1 * tile_sz:
+                    y_representative = y
+                    break
+            xy_pos[t, 1] = y_representative
+
+    # For ND2, we arrange y coords and x coords in descending order and for each tile, see what index these coords are
+    # in this list and this gives the tile
     for t in range(n_tiles):
         tilepos_yx_nd2.append([y_coord.index(xy_pos[t, 1]), x_coord.index(xy_pos[t, 0])])
 
-    # Fill in the npy tile positions. Tile 0 is top right, tile 1 is top 2nd from right, and so on. Does not snake.
-    # Big difference is that this doesn't call the top right [0,0] but does the sensible thing making indices increase
-    # rightwards and upwards
-    for i in range(ny):
-        for j in range(nx):
-            if np.array([x_coord[j], y_coord[i]]) in xy_pos:
-                tilepos_yx_npy.append([ny - i - 1, nx - j - 1])
-
-    # Convert lists back to ndarrays
-    tilepos_yx_npy = np.array(tilepos_yx_npy)
+    # Convert to ndarray
     tilepos_yx_nd2 = np.array(tilepos_yx_nd2)
+
+    # Now begin for the npy's
+    # We cannot loop through the metadata as these tiles are ordered in the nd2 format, not the npy format
+    num_rows = len(y_coord)
+    num_cols = len(x_coord)
+    for y in range(num_rows):
+        relevant_x = [xy_pos[t, 0] for t in range(n_tiles) if xy_pos[t, 1] == y_coord[y]]
+        relevant_x.sort(reverse=True)
+        for x in range(num_cols):
+            tilepos_yx_npy.append([num_rows-y-1, num_cols-x-1])
+
+    # Convert to ndarray
+    tilepos_yx_npy = np.array(tilepos_yx_npy)
 
     return tilepos_yx_nd2, tilepos_yx_npy
 
