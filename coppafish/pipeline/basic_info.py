@@ -29,10 +29,11 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
     nbp.is_3d = config_basic['is_3d']
 
     # Deal with case where no imaging rounds, just want to run anchor round.
-    if config_file['round'] is None:
-        if config_file['anchor'] is None:
-            raise ValueError(f'Neither imaging rounds nor anchor_round provided')
-        config_file['round'] = []
+    if not config_file['raw_extension'] == 'jobs':
+        if config_file['round'] is None:
+            if config_file['anchor'] is None:
+                raise ValueError(f'Neither imaging rounds nor anchor_round provided')
+            config_file['round'] = []
 
     if len(config_file['round']) == n_rounds:
         n_rounds = len(config_file['round'])
