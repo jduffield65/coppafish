@@ -136,7 +136,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
                     laser_file = os.path.join(nbp_file.input_dir, f + '.nd2')
 
                     tile_dask_array.append(nd2.load(laser_file))
-                    round_laser_dask_array.append(dask.array.concatenate(tile_dask_array, axis=1))
+                    round_laser_dask_array.append(dask.array.stack(tile_dask_array, axis=0))
 
             # Now that we have all the lasers dask arrays stored, we concatenate them
             round_dask_array = dask.array.concatenate(round_laser_dask_array, axis=1)
