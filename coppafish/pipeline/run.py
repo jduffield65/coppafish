@@ -64,7 +64,7 @@ def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Note
         all_files = os.listdir(config['file_names']['input_dir'])
         all_files.sort()  # Sort files by ascending number
         n_tiles = int(len(all_files)/7/8)
-        config['files_names']['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
+        config['file_names']['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
         config['file_names']['anchor'] = [r.replace('nd2', '') for r in all_files[n_tiles*7*7:]]
 
     if not nb.has_page("basic_info"):
