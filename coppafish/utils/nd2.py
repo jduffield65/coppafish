@@ -52,26 +52,25 @@ def get_metadata(file_path: str) -> dict:
     """
     if not os.path.isfile(file_path):
         raise errors.NoFileError(file_path)
-    images = nd2.ND2File(file_path)
 
-    if 'P' in images.sizes.keys():  # Check if the file contains several tiles
-        metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
-                          'x': images.sizes['X'], 'z': images.sizes['Z']},
-                'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
-                'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
-        xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
-                           for i in range(images.sizes['P'])])
-        metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
-        metadata['xy_pos'] = metadata['xy_pos'].tolist()
+    with nd2.ND2File(file_path) as images:
 
-    else:
-        print('Image file contain a single tile, changing metadata format')
-        metadata = {'sizes': {'c': images.sizes['C'], 'y': images.sizes['Y'],
-                          'x': images.sizes['X'], 'z': images.sizes['Z']},
-                'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
-                'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
-        xy_pos = np.array(images.frame_metadata(0).channels[0].position.stagePositionUm[:2])
-        metadata['xy_pos'] = xy_pos
+        if 'P' in images.sizes.keys():  # Check if the file contains several tiles
+            metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
+                              'x': images.sizes['X'], 'z': images.sizes['Z']},
+                    'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
+                    'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
+            xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
+                               for i in range(images.sizes['P'])])
+            metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
+            metadata['xy_pos'] = metadata['xy_pos'].tolist()
+
+        else:
+            print('Image file contain a single tile, changing metadata format')
+            metadata = {'sizes': {'c': images.sizes['C'], 'y': images.sizes['Y'],
+                              'x': images.sizes['X'], 'z': images.sizes['Z']},
+                    'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
+                    'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
 
     return metadata
 
@@ -90,8 +89,9 @@ def get_jobs_xypos(input_dir: str, files: list) -> list:
     for f_id, f in tqdm(enumerate(files), desc='Reading XY metadata'):
         with nd2.ND2File(os.path.join(input_dir, f)) as im:
             xy_pos[f_id, :] = np.array(im.frame_metadata(0).channels[0].position.stagePositionUm[:2])
+            cal = im.metadata.channels[0].volume.axesCalibration[0]
 
-    xy_pos = (xy_pos - np.min(xy_pos, 0)) / im.metadata.channels[0].volume.axesCalibration[0]
+    xy_pos = (xy_pos - np.min(xy_pos, 0)) / cal
 
     return xy_pos.tolist()
 
