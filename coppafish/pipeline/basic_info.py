@@ -35,8 +35,8 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
                 raise ValueError(f'Neither imaging rounds nor anchor_round provided')
             config_file['round'] = []
 
-    if len(config_file['round']) == n_rounds:
-        n_rounds = len(config_file['round'])
+        if len(config_file['round']) == n_rounds:
+            n_rounds = len(config_file['round'])
     else:
         n_rounds = n_rounds  # In case of individual files per laser/round, stick to n_rounds = 7
 
