@@ -27,8 +27,8 @@ def load(file_path: str) -> np.ndarray:
     """
     if not os.path.isfile(file_path):
         raise errors.NoFileError(file_path)
-    images = nd2.ND2File(file_path)
-    images = images.to_dask()
+    with nd2.ND2File(file_path) as images:
+        images = images.to_dask()
     # images = nd2.imread(file_name, dask=True)  # get python crashing with this in get_image for some reason
     images = np.moveaxis(images, 1, -1)  # put z index to end
     return images
