@@ -26,11 +26,11 @@ def set_file_names(nb, nbp):
 
     # remove file extension from round and anchor file names if it is present
     if config['raw_extension'] == 'jobs':
-        all_files = os.listdir(config['file_names']['input_dir'])
+        all_files = os.listdir(config['input_dir'])
         all_files.sort()  # Sort files by ascending number
         n_tiles = int(len(all_files)/7/8)
-        config['file_names']['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
-        config['file_names']['anchor'] = [r.replace('nd2', '') for r in all_files[n_tiles*7*7:]]
+        config['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
+        config['anchor'] = [r.replace('nd2', '') for r in all_files[n_tiles*7*7:]]
 
     else:
         if config['round'] is None:
