@@ -88,8 +88,8 @@ def get_jobs_xypos(input_dir: str, files: list) -> list:
     """
     xy_pos = np.zeros((len(files), 2))
     for f_id, f in tqdm(enumerate(files), desc='Reading XY metadata'):
-        im = nd2.ND2File(os.path.join(input_dir, f))
-        xy_pos[f_id, :] = np.array(im.frame_metadata(0).channels[0].position.stagePositionUm[:2])
+        with nd2.ND2File(os.path.join(input_dir, f)) as im:
+            xy_pos[f_id, :] = np.array(im.frame_metadata(0).channels[0].position.stagePositionUm[:2])
 
     xy_pos = (xy_pos - np.min(xy_pos, 0)) / im.metadata.channels[0].volume.axesCalibration[0]
 

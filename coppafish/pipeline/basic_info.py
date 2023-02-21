@@ -121,6 +121,8 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         use_channels_oob = [val for val in nbp.use_channels if val < 0 or val >= n_channels]
         if len(use_channels_oob) > 0:
             raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
+    elif config_file['raw_extension'] == 'jobs':
+        n_channels = metadata['sizes']['c'] * 7
 
     # get z info
     if config_basic['use_z'] is None:
