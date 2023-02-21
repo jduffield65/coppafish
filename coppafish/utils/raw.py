@@ -197,7 +197,7 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
         elif nbp_file.raw_extension == '.npy':
             round_file = os.path.join(nbp_file.input_dir, round_files[r])
             round_dask_array = dask.array.from_npy_stack(round_file)
-        elif nbp_file.raw_extension == 'jobs':
+        #elif nbp_file.raw_extension == 'jobs':
 
 
 
