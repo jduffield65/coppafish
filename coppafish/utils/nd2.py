@@ -53,15 +53,47 @@ def get_metadata(file_path: str) -> dict:
     if not os.path.isfile(file_path):
         raise errors.NoFileError(file_path)
     images = nd2.ND2File(file_path)
-    metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
+
+    if 'P' in images.sizes.keys():  # Check if the file contains several tiles
+        metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
                           'x': images.sizes['X'], 'z': images.sizes['Z']},
                 'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
                 'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
-    xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
-                       for i in range(images.sizes['P'])])
-    metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
-    metadata['xy_pos'] = metadata['xy_pos'].tolist()
+        xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
+                           for i in range(images.sizes['P'])])
+        metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
+        metadata['xy_pos'] = metadata['xy_pos'].tolist()
+
+    else:
+        print('Image file contain a single tile, changing metadata format')
+        metadata = {'sizes': {'c': images.sizes['C'], 'y': images.sizes['Y'],
+                          'x': images.sizes['X'], 'z': images.sizes['Z']},
+                'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
+                'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
+        xy_pos = np.array(images.frame_metadata(0).channels[0].position.stagePositionUm[:2])
+        metadata['xy_pos'] = xy_pos
+
     return metadata
+
+
+def get_jobs_xypos(input_dir: str, files: list) -> list:
+    """
+    Extract the xy stage position for each individual files, convert it as pixels and return a list
+    Args:
+        input_dir: path to nd2 files
+        files: file to read metadata from
+
+    Returns:
+        List [n_tiles x 2]. xy position of tiles in pixels
+    """
+    xy_pos = np.zeros((len(files), 2))
+    for f_id, f in tqdm(enumerate(files), desc='Reading XY metadata'):
+        im = nd2.ND2File(os.path.join(input_dir, f))
+        xy_pos[f_id, :] = np.array(im.frame_metadata(0).channels[0].position.stagePositionUm[:2])
+
+    xy_pos = (xy_pos - np.min(xy_pos, 0)) / im.metadata.channels[0].volume.axesCalibration[0]
+
+    return xy_pos.tolist()
 
 
 def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[int]] = None) -> np.ndarray:
