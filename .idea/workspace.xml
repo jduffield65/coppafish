@@ -226,7 +226,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1661343301282</updated>
-      <workItem from="1676895558088" duration="22757000" />
+      <workItem from="1676895558088" duration="25435000" />
     </task>
     <servers />
   </component>
@@ -375,16 +375,6 @@
           <url>file://$PROJECT_DIR$/coppafish/pipeline/find_spots.py</url>
           <line>215</line>
           <option name="timeStamp" value="370" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/utils/raw.py</url>
-          <line>212</line>
-          <option name="timeStamp" value="376" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/utils/raw.py</url>
-          <line>208</line>
-          <option name="timeStamp" value="377" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/call_spots/base.py</url>

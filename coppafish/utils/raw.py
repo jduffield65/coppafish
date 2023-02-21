@@ -7,7 +7,7 @@ from .errors import OutOfBoundsError
 from ..utils import nd2
 from ..setup import NotebookPage
 import dask.array
-
+import tqdm
 
 def get_tile_indices(folder: str) -> List:
     """
@@ -125,7 +125,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             #Get all files of a given round
             round_files = nbp_file.round[r*n_tiles*n_lasers:(r+1)*n_tiles*n_lasers]
 
-            for t in range(n_tiles):
+            for t in tqdm(range(n_tiles), desc='Loading tiles in dask array'):
                 #Get all the files of a given tiles (should be 7)
                 tile_files = round_files[t*n_lasers: (t+1)*n_lasers]
 
@@ -134,12 +134,14 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
                     tile_dask_array = []
 
                     laser_file = os.path.join(nbp_file.input_dir, f + '.nd2')
-
                     tile_dask_array.append(nd2.load(laser_file))
-                    round_laser_dask_array.append(dask.array.stack(tile_dask_array, axis=0))
+                    tile_da = dask.array.concatenate(tile_dask_array, axis=-1)  # concatenate on the laser axis
+                    tile_da = dask.array.moveaxis(tile_da, -1, 0)  # we need 'channel', 'z', 'y','x'
+
+                    round_laser_dask_array.append(tile_da)
 
             # Now that we have all the lasers dask arrays stored, we concatenate them
-            round_dask_array = dask.array.concatenate(round_laser_dask_array, axis=1)
+            round_dask_array = dask.array.stack(round_laser_dask_array, axis=0)
         # If we're dealing with the anchor round, then we need to pad the array with zeros for the missing lasers
         # as typically there will only be 2 lasers provided so 2 files
         else:
@@ -184,6 +186,7 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
     """
     if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy', 'jobs']):
         raise ValueError(f"nbp_file.raw_extension must be '.nd2', '.npy' or 'jobs' but it is {nbp_file.raw_extension}.")
+
     if round_dask_array is None:
         if nbp_basic.use_anchor:
             # always have anchor as first round after imaging rounds
@@ -197,20 +200,24 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
         elif nbp_file.raw_extension == '.npy':
             round_file = os.path.join(nbp_file.input_dir, round_files[r])
             round_dask_array = dask.array.from_npy_stack(round_file)
-        #elif nbp_file.raw_extension == 'jobs':
-
 
 
     # Return a tile/channel/z-planes from the dask array.
     if use_z is None:
         use_z = nbp_basic.use_z
 
-    t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
+    #t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
+    
     if nbp_file.raw_extension == '.nd2':
         # Only need this if statement because nd2.get_image will be different if use nd2reader not nd2 module
         # which is needed on M1 mac.
+        t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
         return nd2.get_image(round_dask_array, t_nd2, c, use_z)
     elif nbp_file.raw_extension == '.npy':
+        t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
         # Need the with below to silence warning
         with dask.config.set(**{'array.slicing.split_large_chunks': False}):
             return np.asarray(round_dask_array[t_nd2, c, :, :, use_z])
+    elif nbp_file.raw_extension == 'jobs':
+        with dask.config.set(**{'array.slicing.split_large_chunks': False}):
+            return np.asarray(round_dask_array[t, c, :, :, use_z])
