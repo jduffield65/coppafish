@@ -60,13 +60,6 @@ def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Note
     nb = setup.Notebook(config_file=config_file)
     config = nb.get_config()
 
-    if jobs_fileformat:
-        all_files = os.listdir(config['file_names']['input_dir'])
-        all_files.sort()  # Sort files by ascending number
-        n_tiles = int(len(all_files)/7/8)
-        config['file_names']['round'] = [i[:-4] for i in all_files[:n_tiles*7*7]]  # get rid of the file format
-        config['file_names']['anchor'] = [i[:-4] for i in all_files[n_tiles*7*7:]]  # get rid of the file format
-
     if not nb.has_page("basic_info"):
         nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
         nb += nbp_basic
