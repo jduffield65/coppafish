@@ -123,6 +123,8 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
             raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
     elif config_file['raw_extension'] == 'jobs':
         n_channels = metadata['sizes']['c'] * 7
+        nbp.use_channels = config_basic['use_channels']
+        nbp.use_channels.sort()
 
     # get z info
     if config_basic['use_z'] is None:
