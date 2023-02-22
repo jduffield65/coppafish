@@ -161,7 +161,10 @@ def get_scale(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, use_tiles
             Multiplier to apply to filtered nd2 images before saving as npy so full npy ```uint16``` range occupied.
     """
     # tile to get scale from is central tile
-    t = central_tile(nbp_basic.tilepos_yx, use_tiles)
+    if nbp_file.raw_extension == 'jobs':
+        t = central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
+    else:
+        t = central_tile(nbp_basic.tilepos_yx, use_tiles)
     # find z-plane with max pixel across all channels of tile t
     c, z, image = get_z_plane(nbp_file, nbp_basic, r, t, use_channels, use_z)
     # convolve_2d image in same way we convolve_2d before saving tiff files

@@ -213,7 +213,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 scale = nbp_debug.scale_anchor
                 use_channels = use_channels_anchor
             else:
-                scale = nbp_debug.scale
+                scale = nbp_debug.sc
                 use_channels = nbp_basic.use_channels
 
             # convolve_2d each image
