@@ -107,7 +107,8 @@ def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: 
     return tile_name
 
 
-def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int, n_channels: int = 0) -> np.ndarray:
+def get_tile_file_names(tile_directory: str, file_base: List[str],
+                        n_tiles: int, n_channels: int = 0, jobs: bool = False) -> np.ndarray:
     """
     Gets array of all tile file paths which will be saved in tile directory.
 
@@ -118,6 +119,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
         n_tiles: Number of tiles in data set.
         n_channels: Total number of imaging channels if using 3D.
             `0` if using 2D pipeline as all channels saved in same file.
+        jobs: Set True if file were acquired using JOBs (i.e. tiles are split by laser)
 
     Returns:
         `object [n_tiles x n_rounds (x n_channels)]`.
@@ -128,21 +130,38 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
         - If 3D so `n_channels > 0`, `tile_files[t, r]` is the full path to npy file containing all z-planes of
         tile `t`, round `r`, channel `c`.
     """
-    n_rounds = len(file_base)
-    if n_channels == 0:
-        # 2D
-        tile_files = np.zeros((n_tiles, n_rounds), dtype=object)
-        for r in range(n_rounds):
-            for t in range(n_tiles):
-                tile_files[t, r] = \
-                    get_tile_name(tile_directory, file_base, r, t)
+    if not jobs:
+        n_rounds = len(file_base)
+        if n_channels == 0:
+            # 2D
+            tile_files = np.zeros((n_tiles, n_rounds), dtype=object)
+            for r in range(n_rounds):
+                for t in range(n_tiles):
+                    tile_files[t, r] = \
+                        get_tile_name(tile_directory, file_base, r, t)
+        else:
+            # 3D
+            tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
+            for r in range(n_rounds):
+                for t in range(n_tiles):
+                    for c in range(n_channels):
+                        tile_files[t, r, c] = \
+                            get_tile_name(tile_directory, file_base, r, t, c)
     else:
-        # 3D
+        n_lasers = 7  # TODO: should have the option to pass n_lasers as an argument for better generalisation
+        n_rounds = int(len(file_base) / n_tiles / n_lasers)
         tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
+
         for r in range(n_rounds):
+            round_files = file_base[r*n_tiles*n_lasers:(r+1)*n_tiles*n_lasers]
+
             for t in range(n_tiles):
+                raw_tile_files = round_files[t * n_lasers: (t + 1) * n_lasers]
+
                 for c in range(n_channels):
-                    tile_files[t, r, c] = \
-                        get_tile_name(tile_directory, file_base, r, t, c)
+                    f_index = int(np.floor(c/4))
+                    t_name = os.path.join(tile_directory, '{}_t{}c{}.npy'.format(raw_tile_files[f_index], t, c))
+                    tile_files[t, r, c] = t_name
+
     return tile_files
 # TODO: Make tile_pos work for non rectangular array of tiles in nd2 file

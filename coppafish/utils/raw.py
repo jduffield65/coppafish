@@ -128,11 +128,9 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             for t in tqdm(range(n_tiles), desc='Loading tiles in dask array'):
                 #Get all the files of a given tiles (should be 7)
                 tile_files = round_files[t*n_lasers: (t+1)*n_lasers]
+                tile_dask_array = []
 
                 for f in tile_files:
-
-                    tile_dask_array = []
-
                     laser_file = os.path.join(nbp_file.input_dir, f + '.nd2')
                     tile_dask_array.append(nd2.load(laser_file))
 
@@ -141,25 +139,35 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
 
                 round_laser_dask_array.append(tile_da)
 
-            # Now that we have all the lasers dask arrays stored, we concatenate them
-            round_dask_array = dask.array.stack(round_laser_dask_array, axis=0)
-        # If we're dealing with the anchor round, then we need to pad the array with zeros for the missing lasers
-        # as typically there will only be 2 lasers provided so 2 files
+        # If we're dealing with the anchor round, we only need channel 0 (DAPI) and anchor
+        # The rest of the array is padded with zeros
+
         else:
+
             anchor_laser_index = channel_laser.index(nbp_basic.channel_laser[nbp_basic.anchor_channel])
             dapi_laser_index = channel_laser.index(nbp_basic.channel_laser[nbp_basic.dapi_channel])
-            for i in range(n_lasers):
-                if i == anchor_laser_index or i == dapi_laser_index:
-                    round_laser_file = os.path.join(nbp_file.input_dir, 'anchor_' + str(channel_laser[i]) +
-                                           nbp_file.raw_extension)
-                    if nbp_file.raw_extension == '.nd2':
-                        round_laser_dask_array.append(nd2.load(round_laser_file))
-                    elif nbp_file.raw_extension == '.npy':
-                        round_laser_dask_array.append(dask.array.from_npy_stack(round_laser_file))
-                else:
-                    round_laser_dask_array.append(dask.array.zeros((n_tiles, n_cams, tile_sz, tile_sz, nz)))
+
+            anchor_files = nbp_file.anchor
+
+            for t in tqdm(range(n_tiles), desc='Loading tiles in dask array'):
+                # Get all the files of a given tiles (should be 7)
+                tile_files = anchor_files[t * n_lasers: (t + 1) * n_lasers]
+                tile_dask_array = []
+
+                for f_id, f in enumerate(tile_files):
+                    if f_id == anchor_laser_index or f_id == dapi_laser_index:
+                        laser_file = os.path.join(nbp_file.input_dir, f + 'nd2')
+                        tile_dask_array.append(nd2.load(laser_file))
+                    else:
+                        tile_dask_array.append(dask.array.zeros((nz, tile_sz, tile_sz, n_cams)))
+
+                tile_da = dask.array.concatenate(tile_dask_array, axis=-1)  # concatenate on the laser axis
+                tile_da = dask.array.swapaxes(tile_da, -1, 0)  # we need 'channel', 'z', 'y','x'
+
+                round_laser_dask_array.append(tile_da)
+
             # now concatenate dask arrays
-            round_dask_array = dask.array.concatenate(round_laser_dask_array, axis=1)
+        round_dask_array = dask.array.stack(round_laser_dask_array, axis=0)
 
     return round_dask_array
 

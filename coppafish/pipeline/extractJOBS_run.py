@@ -191,13 +191,16 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         for r in use_rounds:
             # set scale and channels to use
             im_file = os.path.join(nbp_file.input_dir, round_files[r])
-            if nbp_file.raw_extension == '.npy':
-                extract.wait_for_data(im_file, config['wait_time'], dir=True)
-            else:
-                extract.wait_for_data(im_file + nbp_file.raw_extension, config['wait_time'])
+            # if nbp_file.raw_extension == '.npy':
+            #     extract.wait_for_data(im_file, config['wait_time'], dir=True)
+            # else:
+            #     extract.wait_for_data(im_file + nbp_file.raw_extension, config['wait_time'])
+
             round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+
             if r == nbp_basic.anchor_round:
                 n_clip_error_images = 0  # reset for anchor as different scale used.
+
                 if config['scale_anchor'] is None:
                     nbp_debug.scale_anchor_tile, _, nbp_debug.scale_anchor_z, config['scale_anchor'] = \
                         extract.get_scale(nbp_file, nbp_basic, nbp_basic.anchor_round, nbp_basic.use_tiles,
@@ -213,51 +216,60 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 scale = nbp_debug.scale_anchor
                 use_channels = use_channels_anchor
             else:
-                scale = nbp_debug.sc
+                scale = nbp_debug.scale
                 use_channels = nbp_basic.use_channels
 
             # convolve_2d each image
             for t in nbp_basic.use_tiles:
-                if not nbp_basic.is_3d:
-                    # for 2d all channels in same file
-                    file_exists = os.path.isfile(nbp_file.tile[t][r])
-                    if file_exists:
-                        # mmap load in image for all channels if tiff exists
-                        im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode='r')
-                    else:
-                        # Only save 2d data when all channels collected
-                        # For channels not used, keep all pixels 0.
-                        im_all_channels_2d = np.zeros((nbp_basic.n_channels, nbp_basic.tile_sz,
-                                                       nbp_basic.tile_sz), dtype=np.int32)
+
+                # if not nbp_basic.is_3d:
+                #     # for 2d all channels in same file
+                #     file_exists = os.path.isfile(nbp_file.tile[t][r])
+                #     if file_exists:
+                #         # mmap load in image for all channels if tiff exists
+                #         im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode='r')
+                #     else:
+                #         # Only save 2d data when all channels collected
+                #         # For channels not used, keep all pixels 0.
+                #         im_all_channels_2d = np.zeros((nbp_basic.n_channels, nbp_basic.tile_sz,
+                #                                        nbp_basic.tile_sz), dtype=np.int32)
+
                 for c in use_channels:
+
                     if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
                         # max value that can be saved and no shifting done for DAPI
                         max_tiff_pixel_value = np.iinfo(np.uint16).max
                     else:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
+
                     if nbp_basic.is_3d:
                         file_exists = os.path.isfile(nbp_file.tile[t][r][c])
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
+
                     if file_exists:
+
                         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
                             pass
                         else:
                             # Only need to load in mid-z plane if 3D.
-                            if nbp_basic.is_3d:
-                                im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
-                                                         yxz=[None, None, nbp_debug.z_info])
-                            else:
-                                im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
+                            # if nbp_basic.is_3d:
+                            im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
+                                                     yxz=[None, None, nbp_debug.z_info])
+                            # else:
+                            #     im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
+                            #
                             nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
                             nbp_debug.clip_extract_scale[t, r, c] = \
                                 extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
                                                          max_tiff_pixel_value, scale)
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
+
                     else:
+
                         im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
-                        if not nbp_basic.is_3d:
-                            im = extract.focus_stack(im)
+                        # if not nbp_basic.is_3d:
+                        #     im = extract.focus_stack(im)
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns
                         if config['deconvolve']:
                             im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
@@ -308,13 +320,14 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
+
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
-                        else:
-                            im_all_channels_2d[c] = im
+                        # else:
+                        #     im_all_channels_2d[c] = im
                     pbar.update(1)
-                if not nbp_basic.is_3d:
-                    utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
+                # if not nbp_basic.is_3d:
+                #     utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
     pbar.close()
     if not nbp_basic.use_anchor:
         nbp_debug.scale_anchor_tile = None
