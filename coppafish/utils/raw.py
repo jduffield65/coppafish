@@ -159,7 +159,9 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
                         laser_file = os.path.join(nbp_file.input_dir, f + 'nd2')
                         tile_dask_array.append(nd2.load(laser_file))
                     else:
-                        tile_dask_array.append(dask.array.zeros((nz, tile_sz, tile_sz, n_cams)))
+                        tile_dask_array.append(dask.array.zeros((nz+1, tile_sz, tile_sz, n_cams)))
+                        # TODO find a better fix for nz. here it is different because of basic_info use_z
+                        # Ideally it should have the same shape as the array for dapi
 
                 tile_da = dask.array.concatenate(tile_dask_array, axis=-1)  # concatenate on the laser axis
                 tile_da = dask.array.swapaxes(tile_da, -1, 0)  # we need 'channel', 'z', 'y','x'
