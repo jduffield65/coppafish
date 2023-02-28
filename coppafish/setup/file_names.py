@@ -99,13 +99,14 @@ def set_file_names(nb, nbp):
         config['big_anchor_image'] = config['big_anchor_image'].replace('.npz', '')
         nbp.big_anchor_image = os.path.join(config['output_dir'], config['big_anchor_image'] + '.npz')
 
-    if config['anchor'] is not None:
+    if config['anchor'] is not None: # TODO this will create a problem with JOBS
         round_files = config['round'] + [config['anchor']]
     else:
         round_files = config['round']
 
     if config['raw_extension'] == 'jobs':
         if nb.basic_info.is_3d:
+            round_files = config['round'] + [config['anchor']]
             tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
                                              nb.basic_info.n_channels, jobs=True)
         else:
