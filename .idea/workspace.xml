@@ -27,6 +27,10 @@
     <setting file="file://$PROJECT_DIR$/coppafish/register/new_pipeline.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/coppafish/utils/npy.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/image_stitcher.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/IPython/core/async_helpers.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/IPython/core/interactiveshell.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/pipeline/basic_info.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/setup/tile_details.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -37,19 +41,19 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "C:/Users/Reilly/Documents/GitHub/coppafish",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Reilly/Documents/GitHub/coppafish&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.new.ui&quot;
   },
-  "keyToStringList": {
-    "com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File": [
-      "Python"
+  &quot;keyToStringList&quot;: {
+    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
+      &quot;Python&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
       <console-settings>
@@ -257,7 +261,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/register/new_pipeline.py</url>
-          <line>788</line>
+          <line>792</line>
           <option name="timeStamp" value="303" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -291,34 +295,14 @@
           <option name="timeStamp" value="328" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/register/base.py</url>
-          <line>16</line>
-          <option name="timeStamp" value="333" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/pipeline/stitch.py</url>
           <line>31</line>
           <option name="timeStamp" value="346" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/call_spots/base.py</url>
-          <line>35</line>
-          <option name="timeStamp" value="352" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/call_spots/base.py</url>
-          <line>38</line>
-          <option name="timeStamp" value="353" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/plot/results_viewer/base.py</url>
           <line>419</line>
           <option name="timeStamp" value="355" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/plot/results_viewer/base.py</url>
-          <line>314</line>
-          <option name="timeStamp" value="365" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/pipeline/find_spots.py</url>
@@ -361,19 +345,49 @@
           <option name="timeStamp" value="377" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/utils/nd2.py</url>
-          <line>132</line>
-          <option name="timeStamp" value="378" />
+          <url>file://$PROJECT_DIR$/coppafish/pipeline/call_reference_spots.py</url>
+          <line>80</line>
+          <option name="timeStamp" value="400" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/utils/nd2.py</url>
-          <line>135</line>
-          <option name="timeStamp" value="379" />
+          <url>file://$PROJECT_DIR$/coppafish/pipeline/call_reference_spots.py</url>
+          <line>119</line>
+          <option name="timeStamp" value="401" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/call_spots/base.py</url>
-          <line>213</line>
-          <option name="timeStamp" value="390" />
+          <url>file://$PROJECT_DIR$/coppafish/pipeline/basic_info.py</url>
+          <line>85</line>
+          <option name="timeStamp" value="410" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/setup/notebook.py</url>
+          <line>240</line>
+          <option name="timeStamp" value="421" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/setup/notebook.py</url>
+          <line>253</line>
+          <option name="timeStamp" value="422" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/pipeline/basic_info.py</url>
+          <line>123</line>
+          <option name="timeStamp" value="423" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/setup/tile_details.py</url>
+          <line>26</line>
+          <option name="timeStamp" value="424" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/setup/tile_details.py</url>
+          <line>28</line>
+          <option name="timeStamp" value="425" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/setup/tile_details.py</url>
+          <line>73</line>
+          <option name="timeStamp" value="429" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

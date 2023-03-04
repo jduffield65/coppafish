@@ -11,9 +11,9 @@ import jax
 def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
                            z_scale: float, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, bool]:
     z_multiplier = jnp.array([1, 1, z_scale])
-    yxz_pad = jnp.pad((yxz - tile_centre) * z_multiplier, [(0, 1)], constant_values=1)
+    yxz_pad = jnp.pad(yxz * z_multiplier, [(0, 1)], constant_values=1)
     yxz_transform = jnp.matmul(yxz_pad, transform)
-    yxz_transform = jnp.round((yxz_transform / z_multiplier) + tile_centre).astype(jnp.int16)
+    yxz_transform = jnp.round(yxz_transform / z_multiplier).astype(jnp.int16)
     in_range = jnp.logical_and((yxz_transform >= jnp.array([0, 0, 0])).all(),
                                (yxz_transform < tile_sz).all())  # set color to nan if out range
     return yxz_transform, in_range

@@ -22,7 +22,9 @@
 # 2. Add it, and a description of what it does, to "config.default.ini".
 
 import configparser
+import copy
 import os.path
+import os
 import re
 
 # List of options and their type.  If you change this, update the
@@ -372,5 +374,3 @@ def get_config(ini_file):
         for name, val in _parser[section].items():
             out_dict[section][name] = _option_formatters[_options[section][name]](_parser[section][name])
     return out_dict
-
-# Config = get_config("settings.ini")
