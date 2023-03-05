@@ -61,7 +61,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         warnings.warn("\noverwrite_ref_spots = True so will overwrite:\ngene_no, score, score_diff, intensity"
                       "\nin nbp_ref_spots.")
     else:
-        # Raise error if data in nbp_ref_spots already exists that will be overwritted in this function.
+        # Raise error if data in nbp_ref_spots already exists that will be overwritten in this function.
         error_message = ""
         for var in ['gene_no', 'score', 'score_diff', 'intensity']:
             if hasattr(nbp_ref_spots, var) and nbp_ref_spots.__getattribute__(var) is not None:
