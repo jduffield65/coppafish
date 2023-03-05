@@ -26,6 +26,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     Returns:
         `NotebookPage[find_spots]` - Page containing point cloud of all tiles, rounds and channels.
     """
+    # Phase 0: Initialisation
     nbp = NotebookPage("find_spots")
     if nbp_basic.is_3d is False:
         # set z details to None if using 2d pipeline
@@ -47,6 +48,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     use_tiles = nbp_basic.use_tiles
     use_rounds = nbp_basic.use_rounds
 
+    # PHASE 1: Retrieve the results run in previous iterations
+
     # Deal with case where algorithm has been run for some tiles and data saved. Whole point of this is to get rid of
     # tiles that we have already run find_spots on.
     if os.path.isfile(nbp_file.spot_details_info):
@@ -67,6 +70,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         # Delete this info as it's large and we want to save memory
         del info, spot_no, prev_found_tiles
 
+    # PHASE 2: Begin detection on previously untouched tiles
     # This is the number of images we're going to detect spots on in total
     n_images = len(use_rounds) * len(use_tiles) * len(nbp_basic.use_channels)
 
@@ -90,7 +94,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             # max value is y or x coordinate of around 2048 hence can use int16.
             spot_details = np.empty((0, 3), dtype=np.int16)
             # spot_no will be an n_tiles by n_rounds by n_channels matrix, anchor_spots per round are approx 30,000 so
-            # use int32. The dimension for tiles needs to be total number of tiles, not just tiles used. If we tried to
+            # use int32.
+            # The dimension for tiles needs to be total number of tiles, not just tiles used. If we tried to
             # remove certain tiles and this only had length len(use_tiles) for the first argument, this would throw
             # an index error. All values should be set to 0 at the start of searching through a new tile because after
             # completing one tile, we add this array to the previous spot_no array, so any nonzero values from previous
@@ -99,7 +104,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                                 nbp_basic.n_channels), dtype=np.int32)
 
             for r in use_rounds:
-
+                # Set the channels in use to only the anchor channel when we're looking at the anchor round
                 if r == nbp_basic.anchor_round:
                     use_channels = [nbp_basic.anchor_channel]
                 else:
@@ -153,6 +158,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                     spot_no[t, r, c] = spot_yxz.shape[0]
                     pbar.update(1)
 
+            # PHASE 3: Save results from this tile to spot_details info
+
             # Now that we've gotten through a complete tile we will
             # append this tile's spot_details info to the spot_detail_info.npz we have saved in the output directory
             if os.path.isfile(nbp_file.spot_details_info):
@@ -180,6 +187,10 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                 # Delete all these variables to save memory
                 del spot_details, spot_no, isolated_spots
 
+    # PHASE 5: Save results into notebook
+    use_tiles = nbp_basic.use_tiles
+    use_rounds = nbp_basic.use_rounds + [nbp_basic.ref_round]
+
     # Once all tiles have been run, we load the complete spot_details_info file and save it to the notebook
     info = np.load(nbp_file.spot_details_info)
 
@@ -187,25 +198,36 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     spot_no = info.f.arr_1
     isolated_spots = info.f.arr_2
 
-    # A problem arises if these arrays contain more info than just the tiles relevant to the user. This happens for
-    # example when find spots is run initially with all tiles and then just a subset. To get rid of this issue is easy
+    # A problem arises if these arrays contain more info than just the tiles relevant to the user.
+    # This happens for example when find spots is run initially with all tiles, and now we just want a subset.
     spot_details_new = np.zeros((0, 3), dtype=int)
     spot_no_new = np.zeros_like(spot_no, dtype=int)
     isolated_spots_new = np.zeros(0, dtype=bool)
+    # Loop over in tiles rounds and channels
     for t in use_tiles:
+        # spot_no is easy to update
+        spot_no_new[t] = spot_no[t]
+        # Next we need to update spot_details and isolated_spots.
         for r in use_rounds:
+            # Need to use different set of channels and save isolated spots if on anchor round, else proceed naturally
+            if r != nbp_basic.ref_round:
+                use_channels = nbp_basic.use_channels
+            else:
+                use_channels = [nbp_basic.ref_channel]
+                # Load in the isolated spots
+                spot_isolated = fs.spot_isolated(isolated_spots, t, nbp_basic.ref_round, nbp_basic.ref_channel, spot_no)
+                isolated_spots_new = np.append(isolated_spots_new, spot_isolated)
+
+            # Finally, load in the spot coords
             for c in use_channels:
-                # spot_no is easy to update
-                spot_no_new[t, r, c] = spot_no[t, r, c]
                 # Now load in all the spot positions for this t, r, c
                 spot_yxz = fs.spot_yxz(spot_details, t, r, c, spot_no)
                 # Now append these to the new spot details
                 spot_details_new = np.vstack((spot_details_new, spot_yxz))
-                # Do the same with isolated spots
-                spot_isolated = fs.spot_isolated(isolated_spots, t, nbp_basic.ref_round, nbp_basic.ref_channel, spot_no)
-                isolated_spots_new = np.append(isolated_spots_new, spot_isolated)
 
+    # Finally, save to the notebook.
     nbp.spot_details = spot_details_new
     nbp.spot_no = spot_no_new
     nbp.isolated_spots = isolated_spots_new
+
     return nbp

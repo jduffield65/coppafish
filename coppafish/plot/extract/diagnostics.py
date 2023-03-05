@@ -21,6 +21,7 @@ def thresh_box_plots(nb: Notebook):
     fig, ax1 = plt.subplots(figsize=(10, 6))
     fig.subplots_adjust(left=0.075, right=0.95, bottom=0.15)
     n_use_channels = len(nb.basic_info.use_channels)
+    n_use_rounds = len(nb.basic_info.use_rounds)
     # different boxplot color for each channel (+ different color for anchor channel)
     # Must be distinct from black and white
     channel_colors = distinctipy.get_colors(n_use_channels + int(nb.basic_info.use_anchor), [(0, 0, 0), (1, 1, 1)])
@@ -39,7 +40,7 @@ def thresh_box_plots(nb: Notebook):
 
     leg_markers = []
     for i in range(len(box_data)):
-        if i % n_use_channels == 0:
+        if i % n_use_rounds == 0:
             c += 1
             leg_markers = leg_markers + [bp['boxes'][i]]
         bp['boxes'][i].set_facecolor(channel_colors[c])

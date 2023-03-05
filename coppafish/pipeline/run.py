@@ -83,8 +83,8 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     Returns:
         `Notebook` containing `file_names` and `basic_info` pages.
     """
+    config = setup.get_config(config_file)
     nb = setup.Notebook(config_file=config_file)
-    config = nb.get_config()
     if not nb.has_page("basic_info"):
         nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
         nb += nbp_basic
@@ -159,19 +159,19 @@ def run_stitch(nb: setup.Notebook):
     # Two conditions below:
     # 1. Check if there is a big dapi_image
     # 2. Check if there is NOT a file in the path directory for the dapi image
-    if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
+    # if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
         # save stitched dapi
         # Will load in from nd2 file if nb.extract_debug.r_dapi is None i.e. if no DAPI filtering performed.
-        utils.npy.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
-                                nb.stitch.tile_origin, nb.basic_info.anchor_round,
-                                nb.basic_info.dapi_channel, nb.extract_debug.r_dapi is None,
-                                config['stitch']['save_image_zero_thresh'])
-
-    if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
+        # utils.npy.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
+        #                         nb.stitch.tile_origin, nb.basic_info.anchor_round,
+        #                         nb.basic_info.dapi_channel, nb.extract_debug.r_dapi is None,
+        #                         config['stitch']['save_image_zero_thresh'])
+    #
+    # if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
-        utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
-                                nb.stitch.tile_origin, nb.basic_info.ref_round,
-                                nb.basic_info.ref_channel, False, config['stitch']['save_image_zero_thresh'])
+        # utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
+        #                         nb.stitch.tile_origin, nb.basic_info.ref_round,
+        #                         nb.basic_info.ref_channel, False, config['stitch']['save_image_zero_thresh'])
 
 
 def run_register(nb: setup.Notebook):
@@ -189,8 +189,8 @@ def run_register(nb: setup.Notebook):
 
     """
     config = nb.get_config()
-    if not all(nb.has_page(["register", "register_debug"])):
-    # if not nb.has_page("register"):
+    # if not all(nb.has_page(["register", "register_debug"])):
+    if not nb.has_page("register"):
         nbp, nbp_debug = register(nb.basic_info, nb.file_names, config, nb.find_spots.spot_details,
                                   nb.find_spots.spot_no)
         nb += nbp
@@ -284,6 +284,5 @@ def run_omp(nb: setup.Notebook):
         utils.errors.check_color_nan(nbp.colors, nb.basic_info)
     else:
         warnings.warn('omp', utils.warnings.NotebookPageWarning)
-
 
 # run_pipeline('C:/Users/Reilly/Downloads/primary_before_seq.ini')

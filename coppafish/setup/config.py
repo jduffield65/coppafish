@@ -22,7 +22,9 @@
 # 2. Add it, and a description of what it does, to "config.default.ini".
 
 import configparser
+import copy
 import os.path
+import os
 import re
 
 # List of options and their type.  If you change this, update the
@@ -417,4 +419,3 @@ def split_config(config_file):
 
         config_file_path.append(new_config_file)
 
-# Config = get_config("settings.ini")
