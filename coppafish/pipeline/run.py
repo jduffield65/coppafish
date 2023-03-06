@@ -3,6 +3,7 @@ from coppafish import setup, utils
 from joblib import Parallel, delayed
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
     get_reference_spots, call_reference_spots, call_spots_omp
+from extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
 from ..setup import split_config
 from ..stitch import check_shifts_stitch, check_shifts_register
@@ -107,7 +108,7 @@ def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Note
     return nb
 
 
-def run_extract(nb: setup.Notebook):
+def run_extract(nb: setup.Notebook, parallel_processing: bool = False, n_workers: int = 1):
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -117,13 +118,21 @@ def run_extract(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `file_names` and `basic_info` pages.
-
+        parallel_processing: Set True to use parallel processing - ONLY WORKS FOR JOBS FILEFORMAT
+        n_workers: number of parallel threads to be used
     """
     if not all(nb.has_page(["extract", "extract_debug"])):
+
         config = nb.get_config()
-        nbp, nbp_debug = extract_and_filter(config['extract'], nb.file_names, nb.basic_info)
-        nb += nbp
-        nb += nbp_debug
+        if not parallel_processing:
+            nbp, nbp_debug = extract_and_filter(config['extract'], nb.file_names, nb.basic_info)
+            nb += nbp
+            nb += nbp_debug
+        else:
+            assert config['file_format']['raw_extension'] == 'jobs', 'Parallelized extraction will work only with JOBS'
+            nbp, nbp_debug = par_extract_and_filter(config['extract'], nb.file_names, nb.basic_info, n_workers)
+            nb += nbp
+            nb += nbp_debug
     else:
         warnings.warn('extract', utils.warnings.NotebookPageWarning)
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)

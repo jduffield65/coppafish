@@ -339,7 +339,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
 
 def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
-                            nbp_basic: NotebookPage) -> Tuple[NotebookPage, NotebookPage]:
+                            nbp_basic: NotebookPage, n_workers: int = 1) -> Tuple[NotebookPage, NotebookPage]:
     """
     This reads in images from the raw `nd2` files, filters them and then saves them as npy files in the tile directory.
     Also gets `auto_thresh` for use in turning images to point clouds and `hist_values`, `hist_counts` required for
@@ -354,6 +354,7 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
         config: Dictionary obtained from `'extract'` section of config file.
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
+        n_workers: Number of parallel threads, default is 1
 
     Returns:
         - `NotebookPage[extract]` - Page containing `auto_thresh` for use in turning images to point clouds and
@@ -560,7 +561,7 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
             kwargs['round_dask_array'] = round_dask_array
             return tile_extract(t=t, **kwargs)
 
-        results = Parallel(n_jobs=10, verbose=10)(delayed(parallel_extract)(t=t, **kwargs) for t in nbp_basic.use_tiles)
+        results = Parallel(n_jobs=n_workers, verbose=10)(delayed(parallel_extract)(t=t, **kwargs) for t in nbp_basic.use_tiles)
 
         for t in nbp_basic.use_tiles:
             for c_id, c in enumerate(use_channels):
