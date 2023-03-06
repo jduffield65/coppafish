@@ -3,7 +3,13 @@ from typing import Optional, Tuple
 import numpy as np
 from .. import utils
 
-
+# This method is a bit silly, I think that the small random number means that the same spot in 2 diff round channels
+# may have a different location depending on where the random number has put it
+# Don't really understand why we are dilating it? We have already convolved with a kernel.
+# Dilation here means producing a new image by sliding the structuring element over all pixels of the original image
+# and then taking the largest pixel within that window (even though the wikipedia definition implies dilation = max + 1)
+# So when image + epsilon > dilation, this just means that the pixel is a local maxima within the ngbd defined by the
+# structuring element
 def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int],
                  radius_z: Optional[int] = None, remove_duplicates: bool = False,
                  se: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:

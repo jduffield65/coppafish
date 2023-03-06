@@ -326,7 +326,7 @@ def reformat_affine(A, z_scale):
     row_shuffler[2, 1] = 1
     row_shuffler[3, 3] = 1
 
-    # Finally, compute the matrix in the new basis
+    # compute the matrix in the new basis
     A = np.linalg.inv(row_shuffler) @ A @ row_shuffler
 
     # Next, multiply the shift part of A by the expansion factor
@@ -703,7 +703,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
 # From this point, we only have viewers.
 
 
-def view_overlay(nbp_file, nbp_basic, transform, t, r, c):
+def view_overlay(nbp_file, nbp_basic, transform, t, r, c, filter=False):
     """
     Function to overlay tile, round and channel with the anchor in napari and view the registration.
     Args:
@@ -713,6 +713,7 @@ def view_overlay(nbp_file, nbp_basic, transform, t, r, c):
         t: common tile
         r: target image round
         c: target image channel
+        filter: Boolean whether to filter
     """
 
     def napari_viewer():
@@ -784,6 +785,9 @@ def view_overlay(nbp_file, nbp_basic, transform, t, r, c):
     target_image = load_tile(nbp_file, nbp_basic, t, r, c)
     target_image = np.swapaxes(target_image, 0, 2)
     target_image = np.swapaxes(target_image, 1, 2)
+    if filter:
+        base_image = sobel(base_image)
+        target_image = sobel(target_image)
     # Transform saved as yxz * yxz but needs to be zyx * zyx. Convert this to something napari will understand. I think
     # this includes making the shift the final column as opposed to our convention of making the shift the final row
     affine_transform = np.vstack(((transform[t, r, c]).T, np.array([0, 0, 0, 1])))

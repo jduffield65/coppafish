@@ -1,8 +1,10 @@
 import os
 from coppafish import setup, utils
+from joblib import Parallel, delayed
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
     get_reference_spots, call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
+from ..setup import split_config
 from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
 from ..register.new_pipeline import register
@@ -35,14 +37,42 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
     nb = initialize_nb(config_file)
     run_extract(nb)
     run_find_spots(nb)
-    run_stitch(nb)
     run_register(nb)
+    run_stitch(nb)
     run_reference_spots(nb, overwrite_ref_spots)
     run_omp(nb)
+
     return nb
 
 
+def run_pipeline_par(config_file: str) -> setup.Notebook:
+    """
+    Function to run the pipeline in parallel mode.
+    Args:
+        config_file: master config file for global notebook
+
+    Returns:
+        nb: global notebook with everything in it.
+    """
+    config_file_path = split_config(config_file)
+    Parallel(n_jobs=2)(delayed(run_indep_processes(config_file_path[i])) for i in range(len(config_file_path)))
+
+
+def run_indep_processes(config_file: str):
+    """
+    Bridge function to run first few tile-independent step of the pipeline.
+
+    Args:
+        config_file: Path to config file.
+    """
+    nb = initialize_nb(config_file)
+    run_extract(nb)
+    run_find_spots(nb)
+    run_register(nb)
+
+
 def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Notebook:
+
     """
     Quick function which creates a `Notebook` and adds `basic_info` page before saving.
     `file_names` page will be added automatically as soon as `basic_info` page is added.
@@ -57,7 +87,9 @@ def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Note
     Returns:
         `Notebook` containing `file_names` and `basic_info` pages.
     """
+    config = setup.get_config(config_file)
     nb = setup.Notebook(config_file=config_file)
+
     config = nb.get_config()
 
     if jobs_fileformat:

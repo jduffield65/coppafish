@@ -73,12 +73,11 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
     # We cannot loop through the metadata as these tiles are ordered in the nd2 format, not the npy format
     num_rows = len(y_coord)
     num_cols = len(x_coord)
-    for y in range(num_rows):
-        relevant_x = [xy_pos[t, 0] for t in range(n_tiles) if xy_pos[t, 1] == y_coord[y]]
-        relevant_x.sort(reverse=True)
-        for x in range(num_cols):
-            tilepos_yx_npy.append([num_rows-y-1, num_cols-x-1])
-
+    for y in range(num_rows - 1, -1, -1):
+        for x in range(num_cols - 1, -1, -1):
+            # Next condition checks if this coord is present in the xy coords
+            if np.any(np.all((xy_pos == np.array([x_coord[x], y_coord[y]])), axis=1)):
+                tilepos_yx_npy.append([y, x])
     # Convert to ndarray
     tilepos_yx_npy = np.array(tilepos_yx_npy)
 

@@ -22,7 +22,9 @@
 # 2. Add it, and a description of what it does, to "config.default.ini".
 
 import configparser
+import copy
 import os.path
+import os
 import re
 
 # List of options and their type.  If you change this, update the
@@ -30,6 +32,7 @@ import re
 _options = {
     'basic_info':
         {
+            'par': 'bool',
             'is_3d': 'bool',
             'anchor_channel': 'maybe_int',
             'dapi_channel': 'maybe_int',
@@ -373,4 +376,46 @@ def get_config(ini_file):
             out_dict[section][name] = _option_formatters[_options[section][name]](_parser[section][name])
     return out_dict
 
-# Config = get_config("settings.ini")
+
+def split_config(config_file):
+    """
+    This function will be used to split the config file into one config file for each tile when in parallel mode.
+
+    Args:
+        config_file: Path to global config file given.
+    Returns:
+        config_file_path: (n_tiles) path to each config file.
+    """
+    config_file_path = []
+    # We will create the various config files for each tile. It is easier to read info from the config dict than the
+    # ini file so use this where necessary
+    config_dict = get_config(config_file)
+    use_tiles = config_dict['basic_info']['use_tiles']
+
+    for t in use_tiles:
+        # Need to load in the config file
+        cfg = configparser.ConfigParser()
+        cfg.read(config_file)
+
+        # Need to change the file_names section.
+        # First create new folder for each tile notebook
+        new_output_dir = os.path.join(config_dict['file_names']['output_dir'], 'tile' + str(t))
+        # If this path doesn't already exist, make the path
+        if not os.path.exists(new_output_dir):
+            os.mkdir(new_output_dir)
+        # Update the value in the file_names section
+        cfg.set(section='file_names', option='output_dir', value=new_output_dir)
+
+        # Now update the basic_info, change par to False and tiles to tile t
+        cfg.set(section='basic_info', option='par', value='False')
+        cfg.set(section='basic_info', option='use_tiles', value=str(t))
+
+        # If there is a stitch page, get rid of it
+        cfg.remove_section('stitch')
+        # Now write this to a new config file
+        new_config_file = os.path.join(new_output_dir, 'config'+str(t)+'.ini')
+        with open(new_config_file, 'w') as file_path:
+            cfg.write(file_path)
+
+        config_file_path.append(new_config_file)
+

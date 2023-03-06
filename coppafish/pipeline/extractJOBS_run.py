@@ -518,10 +518,6 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
         config['n_clip_error'] = int(nbp_basic.tile_sz * nbp_basic.tile_sz / 100)
 
     for r in tqdm(use_rounds, desc='Rounds'):
-        # set scale and channels to use
-        im_file = os.path.join(nbp_file.input_dir, round_files[r])
-
-        round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
 
         if r == nbp_basic.anchor_round:
 
@@ -552,14 +548,19 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
         kwargs['config'] = config
         kwargs['hist_bin_edges'] = hist_bin_edges
         kwargs['scale'] = scale
-        kwargs['round_dask_array'] = round_dask_array
+
         kwargs['wiener_filter'] = wiener_filter
         kwargs['filter_kernel_dapi'] = filter_kernel_dapi
         kwargs['filter_kernel'] = filter_kernel
         kwargs['smooth_kernel'] = smooth_kernel
         kwargs['z_info'] = nbp_debug.z_info
 
-        results = Parallel(n_jobs=10, verbose=10)(delayed(tile_extract)(t=t, **kwargs) for t in nbp_basic.use_tiles)
+        def parallel_extract(t, **kwargs):
+            round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+            kwargs['round_dask_array'] = round_dask_array
+            return tile_extract(t=t, **kwargs)
+
+        results = Parallel(n_jobs=10, verbose=10)(delayed(parallel_extract)(t=t, **kwargs) for t in nbp_basic.use_tiles)
 
         for t in nbp_basic.use_tiles:
             for c_id, c in enumerate(use_channels):
@@ -601,7 +602,10 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
                 pass
             else:
                 # Only need to load in mid-z plane if 3D.
-                im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, yxz=[None, None, z_info])
+                try:
+                    im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, yxz=[None, None, z_info])
+                except:
+                    raise ValueError(f'Round {r}, Tile {t}, Channel {c} is probably compromised. Remove it & re-run')
 
                 auto_thresh_c, hist_counts_trc_c, n_clip_pixels_c, clip_extract_scale_c = \
                     extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
