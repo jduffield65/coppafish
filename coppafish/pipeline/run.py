@@ -1,9 +1,9 @@
 import os
-from coppafish import setup, utils
+from .. import setup, utils
 from joblib import Parallel, delayed
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
     get_reference_spots, call_reference_spots, call_spots_omp
-from extractJOBS_run import par_extract_and_filter
+from .extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
 from ..setup import split_config
 from ..stitch import check_shifts_stitch, check_shifts_register
@@ -129,7 +129,7 @@ def run_extract(nb: setup.Notebook, parallel_processing: bool = False, n_workers
             nb += nbp
             nb += nbp_debug
         else:
-            assert config['file_format']['raw_extension'] == 'jobs', 'Parallelized extraction will work only with JOBS'
+            assert config['file_names']['raw_extension'] == 'jobs', 'Parallelized extraction will work only with JOBS'
             nbp, nbp_debug = par_extract_and_filter(config['extract'], nb.file_names, nb.basic_info, n_workers)
             nb += nbp
             nb += nbp_debug
