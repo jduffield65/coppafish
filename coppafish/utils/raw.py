@@ -217,18 +217,15 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
     if use_z is None:
         use_z = nbp_basic.use_z
 
-    #t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
-
+    t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
     if nbp_file.raw_extension == '.nd2':
         # Only need this if statement because nd2.get_image will be different if use nd2reader not nd2 module
         # which is needed on M1 mac.
-        t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
         return nd2.get_image(round_dask_array, t_nd2, c, use_z)
     elif nbp_file.raw_extension == '.npy':
-        t_nd2 = nd2.get_nd2_tile_ind(t, nbp_basic.tilepos_yx_nd2, nbp_basic.tilepos_yx)
         # Need the with below to silence warning
         with dask.config.set(**{'array.slicing.split_large_chunks': False}):
             return np.asarray(round_dask_array[t_nd2, c, :, :, use_z])
     elif nbp_file.raw_extension == 'jobs':
         with dask.config.set(**{'array.slicing.split_large_chunks': False}):
-            return np.asarray(round_dask_array[t, c, :, :, use_z])
+            return np.asarray(round_dask_array[t_nd2, c, :, :, use_z])

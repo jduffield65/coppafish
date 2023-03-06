@@ -581,6 +581,7 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
 
 def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges, scale,
                 round_dask_array, wiener_filter, filter_kernel_dapi, filter_kernel, smooth_kernel, z_info):
+
     auto_thresh = []
     hist_counts_trc = []
     n_clip_pixels = []
