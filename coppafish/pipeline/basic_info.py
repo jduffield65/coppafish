@@ -72,27 +72,38 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
     if len(use_rounds_oob) > 0:
         raise utils.errors.OutOfBoundsError("use_rounds", use_rounds_oob[0], 0, n_rounds - 1)
 
-    if len(config_file['round']) > 0:
-        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
-    else:
-        first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'])
-    if config_file['raw_extension'] == '.nd2':
-        # load in metadata of nd2 file corresponding to first round
-        # Test for number of rounds in case of separate round registration and load metadata
-        # from anchor round in that case
-        metadata = utils.nd2.get_metadata(first_round_raw + config_file['raw_extension'])
+    if config_file['raw_extension'] == 'jobs':
+        # Declare the file/s that we will extract metadata from.
+        # In jobs format we have both tile and laser splitting
+        if config_basic['use_tiles'] is None:
+            n_tiles = config_basic['n_tiles']
+            use_tiles = list(np.arange(n_tiles))
+        else:
+            n_tiles = len(config_basic['use_tiles'])
+            use_tiles = config_basic['use_tiles']
+        n_lasers = len(set(config_basic['channel_laser']))
+        # Next get the file indices for all the files we will use. This will give a list of n_tiles consecutive blocks
+        # of n_lasers consecutive integers
+        file_indices = np.sum([np.arange(n_lasers * t, n_lasers * (t + 1)) for t in use_tiles], [])
+        first_round_files = [os.path.join(config_file['input_dir'], config_file['round_prefix']) + str(i).zfill(4) +
+                             '.nd2' for i in file_indices]
+        # load in metadata of nd2 file/s corresponding to first round.
+        metadata = utils.nd2.get_metadata(first_round_files)
+    elif config_file['raw_extension'] == '.nd2':
+        first_round_files = [os.path.join(config_file['input_dir'], config_file['round'][0]) + '.nd2']
+        metadata = utils.nd2.get_metadata(first_round_files)
     elif config_file['raw_extension'] == '.npy':
         # Load in metadata as dictionary from a json file
         config_file['raw_metadata'] = config_file['raw_metadata'].replace('.json', '')
         metadata_file = os.path.join(config_file['input_dir'], config_file['raw_metadata'] + '.json')
         metadata = json.load(open(metadata_file))
-        # Check metadata info matches that in first round npy file.
-        use_tiles_nd2 = utils.raw.metadata_sanity_check(metadata, first_round_raw)
+        if config_basic['use_tiles'] is not None:
+            use_tiles_nd2 = config_basic['use_tiles']
+        else:
+            use_tiles_nd2 = config_basic['n_tiles']
     else:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")
-
-
 
     # get channel info
     n_channels = metadata['sizes']['c']
@@ -132,7 +143,7 @@ def set_basic_info(config_file: dict, config_basic: dict) -> NotebookPage:
             config_basic['use_tiles'] = use_tiles_folder
         elif np.setdiff1d(config_basic['use_tiles'], use_tiles_folder).size > 0:
             raise ValueError(f"config_basic['use_tiles'] = {config_basic['use_tiles']}\n"
-                             f"But in the folder:\n{first_round_raw}\nTiles Available are {use_tiles_folder}.")
+                             f"But in the folder:\n{first_round_files}\nTiles Available are {use_tiles_folder}.")
     if config_basic['use_tiles'] is None:
         config_basic['use_tiles'] = list(np.arange(n_tiles))
     if config_basic['ignore_tiles'] is not None:

@@ -48,7 +48,8 @@ _options = {
             'channel_camera': 'maybe_list_int',
             'channel_laser': 'maybe_list_int',
             'tile_pixel_value_shift': 'int',
-            'ignore_first_z_plane': 'bool'
+            'ignore_first_z_plane': 'bool',
+            'n_tiles': 'maybe_int'
         },
     'file_names':
         {
@@ -57,6 +58,7 @@ _options = {
             'output_dir': 'str',  # while not being connected to server where data is
             'tile_dir': 'str',
             'round': 'maybe_list_str',
+            'round_prefix': 'maybe_str',
             'anchor': 'maybe_str',
             'raw_extension': 'str',
             'raw_metadata': 'maybe_str',
@@ -418,4 +420,6 @@ def split_config(config_file):
             cfg.write(file_path)
 
         config_file_path.append(new_config_file)
+
+    return config_file_path
 

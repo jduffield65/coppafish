@@ -4,7 +4,7 @@ from joblib import Parallel, delayed
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
     get_reference_spots, call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
-from ..setup import split_config
+from ..setup import split_config, merge_notebooks, Notebook
 from ..stitch import check_shifts_stitch, check_shifts_register
 from ..register import check_transforms
 from ..register.new_pipeline import register
@@ -34,6 +34,7 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
     Returns:
         `Notebook` containing all information gathered during the pipeline.
     """
+
     nb = initialize_nb(config_file)
     run_extract(nb)
     run_find_spots(nb)
@@ -45,17 +46,44 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
     return nb
 
 
-def run_pipeline_par(config_file: str) -> setup.Notebook:
+def run_pipeline_par(config_file: str, threads=5) -> setup.Notebook:
     """
     Function to run the pipeline in parallel mode.
     Args:
         config_file: master config file for global notebook
+        threads: number of threads used for parallelisation
 
     Returns:
-        nb: global notebook with everything in it.
+        master_nb: global notebook with everything in it.
     """
+    # create independent config files for each tile
     config_file_path = split_config(config_file)
-    Parallel(n_jobs=2)(delayed(run_indep_processes(config_file_path[i])) for i in range(len(config_file_path)))
+    # Run all these in parallel up to register step
+    Parallel(n_jobs=threads)(delayed(run_indep_processes(config_file_path[i])) for i in range(len(config_file_path)))
+
+    # Now create a list of all the notebooks to be merged into master_nb
+    nb_list = []
+    for i in range(len(config_file_path)):
+        nb_path = os.path.join(config_file_path[i].file_names['output_dir'],
+                               config_file_path[i].file_names['notebook_name']) + '.npz'
+        nb_list.append(Notebook(nb_path))
+    # Initialize master_nb
+    master_nb = initialize_nb(config_file)
+    # merge all local notebooks
+    master_nb = merge_notebooks(nb_list, master_nb)
+    # Now run the 2 non-independent processes
+    run_stitch(master_nb)
+    run_reference_spots(master_nb)
+
+    # TODO: Add a trivial stitch page to the 1 tile notebooks
+    # TODO: Add the same call spots notebook page to each of the individual notebooks
+    # TODO: Add a subset of the ref_spots page
+    Parallel(n_jobs=threads)(delayed(run_omp(nb_list[i])) for i in range(len(config_file_path)))
+    # TODO: Add merge option for the OMP pages
+    # master_nb_omp = merge_omp(omp_list)
+    # master_nb += master_nb_omp
+
+    return master_nb
 
 
 def run_indep_processes(config_file: str):

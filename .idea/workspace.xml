@@ -27,10 +27,7 @@
     <setting file="file://$PROJECT_DIR$/coppafish/register/new_pipeline.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/coppafish/utils/npy.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/image_stitcher.py" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/IPython/core/async_helpers.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/IPython/core/interactiveshell.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/pipeline/basic_info.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/setup/tile_details.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/scratches/scratch.py" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -355,21 +352,6 @@
           <option name="timeStamp" value="401" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/pipeline/basic_info.py</url>
-          <line>85</line>
-          <option name="timeStamp" value="410" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/setup/notebook.py</url>
-          <line>240</line>
-          <option name="timeStamp" value="421" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/setup/notebook.py</url>
-          <line>253</line>
-          <option name="timeStamp" value="422" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/pipeline/basic_info.py</url>
           <line>123</line>
           <option name="timeStamp" value="423" />
@@ -381,13 +363,18 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/setup/tile_details.py</url>
-          <line>28</line>
+          <line>34</line>
           <option name="timeStamp" value="425" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/coppafish/setup/tile_details.py</url>
-          <line>73</line>
-          <option name="timeStamp" value="429" />
+          <url>file://$PROJECT_DIR$/coppafish/utils/nd2.py</url>
+          <line>57</line>
+          <option name="timeStamp" value="426" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/utils/nd2.py</url>
+          <line>85</line>
+          <option name="timeStamp" value="428" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
