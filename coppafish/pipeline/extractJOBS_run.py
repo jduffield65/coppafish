@@ -558,13 +558,18 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
 
         def parallel_extract(t, **kwargs):
             while True:
+                i = 0
                 try:
+                    i += 1
                     round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
                     kwargs['round_dask_array'] = round_dask_array
                     results = tile_extract(t=t, **kwargs)
                     break
                 except:
-                    time.sleep(5)
+                    i += 1
+                    time.sleep(30)
+                if i > 25:
+                    raise ValueError(f'Tiles {t} seems to have a problem')
             return results
 
         results = Parallel(n_jobs=n_workers, verbose=10)(delayed(parallel_extract)
