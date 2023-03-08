@@ -1042,3 +1042,87 @@ def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     master_nbp_register.channel_transform = channel_transform
 
     return master_nbp_register
+
+
+def split_stitch(master_nbp_stitch, nb_list):
+    """
+    Function to split the stitch page from the master notebook to the individual notebooks. Does not return anything
+    but simply adds the pages to the single tile notebooks.
+
+    Args:
+        master_nbp_stitch: stitch page of master notebook
+        nb_list: list of single tile notebooks
+
+    Returns:
+        N/A
+    """
+    # Cannot just take a page from a notebook and add it to another unfortunately, have to manually copy arguments
+    for i in range(len(nb_list)):
+
+        # initialise notebook page for each individual stitch page
+        nbp = NotebookPage('stitch')
+        # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
+        key_list = list(master_nbp_stitch.__dict__)[4:]
+        # For remaining arguments set to None but then update tile_origin
+        for key in key_list:
+            nbp.__setattr__(key=key, value=None)
+        origin = np.zeros((1, 3))
+        origin[0] = master_nbp_stitch.tile_origin[i]
+        # Add this updated tile origin
+        nbp.tile_origin = origin
+        # Add notebook page
+        nb_list[i] += nbp
+
+
+def split_call_spots(master_nbp_call_spots, nb_list):
+    """
+    Function to split the call_spots page from the master notebook to the individual notebooks. Does not return anything
+    but simply adds the pages to the single tile notebooks.
+
+    Args:
+        master_nbp_call_spots: call_spots page of master notebook
+        nb_list: list of single tile notebooks
+
+    Returns:
+        N/A
+    """
+    # I was lying earlier when I said we couldn't copy a page verbatim. Just have to use a trick
+    for i in range(len(nb_list)):
+        # This allows us to add the page to another notebook
+        master_nbp_call_spots.finalized = False
+        # Adding the page to a notebook sets finalize = true so have to keep this condition change in the loop
+        nb_list[i] += master_nbp_call_spots
+
+
+def split_ref_spots(master_nbp_ref_spots, nb_list):
+    """
+    Function to split the ref_spots page from the master notebook to the individual notebooks. Does not return anything
+    but simply adds the pages to the single tile notebooks.
+
+    Args:
+        master_nbp_ref_spots: refl_spots page of master notebook
+        nb_list: list of single tile notebooks
+
+    Returns:
+        N/A
+    """
+
+    # Load spot_indices where one tile ends and another begins
+    num_spots = [nb.find_spots.spot_details.shape[0] for nb in nb_list]
+    num_notebooks = len(nb_list)
+
+    # Sum all these to get indices
+    index = [sum(num_spots[:i]) for i in range(num_notebooks + 1)]
+
+    # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
+    key_list = list(master_nbp_ref_spots.__dict__)[4:]
+
+    # Loop through all notebooks
+    for i in range(num_notebooks):
+        # Loop through all parameters to be set
+        for key in key_list:
+            # initialise nbp
+            nbp = NotebookPage('ref_spots')
+            # Set attribute to be all spots in the ith tile
+            nbp.__setattr__(key=key, value=master_nbp_ref_spots.__getattribute__(key)[index[i]:index[i+1]])
+        nb_list[i] += nbp

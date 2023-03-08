@@ -79,6 +79,8 @@ def get_metadata(file_path: list) -> dict:
         # md['channels'] = [image.metadata.channels[i].channel.colorRGB for i in range(md['sizes']['c'])]
         md_list.append(md)
 
+    # TODO: Add a channels list that shows which channels are in use in this dataset
+    # TODO: Read in the tiles here as the tile indices that these are given by nd2
     # Now combine these, most data doesn't change so need only update the xy positions, number of tiles and number of
     # channels
     # initialise metadata to be the last metadata in use
