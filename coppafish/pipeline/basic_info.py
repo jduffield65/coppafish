@@ -104,8 +104,9 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         # Then iterate over every file of the first round to extract xy_pos
         metadata = utils.nd2.get_metadata(first_round_raw + '.nd2')
         all_files = os.listdir(config_file['input_dir'])
+        all_files.sort()
         n_tiles = int(len(all_files) / 7 / (n_rounds+1))
-        first_round_files = all_files[:n_tiles]
+        first_round_files = all_files[::7][:n_tiles]
         metadata['xy_pos'] = utils.nd2.get_jobs_xypos(config_file['input_dir'], first_round_files)
 
     else:
