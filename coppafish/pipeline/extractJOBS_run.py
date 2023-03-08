@@ -1,6 +1,6 @@
 from .. import utils, extract
 import numpy as np
-import os
+import os, time
 from tqdm import tqdm
 from ..setup.notebook import NotebookPage, Notebook
 from typing import Tuple
@@ -557,13 +557,20 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
         kwargs['z_info'] = nbp_debug.z_info
 
         def parallel_extract(t, **kwargs):
-            round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
-            kwargs['round_dask_array'] = round_dask_array
-            return tile_extract(t=t, **kwargs)
+            while True:
+                try:
+                    round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+                    kwargs['round_dask_array'] = round_dask_array
+                    results = tile_extract(t=t, **kwargs)
+                    break
+                except:
+                    time.sleep(5)
+            return results
 
-        results = Parallel(n_jobs=n_workers, verbose=10)(delayed(parallel_extract)(t=t, **kwargs) for t in nbp_basic.use_tiles)
+        results = Parallel(n_jobs=n_workers, verbose=10)(delayed(parallel_extract)
+                                                         (t=t, **kwargs) for t in nbp_basic.use_tiles)
 
-        for t in nbp_basic.use_tiles:
+        for t in tqdm(nbp_basic.use_tiles, desc='Filling notebook'):
             for c_id, c in enumerate(use_channels):
                 nbp.auto_thresh[t, r, c] = results[t][0][c_id]
                 nbp_debug.n_clip_pixels[t, r, c] = results[t][2][c_id]
