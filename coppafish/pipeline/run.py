@@ -101,7 +101,7 @@ def run_independent_processes(config_file: str):
     run_register(nb)
 
 
-def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Notebook:
+def initialize_nb(config_file: str) -> setup.Notebook:
 
     """
     Quick function which creates a `Notebook` and adds `basic_info` page before saving.
@@ -110,9 +110,6 @@ def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Note
 
     Args:
         config_file: Path to config file.
-        jobs_fileformat: Set True to use JOBs file format. Here the function will list
-        all files in the input directory, extract the number of tiles (total /7 lasers /8 rounds) and
-        determine file names for sequencing rounds and anchor round
 
     Returns:
         `Notebook` containing `file_names` and `basic_info` pages.
@@ -122,7 +119,7 @@ def initialize_nb(config_file: str, jobs_fileformat: bool = False) -> setup.Note
 
     config = nb.get_config()
 
-    if jobs_fileformat:
+    if config['file_names']['raw_extension'] == 'jobs':
         all_files = os.listdir(config['file_names']['input_dir'])
         all_files.sort()  # Sort files by ascending number
         n_tiles = int(len(all_files)/7/8)
