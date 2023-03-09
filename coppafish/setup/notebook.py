@@ -814,34 +814,25 @@ class NotebookPage:
         return n
 
 
-def merge_notebooks(nb_list: list, master_config_file: str) -> Notebook:
+def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
     """
     Function which merges n notebooks into one. On issues where all notebooks should have the same value, for example,
     notebook.basic_info.anchor_channel, an error will be raised if these do not match.
 
     Args:
         nb_list: list of single-tile notebooks to be merged
-        master_config_file: Path to master notebook config file
+        master_nb: master notebook initialized from the original unsplit config file. Only contains nbp_basic anc
+        nbp_file
 
     Returns:
         master_nb: master notebook merged from all the others.
     """
-    # Initialize the master notebook
-    master_nb = Notebook(config_file=master_config_file)
+    # Initialize the master notebook basic info page
+    master_nbp_basic = master_nb.basic_info
 
     # First reorder the notebooks so that they are in ascending tile order
     nbp_tiles = [nb.basic_info.use_tiles[0] for nb in nb_list]
     nb_list = [x for _, x in sorted(zip(nb_list, nbp_tiles))]
-
-    # Check all the notebooks have the basic info page
-    has_basic_info = all([nb.has_page('basic_info') for nb in nb_list])
-    if not has_basic_info:
-        return master_nb
-
-    # When all notebook pages have basic info, we make a list of all of them, merge them and then add page to master
-    nbp_basic_list = [nb.basic_info for nb in nb_list]
-    master_nbp_basic = merge_basic_info(nbp_basic_list)
-    master_nb += master_nbp_basic
 
     # Check the notebooks contain extract + extract_debug page
     has_extract_and_debug = all([nb.has_page('extract')*nb.has_page('extract_debug') for nb in nb_list])
@@ -879,39 +870,6 @@ def merge_notebooks(nb_list: list, master_config_file: str) -> Notebook:
     # TODO: Add register_debug page
 
     return master_nb
-
-
-def merge_basic_info(nbp_basic_list) -> NotebookPage:
-    """
-    Merge a list of single tile nbp_basics into one multitile nbp_basic
-    Args:
-        nbp_basic_list: List of basic info pages to be combined
-
-    Returns:
-        master_nbp_basic: multitile nbp_basic page
-    """
-
-    # Add the basic info page to the master notebook
-    master_nbp_basic = NotebookPage('basic_info')
-
-    # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
-    key_list = list(nbp_basic_list[0].__dict__)[4:]
-
-    # The other parameters should be the same across notebooks, with the only exception being use_tiles, so remove this
-    # and set it manually
-    key_list.remove('use_tiles')
-    master_nbp_basic.use_tiles = [nbp_basic.use_tiles[0] for nbp_basic in nbp_basic_list]
-    # Now loop through all other keys and set them
-    for key in key_list:
-        # The set gets rid of duplicates, so this set will have 1 value when all notebooks agree on these parameters
-        key_vals = set([nbp_basic_list[i].__getattribute__(key) for i in range(len(nbp_basic_list))])
-        if len(key_vals) > 1:
-            raise ValueError("What on earth are you doing? These notebooks MUST all have the same value for the "
-                             "parameter: " + key + ". The list of Notebooks you gave has the following set of values:"
-                             + str(key_vals))
-        master_nbp_basic.__setattr__(key=key, value=nbp_basic_list[0].__getattribute__(key))
-
-    return master_nbp_basic
 
 
 def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
@@ -1084,3 +1042,87 @@ def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     master_nbp_register.channel_transform = channel_transform
 
     return master_nbp_register
+
+
+def split_stitch(master_nbp_stitch, nb_list):
+    """
+    Function to split the stitch page from the master notebook to the individual notebooks. Does not return anything
+    but simply adds the pages to the single tile notebooks.
+
+    Args:
+        master_nbp_stitch: stitch page of master notebook
+        nb_list: list of single tile notebooks
+
+    Returns:
+        N/A
+    """
+    # Cannot just take a page from a notebook and add it to another unfortunately, have to manually copy arguments
+    for i in range(len(nb_list)):
+
+        # initialise notebook page for each individual stitch page
+        nbp = NotebookPage('stitch')
+        # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
+        key_list = list(master_nbp_stitch.__dict__)[4:]
+        # For remaining arguments set to None but then update tile_origin
+        for key in key_list:
+            nbp.__setattr__(key=key, value=None)
+        origin = np.zeros((1, 3))
+        origin[0] = master_nbp_stitch.tile_origin[i]
+        # Add this updated tile origin
+        nbp.tile_origin = origin
+        # Add notebook page
+        nb_list[i] += nbp
+
+
+def split_call_spots(master_nbp_call_spots, nb_list):
+    """
+    Function to split the call_spots page from the master notebook to the individual notebooks. Does not return anything
+    but simply adds the pages to the single tile notebooks.
+
+    Args:
+        master_nbp_call_spots: call_spots page of master notebook
+        nb_list: list of single tile notebooks
+
+    Returns:
+        N/A
+    """
+    # I was lying earlier when I said we couldn't copy a page verbatim. Just have to use a trick
+    for i in range(len(nb_list)):
+        # This allows us to add the page to another notebook
+        master_nbp_call_spots.finalized = False
+        # Adding the page to a notebook sets finalize = true so have to keep this condition change in the loop
+        nb_list[i] += master_nbp_call_spots
+
+
+def split_ref_spots(master_nbp_ref_spots, nb_list):
+    """
+    Function to split the ref_spots page from the master notebook to the individual notebooks. Does not return anything
+    but simply adds the pages to the single tile notebooks.
+
+    Args:
+        master_nbp_ref_spots: refl_spots page of master notebook
+        nb_list: list of single tile notebooks
+
+    Returns:
+        N/A
+    """
+
+    # Load spot_indices where one tile ends and another begins
+    num_spots = [nb.find_spots.spot_details.shape[0] for nb in nb_list]
+    num_notebooks = len(nb_list)
+
+    # Sum all these to get indices
+    index = [sum(num_spots[:i]) for i in range(num_notebooks + 1)]
+
+    # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
+    key_list = list(master_nbp_ref_spots.__dict__)[4:]
+
+    # Loop through all notebooks
+    for i in range(num_notebooks):
+        # Loop through all parameters to be set
+        for key in key_list:
+            # initialise nbp
+            nbp = NotebookPage('ref_spots')
+            # Set attribute to be all spots in the ith tile
+            nbp.__setattr__(key=key, value=master_nbp_ref_spots.__getattribute__(key)[index[i]:index[i+1]])
+        nb_list[i] += nbp

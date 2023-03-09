@@ -25,12 +25,18 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
             Index 0 refers to ```YX = [MaxY, MaxX]```.
             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
     """
-    # NOTE: Tile t as an npy does not correspond to tile t as an nd2. This is why we have to handle these separately.
+    # NOTE: There are 2 differences in npy and nd2 tile format:
+    # 1. Tiles in ND2 are ordered according to a snake format where we start at top right, move left across cols, move
+    # down one row, move right across all cols, move down one row, etc. Whereas tiles in npy format start at top right
+    # move left across all cols, then move to the rightmost col one row down and continue
+    # 2. The same tile in npy and nd2 has a different coordinate convention. In nd2, a tile with coord [0,0] represents
+    # top right whereas in npy [0,0] represents bottom left.
+
     n_tiles = xy_pos.shape[0]
     tilepos_yx_nd2 = []
     tilepos_yx_npy = []
 
-    # This should get rid of rounding errors
+    # This should get rid of some rounding errors
     xy_pos = xy_pos.astype(int)
 
     # Next we will try to split tiles up into rows and columns.
@@ -40,7 +46,7 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
     x_coord.sort(reverse=True)
 
     # Refine these to get rid of any coords that correspond to same row/column. We take 2 x coords to correspond to
-    # same col if they are within 10% of a tile width
+    # same col if they are within 10% of a tile width and same with y
     y_coord = [y_coord[i] for i in range(len(y_coord)-1) if y_coord[i] - y_coord[i+1] > 0.1 * tile_sz] + [y_coord[-1]]
     x_coord = [x_coord[i] for i in range(len(x_coord) - 1) if x_coord[i] - x_coord[i + 1] > 0.1 * tile_sz] + [x_coord[-1]]
 
@@ -61,23 +67,41 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
                     break
             xy_pos[t, 1] = y_representative
 
-    # For ND2, we arrange y coords and x coords in descending order and for each tile, see what index these coords are
-    # in this list and this gives the tile
-    for t in range(n_tiles):
-        tilepos_yx_nd2.append([y_coord.index(xy_pos[t, 1]), x_coord.index(xy_pos[t, 0])])
+    # The next arrays will be useful for indexing the nd2s and npys as these have different grid naming conventions
+    # ND2
+    y_coord_descend, x_coord_descend = y_coord.copy(), x_coord.copy()
+    y_coord_descend.sort(reverse=True)
+    x_coord_descend.sort(reverse=True)
+    # NPY
+    y_coord_ascend, x_coord_ascend = y_coord.copy(), x_coord.copy()
+    y_coord_ascend.sort(reverse=False)
+    x_coord_ascend.sort(reverse=False)
+
+    # Do ND2 first. With old get metadata function, tilepos[0] referred to nd2 index 0, tilepos[1] to index 1, etc.
+    # This is no longer the case.
+    # Now need to loop through all indices in the snake order that ND2 does and set these.
+    x_reverse = True
+    for y in y_coord:
+        x_coord.sort(reverse=x_reverse)
+        for x in x_coord:
+            # check if this xy coord present in the xy coords listed
+            if np.any(np.all((xy_pos == np.array([x, y])), axis=1)):
+                tilepos_yx_nd2.append([y_coord_descend.index(y), x_coord_descend.index(x)])
+        # Alternate the x_reverse
+        x_reverse = not x_reverse
 
     # Convert to ndarray
     tilepos_yx_nd2 = np.array(tilepos_yx_nd2)
 
     # Now begin for the npy's
-    # We cannot loop through the metadata as these tiles are ordered in the nd2 format, not the npy format
-    num_rows = len(y_coord)
-    num_cols = len(x_coord)
-    for y in range(num_rows - 1, -1, -1):
-        for x in range(num_cols - 1, -1, -1):
+    x_reverse = True
+    x_coord.sort(reverse=x_reverse)
+    for y in y_coord:
+        for x in x_coord:
             # Next condition checks if this coord is present in the xy coords
-            if np.any(np.all((xy_pos == np.array([x_coord[x], y_coord[y]])), axis=1)):
-                tilepos_yx_npy.append([y, x])
+            if np.any(np.all((xy_pos == np.array([x, y])), axis=1)):
+                tilepos_yx_npy.append([y_coord_ascend.index(y), x_coord_ascend.index(x)])
+
     # Convert to ndarray
     tilepos_yx_npy = np.array(tilepos_yx_npy)
 
