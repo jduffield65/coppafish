@@ -156,7 +156,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
 
                 for f_id, f in enumerate(tile_files):
                     if f_id == anchor_laser_index or f_id == dapi_laser_index:
-                        laser_file = os.path.join(nbp_file.input_dir, f + 'nd2')
+                        laser_file = os.path.join(nbp_file.input_dir, f + '.nd2')
                         tile_dask_array.append(nd2.load(laser_file))
                     else:
                         tile_dask_array.append(dask.array.zeros((nz+1, tile_sz, tile_sz, n_cams)))
