@@ -91,25 +91,24 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         metadata = utils.nd2.get_metadata(first_round_raw + config_file['raw_extension'])
         n_tiles = metadata['sizes']['t']
 
-
-    if config_file['raw_extension'] == 'jobs':
-        # Declare the file/s that we will extract metadata from.
-        # In jobs format we have both tile and laser splitting
-        if config_basic['use_tiles'] is None:
-            n_tiles = config_basic['n_tiles']
-            use_tiles = list(np.arange(n_tiles))
-        else:
-            n_tiles = len(config_basic['use_tiles'])
-            use_tiles = config_basic['use_tiles']
-        n_lasers = len(set(config_basic['channel_laser']))
-        # Next get the file indices for all the files we will use. This will give a list of n_tiles consecutive blocks
-        # of n_lasers consecutive integers
-        file_indices = np.sum([np.arange(n_lasers * t, n_lasers * (t + 1)) for t in use_tiles], [])
-        first_round_files = [os.path.join(config_file['input_dir'], config_file['round_prefix']) + str(i).zfill(4) +
-                             '.nd2' for i in file_indices]
-        # load in metadata of nd2 file/s corresponding to first round.
-        metadata = utils.nd2.get_metadata(first_round_files)
-    elif config_file['raw_extension'] == '.nd2':
+    # if config_file['raw_extension'] == 'jobs':
+    #     # Declare the file/s that we will extract metadata from.
+    #     # In jobs format we have both tile and laser splitting
+    #     if config_basic['use_tiles'] is None:
+    #         n_tiles = config_basic['n_tiles']
+    #         use_tiles = list(np.arange(n_tiles))
+    #     else:
+    #         n_tiles = len(config_basic['use_tiles'])
+    #         use_tiles = config_basic['use_tiles']
+    #     n_lasers = len(set(config_basic['channel_laser']))
+    #     # Next get the file indices for all the files we will use. This will give a list of n_tiles consecutive blocks
+    #     # of n_lasers consecutive integers
+    #     file_indices = np.sum([np.arange(n_lasers * t, n_lasers * (t + 1)) for t in use_tiles], [])
+    #     first_round_files = [os.path.join(config_file['input_dir'], config_file['round_prefix']) + str(i).zfill(4) +
+    #                          '.nd2' for i in file_indices]
+    #     # load in metadata of nd2 file/s corresponding to first round.
+    #     metadata = utils.nd2.get_metadata(first_round_files)
+    if config_file['raw_extension'] == '.nd2':
         first_round_files = [os.path.join(config_file['input_dir'], config_file['round'][0]) + '.nd2']
         metadata = utils.nd2.get_metadata(first_round_files)
 
@@ -132,13 +131,6 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         n_tiles = int(len(all_files) / 7 / (n_rounds+1))
         first_round_files = all_files[::7][:n_tiles]
         metadata['xy_pos'] = utils.nd2.get_jobs_xypos(config_file['input_dir'], first_round_files)
-
-
-        if config_basic['use_tiles'] is not None:
-            use_tiles_nd2 = config_basic['use_tiles']
-        else:
-            use_tiles_nd2 = config_basic['n_tiles']
-
     else:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")
@@ -159,16 +151,16 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         nbp.use_channels = config_basic['use_channels']
         nbp.use_channels.sort()
 
-    # get channel info
-    n_channels = metadata['sizes']['c']
-    if config_basic['use_channels'] is None:
-        config_basic['use_channels'] = list(np.arange(n_channels))
-    nbp.use_channels = config_basic['use_channels']
-    nbp.use_channels.sort()
-    use_channels_oob = [val for val in nbp.use_channels if val < 0 or val >= n_channels]
-    if len(use_channels_oob) > 0:
-        raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
-
+    # # get channel info
+    # # n_channels = metadata['sizes']['c']
+    # # if config_basic['use_channels'] is None:
+    # #     config_basic['use_channels'] = list(np.arange(n_channels))
+    # nbp.use_channels = config_basic['use_channels']
+    # nbp.use_channels.sort()
+    # use_channels_oob = [val for val in nbp.use_channels if val < 0 or val >= n_channels]
+    # if len(use_channels_oob) > 0:
+    #     raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
+    #
 
     # get z info
     if config_basic['use_z'] is None:

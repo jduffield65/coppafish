@@ -74,47 +74,46 @@ def get_metadata(file_path: list) -> dict:
                     'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
                     'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
 
-
-    # If not list, then make it a list
-    if type(file_path) is not list:
-        file_path = [file_path]
-    # Check file/s actually exists
-    num_files = len(file_path)
-    # we'll create a list of all the little metadatas we will make and then combine these
-    md_list = []
-    # loop over all the separate files
-    for i in range(num_files):
-        if not os.path.isfile(file_path[i]):
-            raise errors.NoFileError(file_path[i])
-        # Load in raw metadata
-        image = nd2.ND2File(file_path[i])
-        md = {'sizes': {'c': image.sizes['C'], 'y': image.sizes['Y'],
-                              'x': image.sizes['X'], 'z': image.sizes['Z']},
-                    'pixel_microns': image.metadata.channels[0].volume.axesCalibration[0],
-                    'pixel_microns_z': image.metadata.channels[0].volume.axesCalibration[2]}
-        x_pos = image.recorded_data['X Coord [µm]']
-        y_pos = image.recorded_data['Y Coord [µm]']
-        xy_pos = np.unique(np.vstack((x_pos, y_pos)).T, axis=0)
-        # now add the number of tiles, which is len(xy_pos)
-        md['sizes']['t'] = xy_pos.shape[0]
-        md['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / md['pixel_microns']
-        md['xy_pos'] = md['xy_pos'].tolist()
-        # Surely we have some metadata for channels. The below only uniquely specifies the camera.
-        # md['channels'] = [image.metadata.channels[i].channel.colorRGB for i in range(md['sizes']['c'])]
-        md_list.append(md)
-
-    # TODO: Add a channels list that shows which channels are in use in this dataset
-    # TODO: Read in the tiles here as the tile indices that these are given by nd2
-    # Now combine these, most data doesn't change so need only update the xy positions, number of tiles and number of
-    # channels
-    # initialise metadata to be the last metadata in use
-    metadata = md
-    xy_pos = np.unique(sum([m['xy_pos'] for m in md_list], []), axis=0)
-    metadata['sizes']['t'] = xy_pos.shape[0]
-    # metadata['channels'] = list(set(sum([m['channels'] for m in md_list], [])))
-    # metadata['sizes']['c'] = len(metadata['channels'])
-    metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
-    metadata['xy_pos'] = metadata['xy_pos'].tolist()
+    # # If not list, then make it a list
+    # if type(file_path) is not list:
+    #     file_path = [file_path]
+    # # Check file/s actually exists
+    # num_files = len(file_path)
+    # # we'll create a list of all the little metadatas we will make and then combine these
+    # md_list = []
+    # # loop over all the separate files
+    # for i in range(num_files):
+    #     if not os.path.isfile(file_path[i]):
+    #         raise errors.NoFileError(file_path[i])
+    #     # Load in raw metadata
+    #     image = nd2.ND2File(file_path[i])
+    #     md = {'sizes': {'c': image.sizes['C'], 'y': image.sizes['Y'],
+    #                           'x': image.sizes['X'], 'z': image.sizes['Z']},
+    #                 'pixel_microns': image.metadata.channels[0].volume.axesCalibration[0],
+    #                 'pixel_microns_z': image.metadata.channels[0].volume.axesCalibration[2]}
+    #     x_pos = image.recorded_data['X Coord [µm]']
+    #     y_pos = image.recorded_data['Y Coord [µm]']
+    #     xy_pos = np.unique(np.vstack((x_pos, y_pos)).T, axis=0)
+    #     # now add the number of tiles, which is len(xy_pos)
+    #     md['sizes']['t'] = xy_pos.shape[0]
+    #     md['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / md['pixel_microns']
+    #     md['xy_pos'] = md['xy_pos'].tolist()
+    #     # Surely we have some metadata for channels. The below only uniquely specifies the camera.
+    #     # md['channels'] = [image.metadata.channels[i].channel.colorRGB for i in range(md['sizes']['c'])]
+    #     md_list.append(md)
+    #
+    # # TODO: Add a channels list that shows which channels are in use in this dataset
+    # # TODO: Read in the tiles here as the tile indices that these are given by nd2
+    # # Now combine these, most data doesn't change so need only update the xy positions, number of tiles and number of
+    # # channels
+    # # initialise metadata to be the last metadata in use
+    # metadata = md
+    # xy_pos = np.unique(sum([m['xy_pos'] for m in md_list], []), axis=0)
+    # metadata['sizes']['t'] = xy_pos.shape[0]
+    # # metadata['channels'] = list(set(sum([m['channels'] for m in md_list], [])))
+    # # metadata['sizes']['c'] = len(metadata['channels'])
+    # metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
+    # metadata['xy_pos'] = metadata['xy_pos'].tolist()
 
     return metadata
 
