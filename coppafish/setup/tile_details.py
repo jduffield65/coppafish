@@ -77,9 +77,18 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarra
     y_coord_ascend.sort(reverse=False)
     x_coord_ascend.sort(reverse=False)
 
-    # Fill in the tilepos for nd2. Needs to be in same grid convention as nd2 which is x descending, y descending
-    for t in range(n_tiles):
-        tilepos_yx_nd2.append([y_coord_descend.index(xy_pos[t, 1]), x_coord_descend.index(xy_pos[t, 0])])
+    # Do ND2 first. With old get metadata function, tilepos[0] referred to nd2 index 0, tilepos[1] to index 1, etc.
+    # This is no longer the case.
+    # Now need to loop through all indices in the snake order that ND2 does and set these.
+    x_reverse = True
+    for y in y_coord:
+        x_coord.sort(reverse=x_reverse)
+        for x in x_coord:
+            # check if this xy coord present in the xy coords listed
+            if np.any(np.all((xy_pos == np.array([x, y])), axis=1)):
+                tilepos_yx_nd2.append([y_coord_descend.index(y), x_coord_descend.index(x)])
+        # Alternate the x_reverse
+        x_reverse = not x_reverse
 
     # Convert to ndarray
     tilepos_yx_nd2 = np.array(tilepos_yx_nd2)

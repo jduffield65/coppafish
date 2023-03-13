@@ -34,16 +34,13 @@ def load(file_path: str) -> np.ndarray:
     return images
 
 
-def get_metadata(file_path, tile_split=False, laser_split=False) -> dict:
-
+def get_metadata(file_path: list) -> dict:
     """
     Gets metadata containing information from nd2 data about pixel sizes, position of tiles and numbers of
     tiles/channels/z-planes. This
 
     Args:
         file_path: list of path/s to desired nd2 file/s. If not list will be converted to one.
-        tile_split: Boolean parameter to say whether files split by tile (default =false)
-        laser_split: boolean parameter to say whether files split by laser (default =false)
 
     Returns:
         Dictionary containing -
@@ -54,14 +51,12 @@ def get_metadata(file_path, tile_split=False, laser_split=False) -> dict:
         - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions.
         - 'channels' - list of colorRGB codes for the channels, this is a unique identifier for each channel
     """
-
     # If not list, then make it a list
     if type(file_path) is not list:
         file_path = [file_path]
     # Check file/s actually exists
     num_files = len(file_path)
-
-    # First: we'll create a list of all the little metadatas we will make and then combine these
+    # we'll create a list of all the little metadatas we will make and then combine these
     md_list = []
     # loop over all the separate files
     for i in range(num_files):
@@ -69,20 +64,33 @@ def get_metadata(file_path, tile_split=False, laser_split=False) -> dict:
             raise errors.NoFileError(file_path[i])
         # Load in raw metadata
         image = nd2.ND2File(file_path[i])
-        md = {'sizes': {'t': image.sizes['P'], 'c': image.sizes['C'], 'y': image.sizes['Y'],
+        md = {'sizes': {'c': image.sizes['C'], 'y': image.sizes['Y'],
                               'x': image.sizes['X'], 'z': image.sizes['Z']},
                     'pixel_microns': image.metadata.channels[0].volume.axesCalibration[0],
                     'pixel_microns_z': image.metadata.channels[0].volume.axesCalibration[2]}
-        xy_pos = [image.experiment[0].parameters.points[i].stagePositionUm[:2] for i in range(md['sizes']['t'])]
+        x_pos = image.recorded_data['X Coord [µm]']
+        y_pos = image.recorded_data['Y Coord [µm]']
+        xy_pos = np.unique(np.vstack((x_pos, y_pos)).T, axis=0)
+        # now add the number of tiles, which is len(xy_pos)
+        md['sizes']['t'] = xy_pos.shape[0]
         md['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / md['pixel_microns']
-
+        md['xy_pos'] = md['xy_pos'].tolist()
+        # Surely we have some metadata for channels. The below only uniquely specifies the camera.
+        # md['channels'] = [image.metadata.channels[i].channel.colorRGB for i in range(md['sizes']['c'])]
         md_list.append(md)
 
-    # Now we will combine all these little metadata dicts that we have into one.
-    # Right now we're just trying to make this compatible with old format so just take metadata = md where there is just
-    # one file in file_path
+    # TODO: Add a channels list that shows which channels are in use in this dataset
+    # TODO: Read in the tiles here as the tile indices that these are given by nd2
+    # Now combine these, most data doesn't change so need only update the xy positions, number of tiles and number of
+    # channels
+    # initialise metadata to be the last metadata in use
     metadata = md
-
+    xy_pos = np.unique(sum([m['xy_pos'] for m in md_list], []), axis=0)
+    metadata['sizes']['t'] = xy_pos.shape[0]
+    # metadata['channels'] = list(set(sum([m['channels'] for m in md_list], [])))
+    # metadata['sizes']['c'] = len(metadata['channels'])
+    metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
+    metadata['xy_pos'] = metadata['xy_pos'].tolist()
     return metadata
 
 

@@ -872,42 +872,6 @@ def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
     return master_nb
 
 
-def merge_basic_info(nbp_basic_list) -> NotebookPage:
-    """
-    Merge a list of single tile nbp_basics into one multitile nbp_basic
-    Args:
-        nbp_basic_list: List of basic info pages to be combined
-
-    Returns:
-        master_nbp_basic: multitile nbp_basic page
-    """
-
-    # Add the basic info page to the master notebook
-    master_nbp_basic = NotebookPage('basic_info')
-
-    # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
-    key_list = list(nbp_basic_list[0].__dict__)[4:]
-
-    # The other parameters should be the same across notebooks, with the only exceptions being use_tiles and the
-    # tilepos_npy and tilepos_nd2 parameters
-    key_list.remove('use_tiles')
-    key_list.remove('tilepos_yx')
-    key_list.remove('tilepos_yx_nd2')
-
-    master_nbp_basic.use_tiles = [nbp_basic.use_tiles[0] for nbp_basic in nbp_basic_list]
-    # Now loop through all other keys and set them
-    for key in key_list:
-        # The set gets rid of duplicates, so this set will have 1 value when all notebooks agree on these parameters
-        key_vals = set([nbp_basic_list[i].__getattribute__(key) for i in range(len(nbp_basic_list))])
-        if len(key_vals) > 1:
-            raise ValueError("What on earth are you doing? These notebooks MUST all have the same value for the "
-                             "parameter: " + key + ". The list of Notebooks you gave has the following set of values:"
-                             + str(key_vals))
-        master_nbp_basic.__setattr__(key=key, value=nbp_basic_list[0].__getattribute__(key))
-
-    return master_nbp_basic
-
-
 def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
     """
     Merge a list of single tile nbp_extract into one multitile nbp_extract
