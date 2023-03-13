@@ -22,7 +22,7 @@ setup(
     python_requires='>=3.8',
     url='https://jduffield65.github.io/coppafish/',
     packages=packages,
-    install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'sklearn', 'opencv-python-headless',
+    install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'scikit-learn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx'],
     extras_require={'optimised': ['jax', 'jaxlib'], 'plotting': ['matplotlib', 'distinctipy', 'PyQt5',

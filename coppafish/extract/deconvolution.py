@@ -62,8 +62,16 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
     spot_images = np.zeros((0, shape[0], shape[1], shape[2]), dtype=int)
     tiles_used = []
     while n_spots < min_spots:
-        t = scale.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
-        im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, None, round, use_z)
+        if  nbp_file.raw_extension == 'jobs':
+            t = scale.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
+
+            rda = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
+            # choose tile closet to centre
+            im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, rda, round, use_z)
+
+        else:
+            t = scale.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
+            im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, None, round, use_z)
         mid_z = np.ceil(im.shape[2] / 2).astype(int)
         median_im = np.median(im[:, :, mid_z])
         if intensity_thresh is None:

@@ -25,15 +25,24 @@ def set_file_names(nb, nbp):
     nbp.tile_dir = config['tile_dir']
 
     # remove file extension from round and anchor file names if it is present
-    if config['round'] is None:
-        if config['anchor'] is None:
-            raise ValueError(f'Neither imaging rounds nor anchor_round provided')
-        config['round'] = []  # Sometimes the case where just want to run the anchor round.
-    config['round'] = [r.replace(config['raw_extension'], '') for r in config['round']]
-    nbp.round = config['round']
+    if config['raw_extension'] == 'jobs':
+        all_files = os.listdir(config['input_dir'])
+        all_files.sort()  # Sort files by ascending number
+        n_tiles = int(len(all_files)/7/8)
+        config['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
+        config['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*7*7:]]
 
-    if config['anchor'] is not None:
-        config['anchor'] = config['anchor'].replace(config['raw_extension'], '')
+    else:
+        if config['round'] is None:
+            if config['anchor'] is None:
+                raise ValueError(f'Neither imaging rounds nor anchor_round provided')
+            config['round'] = []  # Sometimes the case where just want to run the anchor round.
+        config['round'] = [r.replace(config['raw_extension'], '') for r in config['round']]
+
+        if config['anchor'] is not None:
+            config['anchor'] = config['anchor'].replace(config['raw_extension'], '')
+
+    nbp.round = config['round']
     nbp.anchor = config['anchor']
     nbp.raw_extension = config['raw_extension']
     nbp.raw_metadata = config['raw_metadata']
@@ -90,16 +99,24 @@ def set_file_names(nb, nbp):
         config['big_anchor_image'] = config['big_anchor_image'].replace('.npz', '')
         nbp.big_anchor_image = os.path.join(config['output_dir'], config['big_anchor_image'] + '.npz')
 
-    if config['anchor'] is not None:
+    if config['anchor'] is not None: # TODO this will create a problem with JOBS
         round_files = config['round'] + [config['anchor']]
     else:
         round_files = config['round']
 
-    if nb.basic_info.is_3d:
-        tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
-                                         nb.basic_info.n_channels)
+    if config['raw_extension'] == 'jobs':
+        if nb.basic_info.is_3d:
+            round_files = config['round'] + config['anchor']
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
+                                             nb.basic_info.n_channels, jobs=True)
+        else:
+            raise ValueError('JOBs file format is only compatible with 3D')
     else:
-        tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles)
+        if nb.basic_info.is_3d:
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
+                                             nb.basic_info.n_channels)
+        else:
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles)
 
     nbp.tile = tile_names.tolist()  # npy tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
     nb += nbp
