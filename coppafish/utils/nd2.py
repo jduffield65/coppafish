@@ -34,13 +34,19 @@ def load(file_path: str) -> np.ndarray:
     return images
 
 
-def get_metadata(file_path: list) -> dict:
+def get_metadata(file_path, tile_split=False, laser_split=False) -> dict:
+
     """
     Gets metadata containing information from nd2 data about pixel sizes, position of tiles and numbers of
     tiles/channels/z-planes. This
 
     Args:
+<<<<<<< HEAD
         file_path: list of path/s to desired nd2 file/s. If not list will be converted to one.
+=======
+        file_path: List of file paths that we will extract metadata from
+        tile_split: Boolean parameter to say whether files split by tile (default =false)
+        laser_split: boolean parameter to say whether files split by laser (default =false)
 
     Returns:
         Dictionary containing -
@@ -51,6 +57,7 @@ def get_metadata(file_path: list) -> dict:
         - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions.
         - 'channels' - list of colorRGB codes for the channels, this is a unique identifier for each channel
     """
+
     # If not list, then make it a list
     if type(file_path) is not list:
         file_path = [file_path]
@@ -89,6 +96,18 @@ def get_metadata(file_path: list) -> dict:
     metadata['sizes']['t'] = xy_pos.shape[0]
     # metadata['channels'] = list(set(sum([m['channels'] for m in md_list], [])))
     # metadata['sizes']['c'] = len(metadata['channels'])
+
+    # Check file_path actually exists
+    if not os.path.isfile(file_path):
+        raise errors.NoFileError(file_path)
+    images = nd2.ND2File(file_path)
+    metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
+                          'x': images.sizes['X'], 'z': images.sizes['Z']},
+                'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
+                'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
+    xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
+                       for i in range(images.sizes['P'])])
+
     metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
     metadata['xy_pos'] = metadata['xy_pos'].tolist()
     return metadata

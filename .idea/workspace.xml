@@ -352,6 +352,19 @@
           <option name="timeStamp" value="401" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+<<<<<<< HEAD
+=======
+          <url>file://$PROJECT_DIR$/coppafish/setup/notebook.py</url>
+          <line>240</line>
+          <option name="timeStamp" value="421" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/coppafish/setup/notebook.py</url>
+          <line>253</line>
+          <option name="timeStamp" value="422" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+>>>>>>> 08d1a6f ('General Parallelization updates)
           <url>file://$PROJECT_DIR$/venv/lib/python3.8/site-packages/coppafish/pipeline/basic_info.py</url>
           <line>123</line>
           <option name="timeStamp" value="423" />
@@ -366,6 +379,7 @@
           <line>34</line>
           <option name="timeStamp" value="425" />
         </line-breakpoint>
+<<<<<<< HEAD
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/coppafish/utils/nd2.py</url>
           <line>57</line>
@@ -381,6 +395,8 @@
           <line>93</line>
           <option name="timeStamp" value="429" />
         </line-breakpoint>
+=======
+>>>>>>> 08d1a6f ('General Parallelization updates)
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
