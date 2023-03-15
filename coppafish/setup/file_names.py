@@ -51,8 +51,13 @@ def set_file_names(nb, nbp):
         # Default information is project
         config['dye_camera_laser'] = os.path.join(os.path.dirname(__file__), 'dye_camera_laser_raw_intensity.csv')
     nbp.dye_camera_laser = config['dye_camera_laser']
-    config['code_book'] = config['code_book'].replace('.txt', '')
-    nbp.code_book = config['code_book'] + '.txt'
+
+    if config['code_book'] is not None:
+        config['code_book'] = config['code_book'].replace('.txt', '')
+        nbp.code_book = config['code_book'] + '.txt'
+    else:
+        # If the user has not put their code_book in, default to the one included in this project
+        config['code_book'] = os.path.join(os.getcwd(), 'coppafish/setup/code_book_73g.txt')
 
     # where to save scale and scale_anchor values used in extract step.
     config['scale'] = config['scale'].replace('.txt', '')

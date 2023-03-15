@@ -74,47 +74,6 @@ def get_metadata(file_path: list) -> dict:
                     'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
                     'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
 
-    # # If not list, then make it a list
-    # if type(file_path) is not list:
-    #     file_path = [file_path]
-    # # Check file/s actually exists
-    # num_files = len(file_path)
-    # # we'll create a list of all the little metadatas we will make and then combine these
-    # md_list = []
-    # # loop over all the separate files
-    # for i in range(num_files):
-    #     if not os.path.isfile(file_path[i]):
-    #         raise errors.NoFileError(file_path[i])
-    #     # Load in raw metadata
-    #     image = nd2.ND2File(file_path[i])
-    #     md = {'sizes': {'c': image.sizes['C'], 'y': image.sizes['Y'],
-    #                           'x': image.sizes['X'], 'z': image.sizes['Z']},
-    #                 'pixel_microns': image.metadata.channels[0].volume.axesCalibration[0],
-    #                 'pixel_microns_z': image.metadata.channels[0].volume.axesCalibration[2]}
-    #     x_pos = image.recorded_data['X Coord [µm]']
-    #     y_pos = image.recorded_data['Y Coord [µm]']
-    #     xy_pos = np.unique(np.vstack((x_pos, y_pos)).T, axis=0)
-    #     # now add the number of tiles, which is len(xy_pos)
-    #     md['sizes']['t'] = xy_pos.shape[0]
-    #     md['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / md['pixel_microns']
-    #     md['xy_pos'] = md['xy_pos'].tolist()
-    #     # Surely we have some metadata for channels. The below only uniquely specifies the camera.
-    #     # md['channels'] = [image.metadata.channels[i].channel.colorRGB for i in range(md['sizes']['c'])]
-    #     md_list.append(md)
-    #
-    # # TODO: Add a channels list that shows which channels are in use in this dataset
-    # # TODO: Read in the tiles here as the tile indices that these are given by nd2
-    # # Now combine these, most data doesn't change so need only update the xy positions, number of tiles and number of
-    # # channels
-    # # initialise metadata to be the last metadata in use
-    # metadata = md
-    # xy_pos = np.unique(sum([m['xy_pos'] for m in md_list], []), axis=0)
-    # metadata['sizes']['t'] = xy_pos.shape[0]
-    # # metadata['channels'] = list(set(sum([m['channels'] for m in md_list], [])))
-    # # metadata['sizes']['c'] = len(metadata['channels'])
-    # metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
-    # metadata['xy_pos'] = metadata['xy_pos'].tolist()
-
     return metadata
 
 
@@ -137,6 +96,59 @@ def get_jobs_xypos(input_dir: str, files: list) -> list:
     xy_pos = (xy_pos - np.min(xy_pos, 0)) / cal
 
     return xy_pos.tolist()
+
+
+def get_jobs_lasers(input_dir: str, files: list) -> list:
+    """
+    Extract the lasers used for the experiment from metadata
+    Args:
+        input_dir: path to nd2 files
+        files: file to read metadata from
+
+    Returns:
+        List [n_tiles]. lasers in use.
+    """
+    # We don't need to loop through all files, just first 100 as we'll never have this many lasers and it takes long
+    # To opem all files.
+    N = min(len(files), 100)
+    files = files[:N]
+    laser = np.zeros(N, dtype=int)
+
+    for f_id, f in tqdm(enumerate(files), desc='Reading laser info'):
+        with nd2.ND2File(os.path.join(input_dir, f)) as im:
+            desc = im.text_info['description']
+            laser[f_id] = int(desc[desc.index('; On')-3:desc.index('; On')])
+    # Get rid of duplicates
+    laser = list(set(laser))
+
+    return laser
+
+
+def get_jobs_rounds_tiles(input_dir: str, files: list, n_lasers: int) -> tuple:
+    """
+    Extract the number of rounds used for the experiment from metadata
+    Args:
+        input_dir: path to nd2 files
+        files: file to read metadata from
+        n_lasers: number of lasers
+
+    Returns:
+        List [2]. rounds, tiles in use.
+    """
+    # Get all tiles/rounds corresponding to the first laser
+    l1_files = files[::n_lasers]
+
+    # Idea now is to loop through these until we get back to the same xy position, at which point we have gone through
+    # all tiles
+    xy_pos = get_jobs_xypos(input_dir, l1_files)
+    for i in range(1, len(l1_files)):
+        if xy_pos[i] == xy_pos[0]:
+            n_tiles = i
+            break
+    # n_rounds is just len(l1_files)/n_tiles -1 to account for anchor
+    n_rounds = len(l1_files)//n_tiles - 1
+
+    return n_tiles, n_rounds
 
 
 def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[int]] = None) -> np.ndarray:
