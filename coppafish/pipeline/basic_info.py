@@ -306,46 +306,44 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")
 
-    # Stage 2: Read in page contents from config that cannot be computed from metadata. We put this in after computing
-    # metadata because things that are left blank are often filled in automatically from quantities obtained from
-    # the metadata. First 9 keys in the basic info page are only variables that the user can influence
-    for key, value in config_basic.items()[:9]:
+    # Stage 2: Read in page contents from config that cannot be computed from metadata.
+    # the metadata. First 12 keys in the basic info page are only variables that the user can influence
+    for key, value in config_basic.items()[:12]:
         nbp.__setattr__(key=key, value=value)
-    # Only 3 of these cannot be left empty
-    if nbp.par is None or nbp.dye_names is None or nbp.tile_pixel_value_shift is None:
-        raise ValueError('One or more of the 3 variables which cannot be computed from anything else has been left '
-                         'empty. Please fill in the par, dye_names and tile_pixel_value_shift variables/')
 
-    # Stage 3: Fill in all but the last piece of data from the metadata
+    # Only 4 of these can NOT be left empty
+    if nbp.par is None or nbp.dye_names is None or nbp.tile_pixel_value_shift is None or nbp.use_anchor is None:
+        raise ValueError('One or more of the 4 variables which cannot be computed from anything else has been left '
+                         'empty. Please fill in the use_anchor, par, dye_names and pixel_value_shift variables.')
+
+    # Stage 3: Fill in all the metadata
     for key, value in metadata.items():
         nbp.__setattr__(key=key, value=value)
 
-    # Stage 4: If anything from the first 9 entries has been left blank, deal with that here.
-    # First 3 keys can be left blank and then all will be used
-    user_key = list(config_basic.keys())[:9]
-    for i in range(3):
-        if nbp.__getattribute__(user_key[i]) is None:
-            nbp.__setattr__(user_key[i], np.arange(list(metadata.values)[i]).tolist())
-
-    # Tell basic info page whether the notebook should use an anchor round
-    if nbp.anchor_channel is None:
+    # Stage 4: If anything from the first 12 entries has been left blank, deal with that here.
+    # Unfortunately, this is just many if statements
+    if nbp.use_anchor:
         nbp.n_extra_rounds = 1
-        # Anchor round always the last round
-        nbp.anchor_round = metadata['n_rounds']
+        if nbp.anchor_round is None:
+            nbp.anchor_round = metadata['n_rounds'] + 1
+        if nbp.anchor_channel is None:
+            raise ValueError('Need to provide an anchor channel if using anchor!')
     else:
         nbp.n_extra_rounds = 0
-        nbp.anchor_round = None
 
-    # use_rounds can be determined from metadata and from n_extra_rounds (which just refers to anchor rounds)
+    if nbp.use_tiles is None:
+        nbp.use_tiles = np.arange(metadata['n_tiles']).tolist()
+
     if nbp.use_rounds is None:
         nbp.use_rounds = np.arange(metadata['n_rounds'] - nbp.n_extra_rounds).tolist()
 
+    if nbp.use_channels is None:
+        nbp.use_channels = np.arange(metadata['n_channels']).tolist()
+
+    if nbp.use_z is None:
+        nbp.use_z = np.arange(1, metadata['nz']).tolist()
+
     if nbp.use_dyes is None:
-        # in the case that use_dyes is none we can set it here to be all dyes named
         nbp.use_dyes = np.arange(len(nbp.dye_names)).tolist()
-        nbp.n_dyes = len(nbp.use_dyes)
-    else:
-        # set number of dyes to be the length of the larger of these 2 lists
-        nbp.n_dyes = max([len(vec) for vec in [nbp.use_dyes, nbp.dye_names] if vec is not None])
 
     return nbp

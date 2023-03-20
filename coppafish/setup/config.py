@@ -37,20 +37,21 @@ _options = {
             'use_channels': 'maybe_list_int',
             'use_z': 'maybe_list_int',
             'use_dyes': 'maybe_list_int',
+            'use_anchor': 'bool',
+            'anchor_round': 'maybe_int',
             'anchor_channel': 'maybe_int',
             'dapi_channel': 'maybe_int',
-            'dye_names': 'maybe_list_str',
-            'use_anchor': 'bool',
+            'tile_pixel_value_shift': 'int',        # rename this pixel_value_shift
+            'dye_names': 'list_str',
             'par': 'bool',
-            'tile_pixel_value_shift': 'int',
-            'channel_camera': 'maybe_list_int',
-            'channel_laser': 'maybe_list_int',
-            'n_tiles': 'maybe_int',
-            'is_3d': 'bool',
-            'ignore_first_z_plane': 'bool',
-            'ref_round': 'maybe_int',
-            'ref_channel': 'maybe_int',
-            'ignore_tiles': 'maybe_list_int'
+            'channel_camera': 'maybe_list_int',     # can get this from metadata
+            'channel_laser': 'maybe_list_int',      # can get this from metadata
+            'n_tiles': 'maybe_int',                 # can get this from metadata
+            'is_3d': 'bool',                        # can get this from metadata
+            'ignore_first_z_plane': 'bool',         # always true
+            'ref_round': 'maybe_int',               # delete
+            'ref_channel': 'maybe_int',             # delete
+            'ignore_tiles': 'maybe_list_int'        # delete
         },
     'file_names':
         {
@@ -58,7 +59,7 @@ _options = {
             'input_dir': 'str',  # all these directories used to be of type 'dir' but you may want to load the notebook
             'output_dir': 'str',  # while not being connected to server where data is
             'tile_dir': 'str',
-            'round': 'maybe_list_str',
+            'round': 'maybe_list_str',  #
             'anchor': 'maybe_str',
             'raw_extension': 'str',
             'raw_metadata': 'maybe_str',
