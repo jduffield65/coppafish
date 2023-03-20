@@ -111,7 +111,7 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         metadata = utils.nd2.get_metadata(first_round_raw + '.nd2')
         all_files = os.listdir(config_file['input_dir'])
         all_files.sort()
-        n_tiles = int(len(all_files) / 7 / (n_rounds+1))
+        n_tiles = int(len(all_files) / 7 / (n_rounds + 1))
         first_round_files = all_files[::7][:n_tiles]
         metadata['sizes']['t'] = n_tiles
         metadata['xy_pos'] = utils.nd2.get_jobs_xypos(config_file['input_dir'], first_round_files)
@@ -276,264 +276,76 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
     # Now break the page contents up into 2 types, contents that must be read in from the config and those that can
     # be computed from the metadata
 
-    # Stage 1: Compute metadata
-    # Metadata is always read from 0th round file/s. This is done differently for all different raw data formats
-    # These 3 conditions are different ways of obtaining the file from which we will obtain the metadata
-
-    if config_file['raw_extension'] == '.nd2':
+    # Stage 1: Compute metadata. This is done slightly differently in the 3 cases of different raw extensions
+    raw_extension = utils.nd2.get_raw_extension(config_file['input_dir'])
+    all_files = os.listdir(config_file['input_dir'])
+    all_files.sort()
+    if raw_extension == '.nd2':
+        if config_file['round'] is None:
+            raise ValueError(f"config_file['round'] should list round file names if we aren't using jobs. Here it has"
+                             f"been left blank")
         # load in metadata of nd2 file corresponding to first round
         first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
-        metadata = utils.nd2.get_metadata(first_round_raw + config_file['raw_extension'])
-        n_tiles = metadata['sizes']['t']
+        metadata = utils.nd2.get_metadata(first_round_raw + raw_extension)
 
-    elif config_file['raw_extension'] == '.npy':
+    elif raw_extension == '.npy':
         # Load in metadata as dictionary from a json file
-        config_file['raw_metadata'] = config_file['raw_metadata'].replace('.json', '')
-        metadata_file = os.path.join(config_file['input_dir'], config_file['raw_metadata'] + '.json')
+        metadata_file = [file for file in all_files if file.endswith('.json')][0]
+        if metadata_file is None:
+            raise ValueError(f"There is no json metadata file in input_dir. This should have been set at the point of "
+                             f"ND2 extraction to npy.")
         metadata = json.load(open(metadata_file))
-
         # Check metadata info matches that in first round npy file.
+        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
         use_tiles_nd2 = utils.raw.metadata_sanity_check(metadata, first_round_raw)
-        n_tiles = metadata['sizes']['t']
 
-    elif config_file['raw_extension'] == 'jobs':
-        # Get the basic metadata from the first file
-        # Then iterate over every file of the first round to extract xy_pos
-        metadata = utils.nd2.get_metadata(first_round_raw + '.nd2')
-        all_files = os.listdir(config_file['input_dir'])
-        all_files.sort()
-        n_tiles = int(len(all_files) / 7 / (n_rounds + 1))
-        first_round_files = all_files[::7][:n_tiles]
-        metadata['sizes']['t'] = n_tiles
-        metadata['xy_pos'] = utils.nd2.get_jobs_xypos(config_file['input_dir'], first_round_files)
+    elif raw_extension == 'jobs':
+        # TODO: Write a new single metadata function for jobs files
+        s = 1
     else:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")
 
-    # Stage 2: Read in page contents from config that cannot be computed from metadata. Wwe put this in after computing
+    # Stage 2: Read in page contents from config that cannot be computed from metadata. We put this in after computing
     # metadata because things that are left blank are often filled in automatically from quantities obtained from
-    # the metadata
-    for key, value in config_file.items():
+    # the metadata. First 9 keys in the basic info page are only variables that the user can influence
+    for key, value in config_basic.items()[:9]:
+        nbp.__setattr__(key=key, value=value)
+    # Only 3 of these cannot be left empty
+    if nbp.par is None or nbp.dye_names is None or nbp.tile_pixel_value_shift is None:
+        raise ValueError('One or more of the 3 variables which cannot be computed from anything else has been left '
+                         'empty. Please fill in the par, dye_names and tile_pixel_value_shift variables/')
+
+    # Stage 3: Fill in all but the last piece of data from the metadata
+    for key, value in metadata.items():
         nbp.__setattr__(key=key, value=value)
 
-    # TODO: Get rid of this
-    # First condition refers to situation where jobs not used, alternative if jobs is used
-    if len(config_file['round']) == n_rounds:
-        n_rounds = len(config_file['round'])
-    else:
-        # In this case we are using jobs format
-        all_files = os.listdir(config_file['input_dir'])
-        all_files.sort()
-        lasers = utils.nd2.get_jobs_lasers(config_file['input_dir'], all_files)
-        n_lasers = len(lasers)
-        n_tiles, n_rounds = utils.nd2.get_jobs_rounds_tiles(config_file['input_dir'], all_files, n_lasers)
+    # Stage 4: If anything from the first 9 entries has been left blank, deal with that here.
+    # First 3 keys can be left blank and then all will be used
+    user_key = list(config_basic.keys())[:9]
+    for i in range(3):
+        if nbp.__getattribute__(user_key[i]) is None:
+            nbp.__setattr__(user_key[i], np.arange(list(metadata.values)[i]).tolist())
 
-    # TODO: Get rid of ref round/channel
-    # Set ref/anchor round/channel
-    if config_file['anchor'] is None:
-        config_basic['anchor_channel'] = None  # set anchor channel to None if no anchor round
-        config_basic['dapi_channel'] = None  # set dapi channel to None if no anchor round
-        if config_basic['ref_round'] is None:
-            raise ValueError('No anchor round used, but ref_round not specified')
-        if config_basic['ref_channel'] is None:
-            raise ValueError('No anchor round used, but ref_channel not specified')
-        nbp.anchor_round = None
-        nbp.n_extra_rounds = 0
-        nbp.use_anchor = False
-        warnings.warn(f"Anchor file not given."
-                      f"\nWill use round {config_basic['ref_round']}, "
-                      f"channel {config_basic['ref_channel']} as reference")
-    else:
-        if config_basic['anchor_channel'] is None:
-            raise ValueError('Using anchor round, but anchor_channel not specified')
-        # always have anchor as first round after imaging rounds
-        nbp.anchor_round = n_rounds
-        config_basic['ref_round'] = nbp.anchor_round
-        config_basic['ref_channel'] = config_basic['anchor_channel']
+    # Tell basic info page whether the notebook should use an anchor round
+    if nbp.anchor_channel is None:
         nbp.n_extra_rounds = 1
-        nbp.use_anchor = True
-        warnings.warn(f"Anchor file given and anchor channel specified."
-                      f"\nWill use anchor round, channel {config_basic['anchor_channel']} as reference")
-    nbp.anchor_channel = config_basic['anchor_channel']
-    nbp.dapi_channel = config_basic['dapi_channel']
-    nbp.ref_round = config_basic['ref_round']
-    nbp.ref_channel = config_basic['ref_channel']
-
-    if config_basic['use_rounds'] is None:
-        config_basic['use_rounds'] = list(np.arange(n_rounds))
-    nbp.use_rounds = config_basic['use_rounds']
-    nbp.use_rounds.sort()  # ensure ascending
-    use_rounds_oob = [val for val in nbp.use_rounds if val < 0 or val >= n_rounds]
-    if len(use_rounds_oob) > 0:
-        raise utils.errors.OutOfBoundsError("use_rounds", use_rounds_oob[0], 0, n_rounds - 1)
-
-    # These 3 are different ways of obtaining the file from which we will obtain the metadata
-    if config_file['round'] is not None:
-        if len(config_file) > 0:
-            first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
-        else:
-            first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'])
+        # Anchor round always the last round
+        nbp.anchor_round = metadata['n_rounds']
     else:
-        first_round_raw = os.path.join(config_file['input_dir'], all_files[0])
+        nbp.n_extra_rounds = 0
+        nbp.anchor_round = None
 
-    if config_file['raw_extension'] == '.nd2':
-        # load in metadata of nd2 file corresponding to first round
-        # Test for number of rounds in case of separate round registration and load metadata
-        # from anchor round in that case
-        metadata = utils.nd2.get_metadata(first_round_raw + config_file['raw_extension'])
-        n_tiles = metadata['sizes']['t']
+    # use_rounds can be determined from metadata and from n_extra_rounds (which just refers to anchor rounds)
+    if nbp.use_rounds is None:
+        nbp.use_rounds = np.arange(metadata['n_rounds'] - nbp.n_extra_rounds).tolist()
 
-    elif config_file['raw_extension'] == '.npy':
-        # Load in metadata as dictionary from a json file
-        config_file['raw_metadata'] = config_file['raw_metadata'].replace('.json', '')
-        metadata_file = os.path.join(config_file['input_dir'], config_file['raw_metadata'] + '.json')
-        metadata = json.load(open(metadata_file))
-
-        # Check metadata info matches that in first round npy file.
-        use_tiles_nd2 = utils.raw.metadata_sanity_check(metadata, first_round_raw)
-        n_tiles = metadata['sizes']['t']
-
-    elif config_file['raw_extension'] == 'jobs':
-        # Get the basic metadata from the first file
-        # Then iterate over every file of the first round to extract xy_pos
-        metadata = utils.nd2.get_metadata(first_round_raw + '.nd2')
-        all_files = os.listdir(config_file['input_dir'])
-        all_files.sort()
-        n_tiles = int(len(all_files) / 7 / (n_rounds + 1))
-        first_round_files = all_files[::7][:n_tiles]
-        metadata['sizes']['t'] = n_tiles
-        metadata['xy_pos'] = utils.nd2.get_jobs_xypos(config_file['input_dir'], first_round_files)
+    if nbp.use_dyes is None:
+        # in the case that use_dyes is none we can set it here to be all dyes named
+        nbp.use_dyes = np.arange(len(nbp.dye_names)).tolist()
+        nbp.n_dyes = len(nbp.use_dyes)
     else:
-        raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
-                         f"{config_file['raw_extension']}.")
-
-    # get channel info only for nd2 or npy files
-    if config_file['raw_extension'] != 'jobs':
-        n_channels = metadata['sizes']['c']
-        if config_basic['use_channels'] is None:
-            config_basic['use_channels'] = list(np.arange(n_channels))
-        nbp.use_channels = config_basic['use_channels']
-        nbp.use_channels.sort()
-        use_channels_oob = [val for val in nbp.use_channels if val < 0 or val >= n_channels]
-        if len(use_channels_oob) > 0:
-            raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
-    elif config_file['raw_extension'] == 'jobs':
-        n_channels = metadata['sizes']['c'] * 7
-        nbp.use_channels = config_basic['use_channels']
-        nbp.use_channels.sort()
-
-    # # get channel info
-    # # n_channels = metadata['sizes']['c']
-    # # if config_basic['use_channels'] is None:
-    # #     config_basic['use_channels'] = list(np.arange(n_channels))
-    # nbp.use_channels = config_basic['use_channels']
-    # nbp.use_channels.sort()
-    # use_channels_oob = [val for val in nbp.use_channels if val < 0 or val >= n_channels]
-    # if len(use_channels_oob) > 0:
-    #     raise utils.errors.OutOfBoundsError("use_channels", use_channels_oob[0], 0, n_channels - 1)
-    #
-
-    # get z info
-    if config_basic['use_z'] is None:
-        config_basic['use_z'] = list(np.arange(metadata['sizes']['z']))
-    elif len(config_basic['use_z']) == 2:
-        # use consecutive values if only 2 given.
-        config_basic['use_z'] = list(np.arange(config_basic['use_z'][0], config_basic['use_z'][1] + 1))
-    if config_basic['ignore_first_z_plane'] and 0 in config_basic['use_z']:
-        config_basic['use_z'].remove(0)
-    nbp.use_z = config_basic['use_z']
-    nbp.use_z.sort()
-    use_z_oob = [val for val in nbp.use_z if val < 0 or val >= metadata['sizes']['z']]
-    if len(use_z_oob) > 0:
-        raise utils.errors.OutOfBoundsError("use_z", use_z_oob[0], 0, metadata['sizes']['z'] - 1)
-
-    # get tile info
-    tile_sz = metadata['sizes']['x']
-    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(np.asarray(metadata['xy_pos']), tile_sz)
-    nbp.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
-    nbp.tilepos_yx = tilepos_yx  # and with npy index
-
-    if config_file['raw_extension'] == '.npy':
-        # Read tile indices from raw data folder and set to use_tiles if not specified already.
-        use_tiles_folder = utils.npy.get_npy_tile_ind(use_tiles_nd2, tilepos_yx_nd2, tilepos_yx)
-        if config_basic['use_tiles'] is None:
-            config_basic['use_tiles'] = use_tiles_folder
-        elif np.setdiff1d(config_basic['use_tiles'], use_tiles_folder).size > 0:
-            raise ValueError(f"config_basic['use_tiles'] = {config_basic['use_tiles']}\n"
-                             f"But in the folder:\n{first_round_raw}\nTiles Available are {use_tiles_folder}.")
-
-    if config_basic['use_tiles'] is None:
-        config_basic['use_tiles'] = list(np.arange(n_tiles))
-
-    if config_basic['ignore_tiles'] is not None:
-        config_basic['use_tiles'] = list(np.setdiff1d(config_basic['use_tiles'], config_basic['ignore_tiles']))
-
-    nbp.use_tiles = config_basic['use_tiles']
-    nbp.use_tiles.sort()
-    use_tiles_oob = [val for val in nbp.use_tiles if val < 0 or val >= n_tiles]
-    if len(use_tiles_oob) > 0:
-        raise utils.errors.OutOfBoundsError("use_tiles", use_tiles_oob[0], 0, n_tiles - 1)
-
-    # get dye info
-    if config_basic['dye_names'] is None:
-        warnings.warn(f"dye_names not specified so assuming separate dye for each channel.")
-        n_dyes = n_channels
-    else:
-        # Ensure channel_camera/channel_laser are correct sizes
-        n_dyes = len(config_basic['dye_names'])
-        if config_basic['channel_camera'] is None:
-            raise ValueError('dye_names specified but channel_camera is not.')
-        elif len(config_basic['channel_camera']) != n_channels:
-            raise ValueError(f"channel_camera contains {len(config_basic['channel_camera'])} values.\n"
-                             f"But there must be a value for each channel and there are {n_channels} channels.")
-        if config_basic['channel_laser'] is None:
-            raise ValueError('dye_names specified but channel_laser is not.')
-        elif len(config_basic['channel_laser']) != n_channels:
-            raise ValueError(f"channel_laser contains {len(config_basic['channel_camera'])} values.\n"
-                             f"But there must be a value for each channel and there are {n_channels} channels.")
-
-    if config_basic['use_dyes'] is None:
-        if config_basic['dye_names'] is None:
-            config_basic['use_dyes'] = nbp.use_channels
-        else:
-            config_basic['use_dyes'] = list(np.arange(n_dyes))
-    nbp.use_dyes = config_basic['use_dyes']
-    nbp.dye_names = config_basic['dye_names']
-    nbp.channel_camera = config_basic['channel_camera']
-    nbp.channel_laser = config_basic['channel_laser']
-
-    nbp.tile_pixel_value_shift = config_basic['tile_pixel_value_shift']
-
-    # Add size info obtained from raw metadata to notebook page
-    nbp.n_rounds = n_rounds  # int, number of imaging rounds
-    nbp.tile_sz = tile_sz  # xy dimension of tiles in pixels.
-    nbp.n_tiles = n_tiles  # int, number of tiles
-    nbp.n_channels = n_channels  # int, number of imaging channels
-    nbp.nz = len(nbp.use_z)  # number of z planes in npy file (not necessarily the same as in nd2)
-    nbp.n_dyes = n_dyes  # int, number of dyes
-
-    # subtract tile_centre from local pixel coordinates to get centered local tile coordinates
-    if not nbp.is_3d:
-        nz = 1
-    else:
-        nz = nbp.nz
-    nbp.tile_centre = (np.array([tile_sz, tile_sz, nz]) - 1) / 2
-    nbp.pixel_size_xy = metadata['pixel_microns']  # pixel size in microns in xy
-    nbp.pixel_size_z = metadata['pixel_microns_z']  # and z directions.
-
-    # Make sure reference rounds/channels are in range of data provided.
-    if nbp.use_anchor:
-        if not 0 <= nbp.ref_channel <= n_channels - 1:
-            raise utils.errors.OutOfBoundsError("ref_channel", nbp.ref_channel, 0, n_channels - 1)
-        if nbp.dapi_channel is not None:
-            if not 0 <= nbp.dapi_channel <= n_channels - 1:
-                raise utils.errors.OutOfBoundsError("dapi_channel", nbp.ref_channel, 0, n_channels - 1)
-    else:
-        # Seen as ref_channel is an imaging channel if anchor not used, ref_channel must be an imaging channels i.e.
-        # must be in use_channels. Same goes for ref_round.
-        if not np.isin(nbp.ref_channel, nbp.use_channels):
-            raise ValueError(f"ref_channel is {nbp.ref_channel} which is not in use_channels = {nbp.use_channels}.")
-        if not np.isin(nbp.ref_round, nbp.use_rounds):
-            raise ValueError(f"ref_round is {nbp.ref_round} which is not in use_rounds = {nbp.use_rounds}.")
+        # set number of dyes to be the length of the larger of these 2 lists
+        nbp.n_dyes = max([len(vec) for vec in [nbp.use_dyes, nbp.dye_names] if vec is not None])
 
     return nbp

@@ -34,6 +34,7 @@ type.)
 import numpy as np
 import hashlib
 import os
+import git
 import time
 import json
 import warnings
@@ -647,7 +648,11 @@ class NotebookPage:
     _comments_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'notebook_comments.json')
 
     def __init__(self, name, input_dict=None):
+        # Would like to store the git commit id in each notebook page to keep track of versions
+        _repo = git.Repo(search_parent_directories=True)
+        _sha = _repo.head.object.hexsha
         self.finalized = False  # Set to true when added to a Notebook
+        self._sha = _sha
         self._times = {}
         self.name = name
         self._time_created = time.time()
@@ -812,35 +817,6 @@ class NotebookPage:
             object.__setattr__(n, k, _decode_type(k, d[k], str(d[k + cls._TYPEMETA][()])))
             n._times[k] = float(d[k + cls._TIMEMETA])
         return n
-
-
-# On Reilly's computer I would like to replace other's config files with config files that reflect my own directories.
-def convert_config(config: dict) -> dict:
-    """
-    Converts the configuration file_names page to reflect pages on everyone's local computer.
-    Args:
-        config: config dict with external file_names
-
-    Returns:
-        config: config dict with local file_names
-    """
-    # Create a dictionary for all places  where we may want to get raw files
-    file_dir = {'zaru_subjects': {'reilly': '/home/reilly/ExternalServers/ZARU/Subjects',
-                                 'izzie': '/home/servers/zaru'},
-                'dri_shared_projects': {'reilly': '/home/reilly/ExternalServers/DRI',
-                                        'christina': '/Volumes/Shared Projects'}
-                }
-    # Now go through the keys in config file and replace other people's file_directories with my own
-    for key, value in config['file_names'].items():
-        # Now loop over the file directories within file_dir
-        for directory in list(file_dir.keys()):
-            # Now loop over users in each file directory
-            for user in list(file_dir[directory].keys()):
-                # Now replace any directories with reilly's
-                if type(config['file_names'][key]) == str:
-                    config['file_names'][key] = \
-                        config['file_names'][key].replace(file_dir[directory][user], file_dir[directory]['reilly'])
-    return config
 
 
 def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:

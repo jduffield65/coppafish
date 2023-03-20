@@ -39,8 +39,8 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
     nb = initialize_nb(config_file)
     run_extract(nb)
     run_find_spots(nb)
-    run_register(nb)
     run_stitch(nb)
+    run_register(nb)
     run_reference_spots(nb, overwrite_ref_spots)
     run_omp(nb)
 
@@ -205,6 +205,7 @@ def run_stitch(nb: setup.Notebook):
         nb += nbp_debug
     else:
         warnings.warn('stitch', utils.warnings.NotebookPageWarning)
+    # TODO: Fix this issue where the image is not saving, seems to have excess memory usage even for smaall files
     # Two conditions below:
     # 1. Check if there is a big dapi_image
     # 2. Check if there is NOT a file in the path directory for the dapi image
@@ -215,7 +216,7 @@ def run_stitch(nb: setup.Notebook):
         #                         nb.stitch.tile_origin, nb.basic_info.anchor_round,
         #                         nb.basic_info.dapi_channel, nb.extract_debug.r_dapi is None,
         #                         config['stitch']['save_image_zero_thresh'])
-    #
+
     # if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
         # utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
@@ -241,7 +242,7 @@ def run_register(nb: setup.Notebook):
     # if not all(nb.has_page(["register", "register_debug"])):
     if not nb.has_page("register"):
         nbp, nbp_debug = register(nb.basic_info, nb.file_names, config, nb.find_spots.spot_details,
-                                  nb.find_spots.spot_no)
+                                  nb.find_spots.spot_no, nb.stitch.tile_origin)
         nb += nbp
         nb += nbp_debug
     else:

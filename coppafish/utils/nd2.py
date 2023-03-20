@@ -1,6 +1,6 @@
 import numpy as np
 import nd2
-from ..setup import NotebookPage
+from ..setup import NotebookPage, get_tilepos
 from ..utils import raw
 import os
 from . import errors
@@ -34,13 +34,37 @@ def load(file_path: str) -> np.ndarray:
     return images
 
 
-def get_metadata(file_path: list) -> dict:
+def get_raw_extension(input_dir: str) -> str:
+    """
+    Looks at input directory and returns the raw data format
+    Args:
+        input_dir: input_directory from config file containing raw data
+    Returns:
+        raw_extension: str, either 'nd2', 'npy' or 'jobs'
+    """
+    files = os.listdir(input_dir)
+    files.sort()
+    # Just need a single npy to confirm this is the format
+    if any([directory.endswith('npy') for directory in files]):
+        raw_extension = 'npy'
+    else:
+        # Get the first nd2 file here
+        index = min([i for i in range(len(files)) if files[i].endswith('nd2')])
+        image = nd2.ND2File(os.path.join(input_dir, files[index]))
+        if 'P' in image.sizes.keys():
+            raw_extension = 'nd2'
+        else:
+            raw_extension = 'jobs'
+    return raw_extension
+
+
+def get_metadata(file_path: str) -> dict:
     """
     Gets metadata containing information from nd2 data about pixel sizes, position of tiles and numbers of
     tiles/channels/z-planes. This
 
     Args:
-        file_path: list of path/s to desired nd2 file/s. If not list will be converted to one.
+        file_path: path to desired nd2 file
 
     Returns:
         Dictionary containing -
@@ -57,24 +81,46 @@ def get_metadata(file_path: list) -> dict:
 
     with nd2.ND2File(file_path) as images:
 
-        if 'P' in images.sizes.keys():  # Check if the file contains several tiles
-            metadata = {'sizes': {'t': images.sizes['P'], 'c': images.sizes['C'], 'y': images.sizes['Y'],
-                              'x': images.sizes['X'], 'z': images.sizes['Z']},
-                    'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
-                    'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
-            xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
-                               for i in range(images.sizes['P'])])
-            metadata['xy_pos'] = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_microns']
-            metadata['xy_pos'] = metadata['xy_pos'].tolist()
-
+        metadata = {'n_tiles': images.sizes['P'],
+                    'n_channels': images.sizes['C']}
+        # Check if data is 3d
+        if 'Z' in images.sizes:
+            metadata['nz'] = images.sizes['Z']
+            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']])/2
+            metadata['is_3d'] = True
         else:
-            print('Image file contain a single tile, changing metadata format')
-            metadata = {'sizes': {'c': images.sizes['C'], 'y': images.sizes['Y'],
-                              'x': images.sizes['X'], 'z': images.sizes['Z']},
-                    'pixel_microns': images.metadata.channels[0].volume.axesCalibration[0],
-                    'pixel_microns_z': images.metadata.channels[0].volume.axesCalibration[2]}
+            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']])/2
+            metadata['is_3d'] = False
+
+        # Load in tile size and pixel size
+        metadata['tile_sz'] = images.sizes['X'],
+        metadata['pixel_size_xy'] = images.metadata.channels[0].volume.axesCalibration[0],
+        metadata['pixel_size_z'] = images.metadata.channels[0].volume.axesCalibration[2]
+        xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
+                           for i in range(images.sizes['P'])])
+
+        xy_pos = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_size_xy']
+        metadata['tilepos_yx_nd2'], metadata['tilepos_yx_npy'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
+        # Now also extract the laser and camera associated with each channel
+        desc = images.text_info['description']
+        channel_metadata = desc.split('Plane #')[1:]
+        laser = np.zeros(len(channel_metadata))
+        camera = np.zeros(len(channel_metadata))
+        for i in range(len(channel_metadata)):
+            laser[i] = int(channel_metadata[i][channel_metadata[i].index('; On')-3:
+                                               channel_metadata[i].index('; On')])
+            camera[i] = int(channel_metadata[i][channel_metadata[i].index('Name:')+6:
+                                                channel_metadata[i].index('Name:')+9])
+        metadata['channel_laser'] = laser.tolist()
+        metadata['channel_camera'] = camera.tolist()
+        # Get the entire input directory to list
+        input_dir = file_path[:file_path.rfind('/')]
+        metadata['n_rounds'] = len([file for file in os.listdir(input_dir) if file.endswith('.nd2')])
 
     return metadata
+
+
+# def get_jobs_metadata(files: list) -> dict:
 
 
 def get_jobs_xypos(input_dir: str, files: list) -> list:
@@ -126,7 +172,7 @@ def get_jobs_lasers(input_dir: str, files: list) -> list:
 
 def get_jobs_rounds_tiles(input_dir: str, files: list, n_lasers: int) -> tuple:
     """
-    Extract the number of rounds used for the experiment from metadata
+    Extract the number of rounds and number of tiles used for the jobs experiment from metadata
     Args:
         input_dir: path to nd2 files
         files: file to read metadata from

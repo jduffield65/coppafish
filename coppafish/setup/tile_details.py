@@ -180,4 +180,3 @@ def get_tile_file_names(tile_directory: str, file_base: List[str],
                     tile_files[t, r, c] = t_name
 
     return tile_files
-# TODO: Make tile_pos work for non rectangular array of tiles in nd2 file
