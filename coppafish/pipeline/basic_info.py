@@ -308,7 +308,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
 
     # Stage 2: Read in page contents from config that cannot be computed from metadata.
     # the metadata. First 12 keys in the basic info page are only variables that the user can influence
-    for key, value in config_basic.items()[:12]:
+    for key, value in list(config_basic.items())[:12]:
         nbp.__setattr__(key=key, value=value)
 
     # Only 4 of these can NOT be left empty
@@ -321,7 +321,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         nbp.__setattr__(key=key, value=value)
 
     # Stage 4: If anything from the first 12 entries has been left blank, deal with that here.
-    # Unfortunately, this is just many if statements
+    # Unfortunately, this is just many if statements as all blank entries need to be handled differently
     if nbp.use_anchor:
         nbp.n_extra_rounds = 1
         if nbp.anchor_round is None:

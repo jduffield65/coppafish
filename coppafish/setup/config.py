@@ -44,14 +44,11 @@ _options = {
             'tile_pixel_value_shift': 'int',        # rename this pixel_value_shift
             'dye_names': 'list_str',
             'par': 'bool',
-            'channel_camera': 'maybe_list_int',     # can get this from metadata
-            'channel_laser': 'maybe_list_int',      # can get this from metadata
-            'n_tiles': 'maybe_int',                 # can get this from metadata
-            'is_3d': 'bool',                        # can get this from metadata
-            'ignore_first_z_plane': 'bool',         # always true
-            'ref_round': 'maybe_int',               # delete
-            'ref_channel': 'maybe_int',             # delete
-            'ignore_tiles': 'maybe_list_int'        # delete
+            # From here onwards these are not compulsory to enter and if left blank will be taken from the metadata
+            'is_3d': 'bool',
+            'channel_camera': 'maybe_list_int',
+            'channel_laser': 'maybe_list_int',
+            'ignore_first_z_plane': 'bool'
         },
     'file_names':
         {
@@ -365,6 +362,7 @@ def get_config(ini_file):
             raise InvalidConfigError(section, None, None)
     for section in _options.keys():
         for name, val in _parser[section].items():
+            # TODO: Instead of throwing an error at this stage, will be better to just remove redundant keys
             # 2. Ensure there are no extra options in the config file.
             if name not in _options[section].keys():
                 raise InvalidConfigError(section, name, val)

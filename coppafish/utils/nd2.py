@@ -46,13 +46,13 @@ def get_raw_extension(input_dir: str) -> str:
     files.sort()
     # Just need a single npy to confirm this is the format
     if any([directory.endswith('npy') for directory in files]):
-        raw_extension = 'npy'
+        raw_extension = '.npy'
     else:
         # Get the first nd2 file here
         index = min([i for i in range(len(files)) if files[i].endswith('nd2')])
         image = nd2.ND2File(os.path.join(input_dir, files[index]))
         if 'P' in image.sizes.keys():
-            raw_extension = 'nd2'
+            raw_extension = '.nd2'
         else:
             raw_extension = 'jobs'
     return raw_extension
@@ -82,25 +82,24 @@ def get_metadata(file_path: str) -> dict:
     with nd2.ND2File(file_path) as images:
 
         metadata = {'n_tiles': images.sizes['P'],
-                    'n_channels': images.sizes['C']}
+                    'n_channels': images.sizes['C'],
+                    'tile_sz': images.sizes['X'],
+                    'pixel_size_xy': images.metadata.channels[0].volume.axesCalibration[0],
+                    'pixel_size_z': images.metadata.channels[0].volume.axesCalibration[2]}
         # Check if data is 3d
         if 'Z' in images.sizes:
-            metadata['nz'] = images.sizes['Z']
+            # subtract 1 as we always ignore first z plane
+            metadata['nz'] = images.sizes['Z'] - 1
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']])/2
             metadata['is_3d'] = True
         else:
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']])/2
             metadata['is_3d'] = False
 
-        # Load in tile size and pixel size
-        metadata['tile_sz'] = images.sizes['X'],
-        metadata['pixel_size_xy'] = images.metadata.channels[0].volume.axesCalibration[0],
-        metadata['pixel_size_z'] = images.metadata.channels[0].volume.axesCalibration[2]
         xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
                            for i in range(images.sizes['P'])])
-
         xy_pos = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_size_xy']
-        metadata['tilepos_yx_nd2'], metadata['tilepos_yx_npy'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
+        metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
         channel_metadata = desc.split('Plane #')[1:]
@@ -263,9 +262,12 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
     Returns:
         Corresponding indices in nd2 file
     """
+    num_rows = np.max(np.array(tile_pos_yx_nd2[:, 0])) - np.min(np.array(tile_pos_yx_nd2[:, 0]))
+    num_cols = np.max(np.array(tile_pos_yx_nd2[:, 1])) - np.min(np.array(tile_pos_yx_nd2[:, 1]))
     if isinstance(tile_ind_npy, numbers.Number):
         tile_ind_npy = [tile_ind_npy]
-    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, tile_pos_yx_npy[tile_ind_npy]).tolist()
+    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, np.array([num_rows, num_cols]) -
+                                      tile_pos_yx_npy[tile_ind_npy]).tolist()
     if len(nd2_index) == 1:
         return nd2_index[0]
     else:

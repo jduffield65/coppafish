@@ -213,7 +213,6 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
             round_file = os.path.join(nbp_file.input_dir, round_files[r])
             round_dask_array = dask.array.from_npy_stack(round_file)
 
-
     # Return a tile/channel/z-planes from the dask array.
     if use_z is None:
         use_z = nbp_basic.use_z

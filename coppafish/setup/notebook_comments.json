@@ -84,7 +84,8 @@
   {
     "DESCRIPTION": ["*basic_info* page contains information that is used at all stages of the pipeline.","",
       "Page added to *Notebook* in *pipeline/basic_info.py*"],
-
+    "par": ["Boolean",
+      "Whether or not to use the parallel version of the code."],
     "anchor_round": ["Integer or None",
       "Index of anchor round (typically the first round after imaging rounds so `anchor_round = n_rounds`).",
       "`None` if anchor not used."],
@@ -155,11 +156,7 @@
     "pixel_size_z": ["Float",
       "$z$ pixel size in microns"],
     "use_anchor": ["Boolean",
-    "whether or not to use anchor"],
-    "ref_round": ["int",
-    "whether or not to use anchor"],
-    "ref_channel": ["int",
-    "whether or not to use anchor"]
+      "whether or not to use anchor"]
   },
 
   "extract":
