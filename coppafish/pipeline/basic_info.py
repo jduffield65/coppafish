@@ -281,11 +281,14 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
     all_files = os.listdir(config_file['input_dir'])
     all_files.sort()
     if raw_extension == '.nd2':
-        if config_file['round'] is None:
-            raise ValueError(f"config_file['round'] should list round file names if we aren't using jobs. Here it has"
-                             f"been left blank")
+        if config_file['round'] is None and config_file['anchor'] is None:
+            raise ValueError(f"config_file['round'] or config_file['anchor'] should not both be left blank")
         # load in metadata of nd2 file corresponding to first round
-        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
+        # Allow for degenerate case when only anchor has been provided
+        if config_file['round'] is not None:
+            first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
+        else:
+            first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'])
         metadata = utils.nd2.get_metadata(first_round_raw + raw_extension)
 
     elif raw_extension == '.npy':
@@ -300,15 +303,15 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         use_tiles_nd2 = utils.raw.metadata_sanity_check(metadata, first_round_raw)
 
     elif raw_extension == 'jobs':
-        # TODO: Write a new single metadata function for jobs files
-        s = 1
+        metadata = utils.nd2.get_jobs_metadata(all_files, config_file['input_dir'])
+
     else:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")
 
     # Stage 2: Read in page contents from config that cannot be computed from metadata.
-    # the metadata. First 14 keys in the basic info page are only variables that the user can influence
-    for key, value in list(config_basic.items())[:14]:
+    # the metadata. First 13 keys in the basic info page are only variables that the user can influence
+    for key, value in list(config_basic.items())[:13]:
         nbp.__setattr__(key=key, value=value)
 
     # Only 4 of these can NOT be left empty
@@ -345,12 +348,10 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         del nbp.use_tiles
         nbp.use_tiles = np.arange(metadata['n_tiles']).tolist()
 
-    # If no use_rounds given, default to all, subtracting the final as an anchor if in use
-    # TODO: Would be a big change but if we named all rounds round0,..,round6 and then anchor round7 going forward.
-    #  This would mean that we'd neatly be able to specify rounds and anchor files in both jobs and non-jobs
+    # If no use_rounds given, replace none with []
     if nbp.use_rounds is None:
         del nbp.use_rounds
-        nbp.use_rounds = np.arange(metadata['n_rounds'] - nbp.n_extra_rounds).tolist()
+        nbp.use_rounds = []
 
     if nbp.use_channels is None:
         del nbp.use_channels
@@ -364,5 +365,6 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
     if nbp.use_dyes is None:
         del nbp.use_dyes
         nbp.use_dyes = np.arange(len(nbp.dye_names)).tolist()
+        nbp.n_dyes = len(nbp.use_dyes)
 
     return nbp

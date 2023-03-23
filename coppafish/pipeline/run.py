@@ -2,7 +2,7 @@ import os
 from .. import setup, utils
 from joblib import Parallel, delayed
 from . import set_basic_info, extract_and_filter, find_spots, stitch, register_initial, register_ft, \
-    get_reference_spots, call_reference_spots, call_spots_omp
+    get_reference_spots, call_reference_spots, call_spots_omp, set_basic_info_new
 from .extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
 from ..setup import split_config, merge_notebooks, split_stitch, split_ref_spots, split_call_spots, Notebook
@@ -127,7 +127,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
         config['file_names']['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*7*7:]]
 
     if not nb.has_page("basic_info"):
-        nbp_basic = set_basic_info(config['file_names'], config['basic_info'])
+        nbp_basic = set_basic_info_new(config['file_names'], config['basic_info'])
         nb += nbp_basic
     else:
         warnings.warn('basic_info', utils.warnings.NotebookPageWarning)

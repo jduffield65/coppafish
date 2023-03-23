@@ -90,10 +90,8 @@ def get_metadata(file_path: str) -> dict:
             # subtract 1 as we always ignore first z plane
             metadata['nz'] = images.sizes['Z'] - 1
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']])/2
-            metadata['is_3d'] = True
         else:
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']])/2
-            metadata['is_3d'] = False
 
         xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
                            for i in range(images.sizes['P'])])
@@ -146,11 +144,9 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
             # subtract 1 as we always ignore first z plane
             metadata['nz'] = im.sizes['Z'] - 1
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']]) / 2
-            metadata['is_3d'] = True
         else:
             # Our microscope setup is always square tiles
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']]) / 2
-            metadata['is_3d'] = False
 
     # Now loop through the files to get the more varied data
     xy_pos = []
