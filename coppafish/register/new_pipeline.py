@@ -66,30 +66,71 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
     return subvolume, position
 
 
-def find_shift_array(subvol_base, subvol_target):
+def find_shift_array(subvol_base, subvol_target, r_threshold):
     """
     This function takes in 2 split up 3d images and finds the optimal shift from each subvolume in 1 to it's corresponding
     subvolume in the other.
     Args:
         subvol_base: Base subvolume array
         subvol_target: Target subvolume array
-
+        r_threshold: threshold of correlation used in degenerate cases
     Returns:
         shift: 4D array, with first 3 dimensions referring to subvolume index and final dim referring to shift.
     """
-
     if subvol_base.shape != subvol_target.shape:
         raise ValueError("Subvolume arrays have different shapes")
-
     z_subvolumes, y_subvolumes, x_subvolumes = subvol_base.shape[0], subvol_base.shape[1], subvol_base.shape[2]
+    z_box = subvol_base.shape[3]
     shift = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
 
-    for z in range(z_subvolumes):
-        for y in range(y_subvolumes):
-            for x in range(x_subvolumes):
-                shift[z, y, x], _, _ = phase_cross_correlation(subvol_target[z, y, x], subvol_base[z, y, x],
+    for y in range(y_subvolumes):
+        for x in range(x_subvolumes):
+            # skip tells us when we need to start comparing z subvols to the subvol above it (in the case that it is
+            # closer to this, or below it in the other case). Reset this whenever we start a new z-tower
+            skip = 0
+            for z in range(z_subvolumes):
+                # Handle case where skip allows us to leave the z-range
+                if z + skip >= z_subvolumes:
+                    shift[z, y, x] = np.nan
+                    break
+                # Now proceed as normal
+                shift[z, y, x], _, _ = phase_cross_correlation(subvol_target[z + skip, y, x], subvol_base[z, y, x],
                                                                upsample_factor=10)
+                corrected_shift, shift_corr, alt_shift_corr = disambiguate_z(subvol_base[z, y, x],
+                                                                             subvol_target[z + skip, y, x],
+                                                                             shift[z, y, x], r_threshold=0.2)
 
+                # CASE 1: deal with the very degenerate case where corrected_shift = nan, this means that a shift of 0
+                # (as predicted by PCC) fails to be similar to the target image. In this case, we can look at neighbours
+                # and see if they do better. If they do then make the shift to the appropriate neighbour
+                if np.isnan(corrected_shift[0]):
+                    neighbours = {z-1, z+1}.intersection(set(np.arange(z_subvolumes, dtype=int)))
+                    # Now loop over neighbours, find their shifts and
+                    for neighb in neighbours:
+                        candidate_shift, _, _ = phase_cross_correlation(subvol_target[neighb, y, x],
+                                                                        subvol_base[z, y, x], upsample_factor=10)
+                        shift_base = custom_shift(subvol_base[z, y, x], candidate_shift.astype(int))
+                        shift_mask = shift_base > 0
+                        candidate_corr = stats.pearsonr(shift_base[shift_mask], subvol_base[z, y, x, shift_mask])[0]
+                        if candidate_corr > r_threshold:
+                            corrected_shift = z_box * (neighb - z) + candidate_shift
+                            skip = skip + neighb - z
+                            break
+                    # If our corrected_shift has been updated by the shifts to one of the neighbours then next line will
+                    # replace the shift, else next line will just save this shift as nan
+                    shift[z, y, x] = corrected_shift
+                else:
+                    # If the corrected shift is not the same as the original shift it is due to aliasing. The range of
+                    # shifts given is [-z_box/2, z_box/2] so if the aliased shift is the true shift then
+                    # subvol_base[z,y,x] has more in common with either subvol_target[z-1,y,x] or
+                    # subvol_target[z+1, y, x], so update the skip parameter
+                    if corrected_shift[0] != shift[z, y, x, 0] and alt_shift_corr > shift_corr:
+                        if corrected_shift[0] > shift[z, y, x, 0]:
+                            skip += 1
+                        else:
+                            skip -= 1
+                        # Finally, update the shift to the correct one
+                        shift[z, y, x] = corrected_shift
     return shift
 
 
@@ -247,8 +288,8 @@ def ols_regression_robust(shift, position, spread):
         transform: 3 x 4 affine transform in yxz format with final col being shift
     """
     # First reshape the shift and position array to the point where their first 3 axes become 1 and final axis untouched
-    shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
-    position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
+    # shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
+    # position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
 
     # Now take median and IQR to filter inliers from outliers
     median = np.median(shift, axis=0)
@@ -520,6 +561,84 @@ Args:
             break
 
     return transform, n_matches, error
+
+
+def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
+    """
+    Custom-built function to compute array shifted by a certain offset
+    Args:
+        array: array to be shifted
+        offset: shift value
+        constant_values: by default this is 0
+
+    Returns:
+        new_array: array shifted by offset with constant value 0
+    """
+    array = np.asarray(array)
+    offset = np.atleast_1d(offset)
+    assert len(offset) == array.ndim
+    new_array = np.empty_like(array)
+
+    def slice1(o):
+        return slice(o, None) if o >= 0 else slice(0, o)
+
+    new_array[tuple(slice1(o) for o in offset)] = (
+        array[tuple(slice1(-o) for o in offset)])
+
+    for axis, o in enumerate(offset):
+        new_array[(slice(None),) * axis +
+                  (slice(0, o) if o >= 0 else slice(o, None),)] = constant_values
+
+    return new_array
+
+
+def disambiguate_z(base_image, target_image, shift, r_threshold):
+    """
+    Function to disambiguate the 2 possible shifts obtained via aliasing.
+    Args:
+        base_image: nz x ny x nx ndarray
+        target_image: nz x ny x nx ndarray
+        shift: z y x shift
+        r_threshold: threshold that r_statistic must exceed for us to accept z shift of 0 ass opposed to alisases
+    Returns:
+        shift: z y x corrected shift
+    """
+    # First we have to compute alternate shift
+    if shift[0] >= 0:
+        alt_shift = shift - np.array([12, 0, 0])
+    else:
+        alt_shift = shift + np.array([12, 0, 0])
+    # Now we need to compute the shift of base image under both shift and alt_shift
+    shift_base = custom_shift(base_image, np.round(shift).astype(int))
+    alt_shift_base = custom_shift(base_image, np.round(alt_shift).astype(int))
+    shift_mask = shift_base != 0
+    alt_shift_mask = alt_shift_base != 0
+
+    # We run into problems when the shift is 0. In this case, aliases of it would be multiples of the box length and
+    # so would have no overlap.
+    if np.round(shift[0]) == 0:
+        shift_corr = stats.pearsonr(shift_base[shift_mask], target_image[shift_mask])[0]
+        alt_shift_corr = 0
+    else:
+        shift_corr = stats.pearsonr(shift_base[shift_mask], target_image[shift_mask])[0]
+        alt_shift_corr = stats.pearsonr(alt_shift_base[alt_shift_mask], target_image[alt_shift_mask])[0]
+
+    # We have 2 cases to consider, when shift[0] = 0 and else
+    if np.round(shift[0]) == 0:
+        # This is the degenerate case, so if we pass the score thresh accept no z-shift
+        if shift_corr > r_threshold:
+            corrected_shift = shift
+        else:
+            corrected_shift = np.array([np.nan, shift[1], shift[2]])
+    else:
+        # This is the non-degenerate case
+        # If shift correlation does better, then make that default else use the alternative
+        if shift_corr > alt_shift_corr:
+            corrected_shift = shift
+        else:
+            corrected_shift = alt_shift
+
+    return corrected_shift, shift_corr, alt_shift_corr
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot_details: np.ndarray,
@@ -945,17 +1064,17 @@ def view_regression_scatter(shift, position, transform):
     yx_range = np.arange(np.min(position[1]), np.max(position[1]))
 
     plt.subplot(1, 3, 1)
-    plt.scatter(position[0], shift[0], alpha=1e3/shift.shape[1])
+    plt.scatter(position[0], shift[0], alpha=1e2/shift.shape[1])
     plt.plot(z_range, (transform[0, 0] - 1) * z_range + transform[0,3])
     plt.title('Z-Shifts vs Z-Positions')
 
     plt.subplot(1, 3, 2)
-    plt.scatter(position[1], shift[1], alpha=1e3 / shift.shape[1])
+    plt.scatter(position[1], shift[1], alpha=1e2 / shift.shape[1])
     plt.plot(yx_range, (transform[1, 1] - 1) * yx_range + transform[1, 3])
     plt.title('Y-Shifts vs Y-Positions')
 
     plt.subplot(1, 3, 3)
-    plt.scatter(position[2], shift[2], alpha=1e3 / shift.shape[1])
+    plt.scatter(position[2], shift[2], alpha=1e2 / shift.shape[1])
     plt.plot(yx_range, (transform[2, 2] - 1) * yx_range + transform[2, 3])
     plt.title('X-Shifts vs X-Positions')
 
