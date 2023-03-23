@@ -307,8 +307,8 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
                          f"{config_file['raw_extension']}.")
 
     # Stage 2: Read in page contents from config that cannot be computed from metadata.
-    # the metadata. First 12 keys in the basic info page are only variables that the user can influence
-    for key, value in list(config_basic.items())[:12]:
+    # the metadata. First 14 keys in the basic info page are only variables that the user can influence
+    for key, value in list(config_basic.items())[:14]:
         nbp.__setattr__(key=key, value=value)
 
     # Only 4 of these can NOT be left empty
@@ -321,29 +321,48 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         nbp.__setattr__(key=key, value=value)
 
     # Stage 4: If anything from the first 12 entries has been left blank, deal with that here.
-    # Unfortunately, this is just many if statements as all blank entries need to be handled differently
+    # Unfortunately, this is just many if statements as all blank entries need to be handled differently.
+    # Notebook doesn't allow us to reset a value once it has been set so must delete and reset.
+
+    # Next condition just says that if we are using the anchor and we don't specify the anchor round we will default it
+    # to the final round. Add an extrea round for the anchor and reduce the number of non anchor rounds by 1.
     if nbp.use_anchor:
+        # Tell software that extra round is just an extra round and reduce the number of rounds
         nbp.n_extra_rounds = 1
+        n_rounds = nbp.n_rounds
+        del nbp.n_rounds
+        nbp.n_rounds = n_rounds - 1
         if nbp.anchor_round is None:
-            nbp.anchor_round = metadata['n_rounds'] + 1
+            del nbp.anchor_round
+            nbp.anchor_round = metadata['n_rounds']
         if nbp.anchor_channel is None:
             raise ValueError('Need to provide an anchor channel if using anchor!')
     else:
         nbp.n_extra_rounds = 0
 
+    # If no use_tiles given, default to all
     if nbp.use_tiles is None:
+        del nbp.use_tiles
         nbp.use_tiles = np.arange(metadata['n_tiles']).tolist()
 
+    # If no use_rounds given, default to all, subtracting the final as an anchor if in use
+    # TODO: Would be a big change but if we named all rounds round0,..,round6 and then anchor round7 going forward.
+    #  This would mean that we'd neatly be able to specify rounds and anchor files in both jobs and non-jobs
     if nbp.use_rounds is None:
+        del nbp.use_rounds
         nbp.use_rounds = np.arange(metadata['n_rounds'] - nbp.n_extra_rounds).tolist()
 
     if nbp.use_channels is None:
+        del nbp.use_channels
         nbp.use_channels = np.arange(metadata['n_channels']).tolist()
 
+    # If no use_channels given, default to all except the first if ignore_first_z_plane = True
     if nbp.use_z is None:
-        nbp.use_z = np.arange(1, metadata['nz']).tolist()
+        del nbp.use_z
+        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), metadata['nz']).tolist()
 
     if nbp.use_dyes is None:
+        del nbp.use_dyes
         nbp.use_dyes = np.arange(len(nbp.dye_names)).tolist()
 
     return nbp

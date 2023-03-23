@@ -44,11 +44,12 @@ _options = {
             'tile_pixel_value_shift': 'int',        # rename this pixel_value_shift
             'dye_names': 'list_str',
             'par': 'bool',
-            # From here onwards these are not compulsory to enter and if left blank will be taken from the metadata
             'is_3d': 'bool',
+            'ignore_first_z_plane': 'bool',
+            # From here onwards these are not compulsory to enter and will be taken from the metadata
+            # Only leaving them here to have backwards compatibility as Max thinks the user should influence these
             'channel_camera': 'maybe_list_int',
-            'channel_laser': 'maybe_list_int',
-            'ignore_first_z_plane': 'bool'
+            'channel_laser': 'maybe_list_int'
         },
     'file_names':
         {

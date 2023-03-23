@@ -80,7 +80,6 @@ def get_metadata(file_path: str) -> dict:
         raise errors.NoFileError(file_path)
 
     with nd2.ND2File(file_path) as images:
-
         metadata = {'n_tiles': images.sizes['P'],
                     'n_channels': images.sizes['C'],
                     'tile_sz': images.sizes['X'],
@@ -103,8 +102,8 @@ def get_metadata(file_path: str) -> dict:
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
         channel_metadata = desc.split('Plane #')[1:]
-        laser = np.zeros(len(channel_metadata))
-        camera = np.zeros(len(channel_metadata))
+        laser = np.zeros(len(channel_metadata), dtype=int)
+        camera = np.zeros(len(channel_metadata), dtype=int)
         for i in range(len(channel_metadata)):
             laser[i] = int(channel_metadata[i][channel_metadata[i].index('; On')-3:
                                                channel_metadata[i].index('; On')])
@@ -119,81 +118,158 @@ def get_metadata(file_path: str) -> dict:
     return metadata
 
 
-# def get_jobs_metadata(files: list) -> dict:
-
-
-def get_jobs_xypos(input_dir: str, files: list) -> list:
+def get_jobs_metadata(files: list, input_dir: str) -> dict:
     """
-    Extract the xy stage position for each individual files, convert it as pixels and return a list
+    Gets metadata containing information from nd2 data about pixel sizes, position of tiles and numbers of
+    tiles/channels/z-planes. This has to be as separate function from above due to the fact that input here is a list
+    of directories as rounds are not entirely contained in a single file for jobs data.
+
     Args:
-        input_dir: path to nd2 files
-        files: file to read metadata from
-
+        files: list of paths to desired nd2 file
+        input_dir: Directory to location of files
     Returns:
-        List [n_tiles x 2]. xy position of tiles in pixels
+        Dictionary containing -
+
+        - `xy_pos` - `List [n_tiles x 2]`. xy position of tiles in pixels.
+        - `pixel_microns` - `float`. xy pixel size in microns.
+        - `pixel_microns_z` - `float`. z pixel size in microns.
+        - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions.
+        - 'channels' - list of colorRGB codes for the channels, this is a unique identifier for each channel
     """
-    xy_pos = np.zeros((len(files), 2))
-    for f_id, f in tqdm(enumerate(files), desc='Reading XY metadata'):
+    # Get simple metadata which is constant across tiles from first file
+    with nd2.ND2File(os.path.join(input_dir, files[0])) as im:
+        metadata = {'tile_sz': im.sizes['X'],
+                    'pixel_size_xy': im.metadata.channels[0].volume.axesCalibration[0],
+                    'pixel_size_z': im.metadata.channels[0].volume.axesCalibration[2]}
+        # Check if data is 3d
+        if 'Z' in im.sizes:
+            # subtract 1 as we always ignore first z plane
+            metadata['nz'] = im.sizes['Z'] - 1
+            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']]) / 2
+            metadata['is_3d'] = True
+        else:
+            # Our microscope setup is always square tiles
+            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']]) / 2
+            metadata['is_3d'] = False
+
+    # Now loop through the files to get the more varied data
+    xy_pos = []
+    laser = []
+    camera = []
+
+    # Only want to extract metadata from round 0
+    for f_id, f in tqdm(enumerate(files), desc='Reading metadata from all files'):
         with nd2.ND2File(os.path.join(input_dir, f)) as im:
-            xy_pos[f_id, :] = np.array(im.frame_metadata(0).channels[0].position.stagePositionUm[:2])
+            stage_position = im.frame_metadata(0).channels[0].position.stagePositionUm[:2]
+            # We want to append if this stage position is new, do nothing if stage position we have read is the same
+            # as the last entry in xy_pos and break out of for loop if stage_position is within xy_pos but not as the
+            # last entry
+            if stage_position not in xy_pos:
+                xy_pos.append(stage_position)
+            elif stage_position in xy_pos and stage_position != xy_pos[-1]:
+                break
             cal = im.metadata.channels[0].volume.axesCalibration[0]
-
-    xy_pos = (xy_pos - np.min(xy_pos, 0)) / cal
-
-    return xy_pos.tolist()
-
-
-def get_jobs_lasers(input_dir: str, files: list) -> list:
-    """
-    Extract the lasers used for the experiment from metadata
-    Args:
-        input_dir: path to nd2 files
-        files: file to read metadata from
-
-    Returns:
-        List [n_tiles]. lasers in use.
-    """
-    # We don't need to loop through all files, just first 100 as we'll never have this many lasers and it takes long
-    # To opem all files.
-    N = min(len(files), 100)
-    files = files[:N]
-    laser = np.zeros(N, dtype=int)
-
-    for f_id, f in tqdm(enumerate(files), desc='Reading laser info'):
-        with nd2.ND2File(os.path.join(input_dir, f)) as im:
+            # Now also extract the laser and camera associated with each channel
             desc = im.text_info['description']
-            laser[f_id] = int(desc[desc.index('; On')-3:desc.index('; On')])
-    # Get rid of duplicates
-    laser = list(set(laser))
+            channel_metadata = desc.split('Plane #')[1:]
+            # Since channels constant across tiles only need to gauge from tile 1
+            if stage_position == xy_pos[0]:
+                for i in range(len(channel_metadata)):
+                    laser_wavelength = int(channel_metadata[i][channel_metadata[i].index('; On') - 3:
+                                                               channel_metadata[i].index('; On')])
+                    camera_wavelength = int(channel_metadata[i][channel_metadata[i].index('Name:') + 6:
+                                                                channel_metadata[i].index('Name:') + 9])
+                    laser.append(laser_wavelength)
+                    camera.append(camera_wavelength)
 
-    return laser
+    # Normalise so that minimum is 0,0
+    xy_pos = np.aarray(xy_pos)
+    xy_pos = (xy_pos - np.min(xy_pos, axis=0)) / cal
+    metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
+    metadata['n_tiles'] = len(metadata['tilepos_yx_nd2'])
+    # get n_channels and channel info
+    metadata['channel_laser'], metadata['channel_camera'] = laser, camera
+    metadata['n_channels'] = len(laser)
+    # Final piece of metadata is n_rounds. Note num_files = num_rounds * num_tiles * num_lasers
+    n_files = len(os.listdir(input_dir))
+    n_lasers = len(set(laser))
+    metadata['n_rounds'] = n_files // (n_lasers * metadata['n_tiles'])
+
+    return metadata
 
 
-def get_jobs_rounds_tiles(input_dir: str, files: list, n_lasers: int) -> tuple:
-    """
-    Extract the number of rounds and number of tiles used for the jobs experiment from metadata
-    Args:
-        input_dir: path to nd2 files
-        files: file to read metadata from
-        n_lasers: number of lasers
+# def get_jobs_xypos(input_dir: str, files: list) -> list:
+#     """
+#     Extract the xy stage position for each individual files, convert it as pixels and return a list
+#     Args:
+#         input_dir: path to nd2 files
+#         files: file to read metadata from
+#
+#     Returns:
+#         List [n_tiles x 2]. xy position of tiles in pixels
+#     """
+#     xy_pos = np.zeros((len(files), 2))
+#     for f_id, f in tqdm(enumerate(files), desc='Reading XY metadata'):
+#         with nd2.ND2File(os.path.join(input_dir, f)) as im:
+#             xy_pos[f_id, :] = np.array(im.frame_metadata(0).channels[0].position.stagePositionUm[:2])
+#             cal = im.metadata.channels[0].volume.axesCalibration[0]
+#
+#     xy_pos = (xy_pos - np.min(xy_pos, 0)) / cal
+#
+#     return xy_pos.tolist()
 
-    Returns:
-        List [2]. rounds, tiles in use.
-    """
-    # Get all tiles/rounds corresponding to the first laser
-    l1_files = files[::n_lasers]
 
-    # Idea now is to loop through these until we get back to the same xy position, at which point we have gone through
-    # all tiles
-    xy_pos = get_jobs_xypos(input_dir, l1_files)
-    for i in range(1, len(l1_files)):
-        if xy_pos[i] == xy_pos[0]:
-            n_tiles = i
-            break
-    # n_rounds is just len(l1_files)/n_tiles -1 to account for anchor
-    n_rounds = len(l1_files)//n_tiles - 1
+# def get_jobs_lasers(input_dir: str, files: list) -> list:
+#     """
+#     Extract the lasers used for the experiment from metadata
+#     Args:
+#         input_dir: path to nd2 files
+#         files: file to read metadata from
+#
+#     Returns:
+#         List [n_tiles]. lasers in use.
+#     """
+#     # We don't need to loop through all files, just first 100 as we'll never have this many lasers and it takes long
+#     # To opem all files.
+#     N = min(len(files), 100)
+#     files = files[:N]
+#     laser = np.zeros(N, dtype=int)
+#
+#     for f_id, f in tqdm(enumerate(files), desc='Reading laser info'):
+#         with nd2.ND2File(os.path.join(input_dir, f)) as im:
+#             desc = im.text_info['description']
+#             laser[f_id] = int(desc[desc.index('; On')-3:desc.index('; On')])
+#     # Get rid of duplicates
+#     laser = list(set(laser))
+#
+#     return laser
 
-    return n_tiles, n_rounds
+
+# def get_jobs_rounds_tiles(input_dir: str, files: list, n_lasers: int) -> tuple:
+#     """
+#     Extract the number of rounds and number of tiles used for the jobs experiment from metadata
+#     Args:
+#         input_dir: path to nd2 files
+#         files: file to read metadata from
+#         n_lasers: number of lasers
+#
+#     Returns:
+#         List [2]. rounds, tiles in use.
+#     """
+#     # Get all tiles/rounds corresponding to the first laser
+#     l1_files = files[::n_lasers]
+#
+#     # Idea now is to loop through these until we get back to the same xy position, at which point we have gone through
+#     # all tiles
+#     xy_pos = get_jobs_xypos(input_dir, l1_files)
+#     for i in range(1, len(l1_files)):
+#         if xy_pos[i] == xy_pos[0]:
+#             n_tiles = i
+#             break
+#     # n_rounds is just len(l1_files)/n_tiles -1 to account for anchor
+#     n_rounds = len(l1_files)//n_tiles - 1
+#
+#     return n_tiles, n_rounds
 
 
 def get_image(images: np.ndarray, fov: int, channel: int, use_z: Optional[List[int]] = None) -> np.ndarray:
