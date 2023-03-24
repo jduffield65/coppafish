@@ -304,7 +304,6 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
 
     elif raw_extension == 'jobs':
         metadata = utils.nd2.get_jobs_metadata(all_files, config_file['input_dir'])
-
     else:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")
