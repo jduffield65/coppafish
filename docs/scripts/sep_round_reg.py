@@ -1,5 +1,5 @@
 from typing import List, Tuple, Optional
-from coppafish.register import get_single_affine_transform
+from coppafish.Unsure.register import get_single_affine_transform
 from coppafish.pipeline.run import initialize_nb, run_extract, run_find_spots
 from coppafish import setup, utils
 from coppafish.call_spots import get_non_duplicate
@@ -7,7 +7,6 @@ from coppafish.stitch import compute_shift
 from coppafish.find_spots import get_isolated_points
 from coppafish.pipeline import stitch
 from coppafish.spot_colors import apply_transform
-from coppafish.plot.register.shift import view_shifts
 import numpy as np
 import os
 import warnings

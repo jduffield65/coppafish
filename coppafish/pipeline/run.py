@@ -1,14 +1,11 @@
 import os
 from .. import setup, utils
 from joblib import Parallel, delayed
-from . import set_basic_info, set_basic_info_new, extract_and_filter, find_spots, stitch, register_initial, \
-    register_ft, get_reference_spots, call_reference_spots, call_spots_omp
+from . import set_basic_info_new, extract_and_filter, find_spots, stitch, get_reference_spots, call_reference_spots, call_spots_omp
 from .extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
 from ..setup import split_config, merge_notebooks, split_stitch, split_ref_spots, split_call_spots, Notebook
-from ..stitch import check_shifts_stitch, check_shifts_register
-from ..register import check_transforms
-from ..register.new_pipeline import register
+# from coppafish.register.new_pipeline import register
 from ..call_spots import get_non_duplicate, quality_threshold
 import warnings
 import numpy as np

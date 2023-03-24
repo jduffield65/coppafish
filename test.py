@@ -5,7 +5,7 @@ import coppafish.omp.test.test_all
 import coppafish.utils.test as utils
 import coppafish.stitch.test as stitch
 import coppafish.setup.test as setup
-import coppafish.register.test as register
+import coppafish.Unsure.register.test as register
 import coppafish.spot_colors.test as spot_colors
 import coppafish.call_spots.test as call_spots
 import coppafish.omp.test as omp
