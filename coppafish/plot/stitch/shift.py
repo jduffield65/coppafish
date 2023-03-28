@@ -256,8 +256,8 @@ def view_stitch_search(nb: Notebook, t: int, direction: Optional[str] = None):
         config['shift_max_range'][2] = 0
 
     # find shifts between overlapping tiles
-    c = nb.basic_info.ref_channel
-    r = nb.basic_info.ref_round
+    c = nb.basic_info.anchor_channel
+    r = nb.basic_info.anchor_round
     t_neighb = {'south': [], 'west': []}
     z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
 

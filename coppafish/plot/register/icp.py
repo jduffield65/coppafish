@@ -42,8 +42,8 @@ def view_icp(nb: Notebook, t: int, r: int, c: int):
     point_clouds[0] = point_clouds[0][isolated]
 
     # 2nd is untransformed reference point cloud
-    r_ref = nb.basic_info.ref_round
-    c_ref = nb.basic_info.ref_channel
+    r_ref = nb.basic_info.anchor_round
+    c_ref = nb.basic_info.anchor_channel
     point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref, nb.find_spots.spot_no)]
     z_scale = z_scale[2]
 
@@ -161,8 +161,8 @@ def view_icp_reg(nb: Notebook, t: int, r: int, c: int, reg_constant: Optional[Li
     point_clouds[0] = point_clouds[0][isolated]
 
     # 2nd is untransformed reference point cloud
-    r_ref = nb.basic_info.ref_round
-    c_ref = nb.basic_info.ref_channel
+    r_ref = nb.basic_info.anchor_round
+    c_ref = nb.basic_info.anchor_channel
     point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref, nb.find_spots.spot_no)]
     z_scale = z_scale[2]
 
@@ -362,149 +362,4 @@ def plot_reg_residual(reg_transform: np.ndarray, transforms_plot: List[np.ndarra
         ax[1, 0].set_ylim(y1_lim)
         ax[1, 0].set_ylabel("$D_{shift}$")
     fig.suptitle("How varying regularization parameters affects how similar transform found is to target transform")
-    plt.show()
-
-
-def view_overlay(nb, t, r, c, filter=False):
-    """
-    Function to overlay tile, round and channel with the anchor in napari and view the registration.
-    This function is only long because we have to convert images to zyx and the transform to zyx * zyx
-    Args:
-        nb: Notebook
-        t: common tile
-        r: target image round
-        c: target image channel
-        filter: Boolean whether to filter
-    """
-
-    def napari_viewer():
-        from magicgui import magicgui
-        prevlayer = None
-
-        @magicgui(layout="vertical", auto_call=True,
-                  x_offset={'max': 10000, 'min': -10000, 'step': 1},
-                  y_offset={'max': 10000, 'min': -10000, 'step': 1},
-                  z_offset={'max': 10000, 'min': -10000, 'step': 1},
-                  x_scale={'max': 5, 'min': .2, 'value': 1.0, 'step': .001},
-                  y_scale={'max': 5, 'min': .2, 'value': 1.0, 'step': .001},
-                  z_scale={'max': 5, 'min': .2, 'value': 1.0, 'step': .1},
-                  x_rotate={'max': 180, 'min': -180, 'step': 1.0},
-                  y_rotate={'max': 180, 'min': -180, 'step': 1.0},
-                  z_rotate={'max': 180, 'min': -180, 'step': 1.0},
-                  )
-        def _napari_extension_move_points(layer: napari.layers.Layer, x_offset: float, y_offset: float, z_offset: float,
-                                          x_scale: float, y_scale: float, z_scale: float, x_rotate: float,
-                                          y_rotate: float, z_rotate: float, use_defaults: bool) -> None:
-            """Add, subtracts, multiplies, or divides to image layers with equal shape."""
-            nonlocal prevlayer
-            if not hasattr(layer, "_true_rotate"):
-                layer._true_rotate = [0, 0, 0]
-                layer._true_translate = [0, 0, 0]
-                layer._true_scale = [1, 1, 1]
-            if prevlayer != layer:
-                prevlayer = layer
-                on_layer_change(layer)
-                return
-            if use_defaults:
-                z_offset = y_offset = x_offset = 0
-                z_scale = y_scale = x_scale = 1
-                z_rotate = y_rotate = x_rotate = 0
-            layer._true_rotate = [z_rotate, y_rotate, x_rotate]
-            layer._true_translate = [z_offset, y_offset, x_offset]
-            layer._true_scale = [z_scale, y_scale, x_scale]
-            layer.affine = napari.utils.transforms.Affine(rotate=layer._true_rotate, scale=layer._true_scale,
-                                                          translate=layer._true_translate)
-            layer.refresh()
-
-        def on_layer_change(layer):
-            e = _napari_extension_move_points
-            widgets = [e.z_scale, e.y_scale, e.x_scale, e.z_offset, e.y_offset, e.x_offset, e.z_rotate, e.y_rotate,
-                       e.x_rotate]
-            for w in widgets:
-                w.changed.pause()
-            e.z_scale.value, e.y_scale.value, e.x_scale.value = layer._true_scale
-            e.z_offset.value, e.y_offset.value, e.x_offset.value = layer._true_translate
-            e.z_rotate.value, e.y_rotate.value, e.x_rotate.value = layer._true_rotate
-            for w in widgets:
-                w.changed.resume()
-            print("Called change layer")
-
-        # _napari_extension_move_points.layer.changed.connect(on_layer_change)
-        v = napari.Viewer()
-        # add our new magicgui widget to the viewer
-        v.window.add_dock_widget(_napari_extension_move_points, area="right")
-        v.axes.visible = True
-        return v
-
-    # initialise frequently used variables
-    nbp_file, nbp_basic, transform = nb.file_names, nb.basic_info, nb.register.transform
-    r_ref, c_ref = nbp_basic.anchor_round, nbp_basic.anchor_channel
-    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
-
-    # Create a napari viewer and add and transform first image and overlay this with second image
-    # Images are saved as yxz but our viewer works with zyx.
-    # Convert to zyx
-    base_image = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
-    base_image = np.swapaxes(base_image, 0, 2)
-    base_image = np.swapaxes(base_image, 1, 2)
-    target_image = load_tile(nbp_file, nbp_basic, t, r, c)
-    target_image = np.swapaxes(target_image, 0, 2)
-    target_image = np.swapaxes(target_image, 1, 2)
-    # Apply filter if needed
-    if filter:
-        base_image = sobel(base_image)
-        target_image = sobel(target_image)
-
-    # Transform saved as yxz * yxz but needs to be zyx * zyx. Convert this to something napari will understand. I think
-    # this includes making the shift the final column as opposed to our convention of making the shift the final row
-    affine_transform = np.vstack(((transform[t, r, c]).T, np.array([0, 0, 0, 1])))
-    row_shuffler = np.zeros((4, 4))
-    row_shuffler[0, 1] = 1
-    row_shuffler[1, 2] = 1
-    row_shuffler[2, 0] = 1
-    row_shuffler[3, 3] = 1
-    # Now compute the affine transform, in the new basis
-    affine_transform = np.linalg.inv(row_shuffler) @ affine_transform @ row_shuffler
-    # Finally, z shift needs to be converted to z-pixels as opposed to yx
-    affine_transform[0, 3] = affine_transform[0, 3] / z_scale
-
-    viewer = napari_viewer()
-    viewer.add_image(base_image, blending='additive', colormap='red',
-                     affine=affine_transform,
-                     contrast_limits=(0, 0.3 * np.max(base_image)))
-    viewer.add_image(target_image, blending='additive', colormap='green',
-                     contrast_limits=(0, 0.3 * np.max(target_image)))
-
-
-# TODO: Change format of this to make it more similar to notebook outputs
-def view_regression_scatter(shift, position, transform):
-    """
-    view 3 scatter plots for each data set shift vs positions
-    Args:
-        shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
-        position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
-        transform: 3 x 4 affine transform obtained by previous robust regression
-    """
-
-    shift = shift.reshape((shift.shape[0] * shift.shape[1] * shift.shape[2], 3)).T
-    position = position.reshape((position.shape[0] * position.shape[1] * position.shape[2], 3)).T
-
-    z_range = np.arange(np.min(position[0]), np.max(position[0]))
-    yx_range = np.arange(np.min(position[1]), np.max(position[1]))
-
-    plt.subplot(1, 3, 1)
-    plt.scatter(position[0], shift[0], alpha=1e2/shift.shape[1])
-    plt.plot(z_range, (transform[0, 0] - 1) * z_range + transform[0,3])
-    plt.title('Z-Shifts vs Z-Positions')
-
-    plt.subplot(1, 3, 2)
-    plt.scatter(position[1], shift[1], alpha=1e2 / shift.shape[1])
-    plt.plot(yx_range, (transform[1, 1] - 1) * yx_range + transform[1, 3])
-    plt.title('Y-Shifts vs Y-Positions')
-
-    plt.subplot(1, 3, 3)
-    plt.scatter(position[2], shift[2], alpha=1e2 / shift.shape[1])
-    plt.plot(yx_range, (transform[2, 2] - 1) * yx_range + transform[2, 3])
-    plt.title('X-Shifts vs X-Positions')
-
     plt.show()

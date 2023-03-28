@@ -59,8 +59,8 @@ def check_shifts_register(nb: Notebook):
     Args:
         nb: *Notebook* containing `stitch` page.
     """
-    r_ref = nb.basic_info.ref_round
-    c_ref = nb.basic_info.ref_channel
+    r_ref = nb.basic_info.anchor_round
+    c_ref = nb.basic_info.anchor_channel
     c_shift = nb.register_initial.shift_channel
     use_rounds = np.asarray(nb.basic_info.use_rounds)
     use_tiles = np.asarray(nb.basic_info.use_tiles)

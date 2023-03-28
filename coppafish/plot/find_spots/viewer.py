@@ -89,7 +89,7 @@ class view_find_spots:
                 raise ValueError(f'No spots are found on round {r}, channel {c} in the pipeline.\n'
                                  f'Only spots on anchor_channel = {nb.basic_info.anchor_channel} used for the '
                                  f'anchor round.')
-        if r == nb.basic_info.ref_round and c == nb.basic_info.ref_channel:
+        if r == nb.basic_info.anchor_round and c == nb.basic_info.anchor_channel:
             if show_isolated:
                 self.show_isolated = True
             else:

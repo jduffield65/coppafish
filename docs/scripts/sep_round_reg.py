@@ -118,12 +118,12 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
     # save all the images
     for c in channels_to_save:
         im_file = os.path.join(nb.file_names.output_dir, f'sep_round_channel{c}_transformed.npz')
-        if c == nb.basic_info.ref_channel:
+        if c == nb.basic_info.anchor_channel:
             from_nd2 = False
         else:
             from_nd2 = True
         image_stitch = utils.npy.save_stitched(None, nb.file_names, nb.basic_info, nb.stitch.tile_origin,
-                                               nb.basic_info.ref_round, c, from_nd2,
+                                               nb.basic_info.anchor_round, c, from_nd2,
                                                config['stitch']['save_image_zero_thresh'])
 
         image_transform = transform_image(image_stitch, nbp.transform, image_centre[:image_stitch.ndim], z_scale)

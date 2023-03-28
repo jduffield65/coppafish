@@ -12,7 +12,7 @@ The [`register_initial`](../notebook_comments.md#register_initial) *NotebookPage
 
 ## Shift
 The channel used for finding the shifts is specified by $c_{shift}$ = `config['register_initial']['shift_channel']`.
-If it is left blank, it will be set to $c_{ref}$ (`nb.basic_info.ref_channel`). This channel
+If it is left blank, it will be set to $c_{ref}$ (`nb.basic_info.anchor_channel`). This channel
 should be one with lots of spots and if an [error](#error-too-many-bad-shifts) 
 is hit, it may be worth re-running with a different value
 of this parameter. 

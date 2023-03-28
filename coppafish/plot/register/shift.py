@@ -51,8 +51,8 @@ def view_register_shift_info(nb: Notebook, outlier: bool = False):
     else:
         title_start = ""
     shift_info_plot(shift_info, f"{title_start}Shifts found in register_initial part of pipeline "
-                                f"from round {nb.basic_info.ref_round}, channel "
-                                f"{nb.basic_info.ref_channel} to channel "
+                                f"from round {nb.basic_info.anchor_round}, channel "
+                                f"{nb.basic_info.anchor_channel} to channel "
                                 f"{nb.register_initial.shift_channel} for each round and tile")
 
 
@@ -80,7 +80,7 @@ def view_register_search(nb: Notebook, t: int, r: int, c: Optional[int] = None,
     if c is None:
         c = config['shift_channel']
         if c is None:
-            c = nb.basic_info.ref_channel
+            c = nb.basic_info.anchor_channel
     if not np.isin(c, nb.basic_info.use_channels):
         raise ValueError(f"c should be in nb.basic_info.use_channels, but value given is\n"
                          f"{c} which is not in use_channels = {nb.basic_info.use_channels}.")
@@ -97,8 +97,8 @@ def view_register_search(nb: Notebook, t: int, r: int, c: Optional[int] = None,
         config['shift_max_range'][2] = 0
         shifts[0]['z'] = np.array([0], dtype=int)
     shifts = shifts * nb.basic_info.n_rounds  # get one set of shifts for each round
-    c_ref = nb.basic_info.ref_channel
-    r_ref = nb.basic_info.ref_round
+    c_ref = nb.basic_info.anchor_channel
+    r_ref = nb.basic_info.anchor_round
     # to convert z coordinate units to xy pixels when calculating distance to nearest neighbours
     z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
     print(f'Finding shift between round {r_ref}, channel {c_ref} to round {r}, channel {c} for tile {t}')

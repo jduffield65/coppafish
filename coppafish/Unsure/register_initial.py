@@ -186,7 +186,7 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
     """
     nbp_debug = NotebookPage("register_initial")
     if config['shift_channel'] is None:
-        config['shift_channel'] = nbp_basic.ref_channel
+        config['shift_channel'] = nbp_basic.anchor_channel
     if not np.isin(config['shift_channel'], nbp_basic.use_channels):
         raise ValueError(f"config['shift_channel'] should be in nb.basic_info.use_channels, but value given is\n"
                          f"{config['shift_channel']} which is not in use_channels = {nbp_basic.use_channels}.")
@@ -212,8 +212,8 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
     shift_score = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds), dtype=float)
     shift_score_thresh = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds), dtype=float)
 
-    c_ref = nbp_basic.ref_channel
-    r_ref = nbp_basic.ref_round
+    c_ref = nbp_basic.anchor_channel
+    r_ref = nbp_basic.anchor_round
     c_imaging = config['shift_channel']
     # to convert z coordinate units to xy pixels when calculating distance to nearest neighbours
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy

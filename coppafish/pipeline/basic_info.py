@@ -327,7 +327,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
     # Notebook doesn't allow us to reset a value once it has been set so must delete and reset.
 
     # Next condition just says that if we are using the anchor and we don't specify the anchor round we will default it
-    # to the final round. Add an extrea round for the anchor and reduce the number of non anchor rounds by 1.
+    # to the final round. Add an extra round for the anchor and reduce the number of non anchor rounds by 1.
     if nbp.use_anchor:
         # Tell software that extra round is just an extra round and reduce the number of rounds
         nbp.n_extra_rounds = 1
@@ -336,7 +336,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         nbp.n_rounds = n_rounds - 1
         if nbp.anchor_round is None:
             del nbp.anchor_round
-            nbp.anchor_round = metadata['n_rounds']
+            nbp.anchor_round = metadata['n_rounds'] - 1
         if nbp.anchor_channel is None:
             raise ValueError('Need to provide an anchor channel if using anchor!')
     else:
@@ -347,19 +347,24 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         del nbp.use_tiles
         nbp.use_tiles = np.arange(metadata['n_tiles']).tolist()
 
-    # If no use_rounds given, replace none with []
+    # If no use_rounds given, replace none with [], unless non jobs and user has provided the rounds in the file names
     if nbp.use_rounds is None:
         del nbp.use_rounds
-        nbp.use_rounds = []
+        if config_file['round'] is not None and raw_extension != 'jobs':
+            nbp.use_rounds = np.arange(len(config_file['round'])).tolist()
+        else:
+            nbp.use_rounds = []
 
     if nbp.use_channels is None:
         del nbp.use_channels
         nbp.use_channels = np.arange(metadata['n_channels']).tolist()
 
-    # If no use_channels given, default to all except the first if ignore_first_z_plane = True
+    # If no use_z given, default to all except the first if ignore_first_z_plane = True
     if nbp.use_z is None:
         del nbp.use_z
-        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), metadata['nz']).tolist()
+        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), int(2 * metadata['tile_centre'][2])).tolist()
+    # This has not been assigned yet but now we can be sure that use_z not None!
+    nbp.nz = len(nbp.use_z)
 
     if nbp.use_dyes is None:
         del nbp.use_dyes

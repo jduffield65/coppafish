@@ -47,8 +47,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
         shift_info[j]['score_thresh'] = np.zeros((0, 1), dtype=float)
 
     # find shifts between overlapping tiles
-    c = nbp_basic.ref_channel
-    r = nbp_basic.ref_round
+    c = nbp_basic.anchor_channel
+    r = nbp_basic.anchor_round
     t_neighb = {'south': [], 'west': []}
     # to convert z coordinate units to xy pixels when calculating distance to nearest neighbours
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy

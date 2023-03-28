@@ -1,6 +1,4 @@
 import numpy as np
-from scipy import stats
-from skimage.registration import phase_cross_correlation
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -30,7 +28,10 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
     # Allow 0.5 of a box either side and then split the middle with subvols evenly spaced points, ie into subvols - 1
     # intervals. Then use integer division. e.g actual unit distance is 12.5, this gives a unit distance of 12 so
     # should never overshoot
-    z_unit = (z_image - z_box) // (z_subvolumes - 1)
+    if z_subvolumes > 1:
+        z_unit = (z_image - z_box) // (z_subvolumes - 1)
+    else:
+        z_unit = 0
     y_unit = (y_image - y_box) // (y_subvolumes - 1)
     x_unit = (x_image - x_box) // (x_subvolumes - 1)
 
@@ -53,74 +54,6 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
                 position[z, y, x] = np.array([(z_start + z_end)//2, (y_start + y_end)//2, (x_start + x_end)//2])
 
     return subvolume, position
-
-
-def find_shift_array(subvol_base, subvol_target, r_threshold):
-    """
-    This function takes in 2 split up 3d images and finds the optimal shift from each subvolume in 1 to it's corresponding
-    subvolume in the other.
-    Args:
-        subvol_base: Base subvolume array
-        subvol_target: Target subvolume array
-        r_threshold: threshold of correlation used in degenerate cases
-    Returns:
-        shift: 4D array, with first 3 dimensions referring to subvolume index and final dim referring to shift.
-    """
-    if subvol_base.shape != subvol_target.shape:
-        raise ValueError("Subvolume arrays have different shapes")
-    z_subvolumes, y_subvolumes, x_subvolumes = subvol_base.shape[0], subvol_base.shape[1], subvol_base.shape[2]
-    z_box = subvol_base.shape[3]
-    shift = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
-
-    for y in range(y_subvolumes):
-        for x in range(x_subvolumes):
-            # skip tells us when we need to start comparing z subvols to the subvol above it (in the case that it is
-            # closer to this, or below it in the other case). Reset this whenever we start a new z-tower
-            skip = 0
-            for z in range(z_subvolumes):
-                # Handle case where skip allows us to leave the z-range
-                if z + skip >= z_subvolumes:
-                    shift[z, y, x] = np.nan
-                    break
-                # Now proceed as normal
-                shift[z, y, x], _, _ = phase_cross_correlation(subvol_target[z + skip, y, x], subvol_base[z, y, x],
-                                                               upsample_factor=10)
-                corrected_shift, shift_corr, alt_shift_corr = disambiguate_z(subvol_base[z, y, x],
-                                                                             subvol_target[z + skip, y, x],
-                                                                             shift[z, y, x], r_threshold=0.2)
-
-                # CASE 1: deal with the very degenerate case where corrected_shift = nan, this means that a shift of 0
-                # (as predicted by PCC) fails to be similar to the target image. In this case, we can look at neighbours
-                # and see if they do better. If they do then make the shift to the appropriate neighbour
-                if np.isnan(corrected_shift[0]):
-                    neighbours = {z-1, z+1}.intersection(set(np.arange(z_subvolumes, dtype=int)))
-                    # Now loop over neighbours, find their shifts and
-                    for neighb in neighbours:
-                        candidate_shift, _, _ = phase_cross_correlation(subvol_target[neighb, y, x],
-                                                                        subvol_base[z, y, x], upsample_factor=10)
-                        shift_base = custom_shift(subvol_base[z, y, x], candidate_shift.astype(int))
-                        shift_mask = shift_base > 0
-                        candidate_corr = stats.pearsonr(shift_base[shift_mask], subvol_base[z, y, x, shift_mask])[0]
-                        if candidate_corr > r_threshold:
-                            corrected_shift = z_box * (neighb - z) + candidate_shift
-                            skip = skip + neighb - z
-                            break
-                    # If our corrected_shift has been updated by the shifts to one of the neighbours then next line will
-                    # replace the shift, else next line will just save this shift as nan
-                    shift[z, y, x] = corrected_shift
-                else:
-                    # If the corrected shift is not the same as the original shift it is due to aliasing. The range of
-                    # shifts given is [-z_box/2, z_box/2] so if the aliased shift is the true shift then
-                    # subvol_base[z,y,x] has more in common with either subvol_target[z-1,y,x] or
-                    # subvol_target[z+1, y, x], so update the skip parameter
-                    if corrected_shift[0] != shift[z, y, x, 0] and alt_shift_corr > shift_corr:
-                        if corrected_shift[0] > shift[z, y, x, 0]:
-                            skip += 1
-                        else:
-                            skip -= 1
-                        # Finally, update the shift to the correct one
-                        shift[z, y, x] = corrected_shift
-    return shift
 
 
 def compose_affine(A1, A2):

@@ -11,6 +11,12 @@ import numpy_indexed
 import numbers
 
 
+def rotate_90_clockwise(image):
+    image = np.swapaxes(image, 1, 2)
+    image = np.flip(image, axis=2)
+    return image
+
+
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,
               t: int, r: int, c: Optional[int] = None):
     """
@@ -42,8 +48,11 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
+        # TODO: See if this is always clockwise. I think Matthieu may have some data where this is not the case
+        image = rotate_90_clockwise(image)
         np.save(nbp_file.tile[t][r][c], np.moveaxis(image, 2, 0))
     else:
+        # TODO: Do 90 degree clockwise rotation in 2d
         if r == nbp_basic.anchor_round:
             if nbp_basic.anchor_channel is not None:
                 # If anchor round, only shift and clip anchor channel, leave DAPI and un-used channels alone.

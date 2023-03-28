@@ -226,8 +226,8 @@ def view_stitch_overlap(nb: Notebook, t: int, direction: str = 'south'):
 
     config = nb.get_config()['stitch']
     t_neighb = t_neighb[0]
-    r = nb.basic_info.ref_round
-    c = nb.basic_info.ref_channel
+    r = nb.basic_info.anchor_round
+    c = nb.basic_info.anchor_channel
     point_clouds = []
     # add global coordinates of neighbour tile as point cloud that is always present.
     point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t_neighb, r, c, nb.find_spots.spot_no) +
@@ -269,10 +269,10 @@ def view_stitch(nb: Notebook):
     local_yxz = np.zeros((0, 3), dtype=int)
     for t in nb.basic_info.use_tiles:
         local_yxz = np.vstack((local_yxz, spot_yxz(spot_details=nb.find_spots.spot_details,
-                              spot_no=nb.find_spots.spot_no, tile=t, round=nb.basic_info.ref_round,
-                               channel=nb.basic_info.ref_channel)))
+                              spot_no=nb.find_spots.spot_no, tile=t, round=nb.basic_info.anchor_round,
+                               channel=nb.basic_info.anchor_channel)))
     # Recreate tile array from spot_no matrix
-    anchor_spots = nb.find_spots.spot_no[:, nb.basic_info.ref_round, nb.basic_info.ref_channel]
+    anchor_spots = nb.find_spots.spot_no[:, nb.basic_info.anchor_round, nb.basic_info.anchor_channel]
     cumulative_spots = np.zeros(len(nb.basic_info.use_tiles))
     for i in range(len(nb.basic_info.use_tiles)):
         cumulative_spots[i] = np.sum(anchor_spots[:(i+1)], dtype=int)

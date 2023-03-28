@@ -1,11 +1,11 @@
 import os
 from .. import setup, utils
 from joblib import Parallel, delayed
-from . import set_basic_info_new, extract_and_filter, find_spots, stitch, get_reference_spots, call_reference_spots, call_spots_omp
+from . import set_basic_info_new, extract_and_filter, find_spots, stitch, register, get_reference_spots, \
+    call_reference_spots, call_spots_omp
 from .extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
 from ..setup import split_config, merge_notebooks, split_stitch, split_ref_spots, split_call_spots, Notebook
-# from coppafish.register.new_pipeline import register
 from ..call_spots import get_non_duplicate, quality_threshold
 import warnings
 import numpy as np
@@ -217,8 +217,8 @@ def run_stitch(nb: setup.Notebook):
     # if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
         # utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
-        #                         nb.stitch.tile_origin, nb.basic_info.ref_round,
-        #                         nb.basic_info.ref_channel, False, config['stitch']['save_image_zero_thresh'])
+        #                         nb.stitch.tile_origin, nb.basic_info.anchor_round,
+        #                         nb.basic_info.anchor_channel, False, config['stitch']['save_image_zero_thresh'])
 
 
 def run_register(nb: setup.Notebook):

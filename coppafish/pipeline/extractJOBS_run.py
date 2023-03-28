@@ -101,8 +101,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     if config['deconvolve']:
         if not os.path.isfile(nbp_file.psf):
             spot_images, config['psf_intensity_thresh'], psf_tiles_used = \
-                extract.get_psf_spots(nbp_file, nbp_basic, nbp_basic.ref_round,
-                                      nbp_basic.use_tiles, nbp_basic.ref_channel, nbp_basic.use_z,
+                extract.get_psf_spots(nbp_file, nbp_basic, nbp_basic.anchor_round,
+                                      nbp_basic.use_tiles, nbp_basic.anchor_channel, nbp_basic.use_z,
                                       config['psf_detect_radius_xy'], config['psf_detect_radius_z'],
                                       config['psf_min_spots'], config['psf_intensity_thresh'],
                                       config['auto_thresh_multiplier'], config['psf_isolation_dist'],
@@ -433,8 +433,8 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
     if config['deconvolve']:
         if not os.path.isfile(nbp_file.psf):
             spot_images, config['psf_intensity_thresh'], psf_tiles_used = \
-                extract.get_psf_spots(nbp_file, nbp_basic, nbp_basic.ref_round,
-                                      nbp_basic.use_tiles, nbp_basic.ref_channel, nbp_basic.use_z,
+                extract.get_psf_spots(nbp_file, nbp_basic, nbp_basic.anchor_round,
+                                      nbp_basic.use_tiles, nbp_basic.anchor_channel, nbp_basic.use_z,
                                       config['psf_detect_radius_xy'], config['psf_detect_radius_z'],
                                       config['psf_min_spots'], config['psf_intensity_thresh'],
                                       config['auto_thresh_multiplier'], config['psf_isolation_dist'],

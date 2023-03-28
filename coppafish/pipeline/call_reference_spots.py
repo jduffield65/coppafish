@@ -218,6 +218,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         # only use isolated spots which pass strict thresholding to compute gene_efficiencies
         # use_ge = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh,
         #                    pass_score_diff_thresh]).all(axis=0)
+        # TODO: Change isolation thresh to allow more scores
         use_ge = np.array([pass_intensity_thresh, pass_score_thresh, pass_score_diff_thresh]).all(axis=0)
         # nan_to_num line below converts nan in bleed_matrix to 0.
         # This basically just says that for dyes not in use_dyes, we expect intensity to be 0.
@@ -228,7 +229,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                                   config['gene_efficiency_max'],
                                                   config['gene_efficiency_min'],
                                                   config['gene_efficiency_min_factor'])
-
+        # gene_efficiency_use = np.load('/home/reilly/Christina Data 2207/gene_efficiency.npy')
         # get new bled codes using gene efficiency with L2 norm = 1.
         multiplier_ge = np.tile(np.expand_dims(gene_efficiency_use, 2), [1, 1, n_channels_use])
         bled_codes_ge_use = bled_codes_use * multiplier_ge

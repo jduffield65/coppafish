@@ -38,10 +38,10 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
 
     # record threshold for isolated spots in each tile of reference round/channel
     if config['isolation_thresh'] is None:
-        nbp.isolation_thresh = auto_thresh[:, nbp_basic.ref_round, nbp_basic.anchor_channel] * \
+        nbp.isolation_thresh = auto_thresh[:, nbp_basic.anchor_round, nbp_basic.anchor_channel] * \
                                   config['auto_isolation_thresh_multiplier']
     else:
-        nbp.isolation_thresh = np.ones_like(auto_thresh[:, nbp_basic.ref_round, nbp_basic.anchor_channel]) * \
+        nbp.isolation_thresh = np.ones_like(auto_thresh[:, nbp_basic.anchor_round, nbp_basic.anchor_channel]) * \
                                   config['isolation_thresh']
 
     # Next we load in tiles and rounds as we may want to change these variables
@@ -123,7 +123,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
                     spot_yxz = spot_yxz[no_negative_neighbour]
                     spot_intensity = spot_intensity[no_negative_neighbour]
                     # If r is a reference round, we also get info about whether the spots are isolated
-                    if r == nbp_basic.ref_round:
+                    if r == nbp_basic.anchor_round:
                         isolated_spots = fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
                                                         spot_yxz, nbp.isolation_thresh[t],
                                                         config['isolation_radius_inner'],
@@ -189,7 +189,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
 
     # PHASE 5: Save results into notebook
     use_tiles = nbp_basic.use_tiles
-    use_rounds = nbp_basic.use_rounds + [nbp_basic.ref_round]
+    use_rounds = nbp_basic.use_rounds + [nbp_basic.anchor_round]
 
     # Once all tiles have been run, we load the complete spot_details_info file and save it to the notebook
     info = np.load(nbp_file.spot_details_info)
@@ -210,12 +210,12 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         # Next we need to update spot_details and isolated_spots.
         for r in use_rounds:
             # Need to use different set of channels and save isolated spots if on anchor round, else proceed naturally
-            if r != nbp_basic.ref_round:
+            if r != nbp_basic.anchor_round:
                 use_channels = nbp_basic.use_channels
             else:
-                use_channels = [nbp_basic.ref_channel]
+                use_channels = [nbp_basic.anchor_channel]
                 # Load in the isolated spots
-                spot_isolated = fs.spot_isolated(isolated_spots, t, nbp_basic.ref_round, nbp_basic.ref_channel, spot_no)
+                spot_isolated = fs.spot_isolated(isolated_spots, t, nbp_basic.anchor_round, nbp_basic.anchor_channel, spot_no)
                 isolated_spots_new = np.append(isolated_spots_new, spot_isolated)
 
             # Finally, load in the spot coords

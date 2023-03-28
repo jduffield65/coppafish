@@ -34,7 +34,7 @@ This can be opened via the command line or using a python script. It requires ei
 This will then open the napari viewer which will show the spots with a marker indicating which gene they 
 were assigned to. If the notebook contains the [*omp*](notebook_comments.md#omp) page, the spots plotted
 will be those found with the [omp algorithm](code/pipeline/omp.md), otherwise it will show the 
-reference spots (those found on `nb.basic_info.ref_round`/`nb.basic_info.ref_channel`) 
+reference spots (those found on `nb.basic_info.anchor_round`/`nb.basic_info.anchor_channel`) 
 and their gene assignments found using [call_reference_spots](code/pipeline/call_reference_spots.md). 
 An example is shown below:
 

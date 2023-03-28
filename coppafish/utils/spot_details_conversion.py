@@ -37,8 +37,8 @@ def spot_details_conversion(nb: Notebook, spot_details_info_dir: str):
     spot_no = nb.find_spots.spot_no
 
     # Now we need to create and populate the isolated spots array. This has length num_ref_spots
-    ref_round = nb.basic_info.ref_round
-    ref_channel = nb.basic_info.ref_channel
+    ref_round = nb.basic_info.anchor_round
+    ref_channel = nb.basic_info.anchor_channel
     # Now find the indices (ie the row numbers in the spot_details array) for reference spots
     anchor_indices = [i for i in range(spot_details_old.shape[0]) if spot_details_old[i, 1] == ref_round]
     num_ref_spots = np.sum(spot_no[:, ref_round, ref_channel])

@@ -229,8 +229,8 @@ then [filtered](extract.md#filtering) according to parameters in [`config['extra
     nb_file = '/Users/user/coppafish/experiment/notebook.npz'
     nb = Notebook(nb_file)
     t = 1                               # tile to view
-    r = nb.basic_info.ref_round         # round to view
-    c = nb.basic_info.ref_channel       # channel to view
+    r = nb.basic_info.anchor_round         # round to view
+    c = nb.basic_info.anchor_channel       # channel to view
     view_find_spots(nb, t, r, c, show_isolated=True)
     ```
 
@@ -240,7 +240,7 @@ This will open a napari viewer with up to 5 sliders in the bottom left:
 * [*Detection Radius Z*](#z): This is the value of `config['find_spots']['r_z']`.
 * [*Intensity Threshold*](#intensity-threshold): This is the value of `nb.extract.auto_thresh[t, r, c]`.
 * [*Isolation Threshold*](#isolation-threshold): This is the value of `nb.find_spots.isolation_thresh[t, r, c]`.
-It will only appear if `show_isolated == True`, `r = nb.basic_info.ref_round` and `c = nb.basic_info.ref_channel`.
+It will only appear if `show_isolated == True`, `r = nb.basic_info.anchor_round` and `c = nb.basic_info.anchor_channel`.
 * [*Z Thickness*](#z-thickness): Spots detected on the current z-plane and this many z-planes either side of it 
 will be shown. Initially, this will be set to 1 so spots from the current z-plane and 1 either side of it will be shown. 
 

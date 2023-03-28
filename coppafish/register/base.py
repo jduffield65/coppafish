@@ -4,6 +4,75 @@ from scipy import stats
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from .preprocessing import custom_shift
+from skimage.registration import phase_cross_correlation
+
+
+def find_shift_array(subvol_base, subvol_target, r_threshold):
+    """
+    This function takes in 2 split up 3d images and finds the optimal shift from each subvolume in 1 to it's corresponding
+    subvolume in the other.
+    Args:
+        subvol_base: Base subvolume array
+        subvol_target: Target subvolume array
+        r_threshold: threshold of correlation used in degenerate cases
+    Returns:
+        shift: 4D array, with first 3 dimensions referring to subvolume index and final dim referring to shift.
+    """
+    if subvol_base.shape != subvol_target.shape:
+        raise ValueError("Subvolume arrays have different shapes")
+    z_subvolumes, y_subvolumes, x_subvolumes = subvol_base.shape[0], subvol_base.shape[1], subvol_base.shape[2]
+    z_box = subvol_base.shape[3]
+    shift = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
+
+    for y in range(y_subvolumes):
+        for x in range(x_subvolumes):
+            # skip tells us when we need to start comparing z subvols to the subvol above it (in the case that it is
+            # closer to this, or below it in the other case). Reset this whenever we start a new z-tower
+            skip = 0
+            for z in range(z_subvolumes):
+                # Handle case where skip allows us to leave the z-range
+                if z + skip >= z_subvolumes:
+                    shift[z, y, x] = np.nan
+                    break
+                # Now proceed as normal
+                shift[z, y, x], _, _ = phase_cross_correlation(subvol_target[z + skip, y, x], subvol_base[z, y, x],
+                                                               upsample_factor=10)
+                corrected_shift, shift_corr, alt_shift_corr = disambiguate_z(subvol_base[z, y, x],
+                                                                             subvol_target[z + skip, y, x],
+                                                                             shift[z, y, x], r_threshold=0.2)
+
+                # CASE 1: deal with the very degenerate case where corrected_shift = nan, this means that a shift of 0
+                # (as predicted by PCC) fails to be similar to the target image. In this case, we can look at neighbours
+                # and see if they do better. If they do then make the shift to the appropriate neighbour
+                if np.isnan(corrected_shift[0]):
+                    neighbours = {z-1, z+1}.intersection(set(np.arange(z_subvolumes, dtype=int)))
+                    # Now loop over neighbours, find their shifts and
+                    for neighb in neighbours:
+                        candidate_shift, _, _ = phase_cross_correlation(subvol_target[neighb, y, x],
+                                                                        subvol_base[z, y, x], upsample_factor=10)
+                        shift_base = custom_shift(subvol_base[z, y, x], candidate_shift.astype(int))
+                        shift_mask = shift_base > 0
+                        candidate_corr = stats.pearsonr(shift_base[shift_mask], subvol_base[z, y, x, shift_mask])[0]
+                        if candidate_corr > r_threshold:
+                            corrected_shift = z_box * (neighb - z) + candidate_shift
+                            skip = skip + neighb - z
+                            break
+                    # If our corrected_shift has been updated by the shifts to one of the neighbours then next line will
+                    # replace the shift, else next line will just save this shift as nan
+                    shift[z, y, x] = corrected_shift
+                else:
+                    # If the corrected shift is not the same as the original shift it is due to aliasing. The range of
+                    # shifts given is [-z_box/2, z_box/2] so if the aliased shift is the true shift then
+                    # subvol_base[z,y,x] has more in common with either subvol_target[z-1,y,x] or
+                    # subvol_target[z+1, y, x], so update the skip parameter
+                    if corrected_shift[0] != shift[z, y, x, 0] and alt_shift_corr > shift_corr:
+                        if corrected_shift[0] > shift[z, y, x, 0]:
+                            skip += 1
+                        else:
+                            skip -= 1
+                        # Finally, update the shift to the correct one
+                        shift[z, y, x] = corrected_shift
+    return shift
 
 
 # Custom regression implementation of Theil-Sen. No longer in use.
@@ -162,12 +231,16 @@ def ols_regression_robust(shift, position, spread):
         transform: 3 x 4 affine transform in yxz format with final col being shift
     """
     # First reshape the shift and position array to the point where their first 3 axes become 1 and final axis untouched
-    # shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
-    # position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
+    shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
+    position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
+
+    # We are going to get rid of the shifts where any of the values are nan for regression
+    position = position[~np.isnan(shift[:, 0])]
+    shift = shift[~np.isnan(shift[:, 0])]
 
     # Now take median and IQR to filter inliers from outliers
-    median = np.median(shift, axis=0)
-    iqr = stats.iqr(shift, axis=0)
+    median = np.nanmedian(shift, axis=0, )
+    iqr = stats.iqr(shift, axis=0, nan_policy='omit')
     # valid would be n_shifts x 3 array, we want the columns to get collapsed into 1 where all 3 conditions hold,
     # so collapse by setting all along the first axis
     valid = (shift <= median + iqr * spread).all(axis=1) * (shift >= median - iqr * spread).all(axis=1)
@@ -295,7 +368,7 @@ def regularise_transforms(transform, residual_threshold, tile_origin):
         tile_origin: yxz positions of the tiles [n_tiles x 3]
 
     Returns:
-        transform_regularised: Either [n_tiles x n_rounds x 4 x 3]
+        transform_regularised: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x x_channels x 4 x 3]
     """
     # First swap columns so that tile origins are in zyx like the shifts are
     i, j = 0, 1
@@ -315,17 +388,21 @@ def regularise_transforms(transform, residual_threshold, tile_origin):
 
     # Use these predicted shifts to get rid of outliers
     residual = np.linalg.norm(predicted_shift-shift, axis=2)
-    outlier = residual > residual_threshold
+    shift_outlier = residual > residual_threshold
     # The nice thing about this approach is that we can immediately replace the outliers with their prediction
     # Now we do something similar for the scales, though we don't really assume these will vary so we just take medians
     scale = np.swapaxes(np.array([transform[:, :, 0, 0].T, transform[:, :, 1, 1].T, transform[:, :, 2, 2].T]), 0, 2)
     scale_median = np.median(scale, axis=0)
+    scale_iqr = stats.iqr(scale, axis=0)
+    scale_low = scale < scale_median - 1.5 * scale_iqr
+    scale_high = scale > scale_median + 1.5 * scale_iqr
+    scale_outlier = (scale_low + scale_high).any(axis=-1)
 
     # Now we have everything to generate the regularised transforms
     transform_regularised = transform.copy()
     for t in range(n_tiles):
         for trial in range(n_trials):
-            if outlier[t, trial]:
+            if shift_outlier[t, trial] or scale_outlier[t, trial]:
                 transform_regularised[t, trial] = np.vstack((np.diag(scale_median[trial]), predicted_shift[t, trial])).T
 
     return transform_regularised

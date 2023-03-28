@@ -52,8 +52,8 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     nbp = NotebookPage("ref_spots")
     # The code is going to loop through all tiles, as we expect some anchor spots on each tile but r and c should stay
     # fixed as the value of the reference round and reference channel
-    r = nbp_basic.ref_round
-    c = nbp_basic.ref_channel
+    r = nbp_basic.anchor_round
+    c = nbp_basic.anchor_channel
 
     # all means all spots found on the reference round / channel
     all_local_yxz = np.zeros((0, 3), dtype=np.int16)

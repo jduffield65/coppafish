@@ -88,8 +88,8 @@ def get_metadata(file_path: str) -> dict:
         # Check if data is 3d
         if 'Z' in images.sizes:
             # subtract 1 as we always ignore first z plane
-            metadata['nz'] = images.sizes['Z'] - 1
-            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']])/2
+            nz = images.sizes['Z']
+            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], nz])/2
         else:
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']])/2
 
@@ -142,8 +142,8 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
         # Check if data is 3d
         if 'Z' in im.sizes:
             # subtract 1 as we always ignore first z plane
-            metadata['nz'] = im.sizes['Z'] - 1
-            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], metadata['nz']]) / 2
+            nz = im.sizes['Z']
+            metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], nz]) / 2
         else:
             # Our microscope setup is always square tiles
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']]) / 2

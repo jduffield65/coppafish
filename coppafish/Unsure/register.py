@@ -45,7 +45,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     n_matches_thresh = np.zeros_like(spot_yxz_imaging, dtype=float)
 
     for t in nbp_basic.use_tiles:
-        spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
+        spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
                                    spot_no) * np.array([1, 1, z_scale])
         for r in nbp_basic.use_rounds:
             for c in nbp_basic.use_channels:
