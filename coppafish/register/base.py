@@ -39,7 +39,8 @@ def find_shift_array(subvol_base, subvol_target, r_threshold):
                                                                upsample_factor=10)
                 corrected_shift, shift_corr, alt_shift_corr = disambiguate_z(subvol_base[z, y, x],
                                                                              subvol_target[z + skip, y, x],
-                                                                             shift[z, y, x], r_threshold=0.2)
+                                                                             shift[z, y, x], r_threshold=0.2,
+                                                                             z_box=z_box)
 
                 # CASE 1: deal with the very degenerate case where corrected_shift = nan, this means that a shift of 0
                 # (as predicted by PCC) fails to be similar to the target image. In this case, we can look at neighbours
@@ -239,7 +240,7 @@ def ols_regression_robust(shift, position, spread):
     shift = shift[~np.isnan(shift[:, 0])]
 
     # Now take median and IQR to filter inliers from outliers
-    median = np.nanmedian(shift, axis=0, )
+    median = np.nanmedian(shift, axis=0)
     iqr = stats.iqr(shift, axis=0, nan_policy='omit')
     # valid would be n_shifts x 3 array, we want the columns to get collapsed into 1 where all 3 conditions hold,
     # so collapse by setting all along the first axis
@@ -409,22 +410,24 @@ def regularise_transforms(transform, residual_threshold, tile_origin):
 
 
 # Complicated but necessary function to get rid of aliasing issues in Fourier Shifts
-def disambiguate_z(base_image, target_image, shift, r_threshold):
+def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
     """
     Function to disambiguate the 2 possible shifts obtained via aliasing.
     Args:
         base_image: nz x ny x nx ndarray
         target_image: nz x ny x nx ndarray
         shift: z y x shift
-        r_threshold: threshold that r_statistic must exceed for us to accept z shift of 0 ass opposed to alisases
+        r_threshold: threshold that r_statistic must exceed for us to accept z shift of 0 as opposed to alisases
+        z_box: z_box size
+
     Returns:
         shift: z y x corrected shift
     """
     # First we have to compute alternate shift
     if shift[0] >= 0:
-        alt_shift = shift - np.array([12, 0, 0])
+        alt_shift = shift - [z_box, 0, 0]
     else:
-        alt_shift = shift + np.array([12, 0, 0])
+        alt_shift = shift + [z_box, 0, 0]
     # Now we need to compute the shift of base image under both shift and alt_shift
     shift_base = custom_shift(base_image, np.round(shift).astype(int))
     alt_shift_base = custom_shift(base_image, np.round(alt_shift).astype(int))
