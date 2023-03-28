@@ -11,9 +11,17 @@ import numpy_indexed
 import numbers
 
 
-def rotate_90_clockwise(image):
-    image = np.swapaxes(image, 1, 2)
-    image = np.flip(image, axis=2)
+def rotate_90(image):
+    # Rotates a 3D image in zyx format by 90 degrees anticlockwise in the xy plane. This is the right thing to do, even
+    # though on the napari viewer it appears that things need to be rotated 90 clockwise. This is due to the napari
+    # image being inverted in y, so after flipping this inversion rotations change direction
+    # Has option to rotate 2D image too, which it assumes is in yx format
+    if image.ndim == 3:
+        image = np.swapaxes(image, 1, 2)
+        image = np.flip(image, axis=2)
+    elif image.ndim == 2:
+        image = np.swapaxes(image, 0, 1)
+        image = np.flip(image, axis=1)
     return image
 
 
@@ -48,11 +56,13 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        # TODO: See if this is always clockwise. I think Matthieu may have some data where this is not the case
-        image = rotate_90_clockwise(image)
-        np.save(nbp_file.tile[t][r][c], np.moveaxis(image, 2, 0))
+        # First reorder axes so that image is in form z y x
+        image = np.swapaxes(image, 2, 0)
+        # Now rotate image
+        image = rotate_90(image)
+        np.save(nbp_file.tile[t][r][c], image)
     else:
-        # TODO: Do 90 degree clockwise rotation in 2d
+        # Don't need to apply rotations here as 2D data obtained from upstairs microscope without this issue
         if r == nbp_basic.anchor_round:
             if nbp_basic.anchor_channel is not None:
                 # If anchor round, only shift and clip anchor channel, leave DAPI and un-used channels alone.
@@ -67,10 +77,10 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
             use_channels = nbp_basic.use_channels
         # set un-used channels to be 0, not clipped to 1.
         image[np.setdiff1d(np.arange(nbp_basic.n_channels), use_channels)] = 0
-
         expected_shape = (nbp_basic.n_channels, nbp_basic.tile_sz, nbp_basic.tile_sz)
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
+
         np.save(nbp_file.tile[t][r], image)
 
 
