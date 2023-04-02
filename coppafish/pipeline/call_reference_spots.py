@@ -215,11 +215,18 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         score_second_best = scores[np.arange(np.shape(scores)[0]), gene_no_second_best]
         spot_score_diff = spot_score - score_second_best
         pass_score_diff_thresh = spot_score_diff > config['gene_efficiency_score_diff_thresh']
-        # only use isolated spots which pass strict thresholding to compute gene_efficiencies
-        # use_ge = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh,
-        #                    pass_score_diff_thresh]).all(axis=0)
-        # TODO: Change isolation thresh to allow more scores
-        use_ge = np.array([pass_intensity_thresh, pass_score_thresh, pass_score_diff_thresh]).all(axis=0)
+        # only use isolated spots which pass strict thresholding to compute gene_efficiencies. If this fails try
+        # dropping filters one at a time
+        use_ge = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh,
+                           pass_score_diff_thresh]).all(axis=0)
+        if sum(use_ge) == 0:
+            use_ge = np.array([pass_intensity_thresh, pass_score_thresh, pass_score_diff_thresh]).all(axis=0)
+        if sum(use_ge) == 0:
+            use_ge = np.array([pass_intensity_thresh, pass_score_thresh]).all(axis=0)
+        if sum(use_ge) == 0:
+            use_ge = np.array([pass_intensity_thresh]).all(axis=0)
+        if sum(use_ge) == 0:
+            use_ge = nbp_ref_spots.intensity > 0
         # nan_to_num line below converts nan in bleed_matrix to 0.
         # This basically just says that for dyes not in use_dyes, we expect intensity to be 0.
         gene_efficiency_use = get_gene_efficiency(spot_colors_use[use_ge], spot_gene_no[use_ge],

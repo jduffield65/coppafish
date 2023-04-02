@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from skimage.filters import sobel
 from skimage.exposure import match_histograms
+from scipy.ndimage import affine_transform
 from ..setup import NotebookPage
 from ..utils.npy import load_tile
 from ..find_spots import spot_yxz, get_isolated_points
@@ -12,7 +13,7 @@ from ..register.preprocessing import split_3d_image, compose_affine, invert_affi
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot_details: np.ndarray,
              spot_no: np.ndarray, tile_origin):
-
+    # TODO: Replace spot_details and spot_no with nbp_find_spots
     """
     Registration pipeline. Returns register Notebook Page.
     Finds affine transforms by using linear regression to find the best matrix (in the least squares sense) taking a
@@ -106,85 +107,125 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
 
     # For each tile, only need to do this for the n_rounds + channels not equal to ref channel
     with tqdm(total=len(uncompleted_tiles)) as pbar:
+
         pbar.set_description(f"Computing shifts for all subvolumes")
-        for t in uncompleted_tiles:
-            # Load in the anchor npy volume, only need to do this once per tile
-            anchor_image_unfiltered = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
-            # Save the unfiltered version as well for histogram matching later
-            anchor_image = sobel(anchor_image_unfiltered)
 
-            # Software was written for z y x, so change it from y x z
-            anchor_image = np.swapaxes(anchor_image, 0, 2)
-            anchor_image = np.swapaxes(anchor_image, 1, 2)
-            anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 0, 2)
-            anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 1, 2)
+        for t in use_tiles:
 
-            for r in use_rounds:
-                pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
+            # Take care of case when we've done the round_shifts already
+            if np.max(round_position[t]) == 0:
 
-                # Load in imaging npy volume.
-                target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
-                target_image = np.swapaxes(target_image, 0, 2)
-                target_image = np.swapaxes(target_image, 1, 2)
+                # Load in the anchor npy volume, only need to do this once per tile
+                anchor_image_unfiltered = load_tile(nbp_file, nbp_basic, t, r_ref, c_ref)
+                # Save the unfiltered version as well for histogram matching later
+                anchor_image = sobel(anchor_image_unfiltered)
 
-                # next we split image into overlapping cuboids
-                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
-                                                       y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                                       z_box=z_box, y_box=y_box, x_box=x_box)
-                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
-                                                  x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
+                # Software was written for z y x, so change it from y x z
+                anchor_image = np.swapaxes(anchor_image, 0, 2)
+                anchor_image = np.swapaxes(anchor_image, 1, 2)
 
-                # Find the subvolume shifts
-                shift = find_shift_array(subvol_base, subvol_target, r_threshold=0.2)
+                mid_z, mid_y, mid_x = np.array(anchor_image.shape) // 2
 
-                # Append these arrays to the round_shift and round_position storage
-                round_shift[t, r] = shift
-                round_position[t, r] = position
+                # save a small subset for reg diagnostics
+                np.save(os.path.join(nbp_file.output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r_ref) + 'c' + str(c_ref),
+                        (256 * anchor_image/np.max(anchor_image)).astype(np.uint8)
+                        [mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250])
 
-                # Save all shifts found thus far
-                np.save(os.path.join(nbp_file.output_dir, 'round_shift.npy'), round_shift)
-                np.save(os.path.join(nbp_file.output_dir, 'round_position.npy'), round_position)
+                # keep an unfiltered copy for histogram matching
+                anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 0, 2)
+                anchor_image_unfiltered = np.swapaxes(anchor_image_unfiltered, 1, 2)
 
-            for c in use_channels:
-                pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
-                # Load in imaging npy volume
-                target_image = load_tile(nbp_file, nbp_basic, t, r_mid, c)
-                target_image = np.swapaxes(target_image, 0, 2)
-                target_image = np.swapaxes(target_image, 1, 2)
+                for r in use_rounds:
+                    pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
 
-                # Match histograms to unfiltered anchor and then sobel filter
-                target_image = match_histograms(target_image, anchor_image_unfiltered)
-                target_image = sobel(target_image)
+                    # Load in imaging npy volume.
+                    target_image = sobel(load_tile(nbp_file, nbp_basic, t, r, c_ref))
+                    target_image = np.swapaxes(target_image, 0, 2)
+                    target_image = np.swapaxes(target_image, 1, 2)
+                    # save a small subset for reg diagnostics
+                    np.save(os.path.join(nbp_file.output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r) + 'c' + str(c_ref),
+                            (256 * target_image / np.max(target_image)).astype(np.uint8)
+                            [mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250])
 
-                # next we split image into overlapping cuboids
-                subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
-                                                       y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                                       z_box=z_box, y_box=y_box, x_box=x_box)
-                subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols,
-                                                  y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                                  z_box=z_box, y_box=y_box, x_box=x_box)
+                    # next we split image into overlapping cuboids
+                    subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
+                                                           y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                           z_box=z_box, y_box=y_box, x_box=x_box)
+                    subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
+                                                      x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
 
-                # Find the subvolume shifts
-                if c != c_ref:
+                    # Find the subvolume shifts
                     shift = find_shift_array(subvol_base, subvol_target, r_threshold=0.2)
-                else:
-                    # We have already computed this set of shifts for c_ref
-                    shift = round_shift[t, r_mid]
 
-                # Append these arrays to the channel_shift and channel_position storage.
-                # Reminder that these are not what will be used to directly compute the shift from (t, r_mid, c_ref) to
-                # (t, r_mid, c) but these will rather be used to compute the transform from (t, r_ref, c_ref) to
-                # (t, r_mid, c). Given that we know the transform from (t, r_ref, c_ref) to (t, r_mid, c_ref), the
-                # desired transform can be easily computed
+                    # Append these arrays to the round_shift and round_position storage
+                    round_shift[t, r] = shift
+                    round_position[t, r] = position
 
-                channel_shift[t, c] = shift
-                channel_position[t, c] = position
+                    # Save all shifts found thus far
+                    np.save(os.path.join(nbp_file.output_dir, 'round_shift.npy'), round_shift)
+                    np.save(os.path.join(nbp_file.output_dir, 'round_position.npy'), round_position)
 
-                # Save all shifts found thus far
-                np.save(os.path.join(nbp_file.output_dir, 'channel_shift.npy'), channel_shift)
-                np.save(os.path.join(nbp_file.output_dir, 'channel_position.npy'), channel_position)
-            pbar.update(1)
+            # Compute the regression
+            for r in use_rounds:
+                round_transform[t, r] = ols_regression_robust(round_shift[t, r], round_position[t, r], spread)
 
+            if np.max(channel_position[t]) == 0:
+
+                # Here we first correct the anchor transform so that it is in the same coord system as r_mid, c_ref
+                # then the algorithm will tell us the approximate transform we need to get from r_mid, c_ref to r_mid, c
+                correction_matrix = np.vstack((round_transform[t, r_mid], [0, 0, 0, 1]))
+                # scipy's affine transform function requires affine transform be inverted
+                anchor_image_corrected = affine_transform(anchor_image, np.linalg.inv(correction_matrix))
+                # Now register all channels to corrected anchor
+                for c in use_channels:
+                    pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
+
+                    # Load in imaging npy volume
+                    target_image = load_tile(nbp_file, nbp_basic, t, r_mid, c)
+                    target_image = np.swapaxes(target_image, 0, 2)
+                    target_image = np.swapaxes(target_image, 1, 2)
+
+                    # Match histograms to unfiltered anchor and then sobel filter
+                    target_image = match_histograms(target_image, anchor_image_unfiltered)
+                    target_image = sobel(target_image)
+
+                    # save a small subset for reg diagnostics
+                    np.save(os.path.join(nbp_file.output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r_mid) + 'c' + str(c),
+                            (256 * target_image / np.max(target_image)).astype(np.uint8)
+                            [mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250])
+
+                    # next we split image into overlapping cuboids
+                    subvol_base, position = split_3d_image(image=anchor_image_corrected, z_subvolumes=z_subvols,
+                                                           y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                           z_box=z_box, y_box=y_box, x_box=x_box)
+                    subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols,
+                                                      y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                      z_box=z_box, y_box=y_box, x_box=x_box)
+
+                    # Find the subvolume shifts.
+                    # NB: These are shifts from corrected anchor (in coord frame of r_mid, c_ref) to r_mid, c
+                    if c != c_ref:
+                        shift = find_shift_array(subvol_base, subvol_target, r_threshold=0.2)
+                    else:
+                        # In this case no correction necessary
+                        shift = np.zeros_like(round_shift[t, r_mid])
+
+                    # Append these arrays to the channel_shift and channel_position storage.
+                    channel_shift[t, c] = shift
+                    channel_position[t, c] = position
+
+                    # Compute the regression
+                    channel_transform[t, c] = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
+
+                    # Save all shifts found thus far
+                    np.save(os.path.join(nbp_file.output_dir, 'channel_shift.npy'), channel_shift)
+                    np.save(os.path.join(nbp_file.output_dir, 'channel_position.npy'), channel_position)
+
+                pbar.update(1)
+
+            # Compute the regression
+            for c in use_channels:
+                channel_transform[t, c] = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
     # Part 2: Compute the regression
 
     # For each tile, only need to do this for the n_rounds + channels not equal to ref channel
@@ -192,16 +233,16 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
 
         pbar.set_description(f"Computing regression for all transforms")
 
-        for t in use_tiles:
-            for r in use_rounds:
-                pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
-                round_transform[t, r] = ols_regression_robust(round_shift[t, r], round_position[t, r], spread)
-                pbar.update(1)
-            for c in use_channels:
-                pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
-                aux_transform = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
-                channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r_mid]))
-                pbar.update(1)
+        # for t in use_tiles:
+        #     for r in use_rounds:
+        #         pbar.set_postfix({'tile': f'{t}', 'round': f'{r}'})
+        #         round_transform[t, r] = ols_regression_robust(round_shift[t, r], round_position[t, r], spread)
+        #         pbar.update(1)
+        #     for c in use_channels:
+        #         pbar.set_postfix({'tile': f'{t}', 'channel': f'{c}'})
+        #         channel_transform[t, c] = ols_regression_robust(channel_shift[t, c], channel_position[t, c], spread)
+        #         channel_transform[t, c] = compose_affine(aux_transform, invert_affine(round_transform[t, r_mid]))
+        #         pbar.update(1)
 
         # Now regularise these and then combine these into total transforms
         round_transform[np.ix_(use_tiles, use_rounds)] = \
@@ -220,8 +261,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
     # initial guess for an ICP algorithm
 
     for t in use_tiles:
+        # Load in anchor spots
         spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
                                    spot_no) * np.array([1, 1, z_scale])
+        # Load in imaging spots
         for r in use_rounds:
             for c in use_channels:
                 spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no) * np.array([1, 1, z_scale])
@@ -230,6 +273,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
                     isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
                     spot_yxz_imaging[t, r, c] = spot_yxz_imaging[t, r, c][isolated, :]
 
+    # Replace spot_no with the num of isolated spots
+    for t in use_tiles:
+        for r in use_rounds:
+            for c in use_channels:
+                spot_no[t, r, c] = len(spot_yxz_imaging[t, r, c])
+
     # Don't import ICP as this is slow, instead, just run 50 iterations or so off each transform
     with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
 
@@ -237,11 +286,16 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict, spot
         for t in use_tiles:
             for r in use_rounds:
                 for c in use_channels:
-                    final_transform[t, r, c], n_matches[t, r, c], error[t, r, c] = icp(yxz_base=spot_yxz_ref[t],
-                                                                                       yxz_target=spot_yxz_imaging[t, r, c],
-                                                                                       dist_thresh=neighb_dist_thresh,
-                                                                                       start_transform=transform[t, r, c],
-                                                                                       n_iters=50, robust=False)
+                    # Only do ICP on non-degenerate cells with more than 100 spots
+                    if spot_no[t, r, c] > 100:
+                        final_transform[t, r, c], n_matches[t, r, c], error[t, r, c] = icp(yxz_base=spot_yxz_ref[t],
+                                                                                           yxz_target=spot_yxz_imaging[t, r, c],
+                                                                                           dist_thresh=neighb_dist_thresh,
+                                                                                           start_transform=transform[t, r, c],
+                                                                                           n_iters=50, robust=False)
+                    else:
+                        # Otherwise just use the starting transform
+                        final_transform[t, r, c] = transform[t, r, c]
                     pbar.update(1)
     # Add convergence statistics to the debug notebook page.
     nbp_debug.n_matches = n_matches

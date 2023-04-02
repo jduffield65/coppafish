@@ -350,7 +350,7 @@ Args:
     for i in range(n_iters):
         transform, _, n_matches[i], error[i] = get_transform(yxz_base, yxz_target, transform,
                                                                      dist_thresh, robust)
-        if i > 0 and n_matches[i] > n_matches[i-1]:
+        if i > 0 and n_matches[i] == n_matches[i-1]:
             n_matches[i:] = n_matches[i] * np.ones(n_iters - i)
             break
 
@@ -428,22 +428,30 @@ def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
         alt_shift = shift - [z_box, 0, 0]
     else:
         alt_shift = shift + [z_box, 0, 0]
-    # Now we need to compute the shift of base image under both shift and alt_shift
+
+    # Now we need to actually shift the base image under both shift and alt_shift
     shift_base = custom_shift(base_image, np.round(shift).astype(int))
     alt_shift_base = custom_shift(base_image, np.round(alt_shift).astype(int))
-    shift_mask = shift_base != 0
-    alt_shift_mask = alt_shift_base != 0
 
-    # We run into problems when the shift is 0. In this case, aliases of it would be multiples of the box length and
-    # so would have no overlap.
-    if np.round(shift[0]) == 0:
-        shift_corr = stats.pearsonr(shift_base[shift_mask], target_image[shift_mask])[0]
+    # Now, if either of the shift_base or alt_shift base is all 0 then it's correlation coeff is undefined
+    if np.max(abs(shift_base)) == 0:
+        shift_corr = 0
+        # We only want the corr coeff where the shifted anchor image exists
+        valid = alt_shift_base != 0
+        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
+    elif np.max(abs(alt_shift_base)) == 0:
         alt_shift_corr = 0
+        # only want the corr coeff where the shifted anchor image exists
+        valid = shift_base != 0
+        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
     else:
-        shift_corr = stats.pearsonr(shift_base[shift_mask], target_image[shift_mask])[0]
-        alt_shift_corr = stats.pearsonr(alt_shift_base[alt_shift_mask], target_image[alt_shift_mask])[0]
+        # only want the corr coeff where the shifted anchor image exists
+        valid = shift_base != 0
+        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
+        valid = alt_shift_base != 0
+        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
 
-    # We have 2 cases to consider, when shift[0] = 0 and else
+    # We have 2 cases to consider, degenerate case when shift[0] = 0 and otherwise
     if np.round(shift[0]) == 0:
         # This is the degenerate case, so if we pass the score thresh accept no z-shift
         if shift_corr > r_threshold:

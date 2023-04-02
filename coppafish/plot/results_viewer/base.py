@@ -259,6 +259,7 @@ class Viewer:
             self.method_buttons = ButtonMethodWindow('OMP')  # Buttons to change between Anchor and OMP spots showing.
         else:
             self.method_buttons = ButtonMethodWindow('Anchor')
+        # What does the below do?
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
         if self.nb.has_page('omp'):

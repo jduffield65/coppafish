@@ -111,7 +111,6 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     Returns:
         `Notebook` containing `file_names` and `basic_info` pages.
     """
-    config = setup.get_config(config_file)
     nb = setup.Notebook(config_file=config_file)
 
     config = nb.get_config()

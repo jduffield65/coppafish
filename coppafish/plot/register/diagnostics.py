@@ -4,9 +4,12 @@ import distinctipy
 import matplotlib.pyplot as plt
 import warnings
 import napari
-from skimage.filters import sobel
+from qtpy.QtCore import Qt
+from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
+from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
 from ...setup import Notebook
 from ..stitch.diagnostics import shift_info_plot
+from scipy.ndimage import affine_transform
 from typing import Optional
 plt.style.use('dark_background')
 
@@ -296,42 +299,285 @@ class view_affine_shift_info:
         self.update()
 
 
-def view_overlay(nb, t, r, c, filter=True):
-    """
-    Function to overlay tile, round and channel with the anchor in napari and view the registration.
-    This function is only long because we have to convert images to zyx and the transform to zyx * zyx
-    Args:
-        nb: Notebook
-        t: common tile
-        r: target image round
-        c: target image channel
-        filter: Boolean whether to filter
-    """
+class RegistrationViewer:
+    def __init__(self, nb: Notebook, t: int = None):
+        """
+        Function to overlay tile, round and channel with the anchor in napari and view the registration.
+        This function is only long because we have to convert images to zyx and the transform to zyx * zyx
+        Args:
+            nb: Notebook
+            t: common tile
+        """
+        # initialise frequently used variables, attaching those which are otherwise awkward to recalculate to self
+        nbp_file, nbp_basic = nb.file_names, nb.basic_info
+        use_rounds, use_channels = nbp_basic.use_rounds, nbp_basic.use_channels
+        # set default transform to svr transform
+        self.transform = nb.register.start_transform
+        self.z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
+        self.r_ref, self.c_ref = nbp_basic.anchor_round, nb.basic_info.anchor_channel
+        self.r_mid = len(use_rounds) // 2
+        y_mid, x_mid, z_mid = nbp_basic.tile_centre
+        self.new_origin = np.array([z_mid - 5, y_mid - 250, x_mid - 250])
 
-    # initialise frequently used variables
-    nbp_file, nbp_basic, transform = nb.file_names, nb.basic_info, nb.register.transform
-    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
-    c_ref = nb.basic_info.anchor_channel
+        # Initialise file directories
+        self.target_round_image = []
+        self.target_channel_image = []
+        self.base_image = None
+        self.output_dir = os.path.join(nbp_file.output_dir, 'reg_images/')
 
-    # Initialise file directories
-    output_dir = os.path.join(nb.file_names.output_dir, 'reg_images')
-    anchor_file = 'anchor_t'+str(t)+'c'+str(c_ref)+'.npy'
-    target_file = 'round'+str(r)+'_t'+str(t)+'c'+str(c)+'.npy'
+        # Attach the 2 arguments to the object to be created and a new object for the viewer
+        self.nb = nb
+        self.viewer = napari.Viewer()
 
-    # Load in the files
-    base_image = np.load(os.path.join(output_dir, anchor_file))
-    target_image = np.load(os.path.join(output_dir, target_file))
+        # Make layer list invisible to remove clutter
+        self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
+        self.viewer.window.qt_viewer.dockLayerControls.setVisible(False)
 
-    # Apply filter if needed
-    if filter:
-        base_image = sobel(base_image)
-        target_image = sobel(target_image)
+        # Now we will create 2 sliders. One will control all the contrast limits simultaneously, the other all anchor
+        # images simultaneously.
+        self.im_contrast_limits_slider = QRangeSlider(Qt.Orientation.Horizontal)
+        self.anchor_contrast_limits_slider = QRangeSlider(Qt.Orientation.Horizontal)
+        self.im_contrast_limits_slider.setRange(0, 256)
+        self.anchor_contrast_limits_slider.setRange(0, 256)
+        # Set default lower limit to 0 and upper limit to 100
+        self.im_contrast_limits_slider.setValue(([0, 100]))
+        self.anchor_contrast_limits_slider.setValue([0, 100])
+        # Now we run a method that sets these contrast limits using napari
+        # Create sliders!
+        self.viewer.window.add_dock_widget(self.im_contrast_limits_slider, area="left", name='Imaging Contrast')
+        self.viewer.window.add_dock_widget(self.anchor_contrast_limits_slider, area="left", name='Anchor Contrast')
+        # Now create events that will recognise when someone has changed slider values
+        self.anchor_contrast_limits_slider.valueChanged.connect(lambda x:
+                                                                self.change_anchor_layer_contrast(x[0], x[1]))
+        self.im_contrast_limits_slider.valueChanged.connect(lambda x: self.change_imaging_layer_contrast(x[0], x[1]))
 
-    affine_transform = change_basis(transform[t, r, c], np.array([25, 850, 850]), z_scale)
+        # Add buttons to change between registration methods
+        self.method_buttons = ButtonMethodWindow('SVR')
+        # I think this allows us to connect button status with the buttons in the viewer
+        self.method_buttons.button_icp.clicked.connect(self.button_icp_clicked)
+        self.method_buttons.button_svr.clicked.connect(self.button_svr_clicked)
+        # Add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
-    viewer = napari.Viewer()
-    viewer.add_image(base_image, blending='additive', colormap='red', affine=affine_transform)
-    viewer.add_image(target_image, blending='additive', colormap='green')
+        # Add buttons to select different tiles. Involves initialising variables use_tiles and tilepos
+        tilepos_xy = np.roll(self.nb.basic_info.tilepos_yx, shift=1, axis=1)
+        # Invert y as y goes downwards in the set geometry func
+        num_rows = np.max(tilepos_xy[:, 1])
+        tilepos_xy[:, 1] = num_rows - tilepos_xy[:, 1]
+        # get use tiles
+        use_tiles = self.nb.basic_info.use_tiles
+        # If no tile provided then default to the first tile in use
+        if t is None:
+            t = use_tiles[0]
+        self.tile = t
+        self.tile_buttons = ButtonTileWindow(tile_pos_xy=tilepos_xy, use_tiles=use_tiles, active_button=self.tile)
+        # We need to connect all these buttons to a single function which updates the tile in the same way
+        for tile in range(len(tilepos_xy)):
+            self.tile_buttons.__getattribute__(str(tile)).clicked.connect(lambda x=tile: self.tile_button_clicked(x))
+        # Add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.tile_buttons, area="left", name='Tiles')
+
+        # Get target images and anchor image
+        self.get_images()
+
+        # Plot images
+        self.plot_images()
+
+        # Set default contrast limits. Have to do this here as the images are only defined now
+        self.change_anchor_layer_contrast(self.anchor_contrast_limits_slider.value()[0],
+                                          self.anchor_contrast_limits_slider.value()[1])
+        self.change_imaging_layer_contrast(self.im_contrast_limits_slider.value()[0],
+                                           self.im_contrast_limits_slider.value()[1])
+
+        napari.run()
+
+    def change_anchor_layer_contrast(self, low, high):
+        # Change contrast of anchor image (displayed in red), these are even index layers
+        for i in range(0, 32, 2):
+            self.viewer.layers[i].contrast_limits = [low, high]
+
+    def change_imaging_layer_contrast(self, low, high):
+        # Change contrast of anchor image (displayed in red), these are even index layers
+        for i in range(1, 32, 2):
+            self.viewer.layers[i].contrast_limits = [low, high]
+
+    def button_svr_clicked(self):
+        # Only allow one button pressed
+        # Below does nothing if method is already svr and updates plot otherwise
+        if self.method_buttons.method == 'SVR':
+            self.method_buttons.button_svr.setChecked(True)
+            self.method_buttons.button_icp.setChecked(False)
+        else:
+            self.method_buttons.button_svr.setChecked(True)
+            self.method_buttons.button_icp.setChecked(False)
+            self.method_buttons.method = 'SVR'
+            # Because method has changed, also need to change transforms
+            # Update set of transforms
+            self.transform = self.nb.register.start_transform
+            self.update_plot()
+
+    def button_icp_clicked(self):
+        # Only allow one button pressed
+        # Below does nothing if method is already icp and updates plot otherwise
+        if self.method_buttons.method == 'ICP':
+            self.method_buttons.button_icp.setChecked(True)
+            self.method_buttons.button_svr.setChecked(False)
+        else:
+            self.method_buttons.button_icp.setChecked(True)
+            self.method_buttons.button_svr.setChecked(False)
+            self.method_buttons.method = 'ICP'
+            # Because method has changed, also need to change transforms
+            # Update set of transforms
+            self.transform = self.nb.register.transform
+            self.update_plot()
+
+    def tile_button_clicked(self, t):
+        # This method should change the image iff self.tile_buttons.tile has changed
+        use_tiles = self.nb.basic_info.use_tiles
+        if self.tile_buttons.tile == str(t):
+            for tile in use_tiles:
+                self.tile_buttons.__getattribute__(str(tile)).setChecked(tile == t)
+        else:
+            for tile in use_tiles:
+                self.tile_buttons.__getattribute__(str(tile)).setChecked(tile == t)
+            # Because tile under consideration changed, need to update plot and update tile_buttons.tile parameter
+            if t in use_tiles:
+                self.tile_buttons.tile = str(t)
+                self.update_plot()
+
+    def update_plot(self):
+        # Updates plot if tile or method has been changed
+        # First get num rounds and channels
+        n_rounds, n_channels = len(self.nb.basic_info.use_rounds), len(self.nb.basic_info.use_channels)
+        # Update the images, we reload the anchor image even when it has not been changed, this should not be too slow
+        self.get_images()
+        self.plot_images()
+
+    def get_images(self):
+        # reset initial target image lists to empty lists
+        use_rounds, use_channels = self.nb.basic_info.use_rounds, self.nb.basic_info.use_channels
+        self.target_round_image, self.target_channel_image = [], []
+        t = self.tile
+        # populate target arrays
+        for r in use_rounds:
+            file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.c_ref)+'.npy'
+            affine = change_basis(self.transform[t, r, self.c_ref], new_origin=self.new_origin, z_scale=self.z_scale)
+            # Reset the spline interpolation order to 1 to speed things up
+            self.target_round_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
+                                                            affine, order=1))
+
+        for c in use_channels:
+            file = 't' + str(t) + 'r' + str(self.r_mid) + 'c' + str(c) + '.npy'
+            affine = change_basis(self.transform[t, self.r_mid, c], new_origin=self.new_origin, z_scale=self.z_scale)
+            self.target_channel_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
+                                                              affine, order=1))
+        # populate anchor image
+        anchor_file = 't' + str(t) + 'r' + str(self.r_ref) + 'c' + str(self.c_ref) + '.npy'
+        self.base_image = np.load(os.path.join(self.output_dir, anchor_file))
+
+    def plot_images(self):
+        use_rounds, use_channels = self.nb.basic_info.use_rounds, self.nb.basic_info.use_channels
+
+        # We will add a point on top of each image and add features to it
+        features = {'round': np.repeat(np.append(use_rounds, np.ones(len(use_channels)) * self.r_mid), 10).astype(int),
+                    'channel': np.repeat(np.append(np.ones(len(use_rounds)) * self.c_ref, use_channels), 10).astype(
+                        int)}
+
+        # Define text
+        text = {
+            'string': 'Round {round} Channel {channel}',
+            'size': 20,
+            'color': 'white'}
+
+        # Now go on to define point coords
+        points = []
+
+        for r in use_rounds:
+            self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
+                                  name='Anchor')
+            self.viewer.add_image(self.target_round_image[r], blending='additive', colormap='green',
+                                  translate=[0, 0, 1_000 * r], name='Round ' + str(r) + ', Channel ' + str(self.c_ref))
+            for z in range(10):
+                points.append([z, -50, 250 + 1_000 * r])
+
+        for c in range(len(use_channels)):
+            self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 1_000, 1_000 * c],
+                                  name='Anchor')
+            self.viewer.add_image(self.target_channel_image[c], blending='additive', colormap='green',
+                                  translate=[0, 1_000, 1_000 * c],
+                                  name='Round ' + str(self.r_mid) + ', Channel ' + str(use_channels[c]))
+            for z in range(10):
+                points.append([z, 950, 250 + 1_000 * c])
+
+        # Add text to image
+        self.viewer.add_points(np.array(points), features=features, text=text, size=1)
+
+
+class ButtonMethodWindow(QMainWindow):
+    def __init__(self, active_button: str = 'SVR'):
+        super().__init__()
+        self.button_svr = QPushButton('SVR', self)
+        self.button_svr.setCheckable(True)
+        self.button_svr.setGeometry(75, 2, 50, 28)  # left, top, width, height
+
+        self.button_icp = QPushButton('ICP', self)
+        self.button_icp.setCheckable(True)
+        self.button_icp.setGeometry(140, 2, 50, 28)  # left, top, width, height
+        if active_button.lower() == 'icp':
+            # Initially, show sub vol regression registration
+            self.button_icp.setChecked(True)
+            self.method = 'ICP'
+        elif active_button.lower() == 'svr':
+            self.button_svr.setChecked(True)
+            self.method = 'SVR'
+        else:
+            raise ValueError(f"active_button should be 'SVR' or 'ICP' but {active_button} was given.")
+
+
+class ButtonTileWindow(QMainWindow):
+    def __init__(self, tile_pos_xy: np.ndarray, use_tiles: list, active_button: 0):
+        super().__init__()
+        # Loop through tiles, putting them in location as specified by tile pos xy
+        for t in range(len(tile_pos_xy)):
+            # Create a button for each tile
+            button = QPushButton(str(t), self)
+            # set the button to be checkable iff t in use_tiles
+            button.setCheckable(t in use_tiles)
+            button.setGeometry(tile_pos_xy[t, 0] * 70, tile_pos_xy[t, 1] * 40, 50, 28)
+            # set active button as checked
+            if active_button == t:
+                button.setChecked(True)
+                self.tile = t
+            # Set button color = grey when hovering over
+            # set colour of tiles in use to blue amd not in use to red
+            if t in use_tiles:
+                button.setStyleSheet("QPushButton"
+                                     "{"
+                                     "background-color : rgb(135, 206, 250);"
+                                     "}"
+                                     "QPushButton::hover"
+                                     "{"
+                                     "background-color : lightgrey;"
+                                     "}"
+                                     "QPushButton::pressed"
+                                     "{"
+                                     "background-color : white;"
+                                     "}")
+            else:
+                button.setStyleSheet("QPushButton"
+                                     "{"
+                                     "background-color : rgb(240, 128, 128);"
+                                     "}"
+                                     "QPushButton::hover"
+                                     "{"
+                                     "background-color : lightgrey;"
+                                     "}"
+                                     "QPushButton::pressed"
+                                     "{"
+                                     "background-color : white;"
+                                     "}")
+            # Finally add this button as an attribute to self
+            self.__setattr__(str(t), button)
 
 
 # TODO: Change format of this to make it more similar to notebook outputs
@@ -339,13 +585,17 @@ def view_regression_scatter(shift, position, transform):
     """
     view 3 scatter plots for each data set shift vs positions
     Args:
-        shift: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
-        position: num_tiles x num_rounds x z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
+        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
         transform: 3 x 4 affine transform obtained by previous robust regression
     """
 
     shift = shift.reshape((shift.shape[0] * shift.shape[1] * shift.shape[2], 3)).T
     position = position.reshape((position.shape[0] * position.shape[1] * position.shape[2], 3)).T
+
+    pos_shape = np.array(position.shape).astype(int)
+    rand = 100 * np.random.rand(pos_shape[0], pos_shape[1]) - 100
+    position = position + rand
 
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
     yx_range = np.arange(np.min(position[1]), np.max(position[1]))
