@@ -146,6 +146,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                       config['gene_efficiency_intensity_thresh_max']))
 
     # get bleed matrix
+    n_rounds = nbp_basic.n_rounds
     spot_colors_use = np.moveaxis(np.moveaxis(nbp_ref_spots.colors, 0, -1)[rc_ind], -1, 0) / color_norm_factor[rc_ind]
     nbp_ref_spots.intensity = np.asarray(get_spot_intensity(spot_colors_use).astype(np.float32))
     # Remove background first
@@ -163,6 +164,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     bleed_matrix = compute_bleed_matrix(default_bleed_matrix=default_bleed_matrix,
                                         colour_matrix=spot_colors_use[nbp_ref_spots.isolated])
+    # Just for compatibility this needs to be repeated n_rounds times
+    bleed_matrix = np.repeat(bleed_matrix, n_rounds)
 
     # get gene codes
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
