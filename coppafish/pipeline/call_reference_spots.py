@@ -1,5 +1,5 @@
 from ..call_spots import get_dye_channel_intensity_guess, get_bleed_matrix, get_bled_codes, color_normalisation, \
-    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency
+    dot_product_score, get_spot_intensity, fit_background, get_gene_efficiency, compute_bleed_matrix
 import numpy as np
 from ..setup.notebook import NotebookPage
 from ..extract import scale
@@ -11,7 +11,8 @@ import warnings
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_ref_spots: NotebookPage,
                          hist_values: np.ndarray, hist_counts: np.ndarray,
-                         transform: np.ndarray, overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
+                         transform: np.ndarray, default_bleed_matrix: np.ndarray,
+                         overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
     simple dot product for spots found on the reference round.
@@ -42,6 +43,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             `transform[t, r, c]` is the affine transform to get from tile `t`, `ref_round`, `ref_channel` to
             tile `t`, round `r`, channel `c`.
             This is saved in the register notebook page i.e. `nb.register.transform`.
+        default_bleed_matrix: float [n_channels x n_dyes] initial bleed matrix guess
         overwrite_ref_spots: If `True`, the variables:
 
             * `gene_no`
@@ -85,28 +87,28 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                                     config['color_norm_probs'], config['bleed_matrix_method'])
 
     # get initial bleed matrix
-    initial_raw_bleed_matrix = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, nbp_basic.n_dyes)) * np.nan
-    rcd_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels, nbp_basic.use_dyes)
-    if nbp_basic.dye_names is not None:
-        # if specify dyes, will initialize bleed matrix using prior data
-        dye_names_use = np.array(nbp_basic.dye_names)[nbp_basic.use_dyes]
-        camera_use = np.array(nbp_basic.channel_camera)[nbp_basic.use_channels]
-        laser_use = np.array(nbp_basic.channel_laser)[nbp_basic.use_channels]
-        initial_raw_bleed_matrix[rcd_ind] = get_dye_channel_intensity_guess(nbp_file.dye_camera_laser,
-                                                                            dye_names_use, camera_use,
-                                                                            laser_use).transpose()
-        initial_bleed_matrix = initial_raw_bleed_matrix / np.expand_dims(color_norm_factor, 2)
-    else:
-        if nbp_basic.n_dyes != nbp_basic.n_channels:
-            raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
-                             f"\nBut n_channels={nbp_basic.n_channels} and n_dyes={nbp_basic.n_dyes}")
-        if nbp_basic.use_channels != nbp_basic.use_dyes:
-            raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
-                             f"\nBleed matrix computation requires use_channels and use_dyes to be the same to work."
-                             f"\nBut use_channels={nbp_basic.use_channels} and use_dyes={nbp_basic.use_dyes}")
-        initial_bleed_matrix = initial_raw_bleed_matrix.copy()
-        initial_bleed_matrix[rcd_ind] = np.tile(np.expand_dims(np.eye(nbp_basic.n_channels), 0),
-                                                (nbp_basic.n_rounds, 1, 1))[rcd_ind]
+    # initial_raw_bleed_matrix = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, nbp_basic.n_dyes)) * np.nan
+    # rcd_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels, nbp_basic.use_dyes)
+    # if nbp_basic.dye_names is not None:
+    #     if specify dyes, will initialize bleed matrix using prior data
+        # dye_names_use = np.array(nbp_basic.dye_names)[nbp_basic.use_dyes]
+        # camera_use = np.array(nbp_basic.channel_camera)[nbp_basic.use_channels]
+        # laser_use = np.array(nbp_basic.channel_laser)[nbp_basic.use_channels]
+        # initial_raw_bleed_matrix[rcd_ind] = get_dye_channel_intensity_guess(nbp_file.dye_camera_laser,
+        #                                                                     dye_names_use, camera_use,
+        #                                                                     laser_use).transpose()
+        # initial_bleed_matrix = initial_raw_bleed_matrix / np.expand_dims(color_norm_factor, 2)
+    # else:
+    #     if nbp_basic.n_dyes != nbp_basic.n_channels:
+    #         raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
+    #                          f"\nBut n_channels={nbp_basic.n_channels} and n_dyes={nbp_basic.n_dyes}")
+    #     if nbp_basic.use_channels != nbp_basic.use_dyes:
+    #         raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
+    #                          f"\nBleed matrix computation requires use_channels and use_dyes to be the same to work."
+    #                          f"\nBut use_channels={nbp_basic.use_channels} and use_dyes={nbp_basic.use_dyes}")
+    #     initial_bleed_matrix = initial_raw_bleed_matrix.copy()
+    #     initial_bleed_matrix[rcd_ind] = np.tile(np.expand_dims(np.eye(nbp_basic.n_channels), 0),
+    #                                             (nbp_basic.n_rounds, 1, 1))[rcd_ind]
 
     # Get norm_shift and intensity_thresh from middle tile/ z-plane average intensity
     # This is because these variables are all a small fraction of a spot_color L2 norm in one round.
@@ -153,11 +155,14 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colors_use, background_coef[:, nbp_basic.use_channels], background_codes[crc_ind] = \
         fit_background(spot_colors_use, nbp.background_weight_shift)
     spot_colors_use = np.asarray(spot_colors_use)  # in case using jax
-    bleed_matrix = initial_raw_bleed_matrix.copy()
-    bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
-                                             config['bleed_matrix_method'], config['bleed_matrix_score_thresh'],
-                                             config['bleed_matrix_min_cluster_size'], config['bleed_matrix_n_iter'],
-                                             config['bleed_matrix_anneal'])
+    # bleed_matrix = initial_raw_bleed_matrix.copy()
+    # bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
+    #                                          config['bleed_matrix_method'], config['bleed_matrix_score_thresh'],
+    #                                          config['bleed_matrix_min_cluster_size'], config['bleed_matrix_n_iter'],
+    #                                          config['bleed_matrix_anneal'])
+
+    bleed_matrix = compute_bleed_matrix(default_bleed_matrix=default_bleed_matrix,
+                                        colour_matrix=spot_colors_use[nbp_ref_spots.isolated])
 
     # get gene codes
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
@@ -182,8 +187,10 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_names = gene_names
     nbp.gene_codes = gene_codes
     nbp.color_norm_factor = color_norm_factor
-    nbp.initial_raw_bleed_matrix = initial_raw_bleed_matrix
-    nbp.initial_bleed_matrix = initial_bleed_matrix
+    # nbp.initifal_raw_bleed_matrix = initial_raw_bleed_matrix
+    # nbp.initial_bleed_matrix = initial_bleed_matrix
+    nbp.initial_raw_bleed_matrix = default_bleed_matrix
+    nbp.initial_bleed_matrix = default_bleed_matrix
     nbp.bleed_matrix = bleed_matrix
     nbp.bled_codes = bled_codes
     nbp.background_codes = background_codes

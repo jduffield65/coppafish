@@ -318,9 +318,10 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         raise ValueError('One or more of the 4 variables which cannot be computed from anything else has been left '
                          'empty. Please fill in the use_anchor, par, dye_names and pixel_value_shift variables.')
 
-    # Stage 3: Fill in all the metadata
+    # Stage 3: Fill in all the metadata except the last item, xy_pos
     for key, value in metadata.items():
-        nbp.__setattr__(key=key, value=value)
+        if key != 'xy_pos':
+            nbp.__setattr__(key=key, value=value)
 
     # Stage 4: If anything from the first 12 entries has been left blank, deal with that here.
     # Unfortunately, this is just many if statements as all blank entries need to be handled differently.
@@ -328,6 +329,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
 
     # Next condition just says that if we are using the anchor and we don't specify the anchor round we will default it
     # to the final round. Add an extra round for the anchor and reduce the number of non anchor rounds by 1.
+    # TODO: See if we can get around this problem of resetting values without deleting them first, messy
     if nbp.use_anchor:
         # Tell software that extra round is just an extra round and reduce the number of rounds
         nbp.n_extra_rounds = 1

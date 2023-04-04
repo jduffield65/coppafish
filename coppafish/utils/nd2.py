@@ -96,6 +96,7 @@ def get_metadata(file_path: str) -> dict:
         xy_pos = np.array([images.experiment[0].parameters.points[i].stagePositionUm[:2]
                            for i in range(images.sizes['P'])])
         xy_pos = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_size_xy']
+        metadata['xy_pos'] = xy_pos
         metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
@@ -181,6 +182,7 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
     # Normalise so that minimum is 0,0
     xy_pos = np.aarray(xy_pos)
     xy_pos = (xy_pos - np.min(xy_pos, axis=0)) / cal
+    metadata['xy_pos'] = xy_pos
     metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
     metadata['n_tiles'] = len(metadata['tilepos_yx_nd2'])
     # get n_channels and channel info
