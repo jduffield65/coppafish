@@ -56,14 +56,38 @@ class Viewer:
 
         # indices of genes in notebook to gene_color data - quicker to look up integers than names
         # in change_threshold
+        # Each gene has the following properties:
+        # 1. name
+        # 2. number
+        # 3. colour
+        # 4. symbol
+        # The name and number must be provided, but if the colour or symbol is not provided then they will be generated
+        # randomly
         n_legend_genes = len(gene_legend_info['GeneNames'])
         self.legend_gene_symbol = np.asarray(gene_legend_info['mpl_symbol'])
         self.legend_gene_no = np.ones(n_legend_genes, dtype=int) * -1
         for i in range(n_legend_genes):
-            # TODO: maybe guard against different cases in this comparison
             gene_ind = np.where(self.nb.call_spots.gene_names == gene_legend_info['GeneNames'][i])[0]
             if len(gene_ind) > 0:
+                # We assign the gene no to the intersection of active genes and genes in the gene_color.csv
                 self.legend_gene_no[i] = gene_ind[0]
+
+        # color to plot for all genes in the notebook, by default this is random rgb values, but if genes exist in
+        # legend they will be set to that value
+        gene_color = np.random.rand(len(self.nb.call_spots.gene_names), 3)
+        for i in range(n_legend_genes):
+            if self.legend_gene_no[i] != -1:
+                gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
+                                                      gene_legend_info.loc[i, 'ColorG'],
+                                                      gene_legend_info.loc[i, 'ColorB']]
+
+        # Next we assign each gene its symbol, or a random symbol if none exists
+        available_symbols = np.unique(np.array(gene_legend_info['napari_symbol']))
+        # Now allocate symbols randomly, correcting when a choice has been given
+        self.gene_symbol = np.random.choice(available_symbols, len(self.nb.call_spots.gene_names))
+        for i in range(n_legend_genes):
+            if self.legend_gene_no[i] != -1:
+                self.gene_symbol[self.legend_gene_no[i]] = gene_legend_info['napari_symbol'][i]
 
         if zeta_tile_path:
             with open(zeta_tile_path, 'r') as file:
@@ -93,14 +117,6 @@ class Viewer:
             show_spots[self.omp_0_ind:] = quality_threshold(self.nb, 'omp')
         else:
             show_spots = quality_threshold(self.nb, 'anchor')
-
-        # color to plot for all genes in the notebook
-        gene_color = np.ones((len(self.nb.call_spots.gene_names), 3))
-        for i in range(n_legend_genes):
-            if self.legend_gene_no[i] != -1:
-                gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
-                                                      gene_legend_info.loc[i, 'ColorG'],
-                                                      gene_legend_info.loc[i, 'ColorB']]
 
         self.viewer = napari.Viewer()
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
@@ -195,20 +211,24 @@ class Viewer:
             self.viewer.window.add_dock_widget(self.z_thick_slider, area="left", name='Z Thickness')
 
         # Add gene spots with coppafish color code - different layer for each symbol
+        # I'm not sure how this plots spots that are not mentioned in the legend. Their colour is by default set to 1,
+        # but their marker is not defined
+        # Break things up into 2 cases
         if self.nb.has_page('omp'):
             self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
         else:
             self.spot_gene_no = self.nb.ref_spots.gene_no
         self.label_prefix = 'Gene Symbol:'  # prefix of label for layers showing spots
-        for s in np.unique(self.legend_gene_symbol):
-            spots_correct_gene = np.isin(self.spot_gene_no, self.legend_gene_no[self.legend_gene_symbol == s])
-            if spots_correct_gene.any():
-                coords_to_plot = self.spot_zyx[spots_correct_gene]
-                spotcolor_to_plot = gene_color[self.spot_gene_no[spots_correct_gene]]
-                symb_to_plot = np.unique(gene_legend_info[self.legend_gene_symbol == s]['napari_symbol'])[0]
-                self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=symb_to_plot,
+
+        for s in available_symbols:
+            correct_gene = np.arange(len(self.nb.call_spots.gene_names))[self.gene_symbol == s]
+            correct_spot = np.isin(self.spot_gene_no, correct_gene)
+            if correct_spot.any():
+                coords_to_plot = self.spot_zyx[correct_spot]
+                spotcolor_to_plot = gene_color[self.spot_gene_no[correct_spot]]
+                self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=s,
                                        name=f'{self.label_prefix}{s}', size=self.point_size,
-                                       shown=show_spots[spots_correct_gene], out_of_slice_display=True)
+                                       shown=show_spots[correct_spot], out_of_slice_display=True)
 
         self.viewer.layers.selection.active = self.viewer.layers[self.diagnostic_layer_ind]
         # so indicates when a spot is selected in viewer status
@@ -334,9 +354,9 @@ class Viewer:
                 self.viewer.layers[i].shown = spots_shown
             elif self.label_prefix in self.viewer.layers[i].name:
                 s = self.viewer.layers[i].name.replace(self.label_prefix, '')
-                spots_correct_gene = np.isin(self.spot_gene_no,
-                                             self.legend_gene_no[self.legend_gene_symbol == s])
-                self.viewer.layers[i].shown = spots_shown[spots_correct_gene]
+                correct_gene = np.arange(len(self.nb.call_spots.gene_names))[self.gene_symbol == s]
+                correct_spot = np.isin(self.spot_gene_no, correct_gene)
+                self.viewer.layers[i].shown = spots_shown[correct_spot]
 
     def update_genes(self, event):
         # When click on a gene in the legend will remove/add that gene to plot.

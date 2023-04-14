@@ -41,7 +41,7 @@ _options = {
             'anchor_round': 'maybe_int',
             'anchor_channel': 'maybe_int',
             'dapi_channel': 'maybe_int',
-            'tile_pixel_value_shift': 'int',        # rename this pixel_value_shift
+            'tile_pixel_value_shift': 'int',
             'dye_names': 'list_str',
             'par': 'bool',
             'is_3d': 'bool',
@@ -49,7 +49,9 @@ _options = {
             # From here onwards these are not compulsory to enter and will be taken from the metadata
             # Only leaving them here to have backwards compatibility as Max thinks the user should influence these
             'channel_camera': 'maybe_list_int',
-            'channel_laser': 'maybe_list_int'
+            'channel_laser': 'maybe_list_int',
+            'ref_round': 'maybe_int',
+            'ref_channel': 'maybe_int'
         },
     'file_names':
         {
