@@ -278,9 +278,14 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
     if not nb.has_page("call_spots"):
         config = nb.get_config()
+        # TODO: Make this work on other peoples pcs
+        default_bleed_matrix = np.load('/home/reilly/PycharmProjects/coppafish/coppafish/setup/default_bleed.npy')
+        unused_channels = [c for c in range(nb.basic_info.n_channels) if c not in nb.basic_info.use_channels]
+        default_bleed_matrix[unused_channels, :] = np.nan
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
                                                   nb.extract.hist_values, nb.extract.hist_counts,
-                                                  nb.register.transform, overwrite_ref_spots)
+                                                  nb.register.transform, default_bleed_matrix,
+                                                  overwrite_ref_spots)
         nb += nbp
         # Raise errors if stitch, register_initial or register section failed
         # Do that at this stage, so can still run viewer to see what spots look like
