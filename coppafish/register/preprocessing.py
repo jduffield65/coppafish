@@ -1,4 +1,84 @@
+import os
+import pickle
 import numpy as np
+from coppafish.setup import NotebookPage
+
+
+def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):
+    """
+    Function to load in pkl file of previously obtained registration data if it exists.
+    Args:
+        nbp_file: File Names notebook page
+        nbp_basic: Basic info notebook page
+        config: register page of config dictionary
+    Returns:
+        registration_data: dictionary with the following keys
+        * tiles_completed (list)
+        * position ( (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+        * round_shift ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+        * channel_shift ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+        * round_transform (n_tiles x n_rounds x 3 x 4) ndarray
+        * channel_transform (n_tiles x n_channels x 3 x 4) ndarray
+        * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
+        * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
+    """
+    # Check if the registration data file exists
+    if os.path.isfile(os.path.join(nbp_file.output_dir, 'registration_data.pkl')):
+        with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'rb') as f:
+            registration_data = pickle.load(f)
+    else:
+        n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
+        z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
+        registration_data = {'tiles_completed': [],
+                             'position': np.zeros((z_subvols * y_subvols * x_subvols, 3)),
+                             'round_shift': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
+                             'channel_shift': np.zeros((n_tiles, n_channels, z_subvols * y_subvols * x_subvols, 3)),
+                             'round_transform': np.zeros((n_tiles, n_rounds, 3, 4)),
+                             'channel_transform': np.zeros((n_tiles, n_channels, 3, 4)),
+                             'round_shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
+                             'channel_shift_corr': np.zeros((n_tiles, n_channels, z_subvols * y_subvols * x_subvols))
+                             }
+    return registration_data
+
+
+def save_compressed_image(nbp_file: NotebookPage, image: np.ndarray, t: int, r: int, c: int):
+    """
+    Save low quality cropped images for reg diagnostics
+
+    Args:
+        nbp_file: file_names notebook page
+        image: zyx image to be saved in compressed form
+        t: tile
+        r: round
+        c: channel
+
+    Returns:
+        N/A
+    """
+
+    # Check directory exists otherwise create it
+    if not os.path.isdir(os.path.join(nbp_file.output_dir, 'reg_images')):
+        os.makedirs(os.path.join(nbp_file.output_dir, 'reg_images'))
+
+    mid_z, mid_y, mid_x = image.shape[0] // 2, image.shape[1] // 2, image.shape[2] // 2
+    # save a small subset for reg diagnostics
+    np.save(os.path.join(nbp_file.output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r) + 'c' + str(c),
+            (256 * image / np.max(image)).astype(np.uint8)
+            [mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250])
+
+
+def yxz_to_zyx(image: np.ndarray):
+    """
+    Function to convert image from yxz to zyx
+    Args:
+        image: yxz image
+
+    Returns:
+        image_new: zyx image
+    """
+    image = np.swapaxes(image, 0, 2)
+    image = np.swapaxes(image, 1, 2)
+    return image
 
 
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
@@ -21,7 +101,7 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
     subvolume : ndarray
         An array of subvolumes. The first three dimensions index the subvolume, the rest store the actual data.
     position: ndarray
-        (y_subvolumes * x_subvolumes * z_sub_volumes) The middle coord of each subtile
+        (y_subvolumes * x_subvolumes * z_sub_volumes) x 3 The middle coord of each subtile
     """
     z_image, y_image, x_image = image.shape
 
@@ -52,6 +132,9 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
 
                 subvolume[z, y, x] = image[z_start:z_end, y_start:y_end, x_start:x_end]
                 position[z, y, x] = np.array([(z_start + z_end)//2, (y_start + y_end)//2, (x_start + x_end)//2])
+
+    # Reshape the position array
+    position = np.reshape(position, (z_subvolumes * y_subvolumes * x_subvolumes, 3))
 
     return subvolume, position
 

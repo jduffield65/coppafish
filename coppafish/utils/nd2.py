@@ -336,12 +336,9 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
     Returns:
         Corresponding indices in nd2 file
     """
-    num_rows = np.max(np.array(tile_pos_yx_nd2[:, 0])) - np.min(np.array(tile_pos_yx_nd2[:, 0]))
-    num_cols = np.max(np.array(tile_pos_yx_nd2[:, 1])) - np.min(np.array(tile_pos_yx_nd2[:, 1]))
     if isinstance(tile_ind_npy, numbers.Number):
         tile_ind_npy = [tile_ind_npy]
-    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, np.array([num_rows, num_cols]) -
-                                      tile_pos_yx_npy[tile_ind_npy]).tolist()
+    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, tile_pos_yx_npy[tile_ind_npy]).tolist()
     if len(nd2_index) == 1:
         return nd2_index[0]
     else:

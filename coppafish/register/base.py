@@ -1,10 +1,15 @@
+import os
+import pickle
 import numpy as np
 from scipy.spatial import KDTree
 from scipy import stats
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-from .preprocessing import custom_shift
+from skimage.filters import sobel
+from skimage.exposure import match_histograms
+from scipy.ndimage import affine_transform
+from ..utils.npy import load_tile
+from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image
 from skimage.registration import phase_cross_correlation
+from coppafish.setup import NotebookPage
 
 
 def find_shift_array(subvol_base, subvol_target, r_threshold):
@@ -16,241 +21,134 @@ def find_shift_array(subvol_base, subvol_target, r_threshold):
         subvol_target: Target subvolume array
         r_threshold: threshold of correlation used in degenerate cases
     Returns:
-        shift: 4D array, with first 3 dimensions referring to subvolume index and final dim referring to shift.
+        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
+        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift_corr coef.
     """
     if subvol_base.shape != subvol_target.shape:
         raise ValueError("Subvolume arrays have different shapes")
     z_subvolumes, y_subvolumes, x_subvolumes = subvol_base.shape[0], subvol_base.shape[1], subvol_base.shape[2]
-    z_box = subvol_base.shape[3]
     shift = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
+    shift_corr = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes))
 
     for y in range(y_subvolumes):
         for x in range(x_subvolumes):
-            # skip tells us when we need to start comparing z subvols to the subvol above it (in the case that it is
-            # closer to this, or below it in the other case). Reset this whenever we start a new z-tower
-            skip = 0
-            for z in range(z_subvolumes):
-                # Handle case where skip allows us to leave the z-range
-                if z + skip >= z_subvolumes:
-                    shift[z, y, x] = np.nan
-                    break
-                # Now proceed as normal
-                shift[z, y, x], _, _ = phase_cross_correlation(subvol_target[z + skip, y, x], subvol_base[z, y, x],
-                                                               upsample_factor=10)
-                corrected_shift, shift_corr, alt_shift_corr = disambiguate_z(subvol_base[z, y, x],
-                                                                             subvol_target[z + skip, y, x],
-                                                                             shift[z, y, x], r_threshold=0.2,
-                                                                             z_box=z_box)
-
-                # CASE 1: deal with the very degenerate case where corrected_shift = nan, this means that a shift of 0
-                # (as predicted by PCC) fails to be similar to the target image. In this case, we can look at neighbours
-                # and see if they do better. If they do then make the shift to the appropriate neighbour
-                if np.isnan(corrected_shift[0]):
-                    neighbours = {z-1, z+1}.intersection(set(np.arange(z_subvolumes, dtype=int)))
-                    # Now loop over neighbours, find their shifts and
-                    for neighb in neighbours:
-                        candidate_shift, _, _ = phase_cross_correlation(subvol_target[neighb, y, x],
-                                                                        subvol_base[z, y, x], upsample_factor=10)
-                        shift_base = custom_shift(subvol_base[z, y, x], candidate_shift.astype(int))
-                        shift_mask = shift_base > 0
-                        candidate_corr = stats.pearsonr(shift_base[shift_mask], subvol_base[z, y, x, shift_mask])[0]
-                        if candidate_corr > r_threshold:
-                            corrected_shift = z_box * (neighb - z) + candidate_shift
-                            skip = skip + neighb - z
-                            break
-                    # If our corrected_shift has been updated by the shifts to one of the neighbours then next line will
-                    # replace the shift, else next line will just save this shift as nan
-                    shift[z, y, x] = corrected_shift
-                else:
-                    # If the corrected shift is not the same as the original shift it is due to aliasing. The range of
-                    # shifts given is [-z_box/2, z_box/2] so if the aliased shift is the true shift then
-                    # subvol_base[z,y,x] has more in common with either subvol_target[z-1,y,x] or
-                    # subvol_target[z+1, y, x], so update the skip parameter
-                    if corrected_shift[0] != shift[z, y, x, 0] and alt_shift_corr > shift_corr:
-                        if corrected_shift[0] > shift[z, y, x, 0]:
-                            skip += 1
-                        else:
-                            skip -= 1
-                        # Finally, update the shift to the correct one
-                        shift[z, y, x] = corrected_shift
-    return shift
+            shift[:, y, x], shift_corr[:, y, x] = find_z_tower_shifts(subvol_base=subvol_base[:, y, x],
+                                                                      subvol_target=subvol_target[:, y, x],
+                                                                      r_threshold=r_threshold)
+    return np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3)), \
+        np.reshape(shift_corr, shift.shape[0] * shift.shape[1] * shift.shape[2])
 
 
-# Custom regression implementation of Theil-Sen. No longer in use.
-def find_affine_transform_robust_custom(shift, position, num_pairs, boundary_erosion, image_dims, dist_thresh,
-                                        resolution, view=False):
+def find_z_tower_shifts(subvol_base, subvol_target, r_threshold):
     """
-    Uses a custom Theil-Sen variant to find optimal affine transform matching the shifts to their positions.
+    This function takes in 2 split up 3d images along one tower of subvolumes in z and computes shifts for each of these
+    to its nearest neighbour subvol
     Args:
-        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
-        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
-        num_pairs: Number of pairs to consider. Must be in range [0, num_samples choose 2]
-        boundary_erosion: 3 x 1 array of z, y, x boundary erosion terms
-        image_dims: 3 x 1 array of z, y, x image dims
-        dist_thresh 3 x 1 array of distance thresholds of z, y and x points that pairs of points must be apart if
-        we use them in the algorithm
-        Resolution: number of bins in histogram whose mode we return (range = median +/- iqr)
-        view: option to view the regression
+        subvol_base: Base subvolume array (this is a z-tower of base subvolumes)
+        subvol_target: Target subvolume array (this is a z-tower of target subvolumes)
+        r_threshold: threshold of correlation used in degenerate cases
+    Returns:
+        shift: 4D array, with first 3 dimensions referring to subvolume index and final dim referring to shift.
+    """
+    z_subvolumes = subvol_base.shape[0]
+    z_box = subvol_base.shape[1]
+    shift = np.zeros((z_subvolumes, 3))
+    shift_corr = np.zeros(z_subvolumes)
+    # skip tells us when we need to start comparing z subvols to the subvol above it (in the case that it is
+    # closer to this, or below it in the other case). Reset this whenever we start a new z-tower
+    skip = 0
+    for z in range(z_subvolumes):
+        # Handle case where skip allows us to leave the z-range
+        if z + skip >= z_subvolumes:
+            shift[z] = np.nan
+            break
+        # Now proceed as normal: Compute shift and then disambiguate shift.
+        # If disambiguation changes the correspondence of the z_subvolumes then subvol_skip will be updated to +/- 1
+        temporary_shift, _, _ = phase_cross_correlation(subvol_target[z + skip], subvol_base[z], upsample_factor=10)
+        shift[z], shift_corr[z], subvol_skip = disambiguate_z(subvol_base[z],
+                                                              subvol_target[z + skip],
+                                                              temporary_shift,
+                                                              r_threshold=r_threshold, z_box=z_box)
+        skip += subvol_skip
+
+    return shift, shift_corr
+
+
+# Complicated but necessary function to get rid of aliasing issues in Fourier Shifts
+def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
+    """
+    Function to disambiguate the 2 possible shifts obtained via aliasing.
+    Args:
+        base_image: nz x ny x nx ndarray
+        target_image: nz x ny x nx ndarray
+        shift: z y x shift
+        r_threshold: threshold that r_statistic must exceed for us to accept z shift of 0 as opposed to alisases
+        z_box: z_box size
+
+    Returns:
+        shift: z y x corrected shift
+        shift_corr: shift correlation of the best shift
+        subvol_skip: number of z subvols we have skipped (-1, 0 or +1)
+    """
+    # First we have to compute alternate shift. Usually anti aliasing algorithms would test shift and shift + z_box and
+    # shift - z_box. In our case however, we only look at one other shift as otherwise means considering a shift that
+    # is more than 1 box wrong, which is unlikely due to our skip policy
+    if shift[0] >= 0:
+        alt_shift = shift - [z_box, 0, 0]
+    else:
+        alt_shift = shift + [z_box, 0, 0]
+
+    # Now we need to actually shift the base image under both shift and alt_shift
+    shift_base = custom_shift(base_image, np.round(shift).astype(int))
+    alt_shift_base = custom_shift(base_image, np.round(alt_shift).astype(int))
+
+    # Now, if either of the shift_base or alt_shift base is all 0 then it's correlation coeff is undefined
+    if np.max(abs(shift_base)) == 0:
+        shift_corr = 0
+        # We only want the corr coeff where the alt shifted anchor image exists
+        valid = alt_shift_base != 0
+        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
+    elif np.max(abs(alt_shift_base)) == 0:
+        alt_shift_corr = 0
+        # only want the corr coeff where the shifted anchor image exists
+        valid = shift_base != 0
+        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
+    else:
+        # only want the corr coeff where the shifted anchor images exist
+        valid = shift_base != 0
+        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
+        valid = alt_shift_base != 0
+        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
+
+    # Now comes the point where we choose between shift and alt_shift. Choose the shift which maximises corr if this is
+    # above r_thresh and return nan otherwise
+    best_shift = [shift, alt_shift][np.argmax([shift_corr, alt_shift_corr])]
+    best_shift_corr = max(shift_corr, alt_shift_corr)
+    subvol_skip = np.sign(best_shift[0] - shift[0])
+    if best_shift_corr > r_threshold:
+        corrected_shift = best_shift
+    else:
+        corrected_shift = np.array([np.nan, np.nan, np.nan])
+
+    return corrected_shift, max(shift_corr, alt_shift_corr), int(subvol_skip)
+
+
+# ols regression to find transform from shifts
+def ols_regression_robust(shift, position):
+    """
+    Args:
+        shift: (z_sv x y_sv x x_sv) x 3 array which of shifts in zyx format
+        position: (z_sv x y_sv x x_sv) x 3 array which of positions in zyx format
     Returns:
         transform: 3 x 4 affine transform in yxz format with final col being shift
     """
-
-    # Initialise returned variable
-    transform = np.zeros((3, 4))
-
-    # Ensure that num_pairs is an integer and all inputted arrays are ndarrays
-    num_pairs = int(num_pairs)
-    boundary_erosion = np.array(boundary_erosion)
-    image_dims = np.array(image_dims)
-    dist_thresh = np.array(dist_thresh)
-    z_subvols, y_subvols, x_subvols = shift.shape[:3]
-    scale = np.zeros((num_pairs, 3))
-    intercept = np.zeros((num_pairs, 3))
-
-    # Now start looping through pairs of shifts randomly, subject to following constraints:
-    # Exclude [0, 0, 0] shifts as these are only returned when the program fails to find a shift
-    # Exclude shifts too close together, as these have too low a resolution to detect a difference
-    # Exlude shifts too close to boundary
-    i = 0
-    with tqdm(total=num_pairs) as pbar:
-        pbar.set_description(f"Robust Estimation of scale and shift parameters")
-        while i < num_pairs:
-            # Generate random indices
-            z1, y1, x1 = np.random.randint(0, z_subvols), np.random.randint(1, y_subvols-1), np.random.randint(1, x_subvols-1)
-            z2, y2, x2 = np.random.randint(0, z_subvols), np.random.randint(1, y_subvols-1), np.random.randint(1, x_subvols-1)
-            # Use this to generate scales and intercepts
-            # in_range = (boundary_erosion < position[z1, y1, x1]) * (position[z1, y1, x1] < image_dims - boundary_erosion) * \
-            #            (boundary_erosion < position[z2, y2, x2]) * (position[z2, y2, x2] < image_dims - boundary_erosion)
-            both_shifts_nonzero = np.min(shift[z1, y1, x1] * shift[z2, y2, x2]) > 0
-            points_sufficiently_far = abs(position[z1, y1, x1] - position[z2, y2, x2]) > dist_thresh
-            if both_shifts_nonzero and all(points_sufficiently_far):
-                scale[i] = np.ones(3) + (shift[z2, y2, x2] - shift[z1, y1, x1]) / (position[z2, y2, x2] - position[z1, y1, x1])
-                intercept[i] = shift[z1, y1, x1] - (scale[i] - 1) * position[z1, y1, x1]
-                i += 1
-
-                pbar.update(1)
-    # Now that we have these randomly sampled scales and intercepts, let's robustly estimate their parameters
-    scale_median, scale_iqr = np.median(scale, axis=0), stats.iqr(scale, axis=0)
-    intercept_median, intercept_iqr = np.median(intercept, axis=0), stats.iqr(intercept, axis=0)
-
-    # Now create histograms within 1 IQR of each median and take the top value as our estimate
-    scale_bin_z_val, scale_bin_z_index, _ = plt.hist(scale[:, 0], bins=resolution,
-                                                     range=(
-                                                     scale_median[0] - scale_iqr[0]/2, scale_median[0] + scale_iqr[0]/2))
-    scale_bin_y_val, scale_bin_y_index, _ = plt.hist(scale[:, 1], bins=resolution,
-                                                     range=(
-                                                     scale_median[1] - scale_iqr[1]/2, scale_median[1] + scale_iqr[1]/2))
-    scale_bin_x_val, scale_bin_x_index, _ = plt.hist(scale[:, 2], bins=resolution,
-                                                     range=(
-                                                     scale_median[2] - scale_iqr[2]/2, scale_median[2] + scale_iqr[2]/2))
-    intercept_bin_z_val, intercept_bin_z_index, _ = plt.hist(intercept[:, 0], bins=resolution,
-                                                             range=(intercept_median[0] - intercept_iqr[0]/2,
-                                                                    intercept_median[0] + intercept_iqr[0]/2))
-    intercept_bin_y_val, intercept_bin_y_index, _ = plt.hist(intercept[:, 1], bins=resolution,
-                                                             range=(intercept_median[1] - intercept_iqr[1]/2,
-                                                                    intercept_median[1] + intercept_iqr[1]/2))
-    intercept_bin_x_val, intercept_bin_x_index, _ = plt.hist(intercept[:, 2], bins=resolution,
-                                                             range=(intercept_median[2] - intercept_iqr[2]/2,
-                                                                    intercept_median[2] + intercept_iqr[2]/2))
-
-    # Finally, obtain our estimates
-    scale_estimate = np.array([scale_bin_z_index[np.argmax(scale_bin_z_val)],
-                               scale_bin_y_index[np.argmax(scale_bin_y_val)],
-                               scale_bin_x_index[np.argmax(scale_bin_x_val)]])
-    intercept_estimate = np.array([intercept_bin_z_index[np.argmax(intercept_bin_z_val)],
-                                   intercept_bin_y_index[np.argmax(intercept_bin_y_val)],
-                                   intercept_bin_x_index[np.argmax(intercept_bin_x_val)]])
-
-    # Finally, build the viewer
-    if view:
-        plt.subplot(3, 2, 1)
-        plt.plot(scale_bin_z_index[:-1], scale_bin_z_val, 'b')
-        plt.vlines(scale_estimate[0], 0, np.max(scale_bin_z_val), colors='r',label='z-scale estimate='+
-                                                                                   str(np.round(scale_estimate[0], 5)))
-        plt.title('Histogram of z-scale estimates')
-        plt.legend()
-
-        plt.subplot(3, 2, 2)
-        plt.plot(intercept_bin_z_index[:-1], intercept_bin_z_val, 'g')
-        plt.vlines(intercept_estimate[0], 0, np.max(intercept_bin_z_val), colors='r', label='z-intercept estimate=' +
-                                                                        str(np.round(intercept_estimate[0], 5)))
-        plt.title('Histogram of z-intercept estimates')
-        plt.legend()
-
-        plt.subplot(3, 2, 3)
-        plt.plot(scale_bin_y_index[:-1], scale_bin_y_val, 'b')
-        plt.vlines(scale_estimate[1], 0, np.max(scale_bin_y_val), colors='r', label='y-scale estimate=' +
-                                                                                    str(np.round(scale_estimate[1],5)))
-        plt.title('Histogram of y-scale estimates')
-        plt.legend()
-
-        plt.subplot(3, 2, 4)
-        plt.plot(intercept_bin_y_index[:-1], intercept_bin_y_val, 'g')
-        plt.vlines(intercept_estimate[1], 0, np.max(intercept_bin_y_val), colors='r', label='y-intercept estimate=' +
-                                                                                str(np.round(intercept_estimate[1], 5)))
-        plt.title('Histogram of y-intercept estimates')
-        plt.legend()
-
-        plt.subplot(3, 2, 5)
-        plt.plot(scale_bin_x_index[:-1], scale_bin_x_val, 'b')
-        plt.vlines(scale_estimate[2], 0, np.max(scale_bin_x_val), colors='r', label='x-scale estimate=' +
-                                                                                    str(np.round(scale_estimate[2],5)))
-        plt.title('Histogram of x-scale estimates')
-        plt.legend()
-
-        plt.subplot(3, 2, 6)
-        plt.plot(intercept_bin_x_index[:-1], intercept_bin_x_val, 'g')
-        plt.vlines(intercept_estimate[2], 0, np.max(intercept_bin_x_val), colors='r', label='x-intercept estimate=' +
-                                                                                str(np.round(intercept_estimate[2], 5)))
-        plt.title('Histogram of x-intercept estimates')
-        plt.legend()
-
-        plt.suptitle('Robust Theil Stein Estimation with Parameters: num_pairs = ' + str(num_pairs) +
-                     ' (' + str(int(100*num_pairs/(0.5*(z_subvols*y_subvols*x_subvols)**2))) + '%), boundary_erosion = ' +
-                     str(boundary_erosion) +
-                     ' (' + str((100*boundary_erosion/image_dims).astype(int)) + '%), ' +
-                     'image_dims = ' + str(image_dims)  + ', dist_thresh = ' + str(dist_thresh) + ', resolution = ' +
-                     str(resolution), fontsize=12)
-        plt.show()
-
-    # Populate the transform array
-    np.fill_diagonal(transform, scale_estimate)
-    transform[:, 3] = intercept_estimate
-
-    return transform, scale_median, scale_iqr, intercept_median, intercept_iqr
-
-
-# ols with outlier removal, in use
-def ols_regression_robust(shift, position, spread):
-    """
-    Uses OLS regression on data points within 1 IQR of the mean.
-    Args:
-        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
-        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
-        spread: number of iqrs away from the median which we intend to use in dataset
-    Returns:
-        transform: 3 x 4 affine transform in yxz format with final col being shift
-    """
-    # First reshape the shift and position array to the point where their first 3 axes become 1 and final axis untouched
-    shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
-    position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
 
     # We are going to get rid of the shifts where any of the values are nan for regression
     position = position[~np.isnan(shift[:, 0])]
     shift = shift[~np.isnan(shift[:, 0])]
 
-    # Now take median and IQR to filter inliers from outliers
-    median = np.nanmedian(shift, axis=0)
-    iqr = stats.iqr(shift, axis=0, nan_policy='omit')
-    # valid would be n_shifts x 3 array, we want the columns to get collapsed into 1 where all 3 conditions hold,
-    # so collapse by setting all along the first axis
-    valid = (shift <= median + iqr * spread).all(axis=1) * (shift >= median - iqr * spread).all(axis=1)
-
-    # Disregard outlier shifts, then pad the position to accommodate for global shift
-    shift = shift[valid]
-    position = position[valid]
     new_position = position + shift
-    position = np.vstack((position.T, np.ones(sum(valid)))).T
+    position = np.vstack((position.T, np.ones(shift.shape[0]))).T
 
     # Now compute the regression
     transform, _, _, _ = np.linalg.lstsq(position, new_position, rcond=None)
@@ -358,41 +256,46 @@ Args:
 
 
 # Simple function to get rid of outlier transforms by comparing with other tiles
-def regularise_transforms(transform, residual_threshold, tile_origin):
+def regularise_transforms(transform, residual_threshold, tile_origin, use_tiles, rc_use):
     """
-    Function to regularise outliers in the transform section. Outliers will be detected in both the shift and
-    scaling components of the transforms and we will replace poor tiles transforms with good transforms in neighbouring
-    tiles.
+    Function to regularise outliers in either round_transform or channel_transform.
+    Without loss of generality, we explain how this works for round_transforms, bearing in mind the same logic applies
+    to channel transforms.
+    For each fixed round r, we have a collection of transforms indexed by the tiles in use. We look at the shifts
+    associated with each of these tiles and see if that looks reasonable based on the position of the tiles.
+    More formally, this means that for each fixed r, we compute a linear regression to determine expected shifts.
+    If a shift belonging to tile t falls outside residual_threshold of the prediction, the shift for tile t round r
+    is replaced with the predicted shift.
+    We don't do regression on scale parameters but rather just analyse them for outliers.
     Args:
         transform: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x n_channels x 4 x 3]
         residual_threshold: This is a threshold above which we will consider a point to be an outlier
         tile_origin: yxz positions of the tiles [n_tiles x 3]
+        use_tiles: list of tiles in use
 
     Returns:
         transform_regularised: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x x_channels x 4 x 3]
     """
-    # First swap columns so that tile origins are in zyx like the shifts are
-    i, j = 0, 1
-    tile_origin.T[[i, j]] = tile_origin.T[[j, i]]
-    i, j = 0, 2
-    tile_origin.T[[i, j]] = tile_origin.T[[j, i]]
-    # Now initialise commonly used variables
-    n_tiles, n_trials = transform.shape[:2]
-    shift = transform[:, :, :, 3]
+    # rearrange columns so that tile origins are in zyx like the shifts are, then initialise commonly used variables
+    tile_origin = np.roll(tile_origin, 1, axis=1)[use_tiles]
+    n_tiles_use = len(use_tiles)
+    shift = transform[use_tiles, :, :, 3]
     predicted_shift = np.zeros_like(shift)
-    # This gives us a different set of shifts for each round/channel, let's compute the regressions for each of these
-    # rounds/channels independently
-    for trial in range(n_trials):
-        padded_origin = np.vstack((tile_origin.T, np.ones(n_tiles))).T
-        big_transform, _, _, _ = np.linalg.lstsq(padded_origin, shift[:, trial], rcond=None)
-        predicted_shift[:, trial] = (padded_origin @ big_transform)[:, :3]
+
+    # This gives us a different set of shifts for each round/channel, let's compute the expected shift for each of these
+    # rounds/channels independently. Since this could be either a round or channel, we call it an elem
+    for elem in rc_use:
+        big_transform = ols_regression_robust(shift[:, elem], tile_origin)
+        padded_origin = np.vstack((tile_origin.T, np.ones(n_tiles_use)))
+        predicted_shift[:, elem] = (big_transform @ padded_origin).T - tile_origin
 
     # Use these predicted shifts to get rid of outliers
     residual = np.linalg.norm(predicted_shift-shift, axis=2)
     shift_outlier = residual > residual_threshold
     # The nice thing about this approach is that we can immediately replace the outliers with their prediction
     # Now we do something similar for the scales, though we don't really assume these will vary so we just take medians
-    scale = np.swapaxes(np.array([transform[:, :, 0, 0].T, transform[:, :, 1, 1].T, transform[:, :, 2, 2].T]), 0, 2)
+    scale = np.swapaxes(np.array([transform[use_tiles, :, 0, 0].T, transform[use_tiles, :, 1, 1].T,
+                                  transform[use_tiles, :, 2, 2].T]), 0, 2)
     scale_median = np.median(scale, axis=0)
     scale_iqr = stats.iqr(scale, axis=0)
     scale_low = scale < scale_median - 1.5 * scale_iqr
@@ -401,69 +304,170 @@ def regularise_transforms(transform, residual_threshold, tile_origin):
 
     # Now we have everything to generate the regularised transforms
     transform_regularised = transform.copy()
-    for t in range(n_tiles):
-        for trial in range(n_trials):
-            if shift_outlier[t, trial] or scale_outlier[t, trial]:
-                transform_regularised[t, trial] = np.vstack((np.diag(scale_median[trial]), predicted_shift[t, trial])).T
+    for t in range(n_tiles_use):
+        for elem in rc_use:
+            if shift_outlier[t, elem] or scale_outlier[t, elem]:
+                transform_regularised[t, elem] = np.vstack((np.diag(scale_median[elem]), predicted_shift[t, elem])).T
 
     return transform_regularised
 
 
-# Complicated but necessary function to get rid of aliasing issues in Fourier Shifts
-def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
+def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
+                           t: int, pbar) -> dict:
     """
-    Function to disambiguate the 2 possible shifts obtained via aliasing.
+    Function to carry out subvolume registration on a single tile.
     Args:
-        base_image: nz x ny x nx ndarray
-        target_image: nz x ny x nx ndarray
-        shift: z y x shift
-        r_threshold: threshold that r_statistic must exceed for us to accept z shift of 0 as opposed to alisases
-        z_box: z_box size
+        nbp_file: File Names notebook page
+        nbp_basic: Basic info notebook page
+        config: Register page of the config dictionary
+        registration_data: dictionary with the following keys
+            * tiles_completed (list)
+            * position ( (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+            * round_shift ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+            * channel_shift ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+            * round_transform (n_tiles x n_rounds x 3 x 4) ndarray
+            * channel_transform (n_tiles x n_channels x 3 x 4) ndarray
+            * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
+            * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
+        t: tile
+        pbar: Progress bar
 
     Returns:
-        shift: z y x corrected shift
+        registration_data updated after the subvolume registration
     """
-    # First we have to compute alternate shift
-    if shift[0] >= 0:
-        alt_shift = shift - [z_box, 0, 0]
-    else:
-        alt_shift = shift + [z_box, 0, 0]
+    z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
+    z_box, y_box, x_box = config['z_box'], config['y_box'], config['x_box']
+    r_thresh = config['r_threshold']
 
-    # Now we need to actually shift the base image under both shift and alt_shift
-    shift_base = custom_shift(base_image, np.round(shift).astype(int))
-    alt_shift_base = custom_shift(base_image, np.round(alt_shift).astype(int))
+    # Load in the anchor npy volume
+    # Save the unfiltered version as well for histogram matching later, switch both to zyx
+    anchor_image_unfiltered = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round,
+                                                   nbp_basic.anchor_channel))
+    anchor_image = sobel(anchor_image_unfiltered)
 
-    # Now, if either of the shift_base or alt_shift base is all 0 then it's correlation coeff is undefined
-    if np.max(abs(shift_base)) == 0:
-        shift_corr = 0
-        # We only want the corr coeff where the shifted anchor image exists
-        valid = alt_shift_base != 0
-        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
-    elif np.max(abs(alt_shift_base)) == 0:
-        alt_shift_corr = 0
-        # only want the corr coeff where the shifted anchor image exists
-        valid = shift_base != 0
-        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
-    else:
-        # only want the corr coeff where the shifted anchor image exists
-        valid = shift_base != 0
-        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
-        valid = alt_shift_base != 0
-        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
+    save_compressed_image(nbp_file, anchor_image, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)
 
-    # We have 2 cases to consider, degenerate case when shift[0] = 0 and otherwise
-    if np.round(shift[0]) == 0:
-        # This is the degenerate case, so if we pass the score thresh accept no z-shift
-        if shift_corr > r_threshold:
-            corrected_shift = shift
+    # Now compute round shifts for this tile and the affine transform for each round
+    for r in nbp_basic.use_rounds:
+        # Set progress bar title
+        pbar.set_description('Computing shifts for tile ' + str(t) + ', round ' + str(r))
+
+        # Load in imaging npy volume.
+        target_image = yxz_to_zyx(sobel(load_tile(nbp_file, nbp_basic, t, r, nbp_basic.anchor_channel)))
+
+        # save a small subset for reg diagnostics
+        save_compressed_image(nbp_file, target_image, t, r, nbp_basic.anchor_channel)
+
+        # next we split image into overlapping cuboids
+        subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
+                                               y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                               z_box=z_box, y_box=y_box, x_box=x_box)
+        subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
+                                          x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
+
+        # Find the subvolume shifts
+        shift, corr = find_shift_array(subvol_base, subvol_target, r_threshold=r_thresh)
+
+        # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
+        registration_data['position'] = position
+        registration_data['round_shift'][t, r] = shift
+        registration_data['round_shift_corr'][t, r] = corr
+        registration_data['round_transform'][t, r] = ols_regression_robust(shift, position)
+
+    # Now begin the channel registration
+    correction_matrix = np.vstack((registration_data['round_transform'][t, nbp_basic.n_rounds // 2], [0, 0, 0, 1]))
+    # scipy's affine transform function requires affine transform be inverted
+    anchor_image_corrected = affine_transform(anchor_image, np.linalg.inv(correction_matrix))
+
+    # Now register all channels to corrected anchor
+    for c in nbp_basic.use_channels:
+        # Update progress bar
+        pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(c))
+
+        # Load in imaging npy volume from middle round for tile t channel c
+        target_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.n_rounds // 2, c))
+
+        # Match histograms to unfiltered anchor and then sobel filter
+        target_image = sobel(match_histograms(target_image, anchor_image_unfiltered))
+
+        # next we split image into overlapping cuboids
+        subvol_base, _ = split_3d_image(image=anchor_image_corrected, z_subvolumes=z_subvols,
+                                        y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                        z_box=z_box, y_box=y_box, x_box=x_box)
+        subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols,
+                                          y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                          z_box=z_box, y_box=y_box, x_box=x_box)
+
+        # Find the subvolume shifts.
+        # NB: These are shifts from corrected anchor (in coord frame of r_mid, anchor_channel) to r_mid, c
+        if c == nbp_basic.anchor_channel:
+            shift, corr = np.zeros((z_subvols * y_subvols * x_subvols, 3)), \
+                np.ones(z_subvols * y_subvols * x_subvols)
         else:
-            corrected_shift = np.array([np.nan, shift[1], shift[2]])
-    else:
-        # This is the non-degenerate case
-        # If shift correlation does better, then make that default else use the alternative
-        if shift_corr > alt_shift_corr:
-            corrected_shift = shift
-        else:
-            corrected_shift = alt_shift
+            shift, corr = find_shift_array(subvol_base, subvol_target, r_threshold=r_thresh)
 
-    return corrected_shift, shift_corr, alt_shift_corr
+        # Save data into our working dictionary
+        registration_data['channel_shift'][t, c] = shift
+        registration_data['channel_shift_corr'][t, c] = corr
+        registration_data['channel_transform'][t, c] = ols_regression_robust(shift, position)
+
+    # Add tile to completed tiles
+    registration_data['tiles_completed'].append(t)
+
+    # Now save the registration data dictionary externally
+    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
+        pickle.dump(registration_data, f)
+
+    return registration_data
+
+# def anti_alias(shift, box):
+#     n_shifts = shift.shape[0]
+#     num_neighb = np.zeros((n_shifts, 3), dtype=int)
+#     # Compute number of neighbours for each of these options
+#     for i in range(n_shifts):
+#         num_neighb[i, 0] = len([s for s in shift if s < shift[i] - box/2])
+#         num_neighb[i, 1] = len([s for s in shift if abs(s - shift[i]) < box/2])
+#         num_neighb[i, 2] = len([s for s in shift if s > shift[i] + box/2])
+#
+#     # Now correct for aliased shifts, this will be incorrect for nan shifts but this doesn't affect anything as these
+#     # nan + wrong = nan
+#     shift_correction = box * (np.argmax(num_neighb, axis=1) - 1)
+#     shift += shift_correction
+#     return shift
+#
+#
+# def clean_shift_data(shift, box_size, zero_bias=False):
+#     """
+#     Function to clean the shift data we obtain before doing regression on it.
+#     Args:
+#         shift: z_sv x y_sv x x_sv x 3 ndarray of zyx shifts
+#         position: z_sv x y_sv x x_sv x 3 ndarray of zyx positions
+#         box_size: zyx box dims
+#         zero_bias: whether to down regulate zeroes (typically yes for round transforms, no o/w)
+#
+#     Returns:
+#         shift_clean: z_sv x y_sv x x_sv x 3 ndarray of zyx cleaned shifts
+#     """
+#     # initialise data into nice form
+#     z_sv, y_sv, x_sv = shift.shape[0], shift.shape[1], shift.shape[2]
+#     shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[1], 3))
+#     # At this stage we 'flatten' the shift matrix a bit
+#     shift_clean = np.copy(shift)
+#     z_box = box_size[0]
+#
+#     # correct for the zero_bias
+#     if zero_bias:
+#         box_shift = abs(shift[:, 0] - z_box) <= 0.1
+#         neg_box_shift = abs(shift[:, 0] + z_box) <= 0.1
+#         alias_zero = neg_box_shift + box_shift
+#         shift_clean[alias_zero] = np.nan
+#
+#     # First we will do the antialiasing step. This is only a concern for z so don't worry about xy
+#     # This works by moving the shift 1 up and 1 down. Then looking at number of neighbours in a neighbourhood
+#     # of that z. We then choose the option (-1, 0, 1) corresponding to most neighbours.
+#     # NB: We only compare shifts from the same layer of the z_subvolumes
+#     chunk = y_sv * x_sv
+#     for z in range(z_sv):
+#         shift_clean[z * chunk:(z + 1) * chunk, 0] = anti_alias(shift_clean[z * chunk:(z + 1) * chunk, 0], z_box)
+#
+#     return shift_clean

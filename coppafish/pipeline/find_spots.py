@@ -203,7 +203,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     spot_details_new = np.zeros((0, 3), dtype=int)
     spot_no_new = np.zeros_like(spot_no, dtype=int)
     isolated_spots_new = np.zeros(0, dtype=bool)
-    # Loop over in tiles rounds and channels
+
+    # Loop over in tiles, rounds and channels and update the spot details etc
     for t in use_tiles:
         # spot_no is easy to update
         spot_no_new[t] = spot_no[t]

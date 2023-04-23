@@ -581,41 +581,48 @@ class ButtonTileWindow(QMainWindow):
 
 
 # TODO: Change format of this to make it more similar to notebook outputs
-def view_regression_scatter(shift, position, transform):
+def view_regression_scatter(shift, position, transform=None, save_loc=None):
     """
     view 3 scatter plots for each data set shift vs positions
     Args:
-        shift: z_sv x y_sv x x_sv x 3 array which of shifts in zyx format
-        position: z_sv x y_sv x x_sv x 3 array which of positions in zyx format
+        shift: (z_sv x y_sv x x_sv) x 3 array which of shifts in zyx format
+        position: (z_sv x y_sv x x_sv) x 3 array which of positions in zyx format
         transform: 3 x 4 affine transform obtained by previous robust regression
+        save_loc: save location if applicable
     """
-
-    shift = shift.reshape((shift.shape[0] * shift.shape[1] * shift.shape[2], 3)).T
-    position = position.reshape((position.shape[0] * position.shape[1] * position.shape[2], 3)).T
-
-    pos_shape = np.array(position.shape).astype(int)
-    rand = 100 * np.random.rand(pos_shape[0], pos_shape[1]) - 100
-    position = position + rand
+    shift = shift.T
+    position = position.T
 
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
     yx_range = np.arange(np.min(position[1]), np.max(position[1]))
 
     plt.subplot(1, 3, 1)
-    plt.scatter(position[0], shift[0], alpha=1e2/shift.shape[1])
-    plt.plot(z_range, (transform[0, 0] - 1) * z_range + transform[0,3])
+    plt.scatter(position[0], shift[0], alpha=0.1)
     plt.title('Z-Shifts vs Z-Positions')
 
     plt.subplot(1, 3, 2)
-    plt.scatter(position[1], shift[1], alpha=1e2 / shift.shape[1])
-    plt.plot(yx_range, (transform[1, 1] - 1) * yx_range + transform[1, 3])
+    plt.scatter(position[1], shift[1], alpha=0.1)
     plt.title('Y-Shifts vs Y-Positions')
 
     plt.subplot(1, 3, 3)
-    plt.scatter(position[2], shift[2], alpha=1e2 / shift.shape[1])
-    plt.plot(yx_range, (transform[2, 2] - 1) * yx_range + transform[2, 3])
+    plt.scatter(position[2], shift[2], alpha=0.1)
     plt.title('X-Shifts vs X-Positions')
 
-    plt.show()
+    # If transform not none then plot line
+    if transform is not None:
+        plt.subplot(1, 3, 1)
+        plt.plot(z_range, (transform[0, 0] - 1) * z_range + transform[0, 3])
+
+        plt.subplot(1, 3, 2)
+        plt.plot(yx_range, (transform[1, 1] - 1) * yx_range + transform[1, 3])
+
+        plt.subplot(1, 3, 3)
+        plt.plot(yx_range, (transform[2, 2] - 1) * yx_range + transform[2, 3])
+
+    if save_loc is None:
+        plt.show()
+    else:
+        plt.savefig(save_loc)
 
 
 def change_basis(A, new_origin, z_scale):

@@ -210,8 +210,7 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
         from_raw: If `False`, will stitch together tiles from saved npy files,
             otherwise will load in raw un-filtered images from nd2/npy file.
         zero_thresh: All pixels with absolute value less than or equal to `zero_thresh` will be set to 0.
-            The larger it is, the smaller the compressed file will be.\
-        save: If True, saves image as im_file, otherwise returns image
+            The larger it is, the smaller the compressed file will be.
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
@@ -237,7 +236,7 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
         for t in nbp_basic.use_tiles:
             if from_raw:
-                image_t = utils.raw.load_image(nbp_file, nbp_basic, t, c,round_dask_array, r, nbp_basic.use_z)
+                image_t = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
                 # replicate non-filtering procedure in extract_and_filter
                 if not nbp_basic.is_3d:
                     image_t = extract.focus_stack(image_t)
@@ -269,8 +268,12 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     pbar.close()
     if shift != 0:
         # remove shift and re-scale so fits the whole int16 range
-        stitched_image = stitched_image - shift
-        stitched_image = stitched_image * np.iinfo(np.int16).max / np.abs(stitched_image).max()
+        # Break things up by z plane so that not everything needs to be stored in ram at once
+        im_max = np.abs(stitched_image).max()
+        for z in range(stitched_image.shape[0]):
+            stitched_image[z] = stitched_image[z] - shift
+            stitched_image[z] = stitched_image[z] * np.iinfo(np.int16).max / im_max
+
         stitched_image = np.rint(stitched_image, np.zeros_like(stitched_image, dtype=np.int16), casting='unsafe')
     if zero_thresh > 0:
         stitched_image[np.abs(stitched_image) <= zero_thresh] = 0

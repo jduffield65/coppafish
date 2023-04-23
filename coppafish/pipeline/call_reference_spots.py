@@ -162,10 +162,11 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     #                                          config['bleed_matrix_min_cluster_size'], config['bleed_matrix_n_iter'],
     #                                          config['bleed_matrix_anneal'])
 
-    bleed_matrix = compute_bleed_matrix(default_bleed_matrix=default_bleed_matrix,
-                                        colour_matrix=spot_colors_use[nbp_ref_spots.isolated])
+    bleed_matrix_use = compute_bleed_matrix(default_bleed_matrix=default_bleed_matrix,
+                                            colour_matrix=spot_colors_use[nbp_ref_spots.isolated])
     # Just for compatibility this needs to be repeated n_rounds times
-    bleed_matrix = np.repeat(bleed_matrix, n_rounds)
+    bleed_matrix = np.zeros((nbp_basic.n_rounds, nbp_basic.n_channels, nbp_basic.n_dyes))
+    bleed_matrix[:, nbp_basic.use_channels] = np.repeat(bleed_matrix_use[np.newaxis, :, :], nbp_basic.n_rounds, axis=0)
 
     # get gene codes
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
