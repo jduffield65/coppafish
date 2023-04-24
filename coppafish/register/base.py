@@ -7,7 +7,8 @@ from skimage.filters import sobel
 from skimage.exposure import match_histograms
 from scipy.ndimage import affine_transform
 from ..utils.npy import load_tile
-from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image
+from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image, \
+    replace_scale
 from skimage.registration import phase_cross_correlation
 from coppafish.setup import NotebookPage
 
@@ -157,161 +158,7 @@ def ols_regression_robust(shift, position):
     return transform.T
 
 
-# Function which runs a single iteration of the icp algorithm, in use
-def get_transform(yxz_base: np.ndarray, yxz_target: np.ndarray, transform_old: np.ndarray, dist_thresh: float,
-                  robust=False):
-    """
-    This finds the affine transform that transforms ```yxz_base``` such that the distances between the neighbours
-    with ```yxz_target``` are minimised.
-
-    Args:
-        yxz_base: ```float [n_base_spots x 3]```.
-            Coordinates of spots you want to transform.
-        transform_old: ```float [4 x 3]```.
-            Affine transform found for previous iteration of PCR algorithm.
-        yxz_target: ```float [n_target_spots x 3]```.
-            Coordinates of spots in image that you want to transform ```yxz_base``` to.
-        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
-            Typical: ```5```.
-        robust: Boolean option to make regression robust. Selecting true will result in the algorithm maximising
-            correntropy as opposed to minimising mse.
-
-    Returns:
-        - ```transform``` - ```float [4 x 3]```.
-            Updated affine transform.
-        - ```neighbour``` - ```int [n_base_spots]```.
-            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of
-            ```yxz_base[i]``` is closest.
-        - ```n_matches``` - ```int```.
-            Number of neighbours which have distance less than ```dist_thresh```.
-        - ```error``` - ```float```.
-            Average distance between ```neighbours``` below ```dist_thresh```.
-    """
-    # Step 1 computes matching, since yxz_target is a subset of yxz_base, we will loop through yxz_target and find
-    # their nearest neighbours within yxz_transform, which is the initial transform applied to yxz_base
-    yxz_base_pad = np.pad(yxz_base, [(0, 0), (0, 1)], constant_values=1)
-    yxz_transform = yxz_base_pad @ transform_old
-    yxz_transform_tree = KDTree(yxz_transform)
-    # the next query works the following way. For each point in yxz_target, we look for the closest neighbour in the
-    # anchor, which we have now applied the initial transform to. If this is below dist_thresh, we append its distance
-    # to distances and append the index of this neighbour to neighbour
-    distances, neighbour = yxz_transform_tree.query(yxz_target, distance_upper_bound=dist_thresh)
-    neighbour = neighbour.flatten()
-    distances = distances.flatten()
-    use = distances < dist_thresh
-    n_matches = np.sum(use)
-    error = np.sqrt(np.mean(distances[use] ** 2))
-
-    base_pad_use = yxz_base_pad[neighbour[use], :]
-    target_use = yxz_target[use, :]
-
-    if not robust:
-        transform = np.linalg.lstsq(base_pad_use, target_use, rcond=None)[0]
-    else:
-        sigma = dist_thresh / 2
-        target_pad_use = np.pad(target_use, [(0, 0), (0, 1)], constant_values=1)
-        D = np.diag(np.exp(-0.5 * (np.linalg.norm(base_pad_use @ transform_old - target_use, axis=1)/sigma) ** 2))
-        transform = (target_pad_use.T @ D @ base_pad_use @ np.linalg.inv(base_pad_use.T @ D @ base_pad_use))[:3, :4].T
-
-    return transform, neighbour, n_matches, error
-
-
-# Simple ICP implementation, calls above until
-def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust):
-    """
-    Applies n_iters rrounds of the above least squares regression
-Args:
-        yxz_base: ```float [n_base_spots x 3]```.
-            Coordinates of spots you want to transform.
-        yxz_target: ```float [n_target_spots x 3]```.
-            Coordinates of spots in image that you want to transform ```yxz_base``` to.
-        start_transform: initial transform
-        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
-            Typical: ```3```.
-        n_iters: number of times to compute regression
-
-
-    Returns:
-        - ```transform``` - ```float [4 x 3]```.
-            Updated affine transform.
-        - ```n_matches``` - ```int```.
-            Number of neighbours which have distance less than ```dist_thresh```.
-        - ```error``` - ```float```.
-            Average distance between ```neighbours``` below ```dist_thresh```.
-    """
-
-    # initialise transform
-    transform = start_transform
-    n_matches = np.zeros(n_iters)
-    error = np.zeros(n_iters)
-
-    for i in range(n_iters):
-        transform, _, n_matches[i], error[i] = get_transform(yxz_base, yxz_target, transform,
-                                                                     dist_thresh, robust)
-        if i > 0 and n_matches[i] == n_matches[i-1]:
-            n_matches[i:] = n_matches[i] * np.ones(n_iters - i)
-            break
-
-    return transform, n_matches, error
-
-
-# Simple function to get rid of outlier transforms by comparing with other tiles
-def regularise_transforms(transform, residual_threshold, tile_origin, use_tiles, rc_use):
-    """
-    Function to regularise outliers in either round_transform or channel_transform.
-    Without loss of generality, we explain how this works for round_transforms, bearing in mind the same logic applies
-    to channel transforms.
-    For each fixed round r, we have a collection of transforms indexed by the tiles in use. We look at the shifts
-    associated with each of these tiles and see if that looks reasonable based on the position of the tiles.
-    More formally, this means that for each fixed r, we compute a linear regression to determine expected shifts.
-    If a shift belonging to tile t falls outside residual_threshold of the prediction, the shift for tile t round r
-    is replaced with the predicted shift.
-    We don't do regression on scale parameters but rather just analyse them for outliers.
-    Args:
-        transform: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x n_channels x 4 x 3]
-        residual_threshold: This is a threshold above which we will consider a point to be an outlier
-        tile_origin: yxz positions of the tiles [n_tiles x 3]
-        use_tiles: list of tiles in use
-
-    Returns:
-        transform_regularised: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x x_channels x 4 x 3]
-    """
-    # rearrange columns so that tile origins are in zyx like the shifts are, then initialise commonly used variables
-    tile_origin = np.roll(tile_origin, 1, axis=1)[use_tiles]
-    n_tiles_use = len(use_tiles)
-    shift = transform[use_tiles, :, :, 3]
-    predicted_shift = np.zeros_like(shift)
-
-    # This gives us a different set of shifts for each round/channel, let's compute the expected shift for each of these
-    # rounds/channels independently. Since this could be either a round or channel, we call it an elem
-    for elem in rc_use:
-        big_transform = ols_regression_robust(shift[:, elem], tile_origin)
-        padded_origin = np.vstack((tile_origin.T, np.ones(n_tiles_use)))
-        predicted_shift[:, elem] = (big_transform @ padded_origin).T - tile_origin
-
-    # Use these predicted shifts to get rid of outliers
-    residual = np.linalg.norm(predicted_shift-shift, axis=2)
-    shift_outlier = residual > residual_threshold
-    # The nice thing about this approach is that we can immediately replace the outliers with their prediction
-    # Now we do something similar for the scales, though we don't really assume these will vary so we just take medians
-    scale = np.swapaxes(np.array([transform[use_tiles, :, 0, 0].T, transform[use_tiles, :, 1, 1].T,
-                                  transform[use_tiles, :, 2, 2].T]), 0, 2)
-    scale_median = np.median(scale, axis=0)
-    scale_iqr = stats.iqr(scale, axis=0)
-    scale_low = scale < scale_median - 1.5 * scale_iqr
-    scale_high = scale > scale_median + 1.5 * scale_iqr
-    scale_outlier = (scale_low + scale_high).any(axis=-1)
-
-    # Now we have everything to generate the regularised transforms
-    transform_regularised = transform.copy()
-    for t in range(n_tiles_use):
-        for elem in rc_use:
-            if shift_outlier[t, elem] or scale_outlier[t, elem]:
-                transform_regularised[t, elem] = np.vstack((np.diag(scale_median[elem]), predicted_shift[t, elem])).T
-
-    return transform_regularised
-
-
+# Bridge function for all functions in subvolume registration
 def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
                            t: int, pbar) -> dict:
     """
@@ -330,7 +177,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
             * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
             * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
         t: tile
-        pbar: Progress bar
+        pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
 
     Returns:
         registration_data updated after the subvolume registration
@@ -420,54 +267,245 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
 
     return registration_data
 
-# def anti_alias(shift, box):
-#     n_shifts = shift.shape[0]
-#     num_neighb = np.zeros((n_shifts, 3), dtype=int)
-#     # Compute number of neighbours for each of these options
-#     for i in range(n_shifts):
-#         num_neighb[i, 0] = len([s for s in shift if s < shift[i] - box/2])
-#         num_neighb[i, 1] = len([s for s in shift if abs(s - shift[i]) < box/2])
-#         num_neighb[i, 2] = len([s for s in shift if s > shift[i] + box/2])
-#
-#     # Now correct for aliased shifts, this will be incorrect for nan shifts but this doesn't affect anything as these
-#     # nan + wrong = nan
-#     shift_correction = box * (np.argmax(num_neighb, axis=1) - 1)
-#     shift += shift_correction
-#     return shift
-#
-#
-# def clean_shift_data(shift, box_size, zero_bias=False):
-#     """
-#     Function to clean the shift data we obtain before doing regression on it.
-#     Args:
-#         shift: z_sv x y_sv x x_sv x 3 ndarray of zyx shifts
-#         position: z_sv x y_sv x x_sv x 3 ndarray of zyx positions
-#         box_size: zyx box dims
-#         zero_bias: whether to down regulate zeroes (typically yes for round transforms, no o/w)
-#
-#     Returns:
-#         shift_clean: z_sv x y_sv x x_sv x 3 ndarray of zyx cleaned shifts
-#     """
-#     # initialise data into nice form
-#     z_sv, y_sv, x_sv = shift.shape[0], shift.shape[1], shift.shape[2]
-#     shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[1], 3))
-#     # At this stage we 'flatten' the shift matrix a bit
-#     shift_clean = np.copy(shift)
-#     z_box = box_size[0]
-#
-#     # correct for the zero_bias
-#     if zero_bias:
-#         box_shift = abs(shift[:, 0] - z_box) <= 0.1
-#         neg_box_shift = abs(shift[:, 0] + z_box) <= 0.1
-#         alias_zero = neg_box_shift + box_shift
-#         shift_clean[alias_zero] = np.nan
-#
-#     # First we will do the antialiasing step. This is only a concern for z so don't worry about xy
-#     # This works by moving the shift 1 up and 1 down. Then looking at number of neighbours in a neighbourhood
-#     # of that z. We then choose the option (-1, 0, 1) corresponding to most neighbours.
-#     # NB: We only compare shifts from the same layer of the z_subvolumes
-#     chunk = y_sv * x_sv
-#     for z in range(z_sv):
-#         shift_clean[z * chunk:(z + 1) * chunk, 0] = anti_alias(shift_clean[z * chunk:(z + 1) * chunk, 0], z_box)
-#
-#     return shift_clean
+
+# Function to remove outlier shifts
+def regularise_shift(shift, position, residual_threshold):
+    """
+    Function to remove outlier shifts from a collection of shifts whose start location can be determined by position.
+    Uses linear regression to compute a prediction of what the shifts should look like and if any shift differs from
+    this by more than some threshold it is declared to be an outlier.
+    Args:
+        shift: Either [n_tiles_use x n_rounds_use x 3] or [n_tiles_use x n_channels_use x 3]
+        position: yxz positions of the tiles [n_tiles_use x 3]
+        residual_threshold: This is a threshold above which we will consider a point to be an outlier
+
+    Returns:
+        shift_regularised: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x x_channels x 4 x 3]
+    """
+    # rearrange columns so that tile origins are in zyx like the shifts are, then initialise commonly used variables
+    tile_origin = np.roll(position, 1, axis=1)
+    rc_use = np.arange(shift.shape[1])
+    n_tiles_use = tile_origin.shape[0]
+    predicted_shift = np.zeros_like(shift)
+
+    # Compute predicted shift for each round/channel from X = position for each tile and Y = shift for each tile
+    for elem in rc_use:
+        big_transform = ols_regression_robust(shift[:, elem], tile_origin)
+        padded_origin = np.vstack((tile_origin.T, np.ones(n_tiles_use)))
+        predicted_shift[:, elem] = (big_transform @ padded_origin).T - tile_origin
+
+    # Use these predicted shifts to get rid of outliers
+    # The nice thing about this approach is that we can immediately replace the outliers with their prediction
+    residual = np.linalg.norm(predicted_shift-shift, axis=2)
+    shift_outlier = residual > residual_threshold
+    shift[shift_outlier] = predicted_shift[shift_outlier]
+
+    return shift
+
+
+# Function to remove outlier round scales
+def regularise_round_scaling(scale: np.ndarray):
+    """
+    Function to remove outliers in the scale parameters for round transforms. Experience shows these should be close
+    to 1 for x and y regardless of round and should be increasing or decreasing for z dependent on whether anchor
+    round came before or after.
+
+    Args:
+        scale: n_tiles_use x n_rounds_use x 3 ndarray of z y x scales for each tile and round
+
+    Returns:
+        scale_regularised:  n_tiles_use x n_rounds_use x 3 ndarray of z y x regularised scales for each tile and round
+    """
+    # Define num tiles and separate the z scale and yx scales for different analysis
+    n_tiles = scale.shape[0]
+    z_scale = scale[:, :, 0]
+    yx_scale = scale[:, :, 1:]
+
+    # Regularise z_scale. Expect z_scale to vary by round but not by tile.
+    # We classify outliers in z as:
+    # a.) those that lie outside 1 iqr of the median for z_scales of that round
+    # b.) those that increase when the majority decrease or those that decrease when majority increase
+    # First carry out removal of outliers of type (a)
+    median_z_scale = np.repeat(np.median(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
+    iqr_z_scale = np.repeat(stats.iqr(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
+    outlier_z = np.abs(z_scale - median_z_scale) > iqr_z_scale
+    z_scale[outlier_z] = median_z_scale
+
+    # Now carry out removal of outliers of type (b)
+    delta_z_scale = np.diff(z_scale, axis=1)
+    dominant_sign = np.sign(np.median(delta_z_scale))
+    outlier_z = np.vstack((np.sign(delta_z_scale) != dominant_sign, np.zeros(n_tiles, dtype=bool)))
+    z_scale[outlier_z] = median_z_scale
+
+    # Regularise yx_scale: No need to account for variation in tile or round
+    outlier_yx = np.abs(yx_scale - 1) > 0.01
+    yx_scale[outlier_yx] = 1
+
+    return scale
+
+
+# Function to remove outlier channel scales
+def regularise_channel_scaling(scale: np.ndarray):
+    """
+    Function to remove outliers in the scale parameters for channel transforms. Experience shows these should be close
+    to 1 for z regardless of channel and should be the same for the same channel.
+
+    Args:
+        scale: n_tiles_use x n_channels_use x 3 ndarray of z y x scales for each tile and channel
+
+    Returns:
+        scale_regularised:  n_tiles_use x n_channels_use x 3 ndarray of z y x regularised scales for each tile and chan
+    """
+    # Define num tiles and separate the z scale and yx scales for different analysis
+    n_tiles = scale.shape[0]
+    z_scale = scale[:, :, 0]
+    yx_scale = scale[:, :, 1:]
+
+    # Regularise z_scale: No need to account for variation in tile or channel
+    outlier_z = np.abs(z_scale - 1) > 0.01
+    z_scale[outlier_z] = 1
+
+    # Regularise yx_scale: Account for variation in channel
+    median_yx_scale = np.repeat(np.median(yx_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
+    iqr_yx_scale = np.repeat(stats.iqr(yx_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
+    outlier_yx = np.abs(yx_scale - median_yx_scale) > iqr_yx_scale
+    yx_scale[outlier_yx] = median_yx_scale
+
+    return scale
+
+
+# Bridge function for all regularisation
+def regularise_transforms(round_transform: np.ndarray, channel_transform: np.ndarray,
+                          tile_origin: np.ndarray, residual_threshold: float):
+    """
+    Function to regularise affine transforms
+    Args:
+        round_transform: n_tiles_use x n_rounds_use x 3 x 4 affine transforms in z y x for rounds
+        channel_transform: n_tiles_use x n_channels_use x 3 x 4 affine transforms in z y x for channels
+        tile_origin: n_tiles_use x 3 tile origin in zyx
+        residual_threshold: threshold for classifying outlier shifts
+
+    Returns:
+        transform_regularised: n_tiles_use x n_rounds_use x n_channels_use x 3 x 4 affine transforms regularised
+    """
+    # Regularise round transforms
+    round_transform[:, :, :, :, 3] = regularise_shift(shift=round_transform[:, :, :, :, 3], position=tile_origin,
+                                                      residual_threshold=residual_threshold)
+    round_scale = np.array([round_transform[:, :, 0, 0], round_transform[:, :, 1, 1], round_transform[:, :, 2, 2]])
+    round_scale_regularised = regularise_round_scaling(round_scale)
+    round_transform = replace_scale(transform=round_transform, scale=round_scale_regularised)
+
+    # Regularise channel transforms
+    channel_transform[:, :, :, :, 3] = regularise_shift(shift=channel_transform[:, :, :, :, 3], position=tile_origin,
+                                                        residual_threshold=residual_threshold)
+    channel_scale = np.array([channel_transform[:, :, 0, 0], channel_transform[:, :, 1, 1],
+                              channel_transform[:, :, 2, 2]])
+    channel_scale_regularised = regularise_channel_scaling(channel_scale)
+    channel_transform = replace_scale(transform=channel_transform, scale=channel_scale_regularised)
+
+    return round_transform, channel_transform
+
+
+# Function which runs a single iteration of the icp algorithm
+def get_transform(yxz_base: np.ndarray, yxz_target: np.ndarray, transform_old: np.ndarray, dist_thresh: float,
+                  robust=False):
+    """
+    This finds the affine transform that transforms ```yxz_base``` such that the distances between the neighbours
+    with ```yxz_target``` are minimised.
+
+    Args:
+        yxz_base: ```float [n_base_spots x 3]```.
+            Coordinates of spots you want to transform.
+        transform_old: ```float [4 x 3]```.
+            Affine transform found for previous iteration of PCR algorithm.
+        yxz_target: ```float [n_target_spots x 3]```.
+            Coordinates of spots in image that you want to transform ```yxz_base``` to.
+        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
+            Typical: ```5```.
+        robust: Boolean option to make regression robust. Selecting true will result in the algorithm maximising
+            correntropy as opposed to minimising mse.
+
+    Returns:
+        - ```transform``` - ```float [4 x 3]```.
+            Updated affine transform.
+        - ```neighbour``` - ```int [n_base_spots]```.
+            ```neighbour[i]``` is index of coordinate in ```yxz_target``` to which transformation of
+            ```yxz_base[i]``` is closest.
+        - ```n_matches``` - ```int```.
+            Number of neighbours which have distance less than ```dist_thresh```.
+        - ```error``` - ```float```.
+            Average distance between ```neighbours``` below ```dist_thresh```.
+    """
+    # Step 1 computes matching, since yxz_target is a subset of yxz_base, we will loop through yxz_target and find
+    # their nearest neighbours within yxz_transform, which is the initial transform applied to yxz_base
+    yxz_base_pad = np.pad(yxz_base, [(0, 0), (0, 1)], constant_values=1)
+    yxz_transform = yxz_base_pad @ transform_old
+    yxz_transform_tree = KDTree(yxz_transform)
+    # the next query works the following way. For each point in yxz_target, we look for the closest neighbour in the
+    # anchor, which we have now applied the initial transform to. If this is below dist_thresh, we append its distance
+    # to distances and append the index of this neighbour to neighbour
+    distances, neighbour = yxz_transform_tree.query(yxz_target, distance_upper_bound=dist_thresh)
+    neighbour = neighbour.flatten()
+    distances = distances.flatten()
+    use = distances < dist_thresh
+    n_matches = np.sum(use)
+    error = np.sqrt(np.mean(distances[use] ** 2))
+    base_pad_use = yxz_base_pad[neighbour[use], :]
+    target_use = yxz_target[use, :]
+
+    if not robust:
+        transform = np.linalg.lstsq(base_pad_use, target_use, rcond=None)[0]
+    else:
+        sigma = dist_thresh / 2
+        target_pad_use = np.pad(target_use, [(0, 0), (0, 1)], constant_values=1)
+        D = np.diag(np.exp(-0.5 * (np.linalg.norm(base_pad_use @ transform_old - target_use, axis=1)/sigma) ** 2))
+        transform = (target_pad_use.T @ D @ base_pad_use @ np.linalg.inv(base_pad_use.T @ D @ base_pad_use))[:3, :4].T
+
+    return transform, neighbour, n_matches, error
+
+
+# Simple ICP implementation, calls above until no change
+def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust):
+    """
+    Applies n_iters rounds of the above least squares regression
+    Args:
+        yxz_base: ```float [n_base_spots x 3]```.
+            Coordinates of spots you want to transform.
+        yxz_target: ```float [n_target_spots x 3]```.
+            Coordinates of spots in image that you want to transform ```yxz_base``` to.
+        start_transform: initial transform
+        dist_thresh: If neighbours closer than this, they are used to compute the new transform.
+            Typical: ```3```.
+        n_iters: max number of times to compute regression
+        robust: whether to compute robust icp
+    Returns:
+        - ```transform``` - ```float [4 x 3]```.
+            Updated affine transform.
+        - ```n_matches``` - ```int```.
+            Number of neighbours which have distance less than ```dist_thresh```.
+        - ```error``` - ```float```.
+            Average distance between ```neighbours``` below ```dist_thresh```.
+        - converged - bool
+            True if completed in less than n_iters and false o/w
+    """
+    # initialise transform
+    transform = start_transform
+    n_matches = np.zeros(n_iters)
+    error = np.zeros(n_iters)
+    prev_neighbour = np.zeros(yxz_base.shape[0], dtype=bool)
+
+    # Update transform. We want this to have max n_iters iterations. We will end sooner if all neighbours do not change
+    # in 2 successive iterations. Define the variables for iteration 0 before we start the loop
+    transform, neighbour, n_matches[0], error[0] = get_transform(yxz_base, yxz_target, transform, dist_thresh, robust)
+    i = 1
+    while i < n_iters and prev_neighbour != neighbour:
+        # update i and prev_neighbour
+        prev_neighbour, i = neighbour, i + 1
+        transform, neighbour, n_matches[i], error[i] = get_transform(yxz_base, yxz_target, transform, dist_thresh,
+                                                                     robust)
+    # now fill in any variables that were not completed due to early exit
+    n_matches[i:] = n_matches[i] * np.ones(n_iters - i)
+    error[i:] = error[i] * np.ones(n_iters - i)
+    converged = i < n_iters
+
+    return transform, n_matches, error, converged

@@ -67,6 +67,23 @@ def save_compressed_image(nbp_file: NotebookPage, image: np.ndarray, t: int, r: 
             [mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250])
 
 
+def replace_scale(transform: np.ndarray, scale: np.ndarray):
+    """
+    Function to replace the diagonal of transform with new scales
+    Args:
+        transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
+        scale: n_tiles x n_rounds x 3 or n_tiles x n_channels x 3 of zyx scales
+
+    Returns:
+        transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
+    """
+    # Loop through dimensions i: z = 0, y = 1, x = 2
+    for i in range(3):
+        transform[:, :, i, i] = scale[:, :, i]
+
+    return transform
+
+
 def yxz_to_zyx(image: np.ndarray):
     """
     Function to convert image from yxz to zyx
@@ -209,6 +226,39 @@ def reformat_affine(A, z_scale):
     A = A.T
 
     return A
+
+
+def change_basis(A, new_origin, z_scale):
+    """
+    Takes in 4 x 3 yxz * yxz transform where z coord is in xy pixels and convert to 4 x 4 zyx * zyx. Same as above
+    but allows for change in origin.
+    # TODO: Replace all cases of reformat affine with change_basis
+    Args:
+        A: 4 x 3 yxz * yxz transform
+        new_origin: new origin (zyx)
+        z_scale: pixel_size_z/pixel_size_xy
+
+    """
+    # Transform saved as yxz * yxz but needs to be zyx * zyx. Convert this to something napari will understand. I think
+    # this includes making the shift the final column as opposed to our convention of making the shift the final row
+    affine_transform = np.vstack((A.T, np.array([0, 0, 0, 1])))
+
+    row_shuffler = np.zeros((4, 4))
+    row_shuffler[0, 1] = 1
+    row_shuffler[1, 2] = 1
+    row_shuffler[2, 0] = 1
+    row_shuffler[3, 3] = 1
+
+    # Now compute the affine transform, in the new basis
+    affine_transform = np.linalg.inv(row_shuffler) @ affine_transform @ row_shuffler
+
+    # z shift needs to be converted to z-pixels as opposed to yx
+    affine_transform[0, 3] = affine_transform[0, 3] / z_scale
+
+    # also add new origin conversion for shift
+    affine_transform[:3, 3] += (affine_transform[:3, :3] - np.eye(3)) @ new_origin
+
+    return affine_transform
 
 
 def reformat_array(A, nbp_basic, round):
