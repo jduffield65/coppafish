@@ -61,6 +61,7 @@ class RegistrationViewer:
         # Set default lower limit to 0 and upper limit to 100
         self.im_contrast_limits_slider.setValue(([0, 100]))
         self.anchor_contrast_limits_slider.setValue([0, 100])
+
         # Now we run a method that sets these contrast limits using napari
         # Create sliders!
         self.viewer.window.add_dock_widget(self.im_contrast_limits_slider, area="left", name='Imaging Contrast')
@@ -78,13 +79,13 @@ class RegistrationViewer:
         # Add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
-        # Add buttons to show round transform regression
-        self.method_buttons = ButtonRoundWindow(use_rounds=nbp_basic.use_rounds)
-        # I think this allows us to connect button status with the buttons in the viewer
-        self.method_buttons.button_icp.clicked.connect(self.button_icp_clicked)
-        self.method_buttons.button_svr.clicked.connect(self.button_svr_clicked)
+        # Add buttons to show round regression
+        # self.round_buttons = ButtonRoundWindow(use_rounds=nbp_basic.use_rounds)
+        # We need to connect all these buttons to a single function which plots image in the same way
+        # for r in use_rounds:
+        #     self.round_buttons.__getattribute__(str(r)).clicked.connect(self.round_button_clicked(r))
         # Add these buttons as widgets in napari viewer
-        self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
+        # self.viewer.window.add_dock_widget(self.round_buttons, area="left", name='Round Regression')
 
         # Add buttons to select different tiles. Involves initialising variables use_tiles and tilepos
         tilepos_xy = np.roll(self.nb.basic_info.tilepos_yx, shift=1, axis=1)
@@ -96,25 +97,40 @@ class RegistrationViewer:
         # If no tile provided then default to the first tile in use
         if t is None:
             t = use_tiles[0]
+        # Store a copy of the working tile in the RegistrationViewer
         self.tile = t
+
+        # Now create tile_buttons
         self.tile_buttons = ButtonTileWindow(tile_pos_xy=tilepos_xy, use_tiles=use_tiles, active_button=self.tile)
-        # We need to connect all these buttons to a single function which updates the tile in the same way
-        for tile in range(len(tilepos_xy)):
-            self.tile_buttons.__getattribute__(str(tile)).clicked.connect(lambda x=tile: self.tile_button_clicked(x))
+        for tile in use_tiles:
+            # Now connect the button associated with tile t to a function that activates t and deactivates all else
+            self.tile_buttons.__getattribute__(str(tile)).clicked.connect(self.create_tile_slot(tile))
         # Add these buttons as widgets in napari viewer
-        self.viewer.window.add_dock_widget(self.tile_buttons, area="left", name='Tiles')
+        self.viewer.window.add_dock_widget(self.tile_buttons, area="left", name='Tiles', add_vertical_stretch=False)
+
+        # Create round_buttons
+        self.round_buttons = ButtonRoundWindow(self.nb.basic_info.use_rounds)
+        for rnd in use_rounds:
+            # Now connect the button associated with tile t to a function that activates t and deactivates all else
+            self.round_buttons.__getattribute__(str(rnd)).clicked.connect(self.create_round_slot(rnd))
+        # Add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.round_buttons, area="left", name='Round Regression',
+                                           add_vertical_stretch=False)
+
+        # Create channel_buttons
+        self.channel_buttons = ButtonChannelWindow(self.nb.basic_info.use_channels)
+        for c in use_channels:
+            # Now connect the button associated with tile t to a function that activates t and deactivates all else
+            self.channel_buttons.__getattribute__(str(c)).clicked.connect(self.create_channel_slot(c))
+        # Add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.channel_buttons, area="left", name='Channel Regression',
+                                           add_vertical_stretch=False)
 
         # Get target images and anchor image
         self.get_images()
 
         # Plot images
         self.plot_images()
-
-        # Set default contrast limits. Have to do this here as the images are only defined now
-        self.change_anchor_layer_contrast(self.anchor_contrast_limits_slider.value()[0],
-                                          self.anchor_contrast_limits_slider.value()[1])
-        self.change_imaging_layer_contrast(self.im_contrast_limits_slider.value()[0],
-                                           self.im_contrast_limits_slider.value()[1])
 
         napari.run()
 
@@ -158,27 +174,55 @@ class RegistrationViewer:
             self.transform = self.nb.register.transform
             self.update_plot()
 
-    def tile_button_clicked(self, t):
-        # This method should change the image iff self.tile_buttons.tile has changed
-        use_tiles = self.nb.basic_info.use_tiles
-        if self.tile_buttons.tile == str(t):
+    def create_round_slot(self, r):
+
+        def round_button_clicked():
+            use_rounds = self.nb.basic_info.use_rounds
+            for rnd in use_rounds:
+                self.round_buttons.__getattribute__(str(rnd)).setChecked(rnd == r)
+            # We don't need to update the plot, we just need to call the viewing function
+            view_regression_scatter(shift=self.nb.register.round_shift[self.tile, r],
+                                    position=self.nb.register.round_position[self.tile, r],
+                                    transform=self.nb.register.round_transform[self.tile, r])
+        return round_button_clicked
+
+    def create_tile_slot(self, t):
+
+        def tile_button_clicked():
+            # We're going to connect each button str(t) to a function that sets checked str(t) and nothing else
+            # Also sets self.tile = t
+            use_tiles = self.nb.basic_info.use_tiles
             for tile in use_tiles:
                 self.tile_buttons.__getattribute__(str(tile)).setChecked(tile == t)
-        else:
-            for tile in use_tiles:
-                self.tile_buttons.__getattribute__(str(tile)).setChecked(tile == t)
-            # Because tile under consideration changed, need to update plot and update tile_buttons.tile parameter
-            if t in use_tiles:
-                self.tile_buttons.tile = str(t)
-                self.update_plot()
+            self.tile = t
+            self.update_plot()
+
+        return tile_button_clicked
+
+    def create_channel_slot(self, c):
+
+        def channel_button_clicked():
+            use_channels = self.nb.basic_info.use_channels
+            for chan in use_channels:
+                self.channel_buttons.__getattribute__(str(chan)).setChecked(chan == c)
+            # We don't need to update the plot, we just need to call the viewing function
+            view_regression_scatter(shift=self.nb.register.channel_shift[self.tile, c],
+                                    position=self.nb.register.channel_position[self.tile, c],
+                                    transform=self.nb.register.channel_transform[self.tile, c])
+        return channel_button_clicked
 
     def update_plot(self):
         # Updates plot if tile or method has been changed
-        # First get num rounds and channels
-        n_rounds, n_channels = len(self.nb.basic_info.use_rounds), len(self.nb.basic_info.use_channels)
         # Update the images, we reload the anchor image even when it has not been changed, this should not be too slow
+        self.clear_images()
         self.get_images()
         self.plot_images()
+
+    def clear_images(self):
+        # Function to clear all images currently in use
+        n_images = len(self.viewer.layers)
+        for i in range(n_images):
+            del self.viewer.layers[0]
 
     def get_images(self):
         # reset initial target image lists to empty lists
@@ -221,18 +265,20 @@ class RegistrationViewer:
 
         for r in use_rounds:
             self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
-                                  name='Anchor')
+                                  name='Anchor', contrast_limits=[0, 100])
             self.viewer.add_image(self.target_round_image[r], blending='additive', colormap='green',
-                                  translate=[0, 0, 1_000 * r], name='Round ' + str(r) + ', Channel ' + str(self.c_ref))
+                                  translate=[0, 0, 1_000 * r], name='Round ' + str(r) + ', Channel ' + str(self.c_ref),
+                                  contrast_limits=[0, 100])
             for z in range(10):
                 points.append([z, -50, 250 + 1_000 * r])
 
         for c in range(len(use_channels)):
             self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 1_000, 1_000 * c],
-                                  name='Anchor')
+                                  name='Anchor', contrast_limits=[0, 100])
             self.viewer.add_image(self.target_channel_image[c], blending='additive', colormap='green',
                                   translate=[0, 1_000, 1_000 * c],
-                                  name='Round ' + str(self.r_mid) + ', Channel ' + str(use_channels[c]))
+                                  name='Round ' + str(self.r_mid) + ', Channel ' + str(use_channels[c]),
+                                  contrast_limits=[0, 100])
             for z in range(10):
                 points.append([z, 950, 250 + 1_000 * c])
 
@@ -332,7 +378,8 @@ class ButtonRoundWindow(QMainWindow):
                                  "background-color : white;"
                                  "}")
             # Finally add this button as an attribute to self
-            self.__setattr__('round_' + str(r), button)
+            self.__setattr__(str(r), button)
+            self.round_regression = None
 
 
 class ButtonChannelWindow(QMainWindow):
@@ -360,7 +407,7 @@ class ButtonChannelWindow(QMainWindow):
                                  "background-color : white;"
                                  "}")
             # Finally add this button as an attribute to self
-            self.__setattr__('channel_' + str(use_channels[c]), button)
+            self.__setattr__(str(use_channels[c]), button)
 
 
 # 1
@@ -373,7 +420,8 @@ def view_regression_scatter(shift, position, transform=None):
         transform: 3 x 4 affine transform obtained by previous robust regression
         save_loc: save location if applicable
     """
-    # TODO: Change transform to represent what it would look like in the middle of the tile
+    shift = np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3))
+    position = np.reshape(position, (position.shape[0] * position.shape[1] * position.shape[2], 3))
     shift = shift.T
     position = position.T
 
@@ -407,7 +455,7 @@ def view_regression_scatter(shift, position, transform=None):
 
 
 # 1
-def view_pearson_scatter(nbp_register_debug, nbp_basic, t, thresh, num_bins=30):
+def view_pearson_scatter(nbp_register_debug, nbp_basic, t, thresh=0.4, num_bins=30):
     """
     function to view histogram of correlation coefficients for all subvol shifts of a particular round/channel.
     Args:
@@ -418,24 +466,27 @@ def view_pearson_scatter(nbp_register_debug, nbp_basic, t, thresh, num_bins=30):
         t: int tile under consideration
     """
     round_corr, channel_corr = nbp_register_debug.round_corr[t], nbp_register_debug.channel_corr[t]
-    n_rounds, n_channels = nbp_basic.n_rounds, nbp_basic.n_channels
+    n_rounds, n_channels_use = nbp_basic.n_rounds, len(nbp_basic.use_channels)
     use_channels = nbp_basic.use_channels
-    cols = max(n_rounds, n_channels)
+    cols = max(n_rounds, n_channels_use)
 
     for r in range(n_rounds):
-        plt.subplot(2, cols, r)
+        plt.subplot(2, cols, r + 1)
         counts, _ = np.histogram(round_corr[r], np.linspace(0, 1, num_bins))
         plt.hist(round_corr[r], bins=np.linspace(0, 1, num_bins))
         plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
         plt.title('Quality of sub-volume shifts for tile ' + str(t) + ', round ' + str(r) +
-                  '\n Inilier proportion = ' + str(100 * sum(counts > thresh) / counts.shape[0]) + '%')
+                  '\n Inilier proportion = ' + str(
+            round(100 * sum(round_corr[r] > thresh) / round_corr.shape[1], 2)) + '%')
 
-    for c in range(n_channels):
-        plt.subplot(2, cols, cols + c)
+    for c in range(n_channels_use):
+        plt.subplot(2, cols, cols + c + 1)
         counts, _ = np.histogram(channel_corr[use_channels[c]], np.linspace(0, 1, num_bins))
         plt.hist(channel_corr[use_channels[c]], bins=np.linspace(0, 1, num_bins))
         plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
         plt.title('Quality of sub-volume shifts for tile ' + str(t) + ', channel ' + str(use_channels[c]) +
-                  '\n Inilier proportion = ' + str(100 * sum(counts > thresh) / counts.shape[0]) + '%')
+                  '\n Inilier proportion = ' + str(
+            round(100 * sum(channel_corr[use_channels[c]] > thresh) / channel_corr.shape[1], 2)) + '%')
 
     plt.show()
+    plt.suptitle('Similarity distributions for all subvolume shifts')

@@ -167,7 +167,7 @@ class Viewer:
                     # When dragging, status will show contrast values.
                     self.image_contrast_slider[i].valueChanged.connect(lambda x: self.show_image_contrast(x[0], x[1]))
                     # On release of slider, genes shown will change
-                    self.image_contrast_slider[i].sliderReleased.connect(lambda j=i: self.change_image_contrast(j))
+                    self.image_contrast_slider[i].sliderReleased.connect(lambda j=i: self.change_image_contrast(i=j))
                     self.diagnostic_layer_ind += 1
 
         if self.diagnostic_layer_ind > 0:
