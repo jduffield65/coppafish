@@ -8,7 +8,7 @@ from skimage.exposure import match_histograms
 from scipy.ndimage import affine_transform
 from ..utils.npy import load_tile
 from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image, \
-    replace_scale
+    replace_scale, populate_full
 from skimage.registration import phase_cross_correlation
 from coppafish.setup import NotebookPage
 
@@ -75,7 +75,7 @@ def find_z_tower_shifts(subvol_base, subvol_target, r_threshold):
     return shift, shift_corr
 
 
-# Complicated but necessary function to get rid of aliasing issues in Fourier Shifts
+# function to get rid of aliasing issues in Fourier Shifts
 def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
     """
     Function to disambiguate the 2 possible shifts obtained via aliasing.
@@ -269,21 +269,20 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
 
 
 # Function to remove outlier shifts
-def regularise_shift(shift, position, residual_threshold):
+def regularise_shift(shift, tile_origin, residual_threshold):
     """
     Function to remove outlier shifts from a collection of shifts whose start location can be determined by position.
     Uses linear regression to compute a prediction of what the shifts should look like and if any shift differs from
     this by more than some threshold it is declared to be an outlier.
     Args:
         shift: Either [n_tiles_use x n_rounds_use x 3] or [n_tiles_use x n_channels_use x 3]
-        position: yxz positions of the tiles [n_tiles_use x 3]
+        tile_origin: yxz positions of the tiles [n_tiles_use x 3]
         residual_threshold: This is a threshold above which we will consider a point to be an outlier
 
     Returns:
         shift_regularised: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x x_channels x 4 x 3]
     """
     # rearrange columns so that tile origins are in zyx like the shifts are, then initialise commonly used variables
-    tile_origin = np.roll(position, 1, axis=1)
     rc_use = np.arange(shift.shape[1])
     n_tiles_use = tile_origin.shape[0]
     predicted_shift = np.zeros_like(shift)
@@ -376,32 +375,50 @@ def regularise_channel_scaling(scale: np.ndarray):
 
 # Bridge function for all regularisation
 def regularise_transforms(round_transform: np.ndarray, channel_transform: np.ndarray,
-                          tile_origin: np.ndarray, residual_threshold: float):
+                          tile_origin: np.ndarray, residual_threshold: float,
+                          use_tiles: list, use_rounds: list, use_channels: list):
     """
     Function to regularise affine transforms
     Args:
-        round_transform: n_tiles_use x n_rounds_use x 3 x 4 affine transforms in z y x for rounds
-        channel_transform: n_tiles_use x n_channels_use x 3 x 4 affine transforms in z y x for channels
-        tile_origin: n_tiles_use x 3 tile origin in zyx
+        round_transform: n_tiles x n_rounds x 3 x 4 affine transforms in z y x for rounds
+        channel_transform: n_tiles x n_channels x 3 x 4 affine transforms in z y x for channels
+        tile_origin: n_tiles x 3 tile origin in zyx
         residual_threshold: threshold for classifying outlier shifts
+        use_tiles: list of tiles in use
+        use_rounds: list of rounds in use
+        use_channels: list of channels in use
 
     Returns:
-        transform_regularised: n_tiles_use x n_rounds_use x n_channels_use x 3 x 4 affine transforms regularised
+        round_transform_regularised: n_tiles x n_rounds x 3 x 4 affine transforms regularised
+        channel_transform_regularised: n_tiles x n_channels x 3 x 4 affine transforms regularised
     """
+
+    # Code becomes easier when we disregard tiles, rounds, channels not in use
+    n_tiles, n_rounds, n_channels = round_transform.shape[0], round_transform.shape[1], channel_transform.shape[1]
+    tile_origin = tile_origin[use_tiles]
+    round_transform = round_transform[use_tiles][:, use_rounds]
+    channel_transform = channel_transform[use_tiles][:, use_channels]
+
     # Regularise round transforms
-    round_transform[:, :, :, :, 3] = regularise_shift(shift=round_transform[:, :, :, :, 3], position=tile_origin,
-                                                      residual_threshold=residual_threshold)
+    round_transform[:, :, :, 3] = regularise_shift(shift=round_transform[:, :, :, 3], tile_origin=tile_origin,
+                                                   residual_threshold=residual_threshold)
     round_scale = np.array([round_transform[:, :, 0, 0], round_transform[:, :, 1, 1], round_transform[:, :, 2, 2]])
     round_scale_regularised = regularise_round_scaling(round_scale)
     round_transform = replace_scale(transform=round_transform, scale=round_scale_regularised)
+    round_transform = populate_full(sublist_1=use_tiles, list_1=np.arange(n_tiles),
+                                    sublist_2=use_rounds, list_2=np.arange(n_rounds),
+                                    array=round_transform)
 
     # Regularise channel transforms
-    channel_transform[:, :, :, :, 3] = regularise_shift(shift=channel_transform[:, :, :, :, 3], position=tile_origin,
+    channel_transform[:, :, :, :, 3] = regularise_shift(shift=channel_transform[:, :, :, :, 3], tile_origin=tile_origin,
                                                         residual_threshold=residual_threshold)
     channel_scale = np.array([channel_transform[:, :, 0, 0], channel_transform[:, :, 1, 1],
                               channel_transform[:, :, 2, 2]])
     channel_scale_regularised = regularise_channel_scaling(channel_scale)
     channel_transform = replace_scale(transform=channel_transform, scale=channel_scale_regularised)
+    channel_transform = populate_full(sublist_1=use_tiles, list_1=np.arange(n_tiles),
+                                      sublist_2=use_channels, list_2=np.arange(n_channels),
+                                      array=channel_transform)
 
     return round_transform, channel_transform
 

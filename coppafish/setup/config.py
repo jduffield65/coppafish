@@ -177,6 +177,8 @@ _options = {
             'z_box': 'int',
             'y_box': 'int',
             'x_box': 'int',
+            'r_thresh': 'number',
+            'residual_thresh': 'int'
         },
     'call_spots':
         {

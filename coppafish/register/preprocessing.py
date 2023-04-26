@@ -84,6 +84,27 @@ def replace_scale(transform: np.ndarray, scale: np.ndarray):
     return transform
 
 
+def populate_full(sublist_1, list_1, sublist_2, list_2, array):
+    """
+    Function to convert array from len(sublist1) x len(sublist2) to len(list1) x len(list2), listting elems not in sublists
+    as 0
+    Args:
+        sublist_1: sublist in the 0th dim
+        list_1: entire list in 0th dim
+        sublist_2: sublist in the 1st dim
+        list_2: entire list in 1st dim
+        array: array to be converted
+
+    Returns:
+        full_array: len(list1) x len(list2) ndarray
+    """
+    full_array = np.zeros((len(list_1), len(list_2)))
+    for i in range(len(sublist_1)):
+        for j in range(len(sublist_2)):
+            full_array[sublist_1[i], sublist_2[j]] = array[i, j]
+    return full_array
+
+
 def yxz_to_zyx(image: np.ndarray):
     """
     Function to convert image from yxz to zyx
