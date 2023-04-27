@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+from sklearn.linear_model import HuberRegressor
 from scipy.spatial import KDTree
 from scipy import stats
 from skimage.filters import sobel
@@ -135,7 +136,7 @@ def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
 
 
 # ols regression to find transform from shifts
-def ols_regression_robust(shift, position):
+def ols_regression(shift, position):
     """
     Args:
         shift: (z_sv x y_sv x x_sv) x 3 array which of shifts in zyx format
@@ -156,6 +157,26 @@ def ols_regression_robust(shift, position):
 
     # Unsure what taking transpose means for off diagonals here
     return transform.T
+
+
+def huber_regression(shift, position):
+    """
+    Function to predict shift as a function of position using robust huber regressor.
+    Args:
+        shift: n_tiles x 3 ndarray of zyx shifts
+        position: n_tiles x 2 ndarray of yx tile coords
+    Returns:
+        transform: 3 x 3 matrix where each row predicts shift of z y z as a function of y index, x index and the final
+        row is the offset at 0,0
+    """
+    # Do robust regression
+    huber_z = HuberRegressor().fit(X=position, y=shift[:, 0])
+    huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
+    huber_x = HuberRegressor().fit(X=position, y=shift[:, 2])
+    transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_), np.append(huber_y.coef_, huber_y.intercept_),
+                           np.append(huber_x.coef_, huber_x.intercept_)))
+
+    return transform
 
 
 # Bridge function for all functions in subvolume registration
@@ -219,7 +240,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         registration_data['position'] = position
         registration_data['round_shift'][t, r] = shift
         registration_data['round_shift_corr'][t, r] = corr
-        registration_data['round_transform'][t, r] = ols_regression_robust(shift, position)
+        registration_data['round_transform'][t, r] = ols_regression(shift, position)
 
     # Now begin the channel registration
     correction_matrix = np.vstack((registration_data['round_transform'][t, nbp_basic.n_rounds // 2], [0, 0, 0, 1]))
@@ -256,7 +277,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         # Save data into our working dictionary
         registration_data['channel_shift'][t, c] = shift
         registration_data['channel_shift_corr'][t, c] = corr
-        registration_data['channel_transform'][t, c] = ols_regression_robust(shift, position)
+        registration_data['channel_transform'][t, c] = ols_regression(shift, position)
 
     # Add tile to completed tiles
     registration_data['tiles_completed'].append(t)
@@ -272,8 +293,8 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
 def regularise_shift(shift, tile_origin, residual_threshold):
     """
     Function to remove outlier shifts from a collection of shifts whose start location can be determined by position.
-    Uses linear regression to compute a prediction of what the shifts should look like and if any shift differs from
-    this by more than some threshold it is declared to be an outlier.
+    Uses robust linear regression to compute a prediction of what the shifts should look like and if any shift differs
+    from this by more than some threshold it is declared to be an outlier.
     Args:
         shift: Either [n_tiles_use x n_rounds_use x 3] or [n_tiles_use x n_channels_use x 3]
         tile_origin: yxz positions of the tiles [n_tiles_use x 3]
@@ -289,7 +310,7 @@ def regularise_shift(shift, tile_origin, residual_threshold):
 
     # Compute predicted shift for each round/channel from X = position for each tile and Y = shift for each tile
     for elem in rc_use:
-        big_transform = ols_regression_robust(shift[:, elem], tile_origin)
+        big_transform = ols_regression(shift[:, elem], tile_origin)
         padded_origin = np.vstack((tile_origin.T, np.ones(n_tiles_use)))
         predicted_shift[:, elem] = (big_transform @ padded_origin).T - tile_origin
 

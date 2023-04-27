@@ -5,15 +5,16 @@ import napari
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
-from ...setup import Notebook
-from coppafish.register.preprocessing import change_basis
+from ...setup import Notebook, NotebookPage
+from coppafish.register.preprocessing import change_basis, stack_images, create_shift_images
+from coppafish.register.base import huber_regression
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
 
 
 # there are 3 parts of the registration pipeline:
 # 1. SVR
-# 2. Regularisation
+# 2. Cross tile outlier removal
 # 3. ICP
 # Above each of these viewers we will plot a number which shows which part it refers to
 
@@ -455,7 +456,7 @@ def view_regression_scatter(shift, position, transform=None):
 
 
 # 1
-def view_pearson_scatter(nbp_register_debug, nbp_basic, t, thresh=0.4, num_bins=30):
+def view_pearson_hists(nbp_register_debug, nbp_basic, t, thresh=0.4, num_bins=30):
     """
     function to view histogram of correlation coefficients for all subvol shifts of a particular round/channel.
     Args:
@@ -490,3 +491,283 @@ def view_pearson_scatter(nbp_register_debug, nbp_basic, t, thresh=0.4, num_bins=
 
     plt.show()
     plt.suptitle('Similarity distributions for all subvolume shifts')
+
+
+# 1
+def view_pearson_colourmap(nbp_register_debug, nbp_basic, t):
+    """
+    function to view colourmap of correlation coefficients for all subvol shifts for all channels and rounds.
+
+    Args:
+        nbp_register_debug: register debug notebook page
+        nbp_basic:register basic info notebook page
+        t: int tile under consideration
+    """
+    # initialise frequently used variables
+    round_corr, channel_corr = nbp_register_debug.round_corr[t], nbp_register_debug.channel_corr[t]
+    use_channels = nbp_basic.use_channels
+    # Replace 0 with nans so they get plotted as black
+    round_corr[round_corr == 0] = np.nan
+    channel_corr[channel_corr == 0] = np.nan
+
+    # plot round correlation and tile correlation
+    plt.subplot(1, 2, 1)
+    plt.imshow(round_corr)
+    plt.subplot(1, 2, 2)
+    plt.imshow(channel_corr[:, use_channels])
+
+    plt.suptitle('Similarity distributions for all subvolume shifts')
+
+
+# 1
+def view_pearson_colourmap_spatial(nbp_register_debug, config, t, round: bool, index: int):
+    """
+    function to view colourmap of correlation coefficients for all subvol shifts for a single t, r, c.
+
+    Args:
+        nbp_register_debug: register debug notebook page
+        config: register page of config dict
+        t: int tile under consideration
+        round: True if round, False if channel
+        index: int rc in question
+    """
+
+    # initialise frequently used variables
+    if round:
+        corr = nbp_register_debug.round_corr[t, index]
+    else:
+        corr = nbp_register_debug.channel_corr[t, index]
+
+    corr[corr == 0] = np.nan
+    z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
+
+    fig, axes = plt.subplots(nrows=1, ncols=z_subvols)
+    for z in range(z_subvols):
+        ax = axes[0, z]
+        im = ax.imshow(np.reshape(corr[z * y_subvols * x_subvols: (z + 1) * x_subvols * y_subvols],
+                                  (y_subvols, x_subvols)), vmin=0, vmax=1)
+
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
+
+
+# 2
+def shift_vector_field(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage, round: bool, config: dict):
+    """
+    Function to plot vector fields of predicted shifts vs shifts to see if we classify a shift as an outlier.
+    Args:
+        nbp_register_debug: register debug notebook page
+        nbp_basic: basic info notebook page
+        round: Boolean indicating whether we are looking at round outlier removal, True if r, False if c
+        config: Register page of config dictionary
+    """
+    use_tiles = nbp_basic.use_tiles
+    tilepos_yx = nbp_basic.tilepos_yx[use_tiles]
+
+    # Load in shift
+    if round:
+        shift = nbp_register_debug.round_transform_unregularised[use_tiles, :, :, 3]
+    else:
+        shift = nbp_register_debug.channel_transform_unregularised[use_tiles, :, :, 3]
+
+    # record number of rounds/channels, tiles and initialise predicted shift
+    n_t, n_rc = shift.shape[0], shift.shape[1]
+    tilepos_yx_pad = np.vstack((tilepos_yx.T, np.ones(n_t))).T
+    predicted_shift = np.zeros_like(shift)
+
+    fig, axes = plt.subplots(nrows=3, ncols=n_rc)
+    for elem in range(n_rc):
+        # generate predicted shift for this r/c via huber regression
+        transform = huber_regression(shift[elem], tilepos_yx)
+        predicted_shift[:, elem] = tilepos_yx_pad @ transform.T
+
+        # plot the predicted yx shift vs actual yx shift in row 0
+        ax = axes[0, elem]
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 10 * predicted_shift[:, elem, 2],
+                  10 * predicted_shift[:, elem, 1], color='b')
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 10 * shift[:, elem, 2], 10 * shift[:, elem, 1], color='r')
+        ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+
+        # plot the predicted z shift vs actual z shift in row 1
+        ax = axes[1, elem]
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, 10 * predicted_shift[:, elem, 0], color='b')
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, 10 * shift[:, elem, 2], color='r')
+        ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+
+        # Plot image of norms of residuals at each tile in ro2 3
+        ax = axes[2, elem]
+        diff = make_residual_plot(residual=np.linalg.norm(predicted_shift[:, elem] - shift[:, elem]),
+                                  nbp_basic=nbp_basic)
+        outlier = np.argwhere(diff > config['residual_threshold'])
+        n_outliers = outlier.shape[0]
+        im = ax.imshow(diff, vmin=0, vmax=10)
+        # Now highlight in red the outlier pixels
+        for pixel in range(n_outliers):
+            rectangle = plt.Rectangle(outlier[pixel], 1, 1, fill='false', ec='r', linestyle=':', lw=4)
+            ax.add_patch(rectangle)
+        ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+
+    # Add colorbar
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
+
+
+# 2
+def zyx_shift_image(nbp_register: NotebookPage, nbp_register_debug: NotebookPage, nbp_basic: NotebookPage, round: bool):
+    """
+        Function to plot vector fields of predicted shifts vs shifts to see if we classify a shift as an outlier.
+        Args:
+            nbp_register: register notebook page
+            nbp_register_debug: register debug notebook page
+            nbp_basic: basic info notebook page
+            round: Boolean indicating whether we are looking at round outlier removal, True if r, False if c
+    """
+    use_tiles = nbp_basic.use_tiles
+    tilepos_yx = nbp_basic.tilepos_yx[use_tiles]
+
+    # Load in shift
+    if round:
+        shift_raw = nbp_register_debug.round_transform_unregularised[use_tiles, :, :, 3]
+        shift = nbp_register.round_transform[use_tiles, :, :, 3]
+    else:
+        shift_raw = nbp_register_debug.channel_transform_unregularised[use_tiles, :, :, 3]
+        shift = nbp_register.channel_transform[use_tiles, :, :, 3]
+
+    n_t, n_rc = shift.shape[0], shift.shape[1]
+
+    fig, axes = plt.subplots(nrows=3, ncols=n_rc)
+    for elem in range(n_rc):
+        im_raw = create_shift_images(shift_raw[:, elem], tilepos_yx)
+        im = create_shift_images(shift[:, elem], tilepos_yx)
+        for coord in range(3):
+            ax = axes[coord, elem]
+            coord_im_stacked = stack_images(im_raw[coord], im[coord])
+            ax.imshow(coord_im_stacked, vmin=np.min(shift_raw[:, :, :, coord]), vmax=np.max(shift_raw[:, :, :, coord]))
+            ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+
+    fig.canvas.draw()
+    plt.show()
+
+
+# 2
+def make_residual_plot(residual, nbp_basic):
+    """
+    generate image of residuals along with their tile positions
+    Args:
+        residual: n_tiles_use x 1 list of residuals
+        nbp_basic: basic info notebook page
+    """
+    # Initialise frequently used variables
+    use_tiles = nbp_basic.use_tiles
+    tilepos_yx = nbp_basic.tilepos_yx
+    n_rows, n_cols = np.max(tilepos_yx[:, 0]) + 1, np.max(tilepos_yx[:, 1]) + 1
+    tilepos_yx = tilepos_yx[nbp_basic.use_tiles]
+    diff = np.zeros((n_rows, n_cols))
+
+    for t in use_tiles:
+        diff[tilepos_yx[t, 1], tilepos_yx[t, 0]] = residual[t]
+
+    diff = np.flip(diff.T, axis=-1)
+
+    return diff
+
+
+# 2
+def view_round_scales(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage):
+    """
+    view scale parameters for the round outlier removals
+    Args:
+        nbp_register_debug: register debug notebook page
+        nbp_basic : basic ingo notebook page
+    """
+    use_tiles = nbp_basic.use_tiles
+    # Extract raw scales
+    z_scale = nbp_register_debug.round_transform_unregularised[use_tiles, :, 0, 0]
+    y_scale = nbp_register_debug.round_transform_unregularised[use_tiles, :, 1, 1]
+    x_scale = nbp_register_debug.round_transform_unregularised[use_tiles, :, 2, 2]
+    n_tiles_use, n_rounds = z_scale.shape[0], z_scale.shape[1]
+    
+    # Plot box plots
+    plt.subplot(3, 1, 1)
+    plt.scatter(np.tile(np.arange(n_rounds), n_tiles_use), np.reshape(z_scale, (n_tiles_use * n_rounds)),
+                c='w', marker='x')
+    plt.plot(np.arange(n_rounds), np.percentile(z_scale, 25, axis=0), 'c:')
+    plt.plot(np.arange(n_rounds), np.percentile(z_scale, 50, axis=0), 'r:')
+    plt.plot(np.arange(n_rounds), np.percentile(z_scale, 75, axis=0), 'c:')
+
+    plt.subplot(3, 1, 2)
+    plt.scatter(x=np.tile(np.arange(n_rounds), n_tiles_use),
+                y=np.reshape(y_scale, (n_tiles_use * n_rounds)), c='w', marker='x', alpha=0.7)
+    plt.plot(np.arange(n_rounds), 0.999 * np.ones(n_rounds), 'c:')
+    plt.plot(np.arange(n_rounds), np.ones(n_rounds), 'r:')
+    plt.plot(np.arange(n_rounds), 1.001 * np.ones(n_rounds), 'c:')
+
+    plt.subplot(3, 1, 3)
+    plt.scatter(x=np.tile(np.arange(n_rounds), n_tiles_use),
+                y=np.reshape(x_scale, (n_tiles_use * n_rounds)), c='w', marker='x', alpha=0.7)
+    plt.plot(np.arange(n_rounds), 0.999 * np.ones(n_rounds), 'c:')
+    plt.plot(np.arange(n_rounds), np.ones(n_rounds), 'r:')
+    plt.plot(np.arange(n_rounds), 1.001 * np.ones(n_rounds), 'c:')
+    plt.show()
+
+
+# 2
+def view_channel_scales(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage):
+    """
+    view scale parameters for the round outlier removals
+    Args:
+        nbp_register_debug: register debug notebook page
+        nbp_basic : basic ingo notebook page
+    """
+    use_tiles = nbp_basic.use_tiles
+    use_channels = nbp_basic.use_channels
+    # Extract raw scales
+    z_scale = nbp_register_debug.channel_transform_unregularised[use_tiles, use_channels, 0, 0]
+    y_scale = nbp_register_debug.channel_transform_unregularised[use_tiles, use_channels, 1, 1]
+    x_scale = nbp_register_debug.channel_transform_unregularised[use_tiles, use_channels, 2, 2]
+    n_tiles_use, n_channels_use = z_scale.shape[0], z_scale.shape[1]
+
+    # Plot box plots
+    plt.subplot(3, 1, 1)
+    plt.scatter(np.tile(np.arange(n_channels_use), n_tiles_use), np.reshape(z_scale, (n_tiles_use * n_channels_use)),
+                c='w', marker='x')
+    plt.plot(np.arange(n_channels_use), 0.99 * np.ones(n_channels_use), 'c:')
+    plt.plot(np.arange(n_channels_use), np.ones(n_channels_use), 'r:')
+    plt.plot(np.arange(n_channels_use), 1.01 * np.ones(n_channels_use), 'c:')
+
+    plt.subplot(3, 1, 2)
+    plt.scatter(x=np.tile(np.arange(n_channels_use), n_tiles_use),
+                y=np.reshape(y_scale, (n_tiles_use * n_channels_use)), c='w', marker='x', alpha=0.7)
+    plt.plot(np.arange(n_channels_use), np.percentile(y_scale, 25, axis=0), 'c:')
+    plt.plot(np.arange(n_channels_use), np.percentile(y_scale, 50, axis=0), 'r:')
+    plt.plot(np.arange(n_channels_use), np.percentile(y_scale, 75, axis=0), 'c:')
+
+    plt.subplot(3, 1, 3)
+    plt.scatter(x=np.tile(np.arange(n_channels_use), n_tiles_use),
+                y=np.reshape(x_scale, (n_tiles_use * n_channels_use)), c='w', marker='x', alpha=0.7)
+    plt.plot(np.arange(n_channels_use), np.percentile(x_scale, 25, axis=0), 'c:')
+    plt.plot(np.arange(n_channels_use), np.percentile(x_scale, 50, axis=0), 'r:')
+    plt.plot(np.arange(n_channels_use), np.percentile(x_scale, 75, axis=0), 'c:')
+    plt.show()
+
+
+def view_icp_n_matches(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage,  t):
+    """
+    Plots simple num matches against iterations
+    Args:
+        nbp_register_debug: register debug notebook page
+        nbp_basic: basic infor page of nb
+        t: tile
+    """
+    use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
+    n_matches = nbp_register_debug.n_matches[t, use_rounds, use_channels]
+    n_iters = n_matches.shape[2]
+
+    fig, axes = plt.subplots(len(use_rounds), len(use_channels))
+    for r in range(len(use_rounds)):
+        for c in range(len(use_channels)):
+            ax = axes[r, c]
+            ax.plot(np.arange(n_iters), n_matches[use_rounds[r], use_channels[c]])
+    plt.show()
