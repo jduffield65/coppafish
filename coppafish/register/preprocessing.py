@@ -157,6 +157,28 @@ def yxz_to_zyx(image: np.ndarray):
     return image
 
 
+def n_matches_to_frac_matches(nbp_basic: NotebookPage, n_matches: np.ndarray, spot_no: np.ndarray):
+    """
+    Function to convert n_matches to fraction of matches
+    Args:
+        nbp_basic: basic info nbp
+        n_matches: n_tiles x n_rounds x n_channels x n_iters
+        spot_no: n_tiles x (n_rounds + 1) x n_channels
+
+    Returns:
+        frac_matches: n_tiles x n_rounds x n_channels x n_iters
+    """
+    use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
+    frac_matches = np.zeros_like(n_matches)
+
+    for t in use_tiles:
+        for r in use_rounds:
+            for c in use_channels:
+                frac_matches[t, r, c] = n_matches[t, r, c] / spot_no[t, r, c]
+
+    return frac_matches
+
+
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
     """
     Splits a 3D image into y_subvolumes * x_subvolumes * z_subvolumes subvolumes.
