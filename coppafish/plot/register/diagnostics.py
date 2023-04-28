@@ -71,19 +71,11 @@ class RegistrationViewer:
 
         # Add buttons to change between registration methods
         self.method_buttons = ButtonMethodWindow('SVR')
-        # I think this allows us to connect button status with the buttons in the viewer
+        # This allows us to link clickng to slot functions
         self.method_buttons.button_icp.clicked.connect(self.button_icp_clicked)
         self.method_buttons.button_svr.clicked.connect(self.button_svr_clicked)
         # Add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
-
-        # Add buttons to show round regression
-        # self.round_buttons = ButtonRoundWindow(use_rounds=nbp_basic.use_rounds)
-        # We need to connect all these buttons to a single function which plots image in the same way
-        # for r in use_rounds:
-        #     self.round_buttons.__getattribute__(str(r)).clicked.connect(self.round_button_clicked(r))
-        # Add these buttons as widgets in napari viewer
-        # self.viewer.window.add_dock_widget(self.round_buttons, area="left", name='Round Regression')
 
         # Add buttons to select different tiles. Involves initialising variables use_tiles and tilepos
         tilepos_xy = np.roll(self.nb.basic_info.tilepos_yx, shift=1, axis=1)
@@ -106,22 +98,27 @@ class RegistrationViewer:
         # Add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.tile_buttons, area="left", name='Tiles', add_vertical_stretch=False)
 
-        # Create round_buttons
-        self.round_buttons = ButtonRoundWindow(self.nb.basic_info.use_rounds)
-        for rnd in use_rounds:
-            # Now connect the button associated with tile t to a function that activates t and deactivates all else
-            self.round_buttons.__getattribute__(str(rnd)).clicked.connect(self.create_round_slot(rnd))
-        # Add these buttons as widgets in napari viewer
-        self.viewer.window.add_dock_widget(self.round_buttons, area="left", name='Round Regression',
-                                           add_vertical_stretch=False)
+        # We want to create a single napari widget containing buttons which for each round and channel
 
-        # Create channel_buttons
-        self.channel_buttons = ButtonChannelWindow(self.nb.basic_info.use_channels)
+        # Create all buttons for SVR
+        self.svr_buttons = ButtonSVRWindow(self.nb.basic_info.use_rounds, self.nb.basic_info.use_channels)
+        # now we begin connecting buttons to functions
+        # round buttons
+        for rnd in use_rounds:
+            # now connect this to a slot that will activate the round regression
+            self.svr_buttons.__getattribute__('R'+str(rnd)).clicked.connect(self.create_round_slot(rnd))
+        # channel buttons
         for c in use_channels:
-            # Now connect the button associated with tile t to a function that activates t and deactivates all else
-            self.channel_buttons.__getattribute__(str(c)).clicked.connect(self.create_channel_slot(c))
-        # Add these buttons as widgets in napari viewer
-        self.viewer.window.add_dock_widget(self.channel_buttons, area="left", name='Channel Regression',
+            # now connect this to a slot that will activate the channel regression
+            self.svr_buttons.__getattribute__('C'+str(c)).clicked.connect(self.create_channel_slot(c))
+        # Add buttons for correlation coefficients for both hist or cmap
+        self.svr_buttons.r_hist.clicked.connect(self.button_r_hist_clicked)
+        self.svr_buttons.r_cmap.clicked.connect(self.button_r_cmap_clicked)
+        # add buttons for spatial correlation coefficients for rounds or channels
+        self.svr_buttons.r_spatial_round.clicked.connect(self.button_r_spatial_round_clicked)
+        self.svr_buttons.r_spatial_channel.clicked.connect(self.button_r_spatial_round_clicked)
+        # Finally, add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.svr_buttons, area="left", name='SVR Diagnostics',
                                            add_vertical_stretch=False)
 
         # Get target images and anchor image
@@ -172,17 +169,29 @@ class RegistrationViewer:
             self.transform = self.nb.register.transform
             self.update_plot()
 
-    def create_round_slot(self, r):
+    def button_r_hist_clicked(self):
+        # No need to only allow one button pressed
+        self.svr_buttons.r_hist.setChecked(True)
+        # link this to the function that plots the histogram of correlation coefficients
+        view_pearson_hists(nb=self.nb, t=self.tile)
 
-        def round_button_clicked():
-            use_rounds = self.nb.basic_info.use_rounds
-            for rnd in use_rounds:
-                self.round_buttons.__getattribute__(str(rnd)).setChecked(rnd == r)
-            # We don't need to update the plot, we just need to call the viewing function
-            view_regression_scatter(shift=self.nb.register.round_shift[self.tile, r],
-                                    position=self.nb.register.round_position[self.tile, r],
-                                    transform=self.nb.register.round_transform[self.tile, r])
-        return round_button_clicked
+    def button_r_cmap_clicked(self):
+        # No need to only allow one button pressed
+        self.svr_buttons.r_cmap.setChecked(True)
+        # link this to the function that plots the histogram of correlation coefficients
+        view_pearson_colourmap(nb=self.nb, t=self.tile)
+
+    def button_r_spatial_round_clicked(self):
+        # No need to only allow one button pressed
+        self.svr_buttons.r_spatial_round.setChecked(True)
+        # link this to the function that plots the histogram of correlation coefficients
+        view_pearson_colourmap_spatial(nb=self.nb, round=True, t=self.tile)
+
+    def button_r_spatial_channel_clicked(self):
+        # No need to only allow one button pressed
+        self.svr_buttons.r_spatial_channel.setChecked(True)
+        # link this to the function that plots the histogram of correlation coefficients
+        view_pearson_colourmap_spatial(nb=self.nb, round=False, t=self.tile)
 
     def create_tile_slot(self, t):
 
@@ -197,12 +206,24 @@ class RegistrationViewer:
 
         return tile_button_clicked
 
+    def create_round_slot(self, r):
+
+        def round_button_clicked():
+            use_rounds = self.nb.basic_info.use_rounds
+            for rnd in use_rounds:
+                self.svr_buttons.__getattribute__('R'+str(rnd)).setChecked(rnd == r)
+            # We don't need to update the plot, we just need to call the viewing function
+            view_regression_scatter(shift=self.nb.register.round_shift[self.tile, r],
+                                    position=self.nb.register.round_position[self.tile, r],
+                                    transform=self.nb.register.round_transform[self.tile, r])
+        return round_button_clicked
+
     def create_channel_slot(self, c):
 
         def channel_button_clicked():
             use_channels = self.nb.basic_info.use_channels
             for chan in use_channels:
-                self.channel_buttons.__getattribute__(str(chan)).setChecked(chan == c)
+                self.svr.__getattribute__('C'+str(chan)).setChecked(chan == c)
             # We don't need to update the plot, we just need to call the viewing function
             view_regression_scatter(shift=self.nb.register.channel_shift[self.tile, c],
                                     position=self.nb.register.channel_position[self.tile, c],
@@ -257,12 +278,14 @@ class RegistrationViewer:
             'string': 'Round {round} Channel {channel}',
             'size': 20,
             'color': 'Green'}
+        # Define text for anchor
         text_anchor = {
-            'string': 'Anchor: Round 7 Channel 18',
+            'string': 'Anchor',
             'size': 20,
             'color': 'Red'}
 
-        # Now go on to define point coords
+        # Now go on to define point coords. Napari only allows us to plot text with points, so will plot points that
+        # are not visible and attach text to them
         points = []
         points_anchor = []
 
@@ -290,7 +313,7 @@ class RegistrationViewer:
 
         # Add text to image
         self.viewer.add_points(np.array(points), features=features, text=text, size=1)
-        self.viewer.add_points(np.array(points_anchor), text=text_anchor, size=1)
+        self.viewer.add_points(np.array(points_anchor), features=features, text=text_anchor, size=1)
 
 
 class ButtonMethodWindow(QMainWindow):
@@ -360,61 +383,87 @@ class ButtonTileWindow(QMainWindow):
             self.__setattr__(str(t), button)
 
 
-class ButtonRoundWindow(QMainWindow):
-    def __init__(self, use_rounds: list):
+class ButtonSVRWindow(QMainWindow):
+    # This class creates a window with buttons for all SVR diagnostics
+    # This includes buttons for each round and channel regression
+    # Also includes a button to view pearson correlation coefficient in either a histogram or colormap
+    # Also includes a button to view pearson correlation coefficient spatially for either rounds or channels
+    def __init__(self, use_rounds, use_channels: list):
         super().__init__()
-        # Loop through tiles, putting them in location as specified by tile pos xy
+        # Create round regression buttons
         for r in use_rounds:
             # Create a button for each tile
-            button = QPushButton(str(r), self)
+            button = QPushButton('R' + str(r), self)
             # set the button to be checkable iff t in use_tiles
             button.setCheckable(True)
-            button.setGeometry(r * 70, 40, 50, 28)
+            x, y_r = r % 4, r // 4
+            button.setGeometry(x * 70, 40 + 60 * y_r, 50, 28)
             # Set button color = grey when hovering over
             # set colour of tiles in use to blue amd not in use to red
-            button.setStyleSheet("QPushButton"
-                                 "{"
-                                 "background-color : rgb(135, 206, 250);"
-                                 "}"
-                                 "QPushButton::hover"
-                                 "{"
-                                 "background-color : lightgrey;"
-                                 "}"
-                                 "QPushButton::pressed"
-                                 "{"
-                                 "background-color : white;"
-                                 "}")
+            button = set_style(button)
             # Finally add this button as an attribute to self
-            self.__setattr__(str(r), button)
-            self.round_regression = None
+            self.__setattr__('R' + str(r), button)
 
-
-class ButtonChannelWindow(QMainWindow):
-    def __init__(self, use_channels: list):
-        super().__init__()
-        # Loop through tiles, putting them in location as specified by tile pos xy
+        # create channel regression buttons
         for c in range(len(use_channels)):
             # Create a button for each tile
-            button = QPushButton(str(use_channels[c]), self)
+            button = QPushButton('C' + str(use_channels[c]), self)
             # set the button to be checkable iff t in use_tiles
             button.setCheckable(True)
-            button.setGeometry(c * 70, 40, 50, 28)
+            x, y_c = c % 4, y_r + c // 4 + 1
+            button.setGeometry(x * 70, 40 + 60 * y_c, 50, 28)
             # Set button color = grey when hovering over
             # set colour of tiles in use to blue amd not in use to red
-            button.setStyleSheet("QPushButton"
-                                 "{"
-                                 "background-color : rgb(135, 206, 250);"
-                                 "}"
-                                 "QPushButton::hover"
-                                 "{"
-                                 "background-color : lightgrey;"
-                                 "}"
-                                 "QPushButton::pressed"
-                                 "{"
-                                 "background-color : white;"
-                                 "}")
+            button = set_style(button)
             # Finally add this button as an attribute to self
-            self.__setattr__(str(use_channels[c]), button)
+            self.__setattr__('C' + str(use_channels[c]), button)
+
+        # Create 2 correlation buttons:
+        # 1 to view pearson correlation coefficient as histogram
+        # 2 to view pearson correlation coefficient as colormap
+        y = y_c + 1
+        button = QPushButton('r_hist', self)
+        button.setCheckable(True)
+        button.setGeometry(0, 40 + 60 * y, 120, 28)
+        button = set_style(button)
+        self.r_hist = button
+        button = QPushButton('r_cmap', self)
+        button.setCheckable(True)
+        button.setGeometry(140, 40 + 60 * y, 120, 28)
+        button = set_style(button)
+        self.r_cmap = button
+
+        # Create 2 spatial correlation buttons:
+        # 1 to view pearson correlation coefficient spatially for rounds
+        # 2 to view pearson correlation coefficient spatially for channels
+        y += 1
+        button = QPushButton('r_spatial_round', self)
+        button.setCheckable(True)
+        button.setGeometry(0, 40 + 60 * y, 120, 28)
+        button = set_style(button)
+        self.r_spatial_round = button
+        button = QPushButton('r_spatial_channel', self)
+        button.setCheckable(True)
+        button.setGeometry(140, 40 + 60 * y, 120, 28)
+        button = set_style(button)
+        self.r_spatial_channel = button
+
+
+def set_style(button):
+    # Set button color = grey when hovering over, blue when pressed, white when not
+    button.setStyleSheet("QPushButton"
+                             "{"
+                             "background-color : rgb(135, 206, 250);"
+                             "}"
+                             "QPushButton::hover"
+                             "{"
+                             "background-color : lightgrey;"
+                             "}"
+                             "QPushButton::pressed"
+                             "{"
+                             "background-color : white;"
+                             "}")
+    return button
 
 
 # 1
@@ -671,10 +720,11 @@ def shift_vector_field(nb: Notebook, round: bool):
         outlier = np.argwhere(diff > residual_thresh)
         n_outliers = outlier.shape[0]
         im = ax.imshow(diff, vmin=0, vmax=10)
-        # Now highlight in red the outlier pixels
-        for pixel in range(n_outliers):
-            rectangle = plt.Rectangle(outlier[pixel], 1, 1, fill='false', ec='r', linestyle=':', lw=4)
-            ax.add_patch(rectangle)
+        # Now we want to outline the outlier pixels with a dotted red rectangle
+        for i in range(n_outliers):
+            rect = patches.Rectangle((outlier[i, 1] - 0.5, outlier[i, 0] - 0.5), 1, 1, linewidth=1, edgecolor='r',
+                                     facecolor='none', linestyle='--')
+            ax.add_patch(rect)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_x_label('X')
@@ -727,17 +777,30 @@ def zyx_shift_image(nb: Notebook, round: bool):
     for ax, row in zip(axes[:, 0], use):
         ax.set_ylabel(row, rotation=0, size='large')
 
-    # Now plot each image
+    # Now we will plot 3 rows of subplots and n_rc columns of subplots. Each subplot will be made up of 2 further subplots
+    # The Left subplot will be the raw shift and the right will be the regularised shift
+    # We will also outline pixels in these images that are different between raw and regularised with a dotted red rectangle
     for elem in range(n_rc):
-        im_raw = create_shift_images(shift_raw[:, elem], tilepos_yx)
-        im = create_shift_images(shift[:, elem], tilepos_yx)
         for coord in range(3):
             ax = axes[coord, elem]
-            ax.set_xticks([])
-            ax.set_yticks([])
-            coord_im_stacked = stack_images(im_raw[coord], im[coord])
-            ax.imshow(coord_im_stacked, vmin=np.min(shift_raw[:, :, :, coord]), vmax=np.max(shift_raw[:, :, :, coord]))
-            ax.set_title(mode + ' ' + str(use[elem]) + ' ' + coord_label[coord] + ' shift for all tiles')
+            # Create 2 subplots within each subplot
+            gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=ax, wspace=0.1)
+            ax1 = plt.subplot(gs[0])
+            ax2 = plt.subplot(gs[1])
+            # Plot the raw shift in the left subplot
+            im = ax1.imshow(shift_raw[:, elem, coord])
+            # Plot the regularised shift in the right subplot
+            im = ax2.imshow(shift[:, elem, coord])
+            # Now we want to outline the pixels that are different between raw and regularised with a dotted red rectangle
+            diff = np.abs(shift_raw[:, elem, coord] - shift[:, elem, coord])
+            outlier = np.argwhere(diff > 0.1)
+            n_outliers = outlier.shape[0]
+            for i in range(n_outliers):
+                rect = patches.Rectangle((outlier[i, 1] - 0.5, outlier[i, 0] - 0.5), 1, 1, linewidth=1, edgecolor='r',
+                                         facecolor='none', linestyle='--')
+                # Add the rectangle to both subplots
+                ax1.add_patch(rect)
+                ax2.add_patch(rect)
 
     fig.canvas.draw()
     plt.suptitle('Raw (top) vs regularised (bottom) shifts for all tiles. Row 1 = Z, Row 2 = Y, Row 3 = X.')
@@ -950,3 +1013,68 @@ def view_icp_mse(nb: Notebook, t):
     plt.suptitle('MSE against iteration of ICP for tile ' + str(t) + ' for all rounds and channels, for all '
                  + str(n_iters) + ' iterations.')
     plt.show()
+
+
+# 3
+def view_icp_deviations(nb: Notebook, t: int):
+    """
+    Plots deviations of ICP transform for a given tile t (n_rounds x n_channel x 3 x 4) affine transform against initial
+    guess (subvol_transform) which has the same shape. These trasnforms are in zyx x zyx format, with the final col
+    referring to the shift. Our plot has rows as rounds and columns as channels, giving us len(use_rounds) rows, and
+    len(use_channels) columns of subplots.
+
+    Each subplot will be a 2 3x1 images where the first im is [z_scale_icp - z_scale_svr, y_scale_icp - y_scale_svr,
+    x_scale_icp - x_scale_svr], and second im is [z_shift_icp - z_shift_svr, y_shift_icp - y_shift_svr,
+    s_shift_icp - x_shift_svr]. There should be a common colour bar on the right for all scale difference images and
+    another on the right for all shift difference images.
+
+    Args:
+        nb: Notebook
+        t: tile
+    """
+    # Initialise frequent variables
+    nbp_basic, nbp_register, nbp_register_debug = nb.basic_info, nb.register, nb.register_debug
+    use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
+    subvol_transform = nbp_register_debug.subvol_transform[t, use_rounds][:, use_channels]
+    transform = nbp_register.transform[t, use_rounds][:, use_channels]
+
+    # Define the axes
+    fig, axes = plt.subplots(len(use_rounds), len(use_channels))
+    # common axis labels
+    fig.supxlabel('Channels')
+    fig.supylabel('Rounds')
+    # Set row and column labels
+    for ax, col in zip(axes[0], use_channels):
+        ax.set_title(col)
+    for ax, row in zip(axes[:, 0], use_rounds):
+        ax.set_ylabel(row, rotation=0, size='large')
+
+    # Define difference images
+    scale_diff = np.zeros((len(use_rounds), len(use_channels), 3))
+    shift_diff = np.zeros((len(use_rounds), len(use_channels), 3))
+    for r in range(len(use_rounds)):
+        for c in range(len(use_channels)):
+            scale_diff[r, c] = np.diag(transform[r, c, :3, :3]) - np.diag(subvol_transform[r, c, :3, :3])
+            shift_diff[r, c] = transform[r, c, :3, 3] - subvol_transform[r, c, :3, 3]
+    
+    # Now plot scale_diff
+    for r in range(len(use_rounds)):
+        for c in range(len(use_channels)):
+            ax = axes[r, c]
+            # create 2 subplots within this subplot
+            gs = ax.subgridspec(2, 1, height_ratios=[1, 1])
+            ax1 = fig.add_subplot(gs[0])
+            ax2 = fig.add_subplot(gs[1])
+            # plot scale_diff. Give this the title scale_diff
+            im1 = ax1.imshow(scale_diff[r, c].reshape(3, 1), cmap='bwr', vmin=-1, vmax=1)
+            ax1.set_title('scale_diff')
+            # plot shift_diff. Give this the title shift_diff
+            im2 = ax2.imshow(shift_diff[r, c].reshape(3, 1), cmap='bwr', vmin=-5, vmax=5)
+            ax2.set_title('shift_diff')
+
+    # plot common colour bar for scale_diff on right. Label this as scale_diff
+    fig.colorbar(im1, ax=axes[:, -1], label='scale_diff')
+    # plot common colour bar for shift_diff on right. Label this as shift_diff
+    fig.colorbar(im2, ax=axes[:, -1], label='shift_diff')
+    plt.suptitle('Deviations of ICP transform against initial guess for tile ' + str(t) + ' for all rounds and '
+                    'channels.')
