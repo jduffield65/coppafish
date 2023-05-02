@@ -272,7 +272,43 @@ def invert_affine(A):
     return inverse
 
 
-def reformat_affine(A, z_scale):
+def yxz_to_zyx_affine(A, z_scale):
+    """
+        Function to convert 4 x 3 matrix in y, x, z coords into a 3 x 4 matrix of z, y, x coords and rescale the
+        z-shift
+
+        Args:
+            A: Original transform in old format (4 x 3)
+            z_scale: How much to unscale z-components by (float)
+
+        Returns:
+            A_reformatted: 3 x 4 transform with associated changes
+            """
+
+    # Append a bottom row to A
+    A = np.vstack((A.T, np.array([0, 0, 0, 1])))
+
+    # First, convert everything into z, y, x by multiplying by a matrix that swaps rows
+    row_shuffler = np.zeros((4, 4))
+    row_shuffler[0, 2] = 1
+    row_shuffler[1, 0] = 1
+    row_shuffler[2, 1] = 1
+    row_shuffler[3, 3] = 1
+    # Invert row shuffler as this was the transform from zyx to yxz. We want to go the other way.
+    row_shuffler = np.linalg.inv(row_shuffler)
+
+    A = np.linalg.inv(row_shuffler) @ A @ row_shuffler
+
+    # Next, divide the shift part of A by the expansion factor
+    A[2, 3] = A[2, 3] / z_scale
+
+    # Remove the final row
+    A = A[:3, :4]
+
+    return A
+
+
+def zyx_to_yxz_affine(A, z_scale):
     """
     Function to convert 3 x 4 matrix in z, y, x coords into a 4 x 3 matrix of y, x, z coords and rescale the shift
 

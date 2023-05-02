@@ -5,7 +5,7 @@ from tqdm import tqdm
 from ..setup import NotebookPage
 from ..find_spots import spot_yxz, spot_isolated
 from ..register.base import icp, regularise_transforms, subvolume_registration
-from ..register.preprocessing import compose_affine, reformat_affine, load_reg_data
+from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: NotebookPage, config: dict,
@@ -81,8 +81,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
         for r in use_rounds:
             for c in use_channels:
                 registration_data['subvol_transform'][t, r, c] = \
-                    reformat_affine(compose_affine(registration_data['channel_transform'][t, c],
-                                                   registration_data['round_transform'][t, r]), z_scale)
+                    zyx_to_yxz_affine(compose_affine(registration_data['channel_transform'][t, c],
+                                                     registration_data['round_transform'][t, r]), z_scale)
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)

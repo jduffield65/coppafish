@@ -8,7 +8,7 @@ from superqt import QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow
 from matplotlib.gridspec import GridSpec as gridspec
 from ...setup import Notebook
-from coppafish.register.preprocessing import change_basis, n_matches_to_frac_matches
+from coppafish.register.preprocessing import change_basis, n_matches_to_frac_matches, yxz_to_zyx_affine
 from coppafish.register.base import huber_regression
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
@@ -611,14 +611,15 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
         mode = 'Round'
         shift = nb.register_debug.round_shift[t, index].T
         subvol_transform = nb.register.round_transform[t, index]
-        icp_transform = nb.register.transform[t, index, nb.basic_info.anchor_channel]
+        icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel],
+                                          z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
     else:
         mode = 'Channel'
         shift = nb.register_debug.channel_shift[t, index].T
         subvol_transform = nb.register.channel_transform[t, index]
-        icp_transform = nb.register.transform[t, nb.basic_info.n_rounds // 2, index]
+        icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index],
+                                          z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
     position = nb.register_debug.position.T
-    # TODO: Convert ICP transform to 3 x 4 zyx x zyx transform
 
     # Make ranges, wil be useful for plotting lines
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
