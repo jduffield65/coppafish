@@ -5,6 +5,7 @@ import napari
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
+from matplotlib.widgets import Button
 from ...setup import Notebook, NotebookPage
 from coppafish.register.preprocessing import change_basis, stack_images, create_shift_images, n_matches_to_frac_matches
 from coppafish.register.base import huber_regression
@@ -18,7 +19,7 @@ plt.style.use('dark_background')
 # 3. ICP
 # Above each of these viewers we will plot a number which shows which part it refers to
 
-# 1 and 3
+
 class RegistrationViewer:
     def __init__(self, nb: Notebook, t: int = None):
         """
@@ -32,7 +33,7 @@ class RegistrationViewer:
         nbp_file, nbp_basic = nb.file_names, nb.basic_info
         use_rounds, use_channels = nbp_basic.use_rounds, nbp_basic.use_channels
         # set default transform to svr transform
-        self.transform = nb.register.start_transform
+        self.transform = nb.register.transform
         self.z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
         self.r_ref, self.c_ref = nbp_basic.anchor_round, nb.basic_info.anchor_channel
         self.r_mid = len(use_rounds) // 2
@@ -121,6 +122,31 @@ class RegistrationViewer:
         self.viewer.window.add_dock_widget(self.svr_buttons, area="left", name='SVR Diagnostics',
                                            add_vertical_stretch=False)
 
+        # Create a single widget containing buttons for cross tile outlier removal
+        self.outlier_buttons = ButtonOutlierWindow()
+        # Now connect buttons to functions
+        self.outlier_buttons.button_vec_field_r.clicked.connect(self.button_vec_field_r_clicked)
+        self.outlier_buttons.button_vec_field_c.clicked.connect(self.button_vec_field_c_clicked)
+        self.outlier_buttons.button_shift_cmap_r.clicked.connect(self.button_shift_cmap_r_clicked)
+        self.outlier_buttons.button_shift_cmap_c.clicked.connect(self.button_shift_cmap_c_clicked)
+        self.outlier_buttons.button_scale_r.clicked.connect(self.button_scale_r_clicked)
+        self.outlier_buttons.button_scale_c.clicked.connect(self.button_scale_c_clicked)
+
+        # Finally, add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.outlier_buttons, area="left", name='Cross Tile Outlier Removal',
+                                             add_vertical_stretch=False)
+
+        # Create a single widget containing buttons for ICP diagnostics
+        self.icp_buttons = ButtonICPWindow()
+        # Now connect buttons to functions
+        self.icp_buttons.button_mse.clicked.connect(self.button_mse_clicked)
+        self.icp_buttons.button_matches.clicked.connect(self.button_matches_clicked)
+        self.icp_buttons.button_deviations.clicked.connect(self.button_deviations_clicked)
+
+        # Finally, add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.icp_buttons, area="left", name='ICP Diagnostics',
+                                                add_vertical_stretch=False)
+
         # Get target images and anchor image
         self.get_images()
 
@@ -129,16 +155,35 @@ class RegistrationViewer:
 
         napari.run()
 
+    # Button functions
+
+    # Tiles grid
+    def create_tile_slot(self, t):
+
+        def tile_button_clicked():
+            # We're going to connect each button str(t) to a function that sets checked str(t) and nothing else
+            # Also sets self.tile = t
+            use_tiles = self.nb.basic_info.use_tiles
+            for tile in use_tiles:
+                self.tile_buttons.__getattribute__(str(tile)).setChecked(tile == t)
+            self.tile = t
+            self.update_plot()
+
+        return tile_button_clicked
+
+    # Contrast
     def change_anchor_layer_contrast(self, low, high):
         # Change contrast of anchor image (displayed in red), these are even index layers
         for i in range(0, 32, 2):
             self.viewer.layers[i].contrast_limits = [low, high]
 
+    # contrast
     def change_imaging_layer_contrast(self, low, high):
         # Change contrast of anchor image (displayed in red), these are even index layers
         for i in range(1, 32, 2):
             self.viewer.layers[i].contrast_limits = [low, high]
 
+    # method
     def button_svr_clicked(self):
         # Only allow one button pressed
         # Below does nothing if method is already svr and updates plot otherwise
@@ -154,6 +199,7 @@ class RegistrationViewer:
             self.transform = self.nb.register.start_transform
             self.update_plot()
 
+    # method
     def button_icp_clicked(self):
         # Only allow one button pressed
         # Below does nothing if method is already icp and updates plot otherwise
@@ -169,43 +215,35 @@ class RegistrationViewer:
             self.transform = self.nb.register.transform
             self.update_plot()
 
+    # SVR
     def button_r_hist_clicked(self):
         # No need to only allow one button pressed
         self.svr_buttons.r_hist.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_hists(nb=self.nb, t=self.tile)
 
+    # SVR
     def button_r_cmap_clicked(self):
         # No need to only allow one button pressed
         self.svr_buttons.r_cmap.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap(nb=self.nb, t=self.tile)
 
+    # SVR
     def button_r_spatial_round_clicked(self):
         # No need to only allow one button pressed
         self.svr_buttons.r_spatial_round.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap_spatial(nb=self.nb, round=True, t=self.tile)
 
+    # SVR
     def button_r_spatial_channel_clicked(self):
         # No need to only allow one button pressed
         self.svr_buttons.r_spatial_channel.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap_spatial(nb=self.nb, round=False, t=self.tile)
 
-    def create_tile_slot(self, t):
-
-        def tile_button_clicked():
-            # We're going to connect each button str(t) to a function that sets checked str(t) and nothing else
-            # Also sets self.tile = t
-            use_tiles = self.nb.basic_info.use_tiles
-            for tile in use_tiles:
-                self.tile_buttons.__getattribute__(str(tile)).setChecked(tile == t)
-            self.tile = t
-            self.update_plot()
-
-        return tile_button_clicked
-
+    # SVR
     def create_round_slot(self, r):
 
         def round_button_clicked():
@@ -218,6 +256,7 @@ class RegistrationViewer:
                                     transform=self.nb.register.round_transform[self.tile, r])
         return round_button_clicked
 
+    # SVR
     def create_channel_slot(self, c):
 
         def channel_button_clicked():
@@ -230,6 +269,61 @@ class RegistrationViewer:
                                     transform=self.nb.register.channel_transform[self.tile, c])
         return channel_button_clicked
 
+    # outlier removal
+    def button_vec_field_r_clicked(self):
+        # No need to only allow one button pressed
+        self.outlier_buttons.button_vec_field_r.setChecked(True)
+        shift_vector_field(nb=self.nb, round=True)
+
+    # outlier removal
+    def button_vec_field_c_clicked(self):
+        # No need to only allow one button pressed
+        self.outlier_buttons.button_vec_field_c.setChecked(True)
+        shift_vector_field(nb=self.nb, round=False)
+
+    # outlier removal
+    def button_shift_cmap_r_clicked(self):
+        # No need to only allow one button pressed
+        self.outlier_buttons.button_shift_cmap_r.setChecked(True)
+        zyx_shift_image(nb=self.nb, round=True)
+
+    # outlier removal
+    def button_shift_cmap_c_clicked(self):
+        # No need to only allow one button pressed
+        self.outlier_buttons.button_shift_cmap_c.setChecked(True)
+        zyx_shift_image(nb=self.nb, round=False)
+
+    # outlier removal
+    def button_scale_r_clicked(self):
+        # No need to only allow one button pressed
+        self.outlier_buttons.button_scale_r.setChecked(True)
+        view_round_scales(nb=self.nb)
+
+    # outlier removal
+    def button_scale_c_clicked(self):
+        # No need to only allow one button pressed
+        self.outlier_buttons.button_scale_c.setChecked(True)
+        view_channel_scales(nb=self.nb)
+
+    # icp
+    def button_mse_clicked(self):
+        # No need to only allow one button pressed
+        self.icp_buttons.button_mse.setChecked(True)
+        view_icp_mse(nb=self.nb, t=self.tile)
+
+    # icp
+    def button_matches_clicked(self):
+        # No need to only allow one button pressed
+        self.icp_buttons.button_matches.setChecked(True)
+        view_icp_n_matches(nb=self.nb, t=self.tile)
+
+    # icp
+    def button_deviations_clicked(self):
+        # No need to only allow one button pressed
+        self.icp_buttons.button_deviations.setChecked(True)
+        view_icp_deviations(nb=self.nb, t=self.tile)
+
+    # Button functions end here
     def update_plot(self):
         # Updates plot if tile or method has been changed
         # Update the images, we reload the anchor image even when it has not been changed, this should not be too slow
@@ -388,7 +482,7 @@ class ButtonSVRWindow(QMainWindow):
     # This includes buttons for each round and channel regression
     # Also includes a button to view pearson correlation coefficient in either a histogram or colormap
     # Also includes a button to view pearson correlation coefficient spatially for either rounds or channels
-    def __init__(self, use_rounds, use_channels: list):
+    def __init__(self, use_rounds: list, use_channels: list):
         super().__init__()
         # Create round regression buttons
         for r in use_rounds:
@@ -398,9 +492,6 @@ class ButtonSVRWindow(QMainWindow):
             button.setCheckable(True)
             x, y_r = r % 4, r // 4
             button.setGeometry(x * 70, 40 + 60 * y_r, 50, 28)
-            # Set button color = grey when hovering over
-            # set colour of tiles in use to blue amd not in use to red
-            button = set_style(button)
             # Finally add this button as an attribute to self
             self.__setattr__('R' + str(r), button)
 
@@ -412,9 +503,6 @@ class ButtonSVRWindow(QMainWindow):
             button.setCheckable(True)
             x, y_c = c % 4, y_r + c // 4 + 1
             button.setGeometry(x * 70, 40 + 60 * y_c, 50, 28)
-            # Set button color = grey when hovering over
-            # set colour of tiles in use to blue amd not in use to red
-            button = set_style(button)
             # Finally add this button as an attribute to self
             self.__setattr__('C' + str(use_channels[c]), button)
 
@@ -425,12 +513,10 @@ class ButtonSVRWindow(QMainWindow):
         button = QPushButton('r_hist', self)
         button.setCheckable(True)
         button.setGeometry(0, 40 + 60 * y, 120, 28)
-        button = set_style(button)
         self.r_hist = button
         button = QPushButton('r_cmap', self)
         button.setCheckable(True)
         button.setGeometry(140, 40 + 60 * y, 120, 28)
-        button = set_style(button)
         self.r_cmap = button
 
         # Create 2 spatial correlation buttons:
@@ -440,14 +526,61 @@ class ButtonSVRWindow(QMainWindow):
         button = QPushButton('r_spatial_round', self)
         button.setCheckable(True)
         button.setGeometry(0, 40 + 60 * y, 120, 28)
-        button = set_style(button)
         self.r_spatial_round = button
         button = QPushButton('r_spatial_channel', self)
         button.setCheckable(True)
         button.setGeometry(140, 40 + 60 * y, 120, 28)
-        button = set_style(button)
         self.r_spatial_channel = button
 
+
+class ButtonOutlierWindow(QMainWindow):
+    # This class creates a window with buttons for all outlier removal diagnostics
+    # This includes round and channel button to view shifts for each tile as a vector field
+    # Also includes round and channel button to view shifts for each tile as a heatmap
+    # Also includes round and channel button to view boxplots of scales for each tile
+    def __init__(self):
+        super().__init__()
+        self.button_vec_field_r = QPushButton('Round Shift Vector Field', self)
+        self.button_vec_field_r.setCheckable(True)
+        self.button_vec_field_r.setGeometry(20, 40, 220, 28)
+
+        self.button_vec_field_c = QPushButton('Channel Shift Vector Field', self)
+        self.button_vec_field_c.setCheckable(True)
+        self.button_vec_field_c.setGeometry(20, 100, 220, 28)  # left, top, width, height
+
+        self.button_shift_cmap_r = QPushButton('Round Shift Colour Map', self)
+        self.button_shift_cmap_r.setCheckable(True)
+        self.button_shift_cmap_r.setGeometry(20, 160, 220, 28)
+
+        self.button_shift_cmap_c = QPushButton('Channel Shift Colour Map', self)
+        self.button_shift_cmap_c.setCheckable(True)
+        self.button_shift_cmap_c.setGeometry(20, 220, 220, 28)  # left, top, width, height
+
+        self.button_scale_r = QPushButton('Round Scales', self)
+        self.button_scale_r.setCheckable(True)
+        self.button_scale_r.setGeometry(20, 280, 100, 28)
+
+        self.button_scale_c = QPushButton('Channel Scales', self)
+        self.button_scale_c.setCheckable(True)
+        self.button_scale_c.setGeometry(140, 280, 100, 28)  # left, top, width, height
+
+
+class ButtonICPWindow(QMainWindow):
+    # This class creates a window with buttons for all ICP diagnostics
+    # One diagnostic for MSE, one for n_matches, one for icp_deciations
+    def __init__(self):
+        super().__init__()
+        self.button_mse = QPushButton('MSE', self)
+        self.button_mse.setCheckable(True)
+        self.button_mse.setGeometry(20, 40, 100, 28)
+
+        self.button_matches = QPushButton('Matches', self)
+        self.button_matches.setCheckable(True)
+        self.button_matches.setGeometry(140, 40, 100, 28)  # left, top, width, height
+
+        self.button_deviations = QPushButton('Large ICP Deviations', self)
+        self.button_deviations.setCheckable(True)
+        self.button_deviations.setGeometry(20, 100, 220, 28)
 
 def set_style(button):
     # Set button color = grey when hovering over, blue when pressed, white when not
@@ -831,13 +964,13 @@ def make_residual_plot(residual, nbp_basic):
 
 
 # 2
-def view_round_scales(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage):
+def view_round_scales(nb: Notebook):
     """
     view scale parameters for the round outlier removals
     Args:
-        nbp_register_debug: register debug notebook page
-        nbp_basic : basic ingo notebook page
+        nb: Notebook
     """
+    nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     anchor_round, anchor_channel = nbp_basic.anchor_round, nbp_basic.anchor_channel
     use_tiles = nbp_basic.use_tiles
     # Extract raw scales
@@ -884,13 +1017,13 @@ def view_round_scales(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage)
 
 
 # 2
-def view_channel_scales(nbp_register_debug: NotebookPage, nbp_basic: NotebookPage):
+def view_channel_scales(nb: Notebook):
     """
     view scale parameters for the round outlier removals
     Args:
-        nbp_register_debug: register debug notebook page
-        nbp_basic : basic ingo notebook page
+        nb: Notebook
     """
+    nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     mid_round, anchor_channel = nbp_basic.n_rounds // 2, nbp_basic.anchor_channel
     use_tiles = nbp_basic.use_tiles
     use_channels = nbp_basic.use_channels
@@ -941,7 +1074,7 @@ def view_channel_scales(nbp_register_debug: NotebookPage, nbp_basic: NotebookPag
 
 
 # 3
-def view_icp_n_matches(nb: Notebook, t):
+def view_icp_n_matches(nb: Notebook, t: int):
     """
     Plots simple proportion matches against iterations.
     Args:
@@ -979,7 +1112,7 @@ def view_icp_n_matches(nb: Notebook, t):
 
 
 # 3
-def view_icp_mse(nb: Notebook, t):
+def view_icp_mse(nb: Notebook, t: int):
     """
     Plots simple MSE grid against iterations
     Args:
