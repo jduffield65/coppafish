@@ -218,29 +218,21 @@ class RegistrationViewer:
 
     # SVR
     def button_r_hist_clicked(self):
-        # No need to only allow one button pressed
-        self.svr_buttons.r_hist.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_hists(nb=self.nb, t=self.tile)
 
     # SVR
     def button_r_cmap_clicked(self):
-        # No need to only allow one button pressed
-        self.svr_buttons.r_cmap.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap(nb=self.nb, t=self.tile)
 
     # SVR
     def button_r_spatial_round_clicked(self):
-        # No need to only allow one button pressed
-        self.svr_buttons.r_spatial_round.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap_spatial(nb=self.nb, round=True, t=self.tile)
 
     # SVR
     def button_r_spatial_channel_clicked(self):
-        # No need to only allow one button pressed
-        self.svr_buttons.r_spatial_channel.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap_spatial(nb=self.nb, round=False, t=self.tile)
 
@@ -261,7 +253,7 @@ class RegistrationViewer:
         def channel_button_clicked():
             use_channels = self.nb.basic_info.use_channels
             for chan in use_channels:
-                self.svr.__getattribute__('C'+str(chan)).setChecked(chan == c)
+                self.svr_buttons.__getattribute__('C'+str(chan)).setChecked(chan == c)
             # We don't need to update the plot, we just need to call the viewing function
             view_regression_scatter(nb=self.nb, t=self.tile, index=c, round=False)
         return channel_button_clicked
@@ -298,26 +290,18 @@ class RegistrationViewer:
 
     # outlier removal
     def button_scale_c_clicked(self):
-        # No need to only allow one button pressed
-        self.outlier_buttons.button_scale_c.setChecked(True)
         view_channel_scales(nb=self.nb)
 
     # icp
     def button_mse_clicked(self):
-        # No need to only allow one button pressed
-        self.icp_buttons.button_mse.setChecked(True)
         view_icp_mse(nb=self.nb, t=self.tile)
 
     # icp
     def button_matches_clicked(self):
-        # No need to only allow one button pressed
-        self.icp_buttons.button_matches.setChecked(True)
         view_icp_n_matches(nb=self.nb, t=self.tile)
 
     # icp
     def button_deviations_clicked(self):
-        # No need to only allow one button pressed
-        self.icp_buttons.button_deviations.setChecked(True)
         view_icp_deviations(nb=self.nb, t=self.tile)
 
     # Button functions end here
@@ -579,6 +563,7 @@ class ButtonICPWindow(QMainWindow):
         self.button_deviations.setCheckable(True)
         self.button_deviations.setGeometry(20, 100, 220, 28)
 
+
 def set_style(button):
     # Set button color = grey when hovering over, blue when pressed, white when not
     button.setStyleSheet("QPushButton"
@@ -642,7 +627,7 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
     for i in range(3):
         for j in range(3):
             ax = axes[i, j]
-            ax.scatter(position[i], shift[j], alpha=0.1)
+            ax.scatter(position[i], shift[j], alpha=0.)
             ax.plot(coord_range[i], (subvol_transform[i, j] - int(i == j)) * coord_range[i] +
                     subvol_transform[i, 3] + central_offset_svr[i, j], label='SVR')
             ax.plot(coord_range[i], (icp_transform[i, j] - int(i == j)) * coord_range[i] +
@@ -666,7 +651,7 @@ def view_pearson_hists(nb, t, num_bins=30):
     """
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     thresh = nb.get_config()['register']['r_thresh']
-    round_corr, channel_corr = nbp_register_debug.round_corr[t], nbp_register_debug.channel_corr[t]
+    round_corr, channel_corr = nbp_register_debug.round_shift_corr[t], nbp_register_debug.channel_shift_corr[t]
     n_rounds, n_channels_use = nbp_basic.n_rounds, len(nbp_basic.use_channels)
     use_channels = nbp_basic.use_channels
     cols = max(n_rounds, n_channels_use)
@@ -676,8 +661,8 @@ def view_pearson_hists(nb, t, num_bins=30):
         counts, _ = np.histogram(round_corr[r], np.linspace(0, 1, num_bins))
         plt.hist(round_corr[r], bins=np.linspace(0, 1, num_bins))
         plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
-        plt.title('Similarity score for sub-volume shifts of tile ' + str(t) + ', round ' + str(r) +
-                  '\n Success Ratio = ' + str(
+        plt.title('r = ' + str(r) +
+                  '\n Pass = ' + str(
             round(100 * sum(round_corr[r] > thresh) / round_corr.shape[1], 2)) + '%')
 
     for c in range(n_channels_use):
@@ -685,8 +670,8 @@ def view_pearson_hists(nb, t, num_bins=30):
         counts, _ = np.histogram(channel_corr[use_channels[c]], np.linspace(0, 1, num_bins))
         plt.hist(channel_corr[use_channels[c]], bins=np.linspace(0, 1, num_bins))
         plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
-        plt.title('Similarity score for sub-volume shifts of tile ' + str(t) + ', channel ' + str(use_channels[c]) +
-                  '\n Success Ratio = ' + str(
+        plt.title('c = ' + str(use_channels[c]) +
+                  '\n Pass = ' + str(
             round(100 * sum(channel_corr[use_channels[c]] > thresh) / channel_corr.shape[1], 2)) + '%')
 
     plt.suptitle('Similarity score distributions for all sub-volume shifts')
@@ -704,27 +689,27 @@ def view_pearson_colourmap(nb, t):
     """
     # initialise frequently used variables
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
-    round_corr, channel_corr = nbp_register_debug.round_corr[t], nbp_register_debug.channel_corr[t]
+    round_corr, channel_corr = nbp_register_debug.round_shift_corr[t], \
+        nbp_register_debug.channel_shift_corr[t, nbp_basic.use_channels]
     use_channels = nbp_basic.use_channels
     # Replace 0 with nans so they get plotted as black
     round_corr[round_corr == 0] = np.nan
     channel_corr[channel_corr == 0] = np.nan
 
     # plot round correlation and tile correlation
-    fig, axes = plt.subplots(n_rows=2, n_cols=1)
-    ax1, ax2 = axes[0, 0], axes[1, 0]
+    fig, axes = plt.subplots(2, 1)
+    ax1, ax2 = axes[0], axes[1]
     # ax1 refers to round shifts
     im = ax1.imshow(round_corr, vmin=0, vmax=1, aspect='auto')
-    ax1.xlabel('Sub-volume index')
-    ax1.ylabel('Round')
-    ax1.title('Round sub-volume shift scores')
+    ax1.set_xlabel('Sub-volume index')
+    ax1.set_ylabel('Round')
+    ax1.set_title('Round sub-volume shift scores')
     # ax2 refers to channel shifts
-    ax2.subplot(1, 2, 2)
-    im = ax2.imshow(channel_corr[:, use_channels], vmin=0, vmax=1)
-    ax2.xlabel('Sub-volume index')
-    ax2.ylabel('Channel')
-    ax2.yticks(nbp_basic.use_channels)
-    ax2.title('Channel sub-volume shift scores')
+    im = ax2.imshow(channel_corr, vmin=0, vmax=1, aspect='auto')
+    ax2.set_xlabel('Sub-volume index')
+    ax2.set_ylabel('Channel')
+    ax2.set_yticks(np.arange(len(nbp_basic.use_channels)), nbp_basic.use_channels)
+    ax2.set_title('Channel sub-volume shift scores')
 
     # Add common colour bar
     fig.subplots_adjust(right=0.8)
@@ -750,11 +735,11 @@ def view_pearson_colourmap_spatial(nb: Notebook, round: bool, t: int):
     config = nb.get_config()['register']
     if round:
         use = nb.basic_info.use_rounds
-        corr = nb.register_debug.round_corr[t, use]
+        corr = nb.register_debug.round_shift_corr[t, use]
         mode = 'Round'
     else:
         use = nb.basic_info.use_channels
-        corr = nb.register_debug.channel_corr[t, use]
+        corr = nb.register_debug.channel_shift_corr[t, use]
         mode = 'Channel'
 
     # Set 0 correlations to nan, so they are plotted as black
@@ -762,25 +747,23 @@ def view_pearson_colourmap_spatial(nb: Notebook, round: bool, t: int):
     z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
     n_rc = corr.shape[0]
 
-    fig, axes = plt.subplots(nrows=n_rc, ncols=z_subvols)
-    # common axis labels
-    fig.supxlabel('Z Sub-volume')
-    fig.supylabel(mode)
-    # Set row and column labels
-    for ax, col in zip(axes[0], np.arange(z_subvols)):
-        ax.set_title(col)
-    for ax, row in zip(axes[:, 0], use):
-        ax.set_ylabel(row, rotation=0, size='large')
+    fig, axes = plt.subplots(nrows=z_subvols, ncols=n_rc)
     # Now plot each image
     for elem in range(n_rc):
         for z in range(z_subvols):
-            ax = axes[elem, z]
+            ax = axes[z, elem]
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_x_label('X')
-            ax.set_y_label('Y')
-            im = ax.imshow(np.reshape(corr[z * y_subvols * x_subvols: (z + 1) * x_subvols * y_subvols],
+            im = ax.imshow(np.reshape(corr[elem, z * y_subvols * x_subvols: (z + 1) * x_subvols * y_subvols],
                                       (y_subvols, x_subvols)), vmin=0, vmax=1)
+    # common axis labels
+    fig.supxlabel(mode)
+    fig.supylabel('Z-Subvolume')
+    # Set row and column labels
+    for ax, col in zip(axes[0], use):
+        ax.set_title(col, size='large')
+    for ax, row in zip(axes[:, 0], np.arange(z_subvols)):
+        ax.set_ylabel(row, rotation=0, size='large', x=-0.1)
     # add colour bar
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
