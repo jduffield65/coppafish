@@ -1,13 +1,14 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import napari
 from qtpy.QtCore import Qt
-from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
-from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
-from matplotlib.widgets import Button
-from ...setup import Notebook, NotebookPage
-from coppafish.register.preprocessing import change_basis, stack_images, create_shift_images, n_matches_to_frac_matches
+from superqt import QRangeSlider
+from PyQt5.QtWidgets import QPushButton, QMainWindow
+from matplotlib.gridspec import GridSpec as gridspec
+from ...setup import Notebook
+from coppafish.register.preprocessing import change_basis, n_matches_to_frac_matches
 from coppafish.register.base import huber_regression
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
@@ -251,9 +252,7 @@ class RegistrationViewer:
             for rnd in use_rounds:
                 self.svr_buttons.__getattribute__('R'+str(rnd)).setChecked(rnd == r)
             # We don't need to update the plot, we just need to call the viewing function
-            view_regression_scatter(shift=self.nb.register.round_shift[self.tile, r],
-                                    position=self.nb.register.round_position[self.tile, r],
-                                    transform=self.nb.register.round_transform[self.tile, r])
+            view_regression_scatter(nb=self.nb, t=self.tile, index=r, round=True)
         return round_button_clicked
 
     # SVR
@@ -264,9 +263,7 @@ class RegistrationViewer:
             for chan in use_channels:
                 self.svr.__getattribute__('C'+str(chan)).setChecked(chan == c)
             # We don't need to update the plot, we just need to call the viewing function
-            view_regression_scatter(shift=self.nb.register.channel_shift[self.tile, c],
-                                    position=self.nb.register.channel_position[self.tile, c],
-                                    transform=self.nb.register.channel_transform[self.tile, c])
+            view_regression_scatter(nb=self.nb, t=self.tile, index=c, round=False)
         return channel_button_clicked
 
     # outlier removal
@@ -613,14 +610,15 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
     if round:
         mode = 'Round'
         shift = nb.register_debug.round_shift[t, index].T
-        subvol_transform = nb.register_debug.round_transform[t, index]
+        subvol_transform = nb.register.round_transform[t, index]
         icp_transform = nb.register.transform[t, index, nb.basic_info.anchor_channel]
     else:
         mode = 'Channel'
         shift = nb.register_debug.channel_shift[t, index].T
-        subvol_transform = nb.register_debug.channel_transform[t, index]
+        subvol_transform = nb.register.channel_transform[t, index]
         icp_transform = nb.register.transform[t, nb.basic_info.n_rounds // 2, index]
     position = nb.register_debug.position.T
+    # TODO: Convert ICP transform to 3 x 4 zyx x zyx transform
 
     # Make ranges, wil be useful for plotting lines
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
@@ -883,7 +881,6 @@ def zyx_shift_image(nb: Notebook, round: bool):
     """
     nbp_basic, nbp_register, nbp_register_debug = nb.basic_info, nb.register, nb.register_debug
     use_tiles = nbp_basic.use_tiles
-    tilepos_yx = nbp_basic.tilepos_yx[use_tiles]
 
     # Load in shift
     if round:
