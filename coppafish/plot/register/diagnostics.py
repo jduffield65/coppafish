@@ -6,9 +6,10 @@ import napari
 from qtpy.QtCore import Qt
 from superqt import QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow
-from matplotlib.gridspec import GridSpec as gridspec
+import matplotlib.gridspec as gridspec
 from ...setup import Notebook
-from coppafish.register.preprocessing import change_basis, n_matches_to_frac_matches, yxz_to_zyx_affine
+from coppafish.register.preprocessing import change_basis, n_matches_to_frac_matches, yxz_to_zyx_affine, \
+    compose_affine, invert_affine
 from coppafish.register.base import huber_regression
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
@@ -114,11 +115,11 @@ class RegistrationViewer:
             # now connect this to a slot that will activate the channel regression
             self.svr_buttons.__getattribute__('C'+str(c)).clicked.connect(self.create_channel_slot(c))
         # Add buttons for correlation coefficients for both hist or cmap
-        self.svr_buttons.r_hist.clicked.connect(self.button_r_hist_clicked)
-        self.svr_buttons.r_cmap.clicked.connect(self.button_r_cmap_clicked)
+        self.svr_buttons.pearson_hist.clicked.connect(self.button_pearson_hist_clicked)
+        self.svr_buttons.pearson_cmap.clicked.connect(self.button_pearson_cmap_clicked)
         # add buttons for spatial correlation coefficients for rounds or channels
-        self.svr_buttons.r_spatial_round.clicked.connect(self.button_r_spatial_round_clicked)
-        self.svr_buttons.r_spatial_channel.clicked.connect(self.button_r_spatial_round_clicked)
+        self.svr_buttons.pearson_spatial_round.clicked.connect(self.button_pearson_spatial_round_clicked)
+        self.svr_buttons.pearson_spatial_channel.clicked.connect(self.button_pearson_spatial_channel_clicked)
         # Finally, add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.svr_buttons, area="left", name='SVR Diagnostics',
                                            add_vertical_stretch=False)
@@ -217,24 +218,26 @@ class RegistrationViewer:
             self.update_plot()
 
     # SVR
-    def button_r_hist_clicked(self):
+    def button_pearson_hist_clicked(self):
+        self.svr_buttons.pearson_hist.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_hists(nb=self.nb, t=self.tile)
 
     # SVR
-    def button_r_cmap_clicked(self):
+    def button_pearson_cmap_clicked(self):
+        self.svr_buttons.pearson_cmap.setChecked(True)
         # link this to the function that plots the histogram of correlation coefficients
         view_pearson_colourmap(nb=self.nb, t=self.tile)
 
     # SVR
-    def button_r_spatial_round_clicked(self):
-        # link this to the function that plots the histogram of correlation coefficients
-        view_pearson_colourmap_spatial(nb=self.nb, round=True, t=self.tile)
+    def button_pearson_spatial_round_clicked(self):
+        self.svr_buttons.pearson_spatial_round.setChecked(True)
+        view_pearson_colourmap_spatial(nb=self.nb, t=self.tile, round=True)
 
     # SVR
-    def button_r_spatial_channel_clicked(self):
-        # link this to the function that plots the histogram of correlation coefficients
-        view_pearson_colourmap_spatial(nb=self.nb, round=False, t=self.tile)
+    def button_pearson_spatial_channel_clicked(self):
+        self.svr_buttons.pearson_spatial_channel.setChecked(True)
+        view_pearson_colourmap_spatial(nb=self.nb, t=self.tile, round=False)
 
     # SVR
     def create_round_slot(self, r):
@@ -344,25 +347,24 @@ class RegistrationViewer:
         use_rounds, use_channels = self.nb.basic_info.use_rounds, self.nb.basic_info.use_channels
 
         # We will add a point on top of each image and add features to it
-        features = {'round': np.repeat(np.append(use_rounds, np.ones(len(use_channels)) * self.r_mid), 10).astype(int),
-                    'channel': np.repeat(np.append(np.ones(len(use_rounds)) * self.c_ref, use_channels), 10).astype(
-                        int)}
+        features = {'r': np.repeat(np.append(use_rounds, np.ones(len(use_channels)) * self.r_mid), 10).astype(int),
+                            'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.c_ref, use_channels), 10).astype(int)}
+        features_anchor = {'r': np.repeat(np.ones(len(use_rounds) + len(use_channels)) * self.r_ref, 10).astype(int),
+                            'c': np.repeat(np.ones(len(use_rounds) + len(use_channels)) * self.c_ref, 10).astype(int)}
 
         # Define text
         text = {
-            'string': 'Round {round} Channel {channel}',
-            'size': 20,
-            'color': 'Green'}
-        # Define text for anchor
+            'string': 'R: {r} C: {c}',
+            'size': 8,
+            'color': 'green'}
         text_anchor = {
-            'string': 'Anchor',
-            'size': 20,
-            'color': 'Red'}
+            'string': 'R: {r} C: {c}',
+            'size': 8,
+            'color': 'red'}
 
         # Now go on to define point coords. Napari only allows us to plot text with points, so will plot points that
         # are not visible and attach text to them
         points = []
-        points_anchor = []
 
         for r in use_rounds:
             self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
@@ -373,7 +375,6 @@ class RegistrationViewer:
             # Add this to all z planes so still shows up when scrolling
             for z in range(10):
                 points.append([z, -50, 250 + 1_000 * r])
-                points_anchor.append([z, -100, 250 + 1_000 * r])
 
         for c in range(len(use_channels)):
             self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 1_000, 1_000 * c],
@@ -384,12 +385,11 @@ class RegistrationViewer:
                                   contrast_limits=[0, 100])
             for z in range(10):
                 points.append([z, 950, 250 + 1_000 * c])
-                points_anchor.append([z, 900, 250 + 1_000 * c])
 
+        points = np.array(points)
         # Add text to image
-        self.viewer.add_points(np.array(points), features=features, text=text, size=1)
-        self.viewer.add_points(np.array(points_anchor), features=features, text=text_anchor, size=1)
-
+        self.viewer.add_points(points, features=features, text=text, size=1)
+        self.viewer.add_points(points - [0, 100, 0], features=features_anchor, text=text_anchor, size=1)
 
 class ButtonMethodWindow(QMainWindow):
     def __init__(self, active_button: str = 'SVR'):
@@ -494,11 +494,11 @@ class ButtonSVRWindow(QMainWindow):
         button = QPushButton('r_hist', self)
         button.setCheckable(True)
         button.setGeometry(0, 40 + 60 * y, 120, 28)
-        self.r_hist = button
+        self.pearson_hist = button
         button = QPushButton('r_cmap', self)
         button.setCheckable(True)
         button.setGeometry(140, 40 + 60 * y, 120, 28)
-        self.r_cmap = button
+        self.pearson_cmap = button
 
         # Create 2 spatial correlation buttons:
         # 1 to view pearson correlation coefficient spatially for rounds
@@ -507,11 +507,11 @@ class ButtonSVRWindow(QMainWindow):
         button = QPushButton('r_spatial_round', self)
         button.setCheckable(True)
         button.setGeometry(0, 40 + 60 * y, 120, 28)
-        self.r_spatial_round = button
+        self.pearson_spatial_round = button
         button = QPushButton('r_spatial_channel', self)
         button.setCheckable(True)
         button.setGeometry(140, 40 + 60 * y, 120, 28)
-        self.r_spatial_channel = button
+        self.pearson_spatial_channel = button
 
 
 class ButtonOutlierWindow(QMainWindow):
@@ -582,7 +582,7 @@ def set_style(button):
 
 
 # 1
-def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
+def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True):
     """
     view 3 scatter plots for each data set shift vs positions
     Args:
@@ -602,8 +602,11 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
         mode = 'Channel'
         shift = nb.register_debug.channel_shift[t, index].T
         subvol_transform = nb.register.channel_transform[t, index]
-        icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index],
-                                          z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+        A = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index],
+                                       z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+        B = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, nb.basic_info.anchor_channel],
+                                        z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+        icp_transform = compose_affine(A, invert_affine(B))
     position = nb.register_debug.position.T
 
     # Make ranges, wil be useful for plotting lines
@@ -612,13 +615,30 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
     coord_range = [z_range, yx_range, yx_range]
     # Need to add a central offset to all lines plotted
     tile_centre_zyx = np.roll(nb.basic_info.tile_centre, 1)
+
+    # We want to plot the shift of each coord against the position of each coord. The gradient when the dependent var
+    # is coord i and the independent var is coord j should be the transform[i,j] - int(i==j)
+    gradient_svr = subvol_transform[:3, :3] - np.eye(3)
+    gradient_icp = icp_transform[:3, :3] - np.eye(3)
+    # Now we need to compute what the intercept should be for each coord. Usually this would just be given by the final
+    # column of the transform, but we need to add a central offset to this. If the dependent var is coord i, and the
+    # independent var is coord j, then the intercept should be the transform[i,3] + central_offset[i,j]. This central
+    # offset is given by the formula: central_offset[i, j] = gradient[i, k1] * tile_centre[k1] + gradient[i, k2] *
+    # tile_centre[k2], where k1 and k2 are the coords that are not j.
     central_offset_svr = np.zeros((3, 3))
     central_offset_icp = np.zeros((3, 3))
+    intercpet_svr = np.zeros((3, 3))
+    intercpet_icp = np.zeros((3, 3))
     for i in range(3):
-        # This is a clever little trick to make j and k the dimensions that i is not
-        j, k = (i + 1) % 3, (i + 2) % 3
-        central_offset_svr[i] = subvol_transform[i, j] * tile_centre_zyx[j] + subvol_transform[i, k] * tile_centre_zyx[k]
-        central_offset_icp[i] = icp_transform[i, j] * tile_centre_zyx[j] + icp_transform[i, k] * tile_centre_zyx[k]
+        for j in range(3):
+            # k1 and k2 are the coords that are not j
+            k1 = (j + 1) % 3
+            k2 = (j + 2) % 3
+            central_offset_svr[i, j] = gradient_svr[i, k1] * tile_centre_zyx[k1] + gradient_svr[i, k2] * tile_centre_zyx[k2]
+            central_offset_icp[i, j] = gradient_icp[i, k1] * tile_centre_zyx[k1] + gradient_icp[i, k2] * tile_centre_zyx[k2]
+            # Now compute the intercepts
+            intercpet_svr[i, j] = subvol_transform[i, 3] + central_offset_svr[i, j]
+            intercpet_icp[i, j] = icp_transform[i, 3] + central_offset_icp[i, j]
 
     # Define the axes
     fig, axes = plt.subplots(3, 3)
@@ -627,16 +647,20 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool):
     for i in range(3):
         for j in range(3):
             ax = axes[i, j]
-            ax.scatter(position[i], shift[j], alpha=0.)
-            ax.plot(coord_range[i], (subvol_transform[i, j] - int(i == j)) * coord_range[i] +
-                    subvol_transform[i, 3] + central_offset_svr[i, j], label='SVR')
-            ax.plot(coord_range[i], (icp_transform[i, j] - int(i == j)) * coord_range[i] +
-                    icp_transform[i, 3] + central_offset_icp[i, j], label='ICP')
-            ax.set_ylabel(coord[j] + ' shift')
-            ax.set_ylabel(coord[i] + ' position')
+            ax.scatter(x=position[j], y=shift[i], alpha=0.3)
+            ax.plot(coord_range[j], gradient_svr[i, j] * coord_range[j] + intercpet_svr[i, j], label='SVR')
+            ax.plot(coord_range[j], gradient_icp[i, j] * coord_range[j] + intercpet_icp[i, j], label='ICP')
             ax.legend()
+    # Label subplot rows and columns with coord names
+    for ax, col in zip(axes[0], coord):
+        ax.set_title(col)
+    for ax, row in zip(axes[:, 0], coord):
+        ax.set_ylabel(row, rotation=90, size='large')
+    # common axis labels
+    fig.supxlabel('Position')
+    fig.supylabel('Shift')
     # Add title
-    plt.suptitle(mode + 'regression for Tile ' + str(t) + ', ' + mode + str(index))
+    plt.suptitle(mode + ' regression for Tile ' + str(t) + ', ' + mode + ' ' + str(index))
     plt.show()
 
 
@@ -661,20 +685,31 @@ def view_pearson_hists(nb, t, num_bins=30):
         counts, _ = np.histogram(round_corr[r], np.linspace(0, 1, num_bins))
         plt.hist(round_corr[r], bins=np.linspace(0, 1, num_bins))
         plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
+        # change fontsize from default 10 to 7
         plt.title('r = ' + str(r) +
                   '\n Pass = ' + str(
-            round(100 * sum(round_corr[r] > thresh) / round_corr.shape[1], 2)) + '%')
+            round(100 * sum(round_corr[r] > thresh) / round_corr.shape[1], 2)) + '%', fontsize=7)
+        # remove x ticks and y ticks
+        plt.xticks([])
+        plt.yticks([])
 
     for c in range(n_channels_use):
         plt.subplot(2, cols, cols + c + 1)
         counts, _ = np.histogram(channel_corr[use_channels[c]], np.linspace(0, 1, num_bins))
         plt.hist(channel_corr[use_channels[c]], bins=np.linspace(0, 1, num_bins))
-        plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
+        if c == 0:
+            plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r', label='r_thresh = ' + str(thresh))
+        else:
+            plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
+        # change fontsize from default 10 to 7
         plt.title('c = ' + str(use_channels[c]) +
                   '\n Pass = ' + str(
-            round(100 * sum(channel_corr[use_channels[c]] > thresh) / channel_corr.shape[1], 2)) + '%')
+            round(100 * sum(channel_corr[use_channels[c]] > thresh) / channel_corr.shape[1], 2)) + '%', fontsize=7)
+        # remove x ticks and y ticks
+        plt.xticks([])
+        plt.yticks([])
 
-    plt.suptitle('Similarity score distributions for all sub-volume shifts')
+    plt.suptitle('Similarity Score Distributions for all Sub-Volume Shifts')
     plt.show()
 
 
@@ -700,27 +735,27 @@ def view_pearson_colourmap(nb, t):
     fig, axes = plt.subplots(2, 1)
     ax1, ax2 = axes[0], axes[1]
     # ax1 refers to round shifts
-    im = ax1.imshow(round_corr, vmin=0, vmax=1, aspect='auto')
+    im = ax1.imshow(round_corr, vmin=0, vmax=1, aspect='auto', interpolation='none')
     ax1.set_xlabel('Sub-volume index')
     ax1.set_ylabel('Round')
     ax1.set_title('Round sub-volume shift scores')
     # ax2 refers to channel shifts
-    im = ax2.imshow(channel_corr, vmin=0, vmax=1, aspect='auto')
+    im = ax2.imshow(channel_corr, vmin=0, vmax=1, aspect='auto', interpolation='none')
     ax2.set_xlabel('Sub-volume index')
     ax2.set_ylabel('Channel')
     ax2.set_yticks(np.arange(len(nbp_basic.use_channels)), nbp_basic.use_channels)
     ax2.set_title('Channel sub-volume shift scores')
 
-    # Add common colour bar
+    # Add common colour bar. Also give it the label 'Pearson correlation coefficient'
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
+    fig.colorbar(im, cax=cbar_ax, label='Correlation coefficient')
 
     plt.suptitle('Similarity score distributions for all sub-volume shifts')
 
 
 # 1
-def view_pearson_colourmap_spatial(nb: Notebook, round: bool, t: int):
+def view_pearson_colourmap_spatial(nb: Notebook, t: int, round: bool = True):
     """
     function to view colourmap of correlation coefficients along with spatial info for either all round shifts of a tile
     or all channel shifts of a tile.
@@ -767,13 +802,13 @@ def view_pearson_colourmap_spatial(nb: Notebook, round: bool, t: int):
     # add colour bar
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
+    fig.colorbar(im, cax=cbar_ax, label='Correlation coefficient')
 
     plt.suptitle(mode + ' shift similarity scores for tile ' + str(t) + ' plotted spatially')
 
 
 # 2
-def shift_vector_field(nb: Notebook, round: bool):
+def shift_vector_field(nb: Notebook, round: bool = True):
     """
     Function to plot vector fields of predicted shifts vs shifts to see if we classify a shift as an outlier.
     Args:
@@ -781,56 +816,72 @@ def shift_vector_field(nb: Notebook, round: bool):
         round: True if round, False if Channel
     """
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
-    residual_thresh = nb.get_config()['register']['residual_threshold']
+    residual_thresh = nb.get_config()['register']['residual_thresh']
     use_tiles = nbp_basic.use_tiles
     tilepos_yx = nbp_basic.tilepos_yx[use_tiles]
 
     # Load in shift
     if round:
-        mode = 'round'
+        mode = 'Round'
         use_rc = nbp_basic.use_rounds
-        shift = nbp_register_debug.round_transform_unregularised[use_tiles, :, :, 3]
+        shift = nbp_register_debug.round_transform_unregularised[use_tiles, :, :, 3][:, use_rc]
     else:
-        mode = 'channel'
+        mode = 'Channel'
         use_rc = nbp_basic.use_channels
-        shift = nbp_register_debug.channel_transform_unregularised[use_tiles, :, :, 3]
+        shift = nbp_register_debug.channel_transform_unregularised[use_tiles, :, :, 3][:, use_rc]
 
     # record number of rounds/channels, tiles and initialise predicted shift
-    n_t, n_rc = shift.shape[0], shift.shape[1]
+    n_t, n_rc = shift.shape[0], len(use_rc)
     tilepos_yx_pad = np.vstack((tilepos_yx.T, np.ones(n_t))).T
     predicted_shift = np.zeros_like(shift)
 
     fig, axes = plt.subplots(nrows=3, ncols=n_rc)
     for elem in range(n_rc):
         # generate predicted shift for this r/c via huber regression
-        transform = huber_regression(shift[elem], tilepos_yx)
+        transform = huber_regression(shift[:, elem], tilepos_yx)
         predicted_shift[:, elem] = tilepos_yx_pad @ transform.T
+        scale = 2 * np.sqrt(np.sum(predicted_shift[:, elem, 1:] ** 2, axis=1))
 
         # plot the predicted yx shift vs actual yx shift in row 0
         ax = axes[0, elem]
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 10 * predicted_shift[:, elem, 2],
-                  10 * predicted_shift[:, elem, 1], color='b', label='regularised')
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 10 * shift[:, elem, 2], 10 * shift[:, elem, 1], color='r',
-                  label='raw')
+        # Make sure the vector field is properly scaled
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], predicted_shift[:, elem, 2], predicted_shift[:, elem, 1],
+                  color='b', scale=scale, scale_units='width', width=.05, alpha=0.5)
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], shift[:, elem, 2], shift[:, elem, 1], color='r', scale=scale,
+                  scale_units='width', width=.05, alpha=0.5)
+        # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
+        ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
+        ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_x_label('X')
-        ax.set_y_label('Y')
-        ax.set_title('XY shifts for ' + mode + ' ' + str(use_rc[elem]))
+        ax.set_title('XY shifts')
 
         # plot the predicted z shift vs actual z shift in row 1
         ax = axes[1, elem]
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, 10 * predicted_shift[:, elem, 0], color='b')
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, 10 * shift[:, elem, 2], color='r')
+        # we only want 1 label so make this for elem = 0
+        if elem == 0:
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, elem, 0], color='b',
+                      label='regularised', scale=scale, scale_units='width', width=.05, alpha=0.5)
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, elem, 2], color='r', label='raw', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5)
+            # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
+            ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
+            ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
+        else:
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, elem, 0], color='b', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5)
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, elem, 2], color='r', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5)
+            # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
+            ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
+            ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_x_label('X')
-        ax.set_y_label('Y')
-        ax.set_title('Z shifts for ' + mode + ' ' + str(use_rc[elem]))
+        ax.set_title('Z shifts')
 
         # Plot image of norms of residuals at each tile in row 3
         ax = axes[2, elem]
-        diff = make_residual_plot(residual=np.linalg.norm(predicted_shift[:, elem] - shift[:, elem]),
+        diff = create_tiled_image(data=np.linalg.norm(predicted_shift[:, elem] - shift[:, elem], axis=1),
                                   nbp_basic=nbp_basic)
         outlier = np.argwhere(diff > residual_thresh)
         n_outliers = outlier.shape[0]
@@ -842,21 +893,29 @@ def shift_vector_field(nb: Notebook, round: bool):
             ax.add_patch(rect)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_x_label('X')
-        ax.set_y_label('Y')
-        ax.set_title('Difference between prediction and observation for ' + mode + ' ' + str(use_rc[elem]))
+        ax.set_title('Residual')
 
+    # Set row and column labels
+    for ax, col in zip(axes[0], use_rc):
+        ax.set_title(col)
+    for ax, row in zip(axes[:, 0], ['XY-shifts', 'Z-shifts', 'Residuals']):
+        ax.set_ylabel(row, rotation=90, size='large')
+    # Add row and column labels
+    fig.supxlabel(mode)
+    fig.supylabel('Diagnostic')
     # Add global colour bar and legend
     lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
     lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
     fig.legend(lines, labels)
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
+    fig.colorbar(im, cax=cbar_ax, label='Residual Norm')
+    # Add title
+    fig.suptitle('Diagnostic plots for {} shift outlier removal'.format(mode), size='x-large')
 
 
 # 2
-def zyx_shift_image(nb: Notebook, round: bool):
+def zyx_shift_image(nb: Notebook, round: bool = True):
     """
         Function to plot overlaid images of predicted shifts vs shifts to see if we classify a shift as an outlier.
         Args:
@@ -886,9 +945,9 @@ def zyx_shift_image(nb: Notebook, round: bool):
     fig.supylabel('Coordinate (Z, Y, X)')
 
     # Set row and column labels
-    for ax, col in zip(axes[0], coord_label):
+    for ax, col in zip(axes[0], use):
         ax.set_title(col)
-    for ax, row in zip(axes[:, 0], use):
+    for ax, row in zip(axes[:, 0], coord_label):
         ax.set_ylabel(row, rotation=0, size='large')
 
     # Now we will plot 3 rows of subplots and n_rc columns of subplots. Each subplot will be made up of 2 further subplots
@@ -897,14 +956,17 @@ def zyx_shift_image(nb: Notebook, round: bool):
     for elem in range(n_rc):
         for coord in range(3):
             ax = axes[coord, elem]
+            # remove the ticks
+            ax.set_xticks([])
+            ax.set_yticks([])
             # Create 2 subplots within each subplot
-            gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=ax, wspace=0.1)
+            gs = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=ax, wspace=0.1)
             ax1 = plt.subplot(gs[0])
             ax2 = plt.subplot(gs[1])
             # Plot the raw shift in the left subplot
-            im = ax1.imshow(shift_raw[:, elem, coord])
+            im = ax1.imshow(create_tiled_image(shift_raw[:, elem, coord], nbp_basic))
             # Plot the regularised shift in the right subplot
-            im = ax2.imshow(shift[:, elem, coord])
+            im = ax2.imshow(create_tiled_image(shift[:, elem, coord], nbp_basic))
             # Now we want to outline the pixels that are different between raw and regularised with a dotted red rectangle
             diff = np.abs(shift_raw[:, elem, coord] - shift[:, elem, coord])
             outlier = np.argwhere(diff > 0.1)
@@ -915,31 +977,44 @@ def zyx_shift_image(nb: Notebook, round: bool):
                 # Add the rectangle to both subplots
                 ax1.add_patch(rect)
                 ax2.add_patch(rect)
+                # Remove ticks and labels from the left subplot
+                ax1.set_xticks([])
+                ax1.set_yticks([])
+                # Remove ticks and labels from the right subplot
+                ax2.set_xticks([])
+                ax2.set_yticks([])
 
     fig.canvas.draw()
-    plt.suptitle('Raw (top) vs regularised (bottom) shifts for all tiles. Row 1 = Z, Row 2 = Y, Row 3 = X.')
     plt.show()
+    # Add a title
+    fig.suptitle('Diagnostic plots for {} shift outlier removal'.format(mode), size='x-large')
+    # add a global colour bar
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
 
 
 # 2
-def make_residual_plot(residual, nbp_basic):
+def create_tiled_image(data, nbp_basic):
     """
-    generate image of residuals along with their tile positions
+    generate image of 1d tile data along with tile positions
     Args:
-        residual: n_tiles_use x 1 list of residuals
+        data: n_tiles_use x 1 list of residuals
         nbp_basic: basic info notebook page
     """
     # Initialise frequently used variables
     use_tiles = nbp_basic.use_tiles
-    tilepos_yx = nbp_basic.tilepos_yx
-    n_rows, n_cols = np.max(tilepos_yx[:, 0]) + 1, np.max(tilepos_yx[:, 1]) + 1
-    tilepos_yx = tilepos_yx[nbp_basic.use_tiles]
+    tilepos_yx = nbp_basic.tilepos_yx[nbp_basic.use_tiles]
+    n_rows = np.max(tilepos_yx[:, 0]) - np.min(tilepos_yx[:, 0]) + 1
+    n_cols = np.max(tilepos_yx[:, 1]) - np.min(tilepos_yx[:, 1]) + 1
+    tilepos_yx = tilepos_yx - np.min(tilepos_yx, axis=0)
     diff = np.zeros((n_rows, n_cols))
 
-    for t in use_tiles:
-        diff[tilepos_yx[t, 1], tilepos_yx[t, 0]] = residual[t]
+    for t in range(len(use_tiles)):
+        diff[tilepos_yx[t, 1], tilepos_yx[t, 0]] = data[t]
 
     diff = np.flip(diff.T, axis=-1)
+    diff[diff == 0] = np.nan
 
     return diff
 
@@ -1064,8 +1139,9 @@ def view_icp_n_matches(nb: Notebook, t: int):
     """
     nbp_basic, nbp_register_debug, nbp_find_spots = nb.basic_info, nb.register_debug, nb.find_spots
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
-    n_matches = nbp_register_debug.n_matches[t, use_rounds, use_channels]
-    frac_matches = n_matches_to_frac_matches(nbp_basic=nbp_basic, n_matches=n_matches, spot_no=nbp_find_spots.spot_no)
+    n_matches = nbp_register_debug.n_matches[t, use_rounds][:, use_channels]
+    frac_matches = n_matches_to_frac_matches(n_matches=n_matches,
+                                             spot_no=nbp_find_spots.spot_no[t, use_rounds][:, use_channels])
     n_iters = n_matches.shape[2]
 
     # Define the axes
@@ -1083,7 +1159,7 @@ def view_icp_n_matches(nb: Notebook, t: int):
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
             ax = axes[r, c]
-            ax.plot(np.arange(n_iters), frac_matches[use_rounds[r], use_channels[c]])
+            ax.plot(np.arange(n_iters), frac_matches[r, c])
             ax.set_xticks([])
             ax.set_yticks([0, 1])
 
@@ -1102,7 +1178,7 @@ def view_icp_mse(nb: Notebook, t: int):
     """
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
-    mse = nbp_register_debug.mse[t, use_rounds, use_channels]
+    mse = nbp_register_debug.mse[t, use_rounds][:, use_channels]
     n_iters = mse.shape[2]
 
     # Define the axes
@@ -1116,13 +1192,13 @@ def view_icp_mse(nb: Notebook, t: int):
     for ax, row in zip(axes[:, 0], use_rounds):
         ax.set_ylabel(row, rotation=0, size='large')
 
-    # Now plot n_matches
+    # Now plot mse
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
             ax = axes[r, c]
-            ax.plot(np.arange(n_iters), mse[use_rounds[r], use_channels[c]])
+            ax.plot(np.arange(n_iters), mse[r, c])
             ax.set_xticks([])
-            ax.set_yticks([np.min(mse[use_rounds[r], use_channels[c]]), np.max(mse[use_rounds[r], use_channels[c]])])
+            ax.set_yticks([np.min(mse[r, c]), np.max(mse[r, c])])
 
     plt.suptitle('MSE against iteration of ICP for tile ' + str(t) + ' for all rounds and channels, for all '
                  + str(n_iters) + ' iterations.')
@@ -1147,10 +1223,16 @@ def view_icp_deviations(nb: Notebook, t: int):
         t: tile
     """
     # Initialise frequent variables
-    nbp_basic, nbp_register, nbp_register_debug = nb.basic_info, nb.register, nb.register_debug
+    nbp_basic, nbp_register = nb.basic_info, nb.register
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
-    subvol_transform = nbp_register_debug.subvol_transform[t, use_rounds][:, use_channels]
-    transform = nbp_register.transform[t, use_rounds][:, use_channels]
+    subvol_transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
+    transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
+    for r in range(len(use_rounds)):
+        for c in range(len(use_channels)):
+            subvol_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.subvol_transform[t, use_rounds[r], use_channels[c]],
+                                                         z_scale=nbp_basic.pixel_size_z/nbp_basic.pixel_size_xy)
+            transform[r, c] = yxz_to_zyx_affine(A=nbp_register.transform[t, use_rounds[r], use_channels[c]],
+                                                         z_scale=nbp_basic.pixel_size_z/nbp_basic.pixel_size_xy)
 
     # Define the axes
     fig, axes = plt.subplots(len(use_rounds), len(use_channels))
@@ -1176,19 +1258,30 @@ def view_icp_deviations(nb: Notebook, t: int):
         for c in range(len(use_channels)):
             ax = axes[r, c]
             # create 2 subplots within this subplot
-            gs = ax.subgridspec(2, 1, height_ratios=[1, 1])
-            ax1 = fig.add_subplot(gs[0])
-            ax2 = fig.add_subplot(gs[1])
-            # plot scale_diff. Give this the title scale_diff
-            im1 = ax1.imshow(scale_diff[r, c].reshape(3, 1), cmap='bwr', vmin=-1, vmax=1)
-            ax1.set_title('scale_diff')
-            # plot shift_diff. Give this the title shift_diff
+            ax1 = ax.inset_axes([0, 0, 0.5, 1])
+            ax2 = ax.inset_axes([0.5, 0, 0.5, 1])
+            # plot scale_diff
+            im1 = ax1.imshow(scale_diff[r, c].reshape(3, 1), cmap='bwr', vmin=-.1, vmax=.1)
+            # plot shift_diff
             im2 = ax2.imshow(shift_diff[r, c].reshape(3, 1), cmap='bwr', vmin=-5, vmax=5)
-            ax2.set_title('shift_diff')
+            # remove ticks
+            ax1.set_xticks([])
+            ax1.set_yticks([])
+            ax2.set_xticks([])
+            ax2.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-    # plot common colour bar for scale_diff on right. Label this as scale_diff
-    fig.colorbar(im1, ax=axes[:, -1], label='scale_diff')
-    # plot common colour bar for shift_diff on right. Label this as shift_diff
-    fig.colorbar(im2, ax=axes[:, -1], label='shift_diff')
+    # plot 2 colour bars, one for the shift_diff and one for the scale_diff. Both colour bars should be the same size,
+    # and the scale_diff colour bar should be on the left of the subplots, and the shift_diff colour bar should be on
+    # the right of the subplots.
+    fig.subplots_adjust(right=0.8)
+    cbar_scale_ax = fig.add_axes([0.85, 0.15, 0.025, 0.7])
+    # Next we want to make sure the scale cbar has ticks on the left.
+    cbar_scale_ax.yaxis.tick_left()
+    fig.colorbar(im1, cax=cbar_scale_ax, ticks=[-.1, 0, .1])
+    cbar_shift_ax = fig.add_axes([0.9, 0.15, 0.025, 0.7])
+    fig.colorbar(im2, cax=cbar_shift_ax, ticks=[-5, 0, 5])
+
     plt.suptitle('Deviations of ICP transform against initial guess for tile ' + str(t) + ' for all rounds and '
                     'channels.')

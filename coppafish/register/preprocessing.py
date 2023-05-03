@@ -157,24 +157,21 @@ def yxz_to_zyx(image: np.ndarray):
     return image
 
 
-def n_matches_to_frac_matches(nbp_basic: NotebookPage, n_matches: np.ndarray, spot_no: np.ndarray):
+def n_matches_to_frac_matches(n_matches: np.ndarray, spot_no: np.ndarray):
     """
     Function to convert n_matches to fraction of matches
     Args:
-        nbp_basic: basic info nbp
-        n_matches: n_tiles x n_rounds x n_channels x n_iters
-        spot_no: n_tiles x (n_rounds + 1) x n_channels
+        n_matches: n_rounds x n_channels_use x n_iters
+        spot_no: n_rounds x n_channels_use
 
     Returns:
         frac_matches: n_tiles x n_rounds x n_channels x n_iters
     """
-    use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     frac_matches = np.zeros_like(n_matches)
 
-    for t in use_tiles:
-        for r in use_rounds:
-            for c in use_channels:
-                frac_matches[t, r, c] = n_matches[t, r, c] / spot_no[t, r, c]
+    for r in range(frac_matches.shape[0]):
+        for c in range(frac_matches.shape[1]):
+            frac_matches[r, c] = n_matches[r, c] / spot_no[r, c]
 
     return frac_matches
 
@@ -284,26 +281,22 @@ def yxz_to_zyx_affine(A, z_scale):
         Returns:
             A_reformatted: 3 x 4 transform with associated changes
             """
+    # convert A to 3 x 4
+    A = A.T
 
     # Append a bottom row to A
-    A = np.vstack((A.T, np.array([0, 0, 0, 1])))
+    A = np.vstack((A, np.array([0, 0, 0, 1])))
 
-    # First, convert everything into z, y, x by multiplying by a matrix that swaps rows
-    row_shuffler = np.zeros((4, 4))
-    row_shuffler[0, 2] = 1
-    row_shuffler[1, 0] = 1
-    row_shuffler[2, 1] = 1
-    row_shuffler[3, 3] = 1
-    # Invert row shuffler as this was the transform from zyx to yxz. We want to go the other way.
-    row_shuffler = np.linalg.inv(row_shuffler)
-
-    A = np.linalg.inv(row_shuffler) @ A @ row_shuffler
-
-    # Next, divide the shift part of A by the expansion factor
+    # Rescale the z-shift
     A[2, 3] = A[2, 3] / z_scale
 
-    # Remove the final row
-    A = A[:3, :4]
+    # Now get the change of basis matrix to go from yxz to zyx. This is just obtained by rolling first 3 rows + cols
+    # of the identity matrix right by 1
+    C = np.eye(4)
+    C[:3, :3] = np.roll(C[:3, :3], 1, axis=1)
+
+    # Finally, change basis and remove the final row
+    A = (np.linalg.inv(C) @ A @ C)[:3, :4]
 
     return A
 
@@ -320,27 +313,18 @@ def zyx_to_yxz_affine(A, z_scale):
         A_reformatted: 4 x 3 transform with associated changes
 
     """
-    # Append to A a bottom row
+    # Append a bottom row
     A = np.vstack((A, np.array([0, 0, 0, 1])))
 
-    # First, convert everything into z, y, x by multiplying by a matrix that swaps rows
-    row_shuffler = np.zeros((4, 4))
-    row_shuffler[0, 2] = 1
-    row_shuffler[1, 0] = 1
-    row_shuffler[2, 1] = 1
-    row_shuffler[3, 3] = 1
+    # scale the z-shift
+    A[0, 3] = z_scale * A[0, 3]
 
-    # compute the matrix in the new basis
-    A = np.linalg.inv(row_shuffler) @ A @ row_shuffler
+    # First, change basis to yxz
+    C = np.eye(4)
+    C[:3, :3] = np.roll(C[:3, :3], -1, axis=1)
 
-    # Next, multiply the shift part of A by the expansion factor
-    A[2, 3] = z_scale * A[2, 3]
-
-    # Remove the final row
-    A = A[:3, :4]
-
-    # Finally, transpose the matrix
-    A = A.T
+    # compute the matrix in the new basis, remove the final row and transpose to get 4 x 3
+    A = (np.linalg.inv(C) @ A @ C)[:3, :4].T
 
     return A
 
@@ -349,7 +333,6 @@ def change_basis(A, new_origin, z_scale):
     """
     Takes in 4 x 3 yxz * yxz transform where z coord is in xy pixels and convert to 4 x 4 zyx * zyx. Same as above
     but allows for change in origin.
-    # TODO: Replace all cases of reformat affine with change_basis
     Args:
         A: 4 x 3 yxz * yxz transform
         new_origin: new origin (zyx)
