@@ -136,7 +136,7 @@ class RegistrationViewer:
 
         # Finally, add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.outlier_buttons, area="left", name='Cross Tile Outlier Removal',
-                                             add_vertical_stretch=False)
+                                           add_vertical_stretch=False)
 
         # Create a single widget containing buttons for ICP diagnostics
         self.icp_buttons = ButtonICPWindow()

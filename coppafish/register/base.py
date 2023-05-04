@@ -205,7 +205,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
     """
     z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
     z_box, y_box, x_box = config['z_box'], config['y_box'], config['x_box']
-    r_thresh = config['r_threshold']
+    r_thresh = config['r_thresh']
 
     # Load in the anchor npy volume
     # Save the unfiltered version as well for histogram matching later, switch both to zyx

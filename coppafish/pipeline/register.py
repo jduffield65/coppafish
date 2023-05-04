@@ -69,7 +69,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
         regularise_transforms(round_transform=registration_data['round_transform'],
                               channel_transform=registration_data['channel_transform'],
                               tile_origin=np.roll(tile_origin, 1, axis=1),
-                              residual_threshold=config['residual_threshold'],
+                              residual_threshold=config['residual_thresh'],
                               use_tiles=nbp_basic.use_tiles,
                               use_rounds=nbp_basic.use_rounds,
                               use_channels=nbp_basic.use_channels)

@@ -180,7 +180,7 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
                     camera.append(camera_wavelength)
 
     # Normalise so that minimum is 0,0
-    xy_pos = np.aarray(xy_pos)
+    xy_pos = np.array(xy_pos)
     xy_pos = (xy_pos - np.min(xy_pos, axis=0)) / cal
     metadata['xy_pos'] = xy_pos
     metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
