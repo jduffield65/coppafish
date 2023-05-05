@@ -309,7 +309,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                         if nbp_basic.is_3d:
-                            utils.npy.save_tile(nbp_file, nbp_basic, rotate_90_clockwise(im), t, r, c)
+                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)
@@ -321,9 +321,3 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_anchor_z = None
         nbp_debug.scale_anchor = None
     return nbp, nbp_debug
-
-
-def rotate_90_clockwise(image):
-    image = np.swapaxes(image, 1, 2)
-    image = np.flip(image, axis=2)
-    return image

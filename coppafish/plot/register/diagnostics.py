@@ -64,7 +64,8 @@ class RegistrationViewer:
         self.anchor_contrast_limits_slider.setValue([0, 100])
 
         # Now we run a method that sets these contrast limits using napari
-        # Create sliders!
+        # Create sliders! We want these sliders to be placed at the top left of the napari viewer
+        # Add these sliders as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.im_contrast_limits_slider, area="left", name='Imaging Contrast')
         self.viewer.window.add_dock_widget(self.anchor_contrast_limits_slider, area="left", name='Anchor Contrast')
         # Now create events that will recognise when someone has changed slider values
@@ -491,26 +492,26 @@ class ButtonSVRWindow(QMainWindow):
         # 1 to view pearson correlation coefficient as histogram
         # 2 to view pearson correlation coefficient as colormap
         y = y_c + 1
-        button = QPushButton('r_hist', self)
+        button = QPushButton('Shift Score \n Hist', self)
         button.setCheckable(True)
-        button.setGeometry(0, 40 + 60 * y, 120, 28)
+        button.setGeometry(0, 40 + 60 * y, 120, 56)
         self.pearson_hist = button
-        button = QPushButton('r_cmap', self)
+        button = QPushButton('Shift Score \n c-map', self)
         button.setCheckable(True)
-        button.setGeometry(140, 40 + 60 * y, 120, 28)
+        button.setGeometry(140, 40 + 60 * y, 120, 56)
         self.pearson_cmap = button
 
         # Create 2 spatial correlation buttons:
         # 1 to view pearson correlation coefficient spatially for rounds
         # 2 to view pearson correlation coefficient spatially for channels
         y += 1
-        button = QPushButton('r_spatial_round', self)
+        button = QPushButton('Round Score \n Spatial c-map', self)
         button.setCheckable(True)
-        button.setGeometry(0, 40 + 60 * y, 120, 28)
+        button.setGeometry(0, 68 + 60 * y, 120, 56)
         self.pearson_spatial_round = button
-        button = QPushButton('r_spatial_channel', self)
+        button = QPushButton('Channel Score \n Spatial c-map', self)
         button.setCheckable(True)
-        button.setGeometry(140, 40 + 60 * y, 120, 28)
+        button.setGeometry(140, 68 + 60 * y, 120, 56)
         self.pearson_spatial_channel = button
 
 
@@ -834,13 +835,17 @@ def shift_vector_field(nb: Notebook, round: bool = True):
     n_t, n_rc = shift.shape[0], len(use_rc)
     tilepos_yx_pad = np.vstack((tilepos_yx.T, np.ones(n_t))).T
     predicted_shift = np.zeros_like(shift)
+    # When we are scaling the vector field, it will be useful to store the following
+    n_vectors_x = tilepos_yx[:, 1].max() - tilepos_yx[:, 1].min() + 1
 
     fig, axes = plt.subplots(nrows=3, ncols=n_rc)
     for elem in range(n_rc):
         # generate predicted shift for this r/c via huber regression
         transform = huber_regression(shift[:, elem], tilepos_yx)
         predicted_shift[:, elem] = tilepos_yx_pad @ transform.T
-        scale = 2 * np.sqrt(np.sum(predicted_shift[:, elem, 1:] ** 2, axis=1))
+        # Defining this scale will mean that the length of the largest vector will be equal to 1/n_vectors_x of the
+        # width of the plot
+        scale = n_vectors_x * np.sqrt(np.sum(predicted_shift[:, elem, 1:] ** 2, axis=1))
 
         # plot the predicted yx shift vs actual yx shift in row 0
         ax = axes[0, elem]
@@ -854,7 +859,6 @@ def shift_vector_field(nb: Notebook, round: bool = True):
         ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_title('XY shifts')
 
         # plot the predicted z shift vs actual z shift in row 1
         ax = axes[1, elem]
@@ -877,7 +881,6 @@ def shift_vector_field(nb: Notebook, round: bool = True):
             ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_title('Z shifts')
 
         # Plot image of norms of residuals at each tile in row 3
         ax = axes[2, elem]
@@ -893,7 +896,6 @@ def shift_vector_field(nb: Notebook, round: bool = True):
             ax.add_patch(rect)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_title('Residual')
 
     # Set row and column labels
     for ax, col in zip(axes[0], use_rc):
@@ -1066,9 +1068,7 @@ def view_round_scales(nb: Notebook):
     plt.ylabel('X-scales')
     plt.legend()
 
-    plt.suptitle('Distribution of scales across tiles for registration from Anchor (R: ' + str(anchor_round)
-                 + ', C: ' + str(anchor_channel) + ') to the reference channel of imaging rounds (R: r, C: '
-                 + str(anchor_channel) + ') for all rounds r.')
+    plt.suptitle('Distribution of scales across tiles for round registration.')
     plt.show()
 
 
@@ -1084,9 +1084,9 @@ def view_channel_scales(nb: Notebook):
     use_tiles = nbp_basic.use_tiles
     use_channels = nbp_basic.use_channels
     # Extract raw scales
-    z_scale = nbp_register_debug.channel_transform_unregularised[use_tiles, use_channels, 0, 0]
-    y_scale = nbp_register_debug.channel_transform_unregularised[use_tiles, use_channels, 1, 1]
-    x_scale = nbp_register_debug.channel_transform_unregularised[use_tiles, use_channels, 2, 2]
+    z_scale = nbp_register_debug.channel_transform_unregularised[use_tiles][:, use_channels, 0, 0]
+    y_scale = nbp_register_debug.channel_transform_unregularised[use_tiles][:, use_channels, 1, 1]
+    x_scale = nbp_register_debug.channel_transform_unregularised[use_tiles][:, use_channels, 2, 2]
     n_tiles_use, n_channels_use = z_scale.shape[0], z_scale.shape[1]
 
     # Plot box plots
@@ -1123,9 +1123,7 @@ def view_channel_scales(nb: Notebook):
     plt.ylabel('X-scale')
     plt.legend()
 
-    plt.suptitle('Distribution of scales across tiles for registration from adjusted anchor in coordinate frame of (R: '
-                 + str(mid_round) + ', C: ' + str(anchor_channel) + ') to (R:' + str(mid_round) + ' C: c for all '
-                                                                                                  'channels c.')
+    plt.suptitle('Distribution of scales across tiles for channel registration.')
     plt.show()
 
 
@@ -1140,6 +1138,8 @@ def view_icp_n_matches(nb: Notebook, t: int):
     nbp_basic, nbp_register_debug, nbp_find_spots = nb.basic_info, nb.register_debug, nb.find_spots
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_matches = nbp_register_debug.n_matches[t, use_rounds][:, use_channels]
+    # delete column 1 from n_matches as it is incorrect
+    n_matches = np.delete(n_matches, 1, axis=2)
     frac_matches = n_matches_to_frac_matches(n_matches=n_matches,
                                              spot_no=nbp_find_spots.spot_no[t, use_rounds][:, use_channels])
     n_iters = n_matches.shape[2]
@@ -1161,10 +1161,12 @@ def view_icp_n_matches(nb: Notebook, t: int):
             ax = axes[r, c]
             ax.plot(np.arange(n_iters), frac_matches[r, c])
             ax.set_xticks([])
-            ax.set_yticks([0, 1])
+            ax.set_yticks([])
+            ax.set_ylim([0, 1])
+            ax.set_xlim([0, n_iters//2])
 
-    plt.suptitle('Fraction of imaging spots matched against iteration of ICP for tile ' + str(t) +
-                 ' for all rounds and channels, for all ' + str(n_iters) + ' iterations.')
+    plt.suptitle('Fraction of matches against iterations for tile ' + str(t) + '. \n '
+                                                                               'Note that y-axis is [0,1]')
     plt.show()
 
 
@@ -1179,6 +1181,8 @@ def view_icp_mse(nb: Notebook, t: int):
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     mse = nbp_register_debug.mse[t, use_rounds][:, use_channels]
+    # delete column 1 from mse as it is incorrect
+    mse = np.delete(mse, 1, axis=2)
     n_iters = mse.shape[2]
 
     # Define the axes
@@ -1198,10 +1202,12 @@ def view_icp_mse(nb: Notebook, t: int):
             ax = axes[r, c]
             ax.plot(np.arange(n_iters), mse[r, c])
             ax.set_xticks([])
-            ax.set_yticks([np.min(mse[r, c]), np.max(mse[r, c])])
+            ax.set_yticks([])
+            ax.set_xlim([0, n_iters//2])
+            ax.set_ylim([0, np.max(mse)])
 
-    plt.suptitle('MSE against iteration of ICP for tile ' + str(t) + ' for all rounds and channels, for all '
-                 + str(n_iters) + ' iterations.')
+    plt.suptitle('MSE against iteration for tile ' + str(t) + ' for all rounds and channels. \n'
+                                                              'Note that the y-axis is the same for all plots.')
     plt.show()
 
 
@@ -1275,13 +1281,14 @@ def view_icp_deviations(nb: Notebook, t: int):
     # plot 2 colour bars, one for the shift_diff and one for the scale_diff. Both colour bars should be the same size,
     # and the scale_diff colour bar should be on the left of the subplots, and the shift_diff colour bar should be on
     # the right of the subplots.
-    fig.subplots_adjust(right=0.8)
-    cbar_scale_ax = fig.add_axes([0.85, 0.15, 0.025, 0.7])
+    fig.subplots_adjust(right=0.7)
+    cbar_scale_ax = fig.add_axes([0.75, 0.15, 0.025, 0.7])
     # Next we want to make sure the scale cbar has ticks on the left.
     cbar_scale_ax.yaxis.tick_left()
-    fig.colorbar(im1, cax=cbar_scale_ax, ticks=[-.1, 0, .1])
+    fig.colorbar(im1, cax=cbar_scale_ax, ticks=[-.1, 0, .1], label='Scale difference')
     cbar_shift_ax = fig.add_axes([0.9, 0.15, 0.025, 0.7])
-    fig.colorbar(im2, cax=cbar_shift_ax, ticks=[-5, 0, 5])
+    fig.colorbar(im2, cax=cbar_shift_ax, ticks=[-5, 0, 5], label='Shift difference')
 
-    plt.suptitle('Deviations of ICP transform against initial guess for tile ' + str(t) + ' for all rounds and '
-                    'channels.')
+    plt.suptitle('Deviations of ICP from SVR for tile ' + str(t) + '. \n'
+                                                                   'Left column is zyx scale difference, '
+                                                                   'right column is zyx shift difference.')
