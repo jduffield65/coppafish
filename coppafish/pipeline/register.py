@@ -93,10 +93,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     mse = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
     converged = np.zeros((n_tiles, n_rounds, n_channels), dtype=bool)
     for t in use_tiles:
-        isolated = spot_isolated(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
-                                 nbp_find_spots.spot_no)
+        # isolated = spot_isolated(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
+        #                          nbp_find_spots.spot_no)
         ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
-                               nbp_find_spots.spot_no)[isolated]
+                               nbp_find_spots.spot_no)
         for r in use_rounds:
             for c in use_channels:
                 # Only do ICP on non-degenerate cells with more than 100 spots
@@ -114,6 +114,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                     icp_transform[t, r, c] = registration_data['subvol_transform'][t, r, c]
 
     # Add subvol statistics to debugging page
+    nbp_debug.position = registration_data['position']
     nbp_debug.channel_shift, nbp_debug.round_shift = registration_data['channel_shift'], registration_data['round_shift']
     nbp_debug.channel_shift_corr = registration_data['channel_shift_corr']
     nbp_debug.round_shift_corr = registration_data['round_shift_corr']

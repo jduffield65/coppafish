@@ -258,6 +258,9 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         # Match histograms to unfiltered anchor and then sobel filter
         target_image = sobel(match_histograms(target_image, anchor_image_unfiltered))
 
+        # save a small subset for reg diagnostics
+        save_compressed_image(nbp_file, target_image, t, nbp_basic.n_rounds // 2, c)
+
         # next we split image into overlapping cuboids
         subvol_base, _ = split_3d_image(image=anchor_image_corrected, z_subvolumes=z_subvols,
                                         y_subvolumes=y_subvols, x_subvolumes=x_subvols,
@@ -331,15 +334,15 @@ def regularise_round_scaling(scale: np.ndarray):
     round came before or after.
 
     Args:
-        scale: n_tiles_use x n_rounds_use x 3 ndarray of z y x scales for each tile and round
+        scale: 3 x n_tiles_use x n_rounds_use ndarray of z y x scales for each tile and round
 
     Returns:
         scale_regularised:  n_tiles_use x n_rounds_use x 3 ndarray of z y x regularised scales for each tile and round
     """
     # Define num tiles and separate the z scale and yx scales for different analysis
-    n_tiles = scale.shape[0]
-    z_scale = scale[:, :, 0]
-    yx_scale = scale[:, :, 1:]
+    n_tiles = scale.shape[1]
+    z_scale = scale[0]
+    yx_scale = scale[1:]
 
     # Regularise z_scale. Expect z_scale to vary by round but not by tile.
     # We classify outliers in z as:
@@ -349,13 +352,13 @@ def regularise_round_scaling(scale: np.ndarray):
     median_z_scale = np.repeat(np.median(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
     iqr_z_scale = np.repeat(stats.iqr(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
     outlier_z = np.abs(z_scale - median_z_scale) > iqr_z_scale
-    z_scale[outlier_z] = median_z_scale
+    z_scale[outlier_z] = median_z_scale[outlier_z]
 
     # Now carry out removal of outliers of type (b)
     delta_z_scale = np.diff(z_scale, axis=1)
     dominant_sign = np.sign(np.median(delta_z_scale))
-    outlier_z = np.vstack((np.sign(delta_z_scale) != dominant_sign, np.zeros(n_tiles, dtype=bool)))
-    z_scale[outlier_z] = median_z_scale
+    outlier_z = np.hstack((np.sign(delta_z_scale) != dominant_sign, np.zeros((n_tiles, 1), dtype=bool)))
+    z_scale[outlier_z] = median_z_scale[outlier_z]
 
     # Regularise yx_scale: No need to account for variation in tile or round
     outlier_yx = np.abs(yx_scale - 1) > 0.01
@@ -371,25 +374,25 @@ def regularise_channel_scaling(scale: np.ndarray):
     to 1 for z regardless of channel and should be the same for the same channel.
 
     Args:
-        scale: n_tiles_use x n_channels_use x 3 ndarray of z y x scales for each tile and channel
+        scale: 3 x n_tiles_use x n_channels_use ndarray of z y x scales for each tile and channel
 
     Returns:
         scale_regularised:  n_tiles_use x n_channels_use x 3 ndarray of z y x regularised scales for each tile and chan
     """
     # Define num tiles and separate the z scale and yx scales for different analysis
-    n_tiles = scale.shape[0]
-    z_scale = scale[:, :, 0]
-    yx_scale = scale[:, :, 1:]
+    n_tiles = scale.shape[1]
+    z_scale = scale[0]
+    yx_scale = scale[1:]
 
     # Regularise z_scale: No need to account for variation in tile or channel
     outlier_z = np.abs(z_scale - 1) > 0.01
     z_scale[outlier_z] = 1
 
     # Regularise yx_scale: Account for variation in channel
-    median_yx_scale = np.repeat(np.median(yx_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
-    iqr_yx_scale = np.repeat(stats.iqr(yx_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
+    median_yx_scale = np.repeat(np.median(yx_scale, axis=1)[:, np.newaxis], n_tiles, axis=1)
+    iqr_yx_scale = np.repeat(stats.iqr(yx_scale, axis=1)[:, np.newaxis], n_tiles, axis=1)
     outlier_yx = np.abs(yx_scale - median_yx_scale) > iqr_yx_scale
-    yx_scale[outlier_yx] = median_yx_scale
+    yx_scale[outlier_yx] = median_yx_scale[outlier_yx]
 
     return scale
 
@@ -431,8 +434,8 @@ def regularise_transforms(round_transform: np.ndarray, channel_transform: np.nda
                                     array=round_transform)
 
     # Regularise channel transforms
-    channel_transform[:, :, :, :, 3] = regularise_shift(shift=channel_transform[:, :, :, :, 3], tile_origin=tile_origin,
-                                                        residual_threshold=residual_threshold)
+    channel_transform[:, :, :, 3] = regularise_shift(shift=channel_transform[:, :, :, 3], tile_origin=tile_origin,
+                                                     residual_threshold=residual_threshold)
     channel_scale = np.array([channel_transform[:, :, 0, 0], channel_transform[:, :, 1, 1],
                               channel_transform[:, :, 2, 2]])
     channel_scale_regularised = regularise_channel_scaling(channel_scale)
@@ -530,13 +533,13 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust):
     transform = start_transform
     n_matches = np.zeros(n_iters)
     error = np.zeros(n_iters)
-    prev_neighbour = np.zeros(yxz_base.shape[0], dtype=bool)
+    prev_neighbour = np.ones(yxz_target.shape[0]) * yxz_base.shape[0]
 
     # Update transform. We want this to have max n_iters iterations. We will end sooner if all neighbours do not change
     # in 2 successive iterations. Define the variables for iteration 0 before we start the loop
     transform, neighbour, n_matches[0], error[0] = get_transform(yxz_base, yxz_target, transform, dist_thresh, robust)
-    i = 1
-    while i < n_iters and prev_neighbour != neighbour:
+    i = 0
+    while i + 1 < n_iters and not all(prev_neighbour == neighbour):
         # update i and prev_neighbour
         prev_neighbour, i = neighbour, i + 1
         transform, neighbour, n_matches[i], error[i] = get_transform(yxz_base, yxz_target, transform, dist_thresh,

@@ -72,14 +72,14 @@ def replace_scale(transform: np.ndarray, scale: np.ndarray):
     Function to replace the diagonal of transform with new scales
     Args:
         transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
-        scale: n_tiles x n_rounds x 3 or n_tiles x n_channels x 3 of zyx scales
+        scale: 3 xn_tiles x n_rounds or 3 x n_tiles x n_channels of zyx scales
 
     Returns:
         transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
     """
     # Loop through dimensions i: z = 0, y = 1, x = 2
     for i in range(3):
-        transform[:, :, i, i] = scale[:, :, i]
+        transform[:, :, i, i] = scale[i]
 
     return transform
 
@@ -93,12 +93,12 @@ def populate_full(sublist_1, list_1, sublist_2, list_2, array):
         list_1: entire list in 0th dim
         sublist_2: sublist in the 1st dim
         list_2: entire list in 1st dim
-        array: array to be converted
+        array: array to be converted (dimensions len(sublist 1) x len(sublist2) x 3 x 4)
 
     Returns:
-        full_array: len(list1) x len(list2) ndarray
+        full_array: len(list1) x len(list2) x 3 x 4 ndarray
     """
-    full_array = np.zeros((len(list_1), len(list_2)))
+    full_array = np.zeros((len(list_1), len(list_2), 3, 4))
     for i in range(len(sublist_1)):
         for j in range(len(sublist_2)):
             full_array[sublist_1[i], sublist_2[j]] = array[i, j]

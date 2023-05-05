@@ -60,8 +60,8 @@ class RegistrationViewer:
         self.im_contrast_limits_slider.setRange(0, 256)
         self.anchor_contrast_limits_slider.setRange(0, 256)
         # Set default lower limit to 0 and upper limit to 100
-        self.im_contrast_limits_slider.setValue(([0, 100]))
-        self.anchor_contrast_limits_slider.setValue([0, 100])
+        # self.im_contrast_limits_slider.setValue(([0, 100]))
+        # self.anchor_contrast_limits_slider.setValue([0, 100])
 
         # Now we run a method that sets these contrast limits using napari
         # Create sliders! We want these sliders to be placed at the top left of the napari viewer
@@ -177,13 +177,13 @@ class RegistrationViewer:
     # Contrast
     def change_anchor_layer_contrast(self, low, high):
         # Change contrast of anchor image (displayed in red), these are even index layers
-        for i in range(0, 32, 2):
+        for i in range(0, len(self.viewer.layers), 2):
             self.viewer.layers[i].contrast_limits = [low, high]
 
     # contrast
     def change_imaging_layer_contrast(self, low, high):
         # Change contrast of anchor image (displayed in red), these are even index layers
-        for i in range(1, 32, 2):
+        for i in range(1, len(self.viewer.layers), 2):
             self.viewer.layers[i].contrast_limits = [low, high]
 
     # method
@@ -596,17 +596,17 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True
     if round:
         mode = 'Round'
         shift = nb.register_debug.round_shift[t, index].T
-        subvol_transform = nb.register.round_transform[t, index]
+        subvol_transform = nb.register_debug.round_transform_unregularised[t, index]
         icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel],
-                                          z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+                                          z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
     else:
         mode = 'Channel'
         shift = nb.register_debug.channel_shift[t, index].T
-        subvol_transform = nb.register.channel_transform[t, index]
-        A = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index],
-                                       z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+        subvol_transform = nb.register.channel_transform_unregularised[t, index]
+        A = yxz_to_zyx_affine(A=nb.register_debug.transform[t, nb.basic_info.n_rounds // 2, index],
+                              z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
         B = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, nb.basic_info.anchor_channel],
-                                        z_scale= nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+                              z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
         icp_transform = compose_affine(A, invert_affine(B))
     position = nb.register_debug.position.T
 
