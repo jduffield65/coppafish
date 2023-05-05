@@ -108,7 +108,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                         dist_thresh=neighb_dist_thresh,
                         start_transform=registration_data['subvol_transform'][t, r, c],
                         n_iters=50,
-                        robust=False)
+                        robust=True)
                 else:
                     # Otherwise just use the starting transform
                     icp_transform[t, r, c] = registration_data['subvol_transform'][t, r, c]

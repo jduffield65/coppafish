@@ -199,7 +199,7 @@ class RegistrationViewer:
             self.method_buttons.method = 'SVR'
             # Because method has changed, also need to change transforms
             # Update set of transforms
-            self.transform = self.nb.register.start_transform
+            self.transform = self.nb.register.subvol_transform
             self.update_plot()
 
     # method
@@ -391,6 +391,7 @@ class RegistrationViewer:
         # Add text to image
         self.viewer.add_points(points, features=features, text=text, size=1)
         self.viewer.add_points(points - [0, 100, 0], features=features_anchor, text=text_anchor, size=1)
+
 
 class ButtonMethodWindow(QMainWindow):
     def __init__(self, active_button: str = 'SVR'):
@@ -595,20 +596,24 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True
     # Transpose shift and position variables so coord is dimension 0, makes plotting easier
     if round:
         mode = 'Round'
-        shift = nb.register_debug.round_shift[t, index].T
+        shift = nb.register_debug.round_shift[t, index]
+        corr = nb.register_debug.round_shift_corr[t, index]
         subvol_transform = nb.register_debug.round_transform_unregularised[t, index]
         icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel],
                                           z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
     else:
         mode = 'Channel'
-        shift = nb.register_debug.channel_shift[t, index].T
-        subvol_transform = nb.register.channel_transform_unregularised[t, index]
-        A = yxz_to_zyx_affine(A=nb.register_debug.transform[t, nb.basic_info.n_rounds // 2, index],
+        shift = nb.register_debug.channel_shift[t, index]
+        corr = nb.register_debug.channel_shift_corr[t, index]
+        subvol_transform = nb.register_debug.channel_transform_unregularised[t, index]
+        A = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index],
                               z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
         B = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, nb.basic_info.anchor_channel],
                               z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
         icp_transform = compose_affine(A, invert_affine(B))
-    position = nb.register_debug.position.T
+    r_thresh = nb.get_config()['register']['r_thresh']
+    shift = shift[corr > r_thresh].T
+    position = nb.register_debug.position[corr > r_thresh].T
 
     # Make ranges, wil be useful for plotting lines
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
@@ -1015,7 +1020,7 @@ def create_tiled_image(data, nbp_basic):
     for t in range(len(use_tiles)):
         diff[tilepos_yx[t, 1], tilepos_yx[t, 0]] = data[t]
 
-    diff = np.flip(diff.T, axis=-1)
+    diff = np.flip(diff.T, axis=0)
     diff[diff == 0] = np.nan
 
     return diff
@@ -1028,6 +1033,7 @@ def view_round_scales(nb: Notebook):
     Args:
         nb: Notebook
     """
+    # TODO: This is showing a bug in the code that all unregularised transforms have same z scale
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     anchor_round, anchor_channel = nbp_basic.anchor_round, nbp_basic.anchor_channel
     use_tiles = nbp_basic.use_tiles
