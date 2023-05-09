@@ -89,26 +89,29 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     n_matches = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
     mse = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
     converged = np.zeros((n_tiles, n_rounds, n_channels), dtype=bool)
-    for t in use_tiles:
-        # isolated = spot_isolated(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
-        #                          nbp_find_spots.spot_no)
-        ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
-                               nbp_find_spots.spot_no)
-        for r in use_rounds:
-            for c in use_channels:
-                # Only do ICP on non-degenerate cells with more than 100 spots
-                if nbp_find_spots.spot_no[t, r, c] > 100:
-                    imaging_spots_trc = spot_yxz(nbp_find_spots.spot_details, t, r, c, nbp_find_spots.spot_no)
-                    icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
-                        yxz_base=ref_spots_t,
-                        yxz_target=imaging_spots_trc,
-                        dist_thresh=neighb_dist_thresh,
-                        start_transform=registration_data['subvol_transform'][t, r, c],
-                        n_iters=50,
-                        robust=True)
-                else:
-                    # Otherwise just use the starting transform
-                    icp_transform[t, r, c] = registration_data['subvol_transform'][t, r, c]
+    # Create a progress bar for the ICP step
+    with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
+        pbar.set_description(f"Running ICP on all tiles")
+        for t in use_tiles:
+            ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
+                                   nbp_find_spots.spot_no)
+            for r in use_rounds:
+                for c in use_channels:
+                    pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
+                    # Only do ICP on non-degenerate cells with more than 100 spots
+                    if nbp_find_spots.spot_no[t, r, c] > 100:
+                        imaging_spots_trc = spot_yxz(nbp_find_spots.spot_details, t, r, c, nbp_find_spots.spot_no)
+                        icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
+                            yxz_base=ref_spots_t,
+                            yxz_target=imaging_spots_trc,
+                            dist_thresh=neighb_dist_thresh,
+                            start_transform=registration_data['subvol_transform'][t, r, c],
+                            n_iters=50,
+                            robust=True)
+                    else:
+                        # Otherwise just use the starting transform
+                        icp_transform[t, r, c] = registration_data['subvol_transform'][t, r, c]
+                    pbar.update(1)
 
     # Add subvol statistics to debugging page
     nbp_debug.position = registration_data['position']
