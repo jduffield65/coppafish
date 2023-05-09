@@ -330,7 +330,6 @@ class RegistrationViewer:
         # populate target arrays
         for r in use_rounds:
             file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.c_ref)+'.npy'
-            # TODO: CHANGE THIS! DONT NEED TO CHANGE BASIS WHEN TRANSFORM IS ICP TRANSFORM> WHY IS THIS WORKING AT ALL
             affine = change_basis(self.transform[t, r, self.c_ref], new_origin=self.new_origin, z_scale=self.z_scale)
             # Reset the spline interpolation order to 1 to speed things up
             self.target_round_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
