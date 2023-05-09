@@ -193,8 +193,8 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
             * position ( (z_subvols x y subvols x x_subvols) x 3 ) ndarray
             * round_shift ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
             * channel_shift ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-            * round_transform (n_tiles x n_rounds x 3 x 4) ndarray
-            * channel_transform (n_tiles x n_channels x 3 x 4) ndarray
+            * round_transform_raw (n_tiles x n_rounds x 3 x 4) ndarray
+            * channel_transform_raw (n_tiles x n_channels x 3 x 4) ndarray
             * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
             * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
         t: tile
@@ -240,7 +240,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         registration_data['position'] = position
         registration_data['round_shift'][t, r] = shift
         registration_data['round_shift_corr'][t, r] = corr
-        registration_data['round_transform'][t, r] = ols_regression(shift, position)
+        registration_data['round_transform_raw'][t, r] = ols_regression(shift, position)
 
     # Now begin the channel registration
     correction_matrix = np.vstack((registration_data['round_transform'][t, nbp_basic.n_rounds // 2], [0, 0, 0, 1]))
@@ -280,7 +280,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         # Save data into our working dictionary
         registration_data['channel_shift'][t, c] = shift
         registration_data['channel_shift_corr'][t, c] = corr
-        registration_data['channel_transform'][t, c] = ols_regression(shift, position)
+        registration_data['channel_transform_raw'][t, c] = ols_regression(shift, position)
 
     # Add tile to completed tiles
     registration_data['tiles_completed'].append(t)

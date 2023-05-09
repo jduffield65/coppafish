@@ -8,8 +8,7 @@ from superqt import QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow
 import matplotlib.gridspec as gridspec
 from ...setup import Notebook
-from coppafish.register.preprocessing import change_basis, n_matches_to_frac_matches, yxz_to_zyx_affine, \
-    compose_affine, invert_affine
+from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, compose_affine, invert_affine
 from coppafish.register.base import huber_regression
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
@@ -330,14 +329,14 @@ class RegistrationViewer:
         # populate target arrays
         for r in use_rounds:
             file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.c_ref)+'.npy'
-            affine = change_basis(self.transform[t, r, self.c_ref], new_origin=self.new_origin, z_scale=self.z_scale)
+            affine = yxz_to_zyx_affine(A=self.transform[t, r, self.c_ref], new_origin=self.new_origin)
             # Reset the spline interpolation order to 1 to speed things up
             self.target_round_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
                                                             affine, order=1))
 
         for c in use_channels:
             file = 't' + str(t) + 'r' + str(self.r_mid) + 'c' + str(c) + '.npy'
-            affine = change_basis(self.transform[t, self.r_mid, c], new_origin=self.new_origin, z_scale=self.z_scale)
+            affine = yxz_to_zyx_affine(A=self.transform[t, self.r_mid, c], new_origin=self.new_origin)
             self.target_channel_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
                                                               affine, order=1))
         # populate anchor image

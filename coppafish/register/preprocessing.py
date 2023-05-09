@@ -33,8 +33,8 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
                              'position': np.zeros((z_subvols * y_subvols * x_subvols, 3)),
                              'round_shift': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
                              'channel_shift': np.zeros((n_tiles, n_channels, z_subvols * y_subvols * x_subvols, 3)),
-                             'round_transform': np.zeros((n_tiles, n_rounds, 3, 4)),
-                             'channel_transform': np.zeros((n_tiles, n_channels, 3, 4)),
+                             'round_transform_raw': np.zeros((n_tiles, n_rounds, 3, 4)),
+                             'channel_transform_raw': np.zeros((n_tiles, n_channels, 3, 4)),
                              'round_shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
                              'channel_shift_corr': np.zeros((n_tiles, n_channels, z_subvols * y_subvols * x_subvols))
                              }
@@ -269,26 +269,23 @@ def invert_affine(A):
     return inverse
 
 
-def yxz_to_zyx_affine(A, z_scale):
+def yxz_to_zyx_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0])):
     """
-        Function to convert 4 x 3 matrix in y, x, z coords into a 3 x 4 matrix of z, y, x coords and rescale the
-        z-shift
+        Function to convert 4 x 3 matrix in y, x, z coords into a 3 x 4 matrix of z, y, x coords.
 
         Args:
             A: Original transform in old format (4 x 3)
-            z_scale: How much to unscale z-components by (float)
+            new_origin: Origin of new coordinate system in z, y, x coords
 
         Returns:
             A_reformatted: 3 x 4 transform with associated changes
             """
-    # convert A to 3 x 4
+    # convert A to 3 x 4 and add shift correction for new origin
     A = A.T
+    A[:, 3] += (A[:3, :3] - np.eye(3)) @ new_origin
 
     # Append a bottom row to A
     A = np.vstack((A, np.array([0, 0, 0, 1])))
-
-    # Rescale the z-shift
-    A[2, 3] = A[2, 3] / z_scale
 
     # Now get the change of basis matrix to go from yxz to zyx. This is just obtained by rolling first 3 rows + cols
     # of the identity matrix right by 1
@@ -301,23 +298,23 @@ def yxz_to_zyx_affine(A, z_scale):
     return A
 
 
-def zyx_to_yxz_affine(A, z_scale):
+def zyx_to_yxz_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0])):
     """
-    Function to convert 3 x 4 matrix in z, y, x coords into a 4 x 3 matrix of y, x, z coords and rescale the shift
+    Function to convert 3 x 4 matrix in z, y, x coords into a 4 x 3 matrix of y, x, z coords
 
     Args:
         A: Original transform in old format (3 x 4)
-        z_scale: How much to scale z-components by (float)
+        new_origin: new origin to use for the transform (zyx)
 
     Returns:
         A_reformatted: 4 x 3 transform with associated changes
 
     """
+    # Add new origin conversion for zyx shift, need to do this before changing basis
+    A[:, 3] += (A[:3, :3] - np.eye(3)) @ new_origin
+
     # Append a bottom row
     A = np.vstack((A, np.array([0, 0, 0, 1])))
-
-    # scale the z-shift
-    A[0, 3] = z_scale * A[0, 3]
 
     # First, change basis to yxz
     C = np.eye(4)
@@ -327,38 +324,6 @@ def zyx_to_yxz_affine(A, z_scale):
     A = (np.linalg.inv(C) @ A @ C)[:3, :4].T
 
     return A
-
-
-def change_basis(A, new_origin, z_scale):
-    """
-    Takes in 4 x 3 yxz * yxz transform where z coord is in xy pixels and convert to 4 x 4 zyx * zyx. Same as above
-    but allows for change in origin.
-    Args:
-        A: 4 x 3 yxz * yxz transform
-        new_origin: new origin (zyx)
-        z_scale: pixel_size_z/pixel_size_xy
-
-    """
-    # Transform saved as yxz * yxz but needs to be zyx * zyx. Convert this to something napari will understand. I think
-    # this includes making the shift the final column as opposed to our convention of making the shift the final row
-    affine_transform = np.vstack((A.T, np.array([0, 0, 0, 1])))
-
-    row_shuffler = np.zeros((4, 4))
-    row_shuffler[0, 1] = 1
-    row_shuffler[1, 2] = 1
-    row_shuffler[2, 0] = 1
-    row_shuffler[3, 3] = 1
-
-    # Now compute the affine transform, in the new basis
-    affine_transform = np.linalg.inv(row_shuffler) @ affine_transform @ row_shuffler
-
-    # z shift needs to be converted to z-pixels as opposed to yx
-    affine_transform[0, 3] = affine_transform[0, 3] / z_scale
-
-    # also add new origin conversion for shift
-    affine_transform[:3, 3] += (affine_transform[:3, :3] - np.eye(3)) @ new_origin
-
-    return affine_transform
 
 
 def reformat_array(A, nbp_basic, round):

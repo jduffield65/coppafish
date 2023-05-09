@@ -42,7 +42,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     nbp, nbp_debug = NotebookPage("register"), NotebookPage("register_debug")
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
-    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
 
     # Initialise variables for ICP step
     if nbp_basic.is_3d:
@@ -63,8 +62,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
             pbar.update(1)
 
     # Part 2: Regularisation
-    registration_data['round_transform_unregularised'] = np.copy(registration_data['round_transform'])
-    registration_data['channel_transform_unregularised'] = np.copy(registration_data['channel_transform'])
     registration_data['round_transform'], registration_data['channel_transform'] = \
         regularise_transforms(round_transform=registration_data['round_transform'],
                               channel_transform=registration_data['channel_transform'],
@@ -82,7 +79,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
             for c in use_channels:
                 registration_data['subvol_transform'][t, r, c] = \
                     zyx_to_yxz_affine(compose_affine(registration_data['channel_transform'][t, c],
-                                                     registration_data['round_transform'][t, r]), z_scale)
+                                                     registration_data['round_transform'][t, r]))
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
@@ -121,8 +118,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     # Add convergence statistics to the debug page
     nbp_debug.n_matches, nbp_debug.mse, nbp_debug.converged = n_matches, mse, converged
     # Add regularisation statistics to debugging page
-    nbp_debug.round_transform_unregularised = registration_data['round_transform_unregularised']
-    nbp_debug.channel_transform_unregularised = registration_data['channel_transform_unregularised']
+    nbp_debug.round_transform_unregularised = registration_data['round_transform_raw']
+    nbp_debug.channel_transform_unregularised = registration_data['channel_transform_raw']
 
     # add to register page of notebook
     nbp.subvol_transform = registration_data['subvol_transform']
