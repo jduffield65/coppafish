@@ -93,6 +93,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
         pbar.set_description(f"Running ICP on all tiles")
         for t in use_tiles:
+            # TODO: Somehow get isolated spots for both ref and imaging
             ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
                                    nbp_find_spots.spot_no)
             for r in use_rounds:

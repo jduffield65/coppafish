@@ -598,17 +598,14 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True
         shift = nb.register_debug.round_shift[t, index]
         corr = nb.register_debug.round_shift_corr[t, index]
         subvol_transform = nb.register_debug.round_transform_unregularised[t, index]
-        icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel],
-                                          z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+        icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel])
     else:
         mode = 'Channel'
         shift = nb.register_debug.channel_shift[t, index]
         corr = nb.register_debug.channel_shift_corr[t, index]
         subvol_transform = nb.register_debug.channel_transform_unregularised[t, index]
-        A = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index],
-                              z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
-        B = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, nb.basic_info.anchor_channel],
-                              z_scale=nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy)
+        A = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index])
+        B = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, nb.basic_info.anchor_channel])
         icp_transform = compose_affine(A, invert_affine(B))
     r_thresh = nb.get_config()['register']['r_thresh']
     shift = shift[corr > r_thresh].T
@@ -1240,10 +1237,8 @@ def view_icp_deviations(nb: Notebook, t: int):
     transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
-            subvol_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.subvol_transform[t, use_rounds[r], use_channels[c]],
-                                                         z_scale=nbp_basic.pixel_size_z/nbp_basic.pixel_size_xy)
-            transform[r, c] = yxz_to_zyx_affine(A=nbp_register.transform[t, use_rounds[r], use_channels[c]],
-                                                         z_scale=nbp_basic.pixel_size_z/nbp_basic.pixel_size_xy)
+            subvol_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.subvol_transform[t, use_rounds[r], use_channels[c]])
+            transform[r, c] = yxz_to_zyx_affine(A=nbp_register.transform[t, use_rounds[r], use_channels[c]])
 
     # Define the axes
     fig, axes = plt.subplots(len(use_rounds), len(use_channels))

@@ -280,9 +280,8 @@ def yxz_to_zyx_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0]
         Returns:
             A_reformatted: 3 x 4 transform with associated changes
             """
-    # convert A to 3 x 4 and add shift correction for new origin
+    # convert A to 3 x 4
     A = A.T
-    A[:, 3] += (A[:3, :3] - np.eye(3)) @ new_origin
 
     # Append a bottom row to A
     A = np.vstack((A, np.array([0, 0, 0, 1])))
@@ -292,8 +291,11 @@ def yxz_to_zyx_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0]
     C = np.eye(4)
     C[:3, :3] = np.roll(C[:3, :3], 1, axis=1)
 
-    # Finally, change basis and remove the final row
+    # Change basis and remove the final row
     A = (np.linalg.inv(C) @ A @ C)[:3, :4]
+
+    # Add new origin conversion for zyx shift, need to do this after changing basis so that the matrix is in zyx coords
+    A[:, 3] += (A[:3, :3] - np.eye(3)) @ new_origin
 
     return A
 
