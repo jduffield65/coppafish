@@ -319,6 +319,7 @@ class RegistrationViewer:
         # Function to clear all images currently in use
         n_images = len(self.viewer.layers)
         for i in range(n_images):
+            # when we delete layer 0, layer 1 becomes l0 and so on
             del self.viewer.layers[0]
 
     def get_images(self):

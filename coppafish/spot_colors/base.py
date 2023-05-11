@@ -5,7 +5,7 @@ from .. import utils
 from ..setup import NotebookPage
 
 
-def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndarray, z_scale: float,
+def apply_transform(yxz: np.ndarray, transform: np.ndarray,
                     tile_sz: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     This transforms the coordinates yxz based on an affine transform.
@@ -41,11 +41,9 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray, tile_centre: np.ndar
         - ```in_range``` - ```bool [n_spots]```.
             Whether spot s was in the bounds of the tile when transformed to round `r`, channel `c`.
     """
-    if (utils.round_any(tile_centre, 0.5) == tile_centre).min() == False:
-        raise ValueError(f"tile_centre given, {tile_centre}, is not a multiple of 0.5 in each dimension.")
-    yxz_pad = np.pad(yxz * [1, 1, z_scale], [(0, 0), (0, 1)], constant_values=1)
+    yxz_pad = np.pad(yxz, [(0, 0), (0, 1)], constant_values=1)
     yxz_transform = yxz_pad @ transform
-    yxz_transform = np.round(yxz_transform / [1, 1, z_scale]).astype(np.int16)
+    yxz_transform = np.round(yxz_transform).astype(np.int16)
     in_range = np.logical_and((yxz_transform >= np.array([0, 0, 0])).all(axis=1),
                               (yxz_transform < tile_sz).all(axis=1))  # set color to nan if out range
     return yxz_transform, in_range
@@ -108,7 +106,6 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         use_rounds = nbp_basic.use_rounds
     if use_channels is None:
         use_channels = nbp_basic.use_channels
-    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
 
     n_spots = yxz_base.shape[0]
     no_verbose = n_spots < 10000
@@ -117,7 +114,6 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     n_use_channels = len(use_channels)
     # spots outside tile bounds on particular r/c will initially be set to 0.
     spot_colors = np.zeros((n_spots, n_use_rounds, n_use_channels), dtype=np.int32)
-    tile_centre = np.array(nbp_basic.tile_centre)
     if not nbp_basic.is_3d:
         # use numpy not jax.numpy as reading in tiff is done in numpy.
         tile_sz = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, 1], dtype=np.int16)
@@ -137,7 +133,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
                     raise ValueError(
                         f"Transform for tile {t}, round {use_rounds[r]}, channel {use_channels[c]} is zero:"
                         f"\n{transform_rc}")
-                yxz_transform, in_range = apply_transform(yxz_base, transform_rc, tile_centre, z_scale, tile_sz)
+                yxz_transform, in_range = apply_transform(yxz_base, transform_rc, tile_sz)
                 yxz_transform = yxz_transform[in_range]
                 if yxz_transform.shape[0] > 0:
                     # Read in the shifted uint16 colors here, and remove shift later.

@@ -50,7 +50,7 @@ def find_z_tower_shifts(subvol_base, subvol_target, r_threshold):
         subvol_target: Target subvolume array (this is a z-tower of target subvolumes)
         r_threshold: threshold of correlation used in degenerate cases
     Returns:
-        shift: 4D array, with first 3 dimensions referring to subvolume index and final dim referring to shift.
+        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
     """
     z_subvolumes = subvol_base.shape[0]
     z_box = subvol_base.shape[1]

@@ -8,20 +8,17 @@ import jax.numpy as jnp
 import jax
 
 
-def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
-                           z_scale: float, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, bool]:
-    z_multiplier = jnp.array([1, 1, z_scale])
-    yxz_pad = jnp.pad(yxz * z_multiplier, [(0, 1)], constant_values=1)
+def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, bool]:
+    yxz_pad = jnp.pad(yxz, [(0, 1)], constant_values=1)
     yxz_transform = jnp.matmul(yxz_pad, transform)
-    yxz_transform = jnp.round(yxz_transform / z_multiplier).astype(jnp.int16)
+    yxz_transform = jnp.round(yxz_transform).astype(jnp.int16)
     in_range = jnp.logical_and((yxz_transform >= jnp.array([0, 0, 0])).all(),
                                (yxz_transform < tile_sz).all())  # set color to nan if out range
     return yxz_transform, in_range
 
 
 @partial(jax.jit, static_argnums=3)
-def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.ndarray,
-                    z_scale: float, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This transforms the coordinates yxz based on an affine transform.
     E.g. to find coordinates of spots on the same tile but on a different round and channel.
@@ -34,15 +31,6 @@ def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.n
             Affine transform to apply to ```yxz```, once centered and z units changed to ```yx_pixels```.
             ```transform[3, 2]``` is approximately the z shift in units of ```yx_pixels```.
             E.g. this is one of the transforms stored in ```nb['register']['transform']```.
-        tile_centre: ```float [3]```.
-            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
-            ```yxz``` were found on.
-            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
-            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
-            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
-        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.
-            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.
-            typically, ```z_scale > 1``` because ```z_pixels``` are larger than the ```yx_pixels```.
         tile_sz: ```int16 [3]```.
             YXZ dimensions of tile
 
@@ -55,8 +43,7 @@ def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_centre: jnp.n
         - ```in_range``` - ```bool [n_spots]```.
             Whether spot s was in the bounds of the tile when transformed to round `r`, channel `c`.
     """
-    return jax.vmap(apply_transform_single, in_axes=(0, None, None, None, None),
-                    out_axes=(0, 0))(yxz, transform, tile_centre, z_scale, tile_sz)
+    return jax.vmap(apply_transform_single, in_axes=(0, None, None), out_axes=(0, 0))(yxz, transform, tile_sz)
 
 
 def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_file: NotebookPage,
@@ -116,7 +103,6 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
         use_rounds = nbp_basic.use_rounds
     if use_channels is None:
         use_channels = nbp_basic.use_channels
-    z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
 
     n_spots = yxz_base.shape[0]
     no_verbose = n_spots < 10000
@@ -145,7 +131,7 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
                     raise ValueError(
                         f"Transform for tile {t}, round {use_rounds[r]}, channel {use_channels[c]} is zero:"
                         f"\n{transform_rc}")
-                yxz_transform, in_range = apply_transform(yxz_base, transform_rc, tile_centre, z_scale, tile_sz)
+                yxz_transform, in_range = apply_transform(yxz_base, transform_rc, tile_sz)
                 yxz_transform = np.asarray(yxz_transform)
                 in_range = np.asarray(in_range)
                 yxz_transform = yxz_transform[in_range]
