@@ -349,7 +349,7 @@
     "DESCRIPTION": ["*register* page contains the affine transforms to go from the ref round/channel",
       "to each imaging round/channel for every tile.",
       "Page added to *Notebook* in *pipeline/register.py*"],
-    "subvol_transform": [" n_tiles x n_rounds x n_channels x 4 x 3 ndarray",
+    "initial_transform": [" n_tiles x n_rounds x n_channels x 4 x 3 ndarray",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c)$ for each tile $t$, round $r $ and channel $c$.",
       " These are computed from start_transform and corrected via an ICP algorithm."],
     "transform": [" n_tiles x n_rounds x n_channels x 4 x 3 ndarray",
@@ -365,7 +365,8 @@
   {
     "DESCRIPTION": ["*register_debug* page contains information on how the affine transforms in *register* page were calculated.",
       "Page added to *Notebook* in *pipeline/register.py*"],
-
+    "reference_round": ["n_tiles",
+      "Round used as reference for each tile's channel registration."],
     "n_matches": ["Numpy integer array [n_tiles x n_rounds x n_channels x n_iters]",
       "Number of matches found for each transform at each iteration",
       "A match is when distance between points is less than `config['register']['neighb_dist_thresh']`."],
@@ -383,13 +384,13 @@
       "the shift taking sub-volume  [z, y, x] from $(t, r_{ref}, c_{ref})$ to its corresponding sub-volume in $(t, r, c_{ref})$."],
     "round_shift_corr": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols):",
       " score of shift of sub-volumes used for the round registration. "],
-    "channel_shift_corr": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols):",
+    "channel_shift_corr": ["n_tiles x n_channels :",
       " Sscore of shift of subvolumes used for channel registration"],
     "position": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols) x 3:",
       "Position of each subvolume in z y x local tile coords"],
-    "round_transform_unregularised": [" n_tiles x n_rounds x 4 x 3 ndarray:",
+    "round_transform_raw": [" n_tiles x n_rounds x 4 x 3 ndarray:",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
-    "channel_transform_unregularised": ["n_tiles x n_channels x 4 x 3 ndarray:",
+    "channel_transform_raw": ["n_tiles x n_channels x 4 x 3 ndarray:",
       " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."]
   },
 

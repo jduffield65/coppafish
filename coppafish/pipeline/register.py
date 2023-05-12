@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from ..setup import NotebookPage
 from ..find_spots import spot_yxz, spot_isolated
-from ..register.base import icp, regularise_transforms, subvolume_registration
+from ..register.base import icp, regularise_transforms, round_registration, channel_registration
 from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data
 
 
@@ -49,37 +49,39 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     else:
         neighb_dist_thresh = config['neighb_dist_thresh_2d']
 
-    # Collect any data that we have already run
+    # Load in registration data from previous runs of the software
     registration_data = load_reg_data(nbp_file, nbp_basic, config)
-    uncompleted_tiles = [t for t in use_tiles if t not in registration_data['tiles_completed']]
+    uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['round_registration']['tiles_completed'])
 
-    # Part 1: Compute subvolume shifts
+    # Part 1: Initial affine transform
+    # Start with round registration
     with tqdm(total=len(uncompleted_tiles)) as pbar:
-        pbar.set_description(f"Computing shifts for all subvolumes")
+        pbar.set_description(f"Running initial round registration on all tiles")
         for t in uncompleted_tiles:
-            registration_data = subvolume_registration(nbp_file=nbp_file, nbp_basic=nbp_basic, config=config,
-                                                       registration_data=registration_data, t=t, pbar=pbar)
-            pbar.update(1)
+            registration_data = round_registration(nbp_file, nbp_basic, config, registration_data, t, pbar)
+
+    # Now do channel registration
+    uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['channel_registration']['tiles_completed'])
+    with tqdm(total=len(uncompleted_tiles)) as pbar:
+        pbar.set_description(f"Running initial channel registration on all tiles")
+        for t in uncompleted_tiles:
+            registration_data = channel_registration(nbp_file, nbp_basic, config, registration_data, t, pbar)
 
     # Part 2: Regularisation
-    registration_data['round_transform'], registration_data['channel_transform'] = \
-        regularise_transforms(round_transform=registration_data['round_transform'],
-                              channel_transform=registration_data['channel_transform'],
-                              tile_origin=np.roll(tile_origin, 1, axis=1),
-                              residual_threshold=config['residual_thresh'],
-                              use_tiles=nbp_basic.use_tiles,
-                              use_rounds=nbp_basic.use_rounds,
-                              use_channels=nbp_basic.use_channels)
+    registration_data = regularise_transforms(registration_data=registration_data,
+                                              tile_origin=np.roll(tile_origin, 1, axis=1),
+                                              residual_threshold=config['residual_thresh'],
+                                              use_tiles=nbp_basic.use_tiles,
+                                              use_rounds=nbp_basic.use_rounds,
+                                              use_channels=nbp_basic.use_channels)
 
-    # Initialise new key in registration data for subvol_transform
-    registration_data['subvol_transform'] = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
     # Now combine all of these into single subvol transform array via composition
     for t in use_tiles:
         for r in use_rounds:
             for c in use_channels:
-                registration_data['subvol_transform'][t, r, c] = \
-                    zyx_to_yxz_affine(compose_affine(registration_data['channel_transform'][t, c],
-                                                     registration_data['round_transform'][t, r]))
+                registration_data['initial_transform'][t, r, c] = \
+                    zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['channel_transform'][t, c],
+                                                     registration_data['round_registration']['round_transform'][t, r]))
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
@@ -89,11 +91,14 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     n_matches = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
     mse = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
     converged = np.zeros((n_tiles, n_rounds, n_channels), dtype=bool)
+
     # Create a progress bar for the ICP step
     with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
         pbar.set_description(f"Running ICP on all tiles")
         for t in use_tiles:
-            # TODO: Somehow get isolated spots for both ref and imaging
+            # Do not do ICP if done in previous run
+            if 'icp' in registration_data.keys():
+                break
             ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
                                    nbp_find_spots.spot_no)
             for r in use_rounds:
@@ -106,31 +111,42 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                             yxz_base=ref_spots_t,
                             yxz_target=imaging_spots_trc,
                             dist_thresh=neighb_dist_thresh,
-                            start_transform=registration_data['subvol_transform'][t, r, c],
+                            start_transform=registration_data['initial_transform'][t, r, c],
                             n_iters=50,
-                            robust=True)
+                            robust=False)
                     else:
                         # Otherwise just use the starting transform
-                        icp_transform[t, r, c] = registration_data['subvol_transform'][t, r, c]
+                        icp_transform[t, r, c] = registration_data['initial_transform'][t, r, c]
                     pbar.update(1)
+    # Save ICP data
+    registration_data['icp'] = {'icp_transform': icp_transform, 'n_matches': n_matches, 'mse': mse,
+                                'converged': converged}
+    # Save registration data externally
+    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
+        pickle.dump(registration_data, f)
 
-    # Add subvol statistics to debugging page
-    nbp_debug.position = registration_data['position']
-    nbp_debug.channel_shift, nbp_debug.round_shift = registration_data['channel_shift'], registration_data['round_shift']
-    nbp_debug.channel_shift_corr = registration_data['channel_shift_corr']
-    nbp_debug.round_shift_corr = registration_data['round_shift_corr']
-    # Add convergence statistics to the debug page
-    nbp_debug.n_matches, nbp_debug.mse, nbp_debug.converged = n_matches, mse, converged
-    # Add regularisation statistics to debugging page
-    nbp_debug.round_transform_unregularised = registration_data['round_transform_raw']
-    nbp_debug.channel_transform_unregularised = registration_data['channel_transform_raw']
+    # Add round statistics to debugging page.
+    # First add the round registration statistics
+    nbp_debug.position = registration_data['round_registration']['position']
+    nbp_debug.round_shift = registration_data['round_registration']['round_shift']
+    nbp_debug.round_shift_corr = registration_data['round_registration']['round_shift_corr']
+    nbp_debug.round_transform_raw = registration_data['round_registration']['round_transform_raw']
 
-    # add to register page of notebook
-    nbp.subvol_transform = registration_data['subvol_transform']
-    nbp.transform = icp_transform
-    # Add round registration data
-    nbp.round_transform = registration_data['round_transform']
-    # Add channel registration data
-    nbp.channel_transform = registration_data['channel_transform']
+    # Now add the channel registration statistics
+    nbp_debug.channel_shift = registration_data['channel_registration']['channel_shift']
+    nbp_debug.reference_round = registration_data['channel_registration']['reference_round']
+    nbp_debug.channel_shift_corr = registration_data['channel_registration']['channel_shift_corr']
+    nbp_debug.channel_transform_raw = registration_data['channel_registration']['channel_transform_raw']
+
+    # Now add the ICP statistics
+    nbp_debug.mse = registration_data['icp']['mse']
+    nbp_debug.n_matches = registration_data['icp']['n_matches']
+    nbp_debug.converged = registration_data['icp']['converged']
+
+    # Now add relevant information to the nbp object
+    nbp.round_transform = registration_data['round_registration']['round_transform']
+    nbp.channel_transform = registration_data['channel_registration']['channel_transform']
+    nbp.initial_transform = registration_data['initial_transform']
+    nbp.transform = registration_data['icp']['icp_transform']
 
     return nbp, nbp_debug

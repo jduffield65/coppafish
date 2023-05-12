@@ -157,13 +157,15 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
     # Only want to extract metadata from round 0
     for f_id, f in tqdm(enumerate(files), desc='Reading metadata from all files'):
         with nd2.ND2File(os.path.join(input_dir, f)) as im:
-            stage_position = im.frame_metadata(0).channels[0].position.stagePositionUm[:2]
-            # We want to append if this stage position is new, do nothing if stage position we have read is the same
-            # as the last entry in xy_pos and break out of for loop if stage_position is within xy_pos but not as the
-            # last entry
+            stage_position = [int(x) for x in im.frame_metadata(0).channels[0].position.stagePositionUm[:2]]
+            # We want to append if this stage position is new
+            # We also want to break if we have reached the end of the tiles. We expect xy_pos to be the same value for
+            # file 0, ..., n_lasers - 1, then the next value for file n_lasers, ..., 2*n_lasers - 1, etc. But when we
+            # reach the end of the tiles, we will eventually loop back to tile 0, so we want to break when we reach.
             if stage_position not in xy_pos:
                 xy_pos.append(stage_position)
-            elif stage_position in xy_pos and stage_position != xy_pos[-1]:
+            all_tiles_complete = (stage_position in xy_pos) * (stage_position != xy_pos[-1])
+            if all_tiles_complete:
                 break
             cal = im.metadata.channels[0].volume.axesCalibration[0]
             # Now also extract the laser and camera associated with each channel
@@ -334,16 +336,15 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
 
     Returns:
-        Corresponding indices in nd2 file
+        Corresponding index in nd2 file
     """
-    if isinstance(tile_ind_npy, numbers.Number):
-        tile_ind_npy = [tile_ind_npy]
-    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, tile_pos_yx_npy[tile_ind_npy]).tolist()
-    if len(nd2_index) == 1:
-        return nd2_index[0]
-    else:
-        return nd2_index
-    # return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_npy[tile_ind_npy], 1) == 2)[0][0]
+    # Since nd2 tiles are numbered 0,0 from bottom left, and npy tiles are numbered 0,0 from top right, we need to
+    # convert tile_pos_yx[tile_ind_npy] to nd2 tile indices
+    n_rows, n_cols = tile_pos_yx_nd2.max(axis=0)
+    # get index in the nd2 tile pos array of [n_rows, n_cols] - tile_pos_yx_np[tile_ind_npy]
+    tile_pos = np.array([n_rows, n_cols]) - tile_pos_yx_npy[tile_ind_npy]
+    nd2_index = np.where(np.sum(tile_pos_yx_nd2 == tile_pos, axis=1) == 2)[0][0]
+    return nd2_index
 
 
 def get_raw_images(nbp_basic: NotebookPage, nbp_file: NotebookPage, tiles: List[int], rounds: List[int],

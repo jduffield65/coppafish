@@ -34,7 +34,7 @@ class RegistrationViewer:
         nbp_file, nbp_basic = nb.file_names, nb.basic_info
         use_rounds, use_channels = nbp_basic.use_rounds, nbp_basic.use_channels
         # set default transform to svr transform
-        self.transform = nb.register.transform
+        self.transform = nb.register.initial_transform
         self.z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
         self.r_ref, self.c_ref = nbp_basic.anchor_round, nb.basic_info.anchor_channel
         self.r_mid = len(use_rounds) // 2
@@ -110,16 +110,11 @@ class RegistrationViewer:
         for rnd in use_rounds:
             # now connect this to a slot that will activate the round regression
             self.svr_buttons.__getattribute__('R'+str(rnd)).clicked.connect(self.create_round_slot(rnd))
-        # channel buttons
-        for c in use_channels:
-            # now connect this to a slot that will activate the channel regression
-            self.svr_buttons.__getattribute__('C'+str(c)).clicked.connect(self.create_channel_slot(c))
         # Add buttons for correlation coefficients for both hist or cmap
         self.svr_buttons.pearson_hist.clicked.connect(self.button_pearson_hist_clicked)
         self.svr_buttons.pearson_cmap.clicked.connect(self.button_pearson_cmap_clicked)
         # add buttons for spatial correlation coefficients for rounds or channels
         self.svr_buttons.pearson_spatial_round.clicked.connect(self.button_pearson_spatial_round_clicked)
-        self.svr_buttons.pearson_spatial_channel.clicked.connect(self.button_pearson_spatial_channel_clicked)
         # Finally, add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.svr_buttons, area="left", name='SVR Diagnostics',
                                            add_vertical_stretch=False)
@@ -198,7 +193,7 @@ class RegistrationViewer:
             self.method_buttons.method = 'SVR'
             # Because method has changed, also need to change transforms
             # Update set of transforms
-            self.transform = self.nb.register.subvol_transform
+            self.transform = self.nb.register.initial_transform
             self.update_plot()
 
     # method
@@ -232,12 +227,7 @@ class RegistrationViewer:
     # SVR
     def button_pearson_spatial_round_clicked(self):
         self.svr_buttons.pearson_spatial_round.setChecked(True)
-        view_pearson_colourmap_spatial(nb=self.nb, t=self.tile, round=True)
-
-    # SVR
-    def button_pearson_spatial_channel_clicked(self):
-        self.svr_buttons.pearson_spatial_channel.setChecked(True)
-        view_pearson_colourmap_spatial(nb=self.nb, t=self.tile, round=False)
+        view_pearson_colourmap_spatial(nb=self.nb, t=self.tile)
 
     # SVR
     def create_round_slot(self, r):
@@ -247,19 +237,8 @@ class RegistrationViewer:
             for rnd in use_rounds:
                 self.svr_buttons.__getattribute__('R'+str(rnd)).setChecked(rnd == r)
             # We don't need to update the plot, we just need to call the viewing function
-            view_regression_scatter(nb=self.nb, t=self.tile, index=r, round=True)
+            view_regression_scatter(nb=self.nb, t=self.tile, index=r)
         return round_button_clicked
-
-    # SVR
-    def create_channel_slot(self, c):
-
-        def channel_button_clicked():
-            use_channels = self.nb.basic_info.use_channels
-            for chan in use_channels:
-                self.svr_buttons.__getattribute__('C'+str(chan)).setChecked(chan == c)
-            # We don't need to update the plot, we just need to call the viewing function
-            view_regression_scatter(nb=self.nb, t=self.tile, index=c, round=False)
-        return channel_button_clicked
 
     # outlier removal
     def button_vec_field_r_clicked(self):
@@ -478,21 +457,10 @@ class ButtonSVRWindow(QMainWindow):
             # Finally add this button as an attribute to self
             self.__setattr__('R' + str(r), button)
 
-        # create channel regression buttons
-        for c in range(len(use_channels)):
-            # Create a button for each tile
-            button = QPushButton('C' + str(use_channels[c]), self)
-            # set the button to be checkable iff t in use_tiles
-            button.setCheckable(True)
-            x, y_c = c % 4, y_r + c // 4 + 1
-            button.setGeometry(x * 70, 40 + 60 * y_c, 50, 28)
-            # Finally add this button as an attribute to self
-            self.__setattr__('C' + str(use_channels[c]), button)
-
         # Create 2 correlation buttons:
         # 1 to view pearson correlation coefficient as histogram
         # 2 to view pearson correlation coefficient as colormap
-        y = y_c + 1
+        y = y_r + 1
         button = QPushButton('Shift Score \n Hist', self)
         button.setCheckable(True)
         button.setGeometry(0, 40 + 60 * y, 120, 56)
@@ -510,10 +478,6 @@ class ButtonSVRWindow(QMainWindow):
         button.setCheckable(True)
         button.setGeometry(0, 68 + 60 * y, 120, 56)
         self.pearson_spatial_round = button
-        button = QPushButton('Channel Score \n Spatial c-map', self)
-        button.setCheckable(True)
-        button.setGeometry(140, 68 + 60 * y, 120, 56)
-        self.pearson_spatial_channel = button
 
 
 class ButtonOutlierWindow(QMainWindow):
@@ -584,30 +548,21 @@ def set_style(button):
 
 
 # 1
-def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True):
+def view_regression_scatter(nb: Notebook, t: int, index: int):
     """
     view 3 scatter plots for each data set shift vs positions
     Args:
         nb: Notebook
         t: tile
         index: round index if round, else channel index
-        round: True if round, False if channel
     """
     # Transpose shift and position variables so coord is dimension 0, makes plotting easier
-    if round:
-        mode = 'Round'
-        shift = nb.register_debug.round_shift[t, index]
-        corr = nb.register_debug.round_shift_corr[t, index]
-        subvol_transform = nb.register_debug.round_transform_unregularised[t, index]
-        icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel])
-    else:
-        mode = 'Channel'
-        shift = nb.register_debug.channel_shift[t, index]
-        corr = nb.register_debug.channel_shift_corr[t, index]
-        subvol_transform = nb.register_debug.channel_transform_unregularised[t, index]
-        A = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, index])
-        B = yxz_to_zyx_affine(A=nb.register.transform[t, nb.basic_info.n_rounds // 2, nb.basic_info.anchor_channel])
-        icp_transform = compose_affine(A, invert_affine(B))
+    mode = 'Round'
+    shift = nb.register_debug.round_shift[t, index]
+    corr = nb.register_debug.round_shift_corr[t, index]
+    initial_transform = nb.register_debug.round_transform_raw[t, index]
+    icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel])
+
     r_thresh = nb.get_config()['register']['r_thresh']
     shift = shift[corr > r_thresh].T
     position = nb.register_debug.position[corr > r_thresh].T
@@ -621,7 +576,7 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True
 
     # We want to plot the shift of each coord against the position of each coord. The gradient when the dependent var
     # is coord i and the independent var is coord j should be the transform[i,j] - int(i==j)
-    gradient_svr = subvol_transform[:3, :3] - np.eye(3)
+    gradient_svr = initial_transform[:3, :3] - np.eye(3)
     gradient_icp = icp_transform[:3, :3] - np.eye(3)
     # Now we need to compute what the intercept should be for each coord. Usually this would just be given by the final
     # column of the transform, but we need to add a central offset to this. If the dependent var is coord i, and the
@@ -640,7 +595,7 @@ def view_regression_scatter(nb: Notebook, t: int, index: int, round: bool = True
             central_offset_svr[i, j] = gradient_svr[i, k1] * tile_centre_zyx[k1] + gradient_svr[i, k2] * tile_centre_zyx[k2]
             central_offset_icp[i, j] = gradient_icp[i, k1] * tile_centre_zyx[k1] + gradient_icp[i, k2] * tile_centre_zyx[k2]
             # Now compute the intercepts
-            intercpet_svr[i, j] = subvol_transform[i, 3] + central_offset_svr[i, j]
+            intercpet_svr[i, j] = initial_transform[i, 3] + central_offset_svr[i, j]
             intercpet_icp[i, j] = icp_transform[i, 3] + central_offset_icp[i, j]
 
     # Define the axes
@@ -684,7 +639,7 @@ def view_pearson_hists(nb, t, num_bins=30):
     cols = max(n_rounds, n_channels_use)
 
     for r in range(n_rounds):
-        plt.subplot(2, cols, r + 1)
+        plt.subplot(1, cols, r + 1)
         counts, _ = np.histogram(round_corr[r], np.linspace(0, 1, num_bins))
         plt.hist(round_corr[r], bins=np.linspace(0, 1, num_bins))
         plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
@@ -692,22 +647,6 @@ def view_pearson_hists(nb, t, num_bins=30):
         plt.title('r = ' + str(r) +
                   '\n Pass = ' + str(
             round(100 * sum(round_corr[r] > thresh) / round_corr.shape[1], 2)) + '%', fontsize=7)
-        # remove x ticks and y ticks
-        plt.xticks([])
-        plt.yticks([])
-
-    for c in range(n_channels_use):
-        plt.subplot(2, cols, cols + c + 1)
-        counts, _ = np.histogram(channel_corr[use_channels[c]], np.linspace(0, 1, num_bins))
-        plt.hist(channel_corr[use_channels[c]], bins=np.linspace(0, 1, num_bins))
-        if c == 0:
-            plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r', label='r_thresh = ' + str(thresh))
-        else:
-            plt.vlines(x=thresh, ymin=0, ymax=np.max(counts), colors='r')
-        # change fontsize from default 10 to 7
-        plt.title('c = ' + str(use_channels[c]) +
-                  '\n Pass = ' + str(
-            round(100 * sum(channel_corr[use_channels[c]] > thresh) / channel_corr.shape[1], 2)) + '%', fontsize=7)
         # remove x ticks and y ticks
         plt.xticks([])
         plt.yticks([])
@@ -734,20 +673,13 @@ def view_pearson_colourmap(nb, t):
     round_corr[round_corr == 0] = np.nan
     channel_corr[channel_corr == 0] = np.nan
 
-    # plot round correlation and tile correlation
-    fig, axes = plt.subplots(2, 1)
-    ax1, ax2 = axes[0], axes[1]
+    # plot round correlation
+    fig, ax = plt.subplots(1, 1)
     # ax1 refers to round shifts
-    im = ax1.imshow(round_corr, vmin=0, vmax=1, aspect='auto', interpolation='none')
-    ax1.set_xlabel('Sub-volume index')
-    ax1.set_ylabel('Round')
-    ax1.set_title('Round sub-volume shift scores')
-    # ax2 refers to channel shifts
-    im = ax2.imshow(channel_corr, vmin=0, vmax=1, aspect='auto', interpolation='none')
-    ax2.set_xlabel('Sub-volume index')
-    ax2.set_ylabel('Channel')
-    ax2.set_yticks(np.arange(len(nbp_basic.use_channels)), nbp_basic.use_channels)
-    ax2.set_title('Channel sub-volume shift scores')
+    im = ax.imshow(round_corr, vmin=0, vmax=1, aspect='auto', interpolation='none')
+    ax.set_xlabel('Sub-volume index')
+    ax.set_ylabel('Round')
+    ax.set_title('Round sub-volume shift scores')
 
     # Add common colour bar. Also give it the label 'Pearson correlation coefficient'
     fig.subplots_adjust(right=0.8)
@@ -758,7 +690,7 @@ def view_pearson_colourmap(nb, t):
 
 
 # 1
-def view_pearson_colourmap_spatial(nb: Notebook, t: int, round: bool = True):
+def view_pearson_colourmap_spatial(nb: Notebook, t: int):
     """
     function to view colourmap of correlation coefficients along with spatial info for either all round shifts of a tile
     or all channel shifts of a tile.
@@ -771,14 +703,9 @@ def view_pearson_colourmap_spatial(nb: Notebook, t: int, round: bool = True):
 
     # initialise frequently used variables
     config = nb.get_config()['register']
-    if round:
-        use = nb.basic_info.use_rounds
-        corr = nb.register_debug.round_shift_corr[t, use]
-        mode = 'Round'
-    else:
-        use = nb.basic_info.use_channels
-        corr = nb.register_debug.channel_shift_corr[t, use]
-        mode = 'Channel'
+    use = nb.basic_info.use_rounds
+    corr = nb.register_debug.round_shift_corr[t, use]
+    mode = 'Round'
 
     # Set 0 correlations to nan, so they are plotted as black
     corr[corr == 0] = np.nan
@@ -827,11 +754,11 @@ def shift_vector_field(nb: Notebook, round: bool = True):
     if round:
         mode = 'Round'
         use_rc = nbp_basic.use_rounds
-        shift = nbp_register_debug.round_transform_unregularised[use_tiles, :, :, 3][:, use_rc]
+        shift = nbp_register_debug.round_transform_raw[use_tiles, :, :, 3][:, use_rc]
     else:
         mode = 'Channel'
         use_rc = nbp_basic.use_channels
-        shift = nbp_register_debug.channel_transform_unregularised[use_tiles, :, :, 3][:, use_rc]
+        shift = nbp_register_debug.channel_transform_raw[use_tiles, :, :, 3][:, use_rc]
 
     # record number of rounds/channels, tiles and initialise predicted shift
     n_t, n_rc = shift.shape[0], len(use_rc)
@@ -933,12 +860,12 @@ def zyx_shift_image(nb: Notebook, round: bool = True):
     if round:
         mode = 'Round'
         use = nbp_basic.use_rounds
-        shift_raw = nbp_register_debug.round_transform_unregularised[use_tiles, :, :, 3]
+        shift_raw = nbp_register_debug.round_transform_raw[use_tiles, :, :, 3]
         shift = nbp_register.round_transform[use_tiles, :, :, 3]
     else:
         mode = 'Channel'
         use = nbp_basic.use_channels
-        shift_raw = nbp_register_debug.channel_transform_unregularised[use_tiles, :, :, 3]
+        shift_raw = nbp_register_debug.channel_transform_raw[use_tiles, :, :, 3]
         shift = nbp_register.channel_transform[use_tiles, :, :, 3]
 
     coord_label = ['Z', 'Y', 'X']
@@ -1035,9 +962,9 @@ def view_round_scales(nb: Notebook):
     anchor_round, anchor_channel = nbp_basic.anchor_round, nbp_basic.anchor_channel
     use_tiles = nbp_basic.use_tiles
     # Extract raw scales
-    z_scale = nbp_register_debug.round_transform_unregularised[use_tiles, :, 0, 0]
-    y_scale = nbp_register_debug.round_transform_unregularised[use_tiles, :, 1, 1]
-    x_scale = nbp_register_debug.round_transform_unregularised[use_tiles, :, 2, 2]
+    z_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 0, 0]
+    y_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 1, 1]
+    x_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 2, 2]
     n_tiles_use, n_rounds = z_scale.shape[0], z_scale.shape[1]
     
     # Plot box plots
@@ -1087,9 +1014,9 @@ def view_channel_scales(nb: Notebook):
     use_tiles = nbp_basic.use_tiles
     use_channels = nbp_basic.use_channels
     # Extract raw scales
-    z_scale = nbp_register_debug.channel_transform_unregularised[use_tiles][:, use_channels, 0, 0]
-    y_scale = nbp_register_debug.channel_transform_unregularised[use_tiles][:, use_channels, 1, 1]
-    x_scale = nbp_register_debug.channel_transform_unregularised[use_tiles][:, use_channels, 2, 2]
+    z_scale = nbp_register_debug.channel_transform_raw[use_tiles][:, use_channels, 0, 0]
+    y_scale = nbp_register_debug.channel_transform_raw[use_tiles][:, use_channels, 1, 1]
+    x_scale = nbp_register_debug.channel_transform_raw[use_tiles][:, use_channels, 2, 2]
     n_tiles_use, n_channels_use = z_scale.shape[0], z_scale.shape[1]
 
     # Plot box plots
@@ -1218,7 +1145,7 @@ def view_icp_mse(nb: Notebook, t: int):
 def view_icp_deviations(nb: Notebook, t: int):
     """
     Plots deviations of ICP transform for a given tile t (n_rounds x n_channel x 3 x 4) affine transform against initial
-    guess (subvol_transform) which has the same shape. These trasnforms are in zyx x zyx format, with the final col
+    guess (initial_transform) which has the same shape. These trasnforms are in zyx x zyx format, with the final col
     referring to the shift. Our plot has rows as rounds and columns as channels, giving us len(use_rounds) rows, and
     len(use_channels) columns of subplots.
 
@@ -1234,11 +1161,11 @@ def view_icp_deviations(nb: Notebook, t: int):
     # Initialise frequent variables
     nbp_basic, nbp_register = nb.basic_info, nb.register
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
-    subvol_transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
+    initial_transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
     transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
-            subvol_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.subvol_transform[t, use_rounds[r], use_channels[c]])
+            initial_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.initial_transform[t, use_rounds[r], use_channels[c]])
             transform[r, c] = yxz_to_zyx_affine(A=nbp_register.transform[t, use_rounds[r], use_channels[c]])
 
     # Define the axes
@@ -1257,8 +1184,8 @@ def view_icp_deviations(nb: Notebook, t: int):
     shift_diff = np.zeros((len(use_rounds), len(use_channels), 3))
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
-            scale_diff[r, c] = np.diag(transform[r, c, :3, :3]) - np.diag(subvol_transform[r, c, :3, :3])
-            shift_diff[r, c] = transform[r, c, :3, 3] - subvol_transform[r, c, :3, 3]
+            scale_diff[r, c] = np.diag(transform[r, c, :3, :3]) - np.diag(initial_transform[r, c, :3, :3])
+            shift_diff[r, c] = transform[r, c, :3, 3] - initial_transform[r, c, :3, 3]
     
     # Now plot scale_diff
     for r in range(len(use_rounds)):

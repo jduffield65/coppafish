@@ -7,6 +7,7 @@ from typing import Tuple
 import warnings
 from joblib import Parallel, delayed
 
+
 def extract_and_filter(config: dict, nbp_file: NotebookPage,
                        nbp_basic: NotebookPage) -> Tuple[NotebookPage, NotebookPage]:
     """

@@ -13,14 +13,20 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
         config: register page of config dictionary
     Returns:
         registration_data: dictionary with the following keys
-        * tiles_completed (list)
-        * position ( (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-        * round_shift ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-        * channel_shift ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-        * round_transform (n_tiles x n_rounds x 3 x 4) ndarray
-        * channel_transform (n_tiles x n_channels x 3 x 4) ndarray
-        * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
-        * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
+        * round_registration (dict) with keys:
+            * completed (list)
+            * position ( (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+            * round_shift ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
+            * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
+            * round_transform_raw (n_tiles x n_rounds x 3 x 4) ndarray
+            * round_transform (n_tiles x n_rounds x 3 x 4) ndarray
+        * channel_registration (dict) with keys:
+            * completed (list)
+            * channel_transform (n_tiles x n_channels x 3 x 4) ndarray
+            * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
+            * reference_round (n_tiles) ndarray
+        * initial_transform (n_tiles x n_rounds x n_channels x 3 x 4) ndarray
+
     """
     # Check if the registration data file exists
     if os.path.isfile(os.path.join(nbp_file.output_dir, 'registration_data.pkl')):
@@ -29,14 +35,20 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
     else:
         n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
         z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
-        registration_data = {'tiles_completed': [],
-                             'position': np.zeros((z_subvols * y_subvols * x_subvols, 3)),
-                             'round_shift': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
-                             'channel_shift': np.zeros((n_tiles, n_channels, z_subvols * y_subvols * x_subvols, 3)),
-                             'round_transform_raw': np.zeros((n_tiles, n_rounds, 3, 4)),
-                             'channel_transform_raw': np.zeros((n_tiles, n_channels, 3, 4)),
-                             'round_shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
-                             'channel_shift_corr': np.zeros((n_tiles, n_channels, z_subvols * y_subvols * x_subvols))
+        round_registration = {'tiles_completed': [], 'position': np.zeros((z_subvols * y_subvols * x_subvols, 3)),
+                              'round_shift': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
+                              'round_shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
+                              'round_transform_raw': np.zeros((n_tiles, n_rounds, 3, 4)),
+                              'round_transform': np.zeros((n_tiles, n_rounds, 3, 4))}
+        channel_registration = {'tiles_completed': [],
+                                'channel_transform_raw': np.zeros((n_tiles, n_channels, 3, 4)),
+                                'channel_transform': np.zeros((n_tiles, n_channels, 3, 4)),
+                                'channel_shift_corr': np.zeros((n_tiles, n_channels)),
+                                'channel_shift': np.zeros((n_tiles, n_channels, 3)),
+                                'reference_round': np.zeros(n_tiles)}
+        registration_data = {'round_registration': round_registration,
+                             'channel_registration': channel_registration,
+                             'initial_transform': np.zeros((n_tiles, n_rounds, n_channels, 3, 4))
                              }
     return registration_data
 
@@ -392,3 +404,31 @@ def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
                   (slice(0, o) if o >= 0 else slice(o, None),)] = constant_values
 
     return new_array
+
+
+def merge_subvols(position, subvol):
+    """
+    Function to merge subvolumes together into one image
+    Args:
+        position: n_subvols x 3 array of positions of centre of subvols (zyx)
+        subvol: n_subvols x z_box x y_box x x_box array of subvols
+
+    Returns:
+        merged: merged image (size will depend on amount of overlap)
+    """
+    # First convert position to the bottom left corner of the subvol instead of the centre. Also set min values to 0
+    position = position - np.array([subvol.shape[1] // 2, subvol.shape[2] // 2, subvol.shape[3] // 2]) - \
+               np.min(position, axis=0)
+    z_box, y_box, x_box = subvol.shape[1:]
+
+    # Get the min and max values of the position, use this to get the size of the merged image and initialise it
+    max_pos = np.max(position, axis=0)
+    merged = np.zeros((max_pos + np.array([subvol.shape[1:]])))
+
+    # Loop through the subvols and add them to the merged image at the correct position. If there is overlap, take the
+    # final value
+    for i in range(position.shape[0]):
+        merged[position[i, 0]:position[i, 0] + z_box, position[i, 1]:position[i, 1] + y_box,
+               position[i, 2]:position[i, 2] + x_box] = subvol[i]
+
+    return merged

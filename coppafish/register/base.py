@@ -9,7 +9,7 @@ from skimage.exposure import match_histograms
 from scipy.ndimage import affine_transform
 from ..utils.npy import load_tile
 from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image, \
-    replace_scale, populate_full
+    replace_scale, populate_full, merge_subvols, invert_affine
 from skimage.registration import phase_cross_correlation
 from coppafish.setup import NotebookPage
 
@@ -41,14 +41,14 @@ def find_shift_array(subvol_base, subvol_target, r_threshold):
         np.reshape(shift_corr, shift.shape[0] * shift.shape[1] * shift.shape[2])
 
 
-def find_z_tower_shifts(subvol_base, subvol_target, r_threshold):
+def find_z_tower_shifts(subvol_base, subvol_target, position, pearson_r_threshold, z_neighbours=1):
     """
     This function takes in 2 split up 3d images along one tower of subvolumes in z and computes shifts for each of these
     to its nearest neighbour subvol
     Args:
         subvol_base: Base subvolume array (this is a z-tower of base subvolumes)
         subvol_target: Target subvolume array (this is a z-tower of target subvolumes)
-        r_threshold: threshold of correlation used in degenerate cases
+        pearson_r_threshold: threshold of correlation used in degenerate cases
     Returns:
         shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
     """
@@ -56,83 +56,62 @@ def find_z_tower_shifts(subvol_base, subvol_target, r_threshold):
     z_box = subvol_base.shape[1]
     shift = np.zeros((z_subvolumes, 3))
     shift_corr = np.zeros(z_subvolumes)
-    # skip tells us when we need to start comparing z subvols to the subvol above it (in the case that it is
-    # closer to this, or below it in the other case). Reset this whenever we start a new z-tower
-    skip = 0
     for z in range(z_subvolumes):
-        # Handle case where skip allows us to leave the z-range
-        if z + skip >= z_subvolumes:
-            shift[z] = np.nan
-            break
-        # Now proceed as normal: Compute shift and then disambiguate shift.
-        # If disambiguation changes the correspondence of the z_subvolumes then subvol_skip will be updated to +/- 1
-        temporary_shift, _, _ = phase_cross_correlation(subvol_target[z + skip], subvol_base[z], upsample_factor=10)
-        shift[z], shift_corr[z], subvol_skip = disambiguate_z(subvol_base[z],
-                                                              subvol_target[z + skip],
-                                                              temporary_shift,
-                                                              r_threshold=r_threshold, z_box=z_box)
-        skip += subvol_skip
+        z_start, z_end = max(0, z - z_neighbours), min(z_subvolumes, z + z_neighbours + 1)
+        merged_subvol_target = merge_subvols(position=position[z_start:z_end], subvol=subvol_target[z_start:z_end])
+        merged_subvol_base = np.zeros(merged_subvol_target.shape)
+        merged_subvol_base[position[z, 0]:position[z, 0] + z_box] = subvol_base[z]
+        # Now we have the merged subvolumes, we can compute the shift
+        shift[z], shift_corr[z] = find_zyx_shift(subvol_base=merged_subvol_base, subvol_target=merged_subvol_target,
+                                                 pearson_r_threshold=pearson_r_threshold)
 
     return shift, shift_corr
 
 
-# function to get rid of aliasing issues in Fourier Shifts
-def disambiguate_z(base_image, target_image, shift, r_threshold, z_box):
+def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
     """
-    Function to disambiguate the 2 possible shifts obtained via aliasing.
+    This function takes in 2 3d images and finds the optimal shift from one to the other. We use a phase cross
+    correlation method to find the shift.
     Args:
-        base_image: nz x ny x nx ndarray
-        target_image: nz x ny x nx ndarray
-        shift: z y x shift
-        r_threshold: threshold that r_statistic must exceed for us to accept z shift of 0 as opposed to alisases
-        z_box: z_box size
+        subvol_base: Base subvolume array (this will contain a lot of zeroes)
+        subvol_target: Target subvolume array (this will be a merging of subvolumes with neighbouring subvolumes)
+        r_threshold: Threshold used to accept a shift as valid
 
     Returns:
-        shift: z y x corrected shift
-        shift_corr: shift correlation of the best shift
-        subvol_skip: number of z subvols we have skipped (-1, 0 or +1)
+        shift: zyx shift
+        shift_corr: correlation coefficient of shift
     """
-    # First we have to compute alternate shift. Usually anti aliasing algorithms would test shift and shift + z_box and
-    # shift - z_box. In our case however, we only look at one other shift as otherwise means considering a shift that
-    # is more than 1 box wrong, which is unlikely due to our skip policy
-    if shift[0] >= 0:
-        alt_shift = shift - [z_box, 0, 0]
+    if subvol_base.shape != subvol_target.shape:
+        raise ValueError("Subvolume arrays have different shapes")
+    shift, _, _ = phase_cross_correlation(reference_image=subvol_target, moving_image=subvol_base,
+                                                   upsample_factor=10)
+    # now anti alias the shift in z. To do this, consider that the other possible aliased z shift is the either one
+    # subvolume above or below the current shift. (In theory, we could also consider the subvolume 2 above or below,
+    # but this is unlikely to be the case in practice as we are already merging subvolumes)
+    if shift[0] > 0:
+        alt_shift = shift[0] - subvol_base.shape[0]
     else:
-        alt_shift = shift + [z_box, 0, 0]
+        alt_shift = shift[0] + subvol_base.shape[0]
 
-    # Now we need to actually shift the base image under both shift and alt_shift
-    shift_base = custom_shift(base_image, np.round(shift).astype(int))
-    alt_shift_base = custom_shift(base_image, np.round(alt_shift).astype(int))
+    # Now we need to compute the correlation coefficient of the shift and the anti aliased shift
+    shift_base = custom_shift(subvol_base, shift.astype(int))
+    alt_shift_base = custom_shift(subvol_base, alt_shift.astype(int))
+    # Now compute the correlation coefficients. First create a mask of the nonzero values
+    mask = shift_base != 0
+    shift_corr = np.corrcoef(shift_base[mask], subvol_target[mask])[0, 1]
+    mask = alt_shift_base != 0
+    alt_shift_corr = np.corrcoef(alt_shift_base[mask], subvol_target[mask])[0, 1]
 
-    # Now, if either of the shift_base or alt_shift base is all 0 then it's correlation coeff is undefined
-    if np.max(abs(shift_base)) == 0:
-        shift_corr = 0
-        # We only want the corr coeff where the alt shifted anchor image exists
-        valid = alt_shift_base != 0
-        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
-    elif np.max(abs(alt_shift_base)) == 0:
-        alt_shift_corr = 0
-        # only want the corr coeff where the shifted anchor image exists
-        valid = shift_base != 0
-        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
-    else:
-        # only want the corr coeff where the shifted anchor images exist
-        valid = shift_base != 0
-        shift_corr = stats.pearsonr(shift_base[valid], target_image[valid])[0]
-        valid = alt_shift_base != 0
-        alt_shift_corr = stats.pearsonr(alt_shift_base[valid], target_image[valid])[0]
+    # Now return the shift with the highest correlation coefficient
+    if alt_shift_corr > shift_corr:
+        shift = alt_shift
+        shift_corr = alt_shift_corr
+    # Now check if the correlation coefficient is above the threshold. If not, set the shift to nan
+    if shift_corr < pearson_r_threshold:
+        shift = np.array([np.nan, np.nan, np.nan])
+        shift_corr = max(shift_corr, alt_shift_corr)
 
-    # Now comes the point where we choose between shift and alt_shift. Choose the shift which maximises corr if this is
-    # above r_thresh and return nan otherwise
-    best_shift = [shift, alt_shift][np.argmax([shift_corr, alt_shift_corr])]
-    best_shift_corr = max(shift_corr, alt_shift_corr)
-    subvol_skip = np.sign(best_shift[0] - shift[0])
-    if best_shift_corr > r_threshold:
-        corrected_shift = best_shift
-    else:
-        corrected_shift = np.array([np.nan, np.nan, np.nan])
-
-    return corrected_shift, max(shift_corr, alt_shift_corr), int(subvol_skip)
+    return shift, shift_corr
 
 
 # ols regression to find transform from shifts
@@ -179,8 +158,8 @@ def huber_regression(shift, position):
     return transform
 
 
-# Bridge function for all functions in subvolume registration
-def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
+# Bridge function for all functions in round registration
+def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
                            t: int, pbar) -> dict:
     """
     Function to carry out subvolume registration on a single tile.
@@ -188,15 +167,7 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         nbp_file: File Names notebook page
         nbp_basic: Basic info notebook page
         config: Register page of the config dictionary
-        registration_data: dictionary with the following keys
-            * tiles_completed (list)
-            * position ( (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-            * round_shift ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-            * channel_shift ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) x 3 ) ndarray
-            * round_transform_raw (n_tiles x n_rounds x 3 x 4) ndarray
-            * channel_transform_raw (n_tiles x n_channels x 3 x 4) ndarray
-            * round_shift_corr ( n_tiles x n_rounds x (z_subvols x y subvols x x_subvols) ) ndarray
-            * channel_shift_corr ( n_tiles x n_channels x (z_subvols x y subvols x x_subvols) ) ndarray
+        registration_data: dictionary with registration data
         t: tile
         pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
 
@@ -208,10 +179,8 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
     r_thresh = config['r_thresh']
 
     # Load in the anchor npy volume
-    # Save the unfiltered version as well for histogram matching later, switch both to zyx
-    anchor_image_unfiltered = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round,
-                                                   nbp_basic.anchor_channel))
-    anchor_image = sobel(anchor_image_unfiltered)
+    anchor_image = sobel(yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round,
+                                                   nbp_basic.anchor_channel)))
 
     save_compressed_image(nbp_file, anchor_image, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)
 
@@ -237,53 +206,93 @@ def subvolume_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, conf
         shift, corr = find_shift_array(subvol_base, subvol_target, r_threshold=r_thresh)
 
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
-        registration_data['position'] = position
-        registration_data['round_shift'][t, r] = shift
-        registration_data['round_shift_corr'][t, r] = corr
-        registration_data['round_transform_raw'][t, r] = ols_regression(shift, position)
-
-    # Now begin the channel registration
-    correction_matrix = np.vstack((registration_data['round_transform'][t, nbp_basic.n_rounds // 2], [0, 0, 0, 1]))
-    # scipy's affine transform function requires affine transform be inverted
-    anchor_image_corrected = affine_transform(anchor_image, np.linalg.inv(correction_matrix))
-
-    # Now register all channels to corrected anchor
-    for c in nbp_basic.use_channels:
-        # Update progress bar
-        pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(c))
-
-        # Load in imaging npy volume from middle round for tile t channel c
-        target_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.n_rounds // 2, c))
-
-        # Match histograms to unfiltered anchor and then sobel filter
-        target_image = sobel(match_histograms(target_image, anchor_image_unfiltered))
-
-        # save a small subset for reg diagnostics
-        save_compressed_image(nbp_file, target_image, t, nbp_basic.n_rounds // 2, c)
-
-        # next we split image into overlapping cuboids
-        subvol_base, _ = split_3d_image(image=anchor_image_corrected, z_subvolumes=z_subvols,
-                                        y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                        z_box=z_box, y_box=y_box, x_box=x_box)
-        subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols,
-                                          y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                          z_box=z_box, y_box=y_box, x_box=x_box)
-
-        # Find the subvolume shifts.
-        # NB: These are shifts from corrected anchor (in coord frame of r_mid, anchor_channel) to r_mid, c
-        if c == nbp_basic.anchor_channel:
-            shift, corr = np.zeros((z_subvols * y_subvols * x_subvols, 3)), \
-                np.ones(z_subvols * y_subvols * x_subvols)
-        else:
-            shift, corr = find_shift_array(subvol_base, subvol_target, r_threshold=r_thresh)
-
-        # Save data into our working dictionary
-        registration_data['channel_shift'][t, c] = shift
-        registration_data['channel_shift_corr'][t, c] = corr
-        registration_data['channel_transform_raw'][t, c] = ols_regression(shift, position)
+        registration_data['round_registration']['position'] = position
+        registration_data['round_registration']['round_shift'][t, r] = shift
+        registration_data['round_registration']['round_shift_corr'][t, r] = corr
+        registration_data['round_registration']['round_transform_raw'][t, r] = ols_regression(shift, position)
+        pbar.update(1)
 
     # Add tile to completed tiles
-    registration_data['tiles_completed'].append(t)
+    registration_data['round_registration']['tiles_completed'].append(t)
+
+    # Now save the registration data dictionary externally
+    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
+        pickle.dump(registration_data, f)
+
+    return registration_data
+
+
+def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
+                           t: int, pbar) -> dict:
+    """
+    Function to carry out subvolume registration on a single tile.
+    Args:
+        nbp_file: File Names notebook page
+        nbp_basic: Basic info notebook page
+        config: Register page of the config dictionary
+        registration_data: dictionary with registration data
+        t: tile
+        pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
+
+    Returns:
+        registration_data updated after the subvolume registration
+    """
+    # Now begin the channel registration.
+    #  * We will not compute subvolume shifts for this step
+    #  * Instead we will use scales from previous experiments and we will find shifts for each channel via a single
+    #    3D cross correlation
+
+    # We will use the round with the highest round_shift_corr. We will move the anchor into this round's space
+    # by applying the round transform to the anchor image.
+    # best_round = np.argmax(np.sum(registration_data['round_registration']['round_shift_corr'][t], axis=1))
+    # Now load the anchor image, convert to zyx and apply sobel filter.
+    # Take small subset of this image for speed
+    # anchor_image = sobel(yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)))
+    # z_mid, y_mid, x_mid = np.array(anchor_image.shape) // 2
+    # adjusted_anchor = \
+    #     affine_transform(anchor_image,
+    #                      invert_affine(registration_data['round_registration']['round_transform_raw'][t, best_round]))
+    # adjusted_anchor = adjusted_anchor[z_mid - 16:z_mid + 16, y_mid - 250:y_mid + 250, x_mid - 250:x_mid + 250]
+    # Now we will loop through channels of this round. We will initially apply the prior channel transform to each
+    # channel and then find the shift between the adjusted anchor and adjusted channel.
+    prior_channel_transform = np.load(os.path.join(os.getcwd(), 'coppafish/setup/', 'prior_channel_transform.npy'))
+
+    for c in nbp_basic.use_channels:
+        # Set progress bar title
+        pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(c))
+
+        # Load in imaging npy volume.
+        # target_image = yxz_to_zyx(sobel(load_tile(nbp_file, nbp_basic, t, best_round, c)))
+        # target_image = target_image[z_mid - 16:z_mid + 16, y_mid - 250:y_mid + 250, x_mid - 250:x_mid + 250]
+
+        # save a small subset for reg diagnostics
+        # save_compressed_image(nbp_file, target_image, t, best_round, c)
+
+        # Apply the prior channel transform to the target image. This will undo the chromatic aberration, so that
+        # the channel shift is only due to the registration
+        # target_image = affine_transform(target_image, prior_channel_transform[c])
+
+        # Find the shift between the adjusted anchor and the adjusted target
+        # shift, _, _ = phase_cross_correlation(reference_image=target_image, moving_image=adjusted_anchor,
+        #                                       upsample_factor=10)
+
+        # Now use our custom_shift function to manually shift the adjusted anchor and compute the correlation
+        # adjusted_anchor_shifted = custom_shift(adjusted_anchor, shift.astype(int))
+        # mask = adjusted_anchor_shifted != 0
+        # corr = np.corrcoef(adjusted_anchor_shifted[mask], target_image[mask])[0, 1]
+        # if corr < config['r_threshold']:
+        #     shift = np.array([0, 0, 0])
+        shift = np.array([0, 0, 0])
+        # Append these arrays to the channel_shift, channel_shift_corr, channel_transform and position storage
+        registration_data['channel_registration']['reference_round'][t] = 10
+        registration_data['channel_registration']['channel_shift'][t, c] = shift
+        registration_data['channel_registration']['channel_shift_corr'][t, c] = 0
+        registration_data['channel_registration']['channel_transform_raw'][t, c] = \
+            np.vstack((prior_channel_transform[c].T, shift)).T
+        pbar.update(1)
+
+    # Add tile to completed tiles
+    registration_data['channel_registration']['tiles_completed'].append(t)
 
     # Now save the registration data dictionary externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
@@ -398,14 +407,12 @@ def regularise_channel_scaling(scale: np.ndarray):
 
 
 # Bridge function for all regularisation
-def regularise_transforms(round_transform: np.ndarray, channel_transform: np.ndarray,
-                          tile_origin: np.ndarray, residual_threshold: float,
+def regularise_transforms(registration_data: dict, tile_origin: np.ndarray, residual_threshold: float,
                           use_tiles: list, use_rounds: list, use_channels: list):
     """
     Function to regularise affine transforms
     Args:
-        round_transform: n_tiles x n_rounds x 3 x 4 affine transforms in z y x for rounds
-        channel_transform: n_tiles x n_channels x 3 x 4 affine transforms in z y x for channels
+        registration_data: dictionary of registration data
         tile_origin: n_tiles x 3 tile origin in zyx
         residual_threshold: threshold for classifying outlier shifts
         use_tiles: list of tiles in use
@@ -416,6 +423,9 @@ def regularise_transforms(round_transform: np.ndarray, channel_transform: np.nda
         round_transform_regularised: n_tiles x n_rounds x 3 x 4 affine transforms regularised
         channel_transform_regularised: n_tiles x n_channels x 3 x 4 affine transforms regularised
     """
+    # Extract transforms
+    round_transform = np.copy(registration_data['round_registration']['round_transform_raw'])
+    channel_transform = np.copy(registration_data['channel_registration']['channel_transform_raw'])
 
     # Code becomes easier when we disregard tiles, rounds, channels not in use
     n_tiles, n_rounds, n_channels = round_transform.shape[0], round_transform.shape[1], channel_transform.shape[1]
@@ -438,13 +448,15 @@ def regularise_transforms(round_transform: np.ndarray, channel_transform: np.nda
                                                      residual_threshold=residual_threshold)
     channel_scale = np.array([channel_transform[:, :, 0, 0], channel_transform[:, :, 1, 1],
                               channel_transform[:, :, 2, 2]])
-    channel_scale_regularised = regularise_channel_scaling(channel_scale)
-    channel_transform = replace_scale(transform=channel_transform, scale=channel_scale_regularised)
+    channel_transform = replace_scale(transform=channel_transform, scale=channel_scale)
     channel_transform = populate_full(sublist_1=use_tiles, list_1=np.arange(n_tiles),
                                       sublist_2=use_channels, list_2=np.arange(n_channels),
                                       array=channel_transform)
 
-    return round_transform, channel_transform
+    registration_data['round_registration']['round_transform'] = round_transform
+    registration_data['channel_registration']['channel_transform'] = channel_transform
+
+    return registration_data
 
 
 # Function which runs a single iteration of the icp algorithm
