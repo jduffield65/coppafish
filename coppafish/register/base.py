@@ -14,13 +14,14 @@ from skimage.registration import phase_cross_correlation
 from coppafish.setup import NotebookPage
 
 
-def find_shift_array(subvol_base, subvol_target, r_threshold):
+def find_shift_array(subvol_base, subvol_target, position, r_threshold):
     """
     This function takes in 2 split up 3d images and finds the optimal shift from each subvolume in 1 to it's corresponding
     subvolume in the other.
     Args:
         subvol_base: Base subvolume array
         subvol_target: Target subvolume array
+        position: Position of centre of subvolumes (z, y, x)
         r_threshold: threshold of correlation used in degenerate cases
     Returns:
         shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
@@ -36,7 +37,8 @@ def find_shift_array(subvol_base, subvol_target, r_threshold):
         for x in range(x_subvolumes):
             shift[:, y, x], shift_corr[:, y, x] = find_z_tower_shifts(subvol_base=subvol_base[:, y, x],
                                                                       subvol_target=subvol_target[:, y, x],
-                                                                      r_threshold=r_threshold)
+                                                                      position=position[:, y, x],
+                                                                      pearson_r_threshold=r_threshold)
     return np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3)), \
         np.reshape(shift_corr, shift.shape[0] * shift.shape[1] * shift.shape[2])
 
@@ -48,7 +50,9 @@ def find_z_tower_shifts(subvol_base, subvol_target, position, pearson_r_threshol
     Args:
         subvol_base: Base subvolume array (this is a z-tower of base subvolumes)
         subvol_target: Target subvolume array (this is a z-tower of target subvolumes)
+        position: Position of centre of subvolumes (z, y, x)
         pearson_r_threshold: threshold of correlation used in degenerate cases
+        z_neighbours: number of neighbouring subvolumes to merge with the current subvolume to compute the shift
     Returns:
         shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
     """
@@ -75,7 +79,7 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
     Args:
         subvol_base: Base subvolume array (this will contain a lot of zeroes)
         subvol_target: Target subvolume array (this will be a merging of subvolumes with neighbouring subvolumes)
-        r_threshold: Threshold used to accept a shift as valid
+        pearson_r_threshold: Threshold used to accept a shift as valid
 
     Returns:
         shift: zyx shift
@@ -203,7 +207,7 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
                                           x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
 
         # Find the subvolume shifts
-        shift, corr = find_shift_array(subvol_base, subvol_target, r_threshold=r_thresh)
+        shift, corr = find_shift_array(subvol_base, subvol_target, position=position, r_threshold=r_thresh)
 
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
         registration_data['round_registration']['position'] = position
