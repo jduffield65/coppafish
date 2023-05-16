@@ -464,6 +464,8 @@
     "bled_codes_ge": ["Numpy float array [n_genes x n_rounds x n_channels]",
       "`bled_codes` using `gene_efficiency` information i.e. `bled_codes * gene_efficiency`.",
       "All codes have L2 norm = 1 when summed across all `use_rounds` and `use_channels`." ],
+    "use_ge": ["Numpy boolean array [n_iter x n_spots]",
+      "For each iteration, `use_ge[i, s]` is True if spot $s$ is used to compute `gene_efficiency` for iteration $i$."],
     "background_weight_shift": ["Float",
       "Shift to apply to weighting of each background vector to limit boost of weak spots.",
       "The weighting of round $r$ for the fitting of the background vector for channel $c$ is",

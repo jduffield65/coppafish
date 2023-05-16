@@ -419,3 +419,20 @@ class view_intensity(ColorPlotBase):
             self.ax[0].add_patch(rectangle)
         self.change_norm()  # initialise with method = 'norm'
         plt.show()
+
+
+# We are now going to create a new class that will allow us to view the spots used to calculate the gene efficiency
+# for a given gene. This will be useful for checking that the spots used are representative of the gene as a whole.
+class view_gene_efficiency:
+    def __init__(self, nb: Notebook, gene_index: int):
+        """
+        Diagnostic to show spots used to calculate gene efficiency.
+
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+            gene_no: Gene of interest to be plotted.
+        """
+        self.nb = nb
+        self.gene_index = gene_index
+        self.gene_names = nb.call_spots.gene_names
+

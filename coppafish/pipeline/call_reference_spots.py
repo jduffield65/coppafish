@@ -214,6 +214,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     pass_intensity_thresh = nbp_ref_spots.intensity > nbp.gene_efficiency_intensity_thresh
     use_ge_last = np.zeros(n_spots).astype(bool)
     bled_codes_ge_use = bled_codes_use.copy()
+    use_ge = np.zeros((n_iter, n_spots), dtype=bool)
     for i in range(n_iter):
         scores = np.asarray(dot_product_score(spot_colors_use.reshape(n_spots, -1),
                                               bled_codes_ge_use.reshape(n_genes, -1), dp_norm_shift, 1/background_var))
@@ -228,26 +229,27 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         pass_score_diff_thresh = spot_score_diff > config['gene_efficiency_score_diff_thresh']
         # only use isolated spots which pass strict thresholding to compute gene_efficiencies. If this fails try
         # dropping filters one at a time
-        use_ge = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh,
-                           pass_score_diff_thresh]).all(axis=0)
-        if sum(use_ge) == 0:
-            use_ge = np.array([pass_intensity_thresh, pass_score_thresh, pass_score_diff_thresh]).all(axis=0)
-        if sum(use_ge) == 0:
-            use_ge = np.array([pass_intensity_thresh, pass_score_thresh]).all(axis=0)
-        if sum(use_ge) == 0:
-            use_ge = np.array([pass_intensity_thresh]).all(axis=0)
-        if sum(use_ge) == 0:
-            use_ge = nbp_ref_spots.intensity > 0
+        use_ge[i] = np.array([nbp_ref_spots.isolated, pass_intensity_thresh, pass_score_thresh,
+                             pass_score_diff_thresh]).all(axis=0)
+        if sum(use_ge[i]) == 0:
+            use_ge[i] = np.array([pass_intensity_thresh, pass_score_thresh, pass_score_diff_thresh]).all(axis=0)
+        if sum(use_ge[i]) == 0:
+            use_ge[i] = np.array([pass_intensity_thresh, pass_score_thresh]).all(axis=0)
+        if sum(use_ge[i]) == 0:
+            use_ge[i] = np.array([pass_intensity_thresh]).all(axis=0)
+        if sum(use_ge[i]) == 0:
+            use_ge[i] = nbp_ref_spots.intensity > 0
+
+        # We want to save use_ge for all iterations to the notebook page for debugging.
         # nan_to_num line below converts nan in bleed_matrix to 0.
         # This basically just says that for dyes not in use_dyes, we expect intensity to be 0.
-        gene_efficiency_use = get_gene_efficiency(spot_colors_use[use_ge], spot_gene_no[use_ge],
+        gene_efficiency_use = get_gene_efficiency(spot_colors_use[use_ge[i]], spot_gene_no[use_ge[i]],
                                                   gene_codes[:, nbp_basic.use_rounds],
                                                   np.nan_to_num(bleed_matrix[rc_ind]),
                                                   config['gene_efficiency_min_spots'],
                                                   config['gene_efficiency_max'],
                                                   config['gene_efficiency_min'],
                                                   config['gene_efficiency_min_factor'])
-        # gene_efficiency_use = np.load('/home/reilly/Christina Data 2207/gene_efficiency.npy')
         # get new bled codes using gene efficiency with L2 norm = 1.
         multiplier_ge = np.tile(np.expand_dims(gene_efficiency_use, 2), [1, 1, n_channels_use])
         bled_codes_ge_use = bled_codes_use * multiplier_ge
@@ -255,10 +257,10 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         norm_factor[norm_factor == 0] = 1  # For genes with no dye in use_dye, this avoids blow up on next line
         bled_codes_ge_use = bled_codes_ge_use / norm_factor
 
-        if np.sum(use_ge != use_ge_last) < 3:
+        if np.sum(use_ge[i] != use_ge_last) < 3:
             # if less than 3 spots different in spots used for ge computation, end.
             break
-        use_ge_last = use_ge.copy()
+        use_ge_last = use_ge[i].copy()
 
     if config['gene_efficiency_n_iter'] > 0:
         # Compute score with final gene efficiency
@@ -281,6 +283,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     gene_efficiency = np.ones((n_genes, nbp_basic.n_rounds)) * np.nan
     gene_efficiency[:, nbp_basic.use_rounds] = gene_efficiency_use
     nbp.gene_efficiency = gene_efficiency
+    nbp.use_ge = use_ge
 
     # bled_codes_ge[g,r,c] so nan when r/c outside use_rounds/channels and 0 when gene_codes[g,r] outside use_dyes
     bled_codes_ge = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, n_genes)) * np.nan
