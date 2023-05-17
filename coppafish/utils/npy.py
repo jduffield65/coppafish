@@ -59,7 +59,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         # First reorder axes so that image is in form z y x
         image = np.swapaxes(image, 2, 0)
         # Now rotate image
-        image = rotate_90(image)
+        # image = rotate_90(image)
         np.save(nbp_file.tile[t][r][c], image)
     else:
         # Don't need to apply rotations here as 2D data obtained from upstairs microscope without this issue
@@ -123,7 +123,10 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
                 if len(yxz) != 3:
                     raise ValueError(f'Loading in a 3D tile but dimension of coordinates given is {len(yxz)}.')
                 if yxz[0] is None and yxz[1] is None:
-                    image = np.load(nbp_file.tile[t][r][c], mmap_mode='r')[yxz[2]]
+                    try:
+                        image = np.load(nbp_file.tile[t][r][c], mmap_mode='r')[yxz[2]]
+                    except ValueError:
+                        image = np.load(nbp_file.tile[t][r][c], mmap_mode='r+')[yxz[2]]
                     if image.ndim == 3:
                         image = np.moveaxis(image, 0, 2)
                 else:

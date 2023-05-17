@@ -319,11 +319,38 @@ def save_metadata(json_file: str, nd2_file: str, use_channels: Optional[List] = 
     json.dump(metadata, open(json_file, 'w'))
 
 
+# def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.ndarray,
+#                      tile_pos_yx_npy: np.ndarray) -> Union[int, List[int]]:
+#     """
+#     Gets index of tiles in nd2 file from tile index of npy file.
+#
+#     Args:
+#         tile_ind_npy: Indices of tiles in npy file
+#         tile_pos_yx_nd2: ```int [n_tiles x 2]```.
+#             ```[i,:]``` contains YX position of tile with nd2 index ```i```.
+#             Index 0 refers to ```YX = [0, 0]```.
+#             Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
+#         tile_pos_yx_npy: ```int [n_tiles x 2]```.
+#             ```[i,:]``` contains YX position of tile with npy index ```i```.
+#             Index 0 refers to ```YX = [MaxY, MaxX]```.
+#             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
+#
+#     Returns:
+#         Corresponding index in nd2 file
+#     """
+#     Since nd2 tiles are numbered 0,0 from bottom left, and npy tiles are numbered 0,0 from top right, we need to
+#     convert tile_pos_yx[tile_ind_npy] to nd2 tile indices
+    # n_rows, n_cols = tile_pos_yx_nd2.max(axis=0)
+    # get index in the nd2 tile pos array of [n_rows, n_cols] - tile_pos_yx_np[tile_ind_npy]
+    # tile_pos = np.array([n_rows, n_cols]) - tile_pos_yx_npy[tile_ind_npy]
+    # nd2_index = np.where(np.sum(tile_pos_yx_nd2 == tile_pos, axis=1) == 2)[0][0]
+    # return nd2_index
+
+
 def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.ndarray,
                      tile_pos_yx_npy: np.ndarray) -> Union[int, List[int]]:
     """
     Gets index of tiles in nd2 file from tile index of npy file.
-
     Args:
         tile_ind_npy: Indices of tiles in npy file
         tile_pos_yx_nd2: ```int [n_tiles x 2]```.
@@ -334,17 +361,17 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
             ```[i,:]``` contains YX position of tile with npy index ```i```.
             Index 0 refers to ```YX = [MaxY, MaxX]```.
             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
-
     Returns:
-        Corresponding index in nd2 file
+        Corresponding indices in nd2 file
     """
-    # Since nd2 tiles are numbered 0,0 from bottom left, and npy tiles are numbered 0,0 from top right, we need to
-    # convert tile_pos_yx[tile_ind_npy] to nd2 tile indices
-    n_rows, n_cols = tile_pos_yx_nd2.max(axis=0)
-    # get index in the nd2 tile pos array of [n_rows, n_cols] - tile_pos_yx_np[tile_ind_npy]
-    tile_pos = np.array([n_rows, n_cols]) - tile_pos_yx_npy[tile_ind_npy]
-    nd2_index = np.where(np.sum(tile_pos_yx_nd2 == tile_pos, axis=1) == 2)[0][0]
-    return nd2_index
+    if isinstance(tile_ind_npy, numbers.Number):
+        tile_ind_npy = [tile_ind_npy]
+    nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, tile_pos_yx_npy[tile_ind_npy]).tolist()
+    if len(nd2_index) == 1:
+        return nd2_index[0]
+    else:
+        return nd2_index
+    # return np.where(np.sum(tile_pos_yx_nd2 == tile_pos_yx_npy[tile_ind_npy], 1) == 2)[0][0]
 
 
 def get_raw_images(nbp_basic: NotebookPage, nbp_file: NotebookPage, tiles: List[int], rounds: List[int],

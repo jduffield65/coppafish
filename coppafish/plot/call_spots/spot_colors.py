@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
+import mplcursors
 import numpy as np
-from matplotlib.widgets import Button, RangeSlider
+from matplotlib.widgets import Button, RangeSlider, Slider
+from matplotlib.patches import Rectangle
 from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
 from ...call_spots.background import fit_background
 from ...setup import Notebook
@@ -423,16 +425,167 @@ class view_intensity(ColorPlotBase):
 
 # We are now going to create a new class that will allow us to view the spots used to calculate the gene efficiency
 # for a given gene. This will be useful for checking that the spots used are representative of the gene as a whole.
-class view_gene_efficiency:
-    def __init__(self, nb: Notebook, gene_index: int):
+class GEViewer():
+    def __init__(self, nb: Notebook):
         """
-        Diagnostic to show spots used to calculate gene efficiency.
-
+        Diagnostic to show the n_genes x n_rounds gene efficiency matrix as a heatmap.
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
-            gene_no: Gene of interest to be plotted.
+        """
+        self.nb = nb
+        self.n_genes = nb.call_spots.gene_efficiency.shape[0]
+        self.fig, self.ax = plt.subplots(figsize=(10, 10))
+        gene_efficiency = nb.call_spots.gene_efficiency
+        self.ax.imshow(gene_efficiency, cmap='viridis', vmin=0, vmax=gene_efficiency.max(), aspect='auto')
+        self.ax.set_xlabel('Round')
+        self.ax.set_ylabel('Gene')
+        self.ax.set_xticks(ticks=np.arange(gene_efficiency.shape[1]))
+        self.ax.set_yticks([])
+
+        # add colorbar
+        self.ax.set_title('Gene Efficiency')
+        cax = self.fig.add_axes([0.95, 0.1, 0.03, 0.8])
+        cbar = self.fig.colorbar(self.ax.images[0], cax=cax)
+        cbar.set_label('Gene Efficiency')
+
+        # Adding gene names to y-axis would be too crowded. We will use mplcursors to show gene name of gene[r] when
+        # hovering over row r of the heatmap. This means we need to only extract the y position of the mouse cursor.
+        gene_names = nb.call_spots.gene_names
+        mplcursors.cursor(self.ax, hover=True).connect("add", lambda sel: self.plot_gene_name(sel.target.index[0]))
+        # 2. Allow genes to be selected by clicking on them
+        mplcursors.cursor(self.ax, hover=False).connect("add", lambda sel: GESpotViewer(nb, sel.target.index[0]))
+        # 3. We would like to add a white rectangle around the observed spot when we hover over it. We will
+        # use mplcursors to do this. We need to add a rectangle to the plot when hovering over a gene.
+        # We also want to turn off annotation when hovering over a gene so we will use the `hover=False` option.
+        mplcursors.cursor(self.ax, hover=2).connect("add", lambda sel: self.add_rectangle(sel.target.index[0]))
+
+        plt.show()
+
+    def add_rectangle(self, index):
+        # We need to remove any existing rectangles from the plot
+        index = max(0, index)
+        index = min(index, self.n_genes - 1)
+        for rectangle in self.ax.patches:
+            rectangle.remove()
+        # We can then add a new rectangle to the plot
+        self.ax.add_patch(
+            Rectangle((-0.5, index - 0.5), self.nb.basic_info.n_rounds, 1, fill=False, edgecolor='white'))
+
+    def plot_gene_name(self, index):
+    # We need to remove any existing gene names from the plot
+        index = max(0, index)
+        index = min(index, self.n_genes - 1)
+        for text in self.ax.texts:
+            text.remove()
+        # We can then add a new gene name to the top right of the plot in size 20 font
+        self.ax.text(1.05, 1.05, self.nb.call_spots.gene_names[index], transform=self.ax.transAxes, size=20,
+                        horizontalalignment='right', verticalalignment='top', color='white')
+
+
+class GESpotViewer():
+    def __init__(self, nb: Notebook, gene_index: int = 0, iteration: int = 0):
+        """
+        Diagnostic to show the spots used to calculate the gene efficiency for a given gene.
+        Args:
+            nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
+            iteration: iteration of call spots that we would like to view
+            gene_index: Index of gene to be plotted.
         """
         self.nb = nb
         self.gene_index = gene_index
-        self.gene_names = nb.call_spots.gene_names
+        self.iteration = iteration
+        self.n_genes = nb.call_spots.gene_efficiency.shape[0]
+        # Load spots
+        self.load_spots(gene_index, iteration)
 
+        # Now initialise the plot, adding fig and ax attributes to the class
+        self.plot_ge()
+        # Initialise buttons and cursors
+        # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
+        spot_id = np.where(self.spots_use)[0]
+        mplcursors.cursor(self.ax[0], hover=False).connect(
+            "add", lambda sel: view_spot(nb, spot_id[sel.target.index[0]]))
+        # 2. We would like to add a white rectangle around the observed spot when we hover over it
+        mplcursors.cursor(self.ax[0], hover=2).connect(
+            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+        plt.show()
+
+    def load_spots(self, gene_index: int, iteration: int):
+        nb = self.nb
+        # First we need to find the spots used to calculate the gene efficiency for the given gene.
+        self.spots_use = nb.call_spots.use_ge[iteration] * (nb.ref_spots.gene_no == gene_index)
+        spots = nb.ref_spots.colors[self.spots_use][:, :, nb.basic_info.use_channels]
+        spots = spots.reshape((spots.shape[0], spots.shape[1] * spots.shape[2]))
+        color_norm = np.repeat(nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                                      nb.basic_info.use_channels)].reshape((1, -1)),
+                               spots.shape[0], axis=0)
+        self.spots_expected = np.repeat(nb.call_spots.bled_codes[gene_index, :, nb.basic_info.use_channels].
+                                        reshape((1, -1)), spots.shape[0], axis=0)
+        self.spots = spots / color_norm
+
+    def plot_ge(self):
+        if not hasattr(self, 'fig'):
+            self.fig, self.ax = plt.subplots(1, 2, figsize=(10, 10))
+        else:
+            self.ax[0].clear()
+            self.ax[1].clear()
+        # Now we can plot the spots. We want to create 2 subplots. One with the spots observed and one with the expected
+        # spots. We will use the same color scale for both subplots.
+        vmax = np.max([np.max(self.spots), np.max(self.spots_expected)]) / 2
+        # We can then plot the spots observed and the spots expected.
+        self.ax[0].imshow(self.spots, cmap='viridis', vmin=0, vmax=vmax, aspect='auto')
+        self.ax[1].imshow(self.spots_expected, cmap='viridis', vmin=0, vmax=vmax, aspect='auto')
+        # We can then add titles and axis labels to the subplots.
+        self.ax[0].set_title('Observed Spot Colours')
+        self.ax[1].set_title('Expected Spot Colours')
+        self.ax[0].set_xlabel('Spot Colour (flattened)')
+        self.ax[1].set_xlabel('Spot Colour (flattened)')
+        self.ax[0].set_ylabel('Spot')
+        self.ax[1].set_ylabel('Spot')
+
+        # We would like to add red vertical lines to show the start of each round.
+        for j in range(2):
+            for i in range(self.nb.basic_info.n_rounds):
+                self.ax[j].axvline(i * len(self.nb.basic_info.use_channels) - 0.5, color='r')
+
+        # We would also like to add horizontal lines to show the start of each tile.
+        tile = self.nb.ref_spots.tile[self.spots_use]
+        # We can then find the indices where the tile number changes using np.where
+        tile_change = np.where(np.diff(tile) != 0)[0]
+        # We can then add a horizontal line at each of these indices
+        for i in tile_change:
+            self.ax[0].axhline(i + 0.5, color='r')
+
+        # Set supertitle, colorbar and show plot
+        self.fig.suptitle(
+            'Gene Efficiency Calculation for Gene ' + self.nb.call_spots.gene_names[self.gene_index] + ' in Iteration '
+            + str(self.iteration))
+
+        # Add gene efficiency plot on top of prediction on the right
+        ge = self.nb.call_spots.gene_efficiency[self.gene_index]
+        ge_max = np.max(self.nb.call_spots.gene_efficiency)
+        ge = ge * self.spots.shape[0] / ge_max
+        ge = self.spots.shape[0] - ge
+        ge = np.repeat(ge, self.nb.basic_info.n_rounds)
+        # Now clip the gene efficiency to be between 0 and the number of spots
+        ge = np.clip(ge, 0, self.spots.shape[0] - 1)
+        # We can then plot the gene efficiency
+        self.ax[1].plot(ge, color='w')
+        # plot a white line at the gene efficiency of 1. This comes at
+        self.ax[1].axhline(0, color='w', linestyle='--', label='Gene Efficiency = ' + str(np.round(ge_max, 2)))
+        self.ax[1].axhline(self.spots.shape[0] - self.spots.shape[0] / ge_max, color='w', linestyle='--',
+                           label='Gene Efficiency = 1')
+        self.ax[1].axhline(self.spots.shape[0] - 1, color='w', linestyle='--', label='Gene Efficiency = 0')
+        self.ax[1].legend(loc='upper right')
+        self.fig.canvas.draw_idle()
+
+    def add_rectangle(self, index):
+        # We need to remove any existing rectangles from the plot
+        index = max(0, index)
+        index = min(index, self.spots.shape[0] - 1)
+        for rectangle in self.ax[0].patches:
+            rectangle.remove()
+        # We can then add a new rectangle to the plot
+        self.ax[0].add_patch(
+            Rectangle((-0.5, index - 0.5), self.nb.basic_info.n_rounds * len(self.nb.basic_info.use_channels), 1,
+                      fill=False, edgecolor='white'))
