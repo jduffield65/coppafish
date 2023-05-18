@@ -32,12 +32,13 @@ def find_shift_array(subvol_base, subvol_target, position, r_threshold):
     z_subvolumes, y_subvolumes, x_subvolumes = subvol_base.shape[0], subvol_base.shape[1], subvol_base.shape[2]
     shift = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes, 3))
     shift_corr = np.zeros((z_subvolumes, y_subvolumes, x_subvolumes))
+    position = np.reshape(position, (z_subvolumes, y_subvolumes, x_subvolumes, 3))
 
     for y in range(y_subvolumes):
         for x in range(x_subvolumes):
             shift[:, y, x], shift_corr[:, y, x] = find_z_tower_shifts(subvol_base=subvol_base[:, y, x],
                                                                       subvol_target=subvol_target[:, y, x],
-                                                                      position=position[:, y, x],
+                                                                      position=position[:, y, x].copy(),
                                                                       pearson_r_threshold=r_threshold)
     return np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3)), \
         np.reshape(shift_corr, shift.shape[0] * shift.shape[1] * shift.shape[2])
@@ -56,15 +57,20 @@ def find_z_tower_shifts(subvol_base, subvol_target, position, pearson_r_threshol
     Returns:
         shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
     """
+    position = position.astype(int)
+    # for the purposes of this section, we'll take position to be the bottom left corner of the subvolume
+    position = position - np.array([subvol_base.shape[1], subvol_base.shape[2], subvol_base.shape[3]]) // 2
     z_subvolumes = subvol_base.shape[0]
     z_box = subvol_base.shape[1]
     shift = np.zeros((z_subvolumes, 3))
     shift_corr = np.zeros(z_subvolumes)
     for z in range(z_subvolumes):
-        z_start, z_end = max(0, z - z_neighbours), min(z_subvolumes, z + z_neighbours + 1)
-        merged_subvol_target = merge_subvols(position=position[z_start:z_end], subvol=subvol_target[z_start:z_end])
+        z_start, z_end = int(max(0, z - z_neighbours)), int(min(z_subvolumes, z + z_neighbours + 1))
+        merged_subvol_target = merge_subvols(position=np.copy(position[z_start:z_end]),
+                                             subvol=subvol_target[z_start:z_end])
         merged_subvol_base = np.zeros(merged_subvol_target.shape)
-        merged_subvol_base[position[z, 0]:position[z, 0] + z_box] = subvol_base[z]
+        box_bottom = position[z_start, 0]
+        merged_subvol_base[position[z, 0] - box_bottom:position[z, 0] - box_bottom + z_box] = subvol_base[z]
         # Now we have the merged subvolumes, we can compute the shift
         shift[z], shift_corr[z] = find_zyx_shift(subvol_base=merged_subvol_base, subvol_target=merged_subvol_target,
                                                  pearson_r_threshold=pearson_r_threshold)
@@ -89,13 +95,14 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
         raise ValueError("Subvolume arrays have different shapes")
     shift, _, _ = phase_cross_correlation(reference_image=subvol_target, moving_image=subvol_base,
                                                    upsample_factor=10)
+    alt_shift = np.copy(shift)
     # now anti alias the shift in z. To do this, consider that the other possible aliased z shift is the either one
     # subvolume above or below the current shift. (In theory, we could also consider the subvolume 2 above or below,
     # but this is unlikely to be the case in practice as we are already merging subvolumes)
     if shift[0] > 0:
-        alt_shift = shift[0] - subvol_base.shape[0]
+        alt_shift[0] = shift[0] - subvol_base.shape[0]
     else:
-        alt_shift = shift[0] + subvol_base.shape[0]
+        alt_shift[0] = shift[0] + subvol_base.shape[0]
 
     # Now we need to compute the correlation coefficient of the shift and the anti aliased shift
     shift_base = custom_shift(subvol_base, shift.astype(int))
@@ -207,7 +214,8 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
                                           x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
 
         # Find the subvolume shifts
-        shift, corr = find_shift_array(subvol_base, subvol_target, position=position, r_threshold=r_thresh)
+
+        shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
 
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
         registration_data['round_registration']['position'] = position

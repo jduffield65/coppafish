@@ -410,20 +410,18 @@ def merge_subvols(position, subvol):
     """
     Function to merge subvolumes together into one image
     Args:
-        position: n_subvols x 3 array of positions of centre of subvols (zyx)
+        position: n_subvols x 3 array of positions of bottom left of subvols (zyx)
         subvol: n_subvols x z_box x y_box x x_box array of subvols
 
     Returns:
         merged: merged image (size will depend on amount of overlap)
     """
-    # First convert position to the bottom left corner of the subvol instead of the centre. Also set min values to 0
-    position = position - np.array([subvol.shape[1] // 2, subvol.shape[2] // 2, subvol.shape[3] // 2]) - \
-               np.min(position, axis=0)
+    # set min values to 0
+    position -= np.min(position, axis=0)
     z_box, y_box, x_box = subvol.shape[1:]
-
     # Get the min and max values of the position, use this to get the size of the merged image and initialise it
     max_pos = np.max(position, axis=0)
-    merged = np.zeros((max_pos + np.array([subvol.shape[1:]])))
+    merged = np.zeros((max_pos + subvol.shape[1:]).astype(int))
 
     # Loop through the subvols and add them to the merged image at the correct position. If there is overlap, take the
     # final value
