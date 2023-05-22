@@ -1,5 +1,6 @@
 import os
 import pickle
+import itertools
 import numpy as np
 from tqdm import tqdm
 from skimage.filters import sobel
@@ -406,9 +407,14 @@ def generate_channel_reg_images(nb):
         nb: Notebook
     """
     non_anchor_channels = [c for c in nb.basic_info.use_channels if c != nb.basic_info.anchor_channel]
-    for t in tqdm(nb.basic_info.use_tiles):
-        for c in non_anchor_channels:
-            # Get the image
+    use_tiles = nb.basic_info.use_tiles
+    # Instead of doing a double loop over tiles and non-anchor channels, we can do a single, combine these into a single
+    # array and then loop over this
+    with tqdm(total=len(use_tiles) * len(non_anchor_channels)) as pbar:
+        for t, c in itertools.product(use_tiles, non_anchor_channels):
+            pbar.set_description(f"Generating channel registration image for tile {t} and channel {c}")
             # TODO: Get this working with nb.register_Debug.reference_round
+            # Get the image for the tile and channel
             im = load_tile(nb.file_names, nb.basic_info, t, 3, c)
             save_compressed_image(nb.file_names.output_dir, im, t, 3, c, True)
+            pbar.update(1)
