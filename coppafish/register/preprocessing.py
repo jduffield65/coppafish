@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+from skimage.filters import sobel
 from coppafish.setup import NotebookPage
 
 
@@ -53,12 +54,12 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
     return registration_data
 
 
-def save_compressed_image(nbp_file: NotebookPage, image: np.ndarray, t: int, r: int, c: int):
+def save_compressed_image(output_dir: str, image: np.ndarray, t: int, r: int, c: int, filter: bool = False):
     """
     Save low quality cropped images for reg diagnostics
 
     Args:
-        nbp_file: file_names notebook page
+        output_dir: string of output directory
         image: zyx image to be saved in compressed form
         t: tile
         r: round
@@ -69,14 +70,17 @@ def save_compressed_image(nbp_file: NotebookPage, image: np.ndarray, t: int, r: 
     """
 
     # Check directory exists otherwise create it
-    if not os.path.isdir(os.path.join(nbp_file.output_dir, 'reg_images')):
-        os.makedirs(os.path.join(nbp_file.output_dir, 'reg_images'))
+    if not os.path.isdir(os.path.join(output_dir, 'reg_images')):
+        os.makedirs(os.path.join(output_dir, 'reg_images'))
 
     mid_z, mid_y, mid_x = image.shape[0] // 2, image.shape[1] // 2, image.shape[2] // 2
     # save a small subset for reg diagnostics
-    np.save(os.path.join(nbp_file.output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r) + 'c' + str(c),
-            (256 * image / np.max(image)).astype(np.uint8)
-            [mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250])
+    small_im = image[mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250]
+    if filter:
+        samll_im = (sobel(small_im) * 255 / np.max(small_im)).astype(np.uint8)
+    else:
+        small_im = (small_im * 255 / np.max(small_im)).astype(np.uint8)
+    np.save(os.path.join(output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r) + 'c' + str(c), small_im)
 
 
 def replace_scale(transform: np.ndarray, scale: np.ndarray):
@@ -115,44 +119,6 @@ def populate_full(sublist_1, list_1, sublist_2, list_2, array):
         for j in range(len(sublist_2)):
             full_array[sublist_1[i], sublist_2[j]] = array[i, j]
     return full_array
-
-
-def create_shift_images(shift, tilepos_yx):
-    """
-    function to create images where shift is in the position specified by tile position.
-    Args:
-        shift: n_tiles_use x 3 zyx shift
-        tilepos_yx: n_tile_use x 2 yx position of tiles
-
-    Returns:
-        shift_im: 3 x n_rows x n_cols where first axis specifies z, y, x respectively and the rest are images
-    """
-    # Initialise images
-    n_rows = np.max(tilepos_yx[:, 0]) - np.min(tilepos_yx[:, 0]) + 1
-    n_cols = np.max(tilepos_yx[:, 1]) - np.min(tilepos_yx[:, 1]) + 1
-    n_tiles_use = tilepos_yx.shape[0]
-    im = np.zeros((3, n_rows, n_cols)) * np.nan
-
-    # Create images. These will have first axis referred to as y and the next as x. This is consistent with how
-    # matplotlib plots things so will look correct
-    for t in range(n_tiles_use):
-        im[:, tilepos_yx[0, t], tilepos_yx[1, t]] = shift[t]
-
-    return im
-
-
-def stack_images(im1, im2):
-    # First stack vertically
-    n_cols = im1.shape[1]
-    nan_bar = np.zeros(n_cols) * np.nan
-    im_stack = np.vstack((nan_bar, im1, nan_bar, im2, nan_bar))
-
-    # Now add horizontal borders
-    n_rows = im_stack.shape[0]
-    nan_bar = np.zeros(n_rows) * np.nan
-    im_stack = np.vstack((nan_bar, im_stack.T, nan_bar)).T
-
-    return im_stack
 
 
 def yxz_to_zyx(image: np.ndarray):

@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox, CheckButtons
 from .score_calc import background_fitting, get_dot_product_score
@@ -280,3 +281,52 @@ class gene_counts:
             self.ax.set_xlim(-0.5, self.n_genes_real - 0.5)
         self.plots[index].set_visible(not self.plots[index].get_visible())
         self.ax.figure.canvas.draw()
+
+
+def view_all_gene_scores(nb):
+    """
+    Plots the scores of all genes in a square grid. Useful for seeing the distribution of scores.
+    Args:
+        nb: Notebook object. Must have ref_spots page
+    """
+    grid_dim = int(np.ceil(np.sqrt(nb.call_spots.gene_names.shape[0])))
+    fig, ax = plt.subplots(grid_dim, grid_dim, figsize=(10, 10))
+    # Move subplots down to make room for the title and to the left to make room for the colourbar
+    fig.subplots_adjust(top=0.9)
+    fig.subplots_adjust(right=0.9)
+
+    # We also want to plot the histograms in different colours, representing the number of spots for each gene
+    for i in range(grid_dim ** 2):
+        gene_i_scores = nb.ref_spots.score[nb.ref_spots.gene_no == i]
+        n_spots = len(gene_i_scores)
+
+        if n_spots < 50:
+            n_bins = 10
+        else:
+            n_bins = 50
+        # We want to choose the colour of the histogram based on the number of spots. We will use a log scale, with the
+        # minimum number of spots being 1 and the maximum being 1000. Use a blue to red colourmap
+        cmap = plt.get_cmap("coolwarm")
+        norm = mpl.colors.Normalize(vmin=1, vmax=2000)
+
+        # Plot the histogram of scores for each gene
+        if i < nb.call_spots.gene_names.shape[0]:
+            ax[i // grid_dim, i % grid_dim].hist(gene_i_scores, bins=n_bins, color=cmap(norm(n_spots)))
+            ax[i // grid_dim, i % grid_dim].set_title(nb.call_spots.gene_names[i])
+            ax[i // grid_dim, i % grid_dim].set_xlim(0, 1)
+            ax[i // grid_dim, i % grid_dim].set_xticks([])
+            ax[i // grid_dim, i % grid_dim].set_yticks([])
+
+        # Next we want to delete the empty plots
+        else:
+            ax[i // grid_dim, i % grid_dim].axis("off")
+            ax[i // grid_dim, i % grid_dim].set_xticks([])
+            ax[i // grid_dim, i % grid_dim].set_yticks([])
+
+    # Add overall title and colorbar
+    fig.suptitle("Distribution of Scores for Each Gene", fontsize=16)
+    cax = fig.add_axes([0.95, 0.1, 0.03, 0.8])
+    mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, label="Number of Spots")
+    # Put label on the left of the colourbar
+    cax.yaxis.set_label_position("left")
+    plt.show()

@@ -5,11 +5,14 @@ import matplotlib.patches as patches
 import napari
 from qtpy.QtCore import Qt
 from superqt import QRangeSlider
-from PyQt5.QtWidgets import QPushButton, QMainWindow
+from PyQt5.QtWidgets import QPushButton, QMainWindow, QLineEdit, QLabel
+from PyQt5.QtGui import QFont
 import matplotlib.gridspec as gridspec
 from ...setup import Notebook
-from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, compose_affine, invert_affine
+from skimage.filters import sobel
+from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, yxz_to_zyx
 from coppafish.register.base import huber_regression
+from coppafish.utils.npy import load_tile
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
 
@@ -143,6 +146,14 @@ class RegistrationViewer:
         # Finally, add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.icp_buttons, area="left", name='ICP Diagnostics',
                                                 add_vertical_stretch=False)
+
+        # Create a single widget containing buttons for Overlay diagnostics
+        self.overlay_buttons = ButtonOverlayWindow()
+        # Now connect button to function
+        self.overlay_buttons.button_overlay.clicked.connect(self.view_button_clicked)
+        # Add buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.overlay_buttons, area="left", name='Overlay Diagnostics',
+                                             add_vertical_stretch=False)
 
         # Get target images and anchor image
         self.get_images()
@@ -285,6 +296,24 @@ class RegistrationViewer:
     # icp
     def button_deviations_clicked(self):
         view_icp_deviations(nb=self.nb, t=self.tile)
+
+    #  overlay
+    def view_button_clicked(self):
+        # This function is called when the view button is clicked
+        # Need to get the tile, round, channel and filter from the GUI. Then run view_entire_overlay
+        # Get the tile, round, channel and filter from the GUI
+        t_view = int(self.overlay_buttons.textbox_tile.text())
+        r_view = int(self.overlay_buttons.textbox_round.text())
+        c_view = int(self.overlay_buttons.textbox_channel.text())
+        filter = self.overlay_buttons.button_filter.isChecked()
+        # Run view_entire_overlay.
+        try:
+            view_entire_overlay(nb=self.nb, t=t_view, r=r_view, c=c_view, filter=filter)
+        except:
+            print('Error: could not view overlay')
+        # Reset view button to unchecked and filter button to unchecked
+        self.overlay_buttons.button_overlay.setChecked(False)
+        self.overlay_buttons.button_filter.setChecked(False)
 
     # Button functions end here
     def update_plot(self):
@@ -528,6 +557,47 @@ class ButtonICPWindow(QMainWindow):
         self.button_deviations = QPushButton('Large ICP Deviations', self)
         self.button_deviations.setCheckable(True)
         self.button_deviations.setGeometry(20, 100, 220, 28)
+
+
+class ButtonOverlayWindow(QMainWindow):
+    # This class creates a window with buttons for viewing overlays
+    # We want text boxes for entering the tile, round and channel. We then want a simple button for filtering and
+    # for viewing the overlay
+    def __init__(self):
+        super().__init__()
+
+        self.button_overlay = QPushButton('View', self)
+        self.button_overlay.setCheckable(True)
+        self.button_overlay.setGeometry(20, 20, 220, 28)
+
+        # Add title to each textbox
+        label_tile = QLabel(self)
+        label_tile.setText('Tile')
+        label_tile.setGeometry(20, 70, 100, 28)
+        self.textbox_tile = QLineEdit(self)
+        self.textbox_tile.setFont(QFont('Arial', 8))
+        self.textbox_tile.setText('0')
+        self.textbox_tile.setGeometry(20, 100, 100, 28)
+
+        label_round = QLabel(self)
+        label_round.setText('Round')
+        label_round.setGeometry(140, 70, 100, 28)
+        self.textbox_round = QLineEdit(self)
+        self.textbox_round.setFont(QFont('Arial', 8))
+        self.textbox_round.setText('0')
+        self.textbox_round.setGeometry(140, 100, 100, 28)
+
+        label_channel = QLabel(self)
+        label_channel.setText('Channel')
+        label_channel.setGeometry(20, 130, 100, 28)
+        self.textbox_channel = QLineEdit(self)
+        self.textbox_channel.setFont(QFont('Arial', 8))
+        self.textbox_channel.setText('18')
+        self.textbox_channel.setGeometry(20, 160, 100, 28)
+
+        self.button_filter = QPushButton('Filter', self)
+        self.button_filter.setCheckable(True)
+        self.button_filter.setGeometry(140, 160, 100, 28)
 
 
 def set_style(button):
@@ -1220,3 +1290,38 @@ def view_icp_deviations(nb: Notebook, t: int):
     plt.suptitle('Deviations of ICP from SVR for tile ' + str(t) + '. \n'
                                                                    'Left column is zyx scale difference, '
                                                                    'right column is zyx shift difference.')
+
+
+def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
+    """
+    Plots the entire image for a given tile t, round r, channel c, and overlays the SVR transformed image on top of the
+    ICP transformed image. The SVR transformed image is in red, and the ICP transformed image is in green.
+
+    Args:
+        nb: Notebook
+        t: tile
+        r: round
+        c: channel
+        filter: whether to apply sobel filter to images
+    """
+    # Initialise frequent variables
+    anchor = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, nb.basic_info.anchor_round,
+                                  nb.basic_info.anchor_channel))
+    target = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c))
+    transform = yxz_to_zyx_affine(nb.register.transform[t, r, c])
+    target_transfromed = affine_transform(target, transform, order=1)
+    # plot in napari
+    if filter:
+        anchor = sobel(anchor)
+        target = sobel(target)
+        target_transfromed = sobel(target_transfromed)
+
+    viewer = napari.Viewer()
+    viewer.add_image(anchor, name='Tile ' + str(t) + ', round ' + str(nb.basic_info.anchor_round) + ', channel ' +
+                     str(nb.basic_info.anchor_channel), colormap='red', blending='additive')
+    viewer.add_image(target_transfromed, name='Tile ' + str(t) + ', round ' + str(r) + ', channel ' + str(c) +
+                                              ' transformed', colormap='green', blending='additive')
+    viewer.add_image(target, name='Tile ' + str(t) + ', round ' + str(r) + ', channel ' + str(c), colormap='blue',
+                     blending='additive', opacity=0)
+    napari.run()
+

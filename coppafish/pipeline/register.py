@@ -99,7 +99,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
             # Do not do ICP if done in previous run
             if 'icp' in registration_data.keys():
                 break
-            ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.ref_round, nbp_basic.ref_channel,
+            ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
                                    nbp_find_spots.spot_no)
             for r in use_rounds:
                 for c in use_channels:

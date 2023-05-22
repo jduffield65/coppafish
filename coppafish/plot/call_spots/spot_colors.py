@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import mplcursors
 import numpy as np
 from matplotlib.widgets import Button, RangeSlider, Slider
@@ -519,8 +520,9 @@ class GESpotViewer():
         color_norm = np.repeat(nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                                       nb.basic_info.use_channels)].reshape((1, -1)),
                                spots.shape[0], axis=0)
-        self.spots_expected = np.repeat(nb.call_spots.bled_codes[gene_index, :, nb.basic_info.use_channels].
-                                        reshape((1, -1)), spots.shape[0], axis=0)
+        bled_code = nb.call_spots.bled_codes[gene_index, :, nb.basic_info.use_channels].T
+        bled_code = bled_code.reshape((1, bled_code.shape[0] * bled_code.shape[1]))
+        self.spots_expected = np.repeat(bled_code, spots.shape[0], axis=0)
         self.spots = spots / color_norm
 
     def plot_ge(self):
@@ -577,6 +579,10 @@ class GESpotViewer():
                            label='Gene Efficiency = 1')
         self.ax[1].axhline(self.spots.shape[0] - 1, color='w', linestyle='--', label='Gene Efficiency = 0')
         self.ax[1].legend(loc='upper right')
+        # Add simple colorbar
+        cax = self.fig.add_axes([0.95, 0.15, 0.02, 0.7])
+        self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=vmax), cmap='viridis'),
+                          cax=cax, label='Spot Colour')
         self.fig.canvas.draw_idle()
 
     def add_rectangle(self, index):

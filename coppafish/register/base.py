@@ -1,12 +1,11 @@
 import os
 import pickle
 import numpy as np
+from tqdm import tqdm
 from sklearn.linear_model import HuberRegressor
 from scipy.spatial import KDTree
 from scipy import stats
 from skimage.filters import sobel
-from skimage.exposure import match_histograms
-from scipy.ndimage import affine_transform
 from ..utils.npy import load_tile
 from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image, \
     replace_scale, populate_full, merge_subvols, invert_affine
@@ -193,7 +192,7 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
     anchor_image = sobel(yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round,
                                                    nbp_basic.anchor_channel)))
 
-    save_compressed_image(nbp_file, anchor_image, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)
+    save_compressed_image(nbp_file.output_dir, anchor_image, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)
 
     # Now compute round shifts for this tile and the affine transform for each round
     for r in nbp_basic.use_rounds:
@@ -204,7 +203,7 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
         target_image = yxz_to_zyx(sobel(load_tile(nbp_file, nbp_basic, t, r, nbp_basic.anchor_channel)))
 
         # save a small subset for reg diagnostics
-        save_compressed_image(nbp_file, target_image, t, r, nbp_basic.anchor_channel)
+        save_compressed_image(nbp_file.output_dir, target_image, t, r, nbp_basic.anchor_channel)
 
         # next we split image into overlapping cuboids
         subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
@@ -232,6 +231,89 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
         pickle.dump(registration_data, f)
 
     return registration_data
+
+
+def custom_svr(im_dir: str, im_rounds: list, anchor_round: int, t: int, registration_data: dict) -> dict:
+    """
+    Function to carry out subvolume registration on a single tile.
+    Args:
+        im_dir: Directory containing the images. Assumed that files are in form t{t}r{r}.npy and all of same channel.
+        im_rounds: List of imaging rounds
+        anchor_round: Imaging round to use as anchor
+        t: tile to register
+        registration_data: dictionary with registration data, we continually update this dictionary as we go through
+        different tiles
+
+    Returns:
+        registration_data: Dictionary with registration data
+    """
+    z_subvols, y_subvols, x_subvols = 5, 8, 8
+    z_box, y_box, x_box = 12, 300, 300
+    r_thresh = 0.4
+
+    # Load in the anchor npy volume
+    anchor_image = np.load(os.path.join(im_dir, 't' + str(t) + 'r' + str(anchor_round) + '.npy'))
+    save_compressed_image(im_dir, anchor_image, t, anchor_round, 0)
+
+    # Now compute round shifts for this tile and the affine transform for each round
+    with tqdm(total=len(im_rounds), desc='Computing shifts for tile ' + str(t)) as pbar:
+        for r in im_rounds:
+            # Set progress bar title
+            pbar.set_description('Computing shifts for tile ' + str(t) + ', round ' + str(r))
+
+            # Load in imaging npy volume.
+            target_image = np.load(os.path.join(im_dir, 't' + str(t) + 'r' + str(r) + '.npy'))
+
+            # save a small subset for reg diagnostics
+            save_compressed_image(im_dir, target_image, t, r, 0)
+
+            # next we split image into overlapping cuboids
+            subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
+                                                   y_subvolumes=y_subvols, x_subvolumes=x_subvols,
+                                                   z_box=z_box, y_box=y_box, x_box=x_box)
+            subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
+                                              x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
+
+            # Find the subvolume shifts
+            shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
+
+            # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
+            registration_data['position'] = position
+            registration_data['round_shift'][t, r] = shift
+            registration_data['round_shift_corr'][t, r] = corr
+            registration_data['round_transform_raw'][t, r] = ols_regression(shift, position)
+            pbar.update(1)
+
+    # Add tile to completed tiles
+    registration_data['tiles_completed'].append(t)
+
+    # Now save the registration data dictionary externally
+    with open(os.path.join(im_dir, 'registration_data.pkl'), 'wb') as f:
+        pickle.dump(registration_data, f)
+
+    return registration_data
+
+
+def dapi_reg(im_dir: str, im_rounds: list, anchor_round: int, tiles: list) -> dict:
+    """
+    Function to carry out subvolume registration on all tiles for a single channel.
+    Args:
+        im_dir: image directory. all images assumed to be in form t{t}r{r}.npy and all of same channel.
+        im_rounds: list of imaging rounds
+        anchor_round: imaging round to use as anchor
+        tiles: list of tiles to register
+
+    Returns:
+        registration_data: dictionary with registration data
+    """
+    registration_data = {'round_shift': np.zeros((len(tiles), len(im_rounds), 5 * 8 * 8, 3)),
+                         'round_shift_corr': np.zeros((len(tiles), len(im_rounds), 5 * 8 * 8)),
+                         'round_transform_raw': np.zeros((len(tiles), len(im_rounds), 3, 4)),
+                         'position': np.zeros((5 * 8 * 8, 3)),
+                         'tiles_completed': []}
+
+    for t in tqdm(tiles):
+        registration_data = custom_svr(im_dir, im_rounds, anchor_round, t, registration_data)
 
 
 def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
