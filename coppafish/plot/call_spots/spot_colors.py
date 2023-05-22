@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import mplcursors
 import numpy as np
-from matplotlib.widgets import Button, RangeSlider, Slider
+from matplotlib.widgets import Button, RangeSlider
 from matplotlib.patches import Rectangle
 from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
 from ...call_spots.background import fit_background
@@ -509,6 +509,7 @@ class GESpotViewer():
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax[0], hover=2).connect(
             "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+
         plt.show()
 
     def load_spots(self, gene_index: int, iteration: int):
@@ -579,8 +580,8 @@ class GESpotViewer():
                            label='Gene Efficiency = 1')
         self.ax[1].axhline(self.spots.shape[0] - 1, color='w', linestyle='--', label='Gene Efficiency = 0')
         self.ax[1].legend(loc='upper right')
-        # Add simple colorbar
-        cax = self.fig.add_axes([0.95, 0.15, 0.02, 0.7])
+        # Add simple colorbar. Move this a little up to make space for the button.
+        cax = self.fig.add_axes([0.925, 0.1, 0.03, 0.8])
         self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=vmax), cmap='viridis'),
                           cax=cax, label='Spot Colour')
         self.fig.canvas.draw_idle()
@@ -595,3 +596,29 @@ class GESpotViewer():
         self.ax[0].add_patch(
             Rectangle((-0.5, index - 0.5), self.nb.basic_info.n_rounds * len(self.nb.basic_info.use_channels), 1,
                       fill=False, edgecolor='white'))
+
+    # want to add a button that will allow us to view histogram of spot colours
+    def plot_histogram(self):
+        # Need n_rounds subplots. These will be in a 1 x n_rounds grid
+        if not hasattr(self, 'fig_hist'):
+            self.fig_hist, self.ax_hist = plt.subplots(1, self.nb.basic_info.n_rounds, figsize=(20, 10))
+        else:
+            for ax in self.ax_hist:
+                ax.clear()
+        # We can then plot the histogram of spot colours for each round. The spot colour for each spot is given by
+        # the spot colour vector for that round, evaluated at the dye code for that spot.
+        gene_codes = self.nb.call_spots.gene_codes
+        for i in range(self.nb.basic_info.n_rounds):
+            round_index = i * len(self.nb.basic_info.use_channels)
+            spots_g_round = self.spots[:, round_index + gene_codes[self.gene_index, i]]
+            self.ax_hist[i].hist(spots_g_round, bins=min(10, spots_g_round.shape[0]//4), density=True)
+            self.ax_hist[i].set_title('Round ' + str(i))
+            self.ax_hist[i].set_xlabel('Spot Intensity')
+            self.ax_hist[i].set_ylabel('Frequency')
+            # Also add vertical bar at the expected spot colour
+            self.ax_hist[i].axvline(self.spots_expected[0, round_index + gene_codes[self.gene_index, i]],
+                                    ymin=0, ymax=1, color='r')
+        # Add supertitle
+        self.fig_hist.suptitle('Histogram of Spot Colours for Gene ' + self.nb.call_spots.gene_names[self.gene_index])
+        self.fig_hist.canvas.draw_idle()
+

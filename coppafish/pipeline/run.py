@@ -277,8 +277,9 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
         warnings.warn('ref_spots', utils.warnings.NotebookPageWarning)
     if not nb.has_page("call_spots"):
         config = nb.get_config()
-        # TODO: Make this work on other peoples pcs
-        default_bleed_matrix = np.load('/home/reilly/PycharmProjects/coppafish/coppafish/setup/default_bleed.npy')
+        # get current working directory
+        bleed_matrix_path = os.path.join(os.getcwd(), 'setup/default_bleed.npy')
+        default_bleed_matrix = np.load(bleed_matrix_path)
         default_bleed_matrix = default_bleed_matrix[nb.basic_info.use_channels]
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
                                                   nb.extract.hist_values, nb.extract.hist_counts,

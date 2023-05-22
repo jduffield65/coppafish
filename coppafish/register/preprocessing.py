@@ -1,8 +1,10 @@
 import os
 import pickle
 import numpy as np
+from tqdm import tqdm
 from skimage.filters import sobel
 from coppafish.setup import NotebookPage
+from coppafish.utils.npy import load_tile
 
 
 def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):
@@ -72,14 +74,13 @@ def save_compressed_image(output_dir: str, image: np.ndarray, t: int, r: int, c:
     # Check directory exists otherwise create it
     if not os.path.isdir(os.path.join(output_dir, 'reg_images')):
         os.makedirs(os.path.join(output_dir, 'reg_images'))
+    if filter:
+        image = sobel(image)
 
     mid_z, mid_y, mid_x = image.shape[0] // 2, image.shape[1] // 2, image.shape[2] // 2
     # save a small subset for reg diagnostics
     small_im = image[mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250]
-    if filter:
-        samll_im = (sobel(small_im) * 255 / np.max(small_im)).astype(np.uint8)
-    else:
-        small_im = (small_im * 255 / np.max(small_im)).astype(np.uint8)
+    small_im = (small_im * 255 / np.max(small_im)).astype(np.uint8)
     np.save(os.path.join(output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r) + 'c' + str(c), small_im)
 
 
@@ -396,3 +397,18 @@ def merge_subvols(position, subvol):
                position[i, 2]:position[i, 2] + x_box] = subvol[i]
 
     return merged
+
+
+def generate_channel_reg_images(nb):
+    """
+    Function to generate the channel registration images
+    Args:
+        nb: Notebook
+    """
+    non_anchor_channels = [c for c in nb.basic_info.use_channels if c != nb.basic_info.anchor_channel]
+    for t in tqdm(nb.basic_info.use_tiles):
+        for c in non_anchor_channels:
+            # Get the image
+            # TODO: Get this working with nb.register_Debug.reference_round
+            im = load_tile(nb.file_names, nb.basic_info, t, 3, c)
+            save_compressed_image(nb.file_names.output_dir, im, t, 3, c, True)
