@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import mplcursors
 import numpy as np
-from matplotlib.widgets import Button, RangeSlider
+from matplotlib.widgets import Button, RangeSlider, Slider
 from matplotlib.patches import Rectangle
 from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
 from ...call_spots.background import fit_background
@@ -496,19 +496,12 @@ class GESpotViewer():
         self.gene_index = gene_index
         self.iteration = iteration
         self.n_genes = nb.call_spots.gene_efficiency.shape[0]
+        self.mode = 'C'
         # Load spots
         self.load_spots(gene_index, iteration)
 
         # Now initialise the plot, adding fig and ax attributes to the class
-        self.plot_ge()
-        # Initialise buttons and cursors
-        # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
-        spot_id = np.where(self.spots_use)[0]
-        mplcursors.cursor(self.ax[0], hover=False).connect(
-            "add", lambda sel: view_spot(nb, spot_id[sel.target.index[0]]))
-        # 2. We would like to add a white rectangle around the observed spot when we hover over it
-        mplcursors.cursor(self.ax[0], hover=2).connect(
-            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+        self.plot()
 
         plt.show()
 
@@ -521,23 +514,38 @@ class GESpotViewer():
         color_norm = np.repeat(nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                                       nb.basic_info.use_channels)].reshape((1, -1)),
                                spots.shape[0], axis=0)
-        bled_code = nb.call_spots.bled_codes[gene_index, :, nb.basic_info.use_channels].T
-        bled_code = bled_code.reshape((1, bled_code.shape[0] * bled_code.shape[1]))
-        self.spots_expected = np.repeat(bled_code, spots.shape[0], axis=0)
         self.spots = spots / color_norm
+        # order spots by nb.ref_spots.score in descending order
+        self.spots = self.spots[np.argsort(nb.ref_spots.score[self.spots_use])[::-1], :]
+        # We also want to plot the expected spots for the given gene. To do this, we need to build an expected spot
+        # profile
+        n_channels = len(nb.basic_info.use_channels)
+        self.spots_expected = np.zeros((self.nb.basic_info.n_rounds, n_channels))
+        for r in self.nb.basic_info.use_rounds:
+            # For each round, we will look at all spots in this round with the same dye as the gene of interest
+            matching_genes = [g for g in np.arange(self.nb.call_spots.gene_names.shape[0])
+                              if self.nb.call_spots.gene_codes[g, r] == self.nb.call_spots.gene_codes[gene_index, r]]
+            # Now look at all spots with a gene no in matching_genes
+            use_spots = np.where(np.isin(self.nb.ref_spots.gene_no, matching_genes))[0]
+            # We will then add the mean spot profile for this gene to the expected spot profile
+            color_norm = nb.call_spots.color_norm_factor[r, nb.basic_info.use_channels]
+            matched_colours_normed = self.nb.ref_spots.colors[use_spots][:, r, nb.basic_info.use_channels] / color_norm
+            self.spots_expected[r, :] = np.mean(matched_colours_normed, axis=0)
+        # Flatten spots_expected to 1D and then repeat spots.shape[0] times along axis 0
+        self.spots_expected = np.repeat(self.spots_expected.reshape((1, -1)), self.spots.shape[0], axis=0)
 
-    def plot_ge(self):
+    def plot_ge_cmap(self):
         if not hasattr(self, 'fig'):
             self.fig, self.ax = plt.subplots(1, 2, figsize=(10, 10))
         else:
-            self.ax[0].clear()
-            self.ax[1].clear()
+            del self.fig, self.ax
+            self.fig, self.ax = plt.subplots(1, 2, figsize=(10, 10))
         # Now we can plot the spots. We want to create 2 subplots. One with the spots observed and one with the expected
         # spots. We will use the same color scale for both subplots.
         vmax = np.max([np.max(self.spots), np.max(self.spots_expected)]) / 2
         # We can then plot the spots observed and the spots expected.
-        self.ax[0].imshow(self.spots, cmap='viridis', vmin=0, vmax=vmax, aspect='auto')
-        self.ax[1].imshow(self.spots_expected, cmap='viridis', vmin=0, vmax=vmax, aspect='auto')
+        self.ax[0].imshow(self.spots, cmap='viridis', vmin=0, vmax=vmax, aspect='auto', interpolation='none')
+        self.ax[1].imshow(self.spots_expected, cmap='viridis', vmin=0, vmax=vmax, aspect='auto', interpolation='none')
         # We can then add titles and axis labels to the subplots.
         self.ax[0].set_title('Observed Spot Colours')
         self.ax[1].set_title('Expected Spot Colours')
@@ -551,13 +559,6 @@ class GESpotViewer():
             for i in range(self.nb.basic_info.n_rounds):
                 self.ax[j].axvline(i * len(self.nb.basic_info.use_channels) - 0.5, color='r')
 
-        # We would also like to add horizontal lines to show the start of each tile.
-        tile = self.nb.ref_spots.tile[self.spots_use]
-        # We can then find the indices where the tile number changes using np.where
-        tile_change = np.where(np.diff(tile) != 0)[0]
-        # We can then add a horizontal line at each of these indices
-        for i in tile_change:
-            self.ax[0].axhline(i + 0.5, color='r')
 
         # Set supertitle, colorbar and show plot
         self.fig.suptitle(
@@ -584,6 +585,154 @@ class GESpotViewer():
         cax = self.fig.add_axes([0.925, 0.1, 0.03, 0.8])
         self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=vmax), cmap='viridis'),
                           cax=cax, label='Spot Colour')
+        self.add_cmap_widgets()
+        self.fig.canvas.draw_idle()
+
+    def plot_ge_hist(self, percentile=95):
+        """
+        Plot n_rounds histograms of spot colours for the gene of interest. This will allow us to see how the spot
+        intensity compares to the expected spot intensity.
+        """
+        nb = self.nb
+        gene_code = nb.call_spots.gene_codes[self.gene_index]
+        dye_names = nb.basic_info.dye_names
+        # Swap all 2s and 3s in gene_code and swap 2 and 3 in dye names
+        gene_code[gene_code == 2] = 10
+        gene_code[gene_code == 3] = 2
+        gene_code[gene_code == 10] = 3
+        dye_names[2], dye_names[3] = dye_names[3], dye_names[2]
+        n_channels = len(nb.basic_info.use_channels)
+
+        if not hasattr(self, 'fig'):
+            # Create figure and axis
+            self.fig, self.ax = plt.subplots(1, nb.basic_info.n_rounds, figsize=(20, 5))
+        else:
+            del self.fig, self.ax
+            # Create figure and axis
+            self.fig, self.ax = plt.subplots(1, nb.basic_info.n_rounds, figsize=(20, 5))
+
+        fig, ax = self.fig, self.ax
+        # Loop through each round and plot the histogram of spot colours
+        for r in range(self.nb.basic_info.n_rounds):
+            matching_genes = [g for g in np.arange(nb.call_spots.gene_names.shape[0])
+                              if nb.call_spots.gene_codes[g, r] == nb.call_spots.gene_codes[self.gene_index, r]]
+            # Now look at all spots with a gene no in matching_genes
+            use_spots = np.where(np.isin(self.nb.ref_spots.gene_no, matching_genes))[0]
+            color_norm = nb.call_spots.color_norm_factor[r, nb.basic_info.use_channels[gene_code[r]]]
+            rc_spot_intensity = self.nb.ref_spots.colors[use_spots][:, r, nb.basic_info.use_channels[gene_code[r]]] / color_norm
+            gene_g_spot_intensity = self.spots[:, r * n_channels + gene_code[r]]
+            # Take max intensity as 90th percentile of rc_spot_intensity
+            max_intensity = np.percentile(rc_spot_intensity, percentile)
+            # Now plot both spot intensities on the same histogram
+            ax[r].hist(rc_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
+                       label='All Genes')
+            ax[r].hist(gene_g_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
+                       label=nb.call_spots.gene_names[self.gene_index])
+
+            # Add a box in the top right of the plot with the Gene Efficiency
+            ge = nb.call_spots.gene_efficiency[self.gene_index, r]
+            ax[r].set_yticks([])
+            ax[r].set_xticks([])
+
+            ax[r].set_title('Round ' + str(r) + ' Dye ' + dye_names[gene_code[r]])
+
+            ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
+            ax[r].set_ylabel('Frequency')
+
+        # Adjust subplots to leave space on the right for the legend and buttons
+        fig.subplots_adjust(right=0.9)
+
+        # Add a single legend on the top right of the figure
+        legend_ax = fig.add_axes([0.925, 0.9, 0.05, 0.05])
+        legend_ax.axis('off')
+        legend_ax.legend(*ax[0].get_legend_handles_labels(), loc='upper right')
+
+        fig.suptitle('Histogram of Spot Intensities for Gene ' + nb.call_spots.gene_names[self.gene_index] +
+                     ' versus spots of the same dye in other genes for each round')
+        self.add_hist_widgets()
+        fig.canvas.draw_idle()
+
+    def plot(self):
+        # Get rid of any existing plots
+        if hasattr(self, 'fig'):
+            plt.close(self.fig)
+
+        # Plot the correct plot
+        if self.mode == 'C':
+            self.plot_ge_cmap()
+        elif self.mode == 'H':
+            self.plot_ge_hist()
+
+        self.add_switch_buttons()
+
+    def button_cmap_clicked(self, event):
+        self.mode = 'C'
+        self.plot()
+
+    def button_hist_clicked(self, event):
+        self.mode = 'H'
+        self.plot()
+
+    def add_switch_buttons(self):
+        # Add 2 buttons on the bottom right of the figure allowing the user to choose between viewing the
+        # histogram or the colourmap. Make text black so that it is visible on the white background.
+        ax_button = self.fig.add_axes([0.925, 0.05, 0.02, 0.03])
+        self.button_hist = Button(ax_button, 'H', color='black')
+        self.button_hist.on_clicked(self.button_hist_clicked)
+        ax_button_cmap = self.fig.add_axes([0.95, 0.05, 0.02, 0.03])
+        self.button_cmap = Button(ax_button_cmap, 'C', color='black')
+        self.button_cmap.on_clicked(self.button_cmap_clicked)
+
+    def add_cmap_widgets(self):
+        # Initialise buttons and cursors
+        # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
+        spot_id = np.where(self.spots_use)[0]
+        mplcursors.cursor(self.ax[0], hover=False).connect(
+            "add", lambda sel: view_spot(self.nb, spot_id[sel.target.index[0]]))
+        # 2. We would like to add a white rectangle around the observed spot when we hover over it
+        mplcursors.cursor(self.ax[0], hover=2).connect(
+            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+
+    def add_hist_widgets(self):
+        # Add a slider on the right of the figure allowing the user to choose the percentile of the histogram
+        # to use as the maximum intensity. This slider should be the same dimensions as the colorbar and should
+        # be in the same position as the colorbar. We should slide vertically to change the percentile.
+        self.ax_slider = self.fig.add_axes([0.94, 0.15, 0.02, 0.6])
+        self.slider = Slider(self.ax_slider, 'Percentile', 80, 100, valinit=90, orientation='vertical')
+        self.slider.on_changed(lambda val: self.update_hist(int(val)))
+
+    def update_hist(self, percentile):
+        nb = self.nb
+        gene_code = nb.call_spots.gene_codes[self.gene_index]
+        n_channels = len(nb.basic_info.use_channels)
+        fig, ax = self.fig, self.ax
+        dye_names = nb.basic_info.dye_names
+        for r in range(self.nb.basic_info.n_rounds):
+            matching_genes = [g for g in np.arange(nb.call_spots.gene_names.shape[0])
+                              if nb.call_spots.gene_codes[g, r] == nb.call_spots.gene_codes[self.gene_index, r]]
+            # Now look at all spots with a gene no in matching_genes
+            use_spots = np.where(np.isin(self.nb.ref_spots.gene_no, matching_genes))[0]
+            color_norm = nb.call_spots.color_norm_factor[r, nb.basic_info.use_channels[gene_code[r]]]
+            rc_spot_intensity = self.nb.ref_spots.colors[use_spots][:, r,
+                                nb.basic_info.use_channels[gene_code[r]]] / color_norm
+            gene_g_spot_intensity = self.spots[:, r * n_channels + gene_code[r]]
+            ax[r].clear()
+            max_intensity = np.percentile(rc_spot_intensity, percentile)
+            ax[r].hist(rc_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
+                       label='All Genes')
+            ax[r].hist(gene_g_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
+                       label=nb.call_spots.gene_names[self.gene_index])
+
+            # Add a box in the top right of the plot with the Gene Efficiency
+            ge = nb.call_spots.gene_efficiency[self.gene_index, r]
+            ax[r].set_yticks([])
+            ax[r].set_xticks([])
+
+            ax[r].set_title('Round ' + str(r) + ' Dye ' + dye_names[gene_code[r]])
+
+            ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
+            ax[r].set_ylabel('Frequency')
+
         self.fig.canvas.draw_idle()
 
     def add_rectangle(self, index):
