@@ -86,29 +86,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     color_norm_factor[rc_ind] = color_normalisation(hist_values, hist_counts_use, config['color_norm_intensities'],
                                                     config['color_norm_probs'], config['bleed_matrix_method'])
 
-    # get initial bleed matrix
-    # initial_raw_bleed_matrix = np.ones((nbp_basic.n_rounds, nbp_basic.n_channels, nbp_basic.n_dyes)) * np.nan
-    # rcd_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels, nbp_basic.use_dyes)
-    # if nbp_basic.dye_names is not None:
-    #     if specify dyes, will initialize bleed matrix using prior data
-        # dye_names_use = np.array(nbp_basic.dye_names)[nbp_basic.use_dyes]
-        # camera_use = np.array(nbp_basic.channel_camera)[nbp_basic.use_channels]
-        # laser_use = np.array(nbp_basic.channel_laser)[nbp_basic.use_channels]
-        # initial_raw_bleed_matrix[rcd_ind] = get_dye_channel_intensity_guess(nbp_file.dye_camera_laser,
-        #                                                                     dye_names_use, camera_use,
-        #                                                                     laser_use).transpose()
-        # initial_bleed_matrix = initial_raw_bleed_matrix / np.expand_dims(color_norm_factor, 2)
-    # else:
-    #     if nbp_basic.n_dyes != nbp_basic.n_channels:
-    #         raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
-    #                          f"\nBut n_channels={nbp_basic.n_channels} and n_dyes={nbp_basic.n_dyes}")
-    #     if nbp_basic.use_channels != nbp_basic.use_dyes:
-    #         raise ValueError(f"'dye_names' were not specified so expect each dye to correspond to a different channel."
-    #                          f"\nBleed matrix computation requires use_channels and use_dyes to be the same to work."
-    #                          f"\nBut use_channels={nbp_basic.use_channels} and use_dyes={nbp_basic.use_dyes}")
-    #     initial_bleed_matrix = initial_raw_bleed_matrix.copy()
-    #     initial_bleed_matrix[rcd_ind] = np.tile(np.expand_dims(np.eye(nbp_basic.n_channels), 0),
-    #                                             (nbp_basic.n_rounds, 1, 1))[rcd_ind]
 
     # Get norm_shift and intensity_thresh from middle tile/ z-plane average intensity
     # This is because these variables are all a small fraction of a spot_color L2 norm in one round.
@@ -156,12 +133,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colors_use, background_coef[:, nbp_basic.use_channels], background_codes[crc_ind] = \
         fit_background(spot_colors_use, nbp.background_weight_shift)
     spot_colors_use = np.asarray(spot_colors_use)  # in case using jax
-    # bleed_matrix = initial_raw_bleed_matrix.copy()
-    # bleed_matrix[rcd_ind] = get_bleed_matrix(spot_colors_use[nbp_ref_spots.isolated], initial_bleed_matrix[rcd_ind],
-    #                                          config['bleed_matrix_method'], config['bleed_matrix_score_thresh'],
-    #                                          config['bleed_matrix_min_cluster_size'], config['bleed_matrix_n_iter'],
-    #                                          config['bleed_matrix_anneal'])
-
+    # get bleed matrix
     bleed_matrix_use = compute_bleed_matrix(default_bleed_matrix=default_bleed_matrix,
                                             colour_matrix=spot_colors_use[nbp_ref_spots.isolated])
     # Just for compatibility this needs to be repeated n_rounds times

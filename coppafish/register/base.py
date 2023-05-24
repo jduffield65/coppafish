@@ -249,7 +249,7 @@ def custom_svr(im_dir: str, im_rounds: list, anchor_round: int, t: int, registra
     """
     z_subvols, y_subvols, x_subvols = 5, 8, 8
     z_box, y_box, x_box = 12, 300, 300
-    r_thresh = 0.4
+    r_thresh = 0.7
 
     # Load in the anchor npy volume
     anchor_image = np.load(os.path.join(im_dir, 't' + str(t) + 'r' + str(anchor_round) + '.npy'))

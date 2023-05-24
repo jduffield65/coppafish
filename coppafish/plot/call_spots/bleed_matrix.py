@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 from ...setup import Notebook
@@ -124,3 +126,62 @@ class view_bled_codes(ColorPlotBase):
         self.main_title.set_text(f'Gene {self.gene_no}, {self.gene_names[self.gene_no]} Bled Code')
         self.ax[1].set_xticklabels(['{:.0f} ({:.2f})'.format(r, self.gene_efficiency[self.gene_no, r])
                                     for r in self.use_rounds])
+
+
+class ViewBleedCalc:
+    def __init__(self, nb: Notebook):
+        self.nb = nb
+        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
+        color_norm = np.repeat(color_norm[np.newaxis, :, :], np.sum(nb.ref_spots.isolated), axis=0)
+        self.isolated_spots = nb.ref_spots.colors[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels] / color_norm
+        # Get current working directory and load default bleed matrix
+        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy'))[nb.basic_info.use_channels]
+        # Normalise each column of default_bleed to have L2 norm of 1
+        self.dye_template = self.default_bleed / np.linalg.norm(self.default_bleed, axis=0)
+        # Now we are going to loop through all isolated spots, convert these to n_rounds colour vectors and then
+        # assign each colour vector to a dye
+        self.colour_vectors = self.isolated_spots.reshape((self.isolated_spots.shape[0] * self.nb.basic_info.n_rounds,
+                                                           len(self.nb.basic_info.use_channels)))
+        self.all_dye_score = np.zeros((self.colour_vectors.shape[0], self.dye_template.shape[1]))
+        self.dye_score = np.zeros(self.colour_vectors.shape[0])
+        self.dye_assignment = np.zeros(self.colour_vectors.shape[0], dtype=int)
+        for i in range(self.colour_vectors.shape[0]):
+            # Assign each vector to dye which maximises dot product with vector
+            self.all_dye_score[i] = self.colour_vectors[i] @ self.dye_template
+            self.dye_assignment[i] = np.argmax(self.all_dye_score[i])
+            self.dye_score[i] = np.max(self.all_dye_score[i])
+
+        # Now we have assigned each colour vector to a dye, we can view all colour vectors assigned to each dye
+        max_intensity = np.max(self.colour_vectors)
+        max_score = np.max(self.dye_score)
+        fig, ax = plt.subplots(2, self.dye_template.shape[1], figsize=(10, 10))
+        for i in range(self.dye_template.shape[1]):
+            # Plot the colour vectors assigned to each dye
+            dye_vectors = self.colour_vectors[self.dye_assignment == i]
+            ax[0, i].imshow(dye_vectors, vmin=0, vmax=max_intensity/2, aspect='auto')
+            ax[0, i].set_title(self.nb.basic_info.dye_names[i])
+            ax[0, i].set_yticks([])
+            ax[0, i].set_xticks([])
+            # Add red horizontal lines to each plot whenever a new tile starts
+            tile = np.repeat(nb.ref_spots.tile[self.nb.ref_spots.isolated], nb.basic_info.n_rounds)[self.dye_assignment == i]
+            tile_change = np.where(np.diff(tile) != 0)[0]
+            for j in tile_change:
+                ax[0, i].axhline(j, color='r', linestyle='--')
+
+            # Plot a histogram of the dye scores
+            ax[1, i].hist(self.dye_score[self.dye_assignment == i], bins=np.linspace(0, max_score, 200))
+            ax[1, i].set_title(self.nb.basic_info.dye_names[i])
+            ax[1, i].set_xlabel('Dye Score')
+            ax[1, i].set_ylabel('Frequency')
+            ax[1, i].set_yticks([])
+            mean = np.mean(self.dye_score[self.dye_assignment == i])
+            ax[1, i].axvline(mean, color='r')
+            # Add label in top right corner of each plot with median dye score
+            ax[1, i].text(0.95, 0.95, '{:.2f}'.format(mean), color='r',
+                          horizontalalignment='right', verticalalignment='top', transform=ax[1, i].transAxes)
+
+        # Add a single colour bar for all plots on the right
+        fig.subplots_adjust(right=0.8)
+        cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+        fig.colorbar(ax[0, 0].images[0], cax=cbar_ax)
+        plt.show()
