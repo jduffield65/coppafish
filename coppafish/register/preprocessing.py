@@ -415,6 +415,6 @@ def generate_channel_reg_images(nb):
             pbar.set_description(f"Generating channel registration image for tile {t} and channel {c}")
             # TODO: Get this working with nb.register_Debug.reference_round
             # Get the image for the tile and channel
-            im = load_tile(nb.file_names, nb.basic_info, t, 3, c)
+            im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, 3, c))
             save_compressed_image(nb.file_names.output_dir, im, t, 3, c, True)
             pbar.update(1)

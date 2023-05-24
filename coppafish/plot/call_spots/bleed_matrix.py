@@ -136,6 +136,10 @@ class ViewBleedCalc:
         self.isolated_spots = nb.ref_spots.colors[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels] / color_norm
         # Get current working directory and load default bleed matrix
         self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy'))[nb.basic_info.use_channels]
+        # Swap columns 2 and 3 in default bleed and dye names
+        self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
+        self.dye_names = self.nb.basic_info.dye_names
+        self.dye_names[2], self.dye_names[3] = self.dye_names[3], self.dye_names[2]
         # Normalise each column of default_bleed to have L2 norm of 1
         self.dye_template = self.default_bleed / np.linalg.norm(self.default_bleed, axis=0)
         # Now we are going to loop through all isolated spots, convert these to n_rounds colour vectors and then
@@ -158,19 +162,21 @@ class ViewBleedCalc:
         for i in range(self.dye_template.shape[1]):
             # Plot the colour vectors assigned to each dye
             dye_vectors = self.colour_vectors[self.dye_assignment == i]
-            ax[0, i].imshow(dye_vectors, vmin=0, vmax=max_intensity/2, aspect='auto')
+            # Order these vectors by dye score in descending order
+            dye_vectors = dye_vectors[np.argsort(self.dye_score[self.dye_assignment == i])[::-1]]
+            ax[0, i].imshow(dye_vectors, vmin=0, vmax=max_intensity/2, aspect='auto', interpolation='none')
             ax[0, i].set_title(self.nb.basic_info.dye_names[i])
             ax[0, i].set_yticks([])
             ax[0, i].set_xticks([])
-            # Add red horizontal lines to each plot whenever a new tile starts
-            tile = np.repeat(nb.ref_spots.tile[self.nb.ref_spots.isolated], nb.basic_info.n_rounds)[self.dye_assignment == i]
-            tile_change = np.where(np.diff(tile) != 0)[0]
-            for j in tile_change:
-                ax[0, i].axhline(j, color='r', linestyle='--')
+
+            # Add a horizontal red line at a dye score of 1. To do this we must first find the index of the dye
+            # vector with score closest to 1
+            first_index = np.argmin(np.abs(self.dye_score[self.dye_assignment == i] - 1))
+            ax[0, i].axhline(first_index, color='r', linestyle='--')
 
             # Plot a histogram of the dye scores
-            ax[1, i].hist(self.dye_score[self.dye_assignment == i], bins=np.linspace(0, max_score, 200))
-            ax[1, i].set_title(self.nb.basic_info.dye_names[i])
+            ax[1, i].hist(self.dye_score[self.dye_assignment == i], bins=np.linspace(0, max_score / 2, 200))
+            ax[1, i].set_title(self.dye_names[i])
             ax[1, i].set_xlabel('Dye Score')
             ax[1, i].set_ylabel('Frequency')
             ax[1, i].set_yticks([])
@@ -180,8 +186,13 @@ class ViewBleedCalc:
             ax[1, i].text(0.95, 0.95, '{:.2f}'.format(mean), color='r',
                           horizontalalignment='right', verticalalignment='top', transform=ax[1, i].transAxes)
 
-        # Add a single colour bar for all plots on the right
+        # Add a single colour bar for all plots on the right. Label this as spot intensity
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
         fig.colorbar(ax[0, 0].images[0], cax=cbar_ax)
+        cbar_ax.set_ylabel('Spot Intensity (normalised)')
+
+        # Add super title
+        fig.suptitle('Dye Assignment', fontsize=16)
+
         plt.show()
