@@ -65,7 +65,6 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     transform = jnp.asarray(transform)
     color_norm_factor = jnp.asarray(nbp_call_spots.color_norm_factor[rc_ind])
     n_genes, n_rounds_use, n_channels_use = bled_codes.shape
-    dp_norm_shift = nbp_call_spots.dp_norm_shift * np.sqrt(n_rounds_use)
 
     if nbp_basic.is_3d:
         detect_radius_z = config['radius_z']
@@ -178,10 +177,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             pixel_colors_tz = pixel_colors_tz[keep]
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
-
+            # TODO: Replace dp_norm_shift and background_weight_shift
             pixel_coefs_tz = sparse.csr_matrix(
-                omp.get_all_coefs(pixel_colors_tz, bled_codes,
-                                  nbp_call_spots.background_weight_shift, dp_norm_shift, config['dp_thresh'],
+                omp.get_all_coefs(pixel_colors_tz, bled_codes, config['dp_thresh'], 0, 0,
                                   config['alpha'], config['beta'], config['max_genes'], config['weight_coef_fit'])[0])
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.

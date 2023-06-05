@@ -153,10 +153,11 @@ def huber_regression(shift, position):
     Function to predict shift as a function of position using robust huber regressor.
     Args:
         shift: n_tiles x 3 ndarray of zyx shifts
-        position: n_tiles x 2 ndarray of yx tile coords
+        position: n_tiles x 2 ndarray of yx tile coords or n_tiles x 3 ndarray of zyx tile coords
     Returns:
         transform: 3 x 3 matrix where each row predicts shift of z y z as a function of y index, x index and the final
         row is the offset at 0,0
+        or 3
     """
     # Do robust regression
     huber_z = HuberRegressor().fit(X=position, y=shift[:, 0])
@@ -220,7 +221,7 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
         registration_data['round_registration']['position'] = position
         registration_data['round_registration']['round_shift'][t, r] = shift
         registration_data['round_registration']['round_shift_corr'][t, r] = corr
-        registration_data['round_registration']['round_transform_raw'][t, r] = ols_regression(shift, position)
+        registration_data['round_registration']['round_transform_raw'][t, r] = huber_regression(shift, position)
         pbar.update(1)
 
     # Add tile to completed tiles

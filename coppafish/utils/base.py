@@ -54,3 +54,27 @@ def setdiff2d(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
     set1 = set([tuple(x) for x in array1])
     set2 = set([tuple(x) for x in array2])
     return np.array(list(set1-set2))
+
+
+def expand_channels(array: np.ndarray, use_channels: list, n_channels:int) -> np.ndarray:
+    """
+    Expands `array` to have `n_channels` channels, with the values in `array` being in the channels specified by
+    `use_channels`.
+
+    Args:
+        array: `float [n1 x n2 x ... x n_k x n_channels_use]`.
+        use_channels: list of channels to use from `array`.
+        n_channels: Number of channels to expand `array` to.
+
+    Returns:
+        expanded_array: `float [n1 x n2 x ... x n_k x n_channels_use].
+    """
+    old_array_shape = np.array(array.shape)
+    new_array_shape = old_array_shape.copy()
+    new_array_shape[-1] = n_channels
+    expanded_array = np.zeros(new_array_shape)
+
+    for i, channel in enumerate(use_channels):
+        expanded_array[..., channel] = array[..., i]
+
+    return expanded_array

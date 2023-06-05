@@ -1,5 +1,6 @@
 from typing import Optional, List, Union, Tuple
 import numpy as np
+import itertools
 from tqdm import tqdm
 from .. import utils
 from ..setup import NotebookPage
@@ -174,3 +175,64 @@ def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarra
     elif isinstance(z_planes, list):
         z_planes = np.array(z_planes)
     return np.array(np.meshgrid(np.arange(y_size), np.arange(x_size), z_planes), dtype=np.int16).T.reshape(-1, 3)
+
+
+# Write a function that will normalise the spot colours.
+def normalise_rc(spot_colours: np.ndarray, initial_bleed_matrix: np.ndarray) -> \
+        Tuple[np.ndarray, list]:
+    """
+    Takes in spots, analyses them and returns the normalisation factor for each round and channel.
+    Args:
+        spot_colours: `int32 [n_spots x n_rounds x n_channels_use]` spot colours to normalise.
+        initial_bleed_matrix: `float32 [n_rounds x n_channels]` initial bleed matrix. This will give us a template to
+        match spots to each dye.
+
+    Returns:
+        norm_factor: [n_rounds x n_channels_use]` normalisation factor for each of the rounds/channels.
+    """
+    # Normalise columns of initial bleed matrix to have L2 norm of 1.
+    initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
+    # Reshape spot colours to be [(n_spots x n_rounds) x n_channels]
+    spot_channel_colours = spot_colours.reshape(-1, spot_colours.shape[-1])
+    median_intensity = np.zeros(spot_colours.shape[1:])
+
+    # First we will apply a fixed normalisation for each channel.
+    spot_intensity = np.zeros((spot_colours.shape[2], 0)).tolist()
+    for s in tqdm(range(spot_channel_colours.shape[0])):
+        all_score = initial_bleed_matrix @ spot_channel_colours[s] + np.random.rand(spot_colours.shape[2]) * 1e-6
+        top_score = np.max(all_score)
+        second_score = np.max(all_score[all_score != top_score])
+        best_matching_dye = initial_bleed_matrix[:, np.argmax(all_score)]
+        channel = np.argmax(best_matching_dye)
+        if top_score > 1.5 * second_score:
+            spot_intensity[channel].append(top_score)
+    # Now normalise by the median of the intensities.
+    for c in range(spot_channel_colours.shape[1]):
+        median_intensity[:, c] = np.median(spot_intensity[c])
+
+    # TODO: Possibly add a second normalisation step here. This would be to normalise each round.
+
+    return median_intensity, spot_intensity
+
+
+def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Removes background from spot colours
+    Args:
+        spot_colours: 'float [n_spots x n_rounds x n_channels_use]' spot colours to remove background from.
+    Returns:
+        'spot_colours: [n_spots x n_rounds x n_channels_use]' spot colours with background removed.
+        background_noise: [n_spots x n_channels_use]' background noise for each spot and channel.
+
+    """
+    background_noise = np.zeros((spot_colours.shape[0], spot_colours.shape[2]))
+    # Loop through all channels and remove the background from each channel.
+    for c in tqdm(range(spot_colours.shape[2])):
+        background_code = np.zeros(spot_colours[0].shape)
+        background_code[:, c] = 1
+        # now loop through all spots and remove the component of the background from the spot colour
+        for s in range(spot_colours.shape[0]):
+            background_noise[s, c] = np.median(spot_colours[s, :, c])
+            spot_colours[s] = spot_colours[s] - background_noise[s, c] * background_code
+
+    return spot_colours, background_noise

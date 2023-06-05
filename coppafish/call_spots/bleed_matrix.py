@@ -283,50 +283,58 @@ def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], n
     return dye_channel_intensity
 
 
-def compute_bleed_matrix(default_bleed_matrix, colour_matrix):
+def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndarray,
+                         round_split: bool = False, n_dyes: int = 7) -> Tuple[np.ndarray, np.ndarray]:
     """
     Takes in a default bleed matrix (channels x dyes) and a collection of spots' colour vectors. Then computes the
-    dot product of each colour vector with each of the columns (normalised of the bleed matrix). Then learns the dye association.
-    Returns the same bleed matrix with scaled columns where the scale is the median of the scores for all spots of this dye.
+    dot product of each colour vector with each of the columns (normalised of the bleed matrix). Then learns the dye
+    association. Returns the same bleed matrix with scaled columns where the scale is the median of the scores for all
+    spots of this dye.
     Args:
-        default_bleed_matrix: n_channels x n_dyes bleed matrix
-        colour_matrix: n_spots x n_rounds x n_channels colour matrix for each spot
+        initial_bleed_matrix: n_channels x n_dyes bleed matrix
+        spot_colours: n_spots x n_rounds x n_channels colour matrix for each isolated spot
+        round_split: If True, then the bleed matrix is computed separately for each round. If False, then the bleed
+            matrix is computed for all rounds together.
+        n_dyes: int. Number of dyes used in experiment. Default = 7
     Returns:
-        bleed_matrix: n_channels x n_dyes updated bleed matrix
-        all_dye_score:
+        bleed_matrix: n_channels x n_dyes updated bleed matrix or n_rounds x n_channels x n_dyes updated bleed matrix
+        all_dye_score: n_spots x n_dyes array of scores for each spot and dye
     """
     # Dye score will be a list of n_dyes arrays. dye_score[i] gives an array of all dye scores for all spots allocated
     # to dye i
-    n_dyes = default_bleed_matrix.shape[1]
+    n_spots, n_rounds, n_channels_use = spot_colours.shape[0], spot_colours.shape[1], spot_colours.shape[2]
+    bleed_matrix_norm = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
     # Convert colour_matrices to colour_vectors
-    colour_vector = np.reshape(colour_matrix, (colour_matrix.shape[0] * colour_matrix.shape[1], colour_matrix.shape[2]))
-    bleed_matrix = np.zeros_like(default_bleed_matrix)
-    dye_score = []
-    scale = []
+    if round_split:
+        colour_vector = np.swapaxes(spot_colours, 0, 1)
+        bleed_matrix = np.zeros((n_rounds, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
+    else:
+        colour_vector = np.reshape(spot_colours, (n_spots * n_rounds, n_channels_use))[np.newaxis, :, :]
+        bleed_matrix = np.zeros((1, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
 
-    # Define the dye strength
-    dye_strength = np.linalg.norm(default_bleed_matrix, axis=0)
+    # Now we loop over the first dimension of the colour vector and compute the dye score for each spot
+    for i in range(colour_vector.shape[0]):
+        dye_score = []
+        scale = []
+        # Now compute the dot product of each spot with each dye. This gives an n_spots x n_dyes matrix
+        all_dye_score = colour_vector[i] @ bleed_matrix_norm
+        # Now assign each spot a dye which is its highest score
+        spot_dye = np.argmax(all_dye_score, axis=1)
+        spot_dye_score = np.max(all_dye_score, axis=1)
 
-    # Normalise the columns by dividing through by this
-    bleed_matrix_norm = default_bleed_matrix / dye_strength
+        # Loop through all dyes and partition our data nicely.
+        # Also compute the median of each of these, this will be our scale factor for each column
+        for d in range(n_dyes):
+            score_d = spot_dye_score[spot_dye == d]
+            scale_d = np.median(score_d)
+            # Append these
+            dye_score.append(score_d)
+            scale.append(scale_d)
+            # Add scaled copy of each of the cols to our new bleed matrix
+            bleed_matrix[i, :, d] = scale_d * bleed_matrix_norm[:, d]
 
-    # Now compute the dot product of each spot with each dye. This gives an n_spots x n_dyes matrix
-    all_dye_score = colour_vector @ default_bleed_matrix
+    # Repeat the first dimension of bleed_matrix if round_split is False
+    if round_split is False:
+        bleed_matrix = np.repeat(bleed_matrix, n_rounds, axis=0)
 
-    # Now assign each spot a dye which is its highest score
-    spot_dye = np.argmax(all_dye_score, axis=1)
-    spot_dye_score = np.max(all_dye_score, axis=1)
-
-    # Loop through all dyes and partition our data nicely.
-    # Also compute the median of each of these, this will be our scale factor for each column
-    for d in range(n_dyes):
-        score_d = spot_dye_score[spot_dye == d]
-        scale_d = np.median(score_d)
-        # Append these
-        dye_score.append(score_d)
-        scale.append(scale_d)
-        # Add scaled copy of each of the cols to our new bleed matrix
-        bleed_matrix[:, d] = scale_d * bleed_matrix_norm[:, d]
-
-    # For the output, include diagnostics spot_dye and all_dye_score
-    return bleed_matrix
+    return bleed_matrix, all_dye_score

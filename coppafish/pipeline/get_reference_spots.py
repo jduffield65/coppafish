@@ -99,9 +99,6 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t,
                                                           transform, nbp_file, nbp_basic)
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
-    # nd_spot_colors_use = np.moveaxis(nd_spot_colors_use, 0, -1)
-    # use_rc_index = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
-    # nd_spot_colors_use = np.moveaxis(nd_spot_colors_use[use_rc_index], -1, 0)
     good = ~np.any(nd_spot_colors_use == invalid_value, axis=(1, 2))
 
     good_local_yxz = nd_local_yxz[good]
@@ -120,10 +117,11 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     nbp.colors = good_spot_colors
 
     # Set variables added in call_reference_spots to None so can save to Notebook.
-    # I.e. if call_reference_spots hit error, but we did not do this,
-    # we would have to run get_reference_spots again.
-    nbp.gene_no = None
+    # I.e. if call_reference_spots hit error, but we did not do this, we would have to run get_reference_spots again.
+    nbp.gene_coefficients = None
     nbp.score = None
-    nbp.score_diff = None
+    nbp.genes_fit = None
+    nbp.residual = None
     nbp.intensity = None
+
     return nbp

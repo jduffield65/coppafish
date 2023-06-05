@@ -207,7 +207,10 @@ _options = {
             'gene_efficiency_intensity_thresh_min': 'number',
             'gene_efficiency_intensity_thresh_max': 'number',
             'alpha': 'number',
-            'beta': 'number'
+            'beta': 'number',
+            'max_genes_fit': 'int',
+            'residual_threshold': 'number',
+            'n_iter': 'int'
         },
     'omp':
         {

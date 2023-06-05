@@ -278,21 +278,13 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
     if not nb.has_page("call_spots"):
         config = nb.get_config()
         # get current working directory
-        bleed_matrix_path = os.path.join(os.getcwd(), 'setup/default_bleed.npy')
+        bleed_matrix_path = os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')
         default_bleed_matrix = np.load(bleed_matrix_path)
         default_bleed_matrix = default_bleed_matrix[nb.basic_info.use_channels]
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
-                                                  nb.extract.hist_values, nb.extract.hist_counts,
-                                                  nb.register.transform, default_bleed_matrix,
-                                                  overwrite_ref_spots)
+                                                  initial_bleed_matrix=default_bleed_matrix,
+                                                  overwrite_ref_spots=overwrite_ref_spots)
         nb += nbp
-        # Raise errors if stitch, register_initial or register section failed
-        # Do that at this stage, so can still run viewer to see what spots look like
-        # check_shifts_stitch(nb)  # error if too many bad shifts between tiles
-        # check_shifts_register(nb)  # error if too many bad shifts between rounds
-        # check_transforms(nb)  # error if affine transforms found have low number of matches
-        # only raise error after saving to notebook if spot_colors have nan in wrong places.
-        # utils.errors.check_color_nan(nb.ref_spots.colors, nb.basic_info)
     else:
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
 
@@ -313,7 +305,8 @@ def run_omp(nb: setup.Notebook):
     if not nb.has_page("omp"):
         config = nb.get_config()
         # Use tile with most spots on to find spot shape in omp
-        tile_most_spots = int(stats.mode(nb.ref_spots.tile[quality_threshold(nb, 'ref')])[0][0])
+        spots_tile = np.sum(nb.find_spots.spot_no, axis=(1, 2))
+        tile_most_spots = np.argmax(spots_tile)
         nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
                              nb.stitch.tile_origin, nb.register.transform, tile_most_spots)
         nb += nbp

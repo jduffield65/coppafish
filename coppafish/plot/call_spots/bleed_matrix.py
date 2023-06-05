@@ -163,16 +163,17 @@ class ViewBleedCalc:
             # Plot the colour vectors assigned to each dye
             dye_vectors = self.colour_vectors[self.dye_assignment == i]
             # Order these vectors by dye score in descending order
-            dye_vectors = dye_vectors[np.argsort(self.dye_score[self.dye_assignment == i])[::-1]]
+            scores = self.dye_score[self.dye_assignment == i]
+            # Now use these scores to order the vectors
+            dye_vectors = dye_vectors[np.argsort(scores)[::-1]]
             ax[0, i].imshow(dye_vectors, vmin=0, vmax=max_intensity/2, aspect='auto', interpolation='none')
             ax[0, i].set_title(self.nb.basic_info.dye_names[i])
             ax[0, i].set_yticks([])
             ax[0, i].set_xticks([])
 
-            # Add a horizontal red line at a dye score of 1. To do this we must first find the index of the dye
-            # vector with score closest to 1
-            first_index = np.argmin(np.abs(self.dye_score[self.dye_assignment == i] - 1))
-            ax[0, i].axhline(first_index, color='r', linestyle='--')
+            # Add a horizontal red line at a dye score of 1. Take the first index where the dye score is less than 1.
+            score_1_index = np.where(np.sort(scores)[::-1] < 1)[0][0]
+            ax[0, i].axhline(score_1_index, color='r', linestyle='--')
 
             # Plot a histogram of the dye scores
             ax[1, i].hist(self.dye_score[self.dye_assignment == i], bins=np.linspace(0, max_score / 2, 200))

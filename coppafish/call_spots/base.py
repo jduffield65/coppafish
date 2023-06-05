@@ -1,7 +1,7 @@
 from scipy.spatial import KDTree
 import numpy as np
 from .. import utils
-from typing import Union, List
+from typing import Union, List, Tuple
 
 
 def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.ndarray,
@@ -129,22 +129,20 @@ def color_normalisation(hist_values: np.ndarray, hist_counts: np.ndarray,
     return norm_factor
 
 
-def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarray:
+def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray, gene_efficiency: np.ndarray) -> np.ndarray:
     """
     This gets ```bled_codes``` such that the spot_color of a gene ```g``` in round ```r``` is expected to be a constant
     multiple of ```bled_codes[g, r]```.
     This function should be run with full bleed_matrix with any rounds/channels/dyes outside those using set to nan.
     Otherwise, will get confusion with dye indices in `gene_codes` being outside size of `bleed_matrix`.
 
-    !!! note
-        All bled_codes returned with an L2 norm of 1 when summed over all rounds and channels
-        with any nan values assumed to be 0.
-
     Args:
         gene_codes: ```int [n_genes x n_rounds]```.
             ```gene_codes[g, r]``` indicates the dye that should be present for gene ```g``` in round ```r```.
         bleed_matrix: ```float [n_rounds x n_channels x n_dyes]```.
             Expected intensity of dye ```d``` in round ```r``` is a constant multiple of ```bleed_matrix[r, :, d]```.
+        gene_efficiency: ```float [n_genes, n_rounds]```.
+            Efficiency of gene ```g``` in round ```r``` is ```gene_efficiency[g, r]```.
 
     Returns:
         ```float [n_genes x n_rounds x n_channels]```.
@@ -168,12 +166,11 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray) -> np.ndarr
     for g in range(n_genes):
         for r in range(n_rounds):
             for c in range(n_channels):
-                bled_codes[g, r, c] = bleed_matrix[r, c, gene_codes[g, r]]
+                bled_codes[g, r, c] = gene_efficiency[g, r] * bleed_matrix[r, c, gene_codes[g, r]]
 
-    # Give all bled codes an L2 norm of 1 assuming any nan values are 0
-    norm_factor = np.expand_dims(np.linalg.norm(np.nan_to_num(bled_codes), axis=(1, 2)), (1, 2))
-    norm_factor[norm_factor == 0] = 1   # For genes with no dye in any rounds, this avoids blow up on next line
-    bled_codes = bled_codes / norm_factor
+    # Give all bled codes an L2 norm of 1
+    norm_factor = np.linalg.norm(bled_codes, axis=(1,2))
+    bled_codes = bled_codes / norm_factor[:, None, None]
     return bled_codes
 
 
@@ -261,4 +258,46 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
 
     # set negative values to 0
     gene_efficiency = np.clip(gene_efficiency, 0, np.inf)
+    return gene_efficiency
+
+
+def compute_gene_efficiency(spot_colours: np.ndarray, split_bleed_matrix: np.ndarray, gene_no: np.ndarray,
+                            gene_score: np.ndarray, gene_codes: np.ndarray,
+                            spot_number_threshold: int = 25, score_threshold: float = 0.7) \
+        -> np.ndarray:
+    """
+    Compute gene efficiency and gene coefficients from spot colours and bleed matrix.
+
+    Args:
+        spot_colours: `float [n_spots x n_rounds x n_channels]`.
+            Spot colours normalised to equalise intensities between channels (and rounds). (BG Removed)
+        split_bleed_matrix: `float [n_rounds x n_channels x n_dyes]`.
+            Bleed matrix for each round.
+        gene_no: `int [n_spots]`. Gene number for each spot.
+        gene_score: `float [n_spots]`. Score for each spot.
+        gene_codes: `int [n_genes x n_rounds]`.
+            Gene codes for each gene.
+        spot_number_threshold: `int`.
+            Minimum number of spots required to compute gene efficiency.
+        score_threshold: `float`.
+            Minimum score required to compute gene efficiency.
+    """
+    n_spots, n_rounds, n_channels = spot_colours.shape
+    n_genes = gene_codes.shape[0]
+    gene_efficiency = np.ones([n_genes, n_rounds])
+
+    # Compute gene efficiency for each gene and round.
+    for g in range(n_genes):
+        gene_g_spot_colours = spot_colours[(gene_no == g) * (gene_score > score_threshold)]
+        if gene_g_spot_colours.shape[0] < spot_number_threshold:
+            continue
+        for r in range(n_rounds):
+            # Target colour for gene g in round r.
+            target_colour = split_bleed_matrix[r, :, gene_codes[g, r]]
+            # Compute gene efficiency for gene f in round r as the median scale of the spot colours for gene g in round
+            # r to the target colour.
+            max_channel = np.argmax(target_colour)
+            scales = gene_g_spot_colours[:, r, max_channel] / target_colour[max_channel]
+            gene_efficiency[g, r] = np.median(scales)
+
     return gene_efficiency
