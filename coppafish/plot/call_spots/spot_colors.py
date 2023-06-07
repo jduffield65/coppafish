@@ -8,6 +8,7 @@ from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
 from ...call_spots.background import fit_background
 from ...setup import Notebook
 from ...spot_colors.base import get_spot_colors
+from ...spot_colors.base import normalise_rc, remove_background
 import matplotlib
 from typing import List, Optional, Tuple, Union
 plt.style.use('dark_background')
@@ -484,7 +485,7 @@ class GEViewer():
 
 
 class GESpotViewer():
-    def __init__(self, nb: Notebook, gene_index: int = 0, iteration: int = 0):
+    def __init__(self, nb: Notebook, gene_index: int = 0):
         """
         Diagnostic to show the spots used to calculate the gene efficiency for a given gene.
         Args:
@@ -494,22 +495,26 @@ class GESpotViewer():
         """
         self.nb = nb
         self.gene_index = gene_index
-        self.iteration = iteration
         self.n_genes = nb.call_spots.gene_efficiency.shape[0]
         self.mode = 'C'
         # Load spots
-        self.load_spots(gene_index, iteration)
+        self.load_spots(gene_index)
 
         # Now initialise the plot, adding fig and ax attributes to the class
         self.plot()
 
         plt.show()
 
-    def load_spots(self, gene_index: int, iteration: int):
+    def load_spots(self, gene_index: int):
         nb = self.nb
         # First we need to find the spots used to calculate the gene efficiency for the given gene.
-        self.spots_use = nb.call_spots.use_ge[iteration] * (nb.ref_spots.gene_no == gene_index)
+        self.spots_use = nb.call_spots.use_ge * (nb.ref_spots.gene_no == gene_index)
         spots = nb.ref_spots.colors[self.spots_use][:, :, nb.basic_info.use_channels]
+        # remove background codes. To do this, repeat background_strenth along a new axis for rounds
+        background_strength = nb.ref_spots.background_strength[self.spots_use]
+        background_strength = np.repeat(background_strength[:, np.newaxis, :], spots.shape[1], axis=1)
+        # remove background from spots
+        spots = spots - background_strength
         spots = spots.reshape((spots.shape[0], spots.shape[1] * spots.shape[2]))
         color_norm = np.repeat(nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                                       nb.basic_info.use_channels)].reshape((1, -1)),
@@ -563,7 +568,7 @@ class GESpotViewer():
         # Set supertitle, colorbar and show plot
         self.fig.suptitle(
             'Gene Efficiency Calculation for Gene ' + self.nb.call_spots.gene_names[self.gene_index] + ' in Iteration '
-            + str(self.iteration))
+            + str(0))
 
         # Add gene efficiency plot on top of prediction on the right
         ge = self.nb.call_spots.gene_efficiency[self.gene_index]
@@ -625,27 +630,40 @@ class GESpotViewer():
             max_intensity = np.percentile(rc_spot_intensity, percentile)
             # Now plot both spot intensities on the same histogram
             ax[r].hist(rc_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
-                       label='All Genes')
+                       label='All genes')
             ax[r].hist(gene_g_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
-                       label=nb.call_spots.gene_names[self.gene_index])
+                       label='Gene ' + nb.call_spots.gene_names[self.gene_index])
 
             # Add a box in the top right of the plot with the Gene Efficiency
             ge = nb.call_spots.gene_efficiency[self.gene_index, r]
             ax[r].set_yticks([])
             ax[r].set_xticks([])
 
+            # We'd like to add two vertical lines at the median of both histograms. The first in blue (for
+            # rc_spot_intensity) and the second in orange (for gene_g_spot_intensity).
+            # First we need to calculate the median of both histograms
+            rc_median = np.median(rc_spot_intensity)
+            gene_median = np.median(gene_g_spot_intensity)
+            # Now plot the vertical lines
+            ax[r].axvline(rc_median, color='blue', linestyle='--', label='Median = ' + str(np.round(rc_median, 2)))
+            ax[r].axvline(gene_median, color='orange', linestyle='--',
+                          label='Median = ' + str(np.round(gene_median, 2)))
+
             ax[r].set_title('Round ' + str(r) + ' Dye ' + dye_names[gene_code[r]])
 
             ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
             ax[r].set_ylabel('Frequency')
+            # Add a legend for the median lines. We need to exclude the first two lines from the legend
+            handles, labels = ax[r].get_legend_handles_labels()
+            ax[r].legend(handles[2:], labels[2:], loc='upper right')
 
         # Adjust subplots to leave space on the right for the legend and buttons
         fig.subplots_adjust(right=0.9)
 
-        # Add a single legend on the top right of the figure
+        # Add a single legend on the top right of the figure. Want to take only first 2 labels from ax 0
         legend_ax = fig.add_axes([0.925, 0.9, 0.05, 0.05])
         legend_ax.axis('off')
-        legend_ax.legend(*ax[0].get_legend_handles_labels(), loc='upper right')
+        legend_ax.legend(handles[:2], labels[:2], loc='upper right')
 
         fig.suptitle('Histogram of Spot Intensities for Gene ' + nb.call_spots.gene_names[self.gene_index] +
                      ' versus spots of the same dye in other genes for each round')
@@ -719,9 +737,19 @@ class GESpotViewer():
             ax[r].clear()
             max_intensity = np.percentile(rc_spot_intensity, percentile)
             ax[r].hist(rc_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
-                       label='All Genes')
+                       label='All genes')
             ax[r].hist(gene_g_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
-                       label=nb.call_spots.gene_names[self.gene_index])
+                       label='Gene ' + nb.call_spots.gene_names[self.gene_index])
+
+            # We'd like to add two vertical lines at the median of both histograms. The first in blue (for
+            # rc_spot_intensity) and the second in orange (for gene_g_spot_intensity).
+            # First we need to calculate the median of both histograms
+            rc_median = np.median(rc_spot_intensity)
+            gene_median = np.median(gene_g_spot_intensity)
+            # Now plot the vertical lines
+            ax[r].axvline(rc_median, color='blue', linestyle='--', label='Median = ' + str(np.round(rc_median, 2)))
+            ax[r].axvline(gene_median, color='orange', linestyle='--',
+                          label='Median = ' + str(np.round(gene_median, 2)))
 
             # Add a box in the top right of the plot with the Gene Efficiency
             ge = nb.call_spots.gene_efficiency[self.gene_index, r]
@@ -732,6 +760,10 @@ class GESpotViewer():
 
             ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
             ax[r].set_ylabel('Frequency')
+
+            # Add a legend for the median lines. We need to exclude the first two lines from the legend
+            handles, labels = ax[r].get_legend_handles_labels()
+            ax[r].legend(handles[2:], labels[2:], loc='upper right')
 
         self.fig.canvas.draw_idle()
 
@@ -745,3 +777,73 @@ class GESpotViewer():
         self.ax[0].add_patch(
             Rectangle((-0.5, index - 0.5), self.nb.basic_info.n_rounds * len(self.nb.basic_info.use_channels), 1,
                       fill=False, edgecolor='white'))
+
+
+class BGNormViewer():
+    """
+    This function will plot all spots before and after background subtraction and order them by background noise.
+    We will then plot the normalised spots too.
+    Args:
+        spot_colour_raw: [n_spots x n_rounds x n_channels_use] array of spots before background subtraction
+        initial_bleed_matrix: [n_channels_use x n_dyes] array of bleed matrix
+    """
+    def __init__(self, nb):
+        self.nb = nb
+        spot_colour_raw = nb.ref_spots.colors.copy()[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels]
+        initial_bleed_matrix = nb.call_spots.initial_bleed_matrix.copy()[:, nb.basic_info.use_channels]
+        spot_colours_subtracted, background_noise = remove_background(spot_colour_raw.copy())
+        norm_factor, _ = normalise_rc(spot_colours_subtracted.copy(), initial_bleed_matrix=initial_bleed_matrix)
+        spot_colours_normed = spot_colours_subtracted / norm_factor[None, :, :]
+        n_spots, n_rounds, n_channels_use = spot_colour_raw.shape
+        spot_colour_raw = spot_colour_raw.swapaxes(1, 2)
+        spot_colours_subtracted = spot_colours_subtracted.swapaxes(1, 2)
+        spot_colours_normed = spot_colours_normed.swapaxes(1, 2)
+        spot_colour_raw = np.reshape(spot_colour_raw, (n_spots, n_rounds * n_channels_use))
+        spot_colours_subtracted = np.reshape(spot_colours_subtracted, (n_spots, n_rounds * n_channels_use))
+        spot_colours_normed = np.reshape(spot_colours_normed, (n_spots, n_rounds * n_channels_use))
+        background_noise = np.sum(background_noise, axis=1)
+
+        # Now we'd like to order the spots by background noise in descending order
+        # We'll do this by sorting the background noise and then reordering the spots
+        spot_colour_raw = spot_colour_raw[np.argsort(background_noise)[::-1]]
+        spot_colours_subtracted = spot_colours_subtracted[np.argsort(background_noise)[::-1]]
+        spot_colours_normed = spot_colours_normed[np.argsort(background_noise)[::-1]]
+
+        # We're going to make a little viewer to show spots before and after background subtraction
+        fig, ax = plt.subplots(1, 3, figsize=(10, 5))
+        max_intensity = np.max(spot_colour_raw)
+        ax[0].imshow(spot_colour_raw, aspect='auto', vmin=0, vmax=max_intensity / 10, interpolation='none')
+        ax[0].set_title('Before background subtraction')
+        ax[0].set_xticks([])
+
+        ax[1].imshow(spot_colours_subtracted, aspect='auto', vmin=0, vmax=max_intensity / 10,
+                     interpolation='none')
+        ax[1].set_title('After background subtraction')
+        ax[1].set_xticks([])
+
+        max_intensity = np.max(spot_colours_normed)
+        ax[2].imshow(spot_colours_normed, aspect='auto', vmin=0, vmax=max_intensity / 10, interpolation='none')
+        ax[2].set_title('After background subtraction and normalisation')
+        ax[2].set_xticks([])
+
+        # Now add vertical dashed red lines to separate channels
+        for i in range(n_rounds - 1):
+            ax[0].axvline((i + 1) * n_rounds - 0.5, color='r', linestyle='--')
+            ax[1].axvline((i + 1) * n_rounds - 0.5, color='r', linestyle='--')
+            ax[2].axvline((i + 1) * n_rounds - 0.5, color='r', linestyle='--')
+
+        # For each ax, add the channels to the x axis. Since the x axis has n_rounds channels, followed by n_rounds
+        # channels, etc, we only need to add the channels once. We want to add the channel name at the bottom of
+        # each set of channels, so we'll add the channel name at the position of the middle channel in each set
+        for i in range(n_channels_use):
+            y_pos = int(n_spots * (1 + 0.05))
+            ax[0].text(i * n_rounds + n_rounds // 2, y_pos, nb.basic_info.use_channels[i], color='w', fontsize=10)
+            ax[1].text(i * n_rounds + n_rounds // 2, y_pos, nb.basic_info.use_channels[i], color='w', fontsize=10)
+            ax[2].text(i * n_rounds + n_rounds // 2, y_pos, nb.basic_info.use_channels[i], color='w', fontsize=10)
+
+        # Add a title
+        fig.suptitle('Background subtraction and normalisation', fontsize=16)
+
+        plt.show()
+
+    # TODO: Add 2 buttons, one for separating normalisation by channel and one for separating by round and channel

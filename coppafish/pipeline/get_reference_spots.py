@@ -118,10 +118,10 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
 
     # Set variables added in call_reference_spots to None so can save to Notebook.
     # I.e. if call_reference_spots hit error, but we did not do this, we would have to run get_reference_spots again.
-    nbp.gene_coefficients = None
+    nbp.gene_no = None
     nbp.score = None
-    nbp.genes_fit = None
-    nbp.residual = None
+    nbp.score_diff = None
     nbp.intensity = None
+    nbp.background_strength = None
 
     return nbp

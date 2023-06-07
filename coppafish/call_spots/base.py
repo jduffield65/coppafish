@@ -264,7 +264,7 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
 def compute_gene_efficiency(spot_colours: np.ndarray, split_bleed_matrix: np.ndarray, gene_no: np.ndarray,
                             gene_score: np.ndarray, gene_codes: np.ndarray,
                             spot_number_threshold: int = 25, score_threshold: float = 0.7) \
-        -> np.ndarray:
+        -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute gene efficiency and gene coefficients from spot colours and bleed matrix.
 
@@ -285,12 +285,15 @@ def compute_gene_efficiency(spot_colours: np.ndarray, split_bleed_matrix: np.nda
     n_spots, n_rounds, n_channels = spot_colours.shape
     n_genes = gene_codes.shape[0]
     gene_efficiency = np.ones([n_genes, n_rounds])
+    use_ge = np.zeros(n_spots, dtype=bool)
 
     # Compute gene efficiency for each gene and round.
     for g in range(n_genes):
-        gene_g_spot_colours = spot_colours[(gene_no == g) * (gene_score > score_threshold)]
-        if gene_g_spot_colours.shape[0] < spot_number_threshold:
+        gene_g_mask = (gene_no == g) * (gene_score > score_threshold)
+        if np.sum(gene_g_mask) < spot_number_threshold:
             continue
+        use_ge += gene_g_mask
+        gene_g_spot_colours = spot_colours[gene_g_mask]
         for r in range(n_rounds):
             # Target colour for gene g in round r.
             target_colour = split_bleed_matrix[r, :, gene_codes[g, r]]
@@ -300,4 +303,4 @@ def compute_gene_efficiency(spot_colours: np.ndarray, split_bleed_matrix: np.nda
             scales = gene_g_spot_colours[:, r, max_channel] / target_colour[max_channel]
             gene_efficiency[g, r] = np.median(scales)
 
-    return gene_efficiency
+    return gene_efficiency, use_ge

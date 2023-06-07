@@ -420,7 +420,9 @@
         "`score_diff[s]` is the difference between the highest and second highest gene score of spot s."],
     "intensity": ["Numpy float32 array [n_spots]",
       "$\\chi_s = \\underset{r}{\\mathrm{median}}(\\max_c\\zeta_{s_{rc}})$",
-      "where $\\pmb{\\zeta}_s=$ `colors[s, r]/color_norm_factor[r]`."]
+      "where $\\pmb{\\zeta}_s=$ `colors[s, r]/color_norm_factor[r]`."],
+    "background_strength": ["Numpy float32 array [n_spots x n_channels_use]",
+      "Background strength of each spot. Calculated as the median of the channel across rounds."]
   },
 
   "call_spots":
@@ -435,6 +437,8 @@
     "color_norm_factor": ["Numpy float array [n_rounds x n_channels]",
       "Normalisation such that dividing `colors` by `color_norm_factor` equalizes intensity of channels.",
       "`config['call_spots']['bleed_matrix_method']` indicates whether normalisation is for rounds and channels or just channels."],
+    "abs_intensity_percentile": ["Numpy float array [100]]",
+      "Percentile of `intensity` to use for thresholding in omp."],
     "initial_bleed_matrix": ["Numpy float array [n_rounds x n_channels x n_dyes]",
       "Starting point for determination of bleed matrix.",
       "If separate dye for each channel, `initial_bleed_matrix[r]` will be the identity matrix for each $r$.",
@@ -457,7 +461,8 @@
       "It is computed based on the average of isolated spot_colors assigned to that gene",
       "which exceed `score`, `score_diff` and `intensity` thresholds given in config file.",
       "For all $g$, there is an `av_round[g]` such that `gene_efficiency[g, av_round[g]] = 1`.",
-      "`nan` if $r$ outside `use_rounds` and 1 if `gene_codes[g,r]` outside `use_dyes`."]
+      "`nan` if $r$ outside `use_rounds` and 1 if `gene_codes[g,r]` outside `use_dyes`."],
+    "use_ge": ["Bool [n_spots] Mask for all spots used in gene efficiency calculation."]
   },
 
   "omp":

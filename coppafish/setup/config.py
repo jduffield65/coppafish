@@ -100,7 +100,8 @@ _options = {
             'r_smooth': 'maybe_list_int',
             'n_clip_warn': 'int',
             'n_clip_error': 'maybe_int',
-            'n_clip_error_images_thresh': 'int'
+            'n_clip_error_images_thresh': 'int',
+            'num_rotations': 'int'
         },
     'find_spots':
         {

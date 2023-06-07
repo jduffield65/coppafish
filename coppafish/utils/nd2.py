@@ -97,7 +97,8 @@ def get_metadata(file_path: str) -> dict:
                            for i in range(images.sizes['P'])])
         xy_pos = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_size_xy']
         metadata['xy_pos'] = xy_pos
-        metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
+        metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
+                                                                         expected_overlap=0.2)
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
         channel_metadata = desc.split('Plane #')[1:]
@@ -366,6 +367,8 @@ def get_nd2_tile_ind(tile_ind_npy: Union[int, List[int]], tile_pos_yx_nd2: np.nd
     """
     if isinstance(tile_ind_npy, numbers.Number):
         tile_ind_npy = [tile_ind_npy]
+    # As npy and nd2 have different coordinate systems, we need to convert tile_pos_yx_npy to nd2 tile coordinates
+    tile_pos_yx_npy = np.max(tile_pos_yx_npy, axis=0) - tile_pos_yx_npy
     nd2_index = numpy_indexed.indices(tile_pos_yx_nd2, tile_pos_yx_npy[tile_ind_npy]).tolist()
     if len(nd2_index) == 1:
         return nd2_index[0]

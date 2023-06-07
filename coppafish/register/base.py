@@ -159,6 +159,9 @@ def huber_regression(shift, position):
         row is the offset at 0,0
         or 3
     """
+    # We are going to get rid of the shifts where any of the values are nan for regression
+    position = position[~np.isnan(shift[:, 0])]
+    shift = shift[~np.isnan(shift[:, 0])]
     # Do robust regression
     huber_z = HuberRegressor().fit(X=position, y=shift[:, 0])
     huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
@@ -221,7 +224,7 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
         registration_data['round_registration']['position'] = position
         registration_data['round_registration']['round_shift'][t, r] = shift
         registration_data['round_registration']['round_shift_corr'][t, r] = corr
-        registration_data['round_registration']['round_transform_raw'][t, r] = huber_regression(shift, position)
+        registration_data['round_registration']['round_transform_raw'][t, r] = ols_regression(shift, position)
         pbar.update(1)
 
     # Add tile to completed tiles

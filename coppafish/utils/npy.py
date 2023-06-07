@@ -11,22 +11,8 @@ import numpy_indexed
 import numbers
 
 
-def rotate_90(image):
-    # Rotates a 3D image in zyx format by 90 degrees anticlockwise in the xy plane. This is the right thing to do, even
-    # though on the napari viewer it appears that things need to be rotated 90 clockwise. This is due to the napari
-    # image being inverted in y, so after flipping this inversion rotations change direction
-    # Has option to rotate 2D image too, which it assumes is in yx format
-    if image.ndim == 3:
-        image = np.swapaxes(image, 1, 2)
-        image = np.flip(image, axis=2)
-    elif image.ndim == 2:
-        image = np.swapaxes(image, 0, 1)
-        image = np.flip(image, axis=1)
-    return image
-
-
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,
-              t: int, r: int, c: Optional[int] = None):
+              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0):
     """
     Wrapper function to save tiles as npy files with correct shift.
     Moves z-axis to start before saving as it is quicker to load in this order.
@@ -39,6 +25,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         t: npy tile index considering
         r: Round considering
         c: Channel considering
+        num_rotations: Number of rotations to apply to image before saving. (Default = 0, done from y to x axis)
     """
     if nbp_basic.is_3d:
         if c is None:
@@ -59,7 +46,8 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         # First reorder axes so that image is in form z y x
         image = np.swapaxes(image, 2, 0)
         # Now rotate image
-        # image = rotate_90(image)
+        if num_rotations != 0:
+            image = np.rot90(image, k=num_rotations, axes=(1, 2))
         np.save(nbp_file.tile[t][r][c], image)
     else:
         # Don't need to apply rotations here as 2D data obtained from upstairs microscope without this issue
@@ -110,7 +98,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
             with the pixels values shifted by `+nbp_basic.tile_pixel_value_shift`.
             May want to disable `apply_shift` to save memory and/or make loading quicker as there will be
             no dtype conversion. If loading in DAPI, dtype always uint16 as is no shift.
-
+        acw_rotations: Number of anti-clockwise rotations to apply to image before returning.
 
     Returns:
         `int32 [ny x nx (x nz)]` or `int32 [n_pixels x (2 or 3)]`
@@ -155,7 +143,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
                              f'the value of the image at these coordinates or \n'
                              f'a list containing {2 + int(nbp_basic.is_3d)} arrays indicating the sub image to load.')
     else:
-        if nbp_basic.is_3d:
+        if nbp_basic.is_3d :
             # Don't use mmap when loading in whole image
             image = np.moveaxis(np.load(nbp_file.tile[t][r][c]), 0, 2)
         else:

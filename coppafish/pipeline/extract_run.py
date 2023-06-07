@@ -309,7 +309,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             if r != nbp_basic.anchor_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                         if nbp_basic.is_3d:
-                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)

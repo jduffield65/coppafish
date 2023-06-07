@@ -20,7 +20,7 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
     Args:
         config_file: Dictionary obtained from `'file_names'` section of config file.
         config_basic: Dictionary obtained from `'basic_info'` section of config file.
-        n_rounds: in order to accomodate with new file format, the number of rounds is specified (default=7)
+        n_rounds: in order to accommodate with new file format, the number of rounds is specified (default=7)
 
     Returns:
         - `NotebookPage[basic_info]` - Page contains information that is used at all stages of the pipeline.

@@ -3,100 +3,50 @@ import os
 from typing import Tuple, Optional, List
 
 
-def get_tilepos(xy_pos: np.ndarray, tile_sz: int) -> Tuple[np.ndarray, np.ndarray]:
+def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Using `xy_pos` from nd2 metadata, this obtains the yx position of each tile.
-    I.e. how tiles are arranged with respect to each other. So the output is an n_tiles by 2 matrix where each row
-    is the yx index of that tile.
-    Note that this is indexed differently in nd2 file and npy files in the tile directory.
+    Using `xy_pos` from nd2 metadata, this obtains the yx position of each tile. We label the tiles differently in the
+    nd2 and npy formats. In general, there are 2 differences in npy and nd2 tile format:
+    1. The same tile in npy and nd2 has a different npy and nd2 index, in nd2 it is the exact same order as the xy pos
+    in the metadata, in npy it is ordered from top right to bottom left, moving left along rows and then down rows.
+    2. The same tile in npy and nd2 has a different coordinate convention. In npy, a tile with coord [0,0] represents
+    bottom left (ie min y and min x) while in nd2, a tile with coord [0,0] represents top right (ie max y and max x).
 
     Args:
         xy_pos: `float [n_tiles x 2]`.
-            xy position of tiles in pixels. Obtained from nd2 metadata.
+            xy position of tiles in pixels. Obtained from nd2 metadata. `xy_pos[t,:]` is xy position of tile `t` where
+            `t` is the nd2 tile index.
         tile_sz: xy dimension of tile in pixels.
+        expected_overlap: expected overlap between tiles as a fraction of tile_sz.
 
     Returns:
-        - `tilepos_yx_nd2` - `int [n_tiles x 2]`.
-            `tilepos_yx_nd2[i]` is yx index of tile with fov index `i` in nd2 file.
-            Index 0 refers to ```YX = [0, 0]```.
-            Index 1 refers to ```YX = [0, 1] if MaxX > 0```.
-        - `tilepos_yx_npy` - `int [n_tiles x 2]`.
-            `tilepos_yx_npy[i, 0]` is yx index of tile with tile directory (npy files) index `i`.
-            Index 0 refers to ```YX = [MaxY, MaxX]```.
-            Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
+
     """
-    # NOTE: There are 2 differences in npy and nd2 tile format:
-    # 1. Tiles in ND2 are ordered according to a snake format where we start at top right, move left across cols, move
-    # down one row, move right across all cols, move down one row, etc. Whereas tiles in npy format start at top right
-    # move left across all cols, then move to the rightmost col one row down and continue
-    # 2. The same tile in npy and nd2 has a different coordinate convention. In nd2, a tile with coord [0,0] represents
-    # top right whereas in npy [0,0] represents bottom left.
+    # since xy_pos is in higher resolution, we need to divide by the expected difference between tiles. May not be
+    # exactly the same as tile_sz due to rounding errors, so round to nearest integer
+    delta = tile_sz * (1 - expected_overlap)
+    xy_pos = np.round(xy_pos / delta).astype(int)
 
-    n_tiles = xy_pos.shape[0]
-    tilepos_yx_nd2 = []
-    tilepos_yx_npy = []
+    # get the max x and y values (xy_pos was normalised to make min x and y = 0)
+    max_x = np.max(xy_pos[:, 0])
+    max_y = np.max(xy_pos[:, 1])
 
-    # This should get rid of some rounding errors
-    xy_pos = xy_pos.astype(int)
+    # Now we need to loop through each tile and assign it a yx index for the nd2 and npy formats
+    tilepos_yx_nd2 = np.zeros((xy_pos.shape[0], 2), dtype=int)
+    tilepos_yx_npy = np.zeros((xy_pos.shape[0], 2), dtype=int)
+    for t in range(xy_pos.shape[0]):
+        # nd2 format
+        tilepos_yx_nd2[t, 1] = max_x - xy_pos[t, 0]
+        tilepos_yx_nd2[t, 0] = max_y - xy_pos[t, 1]
 
-    # Next we will try to split tiles up into rows and columns.
-    y_coord = list(np.unique(xy_pos[:, 1]))
-    y_coord.sort(reverse=True)
-    x_coord = list(np.unique(xy_pos[:, 0]))
-    x_coord.sort(reverse=True)
+        # npy format
+        tilepos_yx_npy[t, 1] = xy_pos[t, 0]
+        tilepos_yx_npy[t, 0] = xy_pos[t, 1]
 
-    # Refine these to get rid of any coords that correspond to same row/column. We take 2 x coords to correspond to
-    # same col if they are within 10% of a tile width and same with y
-    y_coord = [y_coord[i] for i in range(len(y_coord)-1) if y_coord[i] - y_coord[i+1] > 0.1 * tile_sz] + [y_coord[-1]]
-    x_coord = [x_coord[i] for i in range(len(x_coord) - 1) if x_coord[i] - x_coord[i + 1] > 0.1 * tile_sz] + [x_coord[-1]]
-
-    # Now update xy_pos and replace the values that we've got rid of representing a tile with the new values
-    for t in range(n_tiles):
-        if xy_pos[t, 0] not in x_coord:
-            # Find the closest thing to this
-            for x in x_coord:
-                if abs(x - xy_pos[t, 0]) < 0.1 * tile_sz:
-                    x_representative = x
-                    break
-            xy_pos[t, 0] = x_representative
-        if xy_pos[t, 1] not in y_coord:
-            # Find the closest thing to this
-            for y in y_coord:
-                if abs(y - xy_pos[t, 1]) < 0.1 * tile_sz:
-                    y_representative = y
-                    break
-            xy_pos[t, 1] = y_representative
-
-    # The next arrays will be useful for indexing the nd2s and npys as these have different grid naming conventions
-    # ND2
-    y_coord_descend, x_coord_descend = y_coord.copy(), x_coord.copy()
-    y_coord_descend.sort(reverse=True)
-    x_coord_descend.sort(reverse=True)
-    # NPY
-    y_coord_ascend, x_coord_ascend = y_coord.copy(), x_coord.copy()
-    y_coord_ascend.sort(reverse=False)
-    x_coord_ascend.sort(reverse=False)
-
-    # Do ND2 first. With old get metadata function, tilepos[0] referred to nd2 index 0, tilepos[1] to index 1, etc.
-    # This is no longer the case.
-    # Now need to loop through all indices in the snake order that ND2 does and set these.
-    for t in range(n_tiles):
-        tilepos_yx_nd2.append([y_coord_descend.index(xy_pos[t, 1]), x_coord_descend.index(xy_pos[t, 0])])
-
-    # Convert to ndarray
-    tilepos_yx_nd2 = np.array(tilepos_yx_nd2)
-
-    # Now begin for the npy's
-    x_reverse = True
-    x_coord.sort(reverse=x_reverse)
-    for y in y_coord:
-        for x in x_coord:
-            # Next condition checks if this coord is present in the xy coords
-            if np.any(np.all((xy_pos == np.array([x, y])), axis=1)):
-                tilepos_yx_npy.append([y_coord_ascend.index(y), x_coord_ascend.index(x)])
-
-    # Convert to ndarray
-    tilepos_yx_npy = np.array(tilepos_yx_npy)
+    # Finally, we need to sort tilepos_npy. Want to sort by y first, (ascending), then for each y, sort by x
+    # (descending). We need to use merge sort. In practice, need to actually sort by x first then y
+    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()[::-1]]
+    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
 
     return tilepos_yx_nd2, tilepos_yx_npy
 

@@ -232,7 +232,7 @@ def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
         background_code[:, c] = 1
         # now loop through all spots and remove the component of the background from the spot colour
         for s in range(spot_colours.shape[0]):
-            background_noise[s, c] = np.median(spot_colours[s, :, c])
+            background_noise[s, c] = max([np.median(spot_colours[s, :, c]), 0])
             spot_colours[s] = spot_colours[s] - background_noise[s, c] * background_code
 
     return spot_colours, background_noise

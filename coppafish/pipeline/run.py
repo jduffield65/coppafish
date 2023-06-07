@@ -7,6 +7,7 @@ from .extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
 from ..setup import split_config, merge_notebooks, split_stitch, split_ref_spots, split_call_spots, Notebook
 from ..call_spots import get_non_duplicate, quality_threshold
+from ..register import generate_channel_reg_images
 import warnings
 import numpy as np
 from scipy import sparse, stats
@@ -240,6 +241,10 @@ def run_register(nb: setup.Notebook):
                                   nb.stitch.tile_origin)
         nb += nbp
         nb += nbp_debug
+        n_reg_images = len(os.listdir(os.path.join(nb.file_names.output_dir, 'reg_images')))
+        if n_reg_images < len(nb.basic_info.use_tiles) * (len(nb.basic_info.use_rounds) +
+                                                          len(nb.basic_info.use_channels)):
+            generate_channel_reg_images(nb)
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
@@ -283,6 +288,7 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
         default_bleed_matrix = default_bleed_matrix[nb.basic_info.use_channels]
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
                                                   initial_bleed_matrix=default_bleed_matrix,
+                                                  transform=nb.register.transform,
                                                   overwrite_ref_spots=overwrite_ref_spots)
         nb += nbp
     else:

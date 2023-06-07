@@ -90,7 +90,7 @@ def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
     """
     if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
         raise ValueError(f"method must be 'omp' or 'anchor' but {method} given.")
-    intensity_thresh = get_intensity_thresh(nb)
+    # intensity_thresh = get_intensity_thresh(nb)
     if nb.has_page('thresholds'):
         if method.lower() == 'omp':
             score_thresh = nb.thresholds.score_omp
@@ -110,5 +110,5 @@ def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
     else:
         intensity = nb.ref_spots.intensity
         score = nb.ref_spots.score
-    qual_ok = np.array([score > score_thresh, intensity > intensity_thresh]).all(axis=0)
+    qual_ok = np.array([score > score_thresh, intensity > 0]).all(axis=0)
     return qual_ok

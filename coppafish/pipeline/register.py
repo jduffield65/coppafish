@@ -1,5 +1,6 @@
 import os
 import pickle
+import itertools
 import numpy as np
 from tqdm import tqdm
 from ..setup import NotebookPage
@@ -76,33 +77,28 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                                               use_channels=nbp_basic.use_channels)
 
     # Now combine all of these into single subvol transform array via composition
-    for t in use_tiles:
-        for r in use_rounds:
-            for c in use_channels:
-                registration_data['initial_transform'][t, r, c] = \
-                    zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['channel_transform'][t, c],
-                                                     registration_data['round_registration']['round_transform'][t, r]))
+    for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
+        registration_data['initial_transform'][t, r, c] = \
+            zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['channel_transform'][t, c],
+                                             registration_data['round_registration']['round_transform'][t, r]))
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
 
     # Part 3: ICP
-    icp_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
-    n_matches = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
-    mse = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
-    converged = np.zeros((n_tiles, n_rounds, n_channels), dtype=bool)
-
-    # Create a progress bar for the ICP step
-    with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
-        pbar.set_description(f"Running ICP on all tiles")
-        for t in use_tiles:
-            # Do not do ICP if done in previous run
-            if 'icp' in registration_data.keys():
-                break
-            ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
-                                   nbp_find_spots.spot_no)
-            for r in use_rounds:
-                for c in use_channels:
+    if 'icp' not in registration_data.keys():
+        # Initialise variables for ICP step
+        icp_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
+        n_matches = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
+        mse = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
+        converged = np.zeros((n_tiles, n_rounds, n_channels), dtype=bool)
+        # Create a progress bar for the ICP step
+        with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
+            pbar.set_description(f"Running ICP on all tiles")
+            for t in use_tiles:
+                ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
+                                       nbp_find_spots.spot_no)
+                for r, c in itertools.product(use_rounds, use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
                     # Only do ICP on non-degenerate cells with more than 100 spots
                     if nbp_find_spots.spot_no[t, r, c] > 100:
@@ -118,12 +114,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                         # Otherwise just use the starting transform
                         icp_transform[t, r, c] = registration_data['initial_transform'][t, r, c]
                     pbar.update(1)
-    # Save ICP data
-    registration_data['icp'] = {'icp_transform': icp_transform, 'n_matches': n_matches, 'mse': mse,
-                                'converged': converged}
-    # Save registration data externally
-    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
-        pickle.dump(registration_data, f)
+        # Save ICP data
+        registration_data['icp'] = {'icp_transform': icp_transform, 'n_matches': n_matches, 'mse': mse,
+                                    'converged': converged}
+        # Save registration data externally
+        with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
+            pickle.dump(registration_data, f)
 
     # Add round statistics to debugging page.
     # First add the round registration statistics
