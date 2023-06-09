@@ -45,7 +45,7 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tu
 
     # Finally, we need to sort tilepos_npy. Want to sort by y first, (ascending), then for each y, sort by x
     # (descending). We need to use merge sort. In practice, need to actually sort by x first then y
-    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()[::-1]]
+    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
     tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
 
     return tilepos_yx_nd2, tilepos_yx_npy
