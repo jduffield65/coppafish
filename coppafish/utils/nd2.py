@@ -42,7 +42,11 @@ def get_raw_extension(input_dir: str) -> str:
     Returns:
         raw_extension: str, either 'nd2', 'npy' or 'jobs'
     """
-    files = os.listdir(input_dir)
+    # Want to list all files in input directory and all subdirectories. We'll use os.walk
+    files = []
+    for root, directories, filenames in os.walk(input_dir):
+        for filename in filenames:
+            files.append(os.path.join(root, filename))
     files.sort()
     # Just need a single npy to confirm this is the format
     if any([directory.endswith('npy') for directory in files]):
@@ -67,13 +71,9 @@ def get_metadata(file_path: str) -> dict:
         file_path: path to desired nd2 file
 
     Returns:
-        Dictionary containing -
+        Dictionary containing - n_tiles, n_channels, tile_sz, pixel_size_xy, pixel_size_z, tile_centre, xy_pos,
+        tilepos_yx_nd2, tilepos_yx, channel_laser, channel_camera, n_rounds
 
-        - `xy_pos` - `List [n_tiles x 2]`. xy position of tiles in pixels.
-        - `pixel_microns` - `float`. xy pixel size in microns.
-        - `pixel_microns_z` - `float`. z pixel size in microns.
-        - `sizes` - dict with fov (`t`), channels (`c`), y, x, z-planes (`z`) dimensions.
-        - 'channels' - list of colorRGB codes for the channels, this is a unique identifier for each channel
     """
 
     if not os.path.isfile(file_path):
@@ -88,7 +88,7 @@ def get_metadata(file_path: str) -> dict:
         # Check if data is 3d
         if 'Z' in images.sizes:
             # subtract 1 as we always ignore first z plane
-            nz = images.sizes['Z']
+            nz = images.sizes['Z'] - 1
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], nz])/2
         else:
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']])/2

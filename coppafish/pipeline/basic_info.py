@@ -278,7 +278,10 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
 
     # Stage 1: Compute metadata. This is done slightly differently in the 3 cases of different raw extensions
     raw_extension = utils.nd2.get_raw_extension(config_file['input_dir'])
-    all_files = os.listdir(config_file['input_dir'])
+    all_files = []
+    for root, directories, filenames in os.walk(config_file['input_dir']):
+        for filename in filenames:
+            all_files.append(os.path.join(root, filename))
     all_files.sort()
     if raw_extension == '.nd2':
         if config_file['round'] is None and config_file['anchor'] is None:
@@ -298,9 +301,6 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
             raise ValueError(f"There is no json metadata file in input_dir. This should have been set at the point of "
                              f"ND2 extraction to npy.")
         metadata = json.load(open(metadata_file))
-        # Check metadata info matches that in first round npy file.
-        first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
-        use_tiles_nd2 = utils.raw.metadata_sanity_check(metadata, first_round_raw)
 
     elif raw_extension == 'jobs':
         metadata = utils.nd2.get_jobs_metadata(all_files, config_file['input_dir'])
@@ -364,7 +364,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
     # If no use_z given, default to all except the first if ignore_first_z_plane = True
     if nbp.use_z is None:
         del nbp.use_z
-        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), int(2 * metadata['tile_centre'][2])).tolist()
+        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), int(2 * metadata['tile_centre'][2]) + 1).tolist()
     # This has not been assigned yet but now we can be sure that use_z not None!
     nbp.nz = len(nbp.use_z)
 
@@ -372,5 +372,13 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         del nbp.use_dyes
         nbp.use_dyes = np.arange(len(nbp.dye_names)).tolist()
         nbp.n_dyes = len(nbp.use_dyes)
+
+    # Run into annoying problem of tilepos_yx, tilepos_yx_nd2 and tile_centre being saved as lists if they are loaded
+    # from json metadata as json cannot save npys.
+    if raw_extension == '.npy':
+        del nbp.tilepos_yx, nbp.tilepos_yx_nd2, nbp.tile_centre
+        nbp.tilepos_yx = np.array(metadata['tilepos_yx'])
+        nbp.tilepos_yx_nd2 = np.array(metadata['tilepos_yx_nd2'])
+        nbp.tile_centre = np.array(metadata['tile_centre'])
 
     return nbp

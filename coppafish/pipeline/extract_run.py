@@ -184,7 +184,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     n_clip_error_images = 0
     if config['n_clip_error'] is None:
         # default is 1% of pixels on single z-plane
-        config['n_clip_error'] = int(nbp_basic.tile_sz * nbp_basic.tile_sz / 100)
+        config['n_clip_error'] = int(nbp_basic.tile_sz* nbp_basic.tile_sz / 100)
 
     with tqdm(total=n_images) as pbar:
         pbar.set_description(f'Loading in tiles from {nbp_file.raw_extension}, filtering and saving as .npy')
