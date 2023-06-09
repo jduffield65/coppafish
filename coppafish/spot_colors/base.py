@@ -192,27 +192,28 @@ def normalise_rc(spot_colours: np.ndarray, initial_bleed_matrix: np.ndarray) -> 
     """
     # Normalise columns of initial bleed matrix to have L2 norm of 1.
     initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
-    # Reshape spot colours to be [(n_spots x n_rounds) x n_channels]
-    spot_channel_colours = spot_colours.reshape(-1, spot_colours.shape[-1])
-    median_intensity = np.zeros(spot_colours.shape[1:])
 
-    # First we will apply a fixed normalisation for each channel.
-    spot_intensity = np.zeros((spot_colours.shape[2], 0)).tolist()
-    for s in tqdm(range(spot_channel_colours.shape[0])):
-        all_score = initial_bleed_matrix @ spot_channel_colours[s] + np.random.rand(spot_colours.shape[2]) * 1e-6
-        top_score = np.max(all_score)
-        second_score = np.max(all_score[all_score != top_score])
-        best_matching_dye = initial_bleed_matrix[:, np.argmax(all_score)]
-        channel = np.argmax(best_matching_dye)
-        if top_score > 1.5 * second_score:
-            spot_intensity[channel].append(top_score)
-    # Now normalise by the median of the intensities.
-    for c in range(spot_channel_colours.shape[1]):
-        median_intensity[:, c] = np.median(spot_intensity[c])
+    # We want to find what spots look like in each round and channel.
+    spot_brightness = np.zeros((spot_colours.shape[1], spot_colours.shape[2], 0)).tolist()
+    for s in tqdm(range(spot_colours.shape[0])):
+        for r in range(spot_colours.shape[1]):
+            # Find out which dye is the best match for each spot.
+            all_score = initial_bleed_matrix @ spot_colours[s, r] + np.random.rand(spot_colours.shape[2]) * 1e-6
+            top_score = np.max(all_score)
+            second_score = np.max(all_score[all_score != top_score])
+            # Get the column of the bleed matrix that matches the best. This is the dye spectrum for the spot.
+            best_matching_dye = initial_bleed_matrix[:, np.argmax(all_score)]
+            channel = np.argmax(best_matching_dye)
+            if top_score > 1.5 * second_score:
+                spot_brightness[r][channel].append(top_score)
 
-    # TODO: Possibly add a second normalisation step here. This would be to normalise each round.
+    # Now we want to find the median intensity for each round and channel.
+    median_brightness = np.zeros((spot_colours.shape[1], spot_colours.shape[2]))
+    for r in range(median_brightness.shape[0]):
+        for c in range(median_brightness.shape[1]):
+            median_brightness[r][c] = np.median(spot_brightness[r][c])
 
-    return median_intensity, spot_intensity
+    return median_brightness, spot_brightness
 
 
 def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

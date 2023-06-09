@@ -787,12 +787,14 @@ class BGNormViewer():
         spot_colour_raw: [n_spots x n_rounds x n_channels_use] array of spots before background subtraction
         initial_bleed_matrix: [n_channels_use x n_dyes] array of bleed matrix
     """
-    def __init__(self, nb):
+    def __init__(self, nb, interp=0):
         self.nb = nb
         spot_colour_raw = nb.ref_spots.colors.copy()[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels]
         initial_bleed_matrix = nb.call_spots.initial_bleed_matrix.copy()[:, nb.basic_info.use_channels]
         spot_colours_subtracted, background_noise = remove_background(spot_colour_raw.copy())
         norm_factor, _ = normalise_rc(spot_colours_subtracted.copy(), initial_bleed_matrix=initial_bleed_matrix)
+        median_norm_factor = np.median(norm_factor)
+        norm_factor = (1 - interp) * norm_factor + interp * median_norm_factor
         spot_colours_normed = spot_colours_subtracted / norm_factor[None, :, :]
         n_spots, n_rounds, n_channels_use = spot_colour_raw.shape
         spot_colour_raw = spot_colour_raw.swapaxes(1, 2)
@@ -845,5 +847,16 @@ class BGNormViewer():
         fig.suptitle('Background subtraction and normalisation', fontsize=16)
 
         plt.show()
+
+    # add slider to allow us to vary value of interp between 0 and 1 and update plot
+    # def add_hist_widgets(self):
+    #     Add a slider on the right of the figure allowing the user to choose the percentile of the histogram
+    #     to use as the maximum intensity. This slider should be the same dimensions as the colorbar and should
+    #     be in the same position as the colorbar. We should slide vertically to change the percentile.
+        # self.ax_slider = self.fig.add_axes([0.94, 0.15, 0.02, 0.6])
+        # self.slider = Slider(self.ax_slider, 'Interpolation Coefficient', 0, 1, valinit=0, orientation='vertical')
+        # self.slider.on_changed(lambda val: self.update_hist(int(val)))
+    #
+
 
     # TODO: Add 2 buttons, one for separating normalisation by channel and one for separating by round and channel
