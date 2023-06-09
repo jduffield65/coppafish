@@ -173,7 +173,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     if nbp_basic.use_anchor:
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]
-        use_rounds = nbp_basic.use_rounds + [nbp_basic.n_rounds]
+        use_rounds = np.arange(len(round_files))
         n_images = (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels) + \
                    len(nbp_basic.use_tiles) * len(use_channels_anchor)
     else:
