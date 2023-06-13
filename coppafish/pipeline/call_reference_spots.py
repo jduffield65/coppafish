@@ -76,7 +76,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
     # colour_norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
     #                                                   initial_bleed_matrix=initial_bleed_matrix)
-    colour_norm_factor = np.load(os.path.join(os.getcwd(), 'default_norm.npy'))
+    colour_norm_factor = np.load(os.path.join(os.getcwd(), 'coppafish/default_norm.npy'))
     spot_colours = spot_colours_background_removed / colour_norm_factor
 
     # 2. Bleed matrix calculation and bled codes
