@@ -309,7 +309,10 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
         colour_vector = np.swapaxes(spot_colours, 0, 1)
         bleed_matrix = np.zeros((n_rounds, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
     else:
-        colour_vector = np.reshape(spot_colours, (n_spots * n_rounds, n_channels_use))[np.newaxis, :, :]
+        # If not round split then we just take all rounds together. Let's throw away the first 2 rounds as we have
+        # a lot of anchor bleed in these rounds
+        spot_colours = spot_colours[:, 2:, :]
+        colour_vector = np.reshape(spot_colours, (n_spots * (n_rounds - 2), n_channels_use))[np.newaxis, :, :]
         bleed_matrix = np.zeros((1, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
 
     # Now we loop over the first dimension of the colour vector and compute the dye score for each spot
@@ -321,6 +324,12 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
         # Now assign each spot a dye which is its highest score
         spot_dye = np.argmax(all_dye_score, axis=1)
         spot_dye_score = np.max(all_dye_score, axis=1)
+        spot_dye_score_second = np.sort(all_dye_score, axis=1)[:, -2]
+        # Now we want to remove all spots which have a score of 0 or less than twice the second highest score
+        dye_score_valid = (spot_dye_score > 0) * (spot_dye_score > 2 * spot_dye_score_second)
+        spot_dye_score = spot_dye_score[dye_score_valid]
+        spot_dye = spot_dye[dye_score_valid]
+
 
         # Loop through all dyes and partition our data nicely.
         # Also compute the median of each of these, this will be our scale factor for each column

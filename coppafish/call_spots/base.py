@@ -261,8 +261,8 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
     return gene_efficiency
 
 
-def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, gene_no: np.ndarray,
-                            gene_score: np.ndarray, gene_codes: np.ndarray,
+def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, bled_codes: np.ndarray,
+                            gene_no: np.ndarray, gene_score: np.ndarray, gene_codes: np.ndarray,
                             spot_number_threshold: int = 25, score_threshold: float = 0.7) \
         -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -273,6 +273,7 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, 
             Spot colours normalised to equalise intensities between channels (and rounds). (BG Removed)
         bleed_matrix: `float [n_rounds x n_channels x n_dyes]`.
             Bleed matrix
+        bled_codes: `float [n_genes x n_rounds x n_channels]`.
         gene_no: `int [n_spots]`. Gene number for each spot.
         gene_score: `float [n_spots]`. Score for each spot.
         gene_codes: `int [n_genes x n_rounds]`.
@@ -298,9 +299,13 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, 
         for r in range(n_rounds):
             # Compute gene efficiency for each round. This is just the best scaling factor to match the mean
             # spot colour to the expected spot colour.
-            expected_spot_colour = np.dot(bleed_matrix[r], gene_codes[g, r])
+            expected_spot_colour = bled_codes[g, r]
             observed_mean_spot_colour = np.mean(gene_g_spot_colours[:, r], axis=0)
-            gene_efficiency[g, r] = np.dot(expected_spot_colour, observed_mean_spot_colour) / \
-                                    np.dot(expected_spot_colour, expected_spot_colour)
+            if np.dot(expected_spot_colour, expected_spot_colour) > 0:
+                gene_efficiency[g, r] = np.dot(expected_spot_colour, observed_mean_spot_colour) / \
+                                        np.dot(expected_spot_colour, expected_spot_colour)
+
+    # Set negative values to 0.
+    gene_efficiency[gene_efficiency < 0] = 0
 
     return gene_efficiency, use_ge

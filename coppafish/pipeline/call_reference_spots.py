@@ -76,7 +76,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
     # colour_norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
     #                                                   initial_bleed_matrix=initial_bleed_matrix)
-    colour_norm_factor = np.load(os.path.join(os.getcwd(), 'coppafish/default_norm.npy'))
+    colour_norm_factor = np.load('/Users/reillytilbury/Documents/GitHub/coppafish/coppafish/setup/default_norm.npy')
+
     spot_colours = spot_colours_background_removed / colour_norm_factor
 
     # 2. Bleed matrix calculation and bled codes
@@ -92,11 +93,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # 3. Gene efficiency calculation.
     # GE calculation is done iteratively in a similar way to scaled k-means clustering. We start with our initial
     # score distribution and bled codes and then these 2 parameters are iteratively updated until convergence.
-    for i in tqdm(range(config['n_iter'])):
+    # for i in tqdm(range(config['n_iter'])):
+    for i in range(2):
         print(np.median(gene_score))
         # 3.1 Calculate gene efficiency
         gene_efficiency, use_ge = compute_gene_efficiency(spot_colours=spot_colours, bleed_matrix=bleed_matrix,
-                                                          gene_no=gene_no, gene_score=gene_score, gene_codes=gene_codes)
+                                                          bled_codes=bled_codes, gene_no=gene_no, gene_score=gene_score,
+                                                          gene_codes=gene_codes)
         # 3.2 Update bled codes
         bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
@@ -125,11 +128,11 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
     # TODO: Remove this in future versions
-    rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
-    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
-                                   return_in_bounds=True)[0]
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
-    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
+    # rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    # pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
+    #                                int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
+    #                                return_in_bounds=True)[0]
+    # pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
+    nbp.abs_intensity_percentile = np.random.rand(100)
 
     return nbp, nbp_ref_spots
