@@ -124,7 +124,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
         config['file_names']['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*7*7:]]
 
     if not nb.has_page("basic_info"):
-        nbp_basic = set_basic_info_new(config['file_names'], config['basic_info'])
+        nbp_basic = set_basic_info_new(config)
         nb += nbp_basic
     else:
         warnings.warn('basic_info', utils.warnings.NotebookPageWarning)

@@ -3,14 +3,13 @@ import os
 from typing import Tuple, Optional, List
 
 
-def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tuple[np.ndarray, np.ndarray]:
+def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float, format: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     Using `xy_pos` from nd2 metadata, this obtains the yx position of each tile. We label the tiles differently in the
     nd2 and npy formats. In general, there are 2 differences in npy and nd2 tile format:
     1. The same tile in npy and nd2 has a different npy and nd2 index, in nd2 it is the exact same order as the xy pos
     in the metadata, in npy it is ordered from top right to bottom left, moving left along rows and then down rows.
-    2. The same tile in npy and nd2 has a different coordinate convention. In npy, a tile with coord [0,0] represents
-    bottom left (ie min y and min x) while in nd2, a tile with coord [0,0] represents top right (ie max y and max x).
+    2. The same tile in npy and nd2 has a different coordinate convention.
 
     Args:
         xy_pos: `float [n_tiles x 2]`.
@@ -18,9 +17,16 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tu
             `t` is the nd2 tile index.
         tile_sz: xy dimension of tile in pixels.
         expected_overlap: expected overlap between tiles as a fraction of tile_sz.
+        format: Format of data set. Either 'old' or 'new'. 'old' means that the data set was acquired before camera
+        rotation.
 
     Returns:
-
+        tilepos_yx_nd2: `int [n_tiles x 2]`.
+            yx position of each tile in nd2 format. `tilepos_yx_nd2[t,:]` is yx position of tile `t` where `t` is the
+            nd2 tile index.
+        tilepos_yx_npy: `int [n_tiles x 2]`.
+            yx position of each tile in npy format. `tilepos_yx_npy[t,:]` is yx position of tile `t` where `t` is the
+            npy tile index.
     """
     # since xy_pos is in higher resolution, we need to divide by the expected difference between tiles. May not be
     # exactly the same as tile_sz due to rounding errors, so round to nearest integer
@@ -43,10 +49,18 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tu
         tilepos_yx_npy[t, 1] = xy_pos[t, 0]
         tilepos_yx_npy[t, 0] = xy_pos[t, 1]
 
-    # Finally, we need to sort tilepos_npy. Want to sort by y first, (ascending), then for each y, sort by x
-    # (descending). We need to use merge sort. In practice, need to actually sort by x first then y
-    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
-    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
+    # Through trial and error I have seen that what works is as follows:
+    # Old datastes: sort by y in descending order, breaking ties by x in descending order
+    # New datasets: sort by y in ascending order, breaking ties by x in descending order
+    if format == 'new':
+        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()[::-1]]
+        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
+    elif format == 'old':
+        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
+        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
+        tilepos_yx_npy = tilepos_yx_npy[::-1]
+    else:
+        raise ValueError('format must be either "old" or "new"')
 
     return tilepos_yx_nd2, tilepos_yx_npy
 

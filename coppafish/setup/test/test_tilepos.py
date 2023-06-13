@@ -28,7 +28,8 @@ class TestTilePos(unittest.TestCase):
             test_file = os.path.join(self.folder, file_name)
             xy_pos = matlab.load_array(test_file, 'xypos')
             output_matlab = matlab.load_array(test_file, 'TilePosYX') - 1
-            output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(matlab.load_array(test_file, 'tile_sz')))
+            output_python_nd2, output_python_tiff = get_tilepos(xy_pos, int(matlab.load_array(test_file, 'tile_sz'),
+                                                                            0.15, 'new'))
             # MATLAB is wrong here!!
             diff = output_python_nd2.astype(int) - output_matlab.astype(int)
             # self.assertTrue(np.abs(diff).max() <= self.tol)

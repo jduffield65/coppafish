@@ -62,13 +62,14 @@ def get_raw_extension(input_dir: str) -> str:
     return raw_extension
 
 
-def get_metadata(file_path: str) -> dict:
+def get_metadata(file_path: str, config: dict) -> dict:
     """
     Gets metadata containing information from nd2 data about pixel sizes, position of tiles and numbers of
     tiles/channels/z-planes. This
 
     Args:
         file_path: path to desired nd2 file
+        config: config dictionary
 
     Returns:
         Dictionary containing - n_tiles, n_channels, tile_sz, pixel_size_xy, pixel_size_z, tile_centre, xy_pos,
@@ -98,7 +99,9 @@ def get_metadata(file_path: str) -> dict:
         xy_pos = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_size_xy']
         metadata['xy_pos'] = xy_pos
         metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
-                                                                         expected_overlap=0.2)
+                                                                         expected_overlap=config['stitch']
+                                                                         ['expected_overlap'],
+                                                                         format=config['extract']['npy_index_format'])
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
         channel_metadata = desc.split('Plane #')[1:]
@@ -118,7 +121,7 @@ def get_metadata(file_path: str) -> dict:
     return metadata
 
 
-def get_jobs_metadata(files: list, input_dir: str) -> dict:
+def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     """
     Gets metadata containing information from nd2 data about pixel sizes, position of tiles and numbers of
     tiles/channels/z-planes. This has to be as separate function from above due to the fact that input here is a list
@@ -127,6 +130,7 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
     Args:
         files: list of paths to desired nd2 file
         input_dir: Directory to location of files
+        config: config dictionary
     Returns:
         Dictionary containing -
 
@@ -186,7 +190,10 @@ def get_jobs_metadata(files: list, input_dir: str) -> dict:
     xy_pos = np.array(xy_pos)
     xy_pos = (xy_pos - np.min(xy_pos, axis=0)) / cal
     metadata['xy_pos'] = xy_pos
-    metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'])
+    metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
+                                                                     expected_overlap=config['stitch']
+                                                                     ['expected_overlap'],
+                                                                     format=config['extract']['npy_index_format'])
     metadata['n_tiles'] = len(metadata['tilepos_yx_nd2'])
     # get n_channels and channel info
     metadata['channel_laser'], metadata['channel_camera'] = laser, camera

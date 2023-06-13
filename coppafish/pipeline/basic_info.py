@@ -161,7 +161,8 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
 
     # get tile info
     tile_sz = metadata['sizes']['x']
-    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(np.asarray(metadata['xy_pos']), tile_sz)
+    tilepos_yx_nd2, tilepos_yx = setup.get_tilepos(np.asarray(metadata['xy_pos']), tile_sz,
+                                                   format='new')
     nbp.tilepos_yx_nd2 = tilepos_yx_nd2  # numpy array, yx coordinate of tile with nd2 index.
     nbp.tilepos_yx = tilepos_yx  # and with npy index
 
@@ -251,7 +252,7 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
     return nbp
 
 
-def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
+def set_basic_info_new(config: dict) -> NotebookPage:
     """
     Adds info from `'basic_info'` section of config file to notebook page.
 
@@ -263,10 +264,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
     for description of the variables.
 
     Args:
-        config_file: Dictionary obtained from `'file_names'` section of config file.
-        config_basic: Dictionary obtained from `'basic_info'` section of config file.
-        n_rounds: in order to accomodate with new file format, the number of rounds is specified (default=7)
-
+        - `config` : `dict` - Config dictionary.
     Returns:
         - `NotebookPage[basic_info]` - Page contains information that is used at all stages of the pipeline.
     """
@@ -275,6 +273,8 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
 
     # Now break the page contents up into 2 types, contents that must be read in from the config and those that can
     # be computed from the metadata
+    config_file = config['file_names']
+    config_basic = config['basic_info']
 
     # Stage 1: Compute metadata. This is done slightly differently in the 3 cases of different raw extensions
     raw_extension = utils.nd2.get_raw_extension(config_file['input_dir'])
@@ -292,7 +292,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
             first_round_raw = os.path.join(config_file['input_dir'], config_file['round'][0])
         else:
             first_round_raw = os.path.join(config_file['input_dir'], config_file['anchor'])
-        metadata = utils.nd2.get_metadata(first_round_raw + raw_extension)
+        metadata = utils.nd2.get_metadata(first_round_raw + raw_extension, config=config)
 
     elif raw_extension == '.npy':
         # Load in metadata as dictionary from a json file
@@ -303,7 +303,7 @@ def set_basic_info_new(config_file: dict, config_basic: dict) -> NotebookPage:
         metadata = json.load(open(metadata_file))
 
     elif raw_extension == 'jobs':
-        metadata = utils.nd2.get_jobs_metadata(all_files, config_file['input_dir'])
+        metadata = utils.nd2.get_jobs_metadata(all_files, config_file['input_dir'], config=config)
     else:
         raise ValueError(f"config_file['raw_extension'] should be either '.nd2' or '.npy' but it is "
                          f"{config_file['raw_extension']}.")

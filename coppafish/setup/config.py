@@ -101,7 +101,8 @@ _options = {
             'n_clip_warn': 'int',
             'n_clip_error': 'maybe_int',
             'n_clip_error_images_thresh': 'int',
-            'num_rotations': 'int'
+            'num_rotations': 'int',
+            'npy_index_format': 'str'
         },
     'find_spots':
         {
@@ -430,36 +431,4 @@ def split_config(config_file):
         config_file_path.append(new_config_file)
 
     return config_file_path
-
-
-# On Reilly's computer I would like to replace other's config files with config files that reflect my own directories.
-def convert_config(config: dict) -> dict:
-    """
-    Converts the configuration file_names page to reflect pages on everyone's local computer.
-    Args:
-        config: config dict with external file_names
-
-    Returns:
-        config: config dict with local file_names
-    """
-    # Create a dictionary for all places  where we may want to get raw files
-    file_dir = {'zaru_subjects': {'reilly': '/home/reilly/ExternalServers/ZARU/Subjects',
-                                 'izzie': '/home/servers/zaru'},
-                'dri_shared_projects': {'reilly': '/home/reilly/ExternalServers/DRI',
-                                        'christina': '/Volumes/Shared Projects'}
-                }
-    # Now go through the keys in config file and replace other people's file_directories with my own
-    for key, value in config['file_names'].items():
-        # Now loop over the file directories within file_dir
-        for directory in list(file_dir.keys()):
-            # Now loop over users in each file directory
-            for user in list(file_dir[directory].keys()):
-                # Now replace any directories with reilly's
-                if type(config['file_names'][key]) == str:
-                    config['file_names'][key] = \
-                        config['file_names'][key].replace(file_dir[directory][user], file_dir[directory]['reilly'])
-
-    # TODO: Write this in a different way where it takes in the config path and makes a new config file
-
-    return config
 
