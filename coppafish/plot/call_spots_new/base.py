@@ -158,21 +158,9 @@ class GESpotViewer():
         self.spots = spots / color_norm
         # order spots by nb.ref_spots.score in descending order
         self.spots = self.spots[np.argsort(nb.ref_spots.score[self.spots_use])[::-1], :]
-        # We also want to plot the expected spots for the given gene. To do this, we need to build an expected spot
-        # profile
-        n_channels = len(nb.basic_info.use_channels)
-        self.spots_expected = np.zeros((self.nb.basic_info.n_rounds, n_channels))
-        for r in self.nb.basic_info.use_rounds:
-            # For each round, we will look at all spots in this round with the same dye as the gene of interest
-            matching_genes = [g for g in np.arange(self.nb.call_spots.gene_names.shape[0])
-                              if self.nb.call_spots.gene_codes[g, r] == self.nb.call_spots.gene_codes[gene_index, r]]
-            # Now look at all spots with a gene no in matching_genes
-            use_spots = np.where(np.isin(self.nb.ref_spots.gene_no, matching_genes))[0]
-            # We will then add the mean spot profile for this gene to the expected spot profile
-            color_norm = nb.call_spots.color_norm_factor[r, nb.basic_info.use_channels]
-            matched_colours_normed = self.nb.ref_spots.colors[use_spots][:, r, nb.basic_info.use_channels] / color_norm
-            self.spots_expected[r, :] = np.mean(matched_colours_normed, axis=0)
-        # Flatten spots_expected to 1D and then repeat spots.shape[0] times along axis 0
+        # We need to find the expected spot profile for each round/channel. This is just the bled code
+        # for the given gene in the given round/channel
+        self.spots_expected = nb.call_spots.bled_codes[self.gene_index, :, nb.basic_info.use_channels]
         self.spots_expected = np.repeat(self.spots_expected.reshape((1, -1)), self.spots.shape[0], axis=0)
 
     def plot_ge_cmap(self):
@@ -429,8 +417,9 @@ class BGNormViewer():
         initial_bleed_matrix = nb.call_spots.initial_bleed_matrix.copy()[:, nb.basic_info.use_channels]
         spot_colours_subtracted, background_noise = remove_background(spot_colour_raw.copy())
         # Now let's get the norm factor from all spots in rounds 2:6
-        norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_subtracted.copy()[:, 2:],
-                                                   initial_bleed_matrix=initial_bleed_matrix)
+        # norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_subtracted.copy()[:, 2:],
+        #                                            initial_bleed_matrix=initial_bleed_matrix)
+        norm_factor = nb.call_spots.color_norm_factor.copy()
         # Now get gamma norm factor
         # log_intensity = np.zeros((norm_factor.shape[0], norm_factor.shape[1], 0)).tolist()
         # median_log_intensity = np.zeros((norm_factor.shape[0], norm_factor.shape[1]))
@@ -450,8 +439,8 @@ class BGNormViewer():
 
         # Norm factor is now a 5 x 7 array so will get an error when we try to divide by it. Let's take the median
         # across the rounds dimension
-        norm_factor = np.median(norm_factor, axis=0)
-        spot_colours_normed = spot_colours_subtracted / norm_factor[None, None, :]
+        # norm_factor = np.median(norm_factor, axis=0)
+        spot_colours_normed = spot_colours_subtracted / norm_factor[None, :, nb.basic_info.use_channels]
         n_spots, n_rounds, n_channels_use = spot_colour_raw.shape
         spot_colour_raw = spot_colour_raw.swapaxes(1, 2)
         spot_colours_subtracted = spot_colours_subtracted.swapaxes(1, 2)
@@ -524,8 +513,7 @@ class BGNormViewer():
 class ViewBleedCalc:
     def __init__(self, nb: Notebook):
         self.nb = nb
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
-        color_norm = np.repeat(color_norm[np.newaxis, :, :], np.sum(nb.ref_spots.isolated), axis=0)
+        color_norm = nb.call_spots.color_norm_factor[nb.basic_info.use_channels]
         # We're going to remove background from spots, so need to expand the background strength variable from
         # n_spots x n_channels to n_spots x n_rounds x n_channels by repeating the values for each round
         background_strength = np.repeat(nb.ref_spots.background_strength[nb.ref_spots.isolated, np.newaxis, :],
@@ -534,7 +522,7 @@ class ViewBleedCalc:
                               background_strength
         self.isolated_spots = self.isolated_spots / color_norm
         # Get current working directory and load default bleed matrix
-        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy'))[nb.basic_info.use_channels]
+        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy'))
         # Swap columns 2 and 3 in default bleed and dye names
         self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
         self.dye_names = self.nb.basic_info.dye_names

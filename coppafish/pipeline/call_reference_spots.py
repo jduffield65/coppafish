@@ -74,11 +74,14 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # 1. Remove background from spots and normalise channels and rounds
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
-    # colour_norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
-    #                                                   initial_bleed_matrix=initial_bleed_matrix)
-    colour_norm_factor = np.load('/Users/reillytilbury/Documents/GitHub/coppafish/coppafish/setup/default_norm.npy')
-
+    initial_norm_factor = np.load('/Users/reillytilbury/Documents/GitHub/coppafish/coppafish/setup/default_norm.npy')
+    spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
+    colour_norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
+                                                      initial_bleed_matrix=initial_bleed_matrix)
+    # First remove round 0 and 1 from norm factor as these have issues with anchor staining
+    colour_norm_factor = np.median(colour_norm_factor[2:], axis=0)
     spot_colours = spot_colours_background_removed / colour_norm_factor
+    colour_norm_factor = colour_norm_factor * initial_norm_factor
 
     # 2. Bleed matrix calculation and bled codes
     bleed_matrix, all_dye_score = compute_bleed_matrix(initial_bleed_matrix=initial_bleed_matrix,

@@ -208,12 +208,12 @@ def normalise_rc(spot_colours: np.ndarray, initial_bleed_matrix: np.ndarray) -> 
                 spot_brightness[r][channel].append(top_score)
 
     # Now we want to find the median intensity for each round and channel.
-    median_brightness = np.zeros((spot_colours.shape[1], spot_colours.shape[2]))
-    for r in range(median_brightness.shape[0]):
-        for c in range(median_brightness.shape[1]):
-            median_brightness[r][c] = np.median(spot_brightness[r][c])
+    norm_factor = np.zeros((spot_colours.shape[1], spot_colours.shape[2]))
+    for r in range(norm_factor.shape[0]):
+        for c in range(norm_factor.shape[1]):
+            norm_factor[r][c] = np.percentile(spot_brightness[r][c], 99)
 
-    return median_brightness, spot_brightness
+    return norm_factor, spot_brightness
 
 
 def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
