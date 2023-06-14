@@ -53,8 +53,9 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float, forma
     # Old datastes: sort by y in descending order, breaking ties by x in descending order
     # New datasets: sort by y in ascending order, breaking ties by x in descending order
     if format == 'new':
-        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()[::-1]]
+        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
         tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
+        tilepos_yx_npy = tilepos_yx_npy[::-1]
     elif format == 'old':
         tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
         tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
