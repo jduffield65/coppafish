@@ -285,7 +285,6 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
         # get current working directory
         bleed_matrix_path = os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')
         default_bleed_matrix = np.load(bleed_matrix_path)
-        default_bleed_matrix = default_bleed_matrix[nb.basic_info.use_channels]
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
                                                   initial_bleed_matrix=default_bleed_matrix,
                                                   transform=nb.register.transform,

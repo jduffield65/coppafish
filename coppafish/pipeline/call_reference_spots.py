@@ -74,7 +74,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # 1. Remove background from spots and normalise channels and rounds
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
-    initial_norm_factor = np.load('/Users/reillytilbury/Documents/GitHub/coppafish/coppafish/setup/default_norm.npy')
+    initial_norm_factor = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_norm.npy'))
     spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
     colour_norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
                                                       initial_bleed_matrix=initial_bleed_matrix)
@@ -131,11 +131,11 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
     # TODO: Remove this in future versions
-    # rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
-    # pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-    #                                int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
-    #                                return_in_bounds=True)[0]
-    # pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
-    nbp.abs_intensity_percentile = np.random.rand(100)
+    rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
+                                   int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
+                                   return_in_bounds=True)[0]
+    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, (0, 100))
 
     return nbp, nbp_ref_spots

@@ -513,7 +513,7 @@ class BGNormViewer():
 class ViewBleedCalc:
     def __init__(self, nb: Notebook):
         self.nb = nb
-        color_norm = nb.call_spots.color_norm_factor[nb.basic_info.use_channels]
+        color_norm = nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
         # We're going to remove background from spots, so need to expand the background strength variable from
         # n_spots x n_channels to n_spots x n_rounds x n_channels by repeating the values for each round
         background_strength = np.repeat(nb.ref_spots.background_strength[nb.ref_spots.isolated, np.newaxis, :],

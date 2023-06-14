@@ -101,8 +101,7 @@ _options = {
             'n_clip_warn': 'int',
             'n_clip_error': 'maybe_int',
             'n_clip_error_images_thresh': 'int',
-            'num_rotations': 'int',
-            'npy_index_format': 'str'
+            'num_rotations': 'int'
         },
     'find_spots':
         {
@@ -122,10 +121,10 @@ _options = {
         {
             'expected_overlap': 'number',
             'auto_n_shifts': 'list_int',
-            'shift_south_min': 'maybe_list_int',
-            'shift_south_max': 'maybe_list_int',
-            'shift_west_min': 'maybe_list_int',
-            'shift_west_max': 'maybe_list_int',
+            'shift_north_min': 'maybe_list_int',
+            'shift_north_max': 'maybe_list_int',
+            'shift_east_min': 'maybe_list_int',
+            'shift_east_max': 'maybe_list_int',
             'shift_step': 'list_int',
             'shift_widen': 'list_int',
             'shift_max_range': 'list_int',

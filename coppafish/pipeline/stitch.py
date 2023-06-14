@@ -28,8 +28,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
             global coordinates.
     """
     nbp_debug = NotebookPage("stitch")
-    # NOTE that directions should actually be 'north' and 'east'
-    directions = ['south', 'west']
+    directions = ['north', 'east']
     coords = ['y', 'x', 'z']
     shifts = get_shifts_to_search(config, nbp_basic, nbp_debug)
 
@@ -39,7 +38,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
         config['shift_max_range'][2] = 0
 
     # initialise variables to store shift info
-    shift_info = {'south': {}, 'west': {}}
+    shift_info = {'north': {}, 'east': {}}
     for j in directions:
         shift_info[j]['pairs'] = np.zeros((0, 2), dtype=int)
         shift_info[j]['shifts'] = np.zeros((0, 3), dtype=int)
@@ -49,16 +48,16 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
     # find shifts between overlapping tiles
     c = nbp_basic.anchor_channel
     r = nbp_basic.anchor_round
-    t_neighb = {'south': [], 'west': []}
+    t_neighb = {'north': [], 'east': []}
     # to convert z coordinate units to xy pixels when calculating distance to nearest neighbours
     z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
     with tqdm(total=2 * len(nbp_basic.use_tiles)) as pbar:
         pbar.set_description(f"Finding overlap between tiles in round {r} (ref_round)")
         for t in nbp_basic.use_tiles:
-            # align to south neighbour followed by west neighbour
-            t_neighb['south'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [1, 0],
+            # align to north neighbour followed by east neighbour
+            t_neighb['north'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [1, 0],
                                                 axis=1) == 2)[0]
-            t_neighb['west'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [0, 1],
+            t_neighb['east'] = np.where(np.sum(nbp_basic.tilepos_yx == nbp_basic.tilepos_yx[t, :] + [0, 1],
                                                axis=1) == 2)[0]
             for j in directions:
                 pbar.set_postfix({'tile': t, 'direction': j})
@@ -121,13 +120,17 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
 
+    # We want to slightly change our parametrisation. As top tiles have lower y values, we need to flip the y shifts.
+    shift_info['north']['shifts'][:, 0] = -shift_info['north']['shifts'][:, 0]
+    shift_info['east']['shifts'][:, 0] = -shift_info['east']['shifts'][:, 0]
+
     # get tile origins in global coordinates.
     # global coordinates are built about central tile so found this first
     tile_dist_to_centre = np.linalg.norm(nbp_basic.tilepos_yx[nbp_basic.use_tiles] -
                                          np.mean(nbp_basic.tilepos_yx, axis=0), axis=1)
     centre_tile = nbp_basic.use_tiles[tile_dist_to_centre.argmin()]
-    tile_origin = get_tile_origin(shift_info['south']['pairs'], shift_info['south']['shifts'],
-                                  shift_info['west']['pairs'], shift_info['west']['shifts'],
+    tile_origin = get_tile_origin(shift_info['north']['pairs'], shift_info['north']['shifts'],
+                                  shift_info['east']['pairs'], shift_info['east']['shifts'],
                                   nbp_basic.n_tiles, centre_tile)
     if nbp_basic.is_3d is False:
         tile_origin[:, 2] = 0  # set z coordinate to 0 for all tiles if 2d
