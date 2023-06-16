@@ -261,9 +261,10 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
     return gene_efficiency
 
 
-def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, bled_codes: np.ndarray,
-                            gene_no: np.ndarray, gene_score: np.ndarray, gene_codes: np.ndarray,
-                            spot_number_threshold: int = 25, score_threshold: float = 0.7) \
+def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, gene_no: np.ndarray,
+                            gene_score: np.ndarray, gene_codes: np.ndarray, intensity: np.ndarray,
+                            spot_number_threshold: int = 25, score_threshold: float = 0.7,
+                            intensity_threshold: float = 0) \
         -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute gene efficiency and gene coefficients from spot colours and bleed matrix.
@@ -271,17 +272,19 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, 
     Args:
         spot_colours: `float [n_spots x n_rounds x n_channels]`.
             Spot colours normalised to equalise intensities between channels (and rounds). (BG Removed)
-        bleed_matrix: `float [n_rounds x n_channels x n_dyes]`.
-            Bleed matrix
         bled_codes: `float [n_genes x n_rounds x n_channels]`.
         gene_no: `int [n_spots]`. Gene number for each spot.
         gene_score: `float [n_spots]`. Score for each spot.
         gene_codes: `int [n_genes x n_rounds]`.
             Gene codes for each gene.
+        intensity: `float [n_spots]`.
+            Intensity of each spot.
         spot_number_threshold: `int`.
             Minimum number of spots required to compute gene efficiency.
         score_threshold: `float`.
             Minimum score required to compute gene efficiency.
+        intensity_threshold: `float`.
+            Minimum intensity required to compute gene efficiency.
     """
     n_spots, n_rounds, n_channels = spot_colours.shape
     n_genes = gene_codes.shape[0]
@@ -290,7 +293,7 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bleed_matrix: np.ndarray, 
 
     # Compute gene efficiency for each gene and round.
     for g in range(n_genes):
-        gene_g_mask = (gene_no == g) * (gene_score > score_threshold)
+        gene_g_mask = (gene_no == g) * (gene_score > score_threshold) * (intensity > intensity_threshold)
         # Skip gene if not enough spots.
         if np.sum(gene_g_mask) < spot_number_threshold:
             continue

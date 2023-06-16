@@ -66,7 +66,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     with tqdm(total=len(uncompleted_tiles)) as pbar:
         pbar.set_description(f"Running initial channel registration on all tiles")
         for t in uncompleted_tiles:
-            registration_data = channel_registration(nbp_file, nbp_basic, config, registration_data, t, pbar)
+            registration_data = channel_registration(nbp_file, nbp_basic, registration_data, t, pbar)
 
     # Part 2: Regularisation
     registration_data = regularise_transforms(registration_data=registration_data,

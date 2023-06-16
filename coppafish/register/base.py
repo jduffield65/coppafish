@@ -320,14 +320,13 @@ def dapi_reg(im_dir: str, im_rounds: list, anchor_round: int, tiles: list) -> di
         registration_data = custom_svr(im_dir, im_rounds, anchor_round, t, registration_data)
 
 
-def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
+def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, registration_data: dict,
                            t: int, pbar) -> dict:
     """
     Function to carry out subvolume registration on a single tile.
     Args:
         nbp_file: File Names notebook page
         nbp_basic: Basic info notebook page
-        config: Register page of the config dictionary
         registration_data: dictionary with registration data
         t: tile
         pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
@@ -353,33 +352,12 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config
     # adjusted_anchor = adjusted_anchor[z_mid - 16:z_mid + 16, y_mid - 250:y_mid + 250, x_mid - 250:x_mid + 250]
     # Now we will loop through channels of this round. We will initially apply the prior channel transform to each
     # channel and then find the shift between the adjusted anchor and adjusted channel.
-    prior_channel_transform = np.load(os.path.join(os.getcwd(), 'coppafish/setup/', 'prior_channel_transform.npy'))
+
+    prior_channel_transform = np.repeat(np.eye(3)[np.newaxis, :, :], nbp_basic.n_channels, axis=0)
 
     for c in nbp_basic.use_channels:
         # Set progress bar title
         pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(c))
-
-        # Load in imaging npy volume.
-        # target_image = yxz_to_zyx(sobel(load_tile(nbp_file, nbp_basic, t, best_round, c)))
-        # target_image = target_image[z_mid - 16:z_mid + 16, y_mid - 250:y_mid + 250, x_mid - 250:x_mid + 250]
-
-        # save a small subset for reg diagnostics
-        # save_compressed_image(nbp_file, target_image, t, best_round, c)
-
-        # Apply the prior channel transform to the target image. This will undo the chromatic aberration, so that
-        # the channel shift is only due to the registration
-        # target_image = affine_transform(target_image, prior_channel_transform[c])
-
-        # Find the shift between the adjusted anchor and the adjusted target
-        # shift, _, _ = phase_cross_correlation(reference_image=target_image, moving_image=adjusted_anchor,
-        #                                       upsample_factor=10)
-
-        # Now use our custom_shift function to manually shift the adjusted anchor and compute the correlation
-        # adjusted_anchor_shifted = custom_shift(adjusted_anchor, shift.astype(int))
-        # mask = adjusted_anchor_shifted != 0
-        # corr = np.corrcoef(adjusted_anchor_shifted[mask], target_image[mask])[0, 1]
-        # if corr < config['r_threshold']:
-        #     shift = np.array([0, 0, 0])
         shift = np.array([0, 0, 0])
         # Append these arrays to the channel_shift, channel_shift_corr, channel_transform and position storage
         registration_data['channel_registration']['reference_round'][t] = 10

@@ -76,8 +76,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
     initial_norm_factor = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_norm.npy'))
     spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
-    colour_norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
-                                                      initial_bleed_matrix=initial_bleed_matrix)
+    colour_norm_factor, spot_brightness = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
+                                                       initial_bleed_matrix=initial_bleed_matrix)
     # First remove round 0 and 1 from norm factor as these have issues with anchor staining
     colour_norm_factor = np.median(colour_norm_factor[2:], axis=0)
     spot_colours = spot_colours_background_removed / colour_norm_factor
@@ -92,17 +92,17 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     ge_initial = np.ones((n_genes, n_rounds))
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=ge_initial)
     gene_no, gene_score, gene_score_second = compute_gene_scores(spot_colours=spot_colours, bled_codes=bled_codes)
+    intensity = get_spot_intensity(spot_colors=spot_colours)
 
     # 3. Gene efficiency calculation.
     # GE calculation is done iteratively in a similar way to scaled k-means clustering. We start with our initial
     # score distribution and bled codes and then these 2 parameters are iteratively updated until convergence.
-    # for i in tqdm(range(config['n_iter'])):
-    for i in range(2):
+    for i in tqdm(range(config['n_iter'])):
         print(np.median(gene_score))
         # 3.1 Calculate gene efficiency
-        gene_efficiency, use_ge = compute_gene_efficiency(spot_colours=spot_colours, bleed_matrix=bleed_matrix,
-                                                          bled_codes=bled_codes, gene_no=gene_no, gene_score=gene_score,
-                                                          gene_codes=gene_codes)
+        gene_efficiency, use_ge = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
+                                                          gene_no=gene_no, gene_score=gene_score,
+                                                          gene_codes=gene_codes, intensity=intensity)
         # 3.2 Update bled codes
         bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 

@@ -8,6 +8,7 @@ from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Rectangle
 from ...setup import Notebook
 from ...spot_colors.base import normalise_rc, remove_background
+from ...call_spots.bleed_matrix import compute_bleed_matrix
 from ..call_spots.spot_colors import view_spot
 plt.style.use('dark_background')
 
@@ -135,7 +136,6 @@ class GESpotViewer():
         self.mode = 'C'
         # Load spots
         self.load_spots(gene_index)
-
         # Now initialise the plot, adding fig and ax attributes to the class
         self.plot()
 
@@ -144,10 +144,10 @@ class GESpotViewer():
     def load_spots(self, gene_index: int):
         nb = self.nb
         # First we need to find the spots used to calculate the gene efficiency for the given gene.
-        self.spots_use = nb.call_spots.use_ge * (nb.ref_spots.gene_no == gene_index)
-        spots = nb.ref_spots.colors[self.spots_use][:, :, nb.basic_info.use_channels]
+        self.gene_g_mask = nb.call_spots.use_ge * (nb.ref_spots.gene_no == gene_index)
+        spots = nb.ref_spots.colors[self.gene_g_mask][:, :, nb.basic_info.use_channels]
         # remove background codes. To do this, repeat background_strenth along a new axis for rounds
-        background_strength = nb.ref_spots.background_strength[self.spots_use]
+        background_strength = nb.ref_spots.background_strength[self.gene_g_mask]
         background_strength = np.repeat(background_strength[:, np.newaxis, :], spots.shape[1], axis=1)
         # remove background from spots
         spots = spots - background_strength
@@ -157,10 +157,9 @@ class GESpotViewer():
                                spots.shape[0], axis=0)
         self.spots = spots / color_norm
         # order spots by nb.ref_spots.score in descending order
-        self.spots = self.spots[np.argsort(nb.ref_spots.score[self.spots_use])[::-1], :]
-        # We need to find the expected spot profile for each round/channel. This is just the bled code
-        # for the given gene in the given round/channel
-        self.spots_expected = nb.call_spots.bled_codes[self.gene_index, :, nb.basic_info.use_channels]
+        self.spots = self.spots[np.argsort(nb.ref_spots.score[self.gene_g_mask])[::-1], :]
+        # We need to find the expected spot profile for each round/channel
+        self.spots_expected = nb.call_spots.bled_codes[self.gene_index, :, nb.basic_info.use_channels].T
         self.spots_expected = np.repeat(self.spots_expected.reshape((1, -1)), self.spots.shape[0], axis=0)
 
     def plot_ge_cmap(self):
@@ -187,7 +186,6 @@ class GESpotViewer():
         for j in range(2):
             for i in range(self.nb.basic_info.n_rounds):
                 self.ax[j].axvline(i * len(self.nb.basic_info.use_channels) - 0.5, color='r')
-
 
         # Set supertitle, colorbar and show plot
         self.fig.suptitle(
@@ -226,11 +224,19 @@ class GESpotViewer():
         gene_code = nb.call_spots.gene_codes[self.gene_index]
         dye_names = nb.basic_info.dye_names
         # Swap all 2s and 3s in gene_code and swap 2 and 3 in dye names
-        gene_code[gene_code == 2] = 10
+        gene_code[gene_code == 2] = -1
         gene_code[gene_code == 3] = 2
         gene_code[gene_code == 10] = 3
         dye_names[2], dye_names[3] = dye_names[3], dye_names[2]
         n_channels = len(nb.basic_info.use_channels)
+        colour_vector = nb.ref_spots.colors[:, :, nb.basic_info.use_channels][nb.ref_spots.isolated]
+        colour_vector = colour_vector / nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
+        colour_vector = colour_vector.reshape((colour_vector.shape[0] * nb.basic_info.n_rounds, n_channels))
+        dye = np.argmax(colour_vector, axis=1)
+
+        dye_brightness = []
+        for i in range(len(dye_names)):
+            dye_brightness.append(colour_vector[dye == i, i])
 
         if not hasattr(self, 'fig'):
             # Create figure and axis
@@ -243,19 +249,14 @@ class GESpotViewer():
         fig, ax = self.fig, self.ax
         # Loop through each round and plot the histogram of spot colours
         for r in range(self.nb.basic_info.n_rounds):
-            matching_genes = [g for g in np.arange(nb.call_spots.gene_names.shape[0])
-                              if nb.call_spots.gene_codes[g, r] == nb.call_spots.gene_codes[self.gene_index, r]]
-            # Now look at all spots with a gene no in matching_genes
-            use_spots = np.where(np.isin(self.nb.ref_spots.gene_no, matching_genes))[0]
-            color_norm = nb.call_spots.color_norm_factor[r, nb.basic_info.use_channels[gene_code[r]]]
-            rc_spot_intensity = self.nb.ref_spots.colors[use_spots][:, r, nb.basic_info.use_channels[gene_code[r]]] / color_norm
-            gene_g_spot_intensity = self.spots[:, r * n_channels + gene_code[r]]
+            gene_g_spot_brightness = self.spots[:, r * n_channels + gene_code[r]]
+            all_spot_brightness = dye_brightness[gene_code[r]]
             # Take max intensity as 90th percentile of rc_spot_intensity
-            max_intensity = np.percentile(rc_spot_intensity, percentile)
+            max_brightness = np.percentile(all_spot_brightness, percentile)
             # Now plot both spot intensities on the same histogram
-            ax[r].hist(rc_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
+            ax[r].hist(all_spot_brightness, bins=np.linspace(0, max_brightness, 20), alpha=0.5, density=True,
                        label='All genes')
-            ax[r].hist(gene_g_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
+            ax[r].hist(gene_g_spot_brightness, bins=np.linspace(0, max_brightness, 20), alpha=0.5, density=True,
                        label='Gene ' + nb.call_spots.gene_names[self.gene_index])
 
             # Add a box in the top right of the plot with the Gene Efficiency
@@ -266,8 +267,8 @@ class GESpotViewer():
             # We'd like to add two vertical lines at the median of both histograms. The first in blue (for
             # rc_spot_intensity) and the second in orange (for gene_g_spot_intensity).
             # First we need to calculate the median of both histograms
-            rc_median = np.median(rc_spot_intensity)
-            gene_median = np.median(gene_g_spot_intensity)
+            rc_median = np.median(all_spot_brightness)
+            gene_median = np.median(gene_g_spot_brightness)
             # Now plot the vertical lines
             ax[r].axvline(rc_median, color='blue', linestyle='--', label='Median = ' + str(np.round(rc_median, 2)))
             ax[r].axvline(gene_median, color='orange', linestyle='--',
@@ -328,7 +329,7 @@ class GESpotViewer():
     def add_cmap_widgets(self):
         # Initialise buttons and cursors
         # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
-        spot_id = np.where(self.spots_use)[0]
+        spot_id = np.where(self.gene_g_mask)[0]
         mplcursors.cursor(self.ax[0], hover=False).connect(
             "add", lambda sel: view_spot(self.nb, spot_id[sel.target.index[0]]))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
@@ -414,29 +415,8 @@ class BGNormViewer():
     def __init__(self, nb):
         self.nb = nb
         spot_colour_raw = nb.ref_spots.colors.copy()[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels]
-        initial_bleed_matrix = nb.call_spots.initial_bleed_matrix.copy()[:, nb.basic_info.use_channels]
         spot_colours_subtracted, background_noise = remove_background(spot_colour_raw.copy())
-        # Now let's get the norm factor from all spots in rounds 2:6
-        # norm_factor, spot_intensity = normalise_rc(spot_colours=spot_colours_subtracted.copy()[:, 2:],
-        #                                            initial_bleed_matrix=initial_bleed_matrix)
         norm_factor = nb.call_spots.color_norm_factor.copy()
-        # Now get gamma norm factor
-        # log_intensity = np.zeros((norm_factor.shape[0], norm_factor.shape[1], 0)).tolist()
-        # median_log_intensity = np.zeros((norm_factor.shape[0], norm_factor.shape[1]))
-        # for r in range(norm_factor.shape[0]):
-        #     for c in range(len(nb.basic_info.use_channels)):
-        #         intensity = np.array(spot_intensity[r][c])
-        #         intensity = intensity[intensity > 0]
-        #         log_intensity[r][c] = np.log(spot_intensity)
-        #         median_log_intensity[r, c] = np.median(log_intensity[r][c])
-
-        # Gamma norm factor is the quotient of medians of log intensities to the reference channel (the final channel)
-        # gamma_norm_factor = np.zeros(len(nb.basic_info.use_channels))
-        # spot_colours_gamma_normed = np.zeros_like(spot_colours_subtracted)
-        # for c in range(len(nb.basic_info.use_channels)):
-        #     gamma_norm_factor[c] = np.median(median_log_intensity[:, c]) / np.median(median_log_intensity[:, -1])
-        #     spot_colours_gamma_normed[:, :, c] = spot_colours_subtracted[:, :, c] ** gamma_norm_factor[c]
-
         # Norm factor is now a 5 x 7 array so will get an error when we try to divide by it. Let's take the median
         # across the rounds dimension
         # norm_factor = np.median(norm_factor, axis=0)
@@ -505,8 +485,6 @@ class BGNormViewer():
         # self.slider = Slider(self.ax_slider, 'Interpolation Coefficient', 0, 1, valinit=0, orientation='vertical')
         # self.slider.on_changed(lambda val: self.update_hist(int(val)))
     #
-
-
     # TODO: Add 2 buttons, one for separating normalisation by channel and one for separating by round and channel
 
 
