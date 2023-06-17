@@ -306,43 +306,6 @@
       "and old score recorded as `east_outlier_score[i]`. Will be zero if this did not happen."]
   },
 
-  "register_initial":
-  {
-    "DESCRIPTION": ["*register_initial* page contains information about how shift between ref round/channel",
-      "to each imaging round for each tile was found. These are then used as the starting point",
-      "for determining the affine transforms. Only `shift` is used in later stages of the pipeline.","",
-      "Page added to *Notebook* in *pipeline/register_initial.py*"],
-
-    "shift": ["Numpy integer array [n_tiles x n_rounds x n_channels x 3]",
-      "`shift[t, r, c, :]` is the $yxz$ shift found that is applied to tile $t$, `ref_round` to take it to tile $t$, round $r$.",
-      "","Units: `[yx_pixels, yx_pixels, z_pixels]`, `[:, :, 2] = 0` if *2D*."],
-    "cam_shift": ["Numpy integer array [n_tiles x n_rounds x n_channels x 3]",
-      "`cam_shift[t, r, c, :]` is the $yxz$ shift found that is applied to cam[c] to take it to cam[c_ref].",
-      "","Units: `[yx_pixels, yx_pixels, z_pixels]`, `[:, :, 2] = 0` if *2D*."],
-    "shift_channel": ["Integer",
-      "Channel used to find find shifts between rounds to use as starting point for point cloud registration.",
-      "Typically this is `ref_channel` or a channel with lots of spots."],
-    "start_shift_search": ["Numpy integer array [n_rounds x 3 x 3]",
-      "`[r, :, :]` is the initial search range used to find shift from reference round to round $r$ for all tiles","",
-      "`[r, i, :]` is the `[min, max, step]` of the search in direction $i$ (0 is $y$, 1 is $x$, 2 is $z$).","",
-      "`[r, 2,:]` is in units of z-pixels and is 0 if *2D*."],
-    "final_shift_search": ["Numpy integer array [n_rounds x 3 x 3]",
-      "`[r, :, :]` is the final search range used to find shift from reference round to round $r$ for all tiles","",
-      "`[r, i, :]` is the `[min, max, step]` of the search in direction $i$ (0 is $y$, 1 is $x$, 2 is $z$).","",
-      "`[r, 2,:]` is in units of z-pixels and is 0 if *2D*."],
-    "shift_score": ["Numpy float array [n_tiles x n_rounds]",
-      "`shift_score[t, r]` is is approximately the number of matches found for `shift[t,r]`"],
-    "shift_score_thresh": ["Numpy float array [n_tiles x n_rounds]",
-      "If `shift_score[t, r]` is below `shift_score_thresh[t, r]`, it indicates `shift[t,r]` may be incorrect."],
-    "shift_outlier": ["Numpy integer array [n_tiles x n_rounds x 3]",
-      "If `shift_score[t, r]` was below `shift_score_thresh[t, r]`, `shift[t, r]` was found again",
-      "and old shift recorded as `shift_outlier[t, r]`. Will be zero if this did not happen."],
-    "shift_score_outlier": ["Numpy float array [n_tiles x n_rounds]",
-      "If `shift_score[t, r]` was below `shift_score_thresh[t, r]`, `shift[t, r]` was found again",
-      "and old score recorded as `shift_score_outlier[t, r]`. Will be zero if this did not happen."],
-    "z_expansion_factor": ["Numpy float array [n_rounds]", "Initial z_scaling per round. z_expansion_factor[r] is the",
-      "factor we need to multiply the anchor point cloud z coords by to achieve the same scale as round r"]
-  },
 
   "register":
   {
@@ -462,6 +425,7 @@
       "which exceed `score`, `score_diff` and `intensity` thresholds given in config file.",
       "For all $g$, there is an `av_round[g]` such that `gene_efficiency[g, av_round[g]] = 1`.",
       "`nan` if $r$ outside `use_rounds` and 1 if `gene_codes[g,r]` outside `use_dyes`."],
+    "gene_efficiency_intensity_thresh": ["float"],
     "use_ge": ["Bool [n_spots] Mask for all spots used in gene efficiency calculation."]
   },
 
