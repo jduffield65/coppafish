@@ -6,7 +6,7 @@ import warnings
 from ..setup.notebook import NotebookPage
 
 
-def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray) -> NotebookPage:
+def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no: np.ndarray) -> NotebookPage:
     """
     This gets the origin of each tile such that a global coordinate system can be built.
 
@@ -16,9 +16,9 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
     Args:
         config: Dictionary obtained from `'stitch'` section of config file.
         nbp_basic: `basic_info` notebook page
-        spot_details: `int [n_spots x 4]`.
+        local_yxz: `int [n_spots x 3]`.
             `spot_details[s]` is `[y, x, z]` of spot `s`.
-            This is saved in the find_spots notebook page i.e. `nb.find_spots.spot_details`.
+            This is saved in the find_spots notebook page i.e. `nb.find_spots.local_yxz`.
         spot_no: 'int[n_tiles x n_rounds x n_channels]'
             'spot_no[t,r,c]' is num_spots found on that [t,r,c]
             This is saved on find_spots notebook page
@@ -62,8 +62,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
             for j in directions:
                 pbar.set_postfix({'tile': t, 'direction': j})
                 if t_neighb[j] in nbp_basic.use_tiles:
-                    shift, score, score_thresh = compute_shift(spot_yxz(spot_details, t, r, c, spot_no),
-                                                               spot_yxz(spot_details, t_neighb[j][0], r, c, spot_no),
+                    shift, score, score_thresh = compute_shift(spot_yxz(local_yxz, t, r, c, spot_no),
+                                                               spot_yxz(local_yxz, t_neighb[j][0], r, c, spot_no),
                                                                config['shift_score_thresh'],
                                                                config['shift_score_thresh_multiplier'],
                                                                config['shift_score_thresh_min_dist'],
@@ -113,8 +113,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot
             # Don't allow any widening so shift found must be in this range.
             # score_thresh given is 0, so it is not re-computed.
             shift_info[j]['shifts'][i], shift_info[j]['score'][i] = \
-                compute_shift(spot_yxz(spot_details, t, r, c, spot_no),
-                              spot_yxz(spot_details, t_neighb, r, c, spot_no), 0, None, None,
+                compute_shift(spot_yxz(local_yxz, t, r, c, spot_no),
+                              spot_yxz(local_yxz, t_neighb, r, c, spot_no), 0, None, None,
                               None, config['neighb_dist_thresh'], shifts[j]['y'], shifts[j]['x'], shifts[j]['z'],
                               None, None, z_scale, config['nz_collapse'], config['shift_step'][2])[:2]
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"

@@ -230,10 +230,10 @@ def view_stitch_overlap(nb: Notebook, t: int, direction: str = 'south'):
     c = nb.basic_info.anchor_channel
     point_clouds = []
     # add global coordinates of neighbour tile as point cloud that is always present.
-    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_details, t_neighb, r, c, nb.find_spots.spot_no) +
+    point_clouds = point_clouds + [spot_yxz(nb.find_spots.spot_yxz, t_neighb, r, c, nb.find_spots.spot_no) +
                                    nb.stitch.tile_origin[t_neighb]]
 
-    local_yxz_t = spot_yxz(nb.find_spots.spot_details, t, r, c, nb.find_spots.spot_no)
+    local_yxz_t = spot_yxz(nb.find_spots.spot_yxz, t, r, c, nb.find_spots.spot_no)
     # Add point cloud for tile t assuming no overlap
     point_clouds = point_clouds + [local_yxz_t + nb.stitch.tile_origin[t_neighb] + no_overlap_shift]
     # Add point cloud assuming expected overlap
@@ -268,7 +268,7 @@ def view_stitch(nb: Notebook):
     # Create a num_ref_spots * 3 array of local coords of spot positions of the reference spots across all tiles used
     local_yxz = np.zeros((0, 3), dtype=int)
     for t in nb.basic_info.use_tiles:
-        local_yxz = np.vstack((local_yxz, spot_yxz(spot_details=nb.find_spots.spot_details,
+        local_yxz = np.vstack((local_yxz, spot_yxz(spot_details=nb.find_spots.spot_yxz,
                               spot_no=nb.find_spots.spot_no, tile=t, round=nb.basic_info.anchor_round,
                                channel=nb.basic_info.anchor_channel)))
     # Recreate tile array from spot_no matrix

@@ -103,8 +103,8 @@ def view_register_search(nb: Notebook, t: int, r: int, c: Optional[int] = None,
     z_scale = nb.basic_info.pixel_size_z / nb.basic_info.pixel_size_xy
     print(f'Finding shift between round {r_ref}, channel {c_ref} to round {r}, channel {c} for tile {t}')
     shift, shift_score, shift_score_thresh, debug_info = \
-        compute_shift(spot_yxz(nb.find_spots.spot_details, t, r_ref, c_ref, nb.find_spots.spot_no),
-                      spot_yxz(nb.find_spots.spot_details, t, r, c, nb.find_spots.spot_no),
+        compute_shift(spot_yxz(nb.find_spots.spot_yxz, t, r_ref, c_ref, nb.find_spots.spot_no),
+                      spot_yxz(nb.find_spots.spot_yxz, t, r, c, nb.find_spots.spot_no),
                       config['shift_score_thresh'], config['shift_score_thresh_multiplier'],
                       config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
                       config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],

@@ -148,7 +148,7 @@ def ols_regression(shift, position):
     return transform.T
 
 
-def huber_regression(shift, position):
+def huber_regression(shift, position, predict_shift=True):
     """
     Function to predict shift as a function of position using robust huber regressor.
     Args:
@@ -162,12 +162,23 @@ def huber_regression(shift, position):
     # We are going to get rid of the shifts where any of the values are nan for regression
     position = position[~np.isnan(shift[:, 0])]
     shift = shift[~np.isnan(shift[:, 0])]
+    new_position = position + shift
+
     # Do robust regression
-    huber_z = HuberRegressor().fit(X=position, y=shift[:, 0])
-    huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
-    huber_x = HuberRegressor().fit(X=position, y=shift[:, 2])
-    transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_), np.append(huber_y.coef_, huber_y.intercept_),
-                           np.append(huber_x.coef_, huber_x.intercept_)))
+    if predict_shift:
+        huber_z = HuberRegressor().fit(X=position, y=shift[:, 0])
+        huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
+        huber_x = HuberRegressor().fit(X=position, y=shift[:, 2])
+        transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_), np.append(huber_y.coef_, huber_y.intercept_),
+                               np.append(huber_x.coef_, huber_x.intercept_)))
+    else:
+        huber_z = HuberRegressor().fit(X=position, y=new_position[:, 0])
+        huber_y = HuberRegressor().fit(X=position, y=new_position[:, 1])
+        huber_x = HuberRegressor().fit(X=position, y=new_position[:, 2])
+        transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_),
+                               np.append(huber_y.coef_, huber_y.intercept_),
+                               np.append(huber_x.coef_, huber_x.intercept_)))
+
 
     return transform
 
@@ -224,7 +235,8 @@ def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: 
         registration_data['round_registration']['position'] = position
         registration_data['round_registration']['round_shift'][t, r] = shift
         registration_data['round_registration']['round_shift_corr'][t, r] = corr
-        registration_data['round_registration']['round_transform_raw'][t, r] = ols_regression(shift, position)
+        registration_data['round_registration']['round_transform_raw'][t, r] = huber_regression(shift, position,
+                                                                                                predict_shift=False)
         pbar.update(1)
 
     # Add tile to completed tiles
@@ -353,17 +365,18 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, regist
     # Now we will loop through channels of this round. We will initially apply the prior channel transform to each
     # channel and then find the shift between the adjusted anchor and adjusted channel.
 
-    prior_channel_transform = np.repeat(np.eye(3)[np.newaxis, :, :], nbp_basic.n_channels, axis=0)
+    prior_channel_transform = np.load('/home/reilly/PycharmProjects/coppafish/coppafish/setup/prior_channel_transform.npy')
 
-    for c in nbp_basic.use_channels:
+    use_channels = nbp_basic.use_channels
+    for c in range(len(use_channels)):
         # Set progress bar title
-        pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(c))
+        pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(use_channels[c]))
         shift = np.array([0, 0, 0])
         # Append these arrays to the channel_shift, channel_shift_corr, channel_transform and position storage
         registration_data['channel_registration']['reference_round'][t] = 10
-        registration_data['channel_registration']['channel_shift'][t, c] = shift
-        registration_data['channel_registration']['channel_shift_corr'][t, c] = 0
-        registration_data['channel_registration']['channel_transform_raw'][t, c] = \
+        registration_data['channel_registration']['channel_shift'][t, use_channels[c]] = shift
+        registration_data['channel_registration']['channel_shift_corr'][t, use_channels[c]] = 0
+        registration_data['channel_registration']['channel_transform_raw'][t, use_channels[c]] = \
             np.vstack((prior_channel_transform[c].T, shift)).T
         pbar.update(1)
 

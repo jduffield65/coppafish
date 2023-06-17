@@ -978,12 +978,12 @@ def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
     n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
 
     # Now populate all the parameters
-    spot_details = np.zeros((0, 3), dtype=int)
+    spot_yxz = np.zeros((0, 3), dtype=int)
     isolated_spots = np.zeros(0)
     spot_no = np.zeros_like((n_tiles, n_rounds + 1, n_channels), dtype=int)
     isolation_thresh = np.zeros(n_tiles)
     for i in range(len(use_tiles)):
-        spot_details = np.vstack((spot_details, nbp_find_spots_list[i].spot_details))
+        spot_yxz = np.vstack((spot_yxz, nbp_find_spots_list[i].spot_details))
         spot_no[use_tiles[i]] = nbp_find_spots_list[i].spot_no
         isolated_spots = np.append(isolated_spots, nbp_find_spots_list[i].isolated_spots)
         isolation_thresh[use_tiles[i]] = nbp_find_spots_list[i].isolation_thresh

@@ -96,13 +96,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
         with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
             pbar.set_description(f"Running ICP on all tiles")
             for t in use_tiles:
-                ref_spots_t = spot_yxz(nbp_find_spots.spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
+                ref_spots_t = spot_yxz(nbp_find_spots.spot_yxz, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
                                        nbp_find_spots.spot_no)
                 for r, c in itertools.product(use_rounds, use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
                     # Only do ICP on non-degenerate cells with more than 100 spots
                     if nbp_find_spots.spot_no[t, r, c] > 100:
-                        imaging_spots_trc = spot_yxz(nbp_find_spots.spot_details, t, r, c, nbp_find_spots.spot_no)
+                        imaging_spots_trc = spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
                         icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
                             yxz_base=ref_spots_t,
                             yxz_target=imaging_spots_trc,

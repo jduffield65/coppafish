@@ -241,8 +241,8 @@
       "is below `isolation_thresh[t]` at spot location.", "", "*Typical: 0*"],
     "spot_no": ["Numpy int32 array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
       "`spot_no[t, r, c]` is the number of spots found on tile $t$, round $r$, channel $c$"],
-    "spot_details": ["Numpy int16 array [n_total_spots x 3]",
-      "`spot_details[i,:]` is `[y, x, z]` for spot $i$",
+    "spot_yxz": ["Numpy int16 array [n_total_spots x 3]",
+      "`spot_yxz[i,:]` is `[y, x, z]` for spot $i$",
       "$y$, $x$ gives the local tile coordinates in yx-pixels. $z$ gives local tile coordinate in z-pixels (0 if *2D*)"],
     "isolated_spots": ["Boolean Array [n_anchor_spots x 1]",
       "isolated spots[s] returns a 1 if anchor spot s is isolated and 0 o/w"]

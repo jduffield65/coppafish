@@ -2,9 +2,8 @@ from .. import utils
 from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
+import itertools
 from ..setup.notebook import NotebookPage
-import os
-import warnings
 
 
 def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, auto_thresh: np.ndarray) -> NotebookPage:
@@ -43,192 +42,60 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     else:
         nbp.isolation_thresh = np.ones_like(auto_thresh[:, nbp_basic.anchor_round, nbp_basic.anchor_channel]) * \
                                   config['isolation_thresh']
+    use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
 
-    # Next we load in tiles and rounds as we may want to change these variables
-    use_tiles = nbp_basic.use_tiles
-    use_rounds = nbp_basic.use_rounds
+    # Phase 1: Load in previous results if they exist
+    spot_info = fs.load_spot_info(nbp_file, nbp_basic)
+    # Define use_indices as a [n_tiles x n_rounds x n_channels] boolean array where use_indices[t, r, c] is True if
+    # we want to use tile `t`, round `r`, channel `c` to find spots.
+    use_indices = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds, nbp_basic.n_channels),
+                           dtype=bool)
+    for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
+        use_indices[t, r, c] = True
+    for t in use_tiles:
+        use_indices[t, nbp_basic.anchor_round, nbp_basic.anchor_channel] = True
 
-    # PHASE 1: Retrieve the results run in previous iterations
-
-    # Deal with case where algorithm has been run for some tiles and data saved. Whole point of this is to get rid of
-    # tiles that we have already run find_spots on.
-    if os.path.isfile(nbp_file.spot_details_info):
-        # Load in the saved data
-        info = np.load(nbp_file.spot_details_info)
-        # Extract the spot_no array
-        spot_no = info.f.arr_1
-        if spot_no.shape[0] != nbp_basic.n_tiles:
-            warnings.warn(f'spot_no matrix should have info for {nbp_basic.n_tiles} tiles, but only has '
-                          f''f'{spot_no.shape} tiles. This may cause an index error.')
-        # Now find the previously found tiles that are relevant to us
-        prev_found_tiles = [i for i in use_tiles if np.sum(spot_no[i]) > 0]
-        # Now use_tiles os the set diff of use_tiles and prev_found_tiles
-        use_tiles = np.setdiff1d(use_tiles, prev_found_tiles)
-        # Give user a warning
-        warnings.warn(f'Already have find_spots results for tiles {prev_found_tiles} so now just running on tiles '
-                      f''f'{use_tiles}.')
-        # Delete this info as it's large and we want to save memory
-        del info, spot_no, prev_found_tiles
-
-    # PHASE 2: Begin detection on previously untouched tiles
-    # This is the number of images we're going to detect spots on in total
-    n_images = len(use_rounds) * len(use_tiles) * len(nbp_basic.use_channels)
-
-    # The use_rounds doesn't include the anchor round, so if we are going to use the anchor round, we must tell the
-    # program to include this in the rounds, and do some different analysis on this. This can't be included in the
-    # calculation of n_images above because the anchor_round has only one channel
-    if nbp_basic.use_anchor:
-        use_rounds = use_rounds + [nbp_basic.anchor_round]
-        # Since there's only one channel for this round, we get len(use_tiles) extra images
-        n_images = n_images + len(use_tiles)
-
-    # This is the number of z-planes. To make the code compatible with 2D imaging, we just say that the 2D case is
-    # the same as the 3D case but with 1 z-plane
+    uncompleted = np.logical_and(use_indices, np.logical_not(spot_info['completed']))
     n_z = np.max([1, nbp_basic.is_3d * nbp_basic.nz])
 
-    with tqdm(total=n_images) as pbar:
+    # Phase 2: Detect spots on uncompleted tiles, rounds and channels
+    with tqdm(total=np.sum(uncompleted)) as pbar:
         pbar.set_description(f"Detecting spots on filtered images saved as npy")
-        # Loop over tiles
-        for t in use_tiles:
-            # columns of spot_details are: y, x, z
-            # max value is y or x coordinate of around 2048 hence can use int16.
-            spot_details = np.empty((0, 3), dtype=np.int16)
-            # spot_no will be an n_tiles by n_rounds by n_channels matrix, anchor_spots per round are approx 30,000 so
-            # use int32.
-            # The dimension for tiles needs to be total number of tiles, not just tiles used. If we tried to
-            # remove certain tiles and this only had length len(use_tiles) for the first argument, this would throw
-            # an index error. All values should be set to 0 at the start of searching through a new tile because after
-            # completing one tile, we add this array to the previous spot_no array, so any nonzero values from previous
-            # tiles would be counted several times.
-            spot_no = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
-                                nbp_basic.n_channels), dtype=np.int32)
-
-            for r in use_rounds:
-                # Set the channels in use to only the anchor channel when we're looking at the anchor round
-                if r == nbp_basic.anchor_round:
-                    use_channels = [nbp_basic.anchor_channel]
-                else:
-                    use_channels = nbp_basic.use_channels
-
-                for c in use_channels:
-                    pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
-                    # Find local maxima on shifted uint16 images to save time avoiding conversion to int32.
-                    # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
-                    image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
-                    spot_yxz, spot_intensity = fs.detect_spots(image,
-                                                               auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
-                                                               config['radius_xy'], config['radius_z'], True)
-                    no_negative_neighbour = fs.check_neighbour_intensity(image, spot_yxz,
-                                                                         thresh=nbp_basic.tile_pixel_value_shift)
-                    spot_yxz = spot_yxz[no_negative_neighbour]
-                    spot_intensity = spot_intensity[no_negative_neighbour]
-                    # If r is a reference round, we also get info about whether the spots are isolated
-                    if r == nbp_basic.anchor_round:
-                        isolated_spots = fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
-                                                        spot_yxz, nbp.isolation_thresh[t],
-                                                        config['isolation_radius_inner'],
-                                                        config['isolation_radius_xy'],
-                                                        config['isolation_radius_z'])
-
-                    else:
-                        # if imaging round, only keep the highest intensity spots on each z plane
-                        # as only used for registration
-                        keep = np.ones(spot_yxz.shape[0], dtype=bool)
-                        # Loop over each z plane
-                        for z in range(n_z):
-                            if nbp_basic.is_3d:
-                                # in_z is a boolean array of length len(spot_yxz) which is only true if the
-                                # corresponding spot has z-coord z
-                                in_z = spot_yxz[:, 2] == z
-                            else:
-                                # in 2D this is just all spots lol
-                                in_z = np.ones(spot_yxz.shape[0], dtype=bool)
-
-                            # If the number of spots on this z-plane is > max_spots (500 by default for 3D) then we
-                            # set the intensity threshold to the 500th most intense spot and take the top 500 values
-                            if np.sum(in_z) > max_spots:
-                                intensity_thresh = np.sort(spot_intensity[in_z])[-max_spots]
-                                keep[np.logical_and(in_z, spot_intensity < intensity_thresh)] = False
-                        spot_yxz = spot_yxz[keep]
-
-                    # We are still within the channels loop. We'd like to store info about spots found on this [t,r,c]
-                    # We also need to append the spot_details (ie: the yxz coords) of the spots we have found
-                    # on this [t,r,c] to the spot_details we have found so far
-                    spot_details = np.vstack((spot_details, spot_yxz))
-                    spot_no[t, r, c] = spot_yxz.shape[0]
-                    pbar.update(1)
-
-            # PHASE 3: Save results from this tile to spot_details info
-
-            # Now that we've gotten through a complete tile we will
-            # append this tile's spot_details info to the spot_detail_info.npz we have saved in the output directory
-            if os.path.isfile(nbp_file.spot_details_info):
-                # After ran on one tile, need to load in spot_details_info, append and then save again.
-                info = np.load(nbp_file.spot_details_info)
-
-                spot_details_read = info.f.arr_0
-                spot_no_read = info.f.arr_1
-                isolated_spots_read = info.f.arr_2
-
-                # This concatenation is along the 0th axis by default
-                spot_details = np.concatenate((spot_details_read, spot_details))
-                # spot_details
-                spot_no = spot_no_read + spot_no
-                isolated_spots = np.concatenate((isolated_spots_read, isolated_spots))
-
-                np.savez(nbp_file.spot_details_info, spot_details, spot_no, isolated_spots)
-
-                # Delete all these variables to save memory
-                del info, spot_details_read, spot_no_read, isolated_spots_read, spot_details, spot_no, isolated_spots
-            # If none then need to create a file. Do that now!
+        # Loop over uncompleted tiles, rounds and channels
+        for t, r, c in np.argwhere(uncompleted):
+            pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
+            # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
+            image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
+            local_yxz, spot_intensity = fs.detect_spots(image,
+                                                       auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
+                                                       config['radius_xy'], config['radius_z'], True)
+            no_negative_neighbour = fs.check_neighbour_intensity(image, local_yxz,
+                                                                 thresh=nbp_basic.tile_pixel_value_shift)
+            local_yxz = local_yxz[no_negative_neighbour]
+            spot_intensity = spot_intensity[no_negative_neighbour]
+            # If r is a reference round, we also get info about whether the spots are isolated
+            if r == nbp_basic.anchor_round:
+                isolated_spots = fs.get_isolated(image.astype(np.int32) - nbp_basic.tile_pixel_value_shift,
+                                                 local_yxz, nbp.isolation_thresh[t],
+                                                 config['isolation_radius_inner'],
+                                                 config['isolation_radius_xy'],
+                                                 config['isolation_radius_z'])
+                spot_info['isolated'] = np.append(spot_info['isolated'], isolated_spots)
             else:
-                # 1st tile, need to create files to save to
-                np.savez(nbp_file.spot_details_info, spot_details, spot_no, isolated_spots)
-                # Delete all these variables to save memory
-                del spot_details, spot_no, isolated_spots
+                # if imaging round, only keep the highest intensity spots on each z plane
+                local_yxz = fs.filter_intense_spots(local_yxz, spot_intensity, n_z, max_spots)
 
-    # PHASE 5: Save results into notebook
-    use_tiles = nbp_basic.use_tiles
-    use_rounds = nbp_basic.use_rounds + [nbp_basic.anchor_round]
+            # Save results to spot_info
+            spot_info['spot_yxz'] = np.vstack((spot_info['spot_yxz'], local_yxz))
+            spot_info['spot_no'][t, r, c] = local_yxz.shape[0]
+            spot_info['completed'][t, r, c] = True
+            np.savez(nbp_file.spot_details_info, spot_info['spot_yxz'], spot_info['spot_no'], spot_info['isolated'],
+                     spot_info['completed'])
+            pbar.update(1)
 
-    # Once all tiles have been run, we load the complete spot_details_info file and save it to the notebook
-    info = np.load(nbp_file.spot_details_info)
-
-    spot_details = info.f.arr_0
-    spot_no = info.f.arr_1
-    isolated_spots = info.f.arr_2
-
-    # A problem arises if these arrays contain more info than just the tiles relevant to the user.
-    # This happens for example when find spots is run initially with all tiles, and now we just want a subset.
-    spot_details_new = np.zeros((0, 3), dtype=int)
-    spot_no_new = np.zeros_like(spot_no, dtype=int)
-    isolated_spots_new = np.zeros(0, dtype=bool)
-
-    # Loop over in tiles, rounds and channels and update the spot details etc
-    for t in use_tiles:
-        # spot_no is easy to update
-        spot_no_new[t] = spot_no[t]
-        # Next we need to update spot_details and isolated_spots.
-        for r in use_rounds:
-            # Need to use different set of channels and save isolated spots if on anchor round, else proceed naturally
-            if r != nbp_basic.anchor_round:
-                use_channels = nbp_basic.use_channels
-            else:
-                use_channels = [nbp_basic.anchor_channel]
-                # Load in the isolated spots
-                spot_isolated = fs.spot_isolated(isolated_spots, t, nbp_basic.anchor_round, nbp_basic.anchor_channel, spot_no)
-                isolated_spots_new = np.append(isolated_spots_new, spot_isolated)
-
-            # Finally, load in the spot coords
-            for c in use_channels:
-                # Now load in all the spot positions for this t, r, c
-                spot_yxz = fs.spot_yxz(spot_details, t, r, c, spot_no)
-                # Now append these to the new spot details
-                spot_details_new = np.vstack((spot_details_new, spot_yxz))
-
-    # Finally, save to the notebook.
-    nbp.spot_details = spot_details_new
-    nbp.spot_no = spot_no_new
-    nbp.isolated_spots = isolated_spots_new
+    # Phase 3: Save results to notebook page
+    nbp.spot_yxz = spot_info['spot_yxz']
+    nbp.spot_no = spot_info['spot_no']
+    nbp.isolated_spots = spot_info['isolated']
 
     return nbp
