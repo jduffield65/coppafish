@@ -135,7 +135,9 @@ _options = {
             'shift_score_thresh_max_dist': 'number',
             'nz_collapse': 'int',
             'n_shifts_error_fraction': 'number',
-            'save_image_zero_thresh': 'int'
+            'save_image_zero_thresh': 'int',
+            'flip_y': 'bool',
+            'flip_x': 'bool'
         },
     'register_initial':
         {

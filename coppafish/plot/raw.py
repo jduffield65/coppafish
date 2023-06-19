@@ -139,7 +139,8 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
     napari.run()
 
 
-def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False, flip_x: bool = False):
+def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False, flip_x: bool = False,
+                     tiles: Optional[Union[int, List[int]]] = None):
     """
     Args:
         nb: Notebook containing at least basic info and file names.
@@ -147,13 +148,17 @@ def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False,
         direction taking the y axis to the x axis.
         flip_y: Whether to flip the vertical order of the tiles
         flip_x: Whether to flip the horizontal order of the tiles
+        tiles: Which tiles to view. If `None`, will view use_tiles.
     """
+    if tiles is None:
+        tiles = nb.basic_info.use_tiles
+
     if nb.basic_info.dapi_channel is not None:
-        raw_images = get_raw_images(nb, tiles=list(np.arange(nb.basic_info.n_tiles)),
+        raw_images = get_raw_images(nb, tiles=tiles,
                                     rounds=[nb.basic_info.anchor_round], channels=[nb.basic_info.dapi_channel],
                                     use_z=[nb.basic_info.nz // 2])[:, 0, 0, :, :, 0]
     else:
-        raw_images = get_raw_images(nb, tiles=list(np.arange(nb.basic_info.n_tiles)),
+        raw_images = get_raw_images(nb, tiles=tiles,
                                     rounds=[nb.basic_info.anchor_round], channels=[nb.basic_info.anchor_channel],
                                     use_z=[nb.basic_info.nz // 2])[:, 0, 0, :, :, 0]
 
@@ -163,16 +168,16 @@ def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False,
     # Now flip the order of the tiles if necessary
     tilepos_yx = nb.basic_info.tilepos_yx
     if flip_y:
-        tilepos_yx = tilepos_yx[::-1, :]
+        tilepos_yx[:, 0] = tilepos_yx[:, 0].max() - tilepos_yx[:, 0]
     if flip_x:
-        tilepos_yx = tilepos_yx[:, ::-1]
+        tilepos_yx[:, 1] = tilepos_yx[:, 1].max() - tilepos_yx[:, 1]
 
     # Now plot
     expected_overlap = nb.get_config()['stitch']['expected_overlap']
     tile_sz = nb.basic_info.tile_sz
     yx_step = tile_sz * (1 - expected_overlap)
     viewer = napari.Viewer()
-    for t in range(nb.basic_info.n_tiles):
-        viewer.add_image(raw_images[t], name=f'Tile {t}', translate=tilepos_yx[t] * yx_step)
+    for t in range(len(tiles)):
+        viewer.add_image(raw_images[t], name=f'Tile {tiles[t]}', translate=tilepos_yx[tiles[t]] * yx_step)
 
     napari.run()

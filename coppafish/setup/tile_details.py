@@ -3,7 +3,7 @@ import os
 from typing import Tuple, Optional, List
 
 
-def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float, format: str) -> Tuple[np.ndarray, np.ndarray]:
+def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Using `xy_pos` from nd2 metadata, this obtains the yx position of each tile. We label the tiles differently in the
     nd2 and npy formats. In general, there are 2 differences in npy and nd2 tile format:
@@ -17,9 +17,6 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float, forma
             `t` is the nd2 tile index.
         tile_sz: xy dimension of tile in pixels.
         expected_overlap: expected overlap between tiles as a fraction of tile_sz.
-        format: Format of data set. Either 'old' or 'new'. 'old' means that the data set was acquired before camera
-        rotation.
-
     Returns:
         tilepos_yx_nd2: `int [n_tiles x 2]`.
             yx position of each tile in nd2 format. `tilepos_yx_nd2[t,:]` is yx position of tile `t` where `t` is the
@@ -49,19 +46,13 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float, forma
         tilepos_yx_npy[t, 1] = xy_pos[t, 0]
         tilepos_yx_npy[t, 0] = xy_pos[t, 1]
 
-    # Through trial and error I have seen that what works is as follows:
-    # Old datastes: sort by y in descending order, breaking ties by x in descending order
-    # New datasets: sort by y in ascending order, breaking ties by x in descending order
-    if format == 'new':
-        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
-        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
-        tilepos_yx_npy = tilepos_yx_npy[::-1]
-    elif format == 'old':
-        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
-        tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
-        tilepos_yx_npy = tilepos_yx_npy[::-1]
-    else:
-        raise ValueError('format must be either "old" or "new"')
+    # now we need to sort the tiles in the npy format. We want to do this decreasing in x and decreasing in y so
+    # for if we have a 3 x 3 grid of tiles, we want to sort them as:
+    # [2,2], [2,1], [2,0], [1,2], [1,1], [1,0], [0,2], [0,1], [0,0]
+    # so we need to sort first by x and then by y
+    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 1].argsort()]
+    tilepos_yx_npy = tilepos_yx_npy[tilepos_yx_npy[:, 0].argsort(kind='mergesort')]
+    tilepos_yx_npy = tilepos_yx_npy[::-1]
 
     return tilepos_yx_nd2, tilepos_yx_npy
 

@@ -120,9 +120,13 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
 
-    # We want to slightly change our parametrisation. As top tiles have lower y values, we need to flip the y shifts.
-    shift_info['north']['shifts'][:, 0] = -shift_info['north']['shifts'][:, 0]
-    shift_info['east']['shifts'][:, 0] = -shift_info['east']['shifts'][:, 0]
+    # The following is a hack to order the tiles in the correct way if the extraction has not been done correctly.
+    if config['flip_y']:
+        shift_info['north']['shifts'][:, 0] = -shift_info['north']['shifts'][:, 0]
+        shift_info['east']['shifts'][:, 0] = -shift_info['east']['shifts'][:, 0]
+    if config['flip_x']:
+        shift_info['north']['shifts'][:, 1] = -shift_info['north']['shifts'][:, 1]
+        shift_info['east']['shifts'][:, 1] = -shift_info['east']['shifts'][:, 1]
 
     # get tile origins in global coordinates.
     # global coordinates are built about central tile so found this first
