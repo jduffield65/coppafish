@@ -137,3 +137,42 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
     viewer.dims.axis_labels = ['Tile', 'Round', 'Channel', 'z', 'y', 'x']
     viewer.dims.set_point([0, 1, 2], [0, 0, 0])  # set to first tile, round and channel initially
     napari.run()
+
+
+def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False, flip_x: bool = False):
+    """
+    Args:
+        nb: Notebook containing at least basic info and file names.
+        num_rotations: Number of 90 degree rotations to apply to each individual tile. These rotations always in the
+        direction taking the y axis to the x axis.
+        flip_y: Whether to flip the vertical order of the tiles
+        flip_x: Whether to flip the horizontal order of the tiles
+    """
+    if nb.basic_info.dapi_channel is not None:
+        raw_images = get_raw_images(nb, tiles=list(np.arange(nb.basic_info.n_tiles)),
+                                    rounds=[nb.basic_info.anchor_round], channels=[nb.basic_info.dapi_channel],
+                                    use_z=[nb.basic_info.nz // 2])[:, 0, 0, :, :, 0]
+    else:
+        raw_images = get_raw_images(nb, tiles=list(np.arange(nb.basic_info.n_tiles)),
+                                    rounds=[nb.basic_info.anchor_round], channels=[nb.basic_info.anchor_channel],
+                                    use_z=[nb.basic_info.nz // 2])[:, 0, 0, :, :, 0]
+
+    # Apply rotations
+    raw_images = np.rot90(raw_images, k=num_rotations, axes=(1, 2))
+
+    # Now flip the order of the tiles if necessary
+    tilepos_yx = nb.basic_info.tilepos_yx
+    if flip_y:
+        tilepos_yx = tilepos_yx[::-1, :]
+    if flip_x:
+        tilepos_yx = tilepos_yx[:, ::-1]
+
+    # Now plot
+    expected_overlap = nb.get_config()['stitch']['expected_overlap']
+    tile_sz = nb.basic_info.tile_sz
+    yx_step = tile_sz * (1 - expected_overlap)
+    viewer = napari.Viewer()
+    for t in range(nb.basic_info.n_tiles):
+        viewer.add_image(raw_images[t], name=f'Tile {t}', translate=tilepos_yx[t] * yx_step)
+
+    napari.run()
