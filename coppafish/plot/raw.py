@@ -166,7 +166,7 @@ def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False,
     raw_images = np.rot90(raw_images, k=num_rotations, axes=(1, 2))
 
     # Now flip the order of the tiles if necessary
-    tilepos_yx = nb.basic_info.tilepos_yx
+    tilepos_yx = nb.basic_info.tilepos_yx.copy()
     if flip_y:
         tilepos_yx[:, 0] = tilepos_yx[:, 0].max() - tilepos_yx[:, 0]
     if flip_x:
