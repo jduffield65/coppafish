@@ -100,8 +100,7 @@ def get_metadata(file_path: str, config: dict) -> dict:
         metadata['xy_pos'] = xy_pos
         metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
                                                                          expected_overlap=config['stitch']
-                                                                         ['expected_overlap'],
-                                                                         format=config['extract']['npy_index_format'])
+                                                                         ['expected_overlap'])
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
         channel_metadata = desc.split('Plane #')[1:]
