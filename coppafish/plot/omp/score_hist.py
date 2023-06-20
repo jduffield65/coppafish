@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox, CheckButtons
-from ..call_spots.score_calc import background_fitting, get_dot_product_score
 from ...setup import Notebook
-from ...call_spots import omp_spot_score
+from ...call_spots import omp_spot_score, compute_gene_scores
 from typing import Optional, List
 import warnings
 plt.style.use('dark_background')
@@ -45,15 +44,19 @@ class histogram_score:
         # Use all genes by default
         self.genes_use = np.arange(self.n_genes)
 
-        # For computing score_dp
-        spot_colors, spot_colors_pb, background_var = background_fitting(nb, method)
+        # Get spot colors
+        background_codes = np.repeat(nb.ref_spots.background_strength[:, np.newaxis, :], nb.basic_info.n_rounds, axis=1)
+        spot_colors_no_background = nb.ref_spots.colors[:, :, nb.basic_info.use_channels] - background_codes
+        spot_colors = spot_colors_no_background / nb.call_spots.color_norm_factor[None, :, nb.basic_info.use_channels]
+        spot_colors_background = nb.ref_spots.colors[:, :, nb.basic_info.use_channels] / \
+                                    nb.call_spots.color_norm_factor[None, :, nb.basic_info.use_channels]
         grc_ind = np.ix_(np.arange(self.n_genes), nb.basic_info.use_rounds, nb.basic_info.use_channels)
         # Bled codes saved to Notebook should already have L2 norm = 1 over used_channels and rounds
         bled_codes = nb.call_spots.bled_codes[grc_ind]
         bled_codes_ge = nb.call_spots.bled_codes_ge[grc_ind]
 
-        # Save score_dp for each permutation of with/without background/gene_efficiency
-        self.n_plots = 5
+        # Save score_dp for original score, without background removal, without gene efficiency, and without both
+        self.n_plots = 4
         if method.lower() == 'omp':
             self.n_plots += 1
             self.nbp_omp = nb.omp
@@ -65,27 +68,23 @@ class histogram_score:
             self.gene_no = nb.ref_spots.gene_no
             self.score = np.zeros((self.gene_no.size, self.n_plots), dtype=np.float32)
             self.method = 'Anchor'
+
         self.use = np.isin(self.gene_no, self.genes_use)  # which spots to plot
+
         # DP score
-        self.score[:, 0] = get_dot_product_score(spot_colors_pb, bled_codes_ge, self.gene_no,
-                                                 nb.call_spots.dp_norm_shift, background_var)[0]
+        self.score[:, 0] = compute_gene_scores(spot_colors, bled_codes_ge)[1]
+
         if method.lower() != 'omp' and check:
             if np.max(np.abs(self.score[:, 0] - nb.ref_spots.score)) > self.check_tol:
                 raise ValueError(f"nb.ref_spots.score differs to that computed here\n"
                                  f"Set check=False to get past this error")
 
-        # DP score no weight
-        self.score[:, 1] = get_dot_product_score(spot_colors_pb, bled_codes_ge, self.gene_no,
-                                                 nb.call_spots.dp_norm_shift, None)[0]
         # DP score no background
-        self.score[:, 2] = get_dot_product_score(spot_colors, bled_codes_ge, self.gene_no,
-                                                 nb.call_spots.dp_norm_shift, None)[0]
+        self.score[:, 1] = compute_gene_scores(spot_colors_background, bled_codes_ge)[1]
         # DP score no gene efficiency
-        self.score[:, 3] = get_dot_product_score(spot_colors_pb, bled_codes, self.gene_no,
-                                                 nb.call_spots.dp_norm_shift, background_var)[0]
+        self.score[:, 2] = compute_gene_scores(spot_colors, bled_codes)[1]
         # DP score no background or gene efficiency
-        self.score[:, 4] = get_dot_product_score(spot_colors, bled_codes, self.gene_no,
-                                                 nb.call_spots.dp_norm_shift, None)[0]
+        self.score[:, 3] = compute_gene_scores(spot_colors_background, bled_codes)[1]
 
         # Initialise plot
         self.fig, self.ax = plt.subplots(1, 1, figsize=(11, 5))
@@ -99,12 +98,9 @@ class histogram_score:
             self.ax.set_xlabel(r"Score, $\Delta_s$")
         self.ax.set_title(f"Distribution of Scores for all {self.method} spots")
 
-        # Set lower bound based on dot product score with no GE/no background as likely to be lowest
-        self.hist_min = np.percentile(self.score[:, 4], 0.1)
-        # Set upper bound based on dot product score with GE and background because this is likely to be highest
-        self.hist_max = np.clip(np.percentile(self.score[:, 0], 99.9), 1, 2)
+        # Plot histograms
         self.hist_spacing = hist_spacing
-        hist_bins = np.arange(self.hist_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
+        hist_bins = np.arange(0, 1, self.hist_spacing)
         self.plots = [None] * self.n_plots
         default_colors = plt.rcParams['axes.prop_cycle']._left
         for i in range(self.n_plots):
@@ -116,7 +112,7 @@ class histogram_score:
             elif i > 0 and method.lower() != 'omp':
                 self.plots[i].set_visible(False)
 
-        self.ax.set_xlim(self.hist_min, self.hist_max)
+        self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, None)
 
         # Add text box to change score multiplier
@@ -148,11 +144,10 @@ class histogram_score:
         self.buttons_ax = self.fig.add_axes([self.subplot_adjust[1] + 0.02, self.subplot_adjust[3] - 0.45, 0.15, 0.5])
         plt.axis('off')
         self.button_labels = [r"$\Delta_s$" + "\nDot Product Score",
-                              r"$\Delta_s$" + "\nNo Weighting",
                               r"$\Delta_s$" + "\nNo Background",
                               r"$\Delta_s$" + "\nNo Gene Efficiency",
                               r"$\Delta_s$" + "\nNo Background\nNo Gene Efficiency"]
-        label_checked = [True, False, False, False, False]
+        label_checked = [True, False, False, False]
         if method.lower() == 'omp':
             self.button_labels += [r"$\gamma_s$" + "\nOMP Score"]
             label_checked += [True]
@@ -169,7 +164,7 @@ class histogram_score:
 
     def update(self, inds_update: Optional[List[int]] = None):
         ylim_old = self.ax.get_ylim()[1]  # To check whether we need to change y limit
-        hist_bins = np.arange(self.hist_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
+        hist_bins = np.arange(0, 1, self.hist_spacing)
         if inds_update is None:
             inds_update = np.arange(len(self.plots))  # By default update all plots
         ylim_new = 0
@@ -282,13 +277,13 @@ class histogram_2d_score(histogram_score):
         self.score = self.score[:, [0, self.n_plots - 1]]
         self.n_plots = 2
         del self.plots
-        hist_bins = np.arange(self.hist_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
+        hist_bins = np.arange(0, 1, self.hist_spacing)
         self.x_score_ind = 0
         self.hist_spacing = 0.01
         self.plot = self.ax.hist2d(self.score[:, self.x_score_ind], self.score[:, -1], hist_bins)[3]
         self.cbar = self.fig.colorbar(self.plot, ax=self.ax)
-        self.ax.set_xlim(self.hist_min, self.hist_max)
-        self.ax.set_ylim(self.hist_min, self.hist_max)
+        self.ax.set_xlim(0,1)
+        self.ax.set_ylim(0,1)
         self.text_boxes[1].set_val(self.hist_spacing)
         self.ax.set_xlabel(self.button_labels[0].replace('\n', ', '))
         self.ax.set_ylabel(self.button_labels[-1].replace('\n', ', '))
@@ -296,11 +291,11 @@ class histogram_2d_score(histogram_score):
 
     def update(self, inds_update: Optional[List[int]] = None):
         ylim_old = self.plot.get_clim()[1]  # To check whether we need to change y limit
-        hist_bins = np.arange(self.hist_min, self.hist_max + self.hist_spacing / 2, self.hist_spacing)
+        hist_bins = np.arange(0,1, self.hist_spacing)
         self.plot = self.ax.hist2d(self.score[self.use, self.x_score_ind], self.score[self.use, -1], hist_bins)[3]
         ylim_new = self.plot.get_clim()[1]
-        self.ax.set_xlim(self.hist_min, self.hist_max)
-        self.ax.set_ylim(self.hist_min, self.hist_max)
+        self.ax.set_xlim(0,1)
+        self.ax.set_ylim(0,1)
         if np.abs(ylim_new - ylim_old) / np.max([ylim_new, ylim_old]) < self.ylim_tol:
             ylim_new = ylim_old
         self.plot.set_clim(0, ylim_new)

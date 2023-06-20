@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 import numpy as np
 from ...setup import Notebook
-from ...call_spots import fit_background, dot_product_score
+from ...call_spots import fit_background, dot_product_score, compute_gene_scores
 
 
 def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -36,8 +36,8 @@ def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarra
     return spot_colors, spot_colors_pb, background_var
 
 
-def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, spot_gene_no: Optional[np.ndarray],
-                          dp_norm_shift: float, background_var: Optional[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
+def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray,
+                          spot_gene_no: Optional[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds dot product score for each `spot_color` given to the gene indicated by `spot_gene_no`.
 
@@ -49,10 +49,6 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, spot_
         spot_gene_no: `int [n_spots]`.
             Gene that each spot was assigned to. If None, will set `spot_gene_no[s]` to gene for which
             score was largest.
-        dp_norm_shift: Normalisation constant for single round used for dot product calculation.
-            I.e. `nb.call_spots.dp_norm_shift`.
-        background_var - `float [n_spots x n_rounds_use x n_channels_use]`.
-            inverse of the weighting used for dot product score calculation.
 
     Returns:
         `spot_score` - `float [n_spots]`.
@@ -60,14 +56,7 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray, spot_
         `spot_gene_no` - will be same as input if given, otherwise will be the best gene assigned.
     """
     n_spots, n_rounds_use = spot_colors.shape[:2]
-    n_genes = bled_codes.shape[0]
-    dp_norm_shift = dp_norm_shift * np.sqrt(n_rounds_use)
-    if background_var is None:
-        weight = None
-    else:
-        weight = 1 / background_var
-    scores = np.asarray(dot_product_score(spot_colors.reshape(n_spots, -1),
-                                          bled_codes.reshape(n_genes, -1), dp_norm_shift, weight))
+    scores = compute_gene_scores(spot_colors, bled_codes)
     if spot_gene_no is None:
         spot_gene_no = np.argmax(scores, 1)
     spot_score = scores[np.arange(n_spots), spot_gene_no]

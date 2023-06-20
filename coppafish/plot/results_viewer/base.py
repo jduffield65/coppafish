@@ -6,6 +6,7 @@ from ...call_spots.qual_check import quality_threshold
 from .legend import add_legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
     view_scaled_k_means
+from ..call_spots_new import GEViewer, ViewBleedCalc, view_all_gene_scores
 from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
@@ -497,11 +498,15 @@ class Viewer:
         def call_to_view_bm(viewer):
             view_bleed_matrix(self.nb)
 
+        @self.viewer.bind_key('Shift-b')
+        def call_to_view_bm_calc(viewer):
+            ViewBleedCalc(self.nb)
+
         @self.viewer.bind_key('g')
         def call_to_view_bm(viewer):
             view_bled_codes(self.nb)
 
-        @self.viewer.bind_key('a')
+        @self.viewer.bind_key('Shift-h')
         def call_to_view_all_hists(viewer):
             view_all_gene_scores(self.nb)
 
@@ -529,10 +534,10 @@ class Viewer:
                 score_multiplier = None
             histogram_score(self.nb, self.method_buttons.method, score_multiplier)
 
-        @self.viewer.bind_key('Shift-h')
-        def call_to_view_omp_score(viewer):
-            if self.nb.has_page('omp'):
-                histogram_2d_score(self.nb, self.omp_score_multiplier_slider.value())
+        # @self.viewer.bind_key('Shift-h')
+        # def call_to_view_omp_score(viewer):
+        #     if self.nb.has_page('omp'):
+        #         histogram_2d_score(self.nb, self.omp_score_multiplier_slider.value())
 
         @self.viewer.bind_key('k')
         def call_to_view_omp_score(viewer):

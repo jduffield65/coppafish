@@ -122,8 +122,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_names = gene_names
     nbp.gene_codes = gene_codes
     nbp.color_norm_factor = expand_channels(colour_norm_factor, use_channels, nbp_basic.n_channels)
-    nbp.initial_bleed_matrix = expand_channels(initial_bleed_matrix, use_channels, nbp_basic.n_channels)
-    nbp.bleed_matrix = expand_channels(bleed_matrix, use_channels, nbp_basic.n_channels)
+    nbp.initial_bleed_matrix = expand_channels(initial_bleed_matrix, use_channels, nbp_basic.n_channels).T
+    nbp.bleed_matrix = expand_channels(bleed_matrix, use_channels, nbp_basic.n_channels).swapaxes(1, 2)
     nbp.bled_codes_ge = expand_channels(bled_codes, use_channels, nbp_basic.n_channels)
     nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
                                                     gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)

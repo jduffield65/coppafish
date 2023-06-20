@@ -19,7 +19,7 @@ class view_bleed_matrix(ColorPlotBase):
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                             nb.basic_info.use_channels)]
         n_use_rounds, n_use_channels = color_norm.shape
-        single_bm = (color_norm == color_norm[0]).all()
+        single_bm = (nb.call_spots.bleed_matrix == nb.call_spots.bleed_matrix[0]).all()
         if single_bm:
             bleed_matrix = [nb.call_spots.bleed_matrix[0][np.ix_(nb.basic_info.use_channels,
                                                                  nb.basic_info.use_dyes)]]
