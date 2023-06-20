@@ -34,7 +34,6 @@ type.)
 import numpy as np
 import hashlib
 import os
-import git
 import time
 import json
 import warnings
@@ -649,10 +648,7 @@ class NotebookPage:
 
     def __init__(self, name, input_dict=None):
         # Would like to store the git commit id in each notebook page to keep track of versions
-        _repo = git.Repo(search_parent_directories=True)
-        _sha = _repo.head.object.hexsha
         self.finalized = False  # Set to true when added to a Notebook
-        self._sha = _sha
         self._times = {}
         self.name = name
         self._time_created = time.time()
@@ -989,7 +985,7 @@ def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
         isolation_thresh[use_tiles[i]] = nbp_find_spots_list[i].isolation_thresh
 
     # Add these all to the notebook page
-    master_nbp_find_spots.spot_details = spot_details
+    master_nbp_find_spots.spot_details = spot_yxz
     master_nbp_find_spots.spot_no = spot_no
     master_nbp_find_spots.isolated_spots = isolated_spots
     master_nbp_find_spots.isolation_thresh = isolation_thresh
