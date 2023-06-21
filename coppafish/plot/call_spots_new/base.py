@@ -171,9 +171,10 @@ class GESpotViewer():
         # Now we can plot the spots. We want to create 2 subplots. One with the spots observed and one with the expected
         # spots. We will use the same color scale for both subplots.
         vmax = np.max([np.max(self.spots), np.max(self.spots_expected)]) / 2
+        vmin = np.min([np.min(self.spots), np.min(self.spots_expected)]) / 5
         # We can then plot the spots observed and the spots expected.
-        self.ax[0].imshow(self.spots, cmap='viridis', vmin=0, vmax=vmax, aspect='auto', interpolation='none')
-        self.ax[1].imshow(self.spots_expected, cmap='viridis', vmin=0, vmax=vmax, aspect='auto', interpolation='none')
+        self.ax[0].imshow(self.spots, cmap='viridis', vmin=vmin, vmax=vmax, aspect='auto', interpolation='none')
+        self.ax[1].imshow(self.spots_expected, cmap='viridis', vmin=vmin, vmax=vmax, aspect='auto', interpolation='none')
         # We can then add titles and axis labels to the subplots.
         self.ax[0].set_title('Observed Spot Colours')
         self.ax[1].set_title('Expected Spot Colours')
@@ -210,7 +211,7 @@ class GESpotViewer():
         self.ax[1].legend(loc='upper right')
         # Add simple colorbar. Move this a little up to make space for the button.
         cax = self.fig.add_axes([0.925, 0.1, 0.03, 0.8])
-        self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=vmax), cmap='viridis'),
+        self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=vmin, vmax=vmax), cmap='viridis'),
                           cax=cax, label='Spot Colour')
         self.add_cmap_widgets()
         self.fig.canvas.draw_idle()
@@ -439,25 +440,24 @@ class BGNormViewer():
         # We're going to make a little viewer to show spots before and after background subtraction
         fig, ax = plt.subplots(1, 3, figsize=(10, 5))
         max_intensity = np.max(spot_colour_raw)
-        ax[0].imshow(spot_colour_raw, aspect='auto', vmin=0, vmax=max_intensity / 10, interpolation='none')
+        min_intensity = np.min(spot_colour_raw)
+        ax[0].imshow(spot_colour_raw, aspect='auto', vmin=min_intensity / 10, vmax=max_intensity / 10,
+                     interpolation='none')
         ax[0].set_title('Before background subtraction')
         ax[0].set_xticks([])
 
-        ax[1].imshow(spot_colours_subtracted, aspect='auto', vmin=0, vmax=max_intensity / 10,
+        ax[1].imshow(spot_colours_subtracted, aspect='auto', vmin=min_intensity / 10, vmax=max_intensity / 10,
                      interpolation='none')
         ax[1].set_title('After background subtraction')
         ax[1].set_xticks([])
 
         max_intensity = np.max(spot_colours_normed)
-        ax[2].imshow(spot_colours_normed, aspect='auto', vmin=0, vmax=max_intensity / 10, interpolation='none')
+        min_intensity = np.min(spot_colours_normed)
+        ax[2].imshow(spot_colours_normed, aspect='auto', vmin=min_intensity / 10, vmax=max_intensity / 10,
+                     interpolation='none')
         ax[2].set_title('After background subtraction and normalisation')
         ax[2].set_xticks([])
 
-        # max_intensity = np.max(spot_colours_gamma_normed)
-        # ax[3].imshow(spot_colours_gamma_normed, aspect='auto', vmin=0, vmax=max_intensity / 10, interpolation='none')
-        # ax[3].set_title('After background subtraction and gamma normalisation')
-        # ax[3].set_xticks([])
-        #
         # Now add vertical dashed red lines to separate channels
         for i in range(n_rounds - 1):
             for j in range(3):
