@@ -154,6 +154,8 @@ def huber_regression(shift, position, predict_shift=True):
     Args:
         shift: n_tiles x 3 ndarray of zyx shifts
         position: n_tiles x 2 ndarray of yx tile coords or n_tiles x 3 ndarray of zyx tile coords
+        predict_shift: If True, predict shift as a function of position. If False, predict position as a function of
+        position. Default is True.
     Returns:
         transform: 3 x 3 matrix where each row predicts shift of z y z as a function of y index, x index and the final
         row is the offset at 0,0
@@ -178,7 +180,6 @@ def huber_regression(shift, position, predict_shift=True):
         transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_),
                                np.append(huber_y.coef_, huber_y.intercept_),
                                np.append(huber_x.coef_, huber_x.intercept_)))
-
 
     return transform
 
