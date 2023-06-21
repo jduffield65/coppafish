@@ -364,10 +364,17 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, regist
     # adjusted_anchor = adjusted_anchor[z_mid - 16:z_mid + 16, y_mid - 250:y_mid + 250, x_mid - 250:x_mid + 250]
     # Now we will loop through channels of this round. We will initially apply the prior channel transform to each
     # channel and then find the shift between the adjusted anchor and adjusted channel.
-
-    prior_channel_transform = np.load('/home/reilly/PycharmProjects/coppafish/coppafish/setup/prior_channel_transform.npy')
-
     use_channels = nbp_basic.use_channels
+    prior_channel_transform = np.repeat(np.eye(3, 3)[np.newaxis], len(use_channels), axis=0)
+    # since our prior channel transform is only for 7 channels, we will set the prior channel transform for channel
+    # 19 to be identity
+    if len(use_channels) == 8:
+        channels_prior = [0, 1, 2, 3, 4, 6, 7]
+    else:
+        channels_prior = [0, 1, 2, 3, 4, 5, 6]
+    prior_channel_transform[channels_prior] = np.load('/home/reilly/PycharmProjects/coppafish/coppafish/'
+                                                                   'setup/prior_channel_transform.npy')
+
     for c in range(len(use_channels)):
         # Set progress bar title
         pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(use_channels[c]))
