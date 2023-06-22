@@ -223,11 +223,13 @@ class view_codes(ColorPlotBase):
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]
         self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
-                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose() / color_norm
+                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
         # Get spot color after background fitting
         self.background_removed = False
-        self.spot_color_pb = fit_background(self.spot_color.T[np.newaxis],
-                                            nb.call_spots.background_weight_shift)[0][0].T
+        background = np.repeat(nb.ref_spots.background_strength[spot_no][np.newaxis], nb.basic_info.n_rounds, axis=0)
+        self.spot_color_pb = ((self.spot_color - background) / color_norm).transpose()
+        self.spot_color = self.spot_color / color_norm
+
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
 
         gene_name = nb.call_spots.gene_names[gene_no]
