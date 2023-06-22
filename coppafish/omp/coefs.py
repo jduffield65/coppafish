@@ -1,5 +1,4 @@
 import numpy as np
-from coppafish.call_spots import fit_background, dot_product_score
 from typing import Tuple, Union
 from tqdm import tqdm
 import warnings

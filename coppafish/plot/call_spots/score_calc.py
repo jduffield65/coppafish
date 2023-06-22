@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 import numpy as np
 from ...setup import Notebook
-from ...call_spots import fit_background, dot_product_score, compute_gene_scores
+from ...call_spots import compute_gene_scores
 
 
 def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

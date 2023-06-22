@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button, RangeSlider
 from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
-from ...call_spots.background import fit_background
 from ...setup import Notebook
 from ...spot_colors.base import get_spot_colors
 import matplotlib

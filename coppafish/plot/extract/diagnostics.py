@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import distinctipy
 import numpy as np
 from ...setup import Notebook
-from ...call_spots import color_normalisation
+# from ...call_spots import color_normalisation
 from matplotlib.widgets import Button
 
 plt.style.use('dark_background')

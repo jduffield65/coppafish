@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from ...setup import Notebook
 from .score_calc import background_fitting
-from ...call_spots.bleed_matrix import get_bleed_matrix
+# from ...call_spots.bleed_matrix import get_bleed_matrix
 
 plt.style.use('dark_background')
 
