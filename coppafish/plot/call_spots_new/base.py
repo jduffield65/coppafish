@@ -62,6 +62,80 @@ def view_all_gene_scores(nb):
     plt.show()
 
 
+def view_spot_brightness_hists(nb: Notebook):
+    """
+    Simple viewer of spot brightness histograms.
+    Args:
+        nb: Notebook
+    """
+    use_channels, n_rounds = nb.basic_info.use_channels, nb.basic_info.n_rounds
+    spot_colours_no_bg = nb.ref_spots.colors[:, :, use_channels] - \
+                         np.repeat(nb.ref_spots.background_strength[:, np.newaxis, :], n_rounds, axis=1)
+    initial_bleed = nb.call_spots.initial_bleed_matrix[:, use_channels]
+    _, spot_brightness = normalise_rc(spot_colours_no_bg, initial_bleed)
+    n_rounds = len(spot_brightness)
+    n_channels = len(spot_brightness[0])
+    fig, axes = plt.subplots(nrows=n_rounds, ncols=n_channels, figsize=(10, 10))
+    max_brightness = np.zeros(n_channels)
+    min_brightness = np.zeros(n_channels)
+
+    # convert to log scale and get max brightness for each channel (99th percentile) to set x-axis limits
+    for r in range(n_rounds):
+        for c in range(n_channels):
+            spot_brightness[r][c] = np.array(spot_brightness[r][c])
+            spot_brightness[r][c] = np.log(spot_brightness[r][c][spot_brightness[r][c] > 0])
+    for c in range(n_channels):
+        max_brightness[c] = np.percentile(np.concatenate([spot_brightness[r][c] for r in range(n_rounds)]), 99)
+        min_brightness[c] = np.percentile(np.concatenate([spot_brightness[r][c] for r in range(n_rounds)]), 1)
+
+    # We want to color each histogram by the number of spots in that histogram
+    max_spots = np.max([len(spot_brightness[r][c]) for r in range(n_rounds) for c in range(n_channels)])
+
+    for r in range(n_rounds):
+        for c in range(n_channels):
+            # plot histogram of spot_brightness[r][c] on axes[r, c]
+            cmap = plt.get_cmap("coolwarm")
+            norm = mpl.colors.Normalize(vmin=1, vmax=max_spots)
+            axes[r, c].hist(spot_brightness[r][c], bins=np.linspace(min_brightness[c], max_brightness[c], 100),
+                            color=cmap(norm(len(spot_brightness[r][c]))))
+            # set x_ticks to 0, max_brightness for the final round only, otherwise []
+            if r == n_rounds - 1:
+                axes[r, c].set_xticks([0, np.round(max_brightness[c], 1)])
+            else:
+                axes[r, c].set_xticks([])
+            # set y_ticks to []
+            axes[r, c].set_yticks([])
+            # would also like to add red vertical dotted line at the median spot brightness
+            median = np.median(spot_brightness[r][c])
+            axes[r, c].axvline(median, color='r', linestyle='dotted')
+            # add label in top right corner of each plot with median spot brightness
+            axes[r, c].text(0.95, 0.95, '{:.2f}'.format(median), color='r',
+                            horizontalalignment='right', verticalalignment='top', transform=axes[r, c].transAxes,
+                            fontsize=8)
+
+    # Add labels to each row and column for round and channel
+    for ax, col in zip(axes[0], use_channels):
+        ax.set_title(col)
+
+    for ax, row in zip(axes[:, 0], range(n_rounds)):
+        ax.set_ylabel(row)
+
+    # Add label for rows and label for columns
+    fig.text(0.5, 0.04, 'Channels', ha='center')
+    fig.text(0.04, 0.5, 'Rounds', va='center', rotation='vertical')
+
+    # Add a colorbar on the right side of the figure
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    # Now add a colorbar with the label 'Number of spots in each histogram'
+    cb = mpl.colorbar.ColorbarBase(cbar_ax, cmap=cmap, norm=norm, orientation='vertical')
+    cb.set_label('Number of spots in each histogram')
+
+    # Add a title
+    fig.suptitle("Spot brightness histograms")
+
+    plt.show()
+
 # We are now going to create a new class that will allow us to view the spots used to calculate the gene efficiency
 # for a given gene. This will be useful for checking that the spots used are representative of the gene as a whole.
 class GEViewer():
@@ -491,6 +565,8 @@ class BGNormViewer():
 class ViewBleedCalc:
     def __init__(self, nb: Notebook):
         self.nb = nb
+        self.dye_names = nb.basic_info.dye_names.copy()
+        self.dye_names[[2, 3]] = self.dye_names[[3, 2]]
         color_norm = nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
         # We're going to remove background from spots, so need to expand the background strength variable from
         # n_spots x n_channels to n_spots x n_rounds x n_channels by repeating the values for each round
@@ -500,11 +576,10 @@ class ViewBleedCalc:
                               background_strength
         self.isolated_spots = self.isolated_spots / color_norm
         # Get current working directory and load default bleed matrix
-        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy'))
-        # Swap columns 2 and 3 in default bleed and dye names
+        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')).copy()
+        # swap columns 2 and 3 to match the order of the channels in the notebook
         self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
-        self.dye_names = self.nb.basic_info.dye_names
-        self.dye_names[2], self.dye_names[3] = self.dye_names[3], self.dye_names[2]
+        self.default_bleed = self.default_bleed[:, nb.basic_info.use_channels]
         # Normalise each column of default_bleed to have L2 norm of 1
         self.dye_template = self.default_bleed / np.linalg.norm(self.default_bleed, axis=0)
         # Now we are going to loop through all isolated spots, convert these to n_rounds colour vectors and then
@@ -567,78 +642,3 @@ class ViewBleedCalc:
         fig.suptitle('Bleed matrix calculation', fontsize=16)
 
         plt.show()
-
-
-def view_spot_brightness_hists(nb: Notebook):
-    """
-    Simple viewer of spot brightness histograms.
-    Args:
-        nb: Notebook
-    """
-    use_channels, n_rounds = nb.basic_info.use_channels, nb.basic_info.n_rounds
-    spot_colours_no_bg = nb.ref_spots.colors[:, :, use_channels] - \
-                         np.repeat(nb.ref_spots.background_strength[:, np.newaxis, :], n_rounds, axis=1)
-    initial_bleed = nb.call_spots.initial_bleed_matrix[:, use_channels]
-    _, spot_brightness = normalise_rc(spot_colours_no_bg, initial_bleed)
-    n_rounds = len(spot_brightness)
-    n_channels = len(spot_brightness[0])
-    fig, axes = plt.subplots(nrows=n_rounds, ncols=n_channels, figsize=(10, 10))
-    max_brightness = np.zeros(n_channels)
-    min_brightness = np.zeros(n_channels)
-
-    # convert to log scale and get max brightness for each channel (99th percentile) to set x-axis limits
-    for r in range(n_rounds):
-        for c in range(n_channels):
-            spot_brightness[r][c] = np.array(spot_brightness[r][c])
-            spot_brightness[r][c] = np.log(spot_brightness[r][c][spot_brightness[r][c] > 0])
-    for c in range(n_channels):
-        max_brightness[c] = np.percentile(np.concatenate([spot_brightness[r][c] for r in range(n_rounds)]), 99)
-        min_brightness[c] = np.percentile(np.concatenate([spot_brightness[r][c] for r in range(n_rounds)]), 1)
-
-    # We want to color each histogram by the number of spots in that histogram
-    max_spots = np.max([len(spot_brightness[r][c]) for r in range(n_rounds) for c in range(n_channels)])
-
-    for r in range(n_rounds):
-        for c in range(n_channels):
-            # plot histogram of spot_brightness[r][c] on axes[r, c]
-            cmap = plt.get_cmap("coolwarm")
-            norm = mpl.colors.Normalize(vmin=1, vmax=max_spots)
-            axes[r, c].hist(spot_brightness[r][c], bins=np.linspace(min_brightness[c], max_brightness[c], 100),
-                            color=cmap(norm(len(spot_brightness[r][c]))))
-            # set x_ticks to 0, max_brightness for the final round only, otherwise []
-            if r == n_rounds - 1:
-                axes[r, c].set_xticks([0, np.round(max_brightness[c], 1)])
-            else:
-                axes[r, c].set_xticks([])
-            # set y_ticks to []
-            axes[r, c].set_yticks([])
-            # would also like to add red vertical dotted line at the median spot brightness
-            median = np.median(spot_brightness[r][c])
-            axes[r, c].axvline(median, color='r', linestyle='dotted')
-            # add label in top right corner of each plot with median spot brightness
-            axes[r, c].text(0.95, 0.95, '{:.2f}'.format(median), color='r',
-                            horizontalalignment='right', verticalalignment='top', transform=axes[r, c].transAxes,
-                            fontsize=8)
-
-    # Add labels to each row and column for round and channel
-    for ax, col in zip(axes[0], use_channels):
-        ax.set_title(col)
-
-    for ax, row in zip(axes[:, 0], range(n_rounds)):
-        ax.set_ylabel(row)
-
-    # Add label for rows and label for columns
-    fig.text(0.5, 0.04, 'Channels', ha='center')
-    fig.text(0.04, 0.5, 'Rounds', va='center', rotation='vertical')
-
-    # Add a colorbar on the right side of the figure
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    # Now add a colorbar with the label 'Number of spots in each histogram'
-    cb = mpl.colorbar.ColorbarBase(cbar_ax, cmap=cmap, norm=norm, orientation='vertical')
-    cb.set_label('Number of spots in each histogram')
-
-    # Add a title
-    fig.suptitle("Spot brightness histograms")
-
-    plt.show()

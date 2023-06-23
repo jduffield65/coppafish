@@ -223,11 +223,12 @@ class view_codes(ColorPlotBase):
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]
         self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
-                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
+                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose()
         # Get spot color after background fitting
         self.background_removed = False
-        background = np.repeat(nb.ref_spots.background_strength[spot_no][np.newaxis], nb.basic_info.n_rounds, axis=0)
-        self.spot_color_pb = ((self.spot_color - background) / color_norm).transpose()
+        background = np.repeat(nb.ref_spots.background_strength[spot_no][np.newaxis], nb.basic_info.n_rounds,
+                               axis=0).transpose()
+        self.spot_color_pb = (self.spot_color - background) / color_norm
         self.spot_color = self.spot_color / color_norm
 
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
@@ -312,6 +313,11 @@ class view_spot(ColorPlotBase):
         spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
 
         gene_name = nb.call_spots.gene_names[gene_no]
+        gene_code = nb.call_spots.gene_codes[gene_no].copy()
+        # Need to flip 2 and 3 to match the channel order in the image
+        gene_code[gene_code == 2] = 9
+        gene_code[gene_code == 3] = 2
+        gene_code[gene_code == 9] = 3
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
                                                                  nb.basic_info.use_channels)].transpose().flatten()
         n_use_channels, n_use_rounds = color_norm.shape
@@ -370,7 +376,7 @@ class view_spot(ColorPlotBase):
         self.fig.supylabel('Color Channel', size=14)
         self.fig.supxlabel('Round (Gene Efficiency)', size=14, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
         plt.suptitle(f'Spot {spot_no}: match {str(np.around(spot_score, decimals=2))} '
-                     f'to {gene_name}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
+                     f'to {gene_name}. Code = {gene_code}', x=(subplot_adjust[0] + subplot_adjust[1]) / 2, size=16)
         self.change_norm()
         plt.show()
 

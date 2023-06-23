@@ -11,8 +11,8 @@ import os
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
-                         nbp_ref_spots: NotebookPage, initial_bleed_matrix: np.ndarray,
-                         transform: np.ndarray, overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
+                         nbp_ref_spots: NotebookPage, transform: np.ndarray,
+                         overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
     simple dot product for spots found on the reference round.
@@ -31,7 +31,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
             `local_yxz`, `isolated`, `tile`, `colors`.
             `gene_no`, `score`, `score_diff`, `intensity` should all be `None` to add them here, unless
             `overwrite_ref_spots == True`.
-        initial_bleed_matrix: float [n_channels x n_dyes] initial bleed matrix guess
         transform: float [n_tiles x n_rounds x n_channels x 4 x 3] affine transform for each tile, round and channel
         overwrite_ref_spots: If `True`, the variables:
             * `gene_no`
@@ -74,7 +73,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # 1. Remove background from spots and normalise channels and rounds
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
-    initial_norm_factor = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_norm.npy'))
+    initial_norm_factor = np.load('./coppafish/setup/default_norm.npy')
+    initial_bleed_matrix = np.load('./coppafish/setup/default_bleed.npy')
     spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
     colour_norm_factor, spot_brightness = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
                                                        initial_bleed_matrix=initial_bleed_matrix)

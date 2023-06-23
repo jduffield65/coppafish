@@ -373,8 +373,7 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, regist
         channels_prior = [0, 1, 2, 3, 4, 6, 7]
     else:
         channels_prior = [0, 1, 2, 3, 4, 5, 6]
-    prior_channel_transform[channels_prior] = np.load('/home/reilly/PycharmProjects/coppafish/coppafish/'
-                                                                   'setup/prior_channel_transform.npy')
+    prior_channel_transform[channels_prior] = np.load('./coppafish/setup/prior_channel_transform.npy')
 
     for c in range(len(use_channels)):
         # Set progress bar title
