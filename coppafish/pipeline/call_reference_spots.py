@@ -1,4 +1,4 @@
-from ..call_spots import get_bled_codes, compute_bleed_matrix, compute_gene_efficiency, compute_gene_scores, \
+from ..call_spots import get_bled_codes, compute_bleed_matrix, compute_gene_efficiency, dot_product_score, \
     get_spot_intensity
 from ..spot_colors import remove_background, normalise_rc, all_pixel_yxz, get_spot_colors
 from ..setup.notebook import NotebookPage
@@ -91,7 +91,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     n_genes = len(gene_names)
     ge_initial = np.ones((n_genes, n_rounds))
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=ge_initial)
-    gene_no, gene_score, gene_score_second = compute_gene_scores(spot_colours=spot_colours, bled_codes=bled_codes)
+    gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
     intensity = get_spot_intensity(spot_colors=spot_colours)
 
     # 3. Gene efficiency calculation.
@@ -107,7 +107,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
         # 3.3 Update gene coefficients
-        gene_no, gene_score, gene_score_second = compute_gene_scores(spot_colours=spot_colours, bled_codes=bled_codes)
+        gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
 
     # save overwritable variables in nbp_ref_spots
     nbp_ref_spots.gene_no = gene_no

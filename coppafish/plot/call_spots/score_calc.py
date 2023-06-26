@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 import numpy as np
 from ...setup import Notebook
-from ...call_spots import compute_gene_scores
+from ...call_spots import dot_product_score
 
 
 def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -56,7 +56,7 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray,
         `spot_gene_no` - will be same as input if given, otherwise will be the best gene assigned.
     """
     n_spots, n_rounds_use = spot_colors.shape[:2]
-    scores = compute_gene_scores(spot_colors, bled_codes)
+    scores = dot_product_score(spot_colors, bled_codes)
     if spot_gene_no is None:
         spot_gene_no = np.argmax(scores, 1)
     spot_score = scores[np.arange(n_spots), spot_gene_no]

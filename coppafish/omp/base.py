@@ -26,4 +26,3 @@ def get_initial_intensity_thresh(config: dict, nbp: NotebookPage) -> float:
         float(np.clip(config['initial_intensity_thresh'], config['initial_intensity_thresh_min'],
                       config['initial_intensity_thresh_max']))
     return initial_intensity_thresh
-

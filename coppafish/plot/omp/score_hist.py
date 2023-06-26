@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox, CheckButtons
 from ...setup import Notebook
-from ...call_spots import omp_spot_score, compute_gene_scores
+from ...call_spots import omp_spot_score, dot_product_score
 from typing import Optional, List
 import warnings
 plt.style.use('dark_background')
@@ -72,7 +72,7 @@ class histogram_score:
         self.use = np.isin(self.gene_no, self.genes_use)  # which spots to plot
 
         # DP score
-        self.score[:, 0] = compute_gene_scores(spot_colors, bled_codes_ge)[1]
+        self.score[:, 0] = dot_product_score(spot_colors, bled_codes_ge)[1]
 
         if method.lower() != 'omp' and check:
             if np.max(np.abs(self.score[:, 0] - nb.ref_spots.score)) > self.check_tol:
@@ -80,11 +80,11 @@ class histogram_score:
                                  f"Set check=False to get past this error")
 
         # DP score no background
-        self.score[:, 1] = compute_gene_scores(spot_colors_background, bled_codes_ge)[1]
+        self.score[:, 1] = dot_product_score(spot_colors_background, bled_codes_ge)[1]
         # DP score no gene efficiency
-        self.score[:, 2] = compute_gene_scores(spot_colors, bled_codes)[1]
+        self.score[:, 2] = dot_product_score(spot_colors, bled_codes)[1]
         # DP score no background or gene efficiency
-        self.score[:, 3] = compute_gene_scores(spot_colors_background, bled_codes)[1]
+        self.score[:, 3] = dot_product_score(spot_colors_background, bled_codes)[1]
 
         # Initialise plot
         self.fig, self.ax = plt.subplots(1, 1, figsize=(11, 5))
