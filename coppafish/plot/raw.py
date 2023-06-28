@@ -140,7 +140,7 @@ def view_raw(nb: Optional[Notebook] = None, tiles: Union[int, List[int]] = 0, ro
 
 
 def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False, flip_x: bool = False,
-                     tiles: Optional[Union[int, List[int]]] = None):
+                     tiles: Optional[Union[int, List[int]]] = None, anchor: bool = False):
     """
     Args:
         nb: Notebook containing at least basic info and file names.
@@ -153,7 +153,8 @@ def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False,
     if tiles is None:
         tiles = nb.basic_info.use_tiles
 
-    if nb.basic_info.dapi_channel is not None:
+    # Check if user has dapi and has specified they want dapi
+    if nb.basic_info.dapi_channel is not None and anchor is False:
         raw_images = get_raw_images(nb, tiles=tiles,
                                     rounds=[nb.basic_info.anchor_round], channels=[nb.basic_info.dapi_channel],
                                     use_z=[nb.basic_info.nz // 2])[:, 0, 0, :, :, 0]
@@ -162,7 +163,7 @@ def view_tile_layout(nb: Notebook, num_rotations: int = 0, flip_y: bool = False,
                                     rounds=[nb.basic_info.anchor_round], channels=[nb.basic_info.anchor_channel],
                                     use_z=[nb.basic_info.nz // 2])[:, 0, 0, :, :, 0]
 
-    # Apply rotations
+    # First rotate the images. This makes num_rotations rotations in the direction taking the y axis to the x axis
     raw_images = np.rot90(raw_images, k=num_rotations, axes=(1, 2))
 
     # Now flip the order of the tiles if necessary

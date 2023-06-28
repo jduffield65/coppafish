@@ -43,8 +43,10 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
-        # First reorder axes so that image is in form z y x
+        # yxz -> zxy
         image = np.swapaxes(image, 2, 0)
+        # zxy -> zyx
+        image = np.swapaxes(image, 1, 2)
         # Now rotate image
         if num_rotations != 0:
             image = np.rot90(image, k=num_rotations, axes=(1, 2))
@@ -183,7 +185,7 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
 
 
 def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
-                  r: int, c: int, from_raw: bool = False, zero_thresh: int = 0):
+                  r: int, c: int, from_raw: bool = False, zero_thresh: int = 0, num_rotations: int = 0):
     """
     Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
     Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
@@ -235,6 +237,8 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
                 image_t[:, bad_columns] = 0
                 if nbp_basic.is_3d:
                     image_t = np.moveaxis(image_t, 2, 0)  # put z-axis back to the start
+                if num_rotations != 0:
+                    image_t = np.rot90(image_t, k=num_rotations, axes=(1, 2))
             else:
                 if nbp_basic.is_3d:
                     image_t = np.load(nbp_file.tile[t][r][c], mmap_mode='r')
