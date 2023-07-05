@@ -2,6 +2,7 @@ from typing import Tuple, Optional
 import numpy as np
 from ...setup import Notebook
 from ...call_spots import dot_product_score
+from ...call_spots import fit_background
 
 
 def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -30,14 +31,13 @@ def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarra
     beta = config['beta']
     spot_colors = spot_colors / nb.call_spots.color_norm_factor[rc_ind]
     spot_colors_pb, background_coef, background_codes = \
-        fit_background(spot_colors, nb.call_spots.background_weight_shift)
+        fit_background(spot_colors, 0)
     background_codes = background_codes.reshape(background_codes.shape[0], -1)
     background_var = background_coef ** 2 @ background_codes ** 2 * alpha + beta ** 2
     return spot_colors, spot_colors_pb, background_var
 
 
-def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray,
-                          spot_gene_no: Optional[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
+def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds dot product score for each `spot_color` given to the gene indicated by `spot_gene_no`.
 
@@ -55,9 +55,6 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray,
             Dot product score for each spot.
         `spot_gene_no` - will be same as input if given, otherwise will be the best gene assigned.
     """
-    n_spots, n_rounds_use = spot_colors.shape[:2]
-    scores = dot_product_score(spot_colors, bled_codes)
-    if spot_gene_no is None:
-        spot_gene_no = np.argmax(scores, 1)
-    spot_score = scores[np.arange(n_spots), spot_gene_no]
-    return spot_score, spot_gene_no
+    gene_no, score, _ = dot_product_score(spot_colors, bled_codes)
+
+    return score, gene_no

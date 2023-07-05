@@ -70,8 +70,6 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
     n_genes = bled_codes.shape[0]
     bled_codes = np.asarray(bled_codes[np.ix_(np.arange(n_genes),
                                               nb.basic_info.use_rounds, nb.basic_info.use_channels)])
-    n_use_rounds = len(nb.basic_info.use_rounds)
-    dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
 
     dp_thresh = config['dp_thresh']
     if method.lower() == 'omp':
@@ -87,8 +85,7 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
     all_coefs = np.zeros((spot_colors.shape[0], n_genes + nb.basic_info.n_channels))
     all_coefs[np.ix_(keep, np.arange(n_genes))], \
     all_coefs[np.ix_(keep, np.array(nb.basic_info.use_channels) + n_genes)] = \
-        get_all_coefs(spot_colors[keep], bled_codes, nb.call_spots.background_weight_shift, dp_norm_shift,
-                      dp_thresh, alpha, beta, max_genes, weight_coef_fit)
+        get_all_coefs(spot_colors[keep], bled_codes, 0, 0, 0, alpha, beta, max_genes, weight_coef_fit)
 
     n_genes = all_coefs.shape[1]
     nz = len(z)

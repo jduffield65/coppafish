@@ -108,11 +108,10 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
 
     """
     # calculate score including background genes as if best gene is background, then stop iteration.
-    all_scores = dot_product_score(residual_pixel_colors, all_bled_codes, norm_shift, inverse_var)
-    best_gene = np.argmax(np.abs(all_scores), axis=1)
+    best_gene, best_score, _ = dot_product_score(residual_pixel_colors, all_bled_codes)
     # if best_gene is in ignore_gene, set score below score_thresh.
     is_ignore_gene = (best_gene[:, np.newaxis] == ignore_genes).any(axis=1)
-    best_score = all_scores[(np.arange(best_gene.shape[0]), best_gene)] * np.invert(is_ignore_gene)
+    best_score = best_score * np.invert(is_ignore_gene)
     pass_score_thresh = np.abs(best_score) > score_thresh
     return best_gene, pass_score_thresh, best_score
 

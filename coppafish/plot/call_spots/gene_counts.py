@@ -77,8 +77,7 @@ class gene_counts:
         norm_factor = np.expand_dims(np.linalg.norm(bled_codes, axis=(1, 2)), (1, 2))
         norm_factor[norm_factor == 0] = 1  # For genes with no dye in use_dye, this avoids blow up on next line
         bled_codes = bled_codes / norm_factor
-        score, gene_no = get_dot_product_score(spot_colors_pb, bled_codes, None, nb.call_spots.dp_norm_shift,
-                                               background_var)
+        score, gene_no = get_dot_product_score(spot_colors_pb, bled_codes)
 
         # Add quality thresholding info and gene assigned to for method with no fake genes and method with fake genes
         self.intensity = [nb.ref_spots.intensity.astype(np.float16)] * 2

@@ -23,7 +23,7 @@ class view_bleed_matrix(ColorPlotBase):
         if single_bm:
             bleed_matrix = [nb.call_spots.bleed_matrix[0][np.ix_(nb.basic_info.use_channels,
                                                                  nb.basic_info.use_dyes)].copy()]
-            col_2, col_3 = bleed_matrix[0][:, 2], bleed_matrix[0][:, 3]
+            col_2, col_3 = bleed_matrix[0][:, 2].copy(), bleed_matrix[0][:, 3].copy()
             bleed_matrix[0][:, 2], bleed_matrix[0][:, 3] = col_3, col_2  # swap columns 2 and 3
             subplot_row_columns = [1, 1]
             subplot_adjust = [0.07, 0.775, 0.095, 0.94]

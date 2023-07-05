@@ -566,7 +566,9 @@ class ViewBleedCalc:
     def __init__(self, nb: Notebook):
         self.nb = nb
         self.dye_names = nb.basic_info.dye_names.copy()
-        self.dye_names[[2, 3]] = self.dye_names[[3, 2]]
+        # swap dyes 2 and 3
+        dye_2, dye_3 = self.dye_names[2].copy(), self.dye_names[3].copy()
+        self.dye_names[2], self.dye_names[3] = dye_3, dye_2
         color_norm = nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
         # We're going to remove background from spots, so need to expand the background strength variable from
         # n_spots x n_channels to n_spots x n_rounds x n_channels by repeating the values for each round
@@ -579,7 +581,6 @@ class ViewBleedCalc:
         self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')).copy()
         # swap columns 2 and 3 to match the order of the channels in the notebook
         self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
-        self.default_bleed = self.default_bleed[:, nb.basic_info.use_channels]
         # Normalise each column of default_bleed to have L2 norm of 1
         self.dye_template = self.default_bleed / np.linalg.norm(self.default_bleed, axis=0)
         # Now we are going to loop through all isolated spots, convert these to n_rounds colour vectors and then

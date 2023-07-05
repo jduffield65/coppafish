@@ -24,7 +24,8 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray) -> Tuple
 
     all_score = spot_colours @ bled_codes.T
     gene_no = np.argmax(all_score, axis=1)
-    gene_score = np.max(all_score, axis=1)
-    gene_score_second = np.max(np.delete(all_score, gene_no, axis=1), axis=1)
+    all_score = np.sort(all_score, axis=1)
+    gene_score = all_score[:, -1]
+    gene_score_second = all_score[:, -2]
 
     return gene_no, gene_score, gene_score_second

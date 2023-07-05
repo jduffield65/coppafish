@@ -128,7 +128,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
                                                     gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
-    nbp.gene_efficiency_intensity_thresh = 0.5
 
     # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
     # TODO: Remove this in future versions
@@ -138,5 +137,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                    return_in_bounds=True)[0]
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
+    nbp.gene_efficiency_intensity_thresh = float(np.round(pixel_intensity[25], 2))
 
     return nbp, nbp_ref_spots
