@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib.widgets import Button, RangeSlider
 from ...call_spots.qual_check import omp_spot_score, get_intensity_thresh
 from ...setup import Notebook
-from ...spot_colors.base import get_spot_colors
+from ...spot_colors.base import get_spot_colors, remove_background
 import matplotlib
 from typing import List, Optional, Tuple, Union
 plt.style.use('dark_background')
@@ -152,7 +152,6 @@ class ColorPlotBase:
             self.norm_button.label.set_color(current_color)
             self.norm_button.on_clicked(self.change_norm)
 
-
     def change_clim(self, val: List):
         """
         Function triggered on change of color axis slider.
@@ -223,13 +222,12 @@ class view_codes(ColorPlotBase):
             page_name = 'ref_spots'
             spot_score = nb.ref_spots.score[spot_no]
         self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
-                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)].transpose()
+                              np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
         # Get spot color after background fitting
         self.background_removed = False
-        background = np.repeat(nb.ref_spots.background_strength[spot_no][np.newaxis], nb.basic_info.n_rounds,
-                               axis=0).transpose()
-        self.spot_color_pb = (self.spot_color - background) / color_norm
+        self.spot_color_pb = remove_background(self.spot_color.copy()[None, :, :])[0][0] / color_norm
         self.spot_color = self.spot_color / color_norm
+        self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
 
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
 

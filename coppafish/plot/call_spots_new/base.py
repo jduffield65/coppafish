@@ -24,6 +24,10 @@ def view_all_gene_scores(nb):
     # Move subplots down to make room for the title and to the left to make room for the colourbar
     fig.subplots_adjust(top=0.9)
     fig.subplots_adjust(right=0.9)
+    # We also want to plot the histograms in different colours, representing the number of spots for each gene
+    spots_per_gene = np.zeros(nb.call_spots.gene_names.shape[0])
+    for i in range(spots_per_gene.shape[0]):
+        spots_per_gene[i] = np.sum(nb.ref_spots.gene_no == i)
 
     # We also want to plot the histograms in different colours, representing the number of spots for each gene
     for i in range(grid_dim ** 2):
@@ -37,7 +41,7 @@ def view_all_gene_scores(nb):
         # We want to choose the colour of the histogram based on the number of spots. We will use a log scale, with the
         # minimum number of spots being 1 and the maximum being 1000. Use a blue to red colourmap
         cmap = plt.get_cmap("coolwarm")
-        norm = mpl.colors.Normalize(vmin=1, vmax=2000)
+        norm = mpl.colors.Normalize(vmin=1, vmax=np.percentile(spots_per_gene, 99))
 
         # Plot the histogram of scores for each gene
         if i < nb.call_spots.gene_names.shape[0]:
