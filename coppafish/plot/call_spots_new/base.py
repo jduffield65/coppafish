@@ -31,7 +31,7 @@ def view_all_gene_scores(nb):
 
     # We also want to plot the histograms in different colours, representing the number of spots for each gene
     for i in range(grid_dim ** 2):
-        gene_i_scores = nb.ref_spots.score[nb.ref_spots.gene_no == i]
+        gene_i_scores = nb.ref_spots.score_diff[nb.ref_spots.gene_no == i]
         n_spots = len(gene_i_scores)
 
         if n_spots < 50:
@@ -223,6 +223,7 @@ class GESpotViewer():
         nb = self.nb
         # First we need to find the spots used to calculate the gene efficiency for the given gene.
         self.gene_g_mask = nb.call_spots.use_ge * (nb.ref_spots.gene_no == gene_index)
+        # self.gene_g_mask = nb.ref_spots.gene_no == gene_index
         spots = nb.ref_spots.colors[self.gene_g_mask][:, :, nb.basic_info.use_channels]
         # remove background codes. To do this, repeat background_strenth along a new axis for rounds
         background_strength = nb.ref_spots.background_strength[self.gene_g_mask]

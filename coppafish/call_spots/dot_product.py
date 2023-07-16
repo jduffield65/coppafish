@@ -18,7 +18,7 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray) -> Tuple
     n_spots, n_genes = spot_colours.shape[0], bled_codes.shape[0]
     # First convert these matrices to vectors so that we can use the dot product
     spot_colours = spot_colours.reshape(n_spots, -1)
-    # Normalise spot colours
+    # TODO: Maybe do this normalisation with an extra term on the denominator
     spot_colours = spot_colours / np.linalg.norm(spot_colours, axis=1)[:, None]
     bled_codes = bled_codes.reshape(n_genes, -1)
 
