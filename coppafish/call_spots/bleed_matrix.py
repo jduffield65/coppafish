@@ -90,7 +90,8 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
         colour_vector = np.reshape(spot_colours, (n_spots * (n_rounds - 2), n_channels_use))[np.newaxis, :, :]
         bleed_matrix = np.zeros((1, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
 
-    # Now we loop over the first dimension of the colour vector and compute the dye score for each spot
+    # Now we loop over the first dimension of the colour vector and compute the dye score for each spot. This allows us
+    # to treat the 2 cases of round split and not round split in the same way
     for i in range(colour_vector.shape[0]):
         dye_score = []
         scale = []
@@ -104,7 +105,6 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
         dye_score_valid = (spot_dye_score > 0) * (spot_dye_score > 2 * spot_dye_score_second)
         spot_dye_score = spot_dye_score[dye_score_valid]
         spot_dye = spot_dye[dye_score_valid]
-
 
         # Loop through all dyes and partition our data nicely.
         # Also compute the median of each of these, this will be our scale factor for each column

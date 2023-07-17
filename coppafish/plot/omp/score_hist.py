@@ -73,7 +73,6 @@ class histogram_score:
 
         # DP score
         self.score[:, 0] = dot_product_score(spot_colors, bled_codes_ge)[1]
-
         if method.lower() != 'omp' and check:
             if np.max(np.abs(self.score[:, 0] - nb.ref_spots.score)) > self.check_tol:
                 raise ValueError(f"nb.ref_spots.score differs to that computed here\n"

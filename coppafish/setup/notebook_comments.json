@@ -306,7 +306,6 @@
       "and old score recorded as `east_outlier_score[i]`. Will be zero if this did not happen."]
   },
 
-
   "register":
   {
     "DESCRIPTION": ["*register* page contains the affine transforms to go from the ref round/channel",
@@ -385,7 +384,11 @@
       "$\\chi_s = \\underset{r}{\\mathrm{median}}(\\max_c\\zeta_{s_{rc}})$",
       "where $\\pmb{\\zeta}_s=$ `colors[s, r]/color_norm_factor[r]`."],
     "background_strength": ["Numpy float32 array [n_spots x n_channels_use]",
-      "Background strength of each spot. Calculated as the median of the channel across rounds."]
+      "Background strength of each spot. Calculated as the median of the channel across rounds."],
+    "gene_probs": ["Numpy float array [n_spots x n_genes]",
+      "Probability that spot $s$ is gene $g$."],
+    "dye_strengths": ["Numpy float array [n_spots x n_rounds x n_dyes]",
+      "Strength of each dye in each round for each spot."]
   },
 
   "call_spots":
@@ -427,6 +430,7 @@
       "`nan` if $r$ outside `use_rounds` and 1 if `gene_codes[g,r]` outside `use_dyes`."],
     "gene_efficiency_intensity_thresh": ["float"],
     "use_ge": ["Bool [n_spots] Mask for all spots used in gene efficiency calculation."]
+
   },
 
   "omp":

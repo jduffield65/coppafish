@@ -8,8 +8,9 @@ from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Rectangle
 from ...setup import Notebook
 from ...spot_colors.base import normalise_rc, remove_background
-from ...call_spots.bleed_matrix import compute_bleed_matrix
 from ..call_spots.spot_colors import view_spot
+
+
 plt.style.use('dark_background')
 
 
@@ -31,7 +32,7 @@ def view_all_gene_scores(nb):
 
     # We also want to plot the histograms in different colours, representing the number of spots for each gene
     for i in range(grid_dim ** 2):
-        gene_i_scores = nb.ref_spots.score_diff[nb.ref_spots.gene_no == i]
+        gene_i_scores = nb.ref_spots.score[nb.ref_spots.gene_no == i]
         n_spots = len(gene_i_scores)
 
         if n_spots < 50:
@@ -488,9 +489,6 @@ class BGNormViewer():
     """
     This function will plot all spots before and after background subtraction and order them by background noise.
     We will then plot the normalised spots too.
-    Args:
-        spot_colour_raw: [n_spots x n_rounds x n_channels_use] array of spots before background subtraction
-        initial_bleed_matrix: [n_channels_use x n_dyes] array of bleed matrix
     """
     def __init__(self, nb):
         self.nb = nb
@@ -648,3 +646,75 @@ class ViewBleedCalc:
         fig.suptitle('Bleed matrix calculation', fontsize=16)
 
         plt.show()
+
+
+class GeneScoreScatter():
+    def __init__(self, nb: Notebook, gene_no: int = 0):
+        """
+        Function to view a scatter plot of the gene scores for each gene in each spot. The x-axis is the second-highest
+        gene score for each spot and the y-axis is the highest gene score for each spot. This is useful for identifying
+        spots where the gene scores are very similar and therefore the spot is likely to be a false positive.
+        Args:
+            nb: Notebook (containing page ref spots)
+            gene_no: Gene number to plot
+        """
+        self.nb = nb
+        self.gene_no = gene_no
+        self.n_genes = len(self.nb.call_spots.gene_names)
+
+        # Plot the scatter plot
+        self.plot_scatter()
+
+    def plot_scatter(self, event=None):
+        # Plot the scatter plot
+        if not hasattr(self, 'fig'):
+            self.fig, self.ax = plt.subplots()
+        else:
+            self.ax.clear()
+        gene_g_mask = self.nb.ref_spots.gene_no == self.gene_no
+        self.score = self.nb.ref_spots.score[gene_g_mask]
+        self.second_score = self.score - self.nb.ref_spots.score_diff[gene_g_mask]
+        self.ax.scatter(x=self.second_score, y=self.score, s=1)
+        # Add a line at y=x
+        self.ax.plot([0, 1], [0, 1], color='r')
+        # Set x and y limits to be 0 to 1
+        self.ax.set_xlim(0, 1)
+        self.ax.set_ylim(0, 1)
+        self.ax.set_xlabel('Second highest gene score')
+        self.ax.set_ylabel('Highest gene score')
+        self.ax.set_title('Gene score scatter plot for gene ' + self.nb.call_spots.gene_names[self.gene_no])
+        # Shift the image a bit to the left to make room for buttons
+        self.fig.subplots_adjust(right=0.8)
+        self.add_gene_slider()
+        self.fig.canvas.draw()
+
+    def add_gene_slider(self):
+        # Add a slider to select the gene. As we are moving the slider, we want to show the name of the gene
+        # corresponding to the slider value. This will be displayed in the text box below the slider.
+        # We do not want to update the scatter plot as we move the slider, as this will be slow. Instead, we will
+        # add a button to update the scatter plot once we have selected the gene.
+        # First, create the slider. Make it vertical and put it on the right of the plot.
+        self.gene_slider_ax = self.fig.add_axes([0.85, 0.15, 0.05, 0.7])
+        self.gene_slider = Slider(self.gene_slider_ax, 'Gene', 0, self.n_genes - 1, valinit=self.gene_no,
+                                    valstep=1, orientation="vertical")
+        self.gene_slider.on_changed(self.update_gene)
+        self.gene_text_ax = self.fig.add_axes([0.85, 0.05, 0.05, 0.05])
+        # remove x and y ticks from button axes and gene text axes
+        self.gene_text_ax.set_xticks([])
+        self.gene_text_ax.set_yticks([])
+        self.gene_text = self.gene_text_ax.text(0.5, 0.5, self.nb.call_spots.gene_names[self.gene_no],
+                                                horizontalalignment='center', verticalalignment='center')
+        self.plot_button_ax = self.fig.add_axes([0.85, 0.9, 0.05, 0.05])
+        self.plot_button_ax.set_xticks([])
+        self.plot_button_ax.set_yticks([])
+        # Now create a clickable button to update the scatter plot, make the button black
+        self.plot_button = Button(self.plot_button_ax, 'Plot', color='k')
+        # Now link the click event to the function to update the scatter plot
+        self.plot_button.on_clicked(self.plot_scatter)
+
+    def update_gene(self, val):
+        # Update the gene number and gene name
+        self.gene_no = int(val)
+        self.gene_text.set_text(self.nb.call_spots.gene_names[self.gene_no])
+        # Update the scatter plot
+        self.fig.canvas.draw()
