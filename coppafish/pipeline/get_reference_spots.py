@@ -123,5 +123,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     nbp.score_diff = None
     nbp.intensity = None
     nbp.background_strength = None
+    nbp.gene_probs = None
+    nbp.dye_strengths = None
 
     return nbp
