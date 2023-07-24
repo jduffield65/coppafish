@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Rectangle
+from sklearn import linear_model
 from ...setup import Notebook
 from ...spot_colors.base import normalise_rc, remove_background
 from ..call_spots.spot_colors import view_spot
@@ -684,6 +685,109 @@ class GeneScoreScatter():
         self.ax.set_ylabel('Highest gene score')
         self.ax.set_title('Gene score scatter plot for gene ' + self.nb.call_spots.gene_names[self.gene_no])
         # Shift the image a bit to the left to make room for buttons
+        self.fig.subplots_adjust(right=0.8)
+        self.add_gene_slider()
+        self.fig.canvas.draw()
+
+    def add_gene_slider(self):
+        # Add a slider to select the gene. As we are moving the slider, we want to show the name of the gene
+        # corresponding to the slider value. This will be displayed in the text box below the slider.
+        # We do not want to update the scatter plot as we move the slider, as this will be slow. Instead, we will
+        # add a button to update the scatter plot once we have selected the gene.
+        # First, create the slider. Make it vertical and put it on the right of the plot.
+        self.gene_slider_ax = self.fig.add_axes([0.85, 0.15, 0.05, 0.7])
+        self.gene_slider = Slider(self.gene_slider_ax, 'Gene', 0, self.n_genes - 1, valinit=self.gene_no,
+                                    valstep=1, orientation="vertical")
+        self.gene_slider.on_changed(self.update_gene)
+        self.gene_text_ax = self.fig.add_axes([0.85, 0.05, 0.05, 0.05])
+        # remove x and y ticks from button axes and gene text axes
+        self.gene_text_ax.set_xticks([])
+        self.gene_text_ax.set_yticks([])
+        self.gene_text = self.gene_text_ax.text(0.5, 0.5, self.nb.call_spots.gene_names[self.gene_no],
+                                                horizontalalignment='center', verticalalignment='center')
+        self.plot_button_ax = self.fig.add_axes([0.85, 0.9, 0.05, 0.05])
+        self.plot_button_ax.set_xticks([])
+        self.plot_button_ax.set_yticks([])
+        # Now create a clickable button to update the scatter plot, make the button black
+        self.plot_button = Button(self.plot_button_ax, 'Plot', color='k')
+        # Now link the click event to the function to update the scatter plot
+        self.plot_button.on_clicked(self.plot_scatter)
+
+    def update_gene(self, val):
+        # Update the gene number and gene name
+        self.gene_no = int(val)
+        self.gene_text.set_text(self.nb.call_spots.gene_names[self.gene_no])
+        # Update the scatter plot
+        self.fig.canvas.draw()
+
+
+class GEScatter():
+    def __init__(self, nb: Notebook, gene_no: int = 0):
+        """
+        Function to view a scatter plot of the gene scores for each gene in each spot. The x-axis is the second-highest
+        gene score for each spot and the y-axis is the highest gene score for each spot. This is useful for identifying
+        spots where the gene scores are very similar and therefore the spot is likely to be a false positive.
+        Args:
+            nb: Notebook (containing page ref spots)
+            gene_no: Gene number to plot
+        """
+        self.nb = nb
+        self.gene_no = gene_no
+        self.n_genes = len(self.nb.call_spots.gene_names)
+        self.gene_codes = self.nb.call_spots.gene_codes.copy()
+        # Transpose dye 2 and dye 3
+        self.gene_codes[self.gene_codes == 2] = 9
+        self.gene_codes[self.gene_codes == 3] = 2
+        self.gene_codes[self.gene_codes == 9] = 3
+
+        # Plot the scatter plot
+        self.plot_scatter()
+
+    def plot_scatter(self, event=None):
+        # Plot the scatter plots
+        if not hasattr(self, 'fig'):
+            self.fig, self.ax = plt.subplots(nrows=1, ncols=6, figsize=(20, 5))
+        else:
+            for ax in self.ax:
+                ax.clear()
+        gene_g_mask = (self.nb.ref_spots.gene_no == self.gene_no) * (self.nb.call_spots.use_ge)
+        spot_colours = self.nb.ref_spots.colors[gene_g_mask][:, :, self.nb.basic_info.use_channels]
+        # Remove background from spot colours
+        background = np.repeat(self.nb.ref_spots.background_strength[gene_g_mask, np.newaxis, :], 7, axis=1)
+        spot_colours = spot_colours - background
+        spot_colours = spot_colours / self.nb.call_spots.color_norm_factor[:, self.nb.basic_info.use_channels]
+        gene_g_code = self.gene_codes[self.gene_no]
+        spot_round_brightness = np.zeros((spot_colours.shape[0], 7))
+        # Populate spot_round_brightness with the brightness of each spot in each round (this is the intensity of the
+        # spot in round r in the max channel of the dye corresponding to gene_g_code[r])
+        for r in range(7):
+            spot_round_brightness[:, r] = spot_colours[:, r, gene_g_code[r]]
+
+        # Now plot the scatter plots of intensity per round against intensity in r3
+        independent_rounds = [0, 1, 2, 4, 5, 6]
+        for r in range(6):
+            self.ax[r].scatter(spot_round_brightness[:, 3], spot_round_brightness[:, independent_rounds[r]], s=1)
+            self.ax[r].set_xlabel('Intensity in r3')
+            self.ax[r].set_ylabel('Intensity in r' + str(independent_rounds[r]))
+            self.ax[r].set_title('Intensity in r' + str(independent_rounds[r]) + ' vs r3')
+            self.ax[r].set_ylim(np.percentile(spot_round_brightness, 1),
+                                np.percentile(spot_round_brightness, 99))
+            self.ax[r].set_xlim(np.percentile(spot_round_brightness[:, 3], 1),
+                                np.percentile(spot_round_brightness[:, 3], 99))
+            # plot the line of best fit
+            x = spot_round_brightness[:, 3]
+            y = spot_round_brightness[:, independent_rounds[r]]
+            # Calculate the line of best fit. Use robust linear regression to avoid outliers
+            huber = linear_model._huber.HuberRegressor()
+            huber.fit(x[:, np.newaxis], y)
+            m = huber.coef_[0]
+            b = huber.intercept_
+            r_squared = np.corrcoef(x, y)
+            self.ax[r].plot(x, m * x + b, color='red', label='R$^2$ = ' + str(round(r_squared[0, 1], 2)) + '\n' +
+                            'Slope = ' + str(round(m, 2)))
+            self.ax[r].legend(loc='upper right')
+
+        self.fig.suptitle('Correlation between rounds for gene ' + self.nb.call_spots.gene_names[self.gene_no])
         self.fig.subplots_adjust(right=0.8)
         self.add_gene_slider()
         self.fig.canvas.draw()
