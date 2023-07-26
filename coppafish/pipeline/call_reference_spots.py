@@ -52,7 +52,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     else:
         # Raise error if data in nbp_ref_spots already exists that will be overwritten in this function.
         error_message = ""
-        for var in ['gene_no', 'gene_score', 'score_diff', 'intensity', 'background_strength']:
+        for var in ['gene_no', 'gene_score', 'score_diff', 'intensity', 'background_strength', 'gene_probs',
+                    'dye_strengths']:
             if hasattr(nbp_ref_spots, var) and nbp_ref_spots.__getattribute__(var) is not None:
                 error_message += f"\nnbp_ref_spots.{var} is not None but this function will overwrite {var}." \
                                  f"\nRun with overwrite_ref_spots = True to get past this error."
@@ -61,7 +62,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     nbp_ref_spots.finalized = False  # So we can add and delete ref_spots page variables
     # delete all variables in ref_spots set to None so can add them later.
-    for var in ['gene_no', 'score', 'score_diff', 'intensity', 'background_strength']:
+    for var in ['gene_no', 'score', 'score_diff', 'intensity', 'background_strength',  'gene_probs', 'dye_strengths']:
         if hasattr(nbp_ref_spots, var):
             nbp_ref_spots.__delattr__(var)
     nbp = NotebookPage("call_spots")

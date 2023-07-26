@@ -350,7 +350,7 @@ def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
     Custom-built function to compute array shifted by a certain offset
     Args:
         array: array to be shifted
-        offset: shift value
+        offset: shift value (must be int)
         constant_values: by default this is 0
 
     Returns:
