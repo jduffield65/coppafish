@@ -93,8 +93,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     ge_initial = np.ones((n_genes, n_rounds))
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=ge_initial)
     # gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
-    gene_prob, dye_strength = gene_prob_score(spot_colours=spot_colours, bleed_matrix=bleed_matrix[0],
-                                              gene_codes=gene_codes)
+    gene_prob = gene_prob_score(spot_colours=spot_colours, bled_codes=bled_codes)
     gene_no = np.argmax(gene_prob, axis=1)
     gene_score = np.max(gene_prob, axis=1)
     gene_score_second = np.sort(gene_prob, axis=1)[:, -2]
@@ -111,7 +110,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
     # 3.3 Update gene coefficients
-    gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
+    # gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
 
     # save overwritable variables in nbp_ref_spots
     nbp_ref_spots.gene_no = gene_no
@@ -120,7 +119,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp_ref_spots.intensity = np.median(np.max(spot_colours, axis=2), axis=1).astype(np.float32)
     nbp_ref_spots.background_strength = background_noise
     nbp_ref_spots.gene_probs = gene_prob
-    nbp_ref_spots.dye_strengths = dye_strength
+    # nbp_ref_spots.dye_strengths = dye_strength
     nbp_ref_spots.finalized = True
 
     # Save variables in nbp
@@ -138,11 +137,15 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
     # TODO: Remove this in future versions
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
-    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
-                                   return_in_bounds=True)[0]
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
-    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
-    nbp.gene_efficiency_intensity_thresh = float(np.round(pixel_intensity[25], 2))
+    # pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
+    #                                int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
+    #                                return_in_bounds=True)[0]
+    # pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
+    # nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
+    # nbp.gene_efficiency_intensity_thresh = float(np.round(pixel_intensity[25], 2))
+
+    # Quick Hack to get around the fact that we don't have pixel colors
+    nbp.abs_intensity_percentile = np.percentile(np.random.rand(100), np.arange(1, 101))
+    nbp.gene_efficiency_intensity_thresh = 0.5
 
     return nbp, nbp_ref_spots

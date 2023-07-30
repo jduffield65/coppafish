@@ -4,6 +4,7 @@ import warnings
 import time
 from tqdm import tqdm
 from .. import utils
+from .. import NotebookPage
 from typing import Tuple, Optional
 
 
@@ -137,4 +138,52 @@ def get_extract_info(image: np.ndarray, auto_thresh_multiplier: float, hist_bin_
         clip_scale = scale * max_pixel_value / image.max()
     else:
         clip_scale = 0
+
     return np.round(auto_thresh).astype(int), hist_counts, n_clip_pixels, clip_scale
+
+
+def regularise_auto_thresh(nbp_basic: NotebookPage, auto_thresh: np.ndarray):
+    """
+    Function to regularise the auto_thresh values output by get_extract_info.
+    Args:
+        nbp_basic: NotebookPage containing the basic information about the experiment.
+        auto_thresh: n_tiles x n_rounds x n_channels array of auto_thresh values.
+
+    Returns:
+        autp_thresh: n_tiles x n_rounds x n_channels array of auto_thresh values (regularised).
+    """
+
+    # Strategy:
+    # Collect the auto_thresh values for each channel c (n_tiles x n_rounds). Identify outliers in this dataset.
+    # For each outlier x, identify the round r in which it occurs. Comparing x to other values for channel c in round r,
+    # across all tiles, if x is an outlier in this smaller dataset, replace x with the median of this smaller dataset.
+
+    channel_thresh = auto_thresh.copy()
+    # reshape to n_channels x n_tiles x n_rounds
+    channel_thresh = np.moveaxis(channel_thresh, 2, 0)
+    # reshape to n_channels x (n_tiles x n_rounds)
+    channel_thresh = np.reshape(channel_thresh, (channel_thresh.shape[0], -1))
+
+    for c in nbp_basic.use_channels:
+        c_thresh = channel_thresh[c]
+        # identify outliers
+        outliers = np.abs(c_thresh - np.median(c_thresh)) > 2 * np.std(c_thresh)
+        # outliers should also include values of 0
+        outliers = np.logical_or(outliers, c_thresh == 0)
+        # Now loop through outliers, identify the round in which they occur, and if they are outliers in this round,
+        # replace them with the median of the values in this round.
+        outlier_indices = np.where(outliers)[0]
+        for i in outlier_indices:
+            # identify round and tile in which outlier occurs
+            t, r = i // nbp_basic.n_rounds, i % nbp_basic.n_rounds
+            outlier_value = c_thresh[i]
+            rc_median = np.median(auto_thresh[:, r, c])
+            rc_std = np.std(auto_thresh[:, r, c])
+            if abs(outlier_value - rc_median) > rc_std:
+                # replace outlier with median of round
+                auto_thresh[t, r, c] = rc_median
+            elif outlier_value == 0:
+                # replace outlier with median of round
+                auto_thresh[t, r, c] = rc_median
+
+    return auto_thresh

@@ -316,8 +316,13 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 if not nbp_basic.is_3d:
                     utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
     pbar.close()
+
+    # Now remove outliers from nbp.auto_thresh
+    nbp.auto_thresh = extract.regularise_auto_thresh(nbp_basic, nbp.auto_thresh)
+
     if not nbp_basic.use_anchor:
         nbp_debug.scale_anchor_tile = None
         nbp_debug.scale_anchor_z = None
         nbp_debug.scale_anchor = None
+
     return nbp, nbp_debug

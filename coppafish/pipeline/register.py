@@ -55,26 +55,24 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['round_registration']['tiles_completed'])
 
     # Part 1: Initial affine transform
-    # Start with round registration
+    # Start with channel registration
+    pbar = tqdm(total=len(uncompleted_tiles))
+    pbar.set_description(f"Running initial channel registration")
+    if registration_data['channel_registration']['cam_mse'].max() == 0:
+        registration_data = channel_registration(nbp_file, nbp_basic, registration_data,config, pbar)
+
+    # round registration
     with tqdm(total=len(uncompleted_tiles)) as pbar:
         pbar.set_description(f"Running initial round registration on all tiles")
         for t in uncompleted_tiles:
             registration_data = round_registration(nbp_file, nbp_basic, config, registration_data, t, pbar)
-
-    # Now do channel registration
-    uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['channel_registration']['tiles_completed'])
-    with tqdm(total=len(uncompleted_tiles)) as pbar:
-        pbar.set_description(f"Running initial channel registration on all tiles")
-        for t in uncompleted_tiles:
-            registration_data = channel_registration(nbp_file, nbp_basic, registration_data, t, pbar)
 
     # Part 2: Regularisation
     registration_data = regularise_transforms(registration_data=registration_data,
                                               tile_origin=np.roll(tile_origin, 1, axis=1),
                                               residual_threshold=config['residual_thresh'],
                                               use_tiles=nbp_basic.use_tiles,
-                                              use_rounds=nbp_basic.use_rounds,
-                                              use_channels=nbp_basic.use_channels)
+                                              use_rounds=nbp_basic.use_rounds)
 
     # Now combine all of these into single subvol transform array via composition
     for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):

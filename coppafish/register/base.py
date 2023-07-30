@@ -1,14 +1,17 @@
+import itertools
 import os
 import pickle
 import numpy as np
 from tqdm import tqdm
+from skimage.transform import hough_circle, hough_circle_peaks
+from skimage.feature import canny
 from sklearn.linear_model import HuberRegressor
 from scipy.spatial import KDTree
 from scipy import stats
 from skimage.filters import sobel
 from ..utils.npy import load_tile
 from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image, \
-    replace_scale, populate_full, merge_subvols, invert_affine
+    replace_scale, populate_full, merge_subvols, yxz_to_zyx_affine
 from skimage.registration import phase_cross_correlation
 from coppafish.setup import NotebookPage
 
@@ -334,65 +337,86 @@ def dapi_reg(im_dir: str, im_rounds: list, anchor_round: int, tiles: list) -> di
 
 
 def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, registration_data: dict,
-                           t: int, pbar) -> dict:
+                         config: dict, pbar) -> dict:
     """
     Function to carry out subvolume registration on a single tile.
     Args:
         nbp_file: File Names notebook page
         nbp_basic: Basic info notebook page
         registration_data: dictionary with registration data
-        t: tile
         pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
 
     Returns:
         registration_data updated after the subvolume registration
     """
-    # Now begin the channel registration.
-    #  * We will not compute subvolume shifts for this step
-    #  * Instead we will use scales from previous experiments and we will find shifts for each channel via a single
-    #    3D cross correlation
+    # We need to load in the fluorescent bead images
+    fluorescent_beads = np.zeros((len(set(nbp_basic.channel_cameras)), nbp_basic.tile_sz, nbp_basic.tile_sz))
+    files = [f for f in os.listdir(nbp_file.fluorescent_beads_dir) if f.endswith('.npy')]
+    files.sort()
+    for i, f in enumerate(files):
+        fluorescent_beads[i] = np.load(os.path.join(nbp_file.fluorescent_beads_dir, f))
 
-    # We will use the round with the highest round_shift_corr. We will move the anchor into this round's space
-    # by applying the round transform to the anchor image.
-    # best_round = np.argmax(np.sum(registration_data['round_registration']['round_shift_corr'][t], axis=1))
-    # Now load the anchor image, convert to zyx and apply sobel filter.
-    # Take small subset of this image for speed
-    # anchor_image = sobel(yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)))
-    # z_mid, y_mid, x_mid = np.array(anchor_image.shape) // 2
-    # adjusted_anchor = \
-    #     affine_transform(anchor_image,
-    #                      invert_affine(registration_data['round_registration']['round_transform_raw'][t, best_round]))
-    # adjusted_anchor = adjusted_anchor[z_mid - 16:z_mid + 16, y_mid - 250:y_mid + 250, x_mid - 250:x_mid + 250]
-    # Now we will loop through channels of this round. We will initially apply the prior channel transform to each
-    # channel and then find the shift between the adjusted anchor and adjusted channel.
-    use_channels = nbp_basic.use_channels
-    prior_channel_transform = np.repeat(np.eye(3, 3)[np.newaxis], len(use_channels), axis=0)
-    # since our prior channel transform is only for 7 channels, we will set the prior channel transform for channel
-    # 19 to be identity
-    if len(use_channels) == 8:
-        channels_prior = [0, 1, 2, 3, 4, 6, 7]
-    else:
-        channels_prior = [0, 1, 2, 3, 4, 5, 6]
-    prior_channel_transform[channels_prior] = np.load('./coppafish/setup/prior_channel_transform.npy')
+    # We need to find the anchor camera to register to
+    anchor_cam = nbp_basic.channel_cameras[nbp_basic.anchor_channel]
+    all_cams = list(set(nbp_basic.channel_cameras))
+    all_cams.sort()
+    anchor_cam_idx = all_cams.index(anchor_cam)
 
-    for c in range(len(use_channels)):
-        # Set progress bar title
-        pbar.set_description('Computing shifts for tile ' + str(t) + ', channel ' + str(use_channels[c]))
-        shift = np.array([0, 0, 0])
-        # Append these arrays to the channel_shift, channel_shift_corr, channel_transform and position storage
-        registration_data['channel_registration']['reference_round'][t] = 10
-        registration_data['channel_registration']['channel_shift'][t, use_channels[c]] = shift
-        registration_data['channel_registration']['channel_shift_corr'][t, use_channels[c]] = 0
-        registration_data['channel_registration']['channel_transform_raw'][t, use_channels[c]] = \
-            np.vstack((prior_channel_transform[c].T, shift)).T
-        pbar.update(1)
+    # First correct for shifts between cameras
+    shift = np.zeros((len(all_cams), 2))
+    for i in range(len(all_cams)):
+        pbar.set_description('Computing shifts for camera ' + str(all_cams[i]))
+        if i != anchor_cam_idx:
+            shift[i], _, _ = phase_cross_correlation(fluorescent_beads[i], fluorescent_beads[anchor_cam_idx])
+            fluorescent_beads[i] = custom_shift(fluorescent_beads[i], shift[i].astype(int))
 
-    # Add tile to completed tiles
-    registration_data['channel_registration']['tiles_completed'].append(t)
+    # Now we'll turn each image into a point cloud
+    bead_point_clouds = []
+    bead_radii = config['bead_radii']
+    for i in range(len(all_cams)):
+        pbar.set_description('Detecting fluorescent beads for camera ' + str(all_cams[i]))
+        edges = canny(fluorescent_beads[i],  sigma=3, low_threshold=10, high_threshold=50)
+        hough_res = hough_circle(edges, bead_radii)
+        accums, cx, cy, radii = hough_circle_peaks(hough_res, bead_radii, min_xdistance=10, min_ydistance=10)
+        bead_point_clouds.append(np.vstack((cy, cx)).T)
 
-    # Now save the registration data dictionary externally
-    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
-        pickle.dump(registration_data, f)
+    # Now convert the point clouds from yx to yxz
+    bead_point_clouds = [np.hstack((bead_point_clouds[i], np.zeros((bead_point_clouds[i].shape[0], 1))))
+                         for i in range(len(all_cams))]
+    shift = np.hstack((shift, np.zeros((shift.shape[0], 1))))
+
+    # Set up ICP
+    initial_transform = np.zeros((len(all_cams), 4, 3))
+    transform = np.zeros((len(all_cams), 4, 3))
+    mse = np.zeros((len(all_cams)), 50)
+    target_cams = [i for i in range(len(all_cams)) if i != anchor_cam_idx]
+    with tqdm(total=len(target_cams)) as pbar:
+        for i in target_cams:
+            pbar.set_description('Running ICP for camera ' + str(all_cams[i]))
+            # Set initial transform to identity + shift
+            initial_transform[i, :3, :3] = np.eye(3)
+            initial_transform[i, :3, 3] = shift[i]
+            # Run ICP
+            transform[i], _, mse[i], converged = icp(yxz_base=bead_point_clouds[anchor_cam_idx],
+                                                     yxz_target=bead_point_clouds[i],
+                                                     start_transform=initial_transform[i], n_iters=50, dist_thresh=5)
+            registration_data['channel_registration']['cam_mse'][i] = mse[i]
+            if not converged:
+                transform[i, :3, :3] = np.eye(3)
+                transform[i, :3, 3] = shift[i]
+                raise Warning('ICP did not converge for camera ' + str(all_cams[i]) + '. Replacing with shift.')
+            pbar.update(1)
+
+    # Convert transforms from yxz to zyx
+    transform_zyx = np.zeros((len(all_cams), 3, 4))
+    for i in range(len(all_cams)):
+        transform_zyx[i] = yxz_to_zyx_affine(transform[i])
+
+    # Now we need to loop through all channels in use, find the corresponding camera and set channel_transform
+    # to the transform for that camera
+    for c in nbp_basic.use_channels:
+        cam_idx = all_cams.index(nbp_basic.channel_cameras[c])
+        registration_data['channel_registration']['channel_transform'][c] = transform_zyx[cam_idx]
 
     return registration_data
 
@@ -472,62 +496,29 @@ def regularise_round_scaling(scale: np.ndarray):
     return scale
 
 
-# Function to remove outlier channel scales
-def regularise_channel_scaling(scale: np.ndarray):
-    """
-    Function to remove outliers in the scale parameters for channel transforms. Experience shows these should be close
-    to 1 for z regardless of channel and should be the same for the same channel.
-
-    Args:
-        scale: 3 x n_tiles_use x n_channels_use ndarray of z y x scales for each tile and channel
-
-    Returns:
-        scale_regularised:  n_tiles_use x n_channels_use x 3 ndarray of z y x regularised scales for each tile and chan
-    """
-    # Define num tiles and separate the z scale and yx scales for different analysis
-    n_tiles = scale.shape[1]
-    z_scale = scale[0]
-    yx_scale = scale[1:]
-
-    # Regularise z_scale: No need to account for variation in tile or channel
-    outlier_z = np.abs(z_scale - 1) > 0.01
-    z_scale[outlier_z] = 1
-
-    # Regularise yx_scale: Account for variation in channel
-    median_yx_scale = np.repeat(np.median(yx_scale, axis=1)[:, np.newaxis], n_tiles, axis=1)
-    iqr_yx_scale = np.repeat(stats.iqr(yx_scale, axis=1)[:, np.newaxis], n_tiles, axis=1)
-    outlier_yx = np.abs(yx_scale - median_yx_scale) > iqr_yx_scale
-    yx_scale[outlier_yx] = median_yx_scale[outlier_yx]
-
-    return scale
-
-
 # Bridge function for all regularisation
 def regularise_transforms(registration_data: dict, tile_origin: np.ndarray, residual_threshold: float,
-                          use_tiles: list, use_rounds: list, use_channels: list):
+                          use_tiles: list, use_rounds: list):
     """
-    Function to regularise affine transforms
+    Function to regularise affine transforms by comparing them to affine transforms from other tiles.
+    As the channel transforms do not depend on tile, they do not need to be regularised.
     Args:
         registration_data: dictionary of registration data
         tile_origin: n_tiles x 3 tile origin in zyx
         residual_threshold: threshold for classifying outlier shifts
         use_tiles: list of tiles in use
         use_rounds: list of rounds in use
-        use_channels: list of channels in use
 
     Returns:
-        round_transform_regularised: n_tiles x n_rounds x 3 x 4 affine transforms regularised
-        channel_transform_regularised: n_tiles x n_channels x 3 x 4 affine transforms regularised
+        registration_data: dictionary of registration data with regularised transforms
     """
     # Extract transforms
     round_transform = np.copy(registration_data['round_registration']['round_transform_raw'])
-    channel_transform = np.copy(registration_data['channel_registration']['channel_transform_raw'])
 
     # Code becomes easier when we disregard tiles, rounds, channels not in use
-    n_tiles, n_rounds, n_channels = round_transform.shape[0], round_transform.shape[1], channel_transform.shape[1]
+    n_tiles, n_rounds = round_transform.shape[0], round_transform.shape[1]
     tile_origin = tile_origin[use_tiles]
     round_transform = round_transform[use_tiles][:, use_rounds]
-    channel_transform = channel_transform[use_tiles][:, use_channels]
 
     # Regularise round transforms
     round_transform[:, :, :, 3] = regularise_shift(shift=round_transform[:, :, :, 3], tile_origin=tile_origin,
@@ -539,18 +530,7 @@ def regularise_transforms(registration_data: dict, tile_origin: np.ndarray, resi
                                     sublist_2=use_rounds, list_2=np.arange(n_rounds),
                                     array=round_transform)
 
-    # Regularise channel transforms
-    channel_transform[:, :, :, 3] = regularise_shift(shift=channel_transform[:, :, :, 3], tile_origin=tile_origin,
-                                                     residual_threshold=residual_threshold)
-    channel_scale = np.array([channel_transform[:, :, 0, 0], channel_transform[:, :, 1, 1],
-                              channel_transform[:, :, 2, 2]])
-    channel_transform = replace_scale(transform=channel_transform, scale=channel_scale)
-    channel_transform = populate_full(sublist_1=use_tiles, list_1=np.arange(n_tiles),
-                                      sublist_2=use_channels, list_2=np.arange(n_channels),
-                                      array=channel_transform)
-
     registration_data['round_registration']['round_transform'] = round_transform
-    registration_data['channel_registration']['channel_transform'] = channel_transform
 
     return registration_data
 
@@ -614,7 +594,7 @@ def get_transform(yxz_base: np.ndarray, yxz_target: np.ndarray, transform_old: n
 
 
 # Simple ICP implementation, calls above until no change
-def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust):
+def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=False):
     """
     Applies n_iters rounds of the above least squares regression
     Args:
