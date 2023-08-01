@@ -344,7 +344,7 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, regist
         nbp_file: File Names notebook page
         nbp_basic: Basic info notebook page
         registration_data: dictionary with registration data
-        pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
+        config: dictionary with configuration data
 
     Returns:
         registration_data updated after the subvolume registration
@@ -393,9 +393,8 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, regist
     with tqdm(total=len(target_cams)) as pbar:
         for i in target_cams:
             pbar.set_description('Running ICP for camera ' + str(all_cams[i]))
-            # Set initial transform to identity + shift
+            # Set initial transform to identity (shift already accounted for)
             initial_transform[i, :3, :3] = np.eye(3)
-            initial_transform[i, :3, 3] = shift[i]
             # Run ICP
             transform[i], _, mse[i], converged = icp(yxz_base=bead_point_clouds[anchor_cam_idx],
                                                      yxz_target=bead_point_clouds[i],
@@ -406,6 +405,9 @@ def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, regist
                 transform[i, :3, 3] = shift[i]
                 raise Warning('ICP did not converge for camera ' + str(all_cams[i]) + '. Replacing with shift.')
             pbar.update(1)
+
+    # Add the shifts to the transforms
+    transform[:, :3, 3] += shift
 
     # Convert transforms from yxz to zyx
     transform_zyx = np.zeros((len(all_cams), 3, 4))
