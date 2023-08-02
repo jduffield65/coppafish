@@ -4,7 +4,7 @@ import warnings
 import time
 from tqdm import tqdm
 from .. import utils
-from .. import NotebookPage
+from ..setup import NotebookPage
 from typing import Tuple, Optional
 
 

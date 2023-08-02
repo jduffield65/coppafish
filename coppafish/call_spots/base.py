@@ -181,7 +181,7 @@ def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_
 
 def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, gene_no: np.ndarray,
                             gene_score: np.ndarray, gene_codes: np.ndarray, intensity: np.ndarray,
-                            spot_number_threshold: int = 25, score_threshold: float = 0.7,
+                            spot_number_threshold: int = 25, score_threshold: float = 0.8,
                             intensity_threshold: float = 0) \
         -> Tuple[np.ndarray, np.ndarray]:
     """

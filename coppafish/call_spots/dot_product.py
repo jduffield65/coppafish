@@ -65,7 +65,7 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray) -> Tuple
     # gene_probabilities = gene_probabilities / np.sum(gene_probabilities, axis=1)[:, None]
     # return gene_probabilities, dye_strengths
 
-def gene_prob_score(spot_colours: np.ndarray, bled_codes: np.ndarray, kappa: float = 1) -> np.ndarray:
+def gene_prob_score(spot_colours: np.ndarray, bled_codes: np.ndarray, kappa: float = 2) -> np.ndarray:
     """
     Simple dot product score assigning each spot to the gene with the highest score.
     Args:

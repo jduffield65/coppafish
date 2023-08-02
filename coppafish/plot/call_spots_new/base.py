@@ -9,7 +9,8 @@ from matplotlib.patches import Rectangle
 from sklearn import linear_model
 from ...setup import Notebook
 from ...spot_colors.base import normalise_rc, remove_background
-from ..call_spots.spot_colors import view_spot
+from ..call_spots.spot_colors import view_spot, view_codes
+from ..call_spots.bleed_matrix import view_bled_codes
 
 
 plt.style.use('dark_background')
@@ -202,7 +203,7 @@ class GEViewer():
 
 
 class GESpotViewer():
-    def __init__(self, nb: Notebook, gene_index: int = 0):
+    def __init__(self, nb: Notebook, gene_index: int = 0, use_ge=True):
         """
         Diagnostic to show the spots used to calculate the gene efficiency for a given gene.
         Args:
@@ -214,6 +215,7 @@ class GESpotViewer():
         self.gene_index = gene_index
         self.n_genes = nb.call_spots.gene_efficiency.shape[0]
         self.mode = 'C'
+        self.use_ge = use_ge
         # Load spots
         self.load_spots(gene_index)
         # Now initialise the plot, adding fig and ax attributes to the class
@@ -221,10 +223,14 @@ class GESpotViewer():
 
         plt.show()
 
-    def load_spots(self, gene_index: int):
+    def load_spots(self, gene_index: int, use_ge=True):
         nb = self.nb
         # First we need to find the spots used to calculate the gene efficiency for the given gene.
-        self.gene_g_mask = nb.call_spots.use_ge * (nb.ref_spots.gene_no == gene_index)
+        initial_assignment = np.argmax(nb.ref_spots.gene_probs, axis=1)
+        if use_ge:
+            self.gene_g_mask = nb.call_spots.use_ge * (initial_assignment == gene_index)
+        else:
+            self.gene_g_mask = nb.ref_spots.gene_no == gene_index
         # self.gene_g_mask = nb.ref_spots.gene_no == gene_index
         spots = nb.ref_spots.colors[self.gene_g_mask][:, :, nb.basic_info.use_channels]
         # remove background codes. To do this, repeat background_strenth along a new axis for rounds
@@ -291,7 +297,7 @@ class GESpotViewer():
         self.ax[1].axhline(self.spots.shape[0] - 1, color='w', linestyle='--', label='Gene Efficiency = 0')
         self.ax[1].legend(loc='upper right')
         # Add simple colorbar. Move this a little up to make space for the button.
-        cax = self.fig.add_axes([0.925, 0.1, 0.03, 0.8])
+        cax = self.fig.add_axes([0.925, 0.1, 0.03, 0.7])
         self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=vmin, vmax=vmax), cmap='viridis'),
                           cax=cax, label='Spot Colour')
         self.add_cmap_widgets()
@@ -394,6 +400,11 @@ class GESpotViewer():
         self.mode = 'C'
         self.plot()
 
+    def button_all_clicked(self, event):
+        self.use_ge = not self.use_ge
+        self.load_spots(self.gene_index, self.use_ge)
+        self.plot()
+
     def button_hist_clicked(self, event):
         self.mode = 'H'
         self.plot()
@@ -407,6 +418,10 @@ class GESpotViewer():
         ax_button_cmap = self.fig.add_axes([0.95, 0.05, 0.02, 0.03])
         self.button_cmap = Button(ax_button_cmap, 'C', color='black')
         self.button_cmap.on_clicked(self.button_cmap_clicked)
+        # Add button to show all spots in the gene. Put this in the top right of the figure
+        ax_button_show_all = self.fig.add_axes([0.925, 0.825, 0.05, 0.05])
+        self.button_all = Button(ax_button_show_all, 'ALL', color='black')
+        self.button_all.on_clicked(self.button_all_clicked)
 
     def add_cmap_widgets(self):
         # Initialise buttons and cursors
@@ -822,3 +837,112 @@ class GEScatter():
         self.gene_text.set_text(self.nb.call_spots.gene_names[self.gene_no])
         # Update the scatter plot
         self.fig.canvas.draw()
+
+
+class GeneProbs():
+    def __init__(self, nb: Notebook, gene_no: int = 0):
+        self.nb = nb
+        self.gene_no = gene_no
+        self.n_genes = len(self.nb.call_spots.gene_names)
+        self.plot_gene_probs()
+
+    def load_gene_probs(self):
+        gene_g_mask = self.nb.ref_spots.gene_no == self.gene_no
+        gene_g_ids = np.where(gene_g_mask)[0]
+        # Get the spot probabilities for the selected gene
+        spot_probs = self.nb.ref_spots.gene_probs[gene_g_mask]
+        # We will order the spots by the gene they are assigned to with the highest probability
+        self.prob_matrix = np.zeros((0, self.n_genes))
+        self.spot_ids = np.zeros(0, dtype=int)
+        num_assignments = np.zeros(self.n_genes)
+        for i in range(self.n_genes):
+            num_assignments[i] = np.sum(np.argmax(spot_probs, axis=1) == i)
+        # Loop through genes in order of number of assignments
+        for i in np.argsort(num_assignments)[::-1]:
+            # get spots where this gene has the highest probability
+            gene_i_mask = np.argmax(spot_probs, axis=1) == i
+            # add these spots to the matrix
+            prob = spot_probs[gene_i_mask, :]
+            self.prob_matrix = np.concatenate((self.prob_matrix, prob[np.argsort(prob[:, i])[::-1]]), axis=0)
+            spot_ids = gene_g_ids[gene_i_mask]
+            spot_ids = spot_ids[np.argsort(prob[:, i])[::-1]]
+            self.spot_ids = np.concatenate((self.spot_ids, spot_ids))
+        # update num assignments
+        self.num_assignments = num_assignments
+
+    def plot_gene_probs(self, event=None):
+        # Plot the prob image
+        if not hasattr(self, 'fig'):
+            self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
+        else:
+            self.ax.clear()
+        # Load the gene probabilities
+        self.load_gene_probs()
+        # Plot the matrix. Make sure that the image does not go further than 0.9 right to the edge of the plot
+        self.ax.imshow(self.prob_matrix, cmap='viridis', aspect='auto', interpolation='none')
+        # Add white horizontal lines to separate the genes. Do this by looping through num_assignments in descending
+        # order and adding a line at the end of each gene
+        num_assignments = self.num_assignments[np.argsort(self.num_assignments)[::-1]]
+        for i in range(self.n_genes):
+            self.ax.axhline(np.sum(num_assignments[:i + 1]) - 0.5, color='w', linewidth=1, linestyle='--',
+                            alpha=max(0.1, 1 - i / 10))
+
+        self.ax.set_xlabel('Gene')
+        self.ax.set_ylabel('Spot')
+        self.fig.subplots_adjust(right=0.9)
+        self.ax.set_xticks(np.arange(self.n_genes), self.nb.call_spots.gene_names, rotation=90)
+        self.ax.set_title('Spot probabilities for gene ' + self.nb.call_spots.gene_names[self.gene_no])
+        self.add_gene_slider()
+        self.add_widgets()
+        view_bled_codes(self.nb)
+        self.fig.canvas.draw()
+
+    def add_gene_slider(self):
+        # Add a slider to select the gene. As we are moving the slider, we want to show the name of the gene
+        # corresponding to the slider value. This will be displayed in the text box below the slider.
+        # We do not want to update the scatter plot as we move the slider, as this will be slow. Instead, we will
+        # add a button to update the scatter plot once we have selected the gene.
+        # First, create the slider. Make it vertical and put it on the right of the plot.
+        self.gene_slider_ax = self.fig.add_axes([0.90, 0.15, 0.05, 0.7])
+        self.gene_slider = Slider(self.gene_slider_ax, 'Gene', 0, self.n_genes - 1, valinit=self.gene_no,
+                                  valstep=1, orientation="vertical")
+        self.gene_slider.on_changed(self.update_gene)
+        self.gene_text_ax = self.fig.add_axes([0.90, 0.05, 0.05, 0.05])
+        # remove x and y ticks from button axes and gene text axes
+        self.gene_text_ax.set_xticks([])
+        self.gene_text_ax.set_yticks([])
+        self.gene_text = self.gene_text_ax.text(0.5, 0.5, self.nb.call_spots.gene_names[self.gene_no],
+                                                horizontalalignment='center', verticalalignment='center')
+        self.plot_button_ax = self.fig.add_axes([0.90, 0.9, 0.05, 0.05])
+        self.plot_button_ax.set_xticks([])
+        self.plot_button_ax.set_yticks([])
+        # Now create a clickable button to update the scatter plot, make the button black
+        self.plot_button = Button(self.plot_button_ax, 'Plot', color='k')
+        # Now link the click event to the function to update the scatter plot
+        self.plot_button.on_clicked(self.plot_gene_probs)
+
+    def update_gene(self, val):
+        # Update the gene number and gene name
+        self.gene_no = int(val)
+        self.gene_text.set_text(self.nb.call_spots.gene_names[self.gene_no])
+        # Update the scatter plot
+        self.fig.canvas.draw()
+
+    def add_rectangle(self, index):
+        # We need to remove any existing rectangles from the plot
+        index = max(0, index)
+        index = min(index, self.prob_matrix.shape[0] - 1)
+        for rectangle in self.ax.patches:
+            rectangle.remove()
+        # We can then add a new rectangle to the plot
+        self.ax.add_patch(
+            Rectangle((-0.5, index - 0.5), self.n_genes, 1, fill=False, edgecolor='white'))
+
+    def add_widgets(self):
+        # Initialise buttons and cursors
+        # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
+        mplcursors.cursor(self.ax, hover=False).connect(
+            "add", lambda sel: view_codes(self.nb, self.spot_ids[sel.target.index[0]]))
+        # 2. We would like to add a white rectangle around the observed spot when we hover over it
+        mplcursors.cursor(self.ax, hover=2).connect(
+            "add", lambda sel: self.add_rectangle(sel.target.index[0]))

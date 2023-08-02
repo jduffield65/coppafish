@@ -202,7 +202,7 @@ class ColorPlotBase:
 
 
 class view_codes(ColorPlotBase):
-    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor'):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor', save_loc: str = None):
         """
         Diagnostic to compare `spot_color` to `bled_code` of predicted gene.
 
@@ -259,7 +259,10 @@ class view_codes(ColorPlotBase):
         self.background_button.on_clicked(self.change_background)
 
         self.change_norm()  # initialise with method = 'norm'
-        plt.show()
+        if save_loc:
+            plt.savefig(save_loc, dpi=300)
+        else:
+            plt.show()
 
     def change_background(self, event=None):
         """

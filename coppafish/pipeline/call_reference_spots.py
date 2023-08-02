@@ -80,8 +80,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     colour_norm_factor, spot_brightness = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
                                                        initial_bleed_matrix=initial_bleed_matrix)
     # First remove round 0 and 1 from norm factor as these have issues with anchor staining
-    colour_norm_factor = np.median(colour_norm_factor[2:], axis=0)
+    colour_norm_factor = np.median(colour_norm_factor, axis=0)
     spot_colours = spot_colours_background_removed / colour_norm_factor
+    initial_bleed_matrix = initial_bleed_matrix / colour_norm_factor[:, None]
     colour_norm_factor = colour_norm_factor * initial_norm_factor
 
     # 2. Bleed matrix calculation and bled codes
@@ -110,7 +111,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
     # 3.3 Update gene coefficients
-    # gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
+    gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
 
     # save overwritable variables in nbp_ref_spots
     nbp_ref_spots.gene_no = gene_no
