@@ -761,9 +761,9 @@ class GEScatter():
     def plot_scatter(self, event=None):
         # Plot the scatter plots
         if not hasattr(self, 'fig'):
-            self.fig, self.ax = plt.subplots(nrows=1, ncols=6, figsize=(20, 5))
+            self.fig, self.ax = plt.subplots(nrows=7, ncols=7, figsize=(20, 5))
         else:
-            for ax in self.ax:
+            for ax in self.ax.flatten():
                 ax.clear()
         gene_g_mask = (self.nb.ref_spots.gene_no == self.gene_no) * (self.nb.call_spots.use_ge)
         spot_colours = self.nb.ref_spots.colors[gene_g_mask][:, :, self.nb.basic_info.use_channels]
@@ -778,30 +778,35 @@ class GEScatter():
         for r in range(7):
             spot_round_brightness[:, r] = spot_colours[:, r, gene_g_code[r]]
 
-        # Now plot the scatter plots of intensity per round against intensity in r3
-        independent_rounds = [0, 1, 2, 4, 5, 6]
-        for r in range(6):
-            self.ax[r].scatter(spot_round_brightness[:, 3], spot_round_brightness[:, independent_rounds[r]], s=1)
-            self.ax[r].set_xlabel('Intensity in r3')
-            self.ax[r].set_ylabel('Intensity in r' + str(independent_rounds[r]))
-            self.ax[r].set_title('Intensity in r' + str(independent_rounds[r]) + ' vs r3')
-            self.ax[r].set_ylim(np.percentile(spot_round_brightness, 1),
-                                np.percentile(spot_round_brightness, 99))
-            self.ax[r].set_xlim(np.percentile(spot_round_brightness[:, 3], 1),
-                                np.percentile(spot_round_brightness[:, 3], 99))
-            # plot the line of best fit
-            x = spot_round_brightness[:, 3]
-            y = spot_round_brightness[:, independent_rounds[r]]
-            # Calculate the line of best fit. Use robust linear regression to avoid outliers
-            huber = linear_model._huber.HuberRegressor()
-            huber.fit(x[:, np.newaxis], y)
-            m = huber.coef_[0]
-            b = huber.intercept_
-            r_squared = np.corrcoef(x, y)
-            self.ax[r].plot(x, m * x + b, color='red', label='R$^2$ = ' + str(round(r_squared[0, 1], 2)) + '\n' +
-                            'Slope = ' + str(round(m, 2)))
-            self.ax[r].legend(loc='upper right')
+        # Now plot the scatter plots of spot_round_brightness vs spot_round_brightness[:, r] for each r
+        for row in range(7):
+            for col in range(7):
+                self.ax[row][col].scatter(x=spot_round_brightness[:, col], y=spot_round_brightness[:, row], s=1)
+                self.ax[row][col].set_ylim(np.percentile(spot_round_brightness, 1),
+                                    np.percentile(spot_round_brightness, 99))
+                self.ax[row][col].set_xlim(np.percentile(spot_round_brightness, 1),
+                                    np.percentile(spot_round_brightness, 99))
+                # plot the line of best fit
+                x = spot_round_brightness[:, col]
+                y = spot_round_brightness[:, row]
+                # Calculate the line of best fit. Use robust linear regression to avoid outliers
+                huber = linear_model._huber.HuberRegressor()
+                huber.fit(x[:, np.newaxis], y)
+                m = huber.coef_[0]
+                c = huber.intercept_
+                r_squared = np.corrcoef(x, y)
+                self.ax[row][col].plot(x, m * x + c, color='red', label='R$^2$ = ' + str(round(r_squared[0, 1], 2)) + '\n' +
+                                       'Slope = ' + str(round(m, 2)))
+                self.ax[row][col].set_xticks([])
+                self.ax[row][col].set_yticks([])
 
+        # Add row and column labels
+        ge = self.nb.call_spots.gene_efficiency[self.gene_no]
+        for i in range(7):
+            self.ax[6][i].set_xlabel('Round ' + str(i))
+            self.ax[i][0].set_ylabel('Round ' + str(i) + '\n' + 'GE = ' + str(round(ge[i], 2)))
+
+        # Add a title
         self.fig.suptitle('Correlation between rounds for gene ' + self.nb.call_spots.gene_names[self.gene_no])
         self.fig.subplots_adjust(right=0.8)
         self.add_gene_slider()
@@ -894,7 +899,6 @@ class GeneProbs():
         self.ax.set_title('Spot probabilities for gene ' + self.nb.call_spots.gene_names[self.gene_no])
         self.add_gene_slider()
         self.add_widgets()
-        view_bled_codes(self.nb)
         self.fig.canvas.draw()
 
     def add_gene_slider(self):
@@ -921,6 +925,35 @@ class GeneProbs():
         # Now link the click event to the function to update the scatter plot
         self.plot_button.on_clicked(self.plot_gene_probs)
 
+    def add_score_plot(self, spot_no: int):
+        """
+        Want to add plot of score for spot for each gene.
+        Args:
+            spot_no: spot number to plot
+        """
+        # First, we need to get the scores for this spot
+        scores = np.zeros(self.n_genes)
+        bled_codes = self.nb.call_spots.bled_codes_ge[:, :, self.nb.basic_info.use_channels]
+        spot = self.nb.ref_spots.colors[spot_no][:, self.nb.basic_info.use_channels]
+        background = self.nb.ref_spots.background_strength[spot_no][np.newaxis, :]
+        background = np.repeat(background, self.nb.basic_info.n_rounds, axis=0)
+        spot = spot - background
+        spot = spot / self.nb.call_spots.color_norm_factor[:, self.nb.basic_info.use_channels]
+        spot = spot / np.linalg.norm(spot)
+        for i in range(self.n_genes):
+            scores[i] = np.sum(spot * bled_codes[i])
+
+        # Now we can plot the scores for each gene. We want to plot this in a new window, so we need to create a new
+        # figure and axes
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        ax.bar(np.arange(self.n_genes), scores)
+        ax.set_xticks(np.arange(self.n_genes), self.nb.call_spots.gene_names, rotation=90, fontsize=8)
+        ax.set_ylabel('Score')
+        ax.set_xlabel('Gene')
+        ax.set_title('Scores for spot ' + str(spot_no))
+        fig.tight_layout()
+        fig.canvas.draw()
+
     def update_gene(self, val):
         # Update the gene number and gene name
         self.gene_no = int(val)
@@ -942,7 +975,12 @@ class GeneProbs():
         # Initialise buttons and cursors
         # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
         mplcursors.cursor(self.ax, hover=False).connect(
-            "add", lambda sel: view_codes(self.nb, self.spot_ids[sel.target.index[0]]))
+            "add", lambda sel: self.row_clicked(sel))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax, hover=2).connect(
             "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+
+    def row_clicked(self, event):
+        # When a row is clicked, we want to view the observed spot
+        view_codes(self.nb, self.spot_ids[event.target.index[0]])
+        self.add_score_plot(self.spot_ids[event.target.index[0]])

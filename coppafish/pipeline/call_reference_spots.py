@@ -5,9 +5,7 @@ from ..setup.notebook import NotebookPage
 from ..utils.base import expand_channels
 import numpy as np
 from typing import Tuple
-from tqdm import tqdm
 import warnings
-import os
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,

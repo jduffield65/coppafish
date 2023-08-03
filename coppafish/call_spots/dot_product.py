@@ -21,6 +21,7 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray) -> Tuple
     spot_colours = spot_colours / np.linalg.norm(spot_colours, axis=1)[:, None]
     bled_codes = bled_codes.reshape(n_genes, -1)
 
+    # Now we can obtain the dot product score for each spot and each gene
     all_score = spot_colours @ bled_codes.T
     gene_no = np.argmax(all_score, axis=1)
     all_score = np.sort(all_score, axis=1)
