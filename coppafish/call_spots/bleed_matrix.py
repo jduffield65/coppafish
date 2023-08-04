@@ -95,7 +95,7 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
     for i in range(colour_vector.shape[0]):
         dye_score = []
         scale = []
-        # Now compute the dot product of each spot with each dye. This gives an n_spots x n_dyes matrix
+        # Now compute the dot product of each spot with each dye. This gives an n_spots x n_dyes matrix. !!! Normalise
         all_dye_score = colour_vector[i] @ bleed_matrix_norm
         # Now assign each spot a dye which is its highest score
         spot_dye = np.argmax(all_dye_score, axis=1)
