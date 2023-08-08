@@ -225,6 +225,7 @@ class GESpotViewer():
 
     def load_spots(self, gene_index: int, use_ge=True):
         nb = self.nb
+        n_channels = len(nb.basic_info.use_channels)
         # First we need to find the spots used to calculate the gene efficiency for the given gene.
         initial_assignment = np.argmax(nb.ref_spots.gene_probs, axis=1)
         if use_ge:
@@ -243,11 +244,28 @@ class GESpotViewer():
                                                                       nb.basic_info.use_channels)].reshape((1, -1)),
                                spots.shape[0], axis=0)
         self.spots = spots / color_norm
-        # order spots by nb.ref_spots.score in descending order
-        self.spots = self.spots[np.argsort(nb.ref_spots.score[self.gene_g_mask])[::-1], :]
+        # order spots by nb.ref_spots.score
+        # self.spots = self.spots[np.argsort(nb.ref_spots.score[self.gene_g_mask]), :]
         # We need to find the expected spot profile for each round/channel
         self.spots_expected = nb.call_spots.bled_codes[self.gene_index, :, nb.basic_info.use_channels].T
         self.spots_expected = np.repeat(self.spots_expected.reshape((1, -1)), self.spots.shape[0], axis=0)
+        # Now for each spot we would like to store a dye_efficiency vector. This is the least squares solution to
+        # the equation spots[i, r, :] = dye_efficiency * spots_expected[0, r, :].
+        auxilliary_spots = self.spots.reshape((self.spots.shape[0], self.spots.shape[1] // n_channels, n_channels))
+        auxilliary_spots_expected = self.spots_expected.reshape((self.spots.shape[0], self.spots.shape[1] // n_channels,
+                                                                 n_channels))[0, :, :]
+        self.dye_efficiency = np.zeros((auxilliary_spots.shape[0], auxilliary_spots.shape[1]))
+
+        for s in range(auxilliary_spots.shape[0]):
+            for r in range(auxilliary_spots.shape[1]):
+                a = auxilliary_spots[s, r]
+                b = auxilliary_spots_expected[r]
+                self.dye_efficiency[s, r] = np.dot(a, b) / np.dot(b, b)
+
+        self.spot_brightness = np.max(auxilliary_spots, axis=2)
+        # order spots by spot brightness in r0
+        self.spots = self.spots[np.argsort(self.spot_brightness[:, 0]), :]
+        self.spot_id = np.where(self.gene_g_mask)[0][np.argsort(self.spot_brightness[:, 0])]
 
     def plot_ge_cmap(self):
         if not hasattr(self, 'fig'):
@@ -263,6 +281,10 @@ class GESpotViewer():
         self.ax[0].imshow(self.spots, cmap='viridis', vmin=vmin, vmax=vmax, aspect='auto', interpolation='none')
         self.ax[1].imshow(self.spots_expected, cmap='viridis', vmin=vmin, vmax=vmax, aspect='auto', interpolation='none')
         # We can then add titles and axis labels to the subplots.
+        self.ax[0].set_ylim(0, self.spots.shape[0])
+        self.ax[1].set_ylim(0, self.spots.shape[0])
+        self.ax[0].set_xlim(-.5, self.spots.shape[1] - .5)
+        self.ax[1].set_xlim(-.5, self.spots.shape[1] - .5)
         self.ax[0].set_title('Observed Spot Colours')
         self.ax[1].set_title('Expected Spot Colours')
         self.ax[0].set_xlabel('Spot Colour (flattened)')
@@ -284,18 +306,32 @@ class GESpotViewer():
         ge = self.nb.call_spots.gene_efficiency[self.gene_index]
         ge_max = np.max(self.nb.call_spots.gene_efficiency)
         ge = ge * self.spots.shape[0] / ge_max
-        ge = self.spots.shape[0] - ge
         ge = np.repeat(ge, self.nb.basic_info.n_rounds)
         # Now clip the gene efficiency to be between 0 and the number of spots
         ge = np.clip(ge, 0, self.spots.shape[0] - 1)
         # We can then plot the gene efficiency
         self.ax[1].plot(ge, color='w')
-        # plot a white line at the gene efficiency of 1. This comes at
+        # plot a white line at the gene efficiency of 1.
         self.ax[1].axhline(0, color='w', linestyle='--', label='Gene Efficiency = ' + str(np.round(ge_max, 2)))
-        self.ax[1].axhline(self.spots.shape[0] - self.spots.shape[0] / ge_max, color='w', linestyle='--',
-                           label='Gene Efficiency = 1')
+        self.ax[1].axhline(self.spots.shape[0] / ge_max, color='w', linestyle='--', label='Gene Efficiency = 1')
         self.ax[1].axhline(self.spots.shape[0] - 1, color='w', linestyle='--', label='Gene Efficiency = 0')
         self.ax[1].legend(loc='upper right')
+
+        # For each round, we'd like to plot the dye efficiencies associated with the spots in this gene and round.
+        # First, for each round, sort dye_efficiencies in ascending order, then clip between 0 and ge_max.
+        for r in range(self.nb.basic_info.n_rounds):
+            dye_efficiency = self.dye_efficiency[:, r]
+            dye_efficiency = np.sort(dye_efficiency)
+            dye_efficiency = np.clip(dye_efficiency, 0, ge_max)
+            # Now we can plot the dye efficiencies. We want to plot them on the left subplot, and we want each round's
+            # dye efficiencies to be in between the red lines corresponding to that round.
+            # In order to make the dye_efficiencies appear in the correct place, we need to scale and shift them like
+            # we did with gene efficiency.
+            dye_efficiency = dye_efficiency * self.spots.shape[0] / ge_max
+            x_start, x_end = (r * len(self.nb.basic_info.use_channels) - 0.5,
+                              (r + 1) * len(self.nb.basic_info.use_channels) - 0.5)
+            self.ax[0].plot(np.linspace(x_start, x_end, len(dye_efficiency)), dye_efficiency, color='w')
+
         # Add simple colorbar. Move this a little up to make space for the button.
         cax = self.fig.add_axes([0.925, 0.1, 0.03, 0.7])
         self.fig.colorbar(plt.cm.ScalarMappable(norm=colors.Normalize(vmin=vmin, vmax=vmax), cmap='viridis'),
@@ -305,26 +341,10 @@ class GESpotViewer():
 
     def plot_ge_hist(self, percentile=95):
         """
-        Plot n_rounds histograms of spot colours for the gene of interest. This will allow us to see how the spot
-        intensity compares to the expected spot intensity.
+        Plot n_rounds histograms of all gene_efficiencies for each spot in each round.
         """
         nb = self.nb
         gene_code = nb.call_spots.gene_codes[self.gene_index]
-        dye_names = nb.basic_info.dye_names
-        # Swap all 2s and 3s in gene_code and swap 2 and 3 in dye names
-        gene_code[gene_code == 2] = -1
-        gene_code[gene_code == 3] = 2
-        gene_code[gene_code == 10] = 3
-        dye_names[2], dye_names[3] = dye_names[3], dye_names[2]
-        n_channels = len(nb.basic_info.use_channels)
-        colour_vector = nb.ref_spots.colors[:, :, nb.basic_info.use_channels][nb.ref_spots.isolated]
-        colour_vector = colour_vector / nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
-        colour_vector = colour_vector.reshape((colour_vector.shape[0] * nb.basic_info.n_rounds, n_channels))
-        dye = np.argmax(colour_vector, axis=1)
-
-        dye_brightness = []
-        for i in range(len(dye_names)):
-            dye_brightness.append(colour_vector[dye == i, i])
 
         if not hasattr(self, 'fig'):
             # Create figure and axis
@@ -335,40 +355,19 @@ class GESpotViewer():
             self.fig, self.ax = plt.subplots(1, nb.basic_info.n_rounds, figsize=(20, 5))
 
         fig, ax = self.fig, self.ax
-        # Loop through each round and plot the histogram of spot colours
+        # Loop through each round and plot the histogram of dye efficiencies
         for r in range(self.nb.basic_info.n_rounds):
-            gene_g_spot_brightness = self.spots[:, r * n_channels + gene_code[r]]
-            all_spot_brightness = dye_brightness[gene_code[r]]
-            # Take max intensity as 90th percentile of rc_spot_intensity
-            max_brightness = np.percentile(all_spot_brightness, percentile)
+            # Take max efficiency as percentile of rc_spot_intensity
+            max_efficiency = np.percentile(self.dye_efficiency, percentile)
             # Now plot both spot intensities on the same histogram
-            ax[r].hist(all_spot_brightness, bins=np.linspace(0, max_brightness, 20), alpha=0.5, density=True,
-                       label='All genes')
-            ax[r].hist(gene_g_spot_brightness, bins=np.linspace(0, max_brightness, 20), alpha=0.5, density=True,
-                       label='Gene ' + nb.call_spots.gene_names[self.gene_index])
+            ax[r].hist(self.dye_efficiency[:, r], bins=np.linspace(0, max_efficiency, 20), density=True)
 
             # Add a box in the top right of the plot with the Gene Efficiency
             ge = nb.call_spots.gene_efficiency[self.gene_index, r]
             ax[r].set_yticks([])
             ax[r].set_xticks([])
-
-            # We'd like to add two vertical lines at the median of both histograms. The first in blue (for
-            # rc_spot_intensity) and the second in orange (for gene_g_spot_intensity).
-            # First we need to calculate the median of both histograms
-            rc_median = np.median(all_spot_brightness)
-            gene_median = np.median(gene_g_spot_brightness)
-            # Now plot the vertical lines
-            ax[r].axvline(rc_median, color='blue', linestyle='--', label='Median = ' + str(np.round(rc_median, 2)))
-            ax[r].axvline(gene_median, color='orange', linestyle='--',
-                          label='Median = ' + str(np.round(gene_median, 2)))
-
-            ax[r].set_title('Round ' + str(r) + ' Dye ' + dye_names[gene_code[r]])
-
             ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
             ax[r].set_ylabel('Frequency')
-            # Add a legend for the median lines. We need to exclude the first two lines from the legend
-            handles, labels = ax[r].get_legend_handles_labels()
-            ax[r].legend(handles[2:], labels[2:], loc='upper right')
 
         # Adjust subplots to leave space on the right for the legend and buttons
         fig.subplots_adjust(right=0.9)
@@ -376,10 +375,7 @@ class GESpotViewer():
         # Add a single legend on the top right of the figure. Want to take only first 2 labels from ax 0
         legend_ax = fig.add_axes([0.925, 0.9, 0.05, 0.05])
         legend_ax.axis('off')
-        legend_ax.legend(handles[:2], labels[:2], loc='upper right')
-
-        fig.suptitle('Histogram of Spot Intensities for Gene ' + nb.call_spots.gene_names[self.gene_index] +
-                     ' versus spots of the same dye in other genes for each round')
+        fig.suptitle('Histogram of dye efficiencies for Gene ' + nb.call_spots.gene_names[self.gene_index])
         self.add_hist_widgets()
         fig.canvas.draw_idle()
 
@@ -426,9 +422,8 @@ class GESpotViewer():
     def add_cmap_widgets(self):
         # Initialise buttons and cursors
         # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
-        spot_id = np.where(self.gene_g_mask)[0]
         mplcursors.cursor(self.ax[0], hover=False).connect(
-            "add", lambda sel: view_spot(self.nb, spot_id[sel.target.index[0]]))
+            "add", lambda sel: view_codes(self.nb, self.spot_id[sel.target.index[0]]))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax[0], hover=2).connect(
             "add", lambda sel: self.add_rectangle(sel.target.index[0]))
@@ -443,51 +438,25 @@ class GESpotViewer():
 
     def update_hist(self, percentile):
         nb = self.nb
-        gene_code = nb.call_spots.gene_codes[self.gene_index]
-        n_channels = len(nb.basic_info.use_channels)
         fig, ax = self.fig, self.ax
-        dye_names = nb.basic_info.dye_names
+        # Loop through each round and plot the histogram of dye efficiencies
         for r in range(self.nb.basic_info.n_rounds):
-            matching_genes = [g for g in np.arange(nb.call_spots.gene_names.shape[0])
-                              if nb.call_spots.gene_codes[g, r] == nb.call_spots.gene_codes[self.gene_index, r]]
-            # Now look at all spots with a gene no in matching_genes
-            use_spots = np.where(np.isin(self.nb.ref_spots.gene_no, matching_genes))[0]
-            color_norm = nb.call_spots.color_norm_factor[r, nb.basic_info.use_channels[gene_code[r]]]
-            rc_spot_intensity = self.nb.ref_spots.colors[use_spots][:, r,
-                                nb.basic_info.use_channels[gene_code[r]]] / color_norm
-            gene_g_spot_intensity = self.spots[:, r * n_channels + gene_code[r]]
-            ax[r].clear()
-            max_intensity = np.percentile(rc_spot_intensity, percentile)
-            ax[r].hist(rc_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
-                       label='All genes')
-            ax[r].hist(gene_g_spot_intensity, bins=np.linspace(0, max_intensity, 20), alpha=0.5, density=True,
-                       label='Gene ' + nb.call_spots.gene_names[self.gene_index])
-
-            # We'd like to add two vertical lines at the median of both histograms. The first in blue (for
-            # rc_spot_intensity) and the second in orange (for gene_g_spot_intensity).
-            # First we need to calculate the median of both histograms
-            rc_median = np.median(rc_spot_intensity)
-            gene_median = np.median(gene_g_spot_intensity)
-            # Now plot the vertical lines
-            ax[r].axvline(rc_median, color='blue', linestyle='--', label='Median = ' + str(np.round(rc_median, 2)))
-            ax[r].axvline(gene_median, color='orange', linestyle='--',
-                          label='Median = ' + str(np.round(gene_median, 2)))
+            # Take max efficiency as percentile of rc_spot_intensity
+            max_efficiency = np.percentile(self.dye_efficiency, percentile)
+            # Now plot both spot intensities on the same histogram
+            ax[r].cla()
+            ax[r].hist(self.dye_efficiency[:, r], bins=np.linspace(0, max_efficiency, 20), density=True)
 
             # Add a box in the top right of the plot with the Gene Efficiency
             ge = nb.call_spots.gene_efficiency[self.gene_index, r]
             ax[r].set_yticks([])
             ax[r].set_xticks([])
-
-            ax[r].set_title('Round ' + str(r) + ' Dye ' + dye_names[gene_code[r]])
-
             ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
             ax[r].set_ylabel('Frequency')
 
-            # Add a legend for the median lines. We need to exclude the first two lines from the legend
-            handles, labels = ax[r].get_legend_handles_labels()
-            ax[r].legend(handles[2:], labels[2:], loc='upper right')
-
-        self.fig.canvas.draw_idle()
+        # Adjust subplots to leave space on the right for the legend and buttons
+        fig.subplots_adjust(right=0.9)
+        fig.canvas.draw_idle()
 
     def add_rectangle(self, index):
         # We need to remove any existing rectangles from the plot
@@ -840,9 +809,6 @@ class GEScatter():
         # Update the gene number and gene name
         self.gene_no = int(val)
         self.gene_text.set_text(self.nb.call_spots.gene_names[self.gene_no])
-        # Update the scatter plot
-        self.fig.canvas.draw()
-
 
 class GeneProbs():
     def __init__(self, nb: Notebook, gene_no: int = 0):

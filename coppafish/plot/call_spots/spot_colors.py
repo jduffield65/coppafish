@@ -213,7 +213,7 @@ class view_codes(ColorPlotBase):
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
         """
         color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)].transpose()
+                                                            nb.basic_info.use_channels)]
         if method.lower() == 'omp':
             page_name = 'omp'
             config = nb.get_config()['thresholds']
@@ -224,8 +224,11 @@ class view_codes(ColorPlotBase):
         self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
                               np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
         # Get spot color after background fitting
+        # remove background codes. To do this, repeat background_strenth along a new axis for rounds
+        background_strength = nb.ref_spots.background_strength[spot_no]
+        background_strength = np.repeat(background_strength[np.newaxis, :], nb.basic_info.n_rounds, axis=0)
         self.background_removed = False
-        self.spot_color_pb = remove_background(self.spot_color.copy()[None, :, :])[0][0] / color_norm
+        self.spot_color_pb = (self.spot_color - background_strength) / color_norm
         self.spot_color = self.spot_color / color_norm
         self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
 

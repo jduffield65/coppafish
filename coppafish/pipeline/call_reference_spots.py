@@ -102,9 +102,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # GE calculation is done iteratively in a similar way to scaled k-means clustering. We start with our initial
     # score distribution and bled codes and then these 2 parameters are iteratively updated until convergence.
     # 3.1 Calculate gene efficiency
-    gene_efficiency, use_ge = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
-                                                      gene_no=gene_no, gene_score=gene_score,
-                                                      gene_codes=gene_codes, intensity=intensity)
+    gene_efficiency, use_ge, _ = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
+                                                         gene_no=gene_no, gene_score=gene_score,
+                                                         gene_codes=gene_codes, intensity=intensity)
     # 3.2 Update bled codes
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 

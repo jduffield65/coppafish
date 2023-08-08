@@ -87,7 +87,6 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
         r: Round considering
         c: Channel considering
         yxz: If `None`, whole image is loaded otherwise there are two choices:
-
             - `int [2 or 3]`. List containing y,x,z coordinates of sub image to load in.
                 E.g. if `yxz = [np.array([5]), np.array([10,11,12]), np.array([8,9])]`
                 returned `image` will have shape `[1 x 3 x 2]`.
@@ -100,7 +99,6 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
             with the pixels values shifted by `+nbp_basic.tile_pixel_value_shift`.
             May want to disable `apply_shift` to save memory and/or make loading quicker as there will be
             no dtype conversion. If loading in DAPI, dtype always uint16 as is no shift.
-        acw_rotations: Number of anti-clockwise rotations to apply to image before returning.
 
     Returns:
         `int32 [ny x nx (x nz)]` or `int32 [n_pixels x (2 or 3)]`

@@ -68,7 +68,10 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray) -> Tuple
 
 def gene_prob_score(spot_colours: np.ndarray, bled_codes: np.ndarray, kappa: float = 2) -> np.ndarray:
     """
-    Simple dot product score assigning each spot to the gene with the highest score.
+    Probability model says that for each spot in a particular round, the normalised fluorescence vector follows a
+    Von-Mises Fisher distribution with mean equal to the normalised fluorescence for each dye and concentration
+    parameter kappa. Then invert this to get prob(dye | fluorescence) and multiply across rounds to get
+    prob(gene | spot_colours).
     Args:
         spot_colours: np.ndarray of spot colours [n_spots, n_rounds, n_channels_use]
         bled_codes: np.ndarray of normalised bled codes [n_genes, n_rounds, n_channels_use]

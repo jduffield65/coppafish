@@ -183,7 +183,7 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, ge
                             gene_score: np.ndarray, gene_codes: np.ndarray, intensity: np.ndarray,
                             spot_number_threshold: int = 25, score_threshold: float = 0.8,
                             intensity_threshold: float = 0) \
-        -> Tuple[np.ndarray, np.ndarray]:
+        -> Tuple[np.ndarray, np.ndarray, list]:
     """
     Compute gene efficiency and gene coefficients from spot colours and bleed matrix.
 
@@ -207,6 +207,7 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, ge
     n_spots, n_rounds, n_channels = spot_colours.shape
     n_genes = gene_codes.shape[0]
     gene_efficiency = np.ones([n_genes, n_rounds])
+    dye_efficiency = np.ones([n_genes, n_rounds, 0]).tolist()
     use_ge = np.zeros(n_spots, dtype=bool)
 
     # Compute gene efficiency for each gene and round.
@@ -217,16 +218,23 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, ge
             continue
         use_ge += gene_g_mask
         gene_g_spot_colours = spot_colours[gene_g_mask]
+        dye_efficiency_g = np.ones([gene_g_spot_colours.shape[0], n_rounds])
         for r in range(n_rounds):
-            # Compute gene efficiency for each round. This is just the best scaling factor to match the mean
+            # Compute gene efficiency for each round. This is just the best scaling factor to match the mean/median
             # spot colour to the expected spot colour.
             expected_spot_colour = bled_codes[g, r]
-            observed_mean_spot_colour = np.mean(gene_g_spot_colours[:, r], axis=0)
-            if np.dot(expected_spot_colour, expected_spot_colour) > 0:
-                gene_efficiency[g, r] = np.dot(expected_spot_colour, observed_mean_spot_colour) / \
-                                        np.dot(expected_spot_colour, expected_spot_colour)
+            observed_spot_colour = gene_g_spot_colours[:, r]
+            for s in range(observed_spot_colour.shape[0]):
+                a = observed_spot_colour[s]
+                b = expected_spot_colour
+                # Compute scaling factor.
+                dye_efficiency_g[s, r] = np.dot(a, b) / np.dot(b, b)
+            # Compute gene efficiency as the median dye efficiency across spots.
+            gene_efficiency[g, r] = np.median(dye_efficiency_g[:, r])
+            dye_efficiency[g][r] = dye_efficiency_g[:, r]
 
     # Set negative values to 0.
     gene_efficiency[gene_efficiency < 0] = 0
 
-    return gene_efficiency, use_ge
+    return gene_efficiency, use_ge, dye_efficiency
+
