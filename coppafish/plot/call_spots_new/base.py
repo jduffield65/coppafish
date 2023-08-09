@@ -262,10 +262,17 @@ class GESpotViewer():
                 b = auxilliary_spots_expected[r]
                 self.dye_efficiency[s, r] = np.dot(a, b) / np.dot(b, b)
 
-        self.spot_brightness = np.max(auxilliary_spots, axis=2)
-        # order spots by spot brightness in r0
-        self.spots = self.spots[np.argsort(self.spot_brightness[:, 0]), :]
-        self.spot_id = np.where(self.gene_g_mask)[0][np.argsort(self.spot_brightness[:, 0])]
+        self.dye_efficiency_norm = self.dye_efficiency / np.linalg.norm(self.dye_efficiency, axis=1)[:, np.newaxis]
+        # Estimate parameters of VMF distribution for dye efficiency norm
+        r_bar = np.linalg.norm(np.mean(self.dye_efficiency_norm, axis=0))
+        self.mu_hat = np.mean(self.dye_efficiency_norm, axis=0) / r_bar
+        self.kappa_hat = r_bar * (nb.basic_info.n_rounds - r_bar ** 2) / (1 - r_bar ** 2)
+        self.likelihood = np.sum(np.repeat(self.mu_hat[np.newaxis, :],
+                                           self.spots.shape[0], axis=0) * self.dye_efficiency_norm, axis=1)
+
+        # order spots by likelihood of dye efficiency
+        self.spots = self.spots[np.argsort(self.likelihood), :]
+        self.spot_id = np.where(self.gene_g_mask)[0][np.argsort(self.likelihood)]
 
     def plot_ge_cmap(self):
         if not hasattr(self, 'fig'):
@@ -299,8 +306,8 @@ class GESpotViewer():
 
         # Set supertitle, colorbar and show plot
         self.fig.suptitle(
-            'Gene Efficiency Calculation for Gene ' + self.nb.call_spots.gene_names[self.gene_index] + ' in Iteration '
-            + str(0))
+            'Gene Efficiency Calculation for Gene ' + self.nb.call_spots.gene_names[self.gene_index] +
+            '. \n Estimated concentration parameter = ' + str(np.round(self.kappa_hat, 2)))
 
         # Add gene efficiency plot on top of prediction on the right
         ge = self.nb.call_spots.gene_efficiency[self.gene_index]
@@ -358,15 +365,15 @@ class GESpotViewer():
         # Loop through each round and plot the histogram of dye efficiencies
         for r in range(self.nb.basic_info.n_rounds):
             # Take max efficiency as percentile of rc_spot_intensity
-            max_efficiency = np.percentile(self.dye_efficiency, percentile)
+            max_efficiency = np.percentile(self.dye_efficiency_norm, percentile)
             # Now plot both spot intensities on the same histogram
-            ax[r].hist(self.dye_efficiency[:, r], bins=np.linspace(0, max_efficiency, 20), density=True)
+            ax[r].hist(self.dye_efficiency_norm[:, r], bins=np.linspace(0, max_efficiency, 20), density=True)
 
             # Add a box in the top right of the plot with the Gene Efficiency
             ge = nb.call_spots.gene_efficiency[self.gene_index, r]
             ax[r].set_yticks([])
             ax[r].set_xticks([])
-            ax[r].set_xlabel('Spot Intensity \n Gene Efficiency = ' + str(np.round(ge, 2)))
+            ax[r].set_xlabel('Relative Dye Efficiency \n Gene Efficiency = ' + str(np.round(ge, 2)))
             ax[r].set_ylabel('Frequency')
 
         # Adjust subplots to leave space on the right for the legend and buttons
@@ -375,7 +382,7 @@ class GESpotViewer():
         # Add a single legend on the top right of the figure. Want to take only first 2 labels from ax 0
         legend_ax = fig.add_axes([0.925, 0.9, 0.05, 0.05])
         legend_ax.axis('off')
-        fig.suptitle('Histogram of dye efficiencies for Gene ' + nb.call_spots.gene_names[self.gene_index])
+        fig.suptitle('Histogram of relative dye efficiencies for Gene ' + nb.call_spots.gene_names[self.gene_index])
         self.add_hist_widgets()
         fig.canvas.draw_idle()
 
@@ -442,10 +449,10 @@ class GESpotViewer():
         # Loop through each round and plot the histogram of dye efficiencies
         for r in range(self.nb.basic_info.n_rounds):
             # Take max efficiency as percentile of rc_spot_intensity
-            max_efficiency = np.percentile(self.dye_efficiency, percentile)
+            max_efficiency = np.percentile(self.dye_efficiency_norm, percentile)
             # Now plot both spot intensities on the same histogram
             ax[r].cla()
-            ax[r].hist(self.dye_efficiency[:, r], bins=np.linspace(0, max_efficiency, 20), density=True)
+            ax[r].hist(self.dye_efficiency_norm[:, r], bins=np.linspace(0, max_efficiency, 20), density=True)
 
             # Add a box in the top right of the plot with the Gene Efficiency
             ge = nb.call_spots.gene_efficiency[self.gene_index, r]

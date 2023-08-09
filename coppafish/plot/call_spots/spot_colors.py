@@ -202,13 +202,14 @@ class ColorPlotBase:
 
 
 class view_codes(ColorPlotBase):
-    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor', save_loc: str = None):
+    def __init__(self, nb: Notebook, spot_no: int, method: str = 'anchor', bg_removed=False, save_loc: str = None):
         """
         Diagnostic to compare `spot_color` to `bled_code` of predicted gene.
 
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.
+            bg_removed: Whether to plot background removed data.
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
         """
@@ -227,7 +228,7 @@ class view_codes(ColorPlotBase):
         # remove background codes. To do this, repeat background_strenth along a new axis for rounds
         background_strength = nb.ref_spots.background_strength[spot_no]
         background_strength = np.repeat(background_strength[np.newaxis, :], nb.basic_info.n_rounds, axis=0)
-        self.background_removed = False
+        self.background_removed = bg_removed
         self.spot_color_pb = (self.spot_color - background_strength) / color_norm
         self.spot_color = self.spot_color / color_norm
         self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
@@ -237,7 +238,11 @@ class view_codes(ColorPlotBase):
         gene_name = nb.call_spots.gene_names[gene_no]
         gene_color = nb.call_spots.bled_codes_ge[gene_no][np.ix_(nb.basic_info.use_rounds,
                                                                  nb.basic_info.use_channels)].transpose()
-        super().__init__([self.spot_color, gene_color], color_norm, slider_pos=[0.85, 0.2, 0.01, 0.75],
+        if bg_removed:
+            colour = self.spot_color_pb
+        else:
+            colour = self.spot_color
+        super().__init__([colour, gene_color], color_norm, slider_pos=[0.85, 0.2, 0.01, 0.75],
                          cbar_pos=[0.9, 0.2, 0.03, 0.75])
         self.ax[0].set_title(f'Spot {spot_no}: match {str(np.around(spot_score, 2))} '
                              f'to {gene_name}')
@@ -264,6 +269,7 @@ class view_codes(ColorPlotBase):
         self.change_norm()  # initialise with method = 'norm'
         if save_loc:
             plt.savefig(save_loc, dpi=300)
+            plt.close()
         else:
             plt.show()
 
