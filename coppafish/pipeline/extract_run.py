@@ -318,7 +318,13 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     pbar.close()
 
     # Now remove outliers from nbp.auto_thresh
-    nbp.auto_thresh = extract.regularise_auto_thresh(nbp_basic, nbp.auto_thresh)
+    use_tiles = nbp_basic.use_tiles
+    auto_thresh_raw = nbp.auto_thresh.copy()
+    auto_thresh_reg = np.zeros_like(auto_thresh_raw)
+    del nbp.auto_thresh
+    auto_thresh_reg[np.ix_(use_tiles, use_rounds, use_channels)] = \
+        extract.regularise_auto_thresh(auto_thresh_raw[np.ix_(use_tiles, use_rounds, use_channels)])
+    nbp.auto_thresh = auto_thresh_reg
 
     if not nbp_basic.use_anchor:
         nbp_debug.scale_anchor_tile = None
