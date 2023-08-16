@@ -309,14 +309,14 @@ def set_basic_info_new(config: dict) -> NotebookPage:
                          f"{config_file['raw_extension']}.")
 
     # Stage 2: Read in page contents from config that cannot be computed from metadata.
-    # the metadata. First 13 keys in the basic info page are only variables that the user can influence
-    for key, value in list(config_basic.items())[:13]:
+    # the metadata. First 12 keys in the basic info page are only variables that the user can influence
+    for key, value in list(config_basic.items())[:12]:
         nbp.__setattr__(key=key, value=value)
 
-    # Only 4 of these can NOT be left empty
-    if nbp.par is None or nbp.dye_names is None or nbp.tile_pixel_value_shift is None or nbp.use_anchor is None:
+    # Only 3 of these can NOT be left empty
+    if nbp.dye_names is None or nbp.tile_pixel_value_shift is None or nbp.use_anchor is None:
         raise ValueError('One or more of the 4 variables which cannot be computed from anything else has been left '
-                         'empty. Please fill in the use_anchor, par, dye_names and pixel_value_shift variables.')
+                         'empty. Please fill in the use_anchor, dye_names and pixel_value_shift variables.')
 
     # Stage 3: Fill in all the metadata except the last item, xy_pos
     for key, value in metadata.items():

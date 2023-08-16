@@ -822,8 +822,8 @@ def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
 
     Args:
         nb_list: list of single-tile notebooks to be merged
-        master_nb: master notebook initialized from the original unsplit config file. Only contains nbp_basic anc
-        nbp_file
+        master_nb: master notebook initialized from the original unsplit config file. Only contains nbp_basic and
+            nbp_file
 
     Returns:
         master_nb: master notebook merged from all the others.

@@ -1,1 +1,1 @@
-from .base import GEViewer, view_all_gene_scores, ViewBleedCalc, BGNormViewer
+from .base import GEViewer, ViewAllGeneScores, ViewBleedCalc, BGNormViewer

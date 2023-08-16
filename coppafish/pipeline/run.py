@@ -3,17 +3,15 @@ from .. import setup, utils
 from joblib import Parallel, delayed
 from . import set_basic_info_new, extract_and_filter, find_spots, stitch, register, get_reference_spots, \
     call_reference_spots, call_spots_omp
-from .extractJOBS_run import par_extract_and_filter
 from ..find_spots import check_n_spots
-from ..setup import split_config, merge_notebooks, split_stitch, split_ref_spots, split_call_spots, Notebook
-from ..call_spots import get_non_duplicate, quality_threshold
+from ..call_spots import get_non_duplicate
 from ..register import generate_channel_reg_images
 import warnings
 import numpy as np
-from scipy import sparse, stats
+from scipy import sparse
 
 
-def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.Notebook:
+def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: bool = False) -> setup.Notebook:
     """
     Bridge function to run every step of the pipeline.
 
@@ -29,71 +27,32 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False) -> setup.N
 
             in `nb.ref_spots` will be overwritten if they exist. If this is `False`, they will only be overwritten
             if they are all set to `None`, otherwise an error will occur.
-
+        parallel: Boolean, if 'True' will run the pipeline in parallel by splitting the data into tiles and running
+            each tile in parallel.
     Returns:
         `Notebook` containing all information gathered during the pipeline.
     """
-
     nb = initialize_nb(config_file)
-    run_extract(nb)
-    run_find_spots(nb)
-    run_stitch(nb)
-    run_register(nb)
-    run_reference_spots(nb, overwrite_ref_spots)
-    run_omp(nb)
+    if not parallel:
+        run_tile_indep_pipeline(nb)
+        run_stitch(nb)
+        run_reference_spots(nb, overwrite_ref_spots)
+        run_omp(nb)
+    else:
+        config_files = setup.split_config(config_file)
+        nb_list = [initialize_nb(f) for f in config_files]
+        Parallel(n_jobs=len(nb_list))(delayed(run_tile_indep_pipeline)(n) for n in nb_list)
+        nb = setup.merge_notebooks(nb_list, master_nb=nb)
 
     return nb
 
 
-def run_pipeline_par(config_file: str, threads=5) -> setup.Notebook:
+def run_tile_indep_pipeline(nb: setup.Notebook):
     """
-    Function to run the pipeline in parallel mode.
+    Run tile-independent pipeline processes.
     Args:
-        config_file: master config file for global notebook
-        threads: number of threads used for parallelisation
-
-    Returns:
-        master_nb: global notebook with everything in it.
+        nb: `Notebook` containing 'basic_info' and 'file_names' pages.
     """
-    # create independent config files for each tile
-    config_file_path = split_config(config_file=config_file)
-    # Run all these in parallel up to register step
-    Parallel(n_jobs=threads)(delayed(run_independent_processes(config_file_path[i])) for i in range(len(config_file_path)))
-
-    # Now create a list of all the notebooks to be merged into master_nb
-    nb_list = []
-    for i in range(len(config_file_path)):
-        nb_path = os.path.join(config_file_path[i].file_names['output_dir'],
-                               config_file_path[i].file_names['notebook_name']) + '.npz'
-        nb_list.append(Notebook(nb_path))
-    # Initialize master_nb
-    master_nb = initialize_nb(config_file=config_file)
-    # merge all local notebooks
-    master_nb = merge_notebooks(nb_list=nb_list, master_nb=master_nb)
-    # Now run the 2 non-independent processes
-    run_stitch(nb=master_nb)
-    run_reference_spots(nb=master_nb)
-
-    # Now update the list of the single tile notebooks by the master_nb info
-    split_stitch(master_nbp_stitch=master_nb.stitch, nb_list=nb_list)
-    split_ref_spots(master_nbp_ref_spots=master_nb.ref_spots, nb_list=nb_list)
-    split_call_spots(master_nbp_call_spots=master_nb.call_spots, nb_list=nb_list)
-    Parallel(n_jobs=threads)(delayed(run_omp(nb_list[i])) for i in range(len(config_file_path)))
-    # TODO: Add merge option for the OMP pages
-    # master_nb_omp = merge_omp(omp_list)
-    # master_nb += master_nb_omp
-
-    return master_nb
-
-
-def run_independent_processes(config_file: str):
-    """
-    Bridge function to run first few tile-independent step of the pipeline.
-
-    Args:
-        config_file: Path to config file.
-    """
-    nb = initialize_nb(config_file)
     run_extract(nb)
     run_find_spots(nb)
     run_register(nb)
@@ -131,7 +90,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     return nb
 
 
-def run_extract(nb: setup.Notebook, parallel_processing: bool = False, n_workers: int = 1):
+def run_extract(nb: setup.Notebook):
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -141,21 +100,12 @@ def run_extract(nb: setup.Notebook, parallel_processing: bool = False, n_workers
 
     Args:
         nb: `Notebook` containing `file_names` and `basic_info` pages.
-        parallel_processing: Set True to use parallel processing - ONLY WORKS FOR JOBS FILEFORMAT
-        n_workers: number of parallel threads to be used
     """
     if not all(nb.has_page(["extract", "extract_debug"])):
-
         config = nb.get_config()
-        if not parallel_processing:
-            nbp, nbp_debug = extract_and_filter(config['extract'], nb.file_names, nb.basic_info)
-            nb += nbp
-            nb += nbp_debug
-        else:
-            assert config['file_names']['raw_extension'] == 'jobs', 'Parallelized extraction will work only with JOBS'
-            nbp, nbp_debug = par_extract_and_filter(config['extract'], nb.file_names, nb.basic_info, n_workers)
-            nb += nbp
-            nb += nbp_debug
+        nbp, nbp_debug = extract_and_filter(config['extract'], nb.file_names, nb.basic_info)
+        nb += nbp
+        nb += nbp_debug
     else:
         warnings.warn('extract', utils.warnings.NotebookPageWarning)
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
@@ -236,10 +186,9 @@ def run_register(nb: setup.Notebook):
 
     """
     config = nb.get_config()
-    # if not all(nb.has_page(["register", "register_debug"])):
-    if not nb.has_page("register"):
+    if not all(nb.has_page(["register", "register_debug"])):
         nbp, nbp_debug = register(nb.basic_info, nb.file_names, nb.find_spots, config['register'],
-                                  nb.stitch.tile_origin)
+                                  nb.basic_info.tilepos_yx)
         nb += nbp
         nb += nbp_debug
         n_reg_images = len(os.listdir(os.path.join(nb.file_names.output_dir, 'reg_images')))

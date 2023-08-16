@@ -16,57 +16,132 @@ from ..call_spots.bleed_matrix import view_bled_codes
 plt.style.use('dark_background')
 
 
-def view_all_gene_scores(nb):
+class ViewAllGeneScores():
     """
-    Plots the scores of all genes in a square grid. Useful for seeing the distribution of scores.
-    Args:
-        nb: Notebook object. Must have ref_spots page
+    Module to view all gene scores in a grid of n_genes histograms.
     """
-    grid_dim = int(np.ceil(np.sqrt(nb.call_spots.gene_names.shape[0])))
-    fig, ax = plt.subplots(grid_dim, grid_dim, figsize=(10, 10))
-    # Move subplots down to make room for the title and to the left to make room for the colourbar
-    fig.subplots_adjust(top=0.9)
-    fig.subplots_adjust(right=0.9)
-    # We also want to plot the histograms in different colours, representing the number of spots for each gene
-    spots_per_gene = np.zeros(nb.call_spots.gene_names.shape[0])
-    for i in range(spots_per_gene.shape[0]):
-        spots_per_gene[i] = np.sum(nb.ref_spots.gene_no == i)
+    def __init__(self, nb):
+        """
+        Load in notebook and spots.
+        Args:
+            nb: Notebook object. Must have ref_spots page
+        """
+        self.nb = nb
+        self.load_values()
+        self.plot()
 
-    # We also want to plot the histograms in different colours, representing the number of spots for each gene
-    for i in range(grid_dim ** 2):
-        gene_i_scores = nb.ref_spots.score[nb.ref_spots.gene_no == i]
-        n_spots = len(gene_i_scores)
-
-        if n_spots < 50:
-            n_bins = 10
+    def load_values(self, mode: str = 'score'):
+        """
+        Load in values to be plotted.
+        Args:
+            mode: 'score', 'prob', 'score_diff' or 'intensity'
+        """
+        self.mode = mode
+        if mode == 'score':
+            values = self.nb.ref_spots.score
+        elif mode == 'prob':
+            values = np.max(self.nb.ref_spots.gene_probs, axis=1)
+        elif mode == 'score_diff':
+            values = self.nb.ref_spots.score_diff
+        elif mode == 'intensity':
+            values = self.nb.ref_spots.intensity
         else:
-            n_bins = 50
-        # We want to choose the colour of the histogram based on the number of spots. We will use a log scale, with the
-        # minimum number of spots being 1 and the maximum being 1000. Use a blue to red colourmap
-        cmap = plt.get_cmap("coolwarm")
-        norm = mpl.colors.Normalize(vmin=1, vmax=np.percentile(spots_per_gene, 99))
+            raise ValueError("mode must be 'score', 'prob', 'score_diff' or 'intensity'")
 
-        # Plot the histogram of scores for each gene
-        if i < nb.call_spots.gene_names.shape[0]:
-            ax[i // grid_dim, i % grid_dim].hist(gene_i_scores, bins=n_bins, color=cmap(norm(n_spots)))
-            ax[i // grid_dim, i % grid_dim].set_title(nb.call_spots.gene_names[i])
-            ax[i // grid_dim, i % grid_dim].set_xlim(0, 1)
-            ax[i // grid_dim, i % grid_dim].set_xticks([])
-            ax[i // grid_dim, i % grid_dim].set_yticks([])
+        gene_values = np.zeros((self.nb.call_spots.gene_names.shape[0], 0)).tolist()
+        for i in range(len(gene_values)):
+            gene_values[i] = values[self.nb.ref_spots.gene_no == i]
 
-        # Next we want to delete the empty plots
-        else:
-            ax[i // grid_dim, i % grid_dim].axis("off")
-            ax[i // grid_dim, i % grid_dim].set_xticks([])
-            ax[i // grid_dim, i % grid_dim].set_yticks([])
+        self.gene_values = gene_values
+        self.n_spots = np.array([len(gene_values[i]) for i in range(len(gene_values))])
 
-    # Add overall title and colorbar
-    fig.suptitle("Distribution of Scores for Each Gene", fontsize=16)
-    cax = fig.add_axes([0.95, 0.1, 0.03, 0.8])
-    mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, label="Number of Spots")
-    # Put label on the left of the colourbar
-    cax.yaxis.set_label_position("left")
-    plt.show()
+    def plot(self):
+        """
+        Plot self.gene_values in a grid of histograms. Side length of grid is sqrt(n_genes).
+        """
+        # Delete any existing plots
+        grid_dim = int(np.ceil(np.sqrt(len(self.nb.call_spots.gene_names))))
+        if hasattr(self, 'fig'):
+            plt.close(self.fig)
+
+        self.fig, self.ax = plt.subplots(grid_dim, grid_dim, figsize=(10, 10))
+
+        # Move subplots down to make room for the title and to the left to make room for the colourbar
+        self.fig.subplots_adjust(top=0.9)
+        self.fig.subplots_adjust(right=0.9)
+
+        # Now loop through each subplot. If there are more subplots than genes, we want to delete the empty ones
+        # We also want to plot the histogram of scores for each gene, and colour the histogram based on the number of
+        # spots for that gene
+        for i in range(grid_dim ** 2):
+            # Choose the colour of the histogram based on the number of spots. We will use a log scale, with the
+            # minimum number of spots being 1 and the maximum being 1000. Use a blue to red colourmap
+            cmap = plt.get_cmap("coolwarm")
+            norm = mpl.colors.Normalize(vmin=1, vmax=np.percentile(self.n_spots, 99))
+
+            # Plot the histogram of scores for each gene
+            r, c = i // grid_dim, i % grid_dim
+            if i < len(self.nb.call_spots.gene_names):
+                if self.n_spots[i] < 50:
+                    n_bins = 10
+                else:
+                    n_bins = 50
+                self.ax[r, c].hist(self.gene_values[i], bins=n_bins, color=cmap(norm(self.n_spots[i])))
+                self.ax[r, c].set_title(self.nb.call_spots.gene_names[i])
+                self.ax[r, c].set_xlim(0, 1)
+                self.ax[r, c].set_xticks([])
+                self.ax[r, c].set_yticks([])
+
+            # Next we want to delete the empty plots
+            else:
+                self.ax[r, c].axis("off")
+                self.ax[r, c].set_xticks([])
+                self.ax[r, c].set_yticks([])
+
+        # Add overall title, colourbar and buttons
+        self.fig.suptitle("Distribution of Scores for Each Gene", fontsize=16)
+        cax = self.fig.add_axes([0.95, 0.1, 0.03, 0.6])
+        mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, label="Number of Spots")
+        # Put label on the left of the colourbar
+        cax.yaxis.set_label_position("left")
+        self.add_buttons()
+        self.fig.canvas.draw_idle()
+
+    def add_buttons(self):
+        """
+        Add buttons to the plot. Buttons are:
+            - 'score': plot the distribution of scores
+            - 'prob': plot the distribution of probabilities
+            - 'score_diff': plot the distribution of score differences
+            - 'intensity': plot the distribution of intensities
+        """
+        # coords for colourbar are [0.95, 0.1, 0.03, 0.6], we want to put the buttons just above the colourbar
+
+        # create axes for the buttons
+        ax_intensity = self.fig.add_axes([0.95, 0.75, 0.03, 0.03])
+        ax_score_diff = self.fig.add_axes([0.95, 0.8, 0.03, 0.03])
+        ax_prob = self.fig.add_axes([0.95, 0.85, 0.03, 0.03])
+        ax_score = self.fig.add_axes([0.95, 0.9, 0.03, 0.03])
+
+        # create the buttons, make them black. Hovering over will make them white
+        self.button_intensity = Button(ax_intensity, 'intensity', color='black', hovercolor='white')
+        self.button_score_diff = Button(ax_score_diff, 'score_diff', color='black', hovercolor='white')
+        self.button_prob = Button(ax_prob, 'prob', color='black', hovercolor='white')
+        self.button_score = Button(ax_score, 'score', color='black', hovercolor='white')
+
+        # connect the buttons to the update function. We need to ensure the event passed to update is a string
+        self.button_intensity.on_clicked(lambda event: self.update('intensity'))
+        self.button_score_diff.on_clicked(lambda event: self.update('score_diff'))
+        self.button_prob.on_clicked(lambda event: self.update('prob'))
+        self.button_score.on_clicked(lambda event: self.update('score'))
+
+    def update(self, event):
+        """
+            Update the plot when a button is clicked.
+        """
+        self.mode = event
+        self.load_values(mode=self.mode)
+        self.plot()
 
 
 def view_spot_brightness_hists(nb: Notebook):
