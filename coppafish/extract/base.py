@@ -149,11 +149,7 @@ def regularise_auto_thresh(auto_thresh: np.ndarray):
         auto_thresh: n_tiles_use x n_rounds_use x n_channels_use array of auto_thresh values.
 
     Returns:
-<<<<<<< HEAD
         auto_thresh: n_tiles_use x n_rounds_use x n_channels_use array of auto_thresh values (regularised).
-=======
-        auto_thresh: n_tiles x n_rounds x n_channels array of auto_thresh values (regularised).
->>>>>>> 8299f4d (parallel code adjustments + new viewer)
     """
 
     # Strategy:
@@ -161,16 +157,10 @@ def regularise_auto_thresh(auto_thresh: np.ndarray):
     # For each outlier x, identify the round r in which it occurs and replace auto_thresh[x, r, c] with the median
     # of the auto_thresh values for channel c in round r.
 
-<<<<<<< HEAD
     # reshape to n_channels_use x n_tiles_use x n_rounds_use
     channel_thresh = np.moveaxis(auto_thresh.copy(), 2, 0)
-=======
-    auto_thresh = auto_thresh.copy()
-    # Only use tiles that are used in the basic notebook page, and only use non anchor rounds
-    channel_thresh = auto_thresh[nbp_basic.use_tiles, :nbp_basic.n_rounds, :]
     # reshape to n_channels x n_tiles_use x n_rounds
     channel_thresh = np.moveaxis(channel_thresh, 2, 0)
->>>>>>> 8299f4d (parallel code adjustments + new viewer)
 
     for c in range(len(channel_thresh)):
         c_thresh = channel_thresh[c]
@@ -186,14 +176,6 @@ def regularise_auto_thresh(auto_thresh: np.ndarray):
             c_thresh[outlier_t[i], r] = np.median(c_thresh[:, r])
         # Now replace the values in the original array
         channel_thresh[c] = c_thresh
-<<<<<<< HEAD
-=======
-
-    # reshape back to n_tiles_use x n_rounds x n_channels
-    channel_thresh = np.moveaxis(channel_thresh, 0, 2)
-    auto_thresh[nbp_basic.use_tiles, :nbp_basic.n_rounds, :] = channel_thresh
->>>>>>> 8299f4d (parallel code adjustments + new viewer)
-
     # reshape back to n_tiles_use x n_rounds x n_channels
     auto_thresh = np.moveaxis(channel_thresh, 0, 2)
 
