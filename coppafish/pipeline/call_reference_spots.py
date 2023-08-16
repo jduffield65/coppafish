@@ -139,7 +139,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                    int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
                                    return_in_bounds=True)[0]
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
-    # nbp.abs_intensity_percentile = np.percentile(np.random.rand(100), np.arange(1, 101))
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
     nbp.gene_efficiency_intensity_thresh = 0
 
     return nbp, nbp_ref_spots
