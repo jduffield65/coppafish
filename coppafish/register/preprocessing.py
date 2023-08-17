@@ -44,7 +44,7 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
                               'round_shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
                               'round_transform_raw': np.zeros((n_tiles, n_rounds, 3, 4)),
                               'round_transform': np.zeros((n_tiles, n_rounds, 3, 4))}
-        channel_registration = {'channel_transform': np.zeros(nbp_basic.n_tiles, nbp_basic.n_channels, 3, 4),
+        channel_registration = {'channel_transform': np.zeros((n_channels, 3, 4)),
                                 'cam_mse': np.zeros((len(set(nbp_basic.channel_camera)), 50))}
         registration_data = {'round_registration': round_registration,
                              'channel_registration': channel_registration,
@@ -86,7 +86,7 @@ def replace_scale(transform: np.ndarray, scale: np.ndarray):
     Function to replace the diagonal of transform with new scales
     Args:
         transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
-        scale: 3 xn_tiles x n_rounds or 3 x n_tiles x n_channels of zyx scales
+        scale: 3 x n_tiles x n_rounds or 3 x n_tiles x n_channels of zyx scales
 
     Returns:
         transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
@@ -100,8 +100,8 @@ def replace_scale(transform: np.ndarray, scale: np.ndarray):
 
 def populate_full(sublist_1, list_1, sublist_2, list_2, array):
     """
-    Function to convert array from len(sublist1) x len(sublist2) to len(list1) x len(list2), listting elems not in sublists
-    as 0
+    Function to convert array from len(sublist1) x len(sublist2) to len(list1) x len(list2), listing elems not in
+    sub-lists as 0
     Args:
         sublist_1: sublist in the 0th dim
         list_1: entire list in 0th dim
@@ -143,7 +143,7 @@ def n_matches_to_frac_matches(n_matches: np.ndarray, spot_no: np.ndarray):
     Returns:
         frac_matches: n_tiles x n_rounds x n_channels x n_iters
     """
-    frac_matches = np.zeros_like(n_matches)
+    frac_matches = np.zeros_like(n_matches, dtype=np.float32)
 
     for r in range(frac_matches.shape[0]):
         for c in range(frac_matches.shape[1]):
@@ -155,10 +155,11 @@ def n_matches_to_frac_matches(n_matches: np.ndarray, spot_no: np.ndarray):
 def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box, x_box):
     """
     Splits a 3D image into y_subvolumes * x_subvolumes * z_subvolumes subvolumes.
+    NOTE: z_box, y_box and x_box must be even numbers!
 
     Parameters
     ----------
-    image : ndarray
+    image : (nx x ny x nx) ndarray
         The 3D image to be split.
     y_subvolumes : int
         The number of subvolumes to split the image into in the y dimension.
@@ -169,7 +170,7 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
 
     Returns
     -------
-    subvolume : ndarray
+    subvolume : (z_subvols, y_subvols, x_subvols x z_box x y_box x z_box) ndarray
         An array of subvolumes. The first three dimensions index the subvolume, the rest store the actual data.
     position: ndarray
         (y_subvolumes * x_subvolumes * z_sub_volumes) x 3 The middle coord of each subtile
@@ -302,43 +303,6 @@ def zyx_to_yxz_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0]
     A = (np.linalg.inv(C) @ A @ C)[:3, :4].T
 
     return A
-
-
-def reformat_array(A, nbp_basic, round):
-    """
-    Reformatting function to send A from (n_tiles * n_rounds) x z_subvol x x_subvol x y_subvol x 3 array to a new array
-    with dimensions n_tiles x n_rounds x z_subvol x x_subvol x y_subvol x 3 and equivalently with channels
-    Args:
-        A: round, pos arrays for shift and position need to be reformatted
-        nbp_basic: basic info page of notebook
-        round: boolean option (True if working with round_shifts, False if working with channel_shifts)
-
-    Returns:
-        B: Reformatted array
-    """
-
-    n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
-    use_rounds, use_channels = nbp_basic.use_rounds, nbp_basic.use_channels
-    c_ref = nbp_basic.anchor_channel
-    counter = 0
-
-    if round:
-        B = np.zeros((n_tiles, n_rounds, A.shape[1], A.shape[2], A.shape[3], A.shape[4]))
-        for t in range(n_tiles):
-            for r in use_rounds:
-                B[t, r] = A[counter]
-                counter += 1
-    else:
-        # This scenario arises if we don't save the transforms for the anchor channel (identity)
-        use_channels.remove(c_ref)
-        B = np.zeros((n_tiles, n_channels, A.shape[1], A.shape[2], A.shape[3], A.shape[4]))
-        for t in range(n_tiles):
-            for c in use_channels:
-                B[t, c] = A[counter]
-                counter += 1
-        use_channels.append(c_ref)
-
-    return B
 
 
 def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
