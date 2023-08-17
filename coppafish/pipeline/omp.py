@@ -7,7 +7,7 @@ from ..spot_colors import get_spot_colors, all_pixel_yxz
 from ..call_spots import get_spot_intensity, get_non_duplicate
 from .. import omp
 from ..utils.base import round_any
-
+from joblib import Parallel, delayed
 import os
 import warnings
 from scipy import sparse
@@ -156,13 +156,16 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
-        for z in use_z:
-            print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)},"
-                  f" Z-plane {np.where(use_z == z)[0][0] + 1}/{len(use_z)}")
+        z_chunk_size = 5
+        z_chunks = len(use_z) // z_chunk_size + 1
+        # n_jobs = 5
+        for z_chunk in range(z_chunks):
+            print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
             # While iterating through tiles, only save info for rounds/channels using
             # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
+            z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
             pixel_colors_tz, pixel_yxz_tz = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
-                                                                          int(z)), int(t), transform,
+                                                                          np.arange(z_min, z_max)), int(t), transform,
                                                             nbp_file, nbp_basic, return_in_bounds=True)
             if pixel_colors_tz.shape[0] == 0:
                 continue
@@ -170,7 +173,6 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
-            # pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
             pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             if not keep.any():
@@ -179,6 +181,13 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
 
+            # n_spots = pixel_colors_tz.shape[0]
+            # spot_chunk_size = n_spots // n_jobs + 1
+            # Parallel(n_jobs=n_jobs)(delayed(omp.get_all_coefs)(pixel_colors_tz[i*spot_chunk_size:
+            #                                                                    min(n_spots, (i+1 * spot_chunk_size))],
+            #                                                    bled_codes, 0, dp_norm_shift, config['dp_thresh'],
+            #                                                    config['alpha'], config['beta'], config['max_genes'],
+            #                                                    config['weight_coef_fit'][0]) for i in range(n_jobs))
             pixel_coefs_tz = sparse.csr_matrix(
                 omp.get_all_coefs(pixel_colors_tz, bled_codes,
                                   0, dp_norm_shift, config['dp_thresh'],
