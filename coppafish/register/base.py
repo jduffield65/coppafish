@@ -1,5 +1,5 @@
-import itertools
 import os
+import nd2
 import pickle
 import numpy as np
 from tqdm import tqdm
@@ -21,13 +21,15 @@ def find_shift_array(subvol_base, subvol_target, position, r_threshold):
     This function takes in 2 split up 3d images and finds the optimal shift from each subvolume in 1 to it's corresponding
     subvolume in the other.
     Args:
-        subvol_base: Base subvolume array
-        subvol_target: Target subvolume array
-        position: Position of centre of subvolumes (z, y, x)
-        r_threshold: threshold of correlation used in degenerate cases
+        subvol_base: Base subvolume array (n_z_subvolumes, n_y_subvolumes, n_x_subvolumes, z_box, y_box, x_box)
+        subvol_target: Target subvolume array (n_z_subvolumes, n_y_subvolumes, n_x_subvolumes, z_box, y_box, x_box)
+        position: Position of centre of subvolumes in base array (n_z_subvolumes, n_y_subvolumes, n_x_subvolumes, 3)
+        r_threshold: threshold of correlation used in degenerate cases (float)
     Returns:
-        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
-        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift_corr coef.
+        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift
+        (n_z_subvolumes * n_y_subvolumes * n_x_subvolumes, 3)
+        shift_corr: 2D array, with first dimension referring to subvolume index and final dim referring to
+        shift_corr coef (n_z_subvolumes * n_y_subvolumes * n_x_subvolumes, 1)
     """
     if subvol_base.shape != subvol_target.shape:
         raise ValueError("Subvolume arrays have different shapes")
@@ -42,6 +44,7 @@ def find_shift_array(subvol_base, subvol_target, position, r_threshold):
                                                                       subvol_target=subvol_target[:, y, x],
                                                                       position=position[:, y, x].copy(),
                                                                       pearson_r_threshold=r_threshold)
+
     return np.reshape(shift, (shift.shape[0] * shift.shape[1] * shift.shape[2], 3)), \
         np.reshape(shift_corr, shift.shape[0] * shift.shape[1] * shift.shape[2])
 
@@ -51,13 +54,16 @@ def find_z_tower_shifts(subvol_base, subvol_target, position, pearson_r_threshol
     This function takes in 2 split up 3d images along one tower of subvolumes in z and computes shifts for each of these
     to its nearest neighbour subvol
     Args:
-        subvol_base: Base subvolume array (this is a z-tower of base subvolumes)
-        subvol_target: Target subvolume array (this is a z-tower of target subvolumes)
-        position: Position of centre of subvolumes (z, y, x)
-        pearson_r_threshold: threshold of correlation used in degenerate cases
-        z_neighbours: number of neighbouring subvolumes to merge with the current subvolume to compute the shift
+        subvol_base: (n_z_subvols, z_box, y_box, x_box) Base subvolume array (this is a z-tower of n_z_subvols base
+        subvolumes)
+        subvol_target: (n_z_subvols, z_box, y_box, x_box) Target subvolume array (this is a z-tower of n_z_subvols
+        target subvolumes)
+        position: (n_z_subvols, 3) Position of centre of subvolumes (z, y, x)
+        pearson_r_threshold: (float) threshold of correlation used in degenerate cases
+        z_neighbours: (int) number of neighbouring sub-volumes to merge with the current sub-volume to compute the shift
     Returns:
-        shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift.
+        shift: (n_z_subvols, 3) shift of each subvolume in z-tower
+        shift_corr: (n_z_subvols, 1) correlation coefficient of each subvolume in z-tower
     """
     position = position.astype(int)
     # for the purposes of this section, we'll take position to be the bottom left corner of the subvolume
@@ -85,13 +91,14 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
     This function takes in 2 3d images and finds the optimal shift from one to the other. We use a phase cross
     correlation method to find the shift.
     Args:
-        subvol_base: Base subvolume array (this will contain a lot of zeroes)
+        subvol_base: Base subvolume array (this will contain a lot of zeroes) (n_z_pixels, n_y_pixels, n_x_pixels)
         subvol_target: Target subvolume array (this will be a merging of subvolumes with neighbouring subvolumes)
-        pearson_r_threshold: Threshold used to accept a shift as valid
+        (nz_pixels2, n_y_pixels2, n_x_pixels2) size 2 >= size 1
+        pearson_r_threshold: Threshold used to accept a shift as valid (float)
 
     Returns:
-        shift: zyx shift
-        shift_corr: correlation coefficient of shift
+        shift: zyx shift (3,)
+        shift_corr: correlation coefficient of shift (float)
     """
     if subvol_base.shape != subvol_target.shape:
         raise ValueError("Subvolume arrays have different shapes")
@@ -336,91 +343,76 @@ def dapi_reg(im_dir: str, im_rounds: list, anchor_round: int, tiles: list) -> di
         registration_data = custom_svr(im_dir, im_rounds, anchor_round, t, registration_data)
 
 
-def channel_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, registration_data: dict,
-                         config: dict, pbar) -> dict:
+def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int = 2, n_cams: int = 4,
+                         bead_radii: list = [10, 11, 12]) -> np.ndarray:
     """
     Function to carry out subvolume registration on a single tile.
     Args:
-        nbp_file: File Names notebook page
-        nbp_basic: Basic info notebook page
-        registration_data: dictionary with registration data
-        config: dictionary with configuration data
+        fluorescent_bead_path: Path to fluorescent beads directory containing the fluorescent bead images.
+        If none then we assume that the channels are registered to each other and just set channel_transforms to
+        identity matrices
+        anchor_cam_idx: (int) Index of the camera to use as anchor
+        n_cams: int number of cameras
+        bead_radii: list of possible bead radii
 
     Returns:
-        registration_data updated after the subvolume registration
+        transform: n_cams x 3 x 4 array of affine transforms taking anchor camera to each other camera
     """
-    # We need to load in the fluorescent bead images
-    fluorescent_beads = np.zeros((len(set(nbp_basic.channel_cameras)), nbp_basic.tile_sz, nbp_basic.tile_sz))
-    files = [f for f in os.listdir(nbp_file.fluorescent_beads_dir) if f.endswith('.npy')]
-    files.sort()
-    for i, f in enumerate(files):
-        fluorescent_beads[i] = np.load(os.path.join(nbp_file.fluorescent_beads_dir, f))
+    transform = np.zeros((n_cams, 3, 4))
+    # First check if the fluorescent beads path exists. If not, we assume that the channels are registered to each
+    # other and just set channel_transforms to identity matrices
+    if not os.path.isfile(fluorescent_bead_path):
+        # Set registration_data['channel_registration']['channel_transform'][c] = np.eye(3) for all channels c
+        for c in range(n_cams):
+            transform[c] = np.eye(3, 4)
+        print('Fluorescent beads directory does not exist. Prior assumption will be that channels are registered to '
+              'each other.')
+        return transform
 
-    # We need to find the anchor camera to register to
-    anchor_cam = nbp_basic.channel_cameras[nbp_basic.anchor_channel]
-    all_cams = list(set(nbp_basic.channel_cameras))
-    all_cams.sort()
-    anchor_cam_idx = all_cams.index(anchor_cam)
-
-    # First correct for shifts between cameras
-    shift = np.zeros((len(all_cams), 2))
-    for i in range(len(all_cams)):
-        pbar.set_description('Computing shifts for camera ' + str(all_cams[i]))
-        if i != anchor_cam_idx:
-            shift[i], _, _ = phase_cross_correlation(fluorescent_beads[i], fluorescent_beads[anchor_cam_idx])
-            fluorescent_beads[i] = custom_shift(fluorescent_beads[i], shift[i].astype(int))
+    fluorescent_beads = np.array(nd2.ND2File(fluorescent_bead_path))
 
     # Now we'll turn each image into a point cloud
     bead_point_clouds = []
-    bead_radii = config['bead_radii']
-    for i in range(len(all_cams)):
-        pbar.set_description('Detecting fluorescent beads for camera ' + str(all_cams[i]))
+    for i in range(n_cams):
         edges = canny(fluorescent_beads[i],  sigma=3, low_threshold=10, high_threshold=50)
         hough_res = hough_circle(edges, bead_radii)
         accums, cx, cy, radii = hough_circle_peaks(hough_res, bead_radii, min_xdistance=10, min_ydistance=10)
         bead_point_clouds.append(np.vstack((cy, cx)).T)
 
-    # Now convert the point clouds from yx to yxz
+    # Now convert the point clouds from yx to yxz. This is because our ICP algorithm assumes that the point clouds
+    # are in 3D space
     bead_point_clouds = [np.hstack((bead_point_clouds[i], np.zeros((bead_point_clouds[i].shape[0], 1))))
-                         for i in range(len(all_cams))]
-    shift = np.hstack((shift, np.zeros((shift.shape[0], 1))))
+                         for i in range(n_cams)]
 
     # Set up ICP
-    initial_transform = np.zeros((len(all_cams), 4, 3))
-    transform = np.zeros((len(all_cams), 4, 3))
-    mse = np.zeros((len(all_cams)), 50)
-    target_cams = [i for i in range(len(all_cams)) if i != anchor_cam_idx]
+    initial_transform = np.zeros((n_cams, 4, 3))
+    transform = np.zeros((n_cams, 4, 3))
+    mse = np.zeros((n_cams, 50))
+    target_cams = [i for i in range(n_cams) if i != anchor_cam_idx]
     with tqdm(total=len(target_cams)) as pbar:
         for i in target_cams:
-            pbar.set_description('Running ICP for camera ' + str(all_cams[i]))
+            pbar.set_description('Running ICP for camera ' + str(i))
             # Set initial transform to identity (shift already accounted for)
             initial_transform[i, :3, :3] = np.eye(3)
             # Run ICP
             transform[i], _, mse[i], converged = icp(yxz_base=bead_point_clouds[anchor_cam_idx],
                                                      yxz_target=bead_point_clouds[i],
                                                      start_transform=initial_transform[i], n_iters=50, dist_thresh=5)
-            registration_data['channel_registration']['cam_mse'][i] = mse[i]
             if not converged:
-                transform[i, :3, :3] = np.eye(3)
-                transform[i, :3, 3] = shift[i]
-                raise Warning('ICP did not converge for camera ' + str(all_cams[i]) + '. Replacing with shift.')
+                transform[i] = np.eye(4, 3)
+                raise Warning('ICP did not converge for camera ' + str(i) + '. Replacing with identity.')
             pbar.update(1)
 
-    # Add the shifts to the transforms
-    transform[:, :3, 3] += shift
+    # Need to add in z coord info as not accounted for by registration due to all coords being equal
+    transform[:, 2, 2] = 1
+    transform[2] = np.eye(4, 3)
 
     # Convert transforms from yxz to zyx
-    transform_zyx = np.zeros((len(all_cams), 3, 4))
-    for i in range(len(all_cams)):
+    transform_zyx = np.zeros((4, 3, 4))
+    for i in range(4):
         transform_zyx[i] = yxz_to_zyx_affine(transform[i])
 
-    # Now we need to loop through all channels in use, find the corresponding camera and set channel_transform
-    # to the transform for that camera
-    for c in nbp_basic.use_channels:
-        cam_idx = all_cams.index(nbp_basic.channel_cameras[c])
-        registration_data['channel_registration']['channel_transform'][c] = transform_zyx[cam_idx]
-
-    return registration_data
+    return transform_zyx
 
 
 # Function to remove outlier shifts

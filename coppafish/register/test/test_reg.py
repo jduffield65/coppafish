@@ -230,3 +230,17 @@ def test_ols_regression():
     assert np.allclose(transform, np.array([[5, 0, 0, 0],
                                             [0, 5, 0, 0],
                                             [0, 0, 5, 0]]))
+
+
+def test_huber_regression():
+    rng = np.random.RandomState(0)
+    pos = rng.rand(10, 3)
+    shift1 = 5 * pos - pos
+    # Test the function
+    transform = reg_base.huber_regression(shift1, pos, False)
+    # Test that the shape is correct
+    assert transform.shape == (3, 4)
+    # Test that the values are correct
+    assert np.allclose(transform, np.array([[5, 0, 0, 0],
+                                            [0, 5, 0, 0],
+                                            [0, 0, 5, 0]]))

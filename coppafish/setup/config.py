@@ -72,7 +72,9 @@ _options = {
             'omp_spot_coef': 'str',
             'big_dapi_image': 'maybe_str',
             'big_anchor_image': 'maybe_str',
-            'pciseq': 'list_str'
+            'pciseq': 'list_str',
+            'fluorescent_bead_path': 'maybe_str'
+
         },
     'extract':
         {

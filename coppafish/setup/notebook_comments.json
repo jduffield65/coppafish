@@ -77,7 +77,9 @@
     "tile": [
       "List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
       "*2D*: `tile[t][r]` is the *npy* file containing all channels of tile $t$, round $r$.","",
-      "*3D*: `tile[t][r][c]` is the *npy* file containing all z planes for tile $t$, round $r$, channel $c$"]
+      "*3D*: `tile[t][r][c]` is the *npy* file containing all z planes for tile $t$, round $r$, channel $c$"],
+    "fluorescent_bead_path": ["String or None",
+      "Path to *nd2* file containing fluorescent beads. `None` if not used."]
   },
 
   "basic_info":
@@ -325,8 +327,6 @@
   {
     "DESCRIPTION": ["*register_debug* page contains information on how the affine transforms in *register* page were calculated.",
       "Page added to *Notebook* in *pipeline/register.py*"],
-    "reference_round": ["n_tiles",
-      "Round used as reference for each tile's channel registration."],
     "n_matches": ["Numpy integer array [n_tiles x n_rounds x n_channels x n_iters]",
       "Number of matches found for each transform at each iteration",
       "A match is when distance between points is less than `config['register']['neighb_dist_thresh']`."],
@@ -339,19 +339,14 @@
     "round_shift": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols) x 3:",
       " Shift of sub-volumes used for the round registration. Specifically, round_shift[t, r, z, y, x] is the shift",
       " taking sub-volume  [z, y, x] from $(t, r_{ref}, c_{ref})$ to its corresponding sub-volume in $(t, r, c_{ref})$."],
-    "channel_shift": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols) x 3:",
-      " Shift of sub-volumes used for the sub-volume round registration. Specifically, round_shift[t, r, z, y, x] is ",
-      "the shift taking sub-volume  [z, y, x] from $(t, r_{ref}, c_{ref})$ to its corresponding sub-volume in $(t, r, c_{ref})$."],
     "round_shift_corr": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols):",
       " score of shift of sub-volumes used for the round registration. "],
-    "channel_shift_corr": ["n_tiles x n_channels :",
-      " Sscore of shift of subvolumes used for channel registration"],
     "position": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols) x 3:",
       "Position of each subvolume in z y x local tile coords"],
     "round_transform_raw": [" n_tiles x n_rounds x 4 x 3 ndarray:",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
-    "channel_transform_raw": ["n_tiles x n_channels x 4 x 3 ndarray:",
-      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."]
+    "channel_transform": [" n_channels x 4 x 3 ndarray:",
+      " affine transforms taking $(r_{mid}, c_{ref})$ to $(r_{mid}, c)$ for each tile $t$ and channel $c$."]
   },
 
   "ref_spots":

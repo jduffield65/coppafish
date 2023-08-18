@@ -23,6 +23,7 @@ def set_file_names(nb, nbp):
     nbp.input_dir = config['input_dir']
     nbp.output_dir = config['output_dir']
     nbp.tile_dir = config['tile_dir']
+    nbp.fluorescent_bead_path = config['fluorescent_bead_path']
 
     # remove file extension from round and anchor file names if it is present
     if config['raw_extension'] == 'jobs':
@@ -122,6 +123,6 @@ def set_file_names(nb, nbp):
                                              nb.basic_info.n_channels)
         else:
             tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles)
-
+    
     nbp.tile = tile_names.tolist()  # npy tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
     nb += nbp
