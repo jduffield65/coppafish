@@ -80,6 +80,7 @@
       "*3D*: `tile[t][r][c]` is the *npy* file containing all z planes for tile $t$, round $r$, channel $c$"],
     "fluorescent_bead_path": ["String or None",
       "Path to *nd2* file containing fluorescent beads. `None` if not used."]
+
   },
 
   "basic_info":
