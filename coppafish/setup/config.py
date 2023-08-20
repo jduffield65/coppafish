@@ -74,7 +74,6 @@ _options = {
             'big_anchor_image': 'maybe_str',
             'pciseq': 'list_str',
             'fluorescent_bead_path': 'maybe_str'
-
         },
     'extract':
         {

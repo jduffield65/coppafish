@@ -358,6 +358,7 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
     Returns:
         transform: n_cams x 3 x 4 array of affine transforms taking anchor camera to each other camera
     """
+
     transform = np.zeros((n_cams, 3, 4))
     # First check if the fluorescent beads path exists. If not, we assume that the channels are registered to each
     # other and just set channel_transforms to identity matrices

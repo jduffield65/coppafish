@@ -318,12 +318,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     pbar.close()
 
     # Now remove outliers from nbp.auto_thresh
-    use_tiles = nbp_basic.use_tiles
     auto_thresh_raw = nbp.auto_thresh.copy()
     auto_thresh_reg = np.zeros_like(auto_thresh_raw)
+    auto_thresh_reg[np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels)] = \
+        extract.regularise_auto_thresh(auto_thresh_raw[np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds,
+                                                              nbp_basic.use_channels)])
     del nbp.auto_thresh
-    auto_thresh_reg[np.ix_(use_tiles, use_rounds, use_channels)] = \
-        extract.regularise_auto_thresh(auto_thresh_raw[np.ix_(use_tiles, use_rounds, use_channels)])
     nbp.auto_thresh = auto_thresh_reg
 
     if not nbp_basic.use_anchor:

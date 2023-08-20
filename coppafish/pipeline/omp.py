@@ -156,7 +156,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
-        z_chunk_size = 5
+        z_chunk_size = 2
         z_chunks = len(use_z) // z_chunk_size + 1
         # n_jobs = 5
         for z_chunk in range(z_chunks):
