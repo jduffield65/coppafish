@@ -58,19 +58,19 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     # Start with channel registration
     pbar = tqdm(total=len(uncompleted_tiles))
     pbar.set_description(f"Running initial channel registration")
-    if registration_data['channel_registration']['cam_mse'].max() == 0:
-        if not nbp_basic.chanel_cameras:
+    if registration_data['channel_registration']['channel_transform'].max() == 0:
+        if not nbp_basic.channel_camera:
             cameras = [0] * n_channels
         else:
-            cameras = list(set(nbp_basic.channel_cameras))
+            cameras = list(set(nbp_basic.channel_camera))
         cameras.sort()
-        anchor_cam_idx = cameras.index(nbp_basic.channel_cameras[nbp_basic.anchor_channel])
+        anchor_cam_idx = cameras.index(nbp_basic.channel_camera[nbp_basic.anchor_channel])
         cam_transform = channel_registration(fluorescent_bead_path=nbp_file.fluorescent_bead_path,
                                              anchor_cam_idx=anchor_cam_idx, n_cams=len(cameras),
                                              bead_radii=config['bead_radii'])
         # Now loop through all channels and set the channel transform to its cam transform
         for c in use_channels:
-            cam_idx = cameras.index(nbp_basic.channel_cameras[c])
+            cam_idx = cameras.index(nbp_basic.channel_camera[c])
             registration_data['channel_registration']['channel_transform'][c] = cam_transform[cam_idx]
 
     # round registration
@@ -89,7 +89,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     # Now combine all of these into single subvol transform array via composition
     for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
         registration_data['initial_transform'][t, r, c] = \
-            zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['channel_transform'][t, c],
+            zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['channel_transform'][c],
                                              registration_data['round_registration']['round_transform'][t, r]))
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:

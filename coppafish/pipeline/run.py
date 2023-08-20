@@ -188,7 +188,8 @@ def run_register(nb: setup.Notebook):
     config = nb.get_config()
     if not all(nb.has_page(["register", "register_debug"])):
         nbp, nbp_debug = register(nb.basic_info, nb.file_names, nb.find_spots, config['register'],
-                                  nb.basic_info.tilepos_yx)
+                                  np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant',
+                                         constant_values=1))
         nb += nbp
         nb += nbp_debug
         n_reg_images = len(os.listdir(os.path.join(nb.file_names.output_dir, 'reg_images')))

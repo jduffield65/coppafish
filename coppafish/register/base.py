@@ -362,7 +362,7 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
     transform = np.zeros((n_cams, 3, 4))
     # First check if the fluorescent beads path exists. If not, we assume that the channels are registered to each
     # other and just set channel_transforms to identity matrices
-    if not os.path.isfile(fluorescent_bead_path):
+    if fluorescent_bead_path is None:
         # Set registration_data['channel_registration']['channel_transform'][c] = np.eye(3) for all channels c
         for c in range(n_cams):
             transform[c] = np.eye(3, 4)

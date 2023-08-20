@@ -181,7 +181,8 @@ _options = {
             'y_box': 'int',
             'x_box': 'int',
             'r_thresh': 'number',
-            'residual_thresh': 'int'
+            'residual_thresh': 'int',
+            'bead_radii': 'maybe_list_number',
         },
     'call_spots':
         {
