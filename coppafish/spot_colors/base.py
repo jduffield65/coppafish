@@ -207,7 +207,8 @@ def normalise_rc(spot_colours: np.ndarray, initial_bleed_matrix: np.ndarray) -> 
             if top_score > 1.5 * second_score:
                 spot_brightness[r][channel].append(top_score)
 
-    # Now we want to find the median intensity for each round and channel.
+    # Now we want to find the 99the percentile intensity for each round and channel. This will be our normalisation
+    # factor. So after normalising each spot, the 99th percentile brightest spots will be 1.
     norm_factor = np.zeros((spot_colours.shape[1], spot_colours.shape[2]))
     for r in range(norm_factor.shape[0]):
         for c in range(norm_factor.shape[1]):

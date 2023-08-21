@@ -181,6 +181,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
 
+            # Parallelize coef finding over z-chunks.
             # n_spots = pixel_colors_tz.shape[0]
             # spot_chunk_size = n_spots // n_jobs + 1
             # Parallel(n_jobs=n_jobs)(delayed(omp.get_all_coefs)(pixel_colors_tz[i*spot_chunk_size:
@@ -188,6 +189,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             #                                                    bled_codes, 0, dp_norm_shift, config['dp_thresh'],
             #                                                    config['alpha'], config['beta'], config['max_genes'],
             #                                                    config['weight_coef_fit'][0]) for i in range(n_jobs))
+
             pixel_coefs_tz = sparse.csr_matrix(
                 omp.get_all_coefs(pixel_colors_tz, bled_codes,
                                   0, dp_norm_shift, config['dp_thresh'],

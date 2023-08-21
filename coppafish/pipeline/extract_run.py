@@ -120,6 +120,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                        np.array(config['wiener_pad_shape']) * 2
         wiener_filter = extract.get_wiener_filter(psf, pad_im_shape, config['wiener_constant'])
         nbp_debug.psf = psf
+        if config['psf_intensity_thresh'] is not None:
+            config['psf_intensity_thresh'] = int(config['psf_intensity_thresh'])
         nbp_debug.psf_intensity_thresh = config['psf_intensity_thresh']
         nbp_debug.psf_tiles_used = psf_tiles_used
     else:
