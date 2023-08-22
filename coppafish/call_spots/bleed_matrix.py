@@ -79,46 +79,64 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
     # to dye i
     n_spots, n_rounds, n_channels_use = spot_colours.shape[0], spot_colours.shape[1], spot_colours.shape[2]
     bleed_matrix_norm = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
-    # Convert colour_matrices to colour_vectors
+    # Convert colour_matrices to colour_vectors. These throw away the round dimension unless round_split is True.
     if round_split:
-        colour_vector = np.swapaxes(spot_colours, 0, 1)
+        colour_vector = np.swapaxes(spot_colours, 0, 1) # n_rounds x n_spots x n_channels
         bleed_matrix = np.zeros((n_rounds, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
+        # n_rounds x n_channels x n_dyes
     else:
-        # If not round split then we just take all rounds together. Let's throw away the first 2 rounds as we have
-        # a lot of anchor bleed in these rounds
-        spot_colours = spot_colours[:, 2:, :]
-        colour_vector = np.reshape(spot_colours, (n_spots * (n_rounds - 2), n_channels_use))[np.newaxis, :, :]
+        # If not round split then we just take all rounds together.
+        colour_vector = np.reshape(spot_colours, (n_spots * n_rounds, n_channels_use))[np.newaxis, :, :]
+        #  1 x (n_spots*n_rounds) x n_channels
         bleed_matrix = np.zeros((1, initial_bleed_matrix.shape[0], initial_bleed_matrix.shape[1]))
+        # 1 x n_channels x n_dyes
 
-    # Now we loop over the first dimension of the colour vector and compute the dye score for each spot. This allows us
-    # to treat the 2 cases of round split and not round split in the same way
+    # Now we loop over the first dimension of the colour vector and compute the dye score for each spot.
+    # This allows us to treat the 2 cases of round split and not round split in the same way
     for i in range(colour_vector.shape[0]):
-        dye_score = []
-        scale = []
-        # Now compute the dot product of each spot with each dye. This gives an n_spots x n_dyes matrix. !!! Normalise
+        dye_score, scale = [], []
+        # Now compute the dot product of each spot with each dye. This gives an n_spots x n_dyes matrix.
         all_dye_score = colour_vector[i] @ bleed_matrix_norm
         # Now assign each spot a dye which is its highest score
-        spot_dye = np.argmax(all_dye_score, axis=1)
-        spot_dye_score = np.max(all_dye_score, axis=1)
+        spot_dye, spot_dye_score = np.argmax(all_dye_score, axis=1), np.max(all_dye_score, axis=1)
         spot_dye_score_second = np.sort(all_dye_score, axis=1)[:, -2]
-        # Now we want to remove all spots which have a score of 0 or less than twice the second highest score
+        # Now we want to remove all spots which have a score of 0 or less than twice the second-highest score
         dye_score_valid = (spot_dye_score > 0) * (spot_dye_score > 2 * spot_dye_score_second)
-        spot_dye_score = spot_dye_score[dye_score_valid]
-        spot_dye = spot_dye[dye_score_valid]
 
-        # Loop through all dyes and partition our data nicely.
-        # Also compute the median of each of these, this will be our scale factor for each column
+        # Now we loop over the dyes and fine tune the spectrum for each dye
         for d in range(n_dyes):
-            score_d = spot_dye_score[spot_dye == d]
-            scale_d = np.median(score_d)
-            # Append these
-            dye_score.append(score_d)
-            scale.append(scale_d)
-            # Add scaled copy of each of the cols to our new bleed matrix
-            bleed_matrix[i, :, d] = scale_d * bleed_matrix_norm[:, d]
+            # Get all spots which have been assigned to dye d
+            d_spots = colour_vector[i][(spot_dye == d) * dye_score_valid]
+            # Compute the first singular vector of these spots
+            d_spectrum = fine_tune_dye_spectrum(spot_colours=d_spots)
+            bleed_matrix[i, :, d] = d_spectrum
 
     # Repeat the first dimension of bleed_matrix if round_split is False
     if round_split is False:
         bleed_matrix = np.repeat(bleed_matrix, n_rounds, axis=0)
 
     return bleed_matrix, all_dye_score
+
+
+def fine_tune_dye_spectrum(spot_colours: np.ndarray) -> np.ndarray:
+    """
+    Takes in a collection of spots' colour vectors assigned to a single dye. Then computes the first singular vector.
+    Args:
+        spot_colours: n_spots x n_channels colour matrix for each isolated spot assigned to a single dye
+
+    Returns:
+        dye_spectrum: n_channels x 1 array of the first singular vector
+    """
+    # Compute the outer product of the colour vectors and then compute the first singular vector as the eigenvector
+    # corresponding to the largest eigenvalue. This is the best vector that each spot is roughly a multiple of.
+    outer_prod = spot_colours.T @ spot_colours
+    eig_val, eig_vec = np.linalg.eig(outer_prod)
+    dye_spectrum = eig_vec[:, np.argmax(eig_val)]
+
+    # If the largest absolute value of the spectrum is negative, then we flip the spectrum
+    max_index = np.argmax(np.abs(dye_spectrum))
+    if dye_spectrum[max_index] < 0:
+        dye_spectrum = -dye_spectrum
+
+    return dye_spectrum
+

@@ -82,7 +82,7 @@ def save_compressed_image(output_dir: str, image: np.ndarray, t: int, r: int, c:
 
 def replace_scale(transform: np.ndarray, scale: np.ndarray):
     """
-    Function to replace the diagonal of transform with new scales
+    Replace the diagonal of transform with new scales
     Args:
         transform: n_tiles x n_rounds x 3 x 4 or n_tiles x n_channels x 3 x 4 of zyx affine transforms
         scale: 3 x n_tiles x n_rounds or 3 x n_tiles x n_channels of zyx scales
@@ -158,7 +158,7 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
 
     Parameters
     ----------
-    image : (nx x ny x nx) ndarray
+    image : (nz x ny x nx) ndarray
         The 3D image to be split.
     y_subvolumes : int
         The number of subvolumes to split the image into in the y dimension.
@@ -174,6 +174,8 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
     position: ndarray
         (y_subvolumes * x_subvolumes * z_sub_volumes) x 3 The middle coord of each subtile
     """
+    # Make sure that box dims are even
+    assert z_box % 2 == 0 and y_box % 2 == 0 and x_box % 2 == 0, "Box dimensions must be even numbers!"
     z_image, y_image, x_image = image.shape
 
     # Allow 0.5 of a box either side and then split the middle with subvols evenly spaced points, ie into subvols - 1
@@ -212,7 +214,7 @@ def split_3d_image(image, z_subvolumes, y_subvolumes, x_subvolumes, z_box, y_box
 
 def compose_affine(A1, A2):
     """
-    Function to compose 2 affine transfroms
+    Function to compose 2 affine transforms. A1 comes before A2.
     Args:
         A1: 3 x 4 affine transform
         A2: 3 x 4 affine transform
@@ -310,10 +312,10 @@ def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
     Args:
         array: array to be shifted
         offset: shift value (must be int)
-        constant_values: by default this is 0
+        constant_values: This is the value used for points outside the boundaries after shifting.
 
     Returns:
-        new_array: array shifted by offset with constant value 0
+        new_array: array shifted by offset.
     """
     array = np.asarray(array)
     offset = np.atleast_1d(offset)
@@ -335,7 +337,12 @@ def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
 
 def merge_subvols(position, subvol):
     """
-    Function to merge subvolumes together into one image
+    Suppose we have a known volume V split into subvolumes. The position of the subvolume corner
+    in the coords of the initial volume is given by position. However, these subvolumes may have been shifted
+    so position may be slightly different. This function finds the minimal volume containing all these
+    shifted subvolumes.
+
+    If regions overlap, we take the values from the later subvolume.
     Args:
         position: n_subvols x 3 array of positions of bottom left of subvols (zyx)
         subvol: n_subvols x z_box x y_box x x_box array of subvols

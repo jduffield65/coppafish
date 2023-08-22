@@ -35,10 +35,10 @@ def test_populate_full():
 def test_yxz_to_zyx():
     # Setup data
     rng = np.random.RandomState(0)
-    im = rng.rand(10, 20, 30)
+    im = rng.rand(1, 2, 3)
     new_im = reg_pre.yxz_to_zyx(im)
     # Test that the shape is correct
-    assert new_im.shape == (30, 10, 20)
+    assert new_im.shape == (3, 1, 2)
 
 
 def test_n_matches_to_frac_matches():
@@ -156,8 +156,11 @@ def test_merge_subvols():
     subvols = rng.rand(2, 3, 4, 5)
     pos = np.array([[0, 0, 0],
                     [10, 10, 10]])
+    subvol_3 = np.ones((3, 4, 5))
+    pos_3 = np.array([1, 1, 1])
     # merge subvols
     merged = reg_pre.merge_subvols(pos, subvols)
+    # TODO: Do this after the meeting
     # check that the shape is correct
     assert merged.shape == (13, 14, 15)
     # check that the values are correct
@@ -166,6 +169,7 @@ def test_merge_subvols():
 
 
 def test_find_shift_array():
+    # TODO: Make sure we have access to skimage data
     # set up data (10, 256, 256)
     brain = data.brain()
     brain_shifted = reg_pre.custom_shift(brain, np.array([0, 10, 10]))

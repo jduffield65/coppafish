@@ -18,13 +18,16 @@ from coppafish.setup import NotebookPage
 
 def find_shift_array(subvol_base, subvol_target, position, r_threshold):
     """
-    This function takes in 2 split up 3d images and finds the optimal shift from each subvolume in 1 to it's corresponding
-    subvolume in the other.
+    This function takes in 2 3d images which have already been split up into 3d subvolumes. We then find the shift from
+    each base subvolume to its corresponding target subvolume.
+    NOTE: This function does allow matching to non-corresponding subvolumes in z.
+    NOTE: This function performs flattening of the output arrays, and this is done according to np.reshape.
     Args:
         subvol_base: Base subvolume array (n_z_subvolumes, n_y_subvolumes, n_x_subvolumes, z_box, y_box, x_box)
         subvol_target: Target subvolume array (n_z_subvolumes, n_y_subvolumes, n_x_subvolumes, z_box, y_box, x_box)
         position: Position of centre of subvolumes in base array (n_z_subvolumes, n_y_subvolumes, n_x_subvolumes, 3)
-        r_threshold: threshold of correlation used in degenerate cases (float)
+        r_threshold: measure of shift quality. If the correlation between corrected base subvol and fixed target
+        subvol is beneath this, we store shift as [nan, nan, nan]
     Returns:
         shift: 2D array, with first dimension referring to subvolume index and final dim referring to shift
         (n_z_subvolumes * n_y_subvolumes * n_x_subvolumes, 3)
