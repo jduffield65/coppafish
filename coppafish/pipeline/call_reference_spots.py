@@ -72,8 +72,35 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # 1. Remove background from spots and normalise channels and rounds
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
-    initial_norm_factor = np.load('./coppafish/setup/default_norm.npy')
-    initial_bleed_matrix = np.load('./coppafish/setup/default_bleed.npy')
+    initial_norm_factor = np.asarray(
+        [
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+        ]
+    )
+    initial_bleed_matrix = np.asarray(
+        [
+            [5.21242853e-01,  5.57782141e-02, -1.17553342e-02,  2.40581909e-05,
+            -5.81419174e-03,  1.79421999e-03,  2.54695917e-03],
+            [ 1.06200897e-01,  8.96865059e-01,  1.58033190e-02,  1.57588820e-02,
+            -7.89365891e-03,  1.79918088e-04,  1.84386300e-03],
+            [-7.65239488e-03,  3.17302435e-02,  1.02759339e-02,  9.33878144e-01,
+            2.06568978e-01,  2.11419676e-03,  4.58322474e-03],
+            [-1.66209829e-02, -1.35090691e-02,  2.42712053e-01,  5.78419361e-02,
+            1.07721578e-01,  5.02804509e-02, -1.17456786e-02],
+            [-5.35380113e-03,  2.12763117e-02,  1.73425504e-02,  3.65249841e-01,
+            9.03914760e-01,  1.64050295e-02,  1.44562615e-02],
+            [-5.22545768e-03,  4.35610873e-03,  1.10442899e-02, -3.79391868e-03,
+            1.05877141e-02,  1.54341865e+00,  3.60927530e-02],
+            [ 1.01225447e-04,  7.77060680e-03, -9.68191150e-04,  1.37291605e-03,
+            2.94570348e-03,  7.32683087e-03,  1.58991990e+00],
+        ]
+    )
     spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
     colour_norm_factor, spot_brightness = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
                                                        initial_bleed_matrix=initial_bleed_matrix)
