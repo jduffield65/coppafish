@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.signal
-from scipy.ndimage.morphology import grey_dilation
+from scipy.ndimage import grey_dilation
 from coppafish.utils import errors
 import cv2
 from typing import Optional
