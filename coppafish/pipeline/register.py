@@ -154,7 +154,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
 
     # Add round statistics to debugging page.
     # First add the round registration statistics
-    nbp_debug.position = registration_data['round_registration']['position'][0, 0]
+    nbp_debug.position = registration_data['round_registration']['position']
     nbp_debug.round_shift = registration_data['round_registration']['shift']
     nbp_debug.round_shift_corr = registration_data['round_registration']['shift_corr']
     nbp_debug.round_transform_raw = registration_data['round_registration']['transform_raw']

@@ -63,6 +63,7 @@ def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], n
 def compute_bleed_matrix(bleed_matrix_norm: np.ndarray, spot_colours: np.ndarray, spot_tile: np.ndarray,
                          n_tiles: int, tile_split: bool = False, round_split: bool = False,
                          n_dyes: int = 7) -> Tuple[np.ndarray, np.ndarray]:
+    # TODO: Get rid of n_tiles
     """
     Takes in a bleed matrix template and a bunch of isolated spots.
     Then assigns spots in each round to dyes by maximising cosine similarity between the spot colour and the dye colour.
@@ -117,7 +118,7 @@ def compute_bleed_matrix(bleed_matrix_norm: np.ndarray, spot_colours: np.ndarray
         spot_dye, spot_dye_score = np.argmax(all_dye_score, axis=1), np.max(all_dye_score, axis=1)
         spot_dye_score_second = np.sort(all_dye_score, axis=1)[:, -2]
         # Now we want to remove all spots which have a score of 0 or less than twice the second-highest score
-        keep = (spot_dye_score > 0) * (spot_dye_score > 1.5 * spot_dye_score_second)
+        keep = (spot_dye_score > 0) * (spot_dye_score > 2 * spot_dye_score_second)
 
         # Now we loop over the dyes and fine tune the spectrum for each dye
         for d in range(n_dyes):
@@ -149,14 +150,12 @@ def fine_tune_dye_spectrum(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.nda
     outer_prod = spot_colours.T @ spot_colours
     eig_val, eig_vec = np.linalg.eig(outer_prod)
     dye_spectrum = np.real(eig_vec[:, np.argmax(eig_val)])
+    dye_score = spot_colours @ dye_spectrum
+    # TODO: Check this is correct
+    dye_spectrum = dye_spectrum * np.max(eig_val)
 
-    # If the largest absolute value of the spectrum is negative, then we flip the spectrum
-    max_index = np.argmax(np.abs(dye_spectrum))
-    if dye_spectrum[max_index] < 0:
+    # We expect the dye_spectrum to be positive multiples of each row. If median
+    if np.median(dye_score) < 0:
         dye_spectrum = -dye_spectrum
 
-    # Now compute the score of each spot for this dye. This is just the dot product of the spot colour with the
-    # dye spectrum (which is normalised to have unit norm)
-    dye_score = spot_colours @ dye_spectrum
-    dye_spectrum = dye_spectrum * np.max(eig_val)
     return dye_spectrum, dye_score

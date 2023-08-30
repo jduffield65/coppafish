@@ -74,48 +74,53 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
     initial_norm_factor = np.asarray(
         [
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.,],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
+            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
         ]
     )
-    initial_bleed_matrix = np.array([[9.79192617e-01, 6.20064412e-02, -4.80605505e-02,
-                                      2.39489200e-05, -6.04304194e-05, 1.16180039e-03,
-                                      1.60140959e-03],
-                                     [1.99506111e-01, 9.97009521e-01, 6.46103461e-02,
-                                      1.56873061e-02, -2.11249719e-03, 1.16501269e-04,
-                                      1.15933539e-03],
-                                     [-1.43755805e-02, 3.52732605e-02, 4.20121650e-02,
-                                      9.29636525e-01, 3.51303239e-02, 1.36899301e-03,
-                                      2.88171877e-03],
-                                     [-3.12237255e-02, -1.50174994e-02, 9.92304828e-01,
-                                      5.75792215e-02, 7.74624706e-03, 3.25577956e-02,
-                                      -7.38513698e-03],
-                                     [-1.00575049e-02, 2.36520367e-02, 7.09033453e-02,
-                                      3.63590898e-01, 9.99310565e-01, 1.06226493e-02,
-                                      9.08942557e-03],
-                                     [-9.81640238e-03, 4.84251430e-03, 4.51535144e-02,
-                                      -3.77668693e-03, 8.93186792e-03, 9.99400522e-01,
-                                      2.26934462e-02],
-                                     [1.90159366e-04, 8.63827717e-03, -3.95835617e-03,
-                                      1.36668035e-03, 7.47015485e-05, 4.74429838e-03,
-                                      9.99667763e-01]])
+    initial_bleed_matrix = np.asarray(
+        [[9.79192617e-01, 6.20064412e-02, -4.80605505e-02,
+          2.39489200e-05, -6.04304194e-05, 1.16180039e-03,
+          1.60140959e-03],
+         [1.99506111e-01, 9.97009521e-01, 6.46103461e-02,
+          1.56873061e-02, -2.11249719e-03, 1.16501269e-04,
+          1.15933539e-03],
+         [-1.43755805e-02, 3.52732605e-02, 4.20121650e-02,
+          9.29636525e-01, 3.51303239e-02, 1.36899301e-03,
+          2.88171877e-03],
+         [-3.12237255e-02, -1.50174994e-02, 9.92304828e-01,
+          5.75792215e-02, 7.74624706e-03, 3.25577956e-02,
+          -7.38513698e-03],
+         [-1.00575049e-02, 2.36520367e-02, 7.09033453e-02,
+          3.63590898e-01, 9.99310565e-01, 1.06226493e-02,
+          9.08942557e-03],
+         [-9.81640238e-03, 4.84251430e-03, 4.51535144e-02,
+          -3.77668693e-03, 8.93186792e-03, 9.99400522e-01,
+          2.26934462e-02],
+         [1.90159366e-04, 8.63827717e-03, -3.95835617e-03,
+          1.36668035e-03, 7.47015485e-05, 4.74429838e-03,
+          9.99667763e-01]]
+    )
     spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
     colour_norm_factor, spot_brightness = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
                                                        initial_bleed_matrix=initial_bleed_matrix)
-    # First remove round 0 and 1 from norm factor as these have issues with anchor staining
+    # Normalise initial bleed matrix across channels, then across dyes
     colour_norm_factor = np.median(colour_norm_factor, axis=0)
     spot_colours = spot_colours_background_removed / colour_norm_factor
     initial_bleed_matrix = initial_bleed_matrix / colour_norm_factor[:, None]
+    initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
     colour_norm_factor = colour_norm_factor * initial_norm_factor
 
     # 2. Bleed matrix calculation and bled codes
-    bleed_matrix, all_dye_score = compute_bleed_matrix(initial_bleed_matrix=initial_bleed_matrix,
-                                                       spot_colours=spot_colours[isolated])
+    bleed_matrix, all_dye_score = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix,
+                                                       spot_colours=spot_colours[isolated],
+                                                       spot_tile=nbp_ref_spots.tile[isolated],
+                                                       n_tiles=len(nbp_basic.use_tiles))
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
     gene_codes = np.array([[int(i) for i in gene_codes[j]] for j in range(len(gene_codes))])
     n_genes = len(gene_names)
