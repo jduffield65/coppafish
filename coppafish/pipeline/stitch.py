@@ -129,13 +129,42 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
         shift_info['east']['shifts'][:, 1] = -shift_info['east']['shifts'][:, 1]
 
     # get tile origins in global coordinates.
-    # global coordinates are built about central tile so found this first
+    # global coordinates are built about central tile so find this first
     tile_dist_to_centre = np.linalg.norm(nbp_basic.tilepos_yx[nbp_basic.use_tiles] -
                                          np.mean(nbp_basic.tilepos_yx, axis=0), axis=1)
     centre_tile = nbp_basic.use_tiles[tile_dist_to_centre.argmin()]
-    tile_origin = get_tile_origin(shift_info['north']['pairs'], shift_info['north']['shifts'],
-                                  shift_info['east']['pairs'], shift_info['east']['shifts'],
-                                  nbp_basic.n_tiles, centre_tile)
+
+    # Currently this approach does not work when not all tiles used are connected, so check this first.
+    min_hamming_dist = np.zeros(nbp_basic.n_tiles)
+    for t in nbp_basic.use_tiles:
+        # find the min distance between this tile and all other tiles used
+        hamming_dist = np.sum(np.abs(nbp_basic.tilepos_yx[t] - nbp_basic.tilepos_yx[nbp_basic.use_tiles]), axis=1).astype(float)
+        hamming_dist[hamming_dist == 0] = np.inf
+        min_hamming_dist[t] = np.min(hamming_dist)
+    min_hamming_dist = min_hamming_dist[nbp_basic.use_tiles]
+    all_tiles_connected = np.all(min_hamming_dist == 1)
+    no_tiles_connected = np.all(min_hamming_dist > 1)
+
+    if all_tiles_connected:
+        tile_origin = get_tile_origin(shift_info['north']['pairs'], shift_info['north']['shifts'],
+                                      shift_info['east']['pairs'], shift_info['east']['shifts'],
+                                      nbp_basic.n_tiles, centre_tile)
+    elif no_tiles_connected:
+        warnings.warn("No tiles used are connected, so cannot find tile origins. "
+                      "Setting all tile origins to non-overlapping values.")
+        tile_origin = np.zeros((nbp_basic.n_tiles, 3))
+        tile_origin[:, 2] = nbp_basic.nz / 2
+        tile_origin[:, :2] = nbp_basic.tilepos_yx * (1 - config['expected_overlap']) * nbp_basic.tile_sz
+        tile_origin = tile_origin - tile_origin[centre_tile]
+        # set unused tiles to nan
+        unused_tiles = np.setdiff1d(np.arange(nbp_basic.n_tiles), nbp_basic.use_tiles)
+        tile_origin[unused_tiles, :] = np.nan
+
+    else:
+        # Raise error if some tiles are connected and some are not.
+        raise ValueError("Some tiles used are connected and some are not, so cannot find tile origins. "
+                         "Either all tiles or no tiles should be connected.")
+
     if nbp_basic.is_3d is False:
         tile_origin[:, 2] = 0  # set z coordinate to 0 for all tiles if 2d
 

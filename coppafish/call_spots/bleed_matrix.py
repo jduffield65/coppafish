@@ -60,7 +60,7 @@ def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], n
     return dye_channel_intensity
 
 
-def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndarray, spot_tile: np.ndarray,
+def compute_bleed_matrix(bleed_matrix_norm: np.ndarray, spot_colours: np.ndarray, spot_tile: np.ndarray,
                          n_tiles: int, tile_split: bool = False, round_split: bool = False,
                          n_dyes: int = 7) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -70,7 +70,7 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
     Averaging is not quite right, we take the first singular vector of the spot colours assigned to each dye.
 
     Args:
-        initial_bleed_matrix: n_channels x n_dyes bleed matrix
+        bleed_matrix_norm: n_channels x n_dyes bleed matrix (each column normalised)
         spot_colours: n_spots x n_rounds x n_channels colour matrix for each isolated spot
         spot_tile: n_spots array of tile numbers for each spot
         n_tiles: int. Number of tiles in experiment
@@ -93,8 +93,6 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
         bleed_tiles = 1
 
     n_tiles, n_rounds, n_channels = len(set(spot_tile)), spot_colours.shape[1], spot_colours.shape[2]
-    # First define the bleed matrix (normalised so that each dye has unit norm)
-    bleed_matrix_norm = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
     # Now define bleed matrix
     bleed_matrix = np.zeros((bleed_tiles, bleed_rounds, bleed_matrix_norm.shape[0], bleed_matrix_norm.shape[1]))
     colour_vector = np.zeros((bleed_tiles, bleed_rounds, 0)).tolist()

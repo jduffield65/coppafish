@@ -198,170 +198,83 @@ def huber_regression(shift, position, predict_shift=True):
 
 
 # Bridge function for all functions in round registration
-def round_registration(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict, registration_data: dict,
-                           t: int, pbar) -> dict:
+def round_registration(anchor_image: np.ndarray, round_image: list, config: dict) -> dict:
     """
-    Function to carry out subvolume registration on a single tile.
+    Function to carry out sub-volume round registration on a single tile.
     Args:
-        nbp_file: File Names notebook page
-        nbp_basic: Basic info notebook page
-        config: Register page of the config dictionary
-        registration_data: dictionary with registration data
-        t: tile
-        pbar: Progress bar (makes this part of code difficult to run independently of main pipeline)
+        anchor_image: np.ndarray size [n_z, n_y, n_x] of the anchor image
+        round_image: list of length n_rounds, where round_image[r] is  np.ndarray size [n_z, n_y, n_x] of round r
+        config: dict of configuration parameters for registration
 
     Returns:
-        registration_data updated after the subvolume registration
+        round_registration_data: dictionary containing the following keys:
+        'position': np.ndarray size [z_sv x y_sv x x_sv, 3] of the position of each sub-volume in zyx format
+        'shift': np.ndarray size [z_sv x y_sv x x_sv, 3] of the shift of each sub-volume in zyx format
+        'shift_corr': np.ndarray size [z_sv x y_sv x x_sv] of the correlation coefficient of each sub-volume shift
+        'transform': np.ndarray size [n_rounds, 3, 4] of the affine transform for each round in zyx format
     """
-    z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
-    z_box, y_box, x_box = config['z_box'], config['y_box'], config['x_box']
+    # Initialize variables from config
+    z_subvols, y_subvols, x_subvols = config['subvols']
+    z_box, y_box, x_box = config['box_size']
     r_thresh = config['r_thresh']
 
-    # Load in the anchor npy volume
-    anchor_image = sobel(yxz_to_zyx(load_tile(nbp_file, nbp_basic, t, nbp_basic.anchor_round,
-                                                   nbp_basic.anchor_channel)))
+    # Create the directory for the round registration data
+    round_registration_data = {'position': [], 'shift': [], 'shift_corr': [], 'transform': []}
 
-    save_compressed_image(nbp_file.output_dir, anchor_image, t, nbp_basic.anchor_round, nbp_basic.anchor_channel)
+    if config['sobel']:
+        anchor_image = sobel(anchor_image)
+        round_image = [sobel(r) for r in round_image]
 
     # Now compute round shifts for this tile and the affine transform for each round
-    for r in nbp_basic.use_rounds:
+    pbar = tqdm(total=len(round_image), desc='Computing round transforms')
+    for r in range(len(round_image)):
         # Set progress bar title
-        pbar.set_description('Computing shifts for tile ' + str(t) + ', round ' + str(r))
-
-        # Load in imaging npy volume.
-        target_image = yxz_to_zyx(sobel(load_tile(nbp_file, nbp_basic, t, r, nbp_basic.anchor_channel)))
-
-        # save a small subset for reg diagnostics
-        save_compressed_image(nbp_file.output_dir, target_image, t, r, nbp_basic.anchor_channel)
+        pbar.set_description('Computing shifts for round ' + str(r))
 
         # next we split image into overlapping cuboids
         subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
                                                y_subvolumes=y_subvols, x_subvolumes=x_subvols,
                                                z_box=z_box, y_box=y_box, x_box=x_box)
-        subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
+        subvol_target, _ = split_3d_image(image=round_image[r], z_subvolumes=z_subvols, y_subvolumes=y_subvols,
                                           x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
 
         # Find the subvolume shifts
-
         shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
 
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
-        registration_data['round_registration']['position'] = position
-        registration_data['round_registration']['round_shift'][t, r] = shift
-        registration_data['round_registration']['round_shift_corr'][t, r] = corr
-        registration_data['round_registration']['round_transform_raw'][t, r] = huber_regression(shift, position,
-                                                                                                predict_shift=False)
+        round_registration_data['shift'].append(shift)
+        round_registration_data['shift_corr'].append(corr)
+        round_registration_data['position'].append(position)
+        round_registration_data['transform'].append(huber_regression(shift, position, predict_shift=False))
         pbar.update(1)
+    pbar.close()
+    # Convert all lists to numpy arrays
+    for key in round_registration_data.keys():
+        round_registration_data[key] = np.array(round_registration_data[key])
 
-    # Add tile to completed tiles
-    registration_data['round_registration']['tiles_completed'].append(t)
-
-    # Now save the registration data dictionary externally
-    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
-        pickle.dump(registration_data, f)
-
-    return registration_data
-
-
-def custom_svr(im_dir: str, im_rounds: list, anchor_round: int, t: int, registration_data: dict) -> dict:
-    """
-    Function to carry out subvolume registration on a single tile.
-    Args:
-        im_dir: Directory containing the images. Assumed that files are in form t{t}r{r}.npy and all of same channel.
-        im_rounds: List of imaging rounds
-        anchor_round: Imaging round to use as anchor
-        t: tile to register
-        registration_data: dictionary with registration data, we continually update this dictionary as we go through
-        different tiles
-
-    Returns:
-        registration_data: Dictionary with registration data
-    """
-    z_subvols, y_subvols, x_subvols = 5, 8, 8
-    z_box, y_box, x_box = 12, 300, 300
-    r_thresh = 0.7
-
-    # Load in the anchor npy volume
-    anchor_image = np.load(os.path.join(im_dir, 't' + str(t) + 'r' + str(anchor_round) + '.npy'))
-    save_compressed_image(im_dir, anchor_image, t, anchor_round, 0)
-
-    # Now compute round shifts for this tile and the affine transform for each round
-    with tqdm(total=len(im_rounds), desc='Computing shifts for tile ' + str(t)) as pbar:
-        for r in im_rounds:
-            # Set progress bar title
-            pbar.set_description('Computing shifts for tile ' + str(t) + ', round ' + str(r))
-
-            # Load in imaging npy volume.
-            target_image = np.load(os.path.join(im_dir, 't' + str(t) + 'r' + str(r) + '.npy'))
-
-            # save a small subset for reg diagnostics
-            save_compressed_image(im_dir, target_image, t, r, 0)
-
-            # next we split image into overlapping cuboids
-            subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
-                                                   y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                                   z_box=z_box, y_box=y_box, x_box=x_box)
-            subvol_target, _ = split_3d_image(image=target_image, z_subvolumes=z_subvols, y_subvolumes=y_subvols,
-                                              x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
-
-            # Find the subvolume shifts
-            shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
-
-            # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
-            registration_data['position'] = position
-            registration_data['round_shift'][t, r] = shift
-            registration_data['round_shift_corr'][t, r] = corr
-            registration_data['round_transform_raw'][t, r] = ols_regression(shift, position)
-            pbar.update(1)
-
-    # Add tile to completed tiles
-    registration_data['tiles_completed'].append(t)
-
-    # Now save the registration data dictionary externally
-    with open(os.path.join(im_dir, 'registration_data.pkl'), 'wb') as f:
-        pickle.dump(registration_data, f)
-
-    return registration_data
-
-
-def dapi_reg(im_dir: str, im_rounds: list, anchor_round: int, tiles: list) -> dict:
-    """
-    Function to carry out subvolume registration on all tiles for a single channel.
-    Args:
-        im_dir: image directory. all images assumed to be in form t{t}r{r}.npy and all of same channel.
-        im_rounds: list of imaging rounds
-        anchor_round: imaging round to use as anchor
-        tiles: list of tiles to register
-
-    Returns:
-        registration_data: dictionary with registration data
-    """
-    registration_data = {'round_shift': np.zeros((len(tiles), len(im_rounds), 5 * 8 * 8, 3)),
-                         'round_shift_corr': np.zeros((len(tiles), len(im_rounds), 5 * 8 * 8)),
-                         'round_transform_raw': np.zeros((len(tiles), len(im_rounds), 3, 4)),
-                         'position': np.zeros((5 * 8 * 8, 3)),
-                         'tiles_completed': []}
-
-    for t in tqdm(tiles):
-        registration_data = custom_svr(im_dir, im_rounds, anchor_round, t, registration_data)
+    return round_registration_data
 
 
 def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int = 2, n_cams: int = 4,
                          bead_radii: list = [10, 11, 12]) -> np.ndarray:
     """
-    Function to carry out subvolume registration on a single tile.
+    Function to carry out channel registration using fluorescent beads. This function assumes that the fluorescent
+    bead images are 2D images and that there is one image for each camera.
+
+    Fluorescent beads are assumed to be circles and are detected using the Hough transform. The centre of the detected
+    circles are then used to compute the affine transform between each camera and the round_reg_channel_cam via ICP.
+
     Args:
         fluorescent_bead_path: Path to fluorescent beads directory containing the fluorescent bead images.
         If none then we assume that the channels are registered to each other and just set channel_transforms to
         identity matrices
-        anchor_cam_idx: (int) Index of the camera to use as anchor
+        anchor_cam_idx: int index of the camera to use as the anchor camera
         n_cams: int number of cameras
         bead_radii: list of possible bead radii
 
     Returns:
         transform: n_cams x 3 x 4 array of affine transforms taking anchor camera to each other camera
     """
-
     transform = np.zeros((n_cams, 3, 4))
     # First check if the fluorescent beads path exists. If not, we assume that the channels are registered to each
     # other and just set channel_transforms to identity matrices
@@ -409,7 +322,7 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
 
     # Need to add in z coord info as not accounted for by registration due to all coords being equal
     transform[:, 2, 2] = 1
-    transform[2] = np.eye(4, 3)
+    transform[anchor_cam_idx] = np.eye(4, 3)
 
     # Convert transforms from yxz to zyx
     transform_zyx = np.zeros((4, 3, 4))
@@ -511,7 +424,7 @@ def regularise_transforms(registration_data: dict, tile_origin: np.ndarray, resi
         registration_data: dictionary of registration data with regularised transforms
     """
     # Extract transforms
-    round_transform = np.copy(registration_data['round_registration']['round_transform_raw'])
+    round_transform = np.copy(registration_data['round_registration']['transform_raw'])
 
     # Code becomes easier when we disregard tiles, rounds, channels not in use
     n_tiles, n_rounds = round_transform.shape[0], round_transform.shape[1]
@@ -528,7 +441,7 @@ def regularise_transforms(registration_data: dict, tile_origin: np.ndarray, resi
                                     sublist_2=use_rounds, list_2=np.arange(n_rounds),
                                     array=round_transform)
 
-    registration_data['round_registration']['round_transform'] = round_transform
+    registration_data['round_registration']['transform'] = round_transform
 
     return registration_data
 
