@@ -45,6 +45,7 @@ def set_file_names(nb, nbp):
 
     nbp.round = config['round']
     nbp.anchor = config['anchor']
+    nbp.pre_seq_round = config['pre_seq_round']
     nbp.raw_extension = config['raw_extension']
     nbp.raw_metadata = config['raw_metadata']
 
@@ -105,10 +106,13 @@ def set_file_names(nb, nbp):
         config['big_anchor_image'] = config['big_anchor_image'].replace('.npz', '')
         nbp.big_anchor_image = os.path.join(config['output_dir'], config['big_anchor_image'] + '.npz')
 
-    if config['anchor'] is not None: # TODO this will create a problem with JOBS
+    if config['anchor'] is not None:
         round_files = config['round'] + [config['anchor']]
     else:
         round_files = config['round']
+
+    if config['pre_seq_round'] is not None:
+        round_files = round_files + [config['pre_seq_round']]
 
     if config['raw_extension'] == 'jobs':
         if nb.basic_info.is_3d:

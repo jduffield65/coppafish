@@ -4,9 +4,10 @@ import itertools
 import numpy as np
 from tqdm import tqdm
 from ..setup import NotebookPage
+from ..utils.npy import load_tile
 from ..find_spots import spot_yxz
 from ..register.base import icp, regularise_transforms, round_registration, channel_registration
-from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data, populate_full
+from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data, yxz_to_zyx
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: NotebookPage, config: dict,
@@ -58,7 +59,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     # Start with channel registration
     pbar = tqdm(total=len(uncompleted_tiles))
     pbar.set_description(f"Running initial channel registration")
-    if registration_data['channel_registration']['channel_transform'].max() == 0:
+    if registration_data['channel_registration']['transform'].max() == 0:
         if not nbp_basic.channel_camera:
             cameras = [0] * n_channels
         else:
@@ -71,13 +72,33 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
         # Now loop through all channels and set the channel transform to its cam transform
         for c in use_channels:
             cam_idx = cameras.index(nbp_basic.channel_camera[c])
-            registration_data['channel_registration']['channel_transform'][c] = cam_transform[cam_idx]
+            registration_data['channel_registration']['transform'][c] = cam_transform[cam_idx]
 
     # round registration
     with tqdm(total=len(uncompleted_tiles)) as pbar:
         pbar.set_description(f"Running initial round registration on all tiles")
         for t in uncompleted_tiles:
-            registration_data = round_registration(nbp_file, nbp_basic, config, registration_data, t, pbar)
+            # Load in the anchor image and the round images. Note that here anchor means anchor round, not necessarily
+            # anchor channel
+            round_registration_channel = config['round_registration_channel']
+            if round_registration_channel is None:
+                round_registration_channel = nbp_basic.anchor_channel
+            anchor_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round,
+                                                c=config['round_registration_channel']))
+            round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=config['round_registration_channel']))
+                           for r in use_rounds]
+            round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image,
+                                                config=config)
+            # Now save the data
+            registration_data['round_registration']['transform_raw'][t] = round_reg_data['transform']
+            registration_data['round_registration']['shift'][t] = round_reg_data['shift']
+            registration_data['round_registration']['shift_corr'][t] = round_reg_data['shift_corr']
+            registration_data['round_registration']['position'][t] = round_reg_data['position']
+            registration_data['round_registration']['tiles_completed'].append(t)
+            # Save the data to file
+            with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
+                pickle.dump(registration_data, f)
+            pbar.update(1)
 
     # Part 2: Regularisation
     registration_data = regularise_transforms(registration_data=registration_data,
@@ -89,8 +110,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     # Now combine all of these into single subvol transform array via composition
     for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
         registration_data['initial_transform'][t, r, c] = \
-            zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['channel_transform'][c],
-                                             registration_data['round_registration']['round_transform'][t, r]))
+            zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
+                                             registration_data['round_registration']['transform'][t, r]))
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
@@ -99,8 +120,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     if 'icp' not in registration_data.keys():
         # Initialise variables for ICP step
         icp_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
-        n_matches = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
-        mse = np.zeros((n_tiles, n_rounds, n_channels, config['n_iter']))
+        n_matches = np.zeros((n_tiles, n_rounds, n_channels, config['icp_max_iter']))
+        mse = np.zeros((n_tiles, n_rounds, n_channels, config['icp_max_iter']))
         converged = np.zeros((n_tiles, n_rounds, n_channels), dtype=bool)
         # Create a progress bar for the ICP step
         with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
@@ -111,14 +132,14 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                 for r, c in itertools.product(use_rounds, use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
                     # Only do ICP on non-degenerate cells with more than 100 spots
-                    if nbp_find_spots.spot_no[t, r, c] > 100:
+                    if nbp_find_spots.spot_no[t, r, c] > config['icp_min_spots']:
                         imaging_spots_trc = spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
                         icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
                             yxz_base=ref_spots_t,
                             yxz_target=imaging_spots_trc,
                             dist_thresh=neighb_dist_thresh,
                             start_transform=registration_data['initial_transform'][t, r, c],
-                            n_iters=50,
+                            n_iters=config['icp_max_iter'],
                             robust=False)
                     else:
                         # Otherwise just use the starting transform
@@ -133,13 +154,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
 
     # Add round statistics to debugging page.
     # First add the round registration statistics
-    nbp_debug.position = registration_data['round_registration']['position']
-    nbp_debug.round_shift = registration_data['round_registration']['round_shift']
-    nbp_debug.round_shift_corr = registration_data['round_registration']['round_shift_corr']
-    nbp_debug.round_transform_raw = registration_data['round_registration']['round_transform_raw']
+    nbp_debug.position = registration_data['round_registration']['position'][0, 0]
+    nbp_debug.round_shift = registration_data['round_registration']['shift']
+    nbp_debug.round_shift_corr = registration_data['round_registration']['shift_corr']
+    nbp_debug.round_transform_raw = registration_data['round_registration']['transform_raw']
 
     # Now add the channel registration statistics
-    nbp_debug.channel_transform = registration_data['channel_registration']['channel_transform']
+    nbp_debug.channel_transform = registration_data['channel_registration']['transform']
 
     # Now add the ICP statistics
     nbp_debug.mse = registration_data['icp']['mse']
@@ -147,8 +168,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     nbp_debug.converged = registration_data['icp']['converged']
 
     # Now add relevant information to the nbp object
-    nbp.round_transform = registration_data['round_registration']['round_transform']
-    nbp.channel_transform = registration_data['channel_registration']['channel_transform']
+    nbp.round_transform = registration_data['round_registration']['transform']
+    nbp.channel_transform = registration_data['channel_registration']['transform']
     nbp.initial_transform = registration_data['initial_transform']
     nbp.transform = registration_data['icp']['icp_transform']
 

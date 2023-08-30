@@ -38,13 +38,14 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
             registration_data = pickle.load(f)
     else:
         n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
-        z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
-        round_registration = {'tiles_completed': [], 'position': np.zeros((z_subvols * y_subvols * x_subvols, 3)),
-                              'round_shift': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
-                              'round_shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
-                              'round_transform_raw': np.zeros((n_tiles, n_rounds, 3, 4)),
-                              'round_transform': np.zeros((n_tiles, n_rounds, 3, 4))}
-        channel_registration = {'channel_transform': np.zeros((n_channels, 3, 4))}
+        z_subvols, y_subvols, x_subvols = config['subvols']
+        round_registration = {'tiles_completed': [],
+                              'position': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
+                              'shift': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),
+                              'shift_corr': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols)),
+                              'transform_raw': np.zeros((n_tiles, n_rounds, 3, 4)),
+                              'transform': np.zeros((n_tiles, n_rounds, 3, 4))}
+        channel_registration = {'transform': np.zeros((n_channels, 3, 4))}
         registration_data = {'round_registration': round_registration,
                              'channel_registration': channel_registration,
                              'initial_transform': np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
@@ -379,7 +380,6 @@ def generate_channel_reg_images(nb):
     with tqdm(total=len(use_tiles) * len(non_anchor_channels)) as pbar:
         for t, c in itertools.product(use_tiles, non_anchor_channels):
             pbar.set_description(f"Generating channel registration image for tile {t} and channel {c}")
-            # TODO: Get this working with nb.register_Debug.reference_round
             # Get the image for the tile and channel
             im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, 3, c))
             save_compressed_image(nb.file_names.output_dir, im, t, 3, c, True)

@@ -73,7 +73,8 @@ _options = {
             'big_dapi_image': 'maybe_str',
             'big_anchor_image': 'maybe_str',
             'pciseq': 'list_str',
-            'fluorescent_bead_path': 'maybe_str'
+            'fluorescent_bead_path': 'maybe_str',
+            'pre_seq_round': 'maybe_str'
         },
     'extract':
         {
@@ -101,7 +102,8 @@ _options = {
             'n_clip_warn': 'int',
             'n_clip_error': 'maybe_int',
             'n_clip_error_images_thresh': 'int',
-            'num_rotations': 'int'
+            'num_rotations': 'int',
+            'continuous_dapi': 'bool'
         },
     'find_spots':
         {
@@ -139,56 +141,21 @@ _options = {
             'flip_y': 'bool',
             'flip_x': 'bool'
         },
-    'register_initial':
-        {
-            'shift_channel': 'maybe_int',
-            'shift_min': 'list_int',
-            'shift_max': 'list_int',
-            'shift_step': 'list_int',
-            'shift_widen': 'list_int',
-            'shift_max_range': 'list_int',
-            'neighb_dist_thresh': 'number',
-            'shift_score_thresh': 'maybe_number',
-            'shift_score_thresh_multiplier': 'number',
-            'shift_score_thresh_min_dist': 'number',
-            'shift_score_thresh_max_dist': 'number',
-            'nz_collapse': 'int',
-            'n_shifts_error_fraction': 'number'
-        },
     'register':
         {
-            'n_iter': 'int',
             'neighb_dist_thresh_2d': 'number',
             'neighb_dist_thresh_3d': 'number',
-            'matches_thresh_fract': 'number',
-            'matches_thresh_min': 'int',
-            'matches_thresh_max': 'int',
-            'scale_dev_thresh': 'list_number',
-            'shift_dev_thresh': 'list_number',
-            'regularize_constant': 'int',
-            'regularize_factor': 'number',
-            'n_transforms_error_fraction': 'number',
-            'num_pairs': 'number',
-            'boundary_erosion': 'list_number',
-            'image_dims': 'list_number',
-            'dist_thresh': 'list_number',
-            'resolution': 'int',
-            'spread': 'list_number',
-            'z_subvols': 'int',
-            'y_subvols': 'int',
-            'x_subvols': 'int',
-            'z_box': 'int',
-            'y_box': 'int',
-            'x_box': 'int',
-            'r_thresh': 'number',
+            'subvols': 'list_int',
+            'box_size': 'list_int',
+            'pearson_r_thresh': 'number',
             'residual_thresh': 'int',
             'bead_radii': 'maybe_list_number',
+            'icp_min_spots': 'int',
+            'icp_max_iter': 'int',
         },
     'call_spots':
         {
             'bleed_matrix_method': 'str',
-            'color_norm_intensities': 'list_number',
-            'color_norm_probs': 'list_number',
             'bleed_matrix_score_thresh': 'number',
             'bleed_matrix_min_cluster_size': 'int',
             'bleed_matrix_n_iter': 'int',
@@ -199,22 +166,10 @@ _options = {
             'norm_shift_max': 'number',
             'norm_shift_precision': 'number',
             'gene_efficiency_min_spots': 'int',
-            'gene_efficiency_max': 'number',
-            'gene_efficiency_min': 'number',
-            'gene_efficiency_min_factor': 'number',
-            'gene_efficiency_n_iter': 'int',
             'gene_efficiency_score_thresh': 'number',
-            'gene_efficiency_score_diff_thresh': 'number',
-            'gene_efficiency_intensity_thresh': 'maybe_number',
-            'gene_efficiency_intensity_thresh_percentile': 'int',
-            'gene_efficiency_intensity_thresh_precision': 'number',
-            'gene_efficiency_intensity_thresh_min': 'number',
-            'gene_efficiency_intensity_thresh_max': 'number',
+            'gene_efficiency_intensity_thresh': 'number',
             'alpha': 'number',
             'beta': 'number',
-            'max_genes_fit': 'int',
-            'residual_threshold': 'number',
-            'n_iter': 'int'
         },
     'omp':
         {
@@ -374,11 +329,11 @@ def get_config(ini_file):
             raise InvalidConfigError(section, None, None)
     for section in _options.keys():
         for name, val in _parser[section].items():
-            # TODO: Instead of throwing an error at this stage, will be better to just remove redundant keys
-            # 2. Ensure there are no extra options in the config file.
+            # 2. Ensure there are no extra options in config file, else remove them
             if name not in _options[section].keys():
-                raise InvalidConfigError(section, name, val)
-            # 3. Ensure that all of the option values pass type checking.
+                _parser[section].__delitem__(name)
+                continue
+            # 3. Ensure that all the option values pass type checking.
             if not _option_type_checkers[_options[section][name]](val):
                 raise InvalidConfigError(section, name, val)
 

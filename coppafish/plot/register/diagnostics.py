@@ -633,7 +633,7 @@ def view_regression_scatter(nb: Notebook, t: int, index: int):
     initial_transform = nb.register_debug.round_transform_raw[t, index]
     icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel])
 
-    r_thresh = nb.get_config()['register']['r_thresh']
+    r_thresh = nb.get_config()['register']['pearson_r_thresh']
     shift = shift[corr > r_thresh].T
     position = nb.register_debug.position[corr > r_thresh].T
 
@@ -703,10 +703,9 @@ def view_pearson_hists(nb, t, num_bins=30):
     """
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     thresh = nb.get_config()['register']['r_thresh']
-    round_corr, channel_corr = nbp_register_debug.round_shift_corr[t], nbp_register_debug.channel_shift_corr[t]
-    n_rounds, n_channels_use = nbp_basic.n_rounds, len(nbp_basic.use_channels)
-    use_channels = nbp_basic.use_channels
-    cols = max(n_rounds, n_channels_use)
+    round_corr = nbp_register_debug.round_shift_corr[t]
+    n_rounds = nbp_basic.n_rounds
+    cols = n_rounds
 
     for r in range(n_rounds):
         plt.subplot(1, cols, r + 1)
@@ -736,13 +735,10 @@ def view_pearson_colourmap(nb, t):
     """
     # initialise frequently used variables
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
-    round_corr, channel_corr = nbp_register_debug.round_shift_corr[t], \
-        nbp_register_debug.channel_shift_corr[t, nbp_basic.use_channels]
-    use_channels = nbp_basic.use_channels
+    round_corr = nbp_register_debug.round_shift_corr[t]
+
     # Replace 0 with nans so they get plotted as black
     round_corr[round_corr == 0] = np.nan
-    channel_corr[channel_corr == 0] = np.nan
-
     # plot round correlation
     fig, ax = plt.subplots(1, 1)
     # ax1 refers to round shifts
@@ -779,7 +775,7 @@ def view_pearson_colourmap_spatial(nb: Notebook, t: int):
 
     # Set 0 correlations to nan, so they are plotted as black
     corr[corr == 0] = np.nan
-    z_subvols, y_subvols, x_subvols = config['z_subvols'], config['y_subvols'], config['x_subvols']
+    z_subvols, y_subvols, x_subvols = config['subvols']
     n_rc = corr.shape[0]
 
     fig, axes = plt.subplots(nrows=z_subvols, ncols=n_rc)

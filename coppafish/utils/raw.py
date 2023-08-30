@@ -112,6 +112,8 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             round_files = nbp_file.round + [nbp_file.anchor]
         else:
             round_files = nbp_file.round
+        if nbp_basic.use_preseq:
+            round_files = round_files + [nbp_file.pre_seq_round]
         round_file = os.path.join(nbp_file.input_dir, round_files[r])
         if nbp_file.raw_extension == '.nd2':
             round_dask_array = nd2.load(round_file + nbp_file.raw_extension)

@@ -114,8 +114,7 @@ def get_metadata(file_path: str, config: dict) -> dict:
         metadata['channel_laser'] = laser.tolist()
         metadata['channel_camera'] = camera.tolist()
         # Get the entire input directory to list
-        input_dir = file_path[:file_path.rfind('/')]
-        metadata['n_rounds'] = len([file for file in os.listdir(input_dir) if file.endswith('.nd2')])
+        metadata['n_rounds'] = len(config['file_names']['round'])
 
     return metadata
 
@@ -191,8 +190,7 @@ def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     metadata['xy_pos'] = xy_pos
     metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
                                                                      expected_overlap=config['stitch']
-                                                                     ['expected_overlap'],
-                                                                     format=config['extract']['npy_index_format'])
+                                                                     ['expected_overlap'])
     metadata['n_tiles'] = len(metadata['tilepos_yx_nd2'])
     # get n_channels and channel info
     metadata['channel_laser'], metadata['channel_camera'] = laser, camera
@@ -200,7 +198,9 @@ def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     # Final piece of metadata is n_rounds. Note num_files = num_rounds * num_tiles * num_lasers
     n_files = len(os.listdir(input_dir))
     n_lasers = len(set(laser))
+    use_preseq = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq_round']))
     metadata['n_rounds'] = n_files // (n_lasers * metadata['n_tiles'])
+    metadata['n_rounds'] -= use_preseq
 
     return metadata
 
