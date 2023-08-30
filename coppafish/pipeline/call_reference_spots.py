@@ -117,16 +117,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     colour_norm_factor = colour_norm_factor * initial_norm_factor
 
     # 2. Bleed matrix calculation and bled codes
-    bleed_matrix, all_dye_score = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix,
-                                                       spot_colours=spot_colours[isolated],
-                                                       spot_tile=nbp_ref_spots.tile[isolated],
-                                                       n_tiles=len(nbp_basic.use_tiles))
+    bleed_matrix, _ = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix, spot_colours=spot_colours[isolated],
+                                           spot_tile=nbp_ref_spots.tile[isolated], n_tiles=len(nbp_basic.use_tiles))
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
     gene_codes = np.array([[int(i) for i in gene_codes[j]] for j in range(len(gene_codes))])
     n_genes = len(gene_names)
     ge_initial = np.ones((n_genes, n_rounds))
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=ge_initial)
-    # gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
     gene_prob = gene_prob_score(spot_colours=spot_colours, bled_codes=bled_codes)
     gene_no = np.argmax(gene_prob, axis=1)
     gene_score = np.max(gene_prob, axis=1)

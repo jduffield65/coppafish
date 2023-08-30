@@ -63,7 +63,6 @@ def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], n
 def compute_bleed_matrix(bleed_matrix_norm: np.ndarray, spot_colours: np.ndarray, spot_tile: np.ndarray,
                          n_tiles: int, tile_split: bool = False, round_split: bool = False,
                          n_dyes: int = 7) -> Tuple[np.ndarray, np.ndarray]:
-    # TODO: Get rid of n_tiles
     """
     Takes in a bleed matrix template and a bunch of isolated spots.
     Then assigns spots in each round to dyes by maximising cosine similarity between the spot colour and the dye colour.
@@ -93,7 +92,7 @@ def compute_bleed_matrix(bleed_matrix_norm: np.ndarray, spot_colours: np.ndarray
     else:
         bleed_tiles = 1
 
-    n_tiles, n_rounds, n_channels = len(set(spot_tile)), spot_colours.shape[1], spot_colours.shape[2]
+    n_rounds, n_channels = spot_colours.shape[1], spot_colours.shape[2]
     # Now define bleed matrix
     bleed_matrix = np.zeros((bleed_tiles, bleed_rounds, bleed_matrix_norm.shape[0], bleed_matrix_norm.shape[1]))
     colour_vector = np.zeros((bleed_tiles, bleed_rounds, 0)).tolist()
