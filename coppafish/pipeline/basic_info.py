@@ -315,7 +315,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
 
     # Only 3 of these can NOT be left empty
     if nbp.dye_names is None or nbp.tile_pixel_value_shift is None or nbp.use_anchor is None:
-        raise ValueError('One or more of the 4 variables which cannot be computed from anything else has been left '
+        raise ValueError('One or more of the 3 variables which cannot be computed from anything else has been left '
                          'empty. Please fill in the use_anchor, dye_names and pixel_value_shift variables.')
 
     # Stage 3: Fill in all the metadata except the last item, xy_pos
@@ -329,16 +329,12 @@ def set_basic_info_new(config: dict) -> NotebookPage:
 
     # Next condition just says that if we are using the anchor and we don't specify the anchor round we will default it
     # to the final round. Add an extra round for the anchor and reduce the number of non anchor rounds by 1.
-    # TODO: See if we can get around this problem of resetting values without deleting them first, messy
     if nbp.use_anchor:
         # Tell software that extra round is just an extra round and reduce the number of rounds
         nbp.n_extra_rounds = 1
-        n_rounds = nbp.n_rounds
-        del nbp.n_rounds
-        nbp.n_rounds = n_rounds - 1
         if nbp.anchor_round is None:
             del nbp.anchor_round
-            nbp.anchor_round = metadata['n_rounds'] - 1
+            nbp.anchor_round = metadata['n_rounds']
         if nbp.anchor_channel is None:
             raise ValueError('Need to provide an anchor channel if using anchor!')
     else:
@@ -380,5 +376,23 @@ def set_basic_info_new(config: dict) -> NotebookPage:
         nbp.tilepos_yx = np.array(metadata['tilepos_yx'])
         nbp.tilepos_yx_nd2 = np.array(metadata['tilepos_yx_nd2'])
         nbp.tile_centre = np.array(metadata['tile_centre'])
+
+    # If preseq round is a file, set pre_seq_round to True, else False and raise warning that pre_seq_round is not a
+    # file
+    if config_file['pre_seq_round'] is None:
+        nbp.use_preseq = False
+        nbp.pre_seq_round = None
+        # Return here as we don't need to check if the file exists
+        return nbp
+
+    if os.path.isfile(os.path.join(config_file['input_dir'], config_file['pre_seq_round'] + '.nd2')):
+        nbp.use_preseq = True
+        nbp.pre_seq_round = nbp.anchor_round + 1
+    else:
+        nbp.use_preseq = False
+        nbp.pre_seq_round = None
+        warnings.warn(f"Pre-sequencing round not found. Setting pre_seq_round to False. If this is not what you want,"
+                      f"please check that the pre_seq_round variable in the config file is set to the correct file "
+                      f"name.")
 
     return nbp

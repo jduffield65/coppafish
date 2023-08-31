@@ -177,11 +177,19 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         round_files = nbp_file.round + [nbp_file.anchor]
         use_rounds = np.arange(len(round_files))
         n_images = (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels) + \
-                   len(nbp_basic.use_tiles) * len(use_channels_anchor)
+                   len(nbp_basic.use_tiles) * len(use_channels_anchor) \
+                   + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * config['continuous_dapi']
     else:
         round_files = nbp_file.round
         use_rounds = nbp_basic.use_rounds
         n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
+
+    # If we have a pre-sequencing round, add this to round_files at the end
+    if nbp_basic.use_preseq:
+        round_files = round_files + [nbp_file.pre_seq_round]
+        use_rounds = np.arange(len(round_files))
+        pre_seq_round = len(round_files) - 1
+        n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
 
     n_clip_error_images = 0
     if config['n_clip_error'] is None:
@@ -216,7 +224,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 use_channels = use_channels_anchor
             else:
                 scale = nbp_debug.scale
-                use_channels = nbp_basic.use_channels
+                use_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * config['continuous_dapi']
 
             # convolve_2d each image
             for t in nbp_basic.use_tiles:
@@ -263,7 +271,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns
                         if config['deconvolve']:
                             im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
-                        if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+                        if c == nbp_basic.dapi_channel:
                             im = utils.morphology.top_hat(im, filter_kernel_dapi)
                             im[:, bad_columns] = 0
                         else:
@@ -275,41 +283,43 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             im[:, bad_columns] = 0
                             # get_info is quicker on int32 so do this conversion first.
                             im = np.rint(im, np.zeros_like(im, dtype=np.int32), casting='unsafe')
-                            # only use image unaffected by strip_hack to get information from tile
-                            good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
-                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                            nbp_debug.clip_extract_scale[t, r, c] = \
-                                extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
-                                                         hist_bin_edges, max_tiff_pixel_value, scale,
-                                                         nbp_debug.z_info)
+                            if r != pre_seq_round:
+                                # only use image unaffected by strip_hack to get information from tile
+                                good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
+                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                    nbp_debug.clip_extract_scale[t, r, c] = \
+                                    extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
+                                                             hist_bin_edges, max_tiff_pixel_value, scale,
+                                                             nbp_debug.z_info)
 
-                            # Deal with pixels outside uint16 range when saving
-                            if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
-                                warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
-                                              f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
-                                              f"that will be clipped when converting to uint16.")
-                            if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_error']:
-                                n_clip_error_images += 1
-                                message = f"\nNumber of images for which more than {config['n_clip_error']} pixels " \
-                                          f"clipped in conversion to uint16 is {n_clip_error_images}."
-                                if n_clip_error_images >= config['n_clip_error_images_thresh']:
-                                    # create new Notebook to save info obtained so far
-                                    nb_fail_name = os.path.join(nbp_file.output_dir, 'notebook_extract_error.npz')
-                                    nb_fail = Notebook(nb_fail_name, None)
-                                    # change names of pages so can add extra properties not in json file.
-                                    nbp.name = 'extract_fail'
-                                    nbp_debug.name = 'extract_debug_fail'
-                                    nbp.fail_trc = np.array([t, r, c])  # record where failure occurred
-                                    nbp_debug.fail_trc = np.array([t, r, c])
-                                    nb_fail += nbp
-                                    nb_fail += nbp_debug
-                                    raise ValueError(f"{message}\nResults up till now saved as {nb_fail_name}.")
-                                else:
-                                    warnings.warn(f"{message}\nWhen this reaches {config['n_clip_error_images_thresh']}"
-                                                  f", the extract step of the algorithm will be interrupted.")
+                                # Deal with pixels outside uint16 range when saving
+                                if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
+                                    warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
+                                                  f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
+                                                  f"that will be clipped when converting to uint16.")
+                                if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_error']:
+                                    n_clip_error_images += 1
+                                    message = f"\nNumber of images for which more than {config['n_clip_error']} pixels " \
+                                              f"clipped in conversion to uint16 is {n_clip_error_images}."
+                                    if n_clip_error_images >= config['n_clip_error_images_thresh']:
+                                        # create new Notebook to save info obtained so far
+                                        nb_fail_name = os.path.join(nbp_file.output_dir, 'notebook_extract_error.npz')
+                                        nb_fail = Notebook(nb_fail_name, None)
+                                        # change names of pages so can add extra properties not in json file.
+                                        nbp.name = 'extract_fail'
+                                        nbp_debug.name = 'extract_debug_fail'
+                                        nbp.fail_trc = np.array([t, r, c])  # record where failure occurred
+                                        nbp_debug.fail_trc = np.array([t, r, c])
+                                        nb_fail += nbp
+                                        nb_fail += nbp_debug
+                                        raise ValueError(f"{message}\nResults up till now saved as {nb_fail_name}.")
+                                    else:
+                                        warnings.warn(
+                                            f"{message}\nWhen this reaches {config['n_clip_error_images_thresh']}"
+                                            f", the extract step of the algorithm will be interrupted.")
 
-                            if r != nbp_basic.anchor_round:
-                                nbp.hist_counts[:, r, c] += hist_counts_trc
+                                if r != nbp_basic.anchor_round:
+                                    nbp.hist_counts[:, r, c] += hist_counts_trc
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
                         else:

@@ -60,7 +60,7 @@ def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], n
     return dye_channel_intensity
 
 
-def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndarray, spot_tile: np.ndarray,
+def compute_bleed_matrix(bleed_matrix_norm: np.ndarray, spot_colours: np.ndarray, spot_tile: np.ndarray,
                          n_tiles: int, tile_split: bool = False, round_split: bool = False,
                          n_dyes: int = 7) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -70,7 +70,7 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
     Averaging is not quite right, we take the first singular vector of the spot colours assigned to each dye.
 
     Args:
-        initial_bleed_matrix: n_channels x n_dyes bleed matrix
+        bleed_matrix_norm: n_channels x n_dyes bleed matrix (each column normalised)
         spot_colours: n_spots x n_rounds x n_channels colour matrix for each isolated spot
         spot_tile: n_spots array of tile numbers for each spot
         n_tiles: int. Number of tiles in experiment
@@ -92,9 +92,7 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
     else:
         bleed_tiles = 1
 
-    n_tiles, n_rounds, n_channels = len(set(spot_tile)), spot_colours.shape[1], spot_colours.shape[2]
-    # First define the bleed matrix (normalised so that each dye has unit norm)
-    bleed_matrix_norm = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
+    n_rounds, n_channels = spot_colours.shape[1], spot_colours.shape[2]
     # Now define bleed matrix
     bleed_matrix = np.zeros((bleed_tiles, bleed_rounds, bleed_matrix_norm.shape[0], bleed_matrix_norm.shape[1]))
     colour_vector = np.zeros((bleed_tiles, bleed_rounds, 0)).tolist()
@@ -119,7 +117,7 @@ def compute_bleed_matrix(initial_bleed_matrix: np.ndarray, spot_colours: np.ndar
         spot_dye, spot_dye_score = np.argmax(all_dye_score, axis=1), np.max(all_dye_score, axis=1)
         spot_dye_score_second = np.sort(all_dye_score, axis=1)[:, -2]
         # Now we want to remove all spots which have a score of 0 or less than twice the second-highest score
-        keep = (spot_dye_score > 0) * (spot_dye_score > 1.5 * spot_dye_score_second)
+        keep = (spot_dye_score > 0) * (spot_dye_score > 2 * spot_dye_score_second)
 
         # Now we loop over the dyes and fine tune the spectrum for each dye
         for d in range(n_dyes):
@@ -151,14 +149,12 @@ def fine_tune_dye_spectrum(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.nda
     outer_prod = spot_colours.T @ spot_colours
     eig_val, eig_vec = np.linalg.eig(outer_prod)
     dye_spectrum = np.real(eig_vec[:, np.argmax(eig_val)])
+    dye_score = spot_colours @ dye_spectrum
+    # TODO: Check this is correct
+    dye_spectrum = dye_spectrum * np.max(eig_val)
 
-    # If the largest absolute value of the spectrum is negative, then we flip the spectrum
-    max_index = np.argmax(np.abs(dye_spectrum))
-    if dye_spectrum[max_index] < 0:
+    # We expect the dye_spectrum to be positive multiples of each row. If median
+    if np.median(dye_score) < 0:
         dye_spectrum = -dye_spectrum
 
-    # Now compute the score of each spot for this dye. This is just the dot product of the spot colour with the
-    # dye spectrum (which is normalised to have unit norm)
-    dye_score = spot_colours @ dye_spectrum
-    dye_spectrum = dye_spectrum * np.max(eig_val)
     return dye_spectrum, dye_score
