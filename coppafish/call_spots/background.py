@@ -12,6 +12,8 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
     !!! note
         `background_vectors[i]` is 1 in channel `i` for all rounds and 0 otherwise.
         It is then normalised to have L2 norm of 1 when summed over all rounds and channels.
+    !!! note
+        If weight_shift < 1e-20, then it is set to 1e-20 to avoid any divergence.
 
     Args:
         spot_colors: `float [n_spots x n_rounds x n_channels]`.
@@ -27,9 +29,9 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
             background_vectors[c] is the background vector for channel c.
 
     """
-    if weight_shift < 1e-20:
-        warnings.warn(f'weight_shift value given, {weight_shift} is below 1e-20.'
-                      f'Using weight_shift=1e-20 to stop blow up to infinity.')
+    # if weight_shift < 1e-20:
+    #     warnings.warn(f'weight_shift value given, {weight_shift} is below 1e-20.'
+    #                   f'Using weight_shift=1e-20 to stop blow up to infinity.')
     weight_shift = np.clip(weight_shift, 1e-20, np.inf)  # ensure weight_shift > 1e-20 to avoid blow up to infinity.
 
     n_rounds, n_channels = spot_colors[0].shape
