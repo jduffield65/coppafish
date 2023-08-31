@@ -119,6 +119,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # 2. Bleed matrix calculation and bled codes
     bleed_matrix, _ = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix, spot_colours=spot_colours[isolated],
                                            spot_tile=nbp_ref_spots.tile[isolated], n_tiles=len(nbp_basic.use_tiles))
+    # If bleed_matrix was not split by tile, remove dim 0
+    if bleed_matrix.shape[0] == 1:
+        bleed_matrix = bleed_matrix[0]
+    # If bleed_matrix was not split by round, repeat bleed_matrix for each round
+    if bleed_matrix.shape[0] == 1:
+        bleed_matrix = np.repeat(bleed_matrix, n_rounds, axis=0)
+
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
     gene_codes = np.array([[int(i) for i in gene_codes[j]] for j in range(len(gene_codes))])
     n_genes = len(gene_names)
@@ -166,9 +173,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_efficiency = gene_efficiency
 
     # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
+    tilepos = nbp_basic.tilepos_yx[nbp_basic.use_tiles]
+    centre = np.median(nbp_basic.tilepos_yx, axis=0)
+    dist = np.linalg.norm(tilepos - centre, axis=1)
+    central_tile = nbp_basic.use_tiles[np.argmin(dist)]
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   int(np.median(nbp_basic.use_tiles)), transform, nbp_file, nbp_basic,
+                                   central_tile, transform, nbp_file, nbp_basic,
                                    return_in_bounds=True)[0]
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
