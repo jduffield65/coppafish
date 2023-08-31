@@ -203,6 +203,8 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, ge
             Minimum score required to compute gene efficiency.
         intensity_threshold: `float`.
             Minimum intensity required to compute gene efficiency.
+    
+    #TODO: Add documentation for the returns
     """
     n_spots, n_rounds, n_channels = spot_colours.shape
     n_genes = gene_codes.shape[0]
