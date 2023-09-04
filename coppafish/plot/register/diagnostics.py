@@ -40,6 +40,10 @@ class RegistrationViewer:
         self.transform = nb.register.initial_transform
         self.z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
         self.r_ref, self.c_ref = nbp_basic.anchor_round, nb.basic_info.anchor_channel
+        if 'round_registration_channel' not in nb.get_config()['register']:
+            self.round_registration_channel = nbp_basic.anchor_channel
+        else:
+            self.round_registration_channel = nb.get_config()['register']['round_registration_channel']
         self.r_mid = len(use_rounds) // 2
         y_mid, x_mid, z_mid = nbp_basic.tile_centre
         self.new_origin = np.array([z_mid - 5, y_mid - 250, x_mid - 250])
@@ -61,9 +65,9 @@ class RegistrationViewer:
         self.anchor_contrast_limits_slider = QRangeSlider(Qt.Orientation.Horizontal)
         self.im_contrast_limits_slider.setRange(0, 256)
         self.anchor_contrast_limits_slider.setRange(0, 256)
-        # Set default lower limit to 0 and upper limit to 100
-        # self.im_contrast_limits_slider.setValue(([0, 100]))
-        # self.anchor_contrast_limits_slider.setValue([0, 100])
+        # Set default lower limit to 0 and upper limit to 255
+        self.im_contrast_limits_slider.setValue((0, 255))
+        self.anchor_contrast_limits_slider.setValue((0, 255))
 
         # Now we run a method that sets these contrast limits using napari
         # Create sliders! We want these sliders to be placed at the top left of the napari viewer
@@ -248,7 +252,7 @@ class RegistrationViewer:
             for rnd in use_rounds:
                 self.svr_buttons.__getattribute__('R'+str(rnd)).setChecked(rnd == r)
             # We don't need to update the plot, we just need to call the viewing function
-            view_regression_scatter(nb=self.nb, t=self.tile, index=r)
+            view_round_regression_scatter(nb=self.nb, t=self.tile, r=r)
         return round_button_clicked
 
     # outlier removal
@@ -337,8 +341,9 @@ class RegistrationViewer:
         t = self.tile
         # populate target arrays
         for r in use_rounds:
-            file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.c_ref)+'.npy'
-            affine = yxz_to_zyx_affine(A=self.transform[t, r, self.c_ref], new_origin=self.new_origin)
+            file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.round_registration_channel)+'.npy'
+            affine = yxz_to_zyx_affine(A=self.transform[t, r, self.round_registration_channel],
+                                       new_origin=self.new_origin)
             # Reset the spline interpolation order to 1 to speed things up
             self.target_round_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
                                                             affine, order=1))
@@ -349,17 +354,21 @@ class RegistrationViewer:
             self.target_channel_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
                                                               affine, order=1))
         # populate anchor image
-        anchor_file = 't' + str(t) + 'r' + str(self.r_ref) + 'c' + str(self.c_ref) + '.npy'
-        self.base_image = np.load(os.path.join(self.output_dir, anchor_file))
+        base_file = 't' + str(t) + 'r' + str(self.r_ref) + 'c' + str(self.round_registration_channel) + '.npy'
+        self.base_image_dapi = np.load(os.path.join(self.output_dir, base_file))
+        base_file_anchor = 't' + str(t) + 'r' + str(self.r_ref) + 'c' + str(self.c_ref) + '.npy'
+        self.base_image = np.load(os.path.join(self.output_dir, base_file_anchor))
 
     def plot_images(self):
         use_rounds, use_channels = self.nb.basic_info.use_rounds, self.nb.basic_info.use_channels
 
         # We will add a point on top of each image and add features to it
         features = {'r': np.repeat(np.append(use_rounds, np.ones(len(use_channels)) * self.r_mid), 10).astype(int),
-                            'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.c_ref, use_channels), 10).astype(int)}
+                            'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.round_registration_channel,
+                                                     use_channels), 10).astype(int)}
         features_anchor = {'r': np.repeat(np.ones(len(use_rounds) + len(use_channels)) * self.r_ref, 10).astype(int),
-                            'c': np.repeat(np.ones(len(use_rounds) + len(use_channels)) * self.c_ref, 10).astype(int)}
+                           'c': np.repeat(np.ones(len(use_rounds) +
+                                                  len(use_channels)) * self.round_registration_channel, 10).astype(int)}
 
         # Define text
         text = {
@@ -376,22 +385,21 @@ class RegistrationViewer:
         points = []
 
         for r in use_rounds:
-            self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
-                                  name='Anchor', contrast_limits=[0, 100])
+            self.viewer.add_image(self.base_image_dapi, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
+                                  name='Anchor')
             self.viewer.add_image(self.target_round_image[r], blending='additive', colormap='green',
-                                  translate=[0, 0, 1_000 * r], name='Round ' + str(r) + ', Channel ' + str(self.c_ref),
-                                  contrast_limits=[0, 100])
+                                  translate=[0, 0, 1_000 * r],
+                                  name='Round ' + str(r) + ', Channel ' + str(self.round_registration_channel))
             # Add this to all z planes so still shows up when scrolling
             for z in range(10):
                 points.append([z, -50, 250 + 1_000 * r])
 
         for c in range(len(use_channels)):
             self.viewer.add_image(self.base_image, blending='additive', colormap='red', translate=[0, 1_000, 1_000 * c],
-                                  name='Anchor', contrast_limits=[0, 100])
+                                  name='Anchor')
             self.viewer.add_image(self.target_channel_image[c], blending='additive', colormap='green',
                                   translate=[0, 1_000, 1_000 * c],
-                                  name='Round ' + str(self.r_mid) + ', Channel ' + str(use_channels[c]),
-                                  contrast_limits=[0, 100])
+                                  name='Round ' + str(self.r_mid) + ', Channel ' + str(use_channels[c]))
             for z in range(10):
                 points.append([z, 950, 250 + 1_000 * c])
 
@@ -618,24 +626,24 @@ def set_style(button):
 
 
 # 1
-def view_regression_scatter(nb: Notebook, t: int, index: int):
+def view_round_regression_scatter(nb: Notebook, t: int, r: int):
     """
-    view 3 scatter plots for each data set shift vs positions
+    view 9 scatter plots for each data set shift vs positions
     Args:
         nb: Notebook
         t: tile
-        index: round index if round, else channel index
+        r: round
     """
     # Transpose shift and position variables so coord is dimension 0, makes plotting easier
-    mode = 'Round'
-    shift = nb.register_debug.round_shift[t, index]
-    corr = nb.register_debug.round_shift_corr[t, index]
-    initial_transform = nb.register_debug.round_transform_raw[t, index]
-    icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, index, nb.basic_info.anchor_channel])
+    shift = nb.register_debug.round_shift[t, r]
+    corr = nb.register_debug.round_shift_corr[t, r]
+    position = nb.register_debug.position[t, r]
+    initial_transform = nb.register_debug.round_transform_raw[t, r]
+    icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, r, nb.basic_info.anchor_channel])
 
     r_thresh = nb.get_config()['register']['pearson_r_thresh']
     shift = shift[corr > r_thresh].T
-    position = nb.register_debug.position[corr > r_thresh].T
+    position = position[corr > r_thresh].T
 
     # Make ranges, wil be useful for plotting lines
     z_range = np.arange(np.min(position[0]), np.max(position[0]))
@@ -688,7 +696,11 @@ def view_regression_scatter(nb: Notebook, t: int, index: int):
     fig.supxlabel('Position')
     fig.supylabel('Shift')
     # Add title
-    plt.suptitle(mode + ' regression for Tile ' + str(t) + ', ' + mode + ' ' + str(index))
+    round_registration_channel = nb.get_config()['register']['round_registration_channel']
+    if round_registration_channel is None:
+        round_registration_channel = nb.basic_info.anchor_channel
+    plt.suptitle('Round regression for Tile ' + str(t) + ', Round ' + str(r) + 'Channel '
+                 + str(round_registration_channel))
     plt.show()
 
 

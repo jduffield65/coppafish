@@ -84,8 +84,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
             if round_registration_channel is None:
                 round_registration_channel = nbp_basic.anchor_channel
             anchor_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round,
-                                                c=config['round_registration_channel']))
-            round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=config['round_registration_channel']))
+                                                c=round_registration_channel))
+            round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel))
                            for r in use_rounds]
             round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image,
                                                 config=config)

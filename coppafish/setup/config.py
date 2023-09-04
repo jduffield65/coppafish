@@ -152,6 +152,8 @@ _options = {
             'bead_radii': 'maybe_list_number',
             'icp_min_spots': 'int',
             'icp_max_iter': 'int',
+            'round_registration_channel': 'maybe_int',
+            'sobel': 'bool'
         },
     'call_spots':
         {

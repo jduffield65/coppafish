@@ -115,10 +115,14 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     initial_bleed_matrix = initial_bleed_matrix / colour_norm_factor[:, None]
     initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
     colour_norm_factor = colour_norm_factor * initial_norm_factor
+    intensity = get_spot_intensity(spot_colors=spot_colours)
 
     # 2. Bleed matrix calculation and bled codes
-    bleed_matrix, _ = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix, spot_colours=spot_colours[isolated],
-                                           spot_tile=nbp_ref_spots.tile[isolated], n_tiles=len(nbp_basic.use_tiles))
+    intense = intensity > np.percentile(intensity, 90)
+    bleed_matrix, _ = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix,
+                                           spot_colours=spot_colours[isolated * intense],
+                                           spot_tile=nbp_ref_spots.tile[isolated],
+                                           n_tiles=len(nbp_basic.use_tiles))
     # If bleed_matrix was not split by tile, remove dim 0
     if bleed_matrix.shape[0] == 1:
         bleed_matrix = bleed_matrix[0]
@@ -135,7 +139,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     gene_no = np.argmax(gene_prob, axis=1)
     gene_score = np.max(gene_prob, axis=1)
     gene_score_second = np.sort(gene_prob, axis=1)[:, -2]
-    intensity = get_spot_intensity(spot_colors=spot_colours)
 
     # 3. Gene efficiency calculation.
     # GE calculation is done iteratively in a similar way to scaled k-means clustering. We start with our initial
@@ -143,7 +146,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # 3.1 Calculate gene efficiency
     gene_efficiency, use_ge, _ = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
                                                          gene_no=gene_no, gene_score=gene_score,
-                                                         gene_codes=gene_codes, intensity=intensity)
+                                                         gene_codes=gene_codes, intensity=intensity,
+                                                         score_threshold=0.9,
+                                                         intensity_threshold=np.percentile(intensity, 50))
     # 3.2 Update bled codes
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
@@ -164,9 +169,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.use_ge = use_ge
     nbp.gene_names = gene_names
     nbp.gene_codes = gene_codes
+    # Now expand variables to have n_channels channels instead of n_channels_use channels. For some variables, we
+    # also need to swap axes as the expand channels function assumes the last axis is the channel axis.
     nbp.color_norm_factor = expand_channels(colour_norm_factor, use_channels, nbp_basic.n_channels)
-    nbp.initial_bleed_matrix = expand_channels(initial_bleed_matrix, use_channels, nbp_basic.n_channels).T
-    nbp.bleed_matrix = expand_channels(bleed_matrix, use_channels, nbp_basic.n_channels).swapaxes(1, 2)
+    nbp.initial_bleed_matrix = expand_channels(initial_bleed_matrix.T, use_channels, nbp_basic.n_channels).T
+    nbp.bleed_matrix = expand_channels(bleed_matrix.swapaxes(1, 2), use_channels, nbp_basic.n_channels).swapaxes(1, 2)
+    # bled_codes_ge is what we have been calling bled_codes. Haven't kept a record of bled_codes before gene efficiency
+    # was applied, so we need to recalculate it here.
     nbp.bled_codes_ge = expand_channels(bled_codes, use_channels, nbp_basic.n_channels)
     nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
                                                     gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)

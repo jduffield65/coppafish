@@ -225,13 +225,21 @@ class view_codes(ColorPlotBase):
         self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
                               np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
         # Get spot color after background fitting
-        # remove background codes. To do this, repeat background_strenth along a new axis for rounds
-        background_strength = nb.ref_spots.background_strength[spot_no]
-        background_strength = np.repeat(background_strength[np.newaxis, :], nb.basic_info.n_rounds, axis=0)
-        self.background_removed = bg_removed
-        self.spot_color_pb = (self.spot_color - background_strength) / color_norm
-        self.spot_color = self.spot_color / color_norm
-        self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
+        # remove background codes. To do this, repeat background_strength along a new axis for rounds
+        if method.lower() == 'omp':
+            # OMP does not have background strength
+            self.spot_color_pb, _ = remove_background(self.spot_color[None, :, :])
+            self.spot_color_pb = self.spot_color_pb[0] / color_norm
+            self.spot_color = self.spot_color / color_norm
+            self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
+            self.background_removed = bg_removed
+        else:
+            background_strength = nb.ref_spots.background_strength[spot_no]
+            background_strength = np.repeat(background_strength[np.newaxis, :], nb.basic_info.n_rounds, axis=0)
+            self.background_removed = bg_removed
+            self.spot_color_pb = (self.spot_color - background_strength) / color_norm
+            self.spot_color = self.spot_color / color_norm
+            self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
 
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
 

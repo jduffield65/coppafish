@@ -6,6 +6,7 @@ from tqdm import tqdm
 from skimage.filters import sobel
 from coppafish.setup import NotebookPage
 from coppafish.utils.npy import load_tile
+from typing import Optional, Tuple
 
 
 def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):
@@ -51,34 +52,6 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
                              'initial_transform': np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
                              }
     return registration_data
-
-
-def save_compressed_image(output_dir: str, image: np.ndarray, t: int, r: int, c: int, filter: bool = False):
-    """
-    Save low quality cropped images for reg diagnostics
-
-    Args:
-        output_dir: string of output directory
-        image: zyx image to be saved in compressed form
-        t: tile
-        r: round
-        c: channel
-
-    Returns:
-        N/A
-    """
-
-    # Check directory exists otherwise create it
-    if not os.path.isdir(os.path.join(output_dir, 'reg_images')):
-        os.makedirs(os.path.join(output_dir, 'reg_images'))
-    if filter:
-        image = sobel(image)
-
-    mid_z, mid_y, mid_x = image.shape[0] // 2, image.shape[1] // 2, image.shape[2] // 2
-    # save a small subset for reg diagnostics
-    small_im = image[mid_z - 5: mid_z + 5, mid_y - 250: mid_y + 250, mid_x - 250: mid_x + 250]
-    small_im = (small_im * 255 / np.max(small_im)).astype(np.uint8)
-    np.save(os.path.join(output_dir, 'reg_images/') + 't' + str(t) + 'r' + str(r) + 'c' + str(c), small_im)
 
 
 def replace_scale(transform: np.ndarray, scale: np.ndarray):
@@ -367,20 +340,39 @@ def merge_subvols(position, subvol):
     return merged
 
 
-def generate_channel_reg_images(nb):
+def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_value_range: Optional[Tuple] = None):
     """
-    Function to generate the channel registration images
+    Function to generate registration images. These are 500 x 500 x 10 images centred in the middle of the tile and
+    saved as uint8. They are saved in the reg_images folder in the output directory and should be very quick to load.
     Args:
         nb: Notebook
+        t: tile
+        r: round
+        c: channel
+        filter: whether to apply sobel filter
+        image_value_range: tuple of min and max values to clip each output image to
     """
-    non_anchor_channels = [c for c in nb.basic_info.use_channels if c != nb.basic_info.anchor_channel]
-    use_tiles = nb.basic_info.use_tiles
-    # Instead of doing a double loop over tiles and non-anchor channels, we can do a single, combine these into a single
-    # array and then loop over this
-    with tqdm(total=len(use_tiles) * len(non_anchor_channels)) as pbar:
-        for t, c in itertools.product(use_tiles, non_anchor_channels):
-            pbar.set_description(f"Generating channel registration image for tile {t} and channel {c}")
-            # Get the image for the tile and channel
-            im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, 3, c))
-            save_compressed_image(nb.file_names.output_dir, im, t, 3, c, True)
-            pbar.update(1)
+    yx_centre = nb.basic_info.tile_centre.astype(int)[:2]
+    z_centre = np.median(nb.basic_info.use_z).astype(int)
+    tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
+    # Get the image for the tile and channel
+    # TODO: This gives a bug when we run on a subset of z planes
+    im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c,
+                              [np.arange(tile_centre[0] - 250, tile_centre[0] + 250),
+                               np.arange(tile_centre[1] - 250, tile_centre[1] + 250),
+                               np.arange(10)],
+                              apply_shift=False))
+    # Clip the image to the specified range if required
+    if image_value_range is None:
+        image_value_range = (np.min(im), np.max(im))
+    im = np.clip(im, image_value_range[0], image_value_range[1]) - image_value_range[0]
+    # Filter the image if required
+    if filter:
+        im = sobel(im)
+    # Save the image as uint8
+    im = im / np.max(im) * 255  # Scale to 0-255
+    im = im.astype(np.uint8)
+    output_dir = os.path.join(nb.file_names.output_dir, 'reg_images')
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+    np.save(os.path.join(output_dir, 't' + str(t) + 'r' + str(r) + 'c' + str(c)), im)

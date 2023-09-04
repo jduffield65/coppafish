@@ -150,8 +150,7 @@ def fine_tune_dye_spectrum(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.nda
     eig_val, eig_vec = np.linalg.eig(outer_prod)
     dye_spectrum = np.real(eig_vec[:, np.argmax(eig_val)])
     dye_score = spot_colours @ dye_spectrum
-    # TODO: Check this is correct
-    dye_spectrum = dye_spectrum * np.max(eig_val)
+    dye_spectrum = dye_spectrum / np.linalg.norm(dye_spectrum)
 
     # We expect the dye_spectrum to be positive multiples of each row. If median
     if np.median(dye_score) < 0:

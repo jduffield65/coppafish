@@ -9,11 +9,9 @@ from sklearn.linear_model import HuberRegressor
 from scipy.spatial import KDTree
 from scipy import stats
 from skimage.filters import sobel
-from ..utils.npy import load_tile
-from coppafish.register.preprocessing import custom_shift, yxz_to_zyx, save_compressed_image, split_3d_image, \
-    replace_scale, populate_full, merge_subvols, yxz_to_zyx_affine
+from coppafish.register.preprocessing import custom_shift, split_3d_image, replace_scale, populate_full, \
+    merge_subvols, yxz_to_zyx_affine
 from skimage.registration import phase_cross_correlation
-from coppafish.setup import NotebookPage
 
 
 def find_shift_array(subvol_base, subvol_target, position, r_threshold):
@@ -163,12 +161,13 @@ def ols_regression(shift, position):
 
 def huber_regression(shift, position, predict_shift=True):
     """
-    Function to predict shift as a function of position using robust huber regressor.
+    Function to predict shift as a function of position using robust huber regressor. If we do not have >= 3 z-coords
+    in position, the z-coords of the affine transform will be estimated as no scaling, and a shift of mean(shift).
     Args:
         shift: n_tiles x 3 ndarray of zyx shifts
         position: n_tiles x 2 ndarray of yx tile coords or n_tiles x 3 ndarray of zyx tile coords
         predict_shift: If True, predict shift as a function of position. If False, predict position as a function of
-        position. Default is True.
+        position. Default is True. Difference is that if false, we add 1 to each diagonal of the transform matrix.
     Returns:
         transform: 3 x 3 matrix where each row predicts shift of z y z as a function of y index, x index and the final
         row is the offset at 0,0
@@ -177,22 +176,26 @@ def huber_regression(shift, position, predict_shift=True):
     # We are going to get rid of the shifts where any of the values are nan for regression
     position = position[~np.isnan(shift[:, 0])]
     shift = shift[~np.isnan(shift[:, 0])]
-    new_position = position + shift
 
     # Do robust regression
-    if predict_shift:
-        huber_z = HuberRegressor().fit(X=position, y=shift[:, 0])
-        huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
-        huber_x = HuberRegressor().fit(X=position, y=shift[:, 2])
-        transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_), np.append(huber_y.coef_, huber_y.intercept_),
-                               np.append(huber_x.coef_, huber_x.intercept_)))
+    # Check we have at least 3 z-coords in position
+    if len(set(position[:, 0])) <= 2:
+        z_coef = np.array([0, 0, 0])
+        z_shift = np.mean(shift[:, 0])
+        # raise a warning if we have less than 3 z-coords in position
+        print('Warning: Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of '
+              'mean(shift)')
     else:
-        huber_z = HuberRegressor().fit(X=position, y=new_position[:, 0])
-        huber_y = HuberRegressor().fit(X=position, y=new_position[:, 1])
-        huber_x = HuberRegressor().fit(X=position, y=new_position[:, 2])
-        transform = np.vstack((np.append(huber_z.coef_, huber_z.intercept_),
-                               np.append(huber_y.coef_, huber_y.intercept_),
-                               np.append(huber_x.coef_, huber_x.intercept_)))
+        huber_z = HuberRegressor(max_iter=200).fit(X=position, y=shift[:, 0])
+        z_coef = huber_z.coef_
+        z_shift = huber_z.intercept_
+    huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
+    huber_x = HuberRegressor().fit(X=position, y=shift[:, 2])
+    transform = np.vstack((np.append(z_coef, z_shift),
+                           np.append(huber_y.coef_, huber_y.intercept_),
+                           np.append(huber_x.coef_, huber_x.intercept_)))
+    if not predict_shift:
+        transform += np.eye(3, 4)
 
     return transform
 
@@ -216,7 +219,7 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
     # Initialize variables from config
     z_subvols, y_subvols, x_subvols = config['subvols']
     z_box, y_box, x_box = config['box_size']
-    r_thresh = config['r_thresh']
+    r_thresh = config['pearson_r_thresh']
 
     # Create the directory for the round registration data
     round_registration_data = {'position': [], 'shift': [], 'shift_corr': [], 'transform': []}
@@ -286,7 +289,8 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
               'each other.')
         return transform
 
-    fluorescent_beads = np.array(nd2.ND2File(fluorescent_bead_path))
+    # open the fluorescent bead images as nd2 files
+    fluorescent_beads = nd2.ND2File(fluorescent_bead_path).asarray()
 
     # Now we'll turn each image into a point cloud
     bead_point_clouds = []

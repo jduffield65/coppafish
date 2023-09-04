@@ -23,8 +23,6 @@ class view_bleed_matrix(ColorPlotBase):
         if single_bm:
             bleed_matrix = [nb.call_spots.bleed_matrix[0][np.ix_(nb.basic_info.use_channels,
                                                                  nb.basic_info.use_dyes)].copy()]
-            col_2, col_3 = bleed_matrix[0][:, 2].copy(), bleed_matrix[0][:, 3].copy()
-            bleed_matrix[0][:, 2], bleed_matrix[0][:, 3] = col_3, col_2  # swap columns 2 and 3
             subplot_row_columns = [1, 1]
             subplot_adjust = [0.07, 0.775, 0.095, 0.94]
             fig_size = (9, 5)
@@ -85,9 +83,11 @@ class view_bled_codes(ColorPlotBase):
                                                            nb.basic_info.use_channels)]
         bled_codes = nb.call_spots.bled_codes[np.ix_(np.arange(self.n_genes), nb.basic_info.use_rounds,
                                                           nb.basic_info.use_channels)]
-        bled_codes_ge = np.moveaxis(bled_codes_ge, 0, -1)  # move gene index to last so scroll over
+        # move gene index to last so scroll over genes. After this shape is n_rounds x n_channels x n_genes
+        bled_codes_ge = np.moveaxis(bled_codes_ge, 0, -1)
         bled_codes = np.moveaxis(bled_codes, 0, -1)
-        bled_codes_ge = np.moveaxis(bled_codes_ge, 0, 1)  # move channel index to first for plotting
+        # move channel index to first for plotting
+        bled_codes_ge = np.moveaxis(bled_codes_ge, 0, 1)
         bled_codes = np.moveaxis(bled_codes, 0, 1)
         subplot_adjust = [0.07, 0.775, 0.095, 0.9]  # larger top adjust for super title
         super().__init__([bled_codes_ge, bled_codes], color_norm, subplot_adjust=subplot_adjust)

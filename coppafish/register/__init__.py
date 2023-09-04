@@ -1,1 +1,1 @@
-from .preprocessing import generate_channel_reg_images
+from .preprocessing import generate_reg_images

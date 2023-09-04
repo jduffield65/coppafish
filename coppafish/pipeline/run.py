@@ -1,11 +1,12 @@
 import os
 from .. import setup, utils
+from tqdm import tqdm
 from joblib import Parallel, delayed
 from . import set_basic_info_new, extract_and_filter, find_spots, stitch, register, get_reference_spots, \
     call_reference_spots, call_spots_omp
 from ..find_spots import check_n_spots
 from ..call_spots import get_non_duplicate
-from ..register import generate_channel_reg_images
+from ..register import generate_reg_images
 import warnings
 import numpy as np
 from scipy import sparse
@@ -192,10 +193,6 @@ def run_register(nb: setup.Notebook):
                                          constant_values=1))
         nb += nbp
         nb += nbp_debug
-        n_reg_images = len(os.listdir(os.path.join(nb.file_names.output_dir, 'reg_images')))
-        if n_reg_images < len(nb.basic_info.use_tiles) * (len(nb.basic_info.use_rounds) +
-                                                          len(nb.basic_info.use_channels)):
-            generate_channel_reg_images(nb)
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)

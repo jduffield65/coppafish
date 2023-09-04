@@ -156,11 +156,12 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
-        z_chunk_size = 2
+        z_chunk_size = 5
         z_chunks = len(use_z) // z_chunk_size + 1
         # n_jobs = 5
         for z_chunk in range(z_chunks):
             print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
+            print(f"z_chunk {z_chunk + 1}/{z_chunks}")
             # While iterating through tiles, only save info for rounds/channels using
             # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
             z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
