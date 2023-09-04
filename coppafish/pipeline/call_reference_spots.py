@@ -180,12 +180,11 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
                                                     gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
-
-    # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
-    tilepos = nbp_basic.tilepos_yx[nbp_basic.use_tiles]
-    centre = np.median(nbp_basic.tilepos_yx, axis=0)
-    dist = np.linalg.norm(tilepos - centre, axis=1)
+    # Find middle tile to calculate intensity threshold
+    median_tile = int(np.median(nbp_basic.use_tiles))
+    dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
     central_tile = nbp_basic.use_tiles[np.argmin(dist)]
+    # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
                                    central_tile, transform, nbp_file, nbp_basic,
