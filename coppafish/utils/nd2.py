@@ -434,6 +434,7 @@ def get_raw_images(nbp_basic: NotebookPage, nbp_file: NotebookPage, tiles: List[
                     pbar.update(1)
     return raw_images
 
+
 # '''with nd2reader'''
 # # Does not work with QuadCam data hence the switch to nd2 package
 # from nd2reader import ND2Reader
@@ -520,3 +521,33 @@ def get_raw_images(nbp_basic: NotebookPage, nbp_file: NotebookPage, tiles: List[
 #         images.metadata['sizes'] = {'t': images.sizes['v'], 'c': images.sizes['c'], 'y': images.sizes['y'],
 #                                     'x': images.sizes['x'], 'z': images.sizes['z']}
 #     return images
+def get_bleed_estimates(dye_image: list, dye_names: list, percentiles: list = [80, 90]) -> dict:
+    """
+    Estimate bleed matrix from dye images. Do this by taking in a list of images (one for each dye) and then
+    looking for the top ~ 10% of non-saturated pixels in each image. This gives us many data points to average over,
+    thereby reducing the effect of noise.
+    Args:
+        dye_image: list (n_dyes) of dye images (n_channels x n_pixels)
+        dye_names: list (n_dyes) of dye names
+        percentiles: list (2) of percentiles to use to get the top ~ 10% of pixels
+    Returns:
+        bleed: dict (n_dyes) of bleed estimates (n_channels)
+    """
+    n_dyes = len(dye_image)
+    n_channels = dye_image[0].shape[0]
+    dye_image = np.array(dye_image)
+    dye_image = dye_image.reshape((n_dyes, n_channels, -1))
+    bleed = {}
+    for d in range(n_dyes):
+        # allow for 1 saturated channel as this is likely to be the case for a channel we are not using
+        saturated_channels = np.sum(dye_image[d] == 65_535, axis=0)
+        use = saturated_channels <= 1
+        d_pixels = dye_image[d][:, use]
+        # get approx top 10% of non-saturated pixels as measured by the mean across channels
+        intensity = np.mean(d_pixels, axis=0)
+        intensity_threshold_low, intensity_threshold_high = np.percentile(intensity, percentiles)
+        bright = (intensity > intensity_threshold_low) * (intensity < intensity_threshold_high)
+        # get bleed estimates by averaging across pixels
+        bleed[dye_names[d]] = np.mean(d_pixels[:, bright], axis=1)
+
+    return bleed
