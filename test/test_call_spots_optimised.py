@@ -1,6 +1,5 @@
 from coppafish.call_spots.background import fit_background
-from coppafish.call_spots.base import get_non_duplicate, get_bled_codes, get_gene_efficiency, \
-    compute_gene_efficiency
+from coppafish.call_spots.base import get_non_duplicate, get_bled_codes, compute_gene_efficiency
 from coppafish.call_spots.dot_product_optimised import dot_product_score_no_weight, dot_product_score
 from coppafish.call_spots.qual_check_optimised import get_spot_intensity
 import numpy as np
@@ -36,29 +35,7 @@ def test_get_bled_codes():
     bled_codes = get_bled_codes(gene_codes, bleed_matrix, gene_efficiency)
     assert bled_codes.shape == (n_genes, n_rounds, n_channels), \
         'Expected (n_genes x n_rounds x n_channels) output shape'
-
-
-def test_get_gene_efficiency():
-    # TODO: Flesh this unit test out to not just test output dimensions
-    n_spots = 2
-    n_rounds = 3
-    n_channels = 4
-    n_dyes = 5
-    n_genes = 6
-    rng = np.random.RandomState(47)
-    spot_colours = rng.random((n_spots, n_rounds, n_channels))
-    spot_gene_no = rng.randint(0, n_genes, size=(n_spots))
-    gene_codes = rng.randint(0, n_dyes, size=(n_genes, n_rounds))
-    bleed_matrix = rng.random((n_rounds, n_channels, n_dyes))
-    gene_efficiency = get_gene_efficiency(spot_colours, spot_gene_no, gene_codes, bleed_matrix, min_spots=0)
-    assert gene_efficiency.shape == (n_genes, n_rounds), 'Expected output shape to be n_genes x n_rounds'
-    assert not np.allclose(gene_efficiency, 1.), \
-        'Do not expect all gene efficiencies to be ones when min_spots is zero'
-    gene_efficiency_2 = get_gene_efficiency(spot_colours, spot_gene_no, gene_codes, bleed_matrix,
-        min_spots=n_spots+1)
-    assert gene_efficiency_2.shape == (n_genes, n_rounds), 'Expected output shape to be n_genes x n_rounds'
-    assert np.allclose(gene_efficiency_2, 1.), \
-        'Expected all gene efficiencies to be ones when min_spots is > n_spots'
+    # TODO: Test this with a particular bleed matrix with a known output
 
 
 def test_compute_gene_efficiency():
@@ -97,6 +74,29 @@ def test_fit_background():
     assert background_vectors1.shape == (n_channels, n_rounds, n_channels), \
         'Expected coefs to have shape n_channels x n_spots x n_channels'
     assert np.allclose(residual1, 0), 'Expected all residuals to become zero after background fitting'
+    # Create a random pattern of only background noise and check it removes it
+    n_spots = 3
+    n_rounds = 4
+    n_channels = 5
+    rng = np.random.RandomState(81)
+    # Weighting given to background vector
+    bg_weightings = rng.random((n_channels))
+    spot_colours = np.ones((n_spots, n_rounds, n_channels))
+    for c in range(n_channels):
+        spot_colours[:,:,c] *= bg_weightings[c]
+    residual1, coef1, background_vectors1 = fit_background(spot_colours, weight_shift=0)
+    assert residual1.shape == spot_colours.shape, \
+        'Expected outputted residual to be the same shape as the spot_colours array'
+    assert coef1.shape == (n_spots, n_channels), 'Expected coefs to have shape n_spots x n_channels'
+    assert background_vectors1.shape == (n_channels, n_rounds, n_channels), \
+        'Expected coefs to have shape n_channels x n_spots x n_channels'
+    assert np.allclose(residual1, 0), 'Expected all residuals to become near zero after background fitting'
+    # Test weight_shift by seeing if it reduces the variance when increased
+    spot_colours = rng.random((n_spots, n_rounds, n_channels)) * 10
+    residual1, coef1, background_vectors1 = fit_background(spot_colours, weight_shift=0)
+    residual2, coef2, background_vectors2 = fit_background(spot_colours, weight_shift=10)
+    assert (residual1 != residual2).all(), 'Expecting different results when changing weight_shift'
+    assert np.std(residual1) > np.std(residual2), 'Expected weight_shift to reduce the variance in the residuals'
 
 
 def test_dot_product_score_no_weight():
@@ -109,7 +109,6 @@ def test_dot_product_score_no_weight():
     bled_codes = np.ones((n_genes,1))
     norm_shift = 0
     output = dot_product_score_no_weight(spot_colors, bled_codes, norm_shift)
-    print(output)
     assert output.ndim == 2, 'Expected two dimensional array as output'
     assert output.shape[0] == spot_colors.shape[0], 'Expected second dimension to be spot count'
     assert output.shape[1] == n_genes, 'Expected second dimension to be the gene count'
@@ -128,7 +127,6 @@ def test_dot_product_score():
     # Set the weighting to ones so change is applied
     weight_squared = np.ones((spot_colors.shape[0], spot_colors.shape[1]))
     output = dot_product_score(spot_colors, bled_codes, norm_shift, weight_squared)
-    print(output)
     assert output.ndim == 2, 'Expected two dimensional array as output'
     assert output.shape[0] == spot_colors.shape[0], 'Expected second dimension to be spot count'
     assert output.shape[1] == n_genes, 'Expected second dimension to be the gene count'
