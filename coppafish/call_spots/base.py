@@ -65,7 +65,8 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray, gene_effici
     Returns:
         ```float [n_genes x n_rounds x n_channels]```.
             ```bled_codes``` such that ```spot_color``` of a gene ```g```
-            in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r]```.
+            in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r]```. bled_codes[g] will 
+            all have a norm of one.
     """
     n_genes = gene_codes.shape[0]
     n_rounds, n_channels, n_dyes = bleed_matrix.shape
@@ -90,93 +91,6 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray, gene_effici
     norm_factor = np.linalg.norm(bled_codes, axis=(1,2))
     bled_codes = bled_codes / norm_factor[:, None, None]
     return bled_codes
-
-
-def get_gene_efficiency(spot_colors: np.ndarray, spot_gene_no: np.ndarray, gene_codes: np.ndarray,
-                        bleed_matrix: np.ndarray, min_spots,
-                        max_gene_efficiency: float = np.inf,
-                        min_gene_efficiency: float = 0,
-                        min_gene_efficiency_factor: float = 1) -> np.ndarray:
-    """
-    `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected
-    by the `bleed_matrix`. It is computed based on the average of all `spot_colors` assigned to that gene.
-
-    Args:
-        spot_colors: `float [n_spots x n_rounds x n_channels]`.
-            Spot colors normalised to equalise intensities between channels (and rounds).
-        spot_gene_no: `int [n_spots]`.
-            Gene each spot was assigned to.
-        gene_codes: `int [n_genes, n_rounds]`.
-            `gene_codes[g, r]` indicates the dye that should be present for gene `g` in round `r`.
-        bleed_matrix: `float [n_rounds x n_channels x n_dyes]`.
-            For a spot, `s` matched to gene with dye `d` in round `r`, we expect `spot_colors[s, r]`",
-            to be a constant multiple of `bleed_matrix[r, :, d]`"
-        min_spots: If number of spots assigned to a gene less than or equal to this, `gene_efficiency[g]=1`
-            for all rounds. Typical = 30.
-        max_gene_efficiency: Maximum allowed gene efficiency, i.e. any one round can be at most this times more
-            important than the median round for every gene. Typical = 6.
-        min_gene_efficiency: At most `ceil(min_gene_efficiency_factor * n_rounds)` rounds can have
-            `gene_efficiency` below `min_gene_efficiency` for any given gene. Typical = 0.05
-        min_gene_efficiency_factor: At most `ceil(min_gene_efficiency_factor * n_rounds)` rounds can have
-            `gene_efficiency` below `min_gene_efficiency` for any given gene. Typical = 0.2
-
-    Returns:
-        `float [n_genes x n_rounds]`.
-            `gene_efficiency[g,r]` gives the expected intensity of gene `g` in round `r` compared to that expected
-            by the `bleed_matrix`.
-    """
-    # Check n_spots, n_rounds, n_channels, n_genes consistent across all variables.
-    if not utils.errors.check_shape(spot_colors[0], bleed_matrix[:, :, 0].shape):
-        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
-                                      (spot_colors.shape[0],) + bleed_matrix[:, :, 0].shape)
-    if not utils.errors.check_shape(spot_colors[:, 0, 0], spot_gene_no.shape):
-        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
-                                      spot_gene_no.shape + bleed_matrix[:, :, 0].shape)
-    n_genes, n_rounds = gene_codes.shape
-    if not utils.errors.check_shape(spot_colors[0, :, 0].squeeze(), gene_codes[0].shape):
-        raise utils.errors.ShapeError('spot_colors', spot_colors.shape,
-                                      spot_gene_no.shape + (n_rounds,) + (bleed_matrix.shape[1],))
-
-    gene_no_oob = [val for val in spot_gene_no if val < 0 or val >= n_genes]
-    if len(gene_no_oob) > 0:
-        raise utils.errors.OutOfBoundsError("spot_gene_no", gene_no_oob[0], 0, n_genes - 1)
-
-    gene_efficiency = np.ones([n_genes, n_rounds])
-    n_min_thresh = int(np.ceil(min_gene_efficiency_factor * n_rounds))
-    for g in range(n_genes):
-        use = spot_gene_no == g
-        if np.sum(use) > min_spots:
-            round_strength = np.zeros([np.sum(use), n_rounds])
-            for r in range(n_rounds):
-                dye_ind = gene_codes[g, r]
-                # below is equivalent to MATLAB spot_colors / bleed_matrix.
-                round_strength[:, r] = np.linalg.lstsq(bleed_matrix[r, :, dye_ind:dye_ind + 1],
-                                                       spot_colors[use, r].transpose(), rcond=None)[0]
-
-            # find a reference round for each gene as that with median strength.
-            av_round_strength = np.median(round_strength, 0)
-            av_round = np.abs(av_round_strength - np.median(av_round_strength)).argmin()
-
-            # for each spot, find strength of each round relative to strength in
-            # av_round. Need relative strength not absolute strength
-            # because expect spot color to be constant multiple of bled code.
-            # So for all genes, gene_efficiency[g, av_round] = 1 but av_round is different between genes.
-
-            # Only use spots whose strength in RefRound is positive.
-            use = round_strength[:, av_round] > 0
-            if np.sum(use) > min_spots:
-                relative_round_strength = round_strength[use] / np.expand_dims(round_strength[use, av_round], 1)
-                # Only use spots with gene efficiency below the maximum allowed.
-                below_max = np.max(relative_round_strength, axis=1) < max_gene_efficiency
-                # Only use spots with at most n_min_thresh rounds below the minimum.
-                above_min = np.sum(relative_round_strength < min_gene_efficiency, axis=1) <= n_min_thresh
-                use = np.array([below_max, above_min]).all(axis=0)
-                if np.sum(use) > min_spots:
-                    gene_efficiency[g] = np.median(relative_round_strength[use], 0)
-
-    # set negative values to 0
-    gene_efficiency = np.clip(gene_efficiency, 0, np.inf)
-    return gene_efficiency
 
 
 def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, gene_no: np.ndarray,
