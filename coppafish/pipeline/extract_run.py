@@ -3,6 +3,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from ..setup.notebook import NotebookPage, Notebook
+from skimage.filters import gaussian
 from typing import Tuple
 import warnings
 
@@ -186,7 +187,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
-        round_files = round_files + [nbp_file.pre_seq_round]
+        round_files = round_files + [nbp_file.preseq]
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
         n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
@@ -320,6 +321,13 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
                                 if r != nbp_basic.anchor_round:
                                     nbp.hist_counts[:, r, c] += hist_counts_trc
+                            else:
+                                # pre-seq round smoothed on each z-plane with a gaussian filter of radius
+                                # config['pre_seq_blur_radius']
+                                # TODO: Maybe replace gaussian with something quicker
+                                for z in tqdm(nbp_basic.use_z):
+                                    print(f"Pre-seq tile {t}, channel {c}, z-plane {z}")
+                                    im[z] = gaussian(im[:, :, z], config['pre_seq_blur_radius'], truncate=3)
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
                         else:
