@@ -178,33 +178,33 @@ def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarra
     return np.array(np.meshgrid(np.arange(y_size), np.arange(x_size), z_planes), dtype=np.int16).T.reshape(-1, 3)
 
 
-# Write a function that will normalise the spot colours.
 def normalise_rc(spot_colours: np.ndarray, initial_bleed_matrix: np.ndarray) -> \
         Tuple[np.ndarray, list]:
     """
     Takes in spots, analyses them and returns the normalisation factor for each round and channel.
     Args:
         spot_colours: `int32 [n_spots x n_rounds x n_channels_use]` spot colours to normalise.
-        initial_bleed_matrix: `float32 [n_rounds x n_channels]` initial bleed matrix. This will give us a template to
+        initial_bleed_matrix: `float32 [n_channels_use x n_dyes]` initial bleed matrix. This will give us a template to
         match spots to each dye.
 
     Returns:
         norm_factor: [n_rounds x n_channels_use]` normalisation factor for each of the rounds/channels.
     """
-    # Normalise columns of initial bleed matrix to have L2 norm of 1.
-    initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
-
-    # We want to find what spots look like in each round and channel.
+    # We want to find what spots look like in each round and channel. We assign spots to dyes based on the initial
+    # bleed matrix.In order to convert this to spots assigned to channels, for each channel we need to find the dye
+    # that maximises brightness in that channel.
+    channel_dye_conversion = np.argmax(initial_bleed_matrix, axis=1) # best dye for each channel
+    # (should be perm of [0, 1, ..., n_dyes-1])
     spot_brightness = np.zeros((spot_colours.shape[1], spot_colours.shape[2], 0)).tolist()
     for s in tqdm(range(spot_colours.shape[0])):
         for r in range(spot_colours.shape[1]):
-            # Find out which dye is the best match for each spot.
-            all_score = initial_bleed_matrix @ spot_colours[s, r] + np.random.rand(spot_colours.shape[2]) * 1e-6
+            # Find out which dye is the best match for each spot. Don't need to do any norming here.
+            all_score = initial_bleed_matrix.T @ spot_colours[s, r] + np.random.rand(spot_colours.shape[2]) * 1e-6
             top_score = np.max(all_score)
             second_score = np.max(all_score[all_score != top_score])
             # Get the column of the bleed matrix that matches the best. This is the dye spectrum for the spot.
-            best_matching_dye = initial_bleed_matrix[:, np.argmax(all_score)]
-            channel = np.argmax(best_matching_dye)
+            best_matching_dye = np.argmax(all_score)
+            channel = np.where(channel_dye_conversion == best_matching_dye)[0][0]
             if top_score > 1.5 * second_score:
                 spot_brightness[r][channel].append(top_score)
 
