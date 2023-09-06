@@ -326,7 +326,9 @@
     "round_transform": [" n_tiles x n_rounds x 4 x 3 ndarray:",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
     "channel_transform": ["n_tiles x n_channels x 4 x 3 ndarray:",
-      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."]
+      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."],
+    "bg_scale": ["n_tiles x n_rounds x n_channels ndarray:",
+      " scale factor applied to background of each tile in each round and channel to match colour profile."]
   },
 
   "register_debug":

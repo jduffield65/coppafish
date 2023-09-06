@@ -38,7 +38,7 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
         with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'rb') as f:
             registration_data = pickle.load(f)
     else:
-        n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
+        n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.use_preseq, nbp_basic.n_channels
         z_subvols, y_subvols, x_subvols = config['subvols']
         round_registration = {'tiles_completed': [],
                               'position': np.zeros((n_tiles, n_rounds, z_subvols * y_subvols * x_subvols, 3)),

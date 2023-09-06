@@ -6,7 +6,7 @@ from tqdm import tqdm
 from ..setup import NotebookPage
 from ..utils.npy import load_tile
 from ..find_spots import spot_yxz
-from ..register.base import icp, regularise_transforms, round_registration, channel_registration
+from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale
 from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data, yxz_to_zyx
 
 
@@ -87,8 +87,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                                                 c=round_registration_channel))
             round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel))
                            for r in use_rounds]
-            round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image,
-                                                config=config)
+            if nbp_basic.use_preseq:
+                round_image += [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t,
+                                                     r=n_rounds+nbp_basic.use_anchor+nbp_basic.use_preseq,
+                                                     c=round_registration_channel))]
+            round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
             # Now save the data
             registration_data['round_registration']['transform_raw'][t] = round_reg_data['transform']
             registration_data['round_registration']['shift'][t] = round_reg_data['shift']
@@ -107,16 +110,18 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                                               use_tiles=nbp_basic.use_tiles,
                                               use_rounds=nbp_basic.use_rounds)
 
-    # Now combine all of these into single subvol transform array via composition
-    for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
-        registration_data['initial_transform'][t, r, c] = \
-            zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
-                                             registration_data['round_registration']['transform'][t, r]))
+    # Now combine all of these into single sub-vol transform array via composition
+    for t in use_tiles:
+        for r in use_rounds + [n_rounds + 1] * nbp_basic.use_preseq:
+            for c in use_channels:
+                registration_data['initial_transform'][t, r, c] = \
+                    zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
+                                                     registration_data['round_registration']['transform'][t, r]))
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
 
-    # Part 3: ICP
+    # Part 3: ICP. This bit is important for all non-pre-seq rounds but cannot be done for pre-seq round as no spots
     if 'icp' not in registration_data.keys():
         # Initialise variables for ICP step
         icp_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
@@ -172,5 +177,21 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     nbp.channel_transform = registration_data['channel_registration']['transform']
     nbp.initial_transform = registration_data['initial_transform']
     nbp.transform = registration_data['icp']['icp_transform']
+
+    # Load in the middle z-plane of each tile and compute the scale factors to be used when removing background
+    # fluorescence
+    if nbp_basic.use_preseq:
+        bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
+        for t, c in tqdm(itertools.product(use_tiles, use_channels)):
+            preseq = load_tile(nbp_file, nbp_basic, t=t, r=n_rounds + 1, c=c,
+                               yxz=[None, None, [int(np.median(nbp_basic.use_z))]])
+            for r in use_rounds:
+                print(f"Computing background scale for tile {t}, round {r}, channel {c}")
+                seq = load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
+                                yxz=[None, None, [int(np.median(nbp_basic.use_z))]])
+                bg_scale[t, r, c] = brightness_scale(preseq, seq, 90)
+        nbp.bg_scale = bg_scale
+    else:
+        nbp.bg_scale = None
 
     return nbp, nbp_debug

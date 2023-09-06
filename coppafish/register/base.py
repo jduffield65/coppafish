@@ -553,3 +553,32 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=Fals
     converged = i < n_iters
 
     return transform, n_matches, error, converged
+
+
+def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile=90):
+    """
+    Function to find scale factor m and constant c such that m * preseq + c ~ seq. This is done by a regression on
+    the pixels of brightness < brightness_thresh_percentile as these likely won't be spots. The regression is done by
+    least squares.
+
+    This function isn't really registration but needs registration to be run before it can be used and here seems
+    like a good place to put it.
+    Args:
+        preseq: (n_y x n_x) ndarray of presequence image
+        seq: (n_y x n_x) ndarray of sequence image
+        intensity_percentile: float brightness percentile such that all pixels with brightness less than this
+            are used for regression
+    Returns:
+        scale: float scale factor m
+        offset: float offset c
+    """
+    # Find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
+    mask = seq < np.percentile(seq, intensity_percentile)
+    im_pre_masked = preseq.copy()[mask]
+    im_masked = seq.copy()[mask]
+    # Least squares to find im = m * im_pre + c best fit coefficients
+    # A is padded with ones to allow for an intercept, c
+    A = np.vstack([im_pre_masked.ravel(), np.ones(im_pre_masked.size)]).T
+    m, c = np.linalg.lstsq(A, im_masked, rcond=None)[0]
+
+    return m, c
