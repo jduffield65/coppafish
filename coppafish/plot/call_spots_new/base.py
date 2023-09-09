@@ -49,8 +49,12 @@ class ViewAllGeneScores():
             raise ValueError("mode must be 'score', 'prob', 'score_diff' or 'intensity'")
 
         gene_values = np.zeros((self.nb.call_spots.gene_names.shape[0], 0)).tolist()
+        gene_prob_assignments = np.argmax(self.nb.ref_spots.gene_probs, axis=1)
         for i in range(len(gene_values)):
-            gene_values[i] = values[self.nb.ref_spots.gene_no == i]
+            if mode != 'prob':
+                gene_values[i] = values[self.nb.ref_spots.gene_no == i]
+            else:
+                gene_values[i] = values[gene_prob_assignments == i]
 
         self.gene_values = gene_values
         self.n_spots = np.array([len(gene_values[i]) for i in range(len(gene_values))])
@@ -559,46 +563,51 @@ class BGNormViewer():
     """
     def __init__(self, nb):
         self.nb = nb
-        spot_colour_raw = nb.ref_spots.colors.copy()[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels]
-        spot_colours_subtracted, background_noise = remove_background(spot_colour_raw.copy())
-        norm_factor = nb.call_spots.color_norm_factor.copy()
-        # Norm factor is now a 5 x 7 array so will get an error when we try to divide by it. Let's take the median
-        # across the rounds dimension
-        # norm_factor = np.median(norm_factor, axis=0)
-        spot_colours_normed = spot_colours_subtracted / norm_factor[None, :, nb.basic_info.use_channels]
-        n_spots, n_rounds, n_channels_use = spot_colour_raw.shape
-        spot_colour_raw = spot_colour_raw.swapaxes(1, 2)
-        spot_colours_subtracted = spot_colours_subtracted.swapaxes(1, 2)
-        spot_colours_normed = spot_colours_normed.swapaxes(1, 2)
-        spot_colour_raw = np.reshape(spot_colour_raw, (n_spots, n_rounds * n_channels_use))
-        spot_colours_subtracted = np.reshape(spot_colours_subtracted, (n_spots, n_rounds * n_channels_use))
-        spot_colours_normed = np.reshape(spot_colours_normed, (n_spots, n_rounds * n_channels_use))
-        background_noise = np.sum(background_noise, axis=1)
+        isolated = nb.ref_spots.isolated
+        n_spots = np.sum(isolated)
+        n_rounds, n_channels_use = len(nb.basic_info.use_rounds), len(nb.basic_info.use_channels)
+        norm_factor = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
+        background_noise = np.repeat(nb.ref_spots.background_strength[isolated][:, np.newaxis, :],
+                                     nb.basic_info.n_rounds, axis=1)
 
+        spot_colour_raw = nb.ref_spots.colors.copy()[isolated][:, :, nb.basic_info.use_channels]
+        spot_colour_no_bg = spot_colour_raw - background_noise
+        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor
         # Now we'd like to order the spots by background noise in descending order
-        # We'll do this by sorting the background noise and then reordering the spots
+        background_noise = np.sum(abs(background_noise), axis=(1, 2))
         spot_colour_raw = spot_colour_raw[np.argsort(background_noise)[::-1]]
-        spot_colours_subtracted = spot_colours_subtracted[np.argsort(background_noise)[::-1]]
-        spot_colours_normed = spot_colours_normed[np.argsort(background_noise)[::-1]]
+        spot_colour_no_bg = spot_colour_no_bg[np.argsort(background_noise)[::-1]]
+        spot_colour_normed_no_bg = spot_colour_normed_no_bg[np.argsort(background_noise)[::-1]]
+        # Finally, we need to reshape the spots to be n_spots x n_rounds * n_channels. Since we want the channels to be
+        # in consecutive blocks of size n_rounds, we can reshape by first switching the round and channel axes.
+        spot_colour_raw = spot_colour_raw.transpose((0, 2, 1))
+        spot_colour_raw = spot_colour_raw.reshape((n_spots, n_rounds * n_channels_use))
+        spot_colour_no_bg = spot_colour_no_bg.transpose((0, 2, 1))
+        spot_colour_no_bg = spot_colour_no_bg.reshape((n_spots, n_rounds * n_channels_use))
+        spot_colour_normed_no_bg = spot_colour_normed_no_bg.transpose((0, 2, 1))
+        spot_colour_normed_no_bg = spot_colour_normed_no_bg.reshape((n_spots, n_rounds * n_channels_use))
 
         # We're going to make a little viewer to show spots before and after background subtraction
+        colour_scaling_factor = 10
         fig, ax = plt.subplots(1, 3, figsize=(10, 5))
         max_intensity = np.max(spot_colour_raw)
         min_intensity = np.min(spot_colour_raw)
-        ax[0].imshow(spot_colour_raw, aspect='auto', vmin=min_intensity / 10, vmax=max_intensity / 10,
-                     interpolation='none')
-        ax[0].set_title('Before background subtraction')
+        ax[0].imshow(spot_colour_raw, aspect='auto', vmin=min_intensity / colour_scaling_factor,
+                     vmax=max_intensity / colour_scaling_factor, interpolation='none')
+        ax[0].set_title('Before background subtraction and normalisation')
         ax[0].set_xticks([])
 
-        ax[1].imshow(spot_colours_subtracted, aspect='auto', vmin=min_intensity / 10, vmax=max_intensity / 10,
-                     interpolation='none')
-        ax[1].set_title('After background subtraction')
+        max_intensity = np.max(spot_colour_no_bg)
+        min_intensity = np.min(spot_colour_no_bg)
+        ax[1].imshow(spot_colour_no_bg, aspect='auto', vmin=min_intensity / colour_scaling_factor,
+                     vmax=max_intensity / colour_scaling_factor, interpolation='none')
+        ax[1].set_title('After bg removal, before normalisation')
         ax[1].set_xticks([])
 
-        max_intensity = np.max(spot_colours_normed)
-        min_intensity = np.min(spot_colours_normed)
-        ax[2].imshow(spot_colours_normed, aspect='auto', vmin=min_intensity / 10, vmax=max_intensity / 10,
-                     interpolation='none')
+        max_intensity = np.max(spot_colour_normed_no_bg)
+        min_intensity = np.min(spot_colour_normed_no_bg)
+        ax[2].imshow(spot_colour_normed_no_bg, aspect='auto', vmin=min_intensity / colour_scaling_factor,
+                     vmax=max_intensity / colour_scaling_factor, interpolation='none')
         ax[2].set_title('After background subtraction and normalisation')
         ax[2].set_xticks([])
 
