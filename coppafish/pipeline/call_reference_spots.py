@@ -72,18 +72,18 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # 1. Remove background from spots and normalise channels and rounds
     # Find middle tile to calculate intensity threshold
+    spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
     median_tile = int(np.median(nbp_basic.use_tiles))
     dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
     central_tile = nbp_basic.use_tiles[np.argmin(dist)]
-    # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
                                    central_tile, transform, nbp_file, nbp_basic,
                                    return_in_bounds=True)[0]
-    # set the 99.9th percentile of the pixel values for each round and channel as the normalisation factors
-    # assumption here is that ~1% of pixels are spots and we only want to look at the top 10% of these
-    colour_norm_factor = np.percentile(pixel_colors, 99.9, axis=0)
-    spot_colours = spot_colours / colour_norm_factor[None]
-    spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
+    # normalise pixel colours by round and channel and then remove background
+    # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
+    colour_norm_factor = np.percentile(abs(pixel_colors), 99.9, axis=0)
+    spot_colours = spot_colours_background_removed / colour_norm_factor[None]
+
     # save pixel intensity and delete pixel_colors to save memory
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors / colour_norm_factor[None]))
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
@@ -156,8 +156,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     gene_efficiency, use_ge, _ = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
                                                          gene_no=gene_no, gene_score=gene_score,
                                                          gene_codes=gene_codes, intensity=intensity,
-                                                         score_threshold=0.9,
-                                                         intensity_threshold=np.percentile(intensity, 50))
+                                                         score_threshold=0.8,
+                                                         intensity_threshold=np.percentile(intensity, 25))
     # 3.2 Update bled codes
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
