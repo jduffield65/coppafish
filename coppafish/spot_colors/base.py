@@ -178,44 +178,55 @@ def all_pixel_yxz(y_size: int, x_size: int, z_planes: Union[List, int, np.ndarra
     return np.array(np.meshgrid(np.arange(y_size), np.arange(x_size), z_planes), dtype=np.int16).T.reshape(-1, 3)
 
 
-# Write a function that will normalise the spot colours.
-def normalise_rc(spot_colours: np.ndarray, initial_bleed_matrix: np.ndarray) -> \
-        Tuple[np.ndarray, list]:
+def normalise_rc(pixel_colours: np.ndarray, spot_colours: np.ndarray, cutoff_intensity_percentile: float = 75,
+                 num_spots: int = 100) -> np.ndarray:
     """
-    Takes in spots, analyses them and returns the normalisation factor for each round and channel.
+    Takes in the pixel colours for a single z-plane of a tile, for all rounds and channels. Then performs 2
+    normalisations. The first of these is normalising by round and the second is normalising by channel.
     Args:
-        spot_colours: `int32 [n_spots x n_rounds x n_channels_use]` spot colours to normalise.
-        initial_bleed_matrix: `float32 [n_rounds x n_channels]` initial bleed matrix. This will give us a template to
-        match spots to each dye.
-
+        pixel_colours: 'int [n_pixels x n_rounds x n_channels_use]' pixel colours for a single z-plane of a tile.
+        # NOTE: It is assumed these images are all aligned and have the same dimensions.
+        spot_colours: 'int [n_spots x n_rounds x n_channels_use]' spot colours for whole dataset.
+        cutoff_intensity_percentile: 'float' upper percentile of pixel intensities to use for regression in
+        round normalisation.
+        num_spots: 'int' number of spots to use for each round/channel in channel normalisation.
     Returns:
         norm_factor: [n_rounds x n_channels_use]` normalisation factor for each of the rounds/channels.
     """
-    # Normalise columns of initial bleed matrix to have L2 norm of 1.
-    initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
+    # 1. Normalise by round. Do this by performing a linear regression on low brightness pixels that will not be spots.
+    # First, for each channel, find a good round to use for normalisation. We will take this round to be the one with
+    # the median of the means of all rounds.
+    n_spots, n_rounds, n_channels = pixel_colours.shape
+    round_slopes = np.zeros((n_rounds, n_channels))
+    for c in range(n_channels):
+        brightness = np.mean(np.abs(pixel_colours)[:, :, c], axis=0)
+        median_brightness = np.median(brightness)
+        # Find the round with the median brightness
+        median_round = np.where(brightness == median_brightness)[0][0]
+        # Now perform the regression of each round against the median round
+        cutoff_intensity = np.percentile(pixel_colours[:, median_round, c], cutoff_intensity_percentile)
+        image_mask = pixel_colours[:, median_round, c] < cutoff_intensity
+        base_image = pixel_colours[:, median_round, c][image_mask]
+        for r in range(n_rounds):
+            target_image = pixel_colours[:, r, c][image_mask]
+            round_slopes[r, c] = np.linalg.lstsq(base_image[:, None], target_image, rcond=None)[0]
+            pixel_colours[:, r, c] = pixel_colours[:, r, c] / round_slopes[r, c]
+    # 2. Normalise by channel. For this we want to use spots. As spots are not aligned between rounds, we will
+    # concatenate all rounds of a given channel and match the intensities across channels.
+    bright_spots = np.zeros((n_rounds, n_channels, num_spots))
+    max_channel = np.argmax(spot_colours, axis=2)
+    # channel_strength is the median of the mean spot intensities for each channel
+    rc_spot_strength = np.zeros((n_rounds, n_channels))
+    for r in range(n_rounds):
+        for c in range(n_channels):
+            possible_spots = np.where(max_channel[:, r] == c)[0]
+            possible_colours = spot_colours[possible_spots, r, c]
+            # take the brightest spots
+            bright_spots[r][c] = possible_colours[np.argsort(possible_colours)[-num_spots:]]
+            rc_spot_strength[r, c] = np.median(bright_spots[r][c])
 
-    # We want to find what spots look like in each round and channel.
-    spot_brightness = np.zeros((spot_colours.shape[1], spot_colours.shape[2], 0)).tolist()
-    for s in tqdm(range(spot_colours.shape[0])):
-        for r in range(spot_colours.shape[1]):
-            # Find out which dye is the best match for each spot.
-            all_score = initial_bleed_matrix @ spot_colours[s, r] + np.random.rand(spot_colours.shape[2]) * 1e-6
-            top_score = np.max(all_score)
-            second_score = np.max(all_score[all_score != top_score])
-            # Get the column of the bleed matrix that matches the best. This is the dye spectrum for the spot.
-            best_matching_dye = initial_bleed_matrix[:, np.argmax(all_score)]
-            channel = np.argmax(best_matching_dye)
-            if top_score > 1.5 * second_score:
-                spot_brightness[r][channel].append(top_score)
-
-    # Now we want to find the 99the percentile intensity for each round and channel. This will be our normalisation
-    # factor. So after normalising each spot, the 99th percentile brightest spots will be 1.
-    norm_factor = np.zeros((spot_colours.shape[1], spot_colours.shape[2]))
-    for r in range(norm_factor.shape[0]):
-        for c in range(norm_factor.shape[1]):
-            norm_factor[r][c] = np.percentile(spot_brightness[r][c], 99)
-
-    return norm_factor, spot_brightness
+    norm_factor = rc_spot_strength * round_slopes
+    return norm_factor
 
 
 def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -226,7 +237,6 @@ def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     Returns:
         'spot_colours: [n_spots x n_rounds x n_channels_use]' spot colours with background removed.
         background_noise: [n_spots x n_channels_use]' background noise for each spot and channel.
-
     """
     background_noise = np.zeros((spot_colours.shape[0], spot_colours.shape[2]))
     # Loop through all channels and remove the background from each channel.
@@ -235,7 +245,7 @@ def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
         background_code[:, c] = 1
         # now loop through all spots and remove the component of the background from the spot colour
         for s in range(spot_colours.shape[0]):
-            background_noise[s, c] = max([np.percentile(spot_colours[s, :, c], 25), 0])
+            background_noise[s, c] = np.percentile(spot_colours[s, :, c], 25)
             spot_colours[s] = spot_colours[s] - background_noise[s, c] * background_code
 
     return spot_colours, background_noise

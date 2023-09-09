@@ -1,0 +1,11 @@
+11/09/2023 Update:
+ * Added background subtraction with 3D registration with DAPI.
+ * Cross-tile brightness difference correction support, probably caused by microscope auto gain control.
+ * Updated bleed matrix to allow inter-tile variation.
+ * Updated the bleed matrix calculation.
+ * Added weighted dot product method with backwards compatibility.
+ * Error handling when tiles in use are not connected.
+ * Changed spot_no array from uint16 to uint32 for great spot number support.
+ * Registration pipeline now uses DAPI images when necessary.
+ * Registration pipeline now computes camera transforms from fluorescent beads.
+ * Shrunk large .png image sizes to reduce repository download size

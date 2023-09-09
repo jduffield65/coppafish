@@ -71,65 +71,74 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     isolated = nbp_ref_spots.isolated
 
     # 1. Remove background from spots and normalise channels and rounds
+    # Find middle tile to calculate intensity threshold
     spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
-    initial_norm_factor = np.asarray(
-        [
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-            [1026., 3143., 3528., 2265., 2914., 4645., 1035.],
-        ]
-    )
-    initial_bleed_matrix = np.asarray(
-        [[9.79192617e-01, 6.20064412e-02, -4.80605505e-02,
-          2.39489200e-05, -6.04304194e-05, 1.16180039e-03,
-          1.60140959e-03],
-         [1.99506111e-01, 9.97009521e-01, 6.46103461e-02,
-          1.56873061e-02, -2.11249719e-03, 1.16501269e-04,
-          1.15933539e-03],
-         [-1.43755805e-02, 3.52732605e-02, 4.20121650e-02,
-          9.29636525e-01, 3.51303239e-02, 1.36899301e-03,
-          2.88171877e-03],
-         [-3.12237255e-02, -1.50174994e-02, 9.92304828e-01,
-          5.75792215e-02, 7.74624706e-03, 3.25577956e-02,
-          -7.38513698e-03],
-         [-1.00575049e-02, 2.36520367e-02, 7.09033453e-02,
-          3.63590898e-01, 9.99310565e-01, 1.06226493e-02,
-          9.08942557e-03],
-         [-9.81640238e-03, 4.84251430e-03, 4.51535144e-02,
-          -3.77668693e-03, 8.93186792e-03, 9.99400522e-01,
-          2.26934462e-02],
-         [1.90159366e-04, 8.63827717e-03, -3.95835617e-03,
-          1.36668035e-03, 7.47015485e-05, 4.74429838e-03,
-          9.99667763e-01]]
-    )
-    spot_colours_background_removed = spot_colours_background_removed / initial_norm_factor
-    colour_norm_factor, spot_brightness = normalise_rc(spot_colours=spot_colours_background_removed[isolated],
-                                                       initial_bleed_matrix=initial_bleed_matrix)
-    # Normalise initial bleed matrix across channels, then across dyes
-    colour_norm_factor = np.median(colour_norm_factor, axis=0)
-    spot_colours = spot_colours_background_removed / colour_norm_factor
-    initial_bleed_matrix = initial_bleed_matrix / colour_norm_factor[:, None]
-    initial_bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
-    colour_norm_factor = colour_norm_factor * initial_norm_factor
-    intensity = get_spot_intensity(spot_colors=spot_colours)
+    median_tile = int(np.median(nbp_basic.use_tiles))
+    dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
+    central_tile = nbp_basic.use_tiles[np.argmin(dist)]
+    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
+                                   central_tile, transform, nbp_file, nbp_basic,
+                                   return_in_bounds=True)[0]
+    # normalise pixel colours by round and channel and then remove background
+    # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
+    colour_norm_factor = np.percentile(abs(pixel_colors), 99.9, axis=0)
+    spot_colours = spot_colours_background_removed / colour_norm_factor[None]
+
+    # save pixel intensity and delete pixel_colors to save memory
+    pixel_intensity = get_spot_intensity(np.abs(pixel_colors / colour_norm_factor[None]))
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
+    del pixel_colors
 
     # 2. Bleed matrix calculation and bled codes
-    intense = intensity > np.percentile(intensity, 90)
-    bleed_matrix, _ = compute_bleed_matrix(bleed_matrix_norm=initial_bleed_matrix,
-                                           spot_colours=spot_colours[isolated * intense],
-                                           spot_tile=nbp_ref_spots.tile[isolated],
-                                           n_tiles=len(nbp_basic.use_tiles))
-    # If bleed_matrix was not split by tile, remove dim 0
-    if bleed_matrix.shape[0] == 1:
-        bleed_matrix = bleed_matrix[0]
-    # If bleed_matrix was not split by round, repeat bleed_matrix for each round
-    if bleed_matrix.shape[0] == 1:
-        bleed_matrix = np.repeat(bleed_matrix, n_rounds, axis=0)
+    # 2.1 Calculate bleed matrix, this just involves normalising the bleed matrix template with the colour norm factor,
+    # although if we are not creating a new bleed matrix for all rounds, we need to normalise the bleed matrix template
+    # with a median of the colour norm factor across rounds.
+    dye_info = \
+        {'ATTO425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
+                              51750, 2817, 226, 100, 22559, 124, 124, 100, 100,
+                              260, 169, 100, 100, 114, 134, 100, 100, 99,
+                              103]),
+         'AF488': np.array([104, 370, 162, 114, 62454, 809, 2081, 254, 102,
+                            45360, 8053, 368, 100, 40051, 3422, 309, 100, 132,
+                            120, 120, 100, 100, 100, 130, 99, 100, 99,
+                            103]),
+         'DY520XL': np.array([103, 114, 191, 513, 55456, 109, 907, 5440, 99,
+                              117, 2440, 8675, 100, 25424, 5573, 42901, 100, 100,
+                              10458, 50094, 100, 100, 324, 4089, 100, 100, 100,
+                              102]),
+         'AF532': np.array([106, 157, 313, 123, 55021, 142, 1897, 304, 101,
+                            1466, 7980, 487, 100, 31753, 49791, 4511, 100, 849,
+                            38668, 1919, 100, 100, 100, 131, 100, 100, 99,
+                            102]),
+         'AF594': np.array([104, 113, 1168, 585, 65378, 104, 569, 509, 102,
+                            119, 854, 378, 100, 42236, 5799, 3963, 100, 100,
+                            36766, 14856, 100, 100, 3519, 3081, 100, 100, 100,
+                            103]),
+         'AF647': np.array([481, 314, 124, 344, 50254, 125, 126, 374, 98,
+                            202, 152, 449, 100, 26103, 402, 5277, 100, 101,
+                            1155, 27251, 100, 100, 442, 65457, 100, 100, 100,
+                            118]),
+         'AF750': np.array([106, 114, 107, 127, 65531, 108, 124, 193, 104,
+                            142, 142, 153, 100, 55738, 183, 168, 100, 99,
+                            366, 245, 100, 100, 101, 882, 100, 100, 99,
+                            2219])}
+    # initial_bleed_matrix is n_channels x n_dyes
+    initial_bleed_matrix = np.zeros((len(nbp_basic.use_channels), len(nbp_basic.dye_names)))
+    # Populate initial_bleed_matrix with dye info for all channels in use
+    for i, dye in enumerate(nbp_basic.dye_names):
+        initial_bleed_matrix[:, i] = dye_info[dye][use_channels]
+    # normalise bleed matrix across channels, then once again across dyes so each column has norm 1
+    bleed_norm = np.median(colour_norm_factor, axis=0)
+    # Want to divide each row by bleed_norm, so reshape bleed_norm to be n_channels x n_rounds
+    bleed_norm = np.repeat(bleed_norm[:, np.newaxis], n_rounds, axis=1)
+    initial_bleed_matrix = initial_bleed_matrix / bleed_norm
+    # now normalise each column (dye) to have norm 1
+    bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
+    # Repeat bleed n_rounds times along a new 0th axis
+    bleed_matrix = np.repeat(bleed_matrix[np.newaxis, :, :], n_rounds, axis=0)
+    intensity = get_spot_intensity(spot_colors=spot_colours)
 
+    # 2.2 Calculate bled codes and gene probabilities
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
     gene_codes = np.array([[int(i) for i in gene_codes[j]] for j in range(len(gene_codes))])
     n_genes = len(gene_names)
@@ -147,8 +156,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     gene_efficiency, use_ge, _ = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
                                                          gene_no=gene_no, gene_score=gene_score,
                                                          gene_codes=gene_codes, intensity=intensity,
-                                                         score_threshold=0.9,
-                                                         intensity_threshold=np.percentile(intensity, 50))
+                                                         score_threshold=0.8,
+                                                         intensity_threshold=np.percentile(intensity, 25))
     # 3.2 Update bled codes
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 
@@ -180,17 +189,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
                                                     gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
-    # Find middle tile to calculate intensity threshold
-    median_tile = int(np.median(nbp_basic.use_tiles))
-    dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
-    central_tile = nbp_basic.use_tiles[np.argmin(dist)]
-    # Backward compatibility here as OMP requires nbp.abs_intensity_percentile.
-    rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
-    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   central_tile, transform, nbp_file, nbp_basic,
-                                   return_in_bounds=True)[0]
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / nbp.color_norm_factor[rc_ind])
-    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
     nbp.gene_efficiency_intensity_thresh = 0
 
     return nbp, nbp_ref_spots

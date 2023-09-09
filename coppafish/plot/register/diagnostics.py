@@ -40,7 +40,7 @@ class RegistrationViewer:
         self.transform = nb.register.initial_transform
         self.z_scale = nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy
         self.r_ref, self.c_ref = nbp_basic.anchor_round, nb.basic_info.anchor_channel
-        if 'round_registration_channel' not in nb.get_config()['register']:
+        if nb.get_config()['register']['round_registration_channel'] is None:
             self.round_registration_channel = nbp_basic.anchor_channel
         else:
             self.round_registration_channel = nb.get_config()['register']['round_registration_channel']
@@ -637,7 +637,7 @@ def view_round_regression_scatter(nb: Notebook, t: int, r: int):
     # Transpose shift and position variables so coord is dimension 0, makes plotting easier
     shift = nb.register_debug.round_shift[t, r]
     corr = nb.register_debug.round_shift_corr[t, r]
-    position = nb.register_debug.position[t, r]
+    position = nb.register_debug.position
     initial_transform = nb.register_debug.round_transform_raw[t, r]
     icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, r, nb.basic_info.anchor_channel])
 
