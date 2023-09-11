@@ -80,7 +80,7 @@
       "*3D*: `tile[t][r][c]` is the *npy* file containing all z planes for tile $t$, round $r$, channel $c$"],
     "fluorescent_bead_path": ["String or None",
       "Path to *nd2* file containing fluorescent beads. `None` if not used."],
-    "pre_seq_round": ["String or None",
+    "pre_seq": ["String or None",
       "Name of *nd2* file for the pre-sequencing round. `None` if not used"]
   },
 
@@ -179,7 +179,12 @@
       "All possible pixel values in saved *npy* images i.e. length is approx `np.iinfo(np.uint16).max`"],
     "hist_counts": ["Numpy integer array `[n_pixel_values x n_rounds x n_channels]`",
       "`hist_counts[i, r, c]` is the number of pixels across all tiles in round $r$, channel $c$",
-      "which had the value `hist_values[i]`."]
+      "which had the value `hist_values[i]`."],
+    "bg_scale_offset": ["Numpy float array `[n_tiles x n_rounds x n_channels x 2]`",
+      "`bg_scale[t, r, c, 0]` is the scale factor applied to the preseq round of tile $t$, channel $c$",
+      "to match the colour profile of the sequencing image in tile t, round r, channel c.",
+      "bg_scale_offset[t, r, c,1] is the term we add on to this. ",
+      "None if not using preseq round."]
   },
 
   "extract_debug":
@@ -326,9 +331,7 @@
     "round_transform": [" n_tiles x n_rounds x 4 x 3 ndarray:",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
     "channel_transform": ["n_tiles x n_channels x 4 x 3 ndarray:",
-      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."],
-    "bg_scale": ["n_tiles x n_rounds x n_channels ndarray:",
-      " scale factor applied to background of each tile in each round and channel to match colour profile."]
+      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."]
   },
 
   "register_debug":

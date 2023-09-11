@@ -31,12 +31,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
             but may be useful for debugging purposes.
     """
+    # TODO: Refactor this function to make it more readable
     # Check scaling won't cause clipping when saving as uint16
     scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
     if config['scale_norm'] >= scale_norm_max:
         raise ValueError(f"\nconfig['extract']['scale_norm'] = {config['scale_norm']} but it must be below "
                          f"{scale_norm_max}")
-
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config['deconvolve'] = False  # only deconvolve if 3d pipeline
@@ -65,6 +65,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     if config['r_dapi'] is None:
         if config['r_dapi_auto_microns'] is not None:
             config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
+    if config['pre_seq_blur_radius'] is None:
+        config['pre_seq_blur_radius'] = config['r1']
     nbp_debug.r1 = config['r1']
     nbp_debug.r2 = config['r2']
     nbp_debug.r_dapi = config['r_dapi']
@@ -187,7 +189,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
-        round_files = round_files + [nbp_file.preseq]
+        round_files = round_files + [nbp_file.pre_seq]
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
         n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
@@ -325,9 +327,10 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 # pre-seq round smoothed on each z-plane with a gaussian filter of radius
                                 # config['pre_seq_blur_radius']
                                 # TODO: Maybe replace gaussian with something quicker
-                                for z in tqdm(nbp_basic.use_z):
-                                    print(f"Pre-seq tile {t}, channel {c}, z-plane {z}")
-                                    im[z] = gaussian(im[:, :, z], config['pre_seq_blur_radius'], truncate=3)
+                                print(f"Pre-seq tile {t}, channel {c}, z-plane {z}")
+                                for z in tqdm(range(len(nbp_basic.use_z))):
+                                    im[:, :, z] = gaussian(im[:, :, z], config['pre_seq_blur_radius'], truncate=3,
+                                                     preserve_range=True)
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
                         else:
@@ -350,5 +353,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_anchor_tile = None
         nbp_debug.scale_anchor_z = None
         nbp_debug.scale_anchor = None
+    # add a variable for bg_scale
+    nbp.bg_scale_offset = None
 
     return nbp, nbp_debug

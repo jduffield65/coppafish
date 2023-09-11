@@ -74,7 +74,7 @@ _options = {
             'big_anchor_image': 'maybe_str',
             'pciseq': 'list_str',
             'fluorescent_bead_path': 'maybe_str',
-            'pre_seq_round': 'maybe_str'
+            'pre_seq': 'maybe_str'
         },
     'extract':
         {
@@ -103,7 +103,8 @@ _options = {
             'n_clip_error': 'maybe_int',
             'n_clip_error_images_thresh': 'int',
             'num_rotations': 'int',
-            'continuous_dapi': 'bool'
+            'continuous_dapi': 'bool',
+            'pre_seq_blur_radius': 'maybe_int'
         },
     'find_spots':
         {

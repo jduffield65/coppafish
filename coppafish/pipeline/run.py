@@ -189,7 +189,7 @@ def run_register(nb: setup.Notebook):
     config = nb.get_config()
     # if not all(nb.has_page(["register", "register_debug"])):
     if not nb.has_page("register"):
-        nbp, nbp_debug = register(nb.basic_info, nb.file_names, nb.find_spots, config['register'],
+        nbp, nbp_debug = register(nb.basic_info, nb.file_names, nb.extract, nb.find_spots, config['register'],
                                   np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant',
                                          constant_values=1))
         nb += nbp

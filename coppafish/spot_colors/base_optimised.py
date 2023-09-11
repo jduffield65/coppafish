@@ -49,7 +49,7 @@ def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarr
 def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_file: NotebookPage,
                     nbp_basic: NotebookPage, use_rounds: Optional[List[int]] = None,
                     use_channels: Optional[List[int]] = None,return_in_bounds: bool = False,
-                    bg_scale: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, jnp.ndarray]]:
+                    bg_scale_offset: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, jnp.ndarray]]:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
@@ -89,8 +89,10 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
             Otherwise, `spot_colors` will be returned for all the given `yxz_base` but if spot `s` is out of bounds on
             round `r`, channel `c`, then `spot_colors[s, r, c] = invalid_value = -nbp_basic.tile_pixel_value_shift`.
             This is the only scenario for which `spot_colors = invalid_value` due to clipping in the extract step.
-        bg_scale: `float [n_tiles x n_use_rounds x n_use_channels]`. These are the numbers that we multiply the
-        preseq image by if we want to remove background. If None, then no background subtraction is done.
+        bg_scale_offset: 'float [n_tiles x n_rounds x n_channels_use x 2]' normalisation factor for each
+            of the tiles/rounds and channels. bg_round[t, c] * bg_scale_offset[t, r, c, 0] + bg_scale_offset[t, r, c, 1]
+            will equalise the background brightness profile to the same as that of tile t, round r, channel c. If None,
+            no normalisation will be performed.
 
     Returns:
         - `spot_colors` - `int32 [n_spots x n_rounds_use x n_channels_use]` or
@@ -100,7 +102,7 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
             If `return_in_bounds`, the `yxz_base` corresponding to spots in bounds for all `use_rounds` / `use_channels`
             will be returned. It is likely that `n_spots_in_bounds` won't be the same as `n_spots`.
     """
-    if bg_scale is not None and nbp_basic.use_preseq is False:
+    if bg_scale_offset is not None and nbp_basic.use_preseq is False:
         raise ValueError("bg_scale is not None but nbp_basic.use_preseq is False")
     if use_rounds is None:
         use_rounds = nbp_basic.use_rounds

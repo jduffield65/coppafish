@@ -10,8 +10,8 @@ from ..register.base import icp, regularise_transforms, round_registration, chan
 from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data, yxz_to_zyx
 
 
-def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: NotebookPage, config: dict,
-             tile_origin: np.ndarray):
+def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
+             nbp_find_spots: NotebookPage, config: dict, tile_origin: np.ndarray) -> NotebookPage:
     """
     Registration pipeline. Returns register Notebook Page.
     Finds affine transforms by using linear regression to find the best matrix (in the least squares sense) taking a
@@ -23,6 +23,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     Args:
         nbp_basic: (NotebookPage) Basic Info notebook page
         nbp_file: (NotebookPage) File Names notebook page
+        nbp_extract: (NotebookPage) Extract notebook page
         nbp_find_spots: (NotebookPage) Find Spots notebook page
         config: Register part of the config dictionary
         tile_origin: n_tiles x 3 ndarray of tile origins
@@ -157,6 +158,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
         with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
             pickle.dump(registration_data, f)
 
+    # TODO: Save preseq reg data as sep variables
+    # TODO: Save colour norm factors in nbp_extract_debug (have option for overwrite)
+    # TODO: Have option for overwrite in nbp_find_spots with bg subtraction
     # Add round statistics to debugging page.
     # First add the round registration statistics
     nbp_debug.position = registration_data['round_registration']['position']
@@ -181,7 +185,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
     # Load in the middle z-plane of each tile and compute the scale factors to be used when removing background
     # fluorescence
     if nbp_basic.use_preseq:
-        bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
+        nbp_extract.finalized = False
+        del nbp_extract.bg_scale_offset # Delete this so that it is not saved to file
+        bg_scale_offset = np.zeros((n_tiles, n_rounds, n_channels,2))
         for t, c in tqdm(itertools.product(use_tiles, use_channels)):
             preseq = load_tile(nbp_file, nbp_basic, t=t, r=n_rounds + 1, c=c,
                                yxz=[None, None, [int(np.median(nbp_basic.use_z))]])
@@ -189,9 +195,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_find_spots: No
                 print(f"Computing background scale for tile {t}, round {r}, channel {c}")
                 seq = load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
                                 yxz=[None, None, [int(np.median(nbp_basic.use_z))]])
-                bg_scale[t, r, c] = brightness_scale(preseq, seq, 90)
-        nbp.bg_scale = bg_scale
-    else:
-        nbp.bg_scale = None
+                bg_scale_offset[t, r, c] = brightness_scale(preseq, seq, 90)
+        nbp_extract.bg_scale_offset = bg_scale_offset
+        nbp_extract.finalized = True
 
     return nbp, nbp_debug
