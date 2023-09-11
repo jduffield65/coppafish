@@ -89,6 +89,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             spot_info['spot_yxz'] = np.vstack((spot_info['spot_yxz'], local_yxz))
             spot_info['spot_no'][t, r, c] = local_yxz.shape[0]
             spot_info['completed'][t, r, c] = True
+            assert spot_info['spot_yxz'].shape[0] == np.sum(spot_info['spot_no']), \
+                "spot_yxz and spot_no do not match. Tile {}, round {}, channel {}".format(t, r, c)
             np.savez(nbp_file.spot_details_info, spot_info['spot_yxz'], spot_info['spot_no'], spot_info['isolated'],
                      spot_info['completed'])
             pbar.update(1)

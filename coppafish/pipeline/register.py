@@ -90,7 +90,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                            for r in use_rounds]
             if nbp_basic.use_preseq:
                 round_image += [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t,
-                                                     r=n_rounds+nbp_basic.use_anchor+nbp_basic.use_preseq,
+                                                     r=n_rounds+nbp_basic.use_anchor+nbp_basic.use_preseq-1,
                                                      c=round_registration_channel))]
             round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
             # Now save the data
@@ -113,7 +113,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
 
     # Now combine all of these into single sub-vol transform array via composition
     for t in use_tiles:
-        for r in use_rounds + [n_rounds + 1] * nbp_basic.use_preseq:
+        for r in use_rounds + [n_rounds] * nbp_basic.use_preseq:
             for c in use_channels:
                 registration_data['initial_transform'][t, r, c] = \
                     zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
