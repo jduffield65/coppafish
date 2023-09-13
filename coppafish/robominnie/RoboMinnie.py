@@ -47,7 +47,7 @@ class RoboMinnie:
     Usage:
     ------
     Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
-        `RoboMinnie.py` for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use `Compare_Spots_OMP` to \
+        `RoboMinnie.py` functions for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use `Compare_Spots_OMP` to \
         evaluate OMP results.
     """
     #TODO: Implementation of more than 1 tile
@@ -137,7 +137,7 @@ class RoboMinnie:
 
         from numpy.fft import fftshift, ifftshift
         from scipy.fft import fftn, ifftn
-        
+
         # True spatial scale should be maintained regardless of the image size, so we
         # scale it as such.
         self.true_noise_spatial_scale = noise_spatial_scale *  np.asarray([*self.n_yx, 10*self.n_planes])
