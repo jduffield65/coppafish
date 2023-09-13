@@ -38,13 +38,19 @@ class RoboMinnie:
     """
     RoboMinnie
     ==========
-    The fastest coppafish integration testing
+    The fastest coppafish integration testing suite
     
     Provides:
     ---------
     1. Single tile, modular, customisable synthetic data generation for coppafish
     2. Coppafish raw .npy file generation for pipeline running
     3. Coppafish scoring using ground-truth spot data
+
+    Usage:
+    ------
+    Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
+        `RoboMinnie.py` for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use `Compare_Spots_OMP` to \
+        evaluate OMP results.
     """
     #TODO: Implementation of more than 1 tile
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
@@ -486,7 +492,7 @@ class RoboMinnie:
         return instance
 
 
-    def RunCoppafish(self, time_pipeline : bool = True, jax_profile_omp : bool = False) -> None:
+    def Run_Coppafish(self, time_pipeline : bool = True, jax_profile_omp : bool = False) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
