@@ -50,7 +50,8 @@ class RoboMinnie:
         `RoboMinnie.py` functions for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use \
         `Compare_Spots_OMP` to evaluate OMP results.
     """
-    #TODO: Implementation of more than 1 tile
+    #TODO: Multi-tile support
+    #TODO: Presequence support
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
         n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_preseq : bool = False, 
         anchor_channel : int = 0, seed : int = 0) -> None:
@@ -161,13 +162,13 @@ class RoboMinnie:
     def Generate_Random_Noise(self, noise_amplitude : float, noise_std : float, noise_mean : float = 0, 
         noise_type : str = 'normal', include_anchor : bool = True, include_preseq : bool = True) -> None:
         """
-        Superimpose random noise onto every pixel individually.
+        Superimpose random, white noise onto every pixel individually.
 
         Args:
             noise_amplitude(float): Maximum amplitude of abs(noise)
-            noise_std(float): Standard deviation of random noise
+            noise_std(float): Standard deviation/width of random noise
             noise_mean(float, optional): Mean of random noise. Default: 0
-            noise_type(str ('normal', 'uniform'), optional): Type of random noise to apply. Default: 'normal'
+            noise_type(str('normal' or 'uniform'), optional): Type of random noise to apply. Default: 'normal'
             include_anchor(bool, optional): Whether to apply random noise to anchor round. Default: true
             include_preseq(bool, optional): Whether to apply random noise to presequence rounds. Default: true
         """
@@ -187,8 +188,13 @@ class RoboMinnie:
             if include_preseq and self.include_preseq:
                 preseq_noise = rng.normal(noise_mean, noise_std, size=self.preseq_shape)
         elif noise_type == 'uniform':
-            #TODO: Implement
-            raise NotImplementedError('Uniform random noise not implemented yet')
+            noise = rng.uniform(noise_mean - noise_std/2, noise_mean+noise_std/2, size=self.shape)
+            if include_anchor and self.include_anchor:
+                anchor_noise = \
+                    rng.uniform(noise_mean - noise_std/2, noise_mean+noise_std/2, size=self.anchor_shape)
+            if include_preseq and self.include_preseq:
+                preseq_noise = \
+                    rng.uniform(noise_mean - noise_std/2, noise_mean+noise_std/2, size=self.preseq_shape)
         else:
             raise ValueError(f'Unknown noise type: {noise_type}')
         
