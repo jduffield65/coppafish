@@ -3,7 +3,6 @@ from coppafish.call_spots.base import get_non_duplicate, get_bled_codes, compute
 from coppafish.call_spots.dot_product_optimised import dot_product_score_no_weight, dot_product_score
 from coppafish.call_spots.qual_check_optimised import get_spot_intensity
 import numpy as np
-from jax import numpy as jnp
 
 
 def test_get_non_duplicate():
