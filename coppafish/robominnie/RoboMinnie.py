@@ -13,8 +13,6 @@
 # Refactored and expanded by Paul Shuker, September 2023
 import os
 import numpy as np
-from numpy.fft import fftshift, ifftshift
-from scipy.fft import fftn, ifftn
 import scipy.stats
 import pandas
 import dask.array
@@ -136,6 +134,10 @@ class RoboMinnie:
         """
         self.instructions.append(_funcname())
         print('Generating pink noise')
+
+        from numpy.fft import fftshift, ifftshift
+        from scipy.fft import fftn, ifftn
+        
         # True spatial scale should be maintained regardless of the image size, so we
         # scale it as such.
         self.true_noise_spatial_scale = noise_spatial_scale *  np.asarray([*self.n_yx, 10*self.n_planes])
