@@ -47,8 +47,8 @@ class RoboMinnie:
     Usage:
     ------
     Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
-        `RoboMinnie.py` functions for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use `Compare_Spots_OMP` to \
-        evaluate OMP results.
+        `RoboMinnie.py` functions for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use \
+        `Compare_Spots_OMP` to evaluate OMP results.
     """
     #TODO: Implementation of more than 1 tile
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
