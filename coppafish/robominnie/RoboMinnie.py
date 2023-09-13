@@ -70,8 +70,8 @@ class RoboMinnie:
             include_anchor (bool, optional): Whether to include the anchor round. Default:  true
             include_preseq (bool, optional): Whether to include the pre-sequence round. Default: false
             anchor_channel (int, optional): The anchor channel. Default: 0.
-            seed (int, optional): Seed used throughout the generation of random data. Default: 0 for \
-                reproducible output.
+            seed (int, optional): Seed used throughout the generation of random data, specify integer value for \
+                reproducible output. If None, seed is randomly picked. Default: 0.
         """
         self.n_channels = n_channels
         self.n_tiles = n_tiles
@@ -652,7 +652,8 @@ class RoboMinnie:
             for match_index in matches_indices:
                 omp_gene_name = \
                     str(list(self.codes.keys())[omp_gene_numbers[s]])
-                true_gene_name = str(self.true_spot_identities[matches[match_index][0]]) # Actual true spot gene names as strings
+                # Actual true spot gene names as strings
+                true_gene_name = str(self.true_spot_identities[matches[match_index][0]])
                 matching_gene = omp_gene_name == true_gene_name
                 if matching_gene:
                     true_positives += 1
