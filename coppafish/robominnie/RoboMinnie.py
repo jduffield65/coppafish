@@ -47,8 +47,8 @@ class RoboMinnie:
     Usage:
     ------
     Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
-        `RoboMinnie.py` functions for choices). Call `Save_Coppafish` then `Run_Coppafish`. Use \
-        `Compare_Spots_OMP` to evaluate OMP results.
+        ``RoboMinnie.py`` functions for choices). Call ``Save_Coppafish`` then ``Run_Coppafish``. Use \
+        ``Compare_Spots_OMP`` to evaluate OMP results.
     """
     #TODO: Multi-tile support
     #TODO: Presequence support
