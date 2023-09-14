@@ -5,6 +5,8 @@ import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import affine_transform
 from skimage.registration import phase_cross_correlation
+from skimage.filters import gaussian
+from .. import utils
 from ..setup import NotebookPage
 from ..utils.npy import load_tile
 from ..find_spots import spot_yxz
@@ -14,7 +16,8 @@ from ..register.preprocessing import compose_affine, invert_affine, zyx_to_yxz_a
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
-             nbp_find_spots: NotebookPage, config: dict, tile_origin: np.ndarray) -> NotebookPage:
+             nbp_find_spots: NotebookPage, config: dict, tile_origin: np.ndarray,
+             pre_seq_blur_radius: float, num_rotations: int) -> NotebookPage:
     """
     Registration pipeline. Returns register Notebook Page.
     Finds affine transforms by using linear regression to find the best matrix (in the least squares sense) taking a
@@ -30,6 +33,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         nbp_find_spots: (NotebookPage) Find Spots notebook page
         config: Register part of the config dictionary
         tile_origin: n_tiles x 3 ndarray of tile origins
+        pre_seq_blur_radius: Radius of gaussian blur to apply to pre-seq round images
+        num_rotations: Number of rotations to apply to each tile
 
     Returns:
         nbp: (NotebookPage) Register notebook page
@@ -213,6 +218,14 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
 
+    # Now blur the pre seq round images
+    print(f" Blurring pre-seq tile {t}, channel {c}")
+    for t, c in tqdm(itertools.product(use_tiles, use_channels)):
+        im = load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c)
+        for z in tqdm(range(len(nbp_basic.use_z))):
+            im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3,
+                                   preserve_range=True)
+        utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=num_rotations)
     # Add round statistics to debugging page.
     nbp_debug.position = registration_data['round_registration']['position']
     nbp_debug.round_shift = registration_data['round_registration']['shift']
