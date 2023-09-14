@@ -48,9 +48,11 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     spot_info = fs.load_spot_info(nbp_file, nbp_basic)
     # Define use_indices as a [n_tiles x n_rounds x n_channels] boolean array where use_indices[t, r, c] is True if
     # we want to use tile `t`, round `r`, channel `c` to find spots.
-    use_indices = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.use_anchor, nbp_basic.n_channels),
+    use_indices = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq,
+                            nbp_basic.n_channels),
                            dtype=bool)
-    for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
+    for t, r, c in itertools.product(use_tiles, use_rounds + nbp_basic.use_preseq * [nbp_basic.pre_seq_round],
+                                     use_channels):
         use_indices[t, r, c] = True
     for t in use_tiles:
         use_indices[t, nbp_basic.anchor_round, nbp_basic.anchor_channel] = True
