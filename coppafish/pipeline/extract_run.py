@@ -66,7 +66,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         if config['r_dapi_auto_microns'] is not None:
             config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
     if config['pre_seq_blur_radius'] is None:
-        config['pre_seq_blur_radius'] = config['r1']
+        config['pre_seq_blur_radius'] = config['r2']
     nbp_debug.r1 = config['r1']
     nbp_debug.r2 = config['r2']
     nbp_debug.r_dapi = config['r_dapi']
@@ -261,11 +261,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                                          yxz=[None, None, nbp_debug.z_info])
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
-                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                            nbp_debug.clip_extract_scale[t, r, c] = \
-                                extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
-                                                         max_tiff_pixel_value, scale)
-                            if r != nbp_basic.anchor_round:
+                            if r != pre_seq_round:
+                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                nbp_debug.clip_extract_scale[t, r, c] = \
+                                    extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
+                                                             max_tiff_pixel_value, scale)
+                            if r != nbp_basic.anchor_round and r != pre_seq_round:
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     else:
                         im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
@@ -327,7 +328,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 # pre-seq round smoothed on each z-plane with a gaussian filter of radius
                                 # config['pre_seq_blur_radius']
                                 # TODO: Maybe replace gaussian with something quicker
-                                print(f"Pre-seq tile {t}, channel {c}, z-plane {z}")
+                                print(f"Pre-seq tile {t}, channel {c}")
                                 for z in tqdm(range(len(nbp_basic.use_z))):
                                     im[:, :, z] = gaussian(im[:, :, z], config['pre_seq_blur_radius'], truncate=3,
                                                      preserve_range=True)

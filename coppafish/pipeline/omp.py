@@ -19,7 +19,7 @@ except ImportError:
     import numpy as jnp
 
 
-def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
+def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage,
                    nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
                    transform: np.ndarray, shape_tile: Optional[int]) -> NotebookPage:
     """
@@ -167,7 +167,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
             pixel_colors_tz, pixel_yxz_tz = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
                                                                           np.arange(z_min, z_max)), int(t), transform,
-                                                            nbp_file, nbp_basic, return_in_bounds=True)
+                                                            nbp_file, nbp_basic, return_in_bounds=True,
+                                                            bg_scale_offset=nbp_extract.bg_scale_offset)
             if pixel_colors_tz.shape[0] == 0:
                 continue
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
@@ -310,7 +311,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
             nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                          transform, nbp_file, nbp_basic)
+                                                          transform, nbp_file, nbp_basic,
+                                                          bg_scale_offset=nbp_extract.bg_scale_offset)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
     nbp.intensity = np.asarray(get_spot_intensity(spot_colors_norm))

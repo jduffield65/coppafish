@@ -9,7 +9,7 @@ import warnings
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
-                         nbp_ref_spots: NotebookPage, transform: np.ndarray,
+                         nbp_ref_spots: NotebookPage, nbp_extract: NotebookPage, transform: np.ndarray,
                          overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
@@ -78,7 +78,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     central_tile = nbp_basic.use_tiles[np.argmin(dist)]
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
                                    central_tile, transform, nbp_file, nbp_basic,
-                                   return_in_bounds=True)[0]
+                                   return_in_bounds=True, bg_scale_offset=nbp_extract.bg_scale_offset)[0]
     # normalise pixel colours by round and channel and then remove background
     # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
     colour_norm_factor = np.percentile(abs(pixel_colors), 99.9, axis=0)

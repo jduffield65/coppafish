@@ -388,6 +388,9 @@ def set_basic_info_new(config: dict) -> NotebookPage:
     if os.path.isfile(os.path.join(config_file['input_dir'], config_file['pre_seq'] + '.nd2')):
         nbp.use_preseq = True
         nbp.pre_seq_round = nbp.anchor_round + 1
+        n_extra_rounds = nbp.n_extra_rounds
+        del nbp.n_extra_rounds
+        nbp.n_extra_rounds = n_extra_rounds + 1
     else:
         nbp.use_preseq = False
         nbp.pre_seq_round = None

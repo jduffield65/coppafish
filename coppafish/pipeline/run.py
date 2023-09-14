@@ -194,6 +194,16 @@ def run_register(nb: setup.Notebook):
                                          constant_values=1))
         nb += nbp
         nb += nbp_debug
+        # Save reg images
+        for t in nb.basic_info.use_tiles:
+            for r in nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round]:
+                generate_reg_images(nb, t, r, config['register']['round_registration_channel'])
+                print(t, r)
+            for c in nb.basic_info.use_channels:
+                generate_reg_images(nb, t, 3, c)
+                print(t, c)
+            generate_reg_images(nb, t, nb.basic_info.anchor_round, config['register']['round_registration_channel'])
+            generate_reg_images(nb, t, nb.basic_info.anchor_round, nb.basic_info.anchor_channel)
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
@@ -223,7 +233,7 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
             if they are all set to `None`, otherwise an error will occur.
     """
     if not nb.has_page('ref_spots'):
-        nbp = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots,
+        nbp = get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots, nb.extract,
                                   nb.stitch.tile_origin, nb.register.transform)
         nb += nbp  # save to Notebook with gene_no, score, score_diff, intensity = None.
                    # These will be added in call_reference_spots
@@ -232,7 +242,7 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
     if not nb.has_page("call_spots"):
         config = nb.get_config()
         nbp, nbp_ref_spots = call_reference_spots(config['call_spots'], nb.file_names, nb.basic_info, nb.ref_spots,
-                                                  transform=nb.register.transform,
+                                                  nb.extract, transform=nb.register.transform,
                                                   overwrite_ref_spots=overwrite_ref_spots)
         nb += nbp
     else:
@@ -257,7 +267,7 @@ def run_omp(nb: setup.Notebook):
         # Use tile with most spots on to find spot shape in omp
         spots_tile = np.sum(nb.find_spots.spot_no, axis=(1, 2))
         tile_most_spots = np.argmax(spots_tile)
-        nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.call_spots,
+        nbp = call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.extract, nb.call_spots,
                              nb.stitch.tile_origin, nb.register.transform, tile_most_spots)
         nb += nbp
 

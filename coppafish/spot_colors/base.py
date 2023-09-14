@@ -1,7 +1,5 @@
 from typing import Optional, List, Union, Tuple
 import numpy as np
-from sklearn.linear_model import HuberRegressor
-from skimage.registration import phase_cross_correlation
 from tqdm import tqdm
 from .. import utils
 from ..setup import NotebookPage
@@ -22,15 +20,6 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray,
             Affine transform to apply to ```yxz```, once centered and z units changed to ```yx_pixels```.
             ```transform[3, 2]``` is approximately the z shift in units of ```yx_pixels```.
             E.g. this is one of the transforms stored in ```nb['register']['transform']```.
-        tile_centre: ```float [3]```.
-            ```tile_centre[:2]``` are yx coordinates in ```yx_pixels``` of the centre of the tile that spots in
-            ```yxz``` were found on.
-            ```tile_centre[2]``` is the z coordinate in ```z_pixels``` of the centre of the tile.
-            E.g. for tile of ```yxz``` dimensions ```[2048, 2048, 51]```, ```tile_centre = [1023.5, 1023.5, 25]```
-            Each entry in ```tile_centre``` must be an integer multiple of ```0.5```.
-        z_scale: Scale factor to multiply z coordinates to put them in units of yx pixels.
-            I.e. ```z_scale = pixel_size_z / pixel_size_yx``` where both are measured in microns.
-            typically, ```z_scale > 1``` because ```z_pixels``` are larger than the ```yx_pixels```.
         tile_sz: ```int16 [3]```.
             YXZ dimensions of tile
 
@@ -162,26 +151,27 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         with tqdm(total=n_use_channels, disable=no_verbose) as pbar:
             pbar.set_description(f"Reading {n_spots} background spot_colors found on tile {t} from npy files")
             for c in range(n_use_channels):
-                transform_rc = transforms[t, nbp_basic.preseq_round, use_channels[c]]
+                transform_rc = transforms[t, nbp_basic.pre_seq_round, use_channels[c]]
                 pbar.set_postfix({'round': use_rounds[r], 'channel': use_channels[c]})
                 if transform_rc[0, 0] == 0:
                     raise ValueError(
-                        f"Transform for tile {t}, round {nbp_basic.preseq_round}, channel {use_channels[c]} is zero:"
+                        f"Transform for tile {t}, round {nbp_basic.pre_seq_round}, channel {use_channels[c]} is zero:"
                         f"\n{transform_rc}")
                 yxz_transform, in_range = apply_transform(yxz_base, transform_rc, tile_sz)
                 yxz_transform = yxz_transform[in_range]
                 if yxz_transform.shape[0] > 0:
                     # Read in the shifted uint16 colors here, and remove shift later.
                     if nbp_basic.is_3d:
-                        spot_colors[in_range, nbp_basic.preseq_round, c] = \
-                            utils.npy.load_tile(nbp_file, nbp_basic, t, nbp_basic.preseq_round, use_channels[c],
+                        bg_colours[in_range, c] = \
+                            utils.npy.load_tile(nbp_file, nbp_basic, t, nbp_basic.pre_seq_round, use_channels[c],
                                                 yxz_transform, apply_shift=False)
                 pbar.update(1)
         # subtract tile pixel shift value so that bg_colours are in range -15_000 to 50_000 (approx)
-        bg_colours = bg_colours - nbp_basic.tile_pixel_value_shift
+        valid = bg_colours > 0
+        bg_colours[valid] = bg_colours[valid] - nbp_basic.tile_pixel_value_shift
         # repeat bg_colours so it is the same shape as spot_colors
         bg_colours = np.repeat(bg_colours[:, None, :], n_use_rounds, axis=1)
-        bg_colours = bg_colours * bg_scale_offset[t, use_rounds, use_channels, 0][None] + \
+        bg_colours[valid] = bg_colours[valid] * bg_scale_offset[t, use_rounds, use_channels, 0][None] + \
                      bg_scale_offset[t, use_rounds, use_channels, 1][None]
     # Remove shift so now spots outside bounds have color equal to - nbp_basic.tile_pixel_shift_value.
     # It is impossible for any actual spot color to be this due to clipping at the extract stage.

@@ -3,11 +3,14 @@ import pickle
 import itertools
 import numpy as np
 from tqdm import tqdm
+from scipy.ndimage import affine_transform
+from skimage.registration import phase_cross_correlation
 from ..setup import NotebookPage
 from ..utils.npy import load_tile
 from ..find_spots import spot_yxz
 from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale
-from ..register.preprocessing import compose_affine, zyx_to_yxz_affine, load_reg_data, yxz_to_zyx
+from ..register.preprocessing import compose_affine, invert_affine, zyx_to_yxz_affine, yxz_to_zyx_affine, \
+    load_reg_data, yxz_to_zyx
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
@@ -45,7 +48,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     nbp, nbp_debug = NotebookPage("register"), NotebookPage("register_debug")
     use_tiles, use_rounds, use_channels = nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels
     n_tiles, n_rounds, n_channels = nbp_basic.n_tiles, nbp_basic.n_rounds, nbp_basic.n_channels
-
+    round_registration_channel = config['round_registration_channel']
+    if round_registration_channel is None:
+        round_registration_channel = nbp_basic.anchor_channel
     # Initialise variables for ICP step
     if nbp_basic.is_3d:
         neighb_dist_thresh = config['neighb_dist_thresh_3d']
@@ -81,9 +86,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t in uncompleted_tiles:
             # Load in the anchor image and the round images. Note that here anchor means anchor round, not necessarily
             # anchor channel
-            round_registration_channel = config['round_registration_channel']
-            if round_registration_channel is None:
-                round_registration_channel = nbp_basic.anchor_channel
             anchor_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round,
                                                 c=round_registration_channel))
             round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel))
@@ -94,10 +96,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                                                      c=round_registration_channel))]
             round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
             # Now save the data
-            registration_data['round_registration']['transform_raw'][t] = round_reg_data['transform']
-            registration_data['round_registration']['shift'][t] = round_reg_data['shift']
-            registration_data['round_registration']['shift_corr'][t] = round_reg_data['shift_corr']
-            registration_data['round_registration']['position'][t] = round_reg_data['position']
+            non_anchor_rounds = use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
+            registration_data['round_registration']['transform_raw'][t, non_anchor_rounds] = round_reg_data['transform']
+            registration_data['round_registration']['transform'][t, nbp_basic.anchor_round] = np.eye(3, 4)
+            registration_data['round_registration']['shift'][t, non_anchor_rounds] = round_reg_data['shift']
+            registration_data['round_registration']['shift_corr'][t, non_anchor_rounds] = round_reg_data['shift_corr']
+            registration_data['round_registration']['position'][t, non_anchor_rounds] = round_reg_data['position']
             registration_data['round_registration']['tiles_completed'].append(t)
             # Save the data to file
             with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
@@ -109,11 +113,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                                               tile_origin=np.roll(tile_origin, 1, axis=1),
                                               residual_threshold=config['residual_thresh'],
                                               use_tiles=nbp_basic.use_tiles,
-                                              use_rounds=nbp_basic.use_rounds)
+                                              use_rounds=nbp_basic.use_rounds +
+                                                         [nbp_basic.pre_seq_round] * nbp_basic.use_preseq)
 
     # Now combine all of these into single sub-vol transform array via composition
     for t in use_tiles:
-        for r in use_rounds + [n_rounds] * nbp_basic.use_preseq:
+        for r in use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq:
             for c in use_channels:
                 registration_data['initial_transform'][t, r, c] = \
                     zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
@@ -137,32 +142,78 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                                        nbp_find_spots.spot_no)
                 for r, c in itertools.product(use_rounds, use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
-                    # Only do ICP on non-degenerate cells with more than 100 spots
-                    if nbp_find_spots.spot_no[t, r, c] > config['icp_min_spots']:
-                        imaging_spots_trc = spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
-                        icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
-                            yxz_base=ref_spots_t,
-                            yxz_target=imaging_spots_trc,
-                            dist_thresh=neighb_dist_thresh,
-                            start_transform=registration_data['initial_transform'][t, r, c],
-                            n_iters=config['icp_max_iter'],
-                            robust=False)
-                    else:
-                        # Otherwise just use the starting transform
+                    # Only do ICP on non-degenerate cells with more than ~ 100 spots, otherwise just use the
+                    # starting transform
+                    if nbp_find_spots.spot_no[t, r, c] < config['icp_min_spots']:
+                        print(f"Tile {t}, round {r}, channel {c} has too few spots to run ICP. Using initial transform"
+                              f" instead.")
                         icp_transform[t, r, c] = registration_data['initial_transform'][t, r, c]
+                        continue
+                    imaging_spots_trc = spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
+                    icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
+                        yxz_base=ref_spots_t,
+                        yxz_target=imaging_spots_trc,
+                        dist_thresh=neighb_dist_thresh,
+                        start_transform=registration_data['initial_transform'][t, r, c],
+                        n_iters=config['icp_max_iter'],
+                        robust=False)
                     pbar.update(1)
         # Save ICP data
-        registration_data['icp'] = {'icp_transform': icp_transform, 'n_matches': n_matches, 'mse': mse,
+        registration_data['icp'] = {'transform': icp_transform, 'n_matches': n_matches, 'mse': mse,
                                     'converged': converged}
         # Save registration data externally
         with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
             pickle.dump(registration_data, f)
 
-    # TODO: Save preseq reg data as sep variables
-    # TODO: Save colour norm factors in nbp_extract_debug (have option for overwrite)
-    # TODO: Have option for overwrite in nbp_find_spots with bg subtraction
+    # If no fluorescent beads were provided, then we'd like to save the channel transforms we learnt from ICP
+    if nbp_file.fluorescent_bead_path is None:
+        # Find a tile where sum(converged) is maximised. Round will be chosen to be last round as z-scales are all
+        # close to 1
+        converged_sum = np.sum(registration_data['icp']['converged'], axis=(1, 2))
+        best_tile = np.argmax(converged_sum)
+        best_round = n_rounds - 1
+        # NOTE: Channel transforms always go from the anchor channel to the other channels, while round transforms
+        # will always go from the anchor round to the other rounds, but may be computed from any channel. This is
+        # assuming round transforms are independent of channel and channel transforms are independent of round.
+        for c in use_channels:
+            transform_rc = yxz_to_zyx_affine(registration_data['icp']['transform'][best_tile, best_round, c])
+            transform_r_ref_c = yxz_to_zyx_affine(registration_data['icp']['transform'][best_tile, best_round,
+                                                  nbp_basic.anchor_channel])
+            c_transform = compose_affine(transform_rc, invert_affine(transform_r_ref_c))
+            registration_data['channel_registration']['transform'][c] = c_transform
+
+    # Since the pre-sequencing round is not corrected in ICP, let's just do a small correction here
+    if nbp_basic.use_preseq:
+        if 'shift_correction' not in registration_data.keys():
+            registration_data['shift_correction'] = np.zeros((n_tiles, n_channels, 3))
+            for t, c in tqdm(itertools.product(use_tiles, use_channels)):
+                # compose the preseq round transform with the (possibly new) channel transform
+                registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c] = \
+                    zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
+                                                     registration_data['round_registration']['transform']
+                                                     [t, nbp_basic.pre_seq_round]))
+                # For each image, apply the transform and compute any residual shift. This gets around the problem that
+                # the round transform may vary slightly from channel to channel.
+                # To do this, take a central round and the preseq round and put them in the same coordinate system. Then
+                # compute the shift between them
+                transform_pre = yxz_to_zyx_affine(registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c])
+                transform_seq = yxz_to_zyx_affine(registration_data['icp']['transform'][t, 3, c])
+                # Load in the images (downsampled in x and y for speed)
+                seq_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=3, c=c))
+                seq_image = affine_transform(seq_image, transform_seq, order=0)
+                preseq_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c))
+                preseq_image = affine_transform(preseq_image, transform_pre, order=0)
+                shift = phase_cross_correlation(preseq_image, seq_image, upsample_factor=100)[0]
+                print(f"Tile {t}, channel {c} has shift correction {shift}")
+                registration_data['shift_correction'][t, c] = -shift
+                transform_pre[:3, 3] -= shift
+                registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c] = zyx_to_yxz_affine(transform_pre)
+
+    # Save registration data externally
+    with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
+        pickle.dump(registration_data, f)
+
     # Add round statistics to debugging page.
-    # First add the round registration statistics
     nbp_debug.position = registration_data['round_registration']['position']
     nbp_debug.round_shift = registration_data['round_registration']['shift']
     nbp_debug.round_shift_corr = registration_data['round_registration']['shift_corr']
@@ -180,7 +231,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     nbp.round_transform = registration_data['round_registration']['transform']
     nbp.channel_transform = registration_data['channel_registration']['transform']
     nbp.initial_transform = registration_data['initial_transform']
-    nbp.transform = registration_data['icp']['icp_transform']
+    # combine icp transform, channel transform and initial transform to get final transform
+    transform = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels, 4, 3))
+    transform[:, use_rounds] = registration_data['icp']['transform']
+    transform[:, nbp_basic.pre_seq_round] = registration_data['initial_transform'][:, nbp_basic.pre_seq_round]
+    nbp.transform = transform
 
     # Load in the middle z-plane of each tile and compute the scale factors to be used when removing background
     # fluorescence
@@ -188,14 +243,19 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         nbp_extract.finalized = False
         del nbp_extract.bg_scale_offset # Delete this so that it is not saved to file
         bg_scale_offset = np.zeros((n_tiles, n_rounds, n_channels,2))
-        for t, c in tqdm(itertools.product(use_tiles, use_channels)):
-            preseq = load_tile(nbp_file, nbp_basic, t=t, r=n_rounds + 1, c=c,
-                               yxz=[None, None, [int(np.median(nbp_basic.use_z))]])
-            for r in use_rounds:
-                print(f"Computing background scale for tile {t}, round {r}, channel {c}")
-                seq = load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
-                                yxz=[None, None, [int(np.median(nbp_basic.use_z))]])
-                bg_scale_offset[t, r, c] = brightness_scale(preseq, seq, 90)
+        num_z = nbp_basic.tile_centre[2].astype(int)
+        for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
+            print(f"Computing background scale for tile {t}, round {r}, channel {c}")
+            transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
+                                              new_origin=np.array([num_z-5, 0, 0]))
+            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([num_z-5, 0, 0]))
+            preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
+                                          yxz=[None, None, np.arange(num_z-5, num_z+5)]))
+            seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
+                                       yxz=[None, None, np.arange(num_z-5, num_z+5)]))
+            preseq = affine_transform(preseq, transform_pre, order=0)[5]
+            seq = affine_transform(seq, transform_seq, order=0)[5]
+            bg_scale_offset[t, r, c] = brightness_scale(preseq, seq)[0]
         nbp_extract.bg_scale_offset = bg_scale_offset
         nbp_extract.finalized = True
 

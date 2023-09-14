@@ -1,12 +1,11 @@
-import os
 import nd2
-import pickle
 import numpy as np
 from tqdm import tqdm
 from skimage.transform import hough_circle, hough_circle_peaks
 from skimage.feature import canny
 from sklearn.linear_model import HuberRegressor
 from scipy.spatial import KDTree
+from scipy.ndimage import affine_transform
 from scipy import stats
 from skimage.filters import sobel
 from coppafish.register.preprocessing import custom_shift, split_3d_image, replace_scale, populate_full, \
@@ -243,12 +242,15 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
 
         # Find the subvolume shifts
         shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
-
+        transform = huber_regression(shift, position, predict_shift=False)
+        adjusted_target = affine_transform(round_image[r], transform, order=0)
+        global_shift_correction = phase_cross_correlation(reference_image=adjusted_target, moving_image=anchor_image)[0]
+        transform[:, 3] += global_shift_correction
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
         round_registration_data['shift'].append(shift)
         round_registration_data['shift_corr'].append(corr)
         round_registration_data['position'].append(position)
-        round_registration_data['transform'].append(huber_regression(shift, position, predict_shift=False))
+        round_registration_data['transform'].append(transform)
         pbar.update(1)
     pbar.close()
     # Convert all lists to numpy arrays
@@ -569,16 +571,48 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile=9
         intensity_percentile: float brightness percentile such that all pixels with brightness less than this
             are used for regression
     Returns:
-        scale: float scale factor m
-        offset: float offset c
+        scale, offset:
+        sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression
+        sub_image_preseq: (sub_image_size, sub_image_size) ndarray of presequence image used for regression
     """
     # Find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
-    mask = seq < np.percentile(seq, intensity_percentile)
-    im_pre_masked = preseq.copy()[mask]
-    im_masked = seq.copy()[mask]
-    # Least squares to find im = m * im_pre + c best fit coefficients
-    # A is padded with ones to allow for an intercept, c
-    A = np.vstack([im_pre_masked.ravel(), np.ones(im_pre_masked.size)]).T
-    m, c = np.linalg.lstsq(A, im_masked, rcond=None)[0]
+    # Create 2 masks, and take the intersection of them
+    # Super important to have very well registered images for this to work, so to do this, we'll scan through 
+    # small sub-images, and find the shifts between them. We'll then do the brightness matching on the best 
+    # registered sub-images
+    assert preseq.shape == seq.shape, "Presequence and sequence images must have the same shape"
+    tile_size = seq.shape[0]
+    sub_image_size = 200
+    n_sub_images = int(tile_size / sub_image_size)
+    sub_image_shifts = np.zeros((n_sub_images, n_sub_images, 2))
+    sub_image_shift_score = np.zeros((n_sub_images, n_sub_images))
+    for i in range(n_sub_images):
+        for j in range(n_sub_images):
+            sub_image_preseq = preseq[i * sub_image_size:(i + 1) * sub_image_size,
+                              j * sub_image_size:(j + 1) * sub_image_size]
+            sub_image_seq = seq[i * sub_image_size:(i + 1) * sub_image_size,
+                            j * sub_image_size:(j + 1) * sub_image_size]
+            sub_image_shifts[i, j] = phase_cross_correlation(sub_image_preseq, sub_image_seq)[0]
+            sub_image_shift_score[i, j] = np.corrcoef(sub_image_preseq.ravel(),
+                                                      custom_shift(sub_image_seq, sub_image_shifts[i, j].astype(int))
+                                                      .ravel())[0, 1]
+    # Now find the best sub-image
+    best_sub_image = np.argwhere(sub_image_shift_score == np.nanmax(sub_image_shift_score))[0]
+    sub_image_seq = seq[best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
+                        best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
+    sub_image_preseq = preseq[best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
+                              best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
+    sub_image_seq = custom_shift(sub_image_seq, sub_image_shifts[best_sub_image[0], best_sub_image[1]].astype(int))
 
-    return m, c
+    # Now find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
+    mask_pre = sub_image_preseq < np.percentile(sub_image_preseq, intensity_percentile)
+    mask_seq = sub_image_seq < np.percentile(sub_image_seq, intensity_percentile)
+    mask = mask_pre & mask_seq
+    sub_image_preseq = sub_image_preseq[mask].ravel()
+    sub_image_seq = sub_image_seq[mask].ravel()
+    # Least squares to find im = m * im_pre + c best fit coefficients
+    # im_pre_masked_pad is padded with ones to allow for an intercept, c
+    sub_image_preseq = np.vstack([sub_image_preseq, np.ones(sub_image_preseq.shape[0])]).T
+    m, c = np.linalg.lstsq(sub_image_preseq, sub_image_seq, rcond=None)[0]
+
+    return np.array([m, c]), sub_image_seq, sub_image_preseq
