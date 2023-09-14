@@ -190,6 +190,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
         n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
+    else:
+        pre_seq_round = None
 
     n_clip_error_images = 0
     if config['n_clip_error'] is None:
