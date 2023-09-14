@@ -1,8 +1,8 @@
 import numpy as np
-from . import RoboMinnie
+from coppafish.robominnie import RoboMinnie
 import warnings
 
-output_dir = '/home/paul/Documents/coppafish/synthetic/robominnie_refactored'
+output_dir = '/home/paul/Documents/coppafish/robominnie-install/synthetic_output'
 codebook_path = '/home/paul/Documents/coppafish/synthetic/codebook.txt'
 
 # Produce the most basic synthetic data to run coppafish on and check if the spots are being detected

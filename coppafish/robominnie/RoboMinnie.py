@@ -23,6 +23,7 @@ import inspect
 import time
 import pickle
 from tqdm import tqdm, trange
+import bz2
 
 
 DEFAULT_INSTANCE_FILENAME = 'robominnie.pkl'
@@ -141,22 +142,22 @@ class RoboMinnie:
 
         # True spatial scale should be maintained regardless of the image size, so we
         # scale it as such.
-        self.true_noise_spatial_scale = noise_spatial_scale *  np.asarray([*self.n_yx, 10*self.n_planes])
+        true_noise_spatial_scale = noise_spatial_scale *  np.asarray([*self.n_yx, 10*self.n_planes])
         # Generate pink noise
-        self.pink_spectrum = 1 / (
-            1 + np.linspace(0, self.true_noise_spatial_scale[0], self.n_yx[0])[:,None,None]**2 +
-            np.linspace(0, self.true_noise_spatial_scale[1],     self.n_yx[1])[None,:,None]**2 +
-            np.linspace(0, self.true_noise_spatial_scale[2],     self.n_planes   )[None,None,:]**2
+        pink_spectrum = 1 / (
+            1 + np.linspace(0, true_noise_spatial_scale[0],  self.n_yx[0]) [:,None,None]**2 +
+            np.linspace(0,     true_noise_spatial_scale[1],  self.n_yx[1]) [None,:,None]**2 +
+            np.linspace(0,     true_noise_spatial_scale[2],  self.n_planes)[None,None,:]**2
         )
         rng = np.random.RandomState(self.seed)
-        self.pink_sampled_spectrum = \
-            self.pink_spectrum*fftshift(fftn(rng.randn(*self.n_yx, self.n_planes)))
-        self.pink_noise = np.abs(ifftn(ifftshift(self.pink_sampled_spectrum)))
-        self.pink_noise = \
-            (self.pink_noise - np.mean(self.pink_noise))/np.std(self.pink_noise) * noise_amplitude
-        self.image[:,:,:] += self.pink_noise
+        pink_sampled_spectrum = \
+            pink_spectrum*fftshift(fftn(rng.randn(*self.n_yx, self.n_planes)))
+        pink_noise = np.abs(ifftn(ifftshift(pink_sampled_spectrum)))
+        pink_noise = \
+            (pink_noise - np.mean(pink_noise))/np.std(pink_noise) * noise_amplitude
+        self.image[:,:,:] += pink_noise
         if self.include_anchor:
-            self.anchor_image[:,:] += self.pink_noise
+            self.anchor_image[:,:] += pink_noise
 
 
     def Generate_Random_Noise(self, noise_amplitude : float, noise_std : float, noise_mean : float = 0, 
@@ -295,7 +296,7 @@ class RoboMinnie:
         indices = np.indices(ind_size)-ind_size[:,None,None,None]//2
         spot_img = scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels).pdf(indices.transpose(1,2,3,0))
         for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), 
-            desc='Superimposing spots', ascii=True, unit='spots'):
+            desc='Superimposing spots', ascii=True, unit='spots', maxinterval=self.n_spots//10):
 
             p = np.asarray(p).astype(int)
             p_chan = np.round([self.n_channels//2, p[0], p[1], p[2]]).astype(int)
@@ -443,13 +444,15 @@ class RoboMinnie:
             f.writelines(self.instructions)
 
 
-    def Save(self, output_dir : str, filename : str = None) -> None:
+    def Save(self, output_dir : str, filename : str = None, compress : bool = False) -> None:
         """
-        Save RoboMinnie instance using the amazing tool pickle inside output_dir directory.
+        Save `RoboMinnie` instance using the amazing tool pickle inside output_dir directory.
 
         args:
             output_dir(str): 
-            filename(str, optional): Name of the pickle RoboMinnie object. Default: 'robominnie.pkl'
+            filename(str, optional): Name of the pickled `RoboMinnie` object. Default: 'robominnie.pkl'
+            compress(bool, optional): If True, compress pickle binary file using bzip2 compression in the \
+                default python package `bz2`. Default: False
         """
         self.instructions.append(_funcname())
         print('Saving RoboMinnie instance')
@@ -463,23 +466,29 @@ class RoboMinnie:
 
         instance_filepath = os.path.join(instance_output_dir, instance_filename)
         assert not os.path.isfile(instance_filepath), \
-            f'RoboMinnie instance already saved as {self.instance_filepath}'
+            f'RoboMinnie instance already saved as {instance_filepath}'
 
-        with open(instance_filepath, 'wb') as f:
-            pickle.dump(self, f)
+        if not compress:
+            with open(instance_filepath, 'wb') as f:
+                pickle.dump(self, f)
+        else:
+            with bz2.open(instance_filepath, 'wb', compresslevel=9) as f:
+                pickle.dump(self, f)
 
 
-    def Load(self, input_dir : str, filename : str = None, overwrite_self : bool = True):
+    def Load(self, input_dir : str, filename : str = None, overwrite_self : bool = True, compressed : bool = False):
         """
-        Load RoboMinnie instance using the handy pickled information saved inside input_dir.
+        Load `RoboMinnie` instance using the handy pickled information saved inside input_dir.
 
         args:
             input_dir(str): The directory where the RoboMinnie data is stored
             filename(str, optional): Name of the pickle RoboMinnie object. Default: 'robominnie.pkl'
             overwrite_self(bool, optional): If true, become the RoboMinnie instance loaded from disk
+            compressed(bool, optional): If True, try decompress pickle binary file assuming a bzip2 compression. \
+                Default: False
 
         Returns:
-            RoboMinnie class loaded
+            Loaded `RoboMinnie` class
         """
         self.instructions.append(_funcname())
         print('Loading RoboMinnie instance')
@@ -492,9 +501,13 @@ class RoboMinnie:
         
         assert os.path.isfile(instance_filepath), f'RoboMinnie instance not found at {instance_filepath}'
 
-        with open(instance_filepath, 'rb') as f:
-            instance : RoboMinnie = pickle.load(f)
-        
+        if not compressed:
+            with open(instance_filepath, 'rb') as f:
+                instance : RoboMinnie = pickle.load(f)
+        else:
+            with bz2.open(instance_filepath, 'rb') as f:
+                instance : RoboMinnie = pickle.load(f)
+
         if overwrite_self:
             self = instance
         return instance
