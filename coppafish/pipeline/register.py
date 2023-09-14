@@ -208,6 +208,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                 seq_image = affine_transform(seq_image, transform_seq, order=0)
                 preseq_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c))
                 preseq_image = affine_transform(preseq_image, transform_pre, order=0)
+                # Apply low pass (gaussian) filter to seq image (preseq image already has this applied). This will
+                # remove spots
+                seq_image = gaussian(seq_image, pre_seq_blur_radius, truncate=3, preserve_range=True)
                 shift = phase_cross_correlation(preseq_image, seq_image, upsample_factor=100)[0]
                 print(f"Tile {t}, channel {c} has shift correction {shift}")
                 registration_data['shift_correction'][t, c] = -shift

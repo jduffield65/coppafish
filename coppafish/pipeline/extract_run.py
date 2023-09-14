@@ -287,44 +287,44 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             im[:, bad_columns] = 0
                             # get_info is quicker on int32 so do this conversion first.
                             im = np.rint(im, np.zeros_like(im, dtype=np.int32), casting='unsafe')
-                            # only use image unaffected by strip_hack to get information from tile
-                            good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
-                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                nbp_debug.clip_extract_scale[t, r, c] = \
-                                extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
-                                                         hist_bin_edges, max_tiff_pixel_value, scale,
-                                                         nbp_debug.z_info)
+                            if r != pre_seq_round:
+                                # only use image unaffected by strip_hack to get information from tile
+                                good_columns = np.setdiff1d(np.arange(nbp_basic.tile_sz), bad_columns)
+                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                                    nbp_debug.clip_extract_scale[t, r, c] = \
+                                    extract.get_extract_info(im[:, good_columns], config['auto_thresh_multiplier'],
+                                                             hist_bin_edges, max_tiff_pixel_value, scale,
+                                                             nbp_debug.z_info)
 
-                            # Deal with pixels outside uint16 range when saving
-                            if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
-                                warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
-                                              f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
-                                              f"that will be clipped when converting to uint16.")
-                            if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_error']:
-                                n_clip_error_images += 1
-                                message = f"\nNumber of images for which more than {config['n_clip_error']} pixels " \
-                                          f"clipped in conversion to uint16 is {n_clip_error_images}."
-                                if n_clip_error_images >= config['n_clip_error_images_thresh']:
-                                    # create new Notebook to save info obtained so far
-                                    nb_fail_name = os.path.join(nbp_file.output_dir, 'notebook_extract_error.npz')
-                                    nb_fail = Notebook(nb_fail_name, None)
-                                    # change names of pages so can add extra properties not in json file.
-                                    nbp.name = 'extract_fail'
-                                    nbp_debug.name = 'extract_debug_fail'
-                                    nbp.fail_trc = np.array([t, r, c])  # record where failure occurred
-                                    nbp_debug.fail_trc = np.array([t, r, c])
-                                    nb_fail += nbp
-                                    nb_fail += nbp_debug
-                                    raise ValueError(f"{message}\nResults up till now saved as {nb_fail_name}.")
-                                else:
-                                    warnings.warn(
-                                        f"{message}\nWhen this reaches {config['n_clip_error_images_thresh']}"
-                                        f", the extract step of the algorithm will be interrupted.")
+                                # Deal with pixels outside uint16 range when saving
+                                if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
+                                    warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
+                                                  f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
+                                                  f"that will be clipped when converting to uint16.")
+                                if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_error']:
+                                    n_clip_error_images += 1
+                                    message = f"\nNumber of images for which more than {config['n_clip_error']} pixels " \
+                                              f"clipped in conversion to uint16 is {n_clip_error_images}."
+                                    if n_clip_error_images >= config['n_clip_error_images_thresh']:
+                                        # create new Notebook to save info obtained so far
+                                        nb_fail_name = os.path.join(nbp_file.output_dir, 'notebook_extract_error.npz')
+                                        nb_fail = Notebook(nb_fail_name, None)
+                                        # change names of pages so can add extra properties not in json file.
+                                        nbp.name = 'extract_fail'
+                                        nbp_debug.name = 'extract_debug_fail'
+                                        nbp.fail_trc = np.array([t, r, c])  # record where failure occurred
+                                        nbp_debug.fail_trc = np.array([t, r, c])
+                                        nb_fail += nbp
+                                        nb_fail += nbp_debug
+                                        raise ValueError(f"{message}\nResults up till now saved as {nb_fail_name}.")
+                                    else:
+                                        warnings.warn(
+                                            f"{message}\nWhen this reaches {config['n_clip_error_images_thresh']}"
+                                            f", the extract step of the algorithm will be interrupted.")
 
-                            if r != nbp_basic.anchor_round:
-                                nbp.hist_counts[:, r, c] += hist_counts_trc
-                            # delay the blurring of the pre seq round until after registration to give
-                            # better registration results.
+                                if r != nbp_basic.anchor_round:
+                                    nbp.hist_counts[:, r, c] += hist_counts_trc
+                            # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
                         else:
