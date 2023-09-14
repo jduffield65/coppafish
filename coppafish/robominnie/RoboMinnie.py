@@ -80,6 +80,7 @@ class RoboMinnie:
         self.n_planes = n_planes
         self.n_yx = n_yx
         self.n_spots = 0
+        self.bleed_matrix = None
         self.true_spot_positions_pixels = np.zeros((0, 3)) # Has shape n_spots x 3 (x,y,z)
         self.true_spot_identities = np.zeros((0), dtype=str) # Has shape n_spots, saves every spots gene
         self.include_anchor = include_anchor
@@ -257,6 +258,10 @@ class RoboMinnie:
         assert spot_size_pixels.size == 3, 'Spot size must be in three dimensions'
         if bleed_matrix.shape[0] != bleed_matrix.shape[1]:
             warnings.warn(f'Given bleed matrix does not have equal channel and dye counts like usual')
+        if self.bleed_matrix is None:
+            self.bleed_matrix = bleed_matrix
+        else:
+            assert self.bleed_matrix == bleed_matrix, 'All added spots must have the same shared bleed matrix'
 
         self.n_spots += n_spots
 
@@ -296,7 +301,7 @@ class RoboMinnie:
         indices = np.indices(ind_size)-ind_size[:,None,None,None]//2
         spot_img = scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels).pdf(indices.transpose(1,2,3,0))
         for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), 
-            desc='Superimposing spots', ascii=True, unit='spots', maxinterval=self.n_spots//10):
+            desc='Superimposing spots', ascii=True, unit='spots', mininterval=0.001):
 
             p = np.asarray(p).astype(int)
             p_chan = np.round([self.n_channels//2, p[0], p[1], p[2]]).astype(int)
@@ -346,27 +351,44 @@ class RoboMinnie:
             np.add(self.preseq_image, constant, out=self.preseq_image)
 
 
-    def Save_Coppafish(self, output_dir : str) -> None:
+    def Save_Coppafish(self, output_dir : str, overwrite : bool = False) -> None:
         """
-        Save known spot positions and codes, raw .npy image files, metadata.json file and config.ini file for 
-        coppafish pipeline run. Output directory must be empty.
-    
+        Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and \
+            config.ini file for coppafish pipeline run. Output directory must be empty.
+        
         args:
             output_dir(str): Save directory
+            overwrite(bool, optional): If True, overwrite any saved coppafish data inside the directory, \
+                delete old notebook.npz file if there is one and ignore any other files inside the directory
         """
         self.instructions.append(_funcname())
         print(f'Saving as coppafish data')
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
-        assert len(os.listdir(output_dir)) == 0, f'Output directory {output_dir} must be empty'
+        if not overwrite:
+            assert len(os.listdir(output_dir)) == 0, f'Output directory {output_dir} must be empty'
 
         # Create an output_dir/output_coppafish directory for coppafish pipeline output saved to disk
         self.coppafish_output = os.path.join(output_dir, 'output_coppafish')
-        os.mkdir(self.coppafish_output)
+        if not os.path.isdir(self.coppafish_output):
+            os.mkdir(self.coppafish_output)
+        if overwrite:
+            # Delete all files located in coppafish output directory to stop coppafish using old data
+            for filename in os.listdir(self.coppafish_output):
+                filepath = os.path.join(self.coppafish_output, filename)
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
 
         # Create an output_dir/output_coppafish/tiles directory for coppafish extract output
         self.coppafish_tiles = os.path.join(self.coppafish_output, 'tiles')
-        os.mkdir(self.coppafish_tiles)
+        if not os.path.isdir(self.coppafish_tiles):
+            os.mkdir(self.coppafish_tiles)
+        # Remove any old tile files in the tile directory, if any, to make sure coppafish runs extract and filter \
+        # again
+        for filename in os.listdir(self.coppafish_tiles):
+            filepath = os.path.join(self.coppafish_tiles, filename)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
 
         # Save the known gene names and positions to a csv.
         df = pandas.DataFrame(
@@ -381,7 +403,7 @@ class RoboMinnie:
 
         #TODO: Update metadata entries for multiple tile support
         metadata = {
-            "n_tiles": self.n_tiles, "n_rounds": self.n_rounds+self.include_anchor, "n_channels": self.n_channels, 
+            "n_tiles": self.n_tiles, "n_rounds": self.n_rounds, "n_channels": self.n_channels, 
             "tile_sz": self.n_yx[0], "pixel_size_xy": 0.26, 
             "pixel_size_z": 0.9, "tile_centre": [self.n_yx[0]//2,self.n_yx[1]//2,self.n_planes//2], "tilepos_yx": [[0,0]], "tilepos_yx_nd2": [[0,0]], 
             "channel_camera": [1,1,2,3,2,3,3], "channel_laser": [1,1,2,3,2,3,3], "xy_pos": [[0,0]]
@@ -391,36 +413,51 @@ class RoboMinnie:
             json.dump(metadata, f)
 
         # Save the raw .npy files, one round at a time, in separate round directories
-        self.shape
         all_images = self.image
         if self.include_anchor:
             all_images = np.concatenate([self.image, self.anchor_image[None]]).astype(np.float32)
         #TODO: Save preseq image
         for r in range(self.n_rounds + self.include_anchor):
             save_path = os.path.join(output_dir, f'{r}')
-            os.mkdir(save_path)
+            if not os.path.isdir(save_path):
+                os.mkdir(save_path)
             image_dask = dask.array.from_array(all_images[r], chunks=(self.shape[1:]))
             dask.array.to_npy_stack(save_path, image_dask)
 
-        # Save the config.ini file
-        # Finally, write the config file. z_subvols is moved from the default of 5 based on n_planes. z_box is set to
-        # n_planes if the default of 12 is too large for the number of z planes
+        # Save the gene codebook in `coppafish_output`
+        self.codebook_filepath = os.path.join(output_dir, 'codebook.txt')
+        with open(self.codebook_filepath, 'w') as f:
+            for genename, code in self.codes.items():
+                f.write(f'{genename} {code}\n')
+
+        # Save the initial bleed matrix for the config file
+        self.initial_bleed_matrix_filepath = os.path.join(output_dir, 'bleed_matrix.npy')
+        np.save(self.initial_bleed_matrix_filepath, self.bleed_matrix)
+
+        # Save the config file. z_subvols is moved from the default of 5 based on n_planes.
+        #! Note: Older coppafish software used to take settings ['register']['z_box'] for each dimension 
+        #! subvolume. Newer coppafish software (supported here) uses ['register']['box_size'] to change subvolume 
+        #! size in each dimension in one setting
+        self.dye_names = ['ATTO425', 'AF488', 'DY520XL', 'AF532', 'AF594', 'AF647', 'AF750']
+        self.dye_names = self.dye_names[:np.min([len(self.dye_names), self.n_channels])]
+
         config_file_contents = f"""; This config file is auto-generated, do not edit directly
         [file_names]
         notebook_name = notebook.npz
         input_dir = {output_dir}
         output_dir = {self.coppafish_output}
         tile_dir = {self.coppafish_tiles}
+        initial_bleed_matrix = {self.initial_bleed_matrix_filepath}
         round = {', '.join([str(i) for i in range(self.n_rounds)])}
         anchor = {self.n_rounds}
-        code_book = codebook.txt
+        code_book = {self.codebook_filepath}
         raw_extension = .npy
         raw_metadata = {self.metadata_filepath}
 
         [basic_info]
         is_3d = True
         anchor_channel = {self.anchor_channel}
-        dye_names = {', '.join([str(i) for i in range(self.n_channels)])}
+        dye_names = {', '.join(self.dye_names)}
         use_z = {', '.join([str(i) for i in range(self.n_planes)])}
         anchor_round = {self.n_rounds}
         use_rounds = {', '.join([str(i) for i in range(self.n_rounds)])}
@@ -429,7 +466,8 @@ class RoboMinnie:
         z_subvols = 1
         x_subvols = 8
         y_subvols = 8
-        z_box = {self.n_planes}
+        box_size = {np.min([self.n_planes, 12])}, 300, 300
+        pearson_r_thresh = 0.25
         """
         # Remove any large spaces in the config contents
         config_file_contents = config_file_contents.replace('  ', '')
@@ -441,7 +479,8 @@ class RoboMinnie:
         # Save the instructions run so far (every function call)
         self.instruction_filepath = os.path.join(output_dir, 'instructions.txt')
         with open(self.instruction_filepath, 'w') as f:
-            f.writelines(self.instructions)
+            for instruction in self.instructions:
+                f.write(instruction + '\n')
 
 
     def Save(self, output_dir : str, filename : str = None, compress : bool = False) -> None:

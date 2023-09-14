@@ -48,6 +48,11 @@ def set_file_names(nb, nbp):
     nbp.pre_seq_round = config['pre_seq_round']
     nbp.raw_extension = config['raw_extension']
     nbp.raw_metadata = config['raw_metadata']
+    nbp.initial_bleed_matrix = config['initial_bleed_matrix']
+
+    if nbp.initial_bleed_matrix is not None:
+        assert os.path.isfile(nbp.initial_bleed_matrix), \
+            f'Initial bleed matrix located at {nbp.initial_bleed_matrix} does not exist'
 
     if config['dye_camera_laser'] is None:
         # Default information is project

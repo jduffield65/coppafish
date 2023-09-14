@@ -17,7 +17,7 @@ robominnie.Add_Spots(n_spots=n_spots, bleed_matrix=bleed_matrix, gene_codebook_p
     spot_size_pixels=spot_size)
 robominnie.Fix_Image_Minimum(minimum=0)
 # Save the synthetic data in coppafish format as raw .npy files
-robominnie.Save_Coppafish(output_dir=output_dir)
+robominnie.Save_Coppafish(output_dir=output_dir, overwrite=True)
 robominnie.Run_Coppafish()
 true_positives, wrong_positives, false_positives, false_negatives = robominnie.Compare_Spots_OMP()
 print('OMP results:')
