@@ -24,6 +24,7 @@ import time
 import pickle
 from tqdm import tqdm, trange
 import bz2
+import napari
 
 
 DEFAULT_INSTANCE_FILENAME = 'robominnie.pkl'
@@ -483,75 +484,6 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def Save(self, output_dir : str, filename : str = None, compress : bool = False) -> None:
-        """
-        Save `RoboMinnie` instance using the amazing tool pickle inside output_dir directory.
-
-        args:
-            output_dir(str): 
-            filename(str, optional): Name of the pickled `RoboMinnie` object. Default: 'robominnie.pkl'
-            compress(bool, optional): If True, compress pickle binary file using bzip2 compression in the \
-                default python package `bz2`. Default: False
-        """
-        self.instructions.append(_funcname())
-        print('Saving RoboMinnie instance')
-        instance_output_dir = output_dir
-        if filename == None:
-            instance_filename = DEFAULT_INSTANCE_FILENAME
-        else:
-            instance_filename = filename
-        if not os.path.isdir(instance_output_dir):
-            os.mkdir(instance_output_dir)
-
-        instance_filepath = os.path.join(instance_output_dir, instance_filename)
-        assert not os.path.isfile(instance_filepath), \
-            f'RoboMinnie instance already saved as {instance_filepath}'
-
-        if not compress:
-            with open(instance_filepath, 'wb') as f:
-                pickle.dump(self, f)
-        else:
-            with bz2.open(instance_filepath, 'wb', compresslevel=9) as f:
-                pickle.dump(self, f)
-
-
-    def Load(self, input_dir : str, filename : str = None, overwrite_self : bool = True, compressed : bool = False):
-        """
-        Load `RoboMinnie` instance using the handy pickled information saved inside input_dir.
-
-        args:
-            input_dir(str): The directory where the RoboMinnie data is stored
-            filename(str, optional): Name of the pickle RoboMinnie object. Default: 'robominnie.pkl'
-            overwrite_self(bool, optional): If true, become the RoboMinnie instance loaded from disk
-            compressed(bool, optional): If True, try decompress pickle binary file assuming a bzip2 compression. \
-                Default: False
-
-        Returns:
-            Loaded `RoboMinnie` class
-        """
-        self.instructions.append(_funcname())
-        print('Loading RoboMinnie instance')
-        instance_input_dir = input_dir
-        if filename == None:
-            instance_filename = DEFAULT_INSTANCE_FILENAME
-        else:
-            instance_filename = filename
-        instance_filepath = os.path.join(instance_input_dir, instance_filename)
-        
-        assert os.path.isfile(instance_filepath), f'RoboMinnie instance not found at {instance_filepath}'
-
-        if not compressed:
-            with open(instance_filepath, 'rb') as f:
-                instance : RoboMinnie = pickle.load(f)
-        else:
-            with bz2.open(instance_filepath, 'rb') as f:
-                instance : RoboMinnie = pickle.load(f)
-
-        if overwrite_self:
-            self = instance
-        return instance
-
-
     def Run_Coppafish(self, time_pipeline : bool = True, jax_profile_omp : bool = False) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
@@ -719,3 +651,93 @@ class RoboMinnie:
         # False negatives are any true spots that have not been paired to an OMP spot
         false_negatives = true_spot_count - true_spots_paired.size
         return (true_positives, wrong_positives, false_positives, false_negatives)
+
+
+    # Debugging Function:
+    def View_Images(self, tile : int = 0):
+        """
+        View all images in `napari` for tile index `t`, including a presequence and anchor image, if they exist.
+
+        args:
+            tile(int, optional): Tile index. Default: 0
+        """
+        viewer = napari.Viewer(title=f'RoboMinnie, tile={tile}')
+        for c in range(self.n_channels):
+            for r in range(self.n_rounds):
+                # z index must be in the first axis for napari to view
+                viewer.add_image(self.image[r,tile,c].transpose([2,0,1]), name=f'r={r}, c={c}')    
+                if self.include_preseq:
+                    viewer.add_image(self.preseq_image[r,tile,c].transpose([2,0,1]), name=f'preseq, r={r}, c={c}')    
+            if self.include_anchor:
+                viewer.add_image(self.anchor_image[tile,c].transpose([2,0,1]), name=f'anchor, c={c}')
+        # viewer.show()
+        napari.run()
+
+
+    def Save(self, output_dir : str, filename : str = None, compress : bool = False) -> None:
+        """
+        Save `RoboMinnie` instance using the amazing tool pickle inside output_dir directory.
+
+        args:
+            output_dir(str): 
+            filename(str, optional): Name of the pickled `RoboMinnie` object. Default: 'robominnie.pkl'
+            compress(bool, optional): If True, compress pickle binary file using bzip2 compression in the \
+                default python package `bz2`. Default: False
+        """
+        self.instructions.append(_funcname())
+        print('Saving RoboMinnie instance')
+        instance_output_dir = output_dir
+        if filename == None:
+            instance_filename = DEFAULT_INSTANCE_FILENAME
+        else:
+            instance_filename = filename
+        if not os.path.isdir(instance_output_dir):
+            os.mkdir(instance_output_dir)
+
+        instance_filepath = os.path.join(instance_output_dir, instance_filename)
+        assert not os.path.isfile(instance_filepath), \
+            f'RoboMinnie instance already saved as {instance_filepath}'
+
+        if not compress:
+            with open(instance_filepath, 'wb') as f:
+                pickle.dump(self, f)
+        else:
+            with bz2.open(instance_filepath, 'wb', compresslevel=9) as f:
+                pickle.dump(self, f)
+
+
+    def Load(self, input_dir : str, filename : str = None, overwrite_self : bool = True, compressed : bool = False):
+        """
+        Load `RoboMinnie` instance using the handy pickled information saved inside input_dir.
+
+        args:
+            input_dir(str): The directory where the RoboMinnie data is stored
+            filename(str, optional): Name of the pickle RoboMinnie object. Default: 'robominnie.pkl'
+            overwrite_self(bool, optional): If true, become the RoboMinnie instance loaded from disk
+            compressed(bool, optional): If True, try decompress pickle binary file assuming a bzip2 compression. \
+                Default: False
+
+        Returns:
+            Loaded `RoboMinnie` class
+        """
+        self.instructions.append(_funcname())
+        print('Loading RoboMinnie instance')
+        instance_input_dir = input_dir
+        if filename == None:
+            instance_filename = DEFAULT_INSTANCE_FILENAME
+        else:
+            instance_filename = filename
+        instance_filepath = os.path.join(instance_input_dir, instance_filename)
+        
+        assert os.path.isfile(instance_filepath), f'RoboMinnie instance not found at {instance_filepath}'
+
+        if not compressed:
+            with open(instance_filepath, 'rb') as f:
+                instance : RoboMinnie = pickle.load(f)
+        else:
+            with bz2.open(instance_filepath, 'rb') as f:
+                instance : RoboMinnie = pickle.load(f)
+
+        if overwrite_self:
+            self = instance
+        return instance
