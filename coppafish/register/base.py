@@ -568,12 +568,12 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     Args:
         preseq: (n_y x n_x) ndarray of presequence image
         seq: (n_y x n_x) ndarray of sequence image
-        intensity_percentile: float brightness percentile such that all pixels with brightness less than this
-            are used for regression
+        intensity_percentile: float brightness percentile such that all pixels with brightness > this percentile
+        (in the preseq im only) are used for regression
         sub_image_size: int size of sub-images to use for regression. This is because the images are not perfectly
             registered and so we need to find the best registered sub-image to use for regression
     Returns:
-        scale, offset:
+        scale: float scale factor m
         sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression
         sub_image_preseq: (sub_image_size, sub_image_size) ndarray of presequence image used for regression
     """
@@ -605,16 +605,12 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
                               best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
     sub_image_seq = custom_shift(sub_image_seq, sub_image_shifts[best_sub_image[0], best_sub_image[1]].astype(int))
 
-    # Now find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
-    mask_seq = np.abs(sub_image_seq) < np.percentile(np.abs(sub_image_seq), intensity_percentile)
-    mask_pre = np.abs(sub_image_preseq) < np.percentile(np.abs(sub_image_preseq), intensity_percentile)
-    mask = mask_pre * mask_seq
+    # Now find the top intensity_percentile pixels from the image to linear regress with any background
+    mask = sub_image_preseq > np.percentile(sub_image_preseq, intensity_percentile)
 
     sub_image_preseq_flat = sub_image_preseq[mask].ravel()
     sub_image_seq_flat = sub_image_seq[mask].ravel()
-    # Least squares to find im = m * im_pre + c best fit coefficients
-    # im_pre_masked_pad is padded with ones to allow for an intercept, c
-    sub_image_preseq_flat= np.vstack([sub_image_preseq_flat, np.ones(sub_image_preseq_flat.shape[0])]).T
-    m, c = np.linalg.lstsq(sub_image_preseq_flat, sub_image_seq_flat, rcond=None)[0]
+    # Least squares to find im = m * im_pre best fit coefficients
+    m = np.linalg.lstsq(sub_image_preseq_flat[:, None], sub_image_seq_flat, rcond=None)[0]
 
-    return np.array([m, c]), sub_image_seq, sub_image_preseq
+    return m, sub_image_seq, sub_image_preseq
