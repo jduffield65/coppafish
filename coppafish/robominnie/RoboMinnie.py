@@ -55,7 +55,7 @@ class RoboMinnie:
     #TODO: Multi-tile support
     #TODO: Presequence support
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
-        n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_preseq : bool = False, 
+        n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_presequence : bool = False, 
         anchor_channel : int = 0, seed : int = 0) -> None:
         """
         Create a new RoboMinnie instance. Used to manipulate, create and save synthetic data in a modular,
@@ -70,7 +70,7 @@ class RoboMinnie:
             n_yx (Tuple[int, int], optional): Number of pixels for each tile in the y and x directions \
                 respectively. Default: (2048, 2048).
             include_anchor (bool, optional): Whether to include the anchor round. Default:  true
-            include_preseq (bool, optional): Whether to include the pre-sequence round. Default: false
+            include_presequence (bool, optional): Whether to include the pre-sequence round. Default: false
             anchor_channel (int, optional): The anchor channel. Default: 0.
             seed (int, optional): Seed used throughout the generation of random data, specify integer value for \
                 reproducible output. If None, seed is randomly picked. Default: 0.
@@ -85,7 +85,7 @@ class RoboMinnie:
         self.true_spot_positions_pixels = np.zeros((0, 3)) # Has shape n_spots x 3 (x,y,z)
         self.true_spot_identities = np.zeros((0), dtype=str) # Has shape n_spots, saves every spots gene
         self.include_anchor = include_anchor
-        self.include_preseq = include_preseq
+        self.include_presequence = include_presequence
         self.anchor_channel = anchor_channel
         self.seed = seed
         self.instructions = [] # Keep track of the functions called inside RoboMinnie, in order
@@ -102,20 +102,18 @@ class RoboMinnie:
         self.shape = (self.n_rounds, self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], 
             self.n_planes)
         self.anchor_shape = (self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], self.n_planes)
-        self.preseq_shape = (self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], self.n_planes)
+        self.presequence_shape = (self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], self.n_planes)
         # This is the image we will build up throughout this script and eventually return. Starting with just 
         # zeroes
         self.image = np.zeros(self.shape, dtype=float)
         if self.include_anchor:
             self.anchor_image = np.zeros(self.anchor_shape, dtype=float)
-        if self.include_preseq:
-            self.preseq_image = np.zeros(self.shape, dtype=float)
+        if self.include_presequence:
+            self.presequence_image = np.zeros(self.presequence_shape, dtype=float)
         if self.n_tiles > 1:
             raise NotImplementedError('Multiple tile support is not implemented yet')
         if self.n_yx[0] != self.n_yx[1]:
             raise NotImplementedError('Coppafish does not support non-square tiles')
-        if self.include_preseq:
-            raise NotImplementedError('Preseq is not supported yet in RoboMinnie')
         if self.n_yx[0] < 2_000 or self.n_yx[1] < 2_000:
             warnings.warn('Coppafish may not support tile sizes that are too small due to implicit' + \
                 ' assumptions about a tile size of 2048 in the x and y directions')
@@ -159,10 +157,12 @@ class RoboMinnie:
         self.image[:,:,:] += pink_noise
         if self.include_anchor:
             self.anchor_image[:,:] += pink_noise
+        if self.include_presequence:
+            self.presequence_image[:,:] += pink_noise
 
 
     def Generate_Random_Noise(self, noise_std : float, noise_mean_amplitude : float = 0, 
-        noise_type : str = 'normal', include_anchor : bool = True, include_preseq : bool = True) -> None:
+        noise_type : str = 'normal', include_anchor : bool = True, include_presequence : bool = True) -> None:
         """
         Superimpose random, white noise onto every pixel individually. Good for modelling random noise from the 
         camera
@@ -172,7 +172,7 @@ class RoboMinnie:
             noise_std(float): Standard deviation/width of random noise
             noise_type(str('normal' or 'uniform'), optional): Type of random noise to apply. Default: 'normal'
             include_anchor(bool, optional): Whether to apply random noise to anchor round. Default: true
-            include_preseq(bool, optional): Whether to apply random noise to presequence rounds. Default: true
+            include_presequence(bool, optional): Whether to apply random noise to presequence rounds. Default: true
         """
         self.instructions.append(_funcname())
         print(f'Generating random noise')
@@ -185,16 +185,16 @@ class RoboMinnie:
             noise = rng.normal(noise_mean_amplitude, noise_std, size=self.shape)
             if include_anchor and self.include_anchor:
                 anchor_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.anchor_shape)
-            if include_preseq and self.include_preseq:
-                preseq_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.preseq_shape)
+            if include_presequence and self.include_presequence:
+                presequence_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.presequence_shape)
         elif noise_type == 'uniform':
             noise = rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.shape)
             if include_anchor and self.include_anchor:
                 anchor_noise = \
                     rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.anchor_shape)
-            if include_preseq and self.include_preseq:
-                preseq_noise = \
-                    rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.preseq_shape)
+            if include_presequence and self.include_presequence:
+                presequence_noise = \
+                    rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.presequence_shape)
         else:
             raise ValueError(f'Unknown noise type: {noise_type}')
         
@@ -202,15 +202,16 @@ class RoboMinnie:
         np.add(self.image, noise, out=self.image)
         if include_anchor and self.include_anchor:
             np.add(self.anchor_image, anchor_noise, out=self.anchor_image)
-        if include_preseq and self.include_preseq:
-            np.add(self.preseq_image, preseq_noise, out=self.preseq_image)
+        if include_presequence and self.include_presequence:
+            np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
 
 
     def Add_Spots(self, n_spots : int, bleed_matrix : np.ndarray[float, float], gene_codebook_path : str, 
         spot_size_pixels : np.ndarray[float]) -> None:
         """
         Superimpose spots onto images in both space and channels (based on the bleed matrix). Also applied to the 
-        anchor when included. The spots are uniformly, randomly distributed across each image.
+        anchor when included. The spots are uniformly, randomly distributed across each image. Never applied to 
+        presequence images.
 
         args:
             n_spots (int): Number of spots to add
@@ -317,20 +318,28 @@ class RoboMinnie:
     # Post-Processing function
     def Fix_Image_Minimum(self, minimum : float = 0.) -> None:
         """
-        Ensure that all pixels in the images are greater than given value (minimum).
+        Ensure all pixels in the images are greater than or equal to given value (minimum). Includes the \
+            presequence and anchor images, if they exist.
 
         args:
             minimum (float, optional): Minimum pixel value allowed. Default: 0
         """
         self.instructions.append(_funcname())
         print(f'Fixing image minima')
-        minval = np.min(self.image)
-        self.image -= minval + minimum
-        self.anchor_image -= minval + minimum
+
+        minval = self.image.min()
+        minval = np.min([minval, self.anchor_image.min()      if self.include_anchor      else np.inf])
+        minval = np.min([minval, self.presequence_image.min() if self.include_presequence else np.inf])
+        offset = -(minval + minimum)
+        self.image += offset
+        if self.include_anchor:
+            self.anchor_image += offset
+        if self.include_presequence:
+            self.presequence_image += offset
     
 
     # Post-Processing function
-    def Offset_Images_By(self, constant : float, include_anchor : bool = True, include_preseq : bool = True) \
+    def Offset_Images_By(self, constant : float, include_anchor : bool = True, include_presequence : bool = True) \
         -> None:
         """
         Shift every image pixel, in all tiles, by a constant value
@@ -338,15 +347,16 @@ class RoboMinnie:
         args:
             constant(float): Shift value
             include_anchor(bool, optional): Include anchor images in the shift if exists. Default: true
-            include_preseq(bool, optional): Include preseq images in the shift if exists. Default: true
+            include_presequence(bool, optional): Include preseq images in the shift if exists. Default: true
         """
         self.instructions.append(_funcname())
         print(f'Shifting image by {constant}')
+
         np.add(self.image, constant, out=self.image)
         if self.include_anchor and include_anchor:
             np.add(self.anchor_image, constant, out=self.anchor_image)
-        if self.include_preseq and include_preseq:
-            np.add(self.preseq_image, constant, out=self.preseq_image)
+        if self.include_presequence and include_presequence:
+            np.add(self.presequence_image, constant, out=self.presequence_image)
 
 
     def Save_Coppafish(self, output_dir : str, overwrite : bool = False) -> None:
@@ -401,26 +411,44 @@ class RoboMinnie:
 
         #TODO: Update metadata entries for multiple tile support
         metadata = {
-            "n_tiles": self.n_tiles, "n_rounds": self.n_rounds, "n_channels": self.n_channels, 
-            "tile_sz": self.n_yx[0], "pixel_size_xy": 0.26, 
-            "pixel_size_z": 0.9, "tile_centre": [self.n_yx[0]//2,self.n_yx[1]//2,self.n_planes//2], "tilepos_yx": [[0,0]], "tilepos_yx_nd2": [[0,0]], 
-            "channel_camera": [1,1,2,3,2,3,3], "channel_laser": [1,1,2,3,2,3,3], "xy_pos": [[0,0]]
+            "n_tiles": self.n_tiles, 
+            "n_rounds": self.n_rounds, 
+            "n_channels": self.n_channels, 
+            "tile_sz": self.n_yx[0], 
+            "pixel_size_xy": 0.26, 
+            "pixel_size_z": 0.9, 
+            "tile_centre": [self.n_yx[0]//2,self.n_yx[1]//2,self.n_planes//2], 
+            "tilepos_yx": [[0,0]], 
+            "tilepos_yx_nd2": [[0,0]], 
+            "channel_camera": [1,1,2,3,2,3,3], 
+            "channel_laser": [1,1,2,3,2,3,3], 
+            "xy_pos": [[0,0]],
         }
         self.metadata_filepath = os.path.join(output_dir, 'metadata.json')
         with open(self.metadata_filepath, 'w') as f:
             json.dump(metadata, f)
 
-        # Save the raw .npy files, one round at a time, in separate round directories
+        # Save the raw .npy files, one round at a time, in separate round directories. We do this because 
+        # coppafish expects every rounds (and anchor and presequence) in its own directory.
         all_images = self.image
+        presequence_directory = f'presequence'
+        dask_save_shape = self.shape[1:]
         if self.include_anchor:
             all_images = np.concatenate([self.image, self.anchor_image[None]]).astype(np.float32)
-        #TODO: Save preseq image
         for r in range(self.n_rounds + self.include_anchor):
             save_path = os.path.join(output_dir, f'{r}')
             if not os.path.isdir(save_path):
                 os.mkdir(save_path)
-            image_dask = dask.array.from_array(all_images[r], chunks=(self.shape[1:]))
+            image_dask = dask.array.from_array(all_images[r], chunks=dask_save_shape)
             dask.array.to_npy_stack(save_path, image_dask)
+            del image_dask
+        if self.include_presequence:
+            # Save the presequence image in `coppafish_output/preseq/`
+            presequence_save_path = os.path.join(output_dir, presequence_directory)
+            image_dask = dask.array.from_array(self.presequence_image, chunks=dask_save_shape)
+            dask.array.to_npy_stack(presequence_save_path, image_dask)
+            del image_dask
+        del all_images
 
         # Save the gene codebook in `coppafish_output`
         self.codebook_filepath = os.path.join(output_dir, 'codebook.txt')
@@ -434,12 +462,12 @@ class RoboMinnie:
 
         # Save the config file. z_subvols is moved from the default of 5 based on n_planes.
         #! Note: Older coppafish software used to take settings ['register']['z_box'] for each dimension 
-        #! subvolume. Newer coppafish software (supported here) uses ['register']['box_size'] to change subvolume 
-        #! size in each dimension in one setting
+        # subvolume. Newer coppafish software (supported here) uses ['register']['box_size'] to change subvolume 
+        # size in each dimension in one setting
         self.dye_names = ['ATTO425', 'AF488', 'DY520XL', 'AF532', 'AF594', 'AF647', 'AF750']
         self.dye_names = self.dye_names[:np.min([len(self.dye_names), self.n_channels])]
 
-        config_file_contents = f"""; This config file is auto-generated, do not edit directly
+        config_file_contents = f"""; This config file is auto-generated by RoboMinnie. 
         [file_names]
         notebook_name = notebook.npz
         input_dir = {output_dir}
@@ -447,19 +475,20 @@ class RoboMinnie:
         tile_dir = {self.coppafish_tiles}
         initial_bleed_matrix = {self.initial_bleed_matrix_filepath}
         round = {', '.join([str(i) for i in range(self.n_rounds)])}
-        anchor = {self.n_rounds}
+        anchor = {self.n_rounds if self.include_anchor else ''}
+        pre_seq_round = {presequence_directory if self.include_presequence else ''}
         code_book = {self.codebook_filepath}
         raw_extension = .npy
         raw_metadata = {self.metadata_filepath}
 
         [basic_info]
         is_3d = True
-        anchor_channel = {self.anchor_channel}
         dye_names = {', '.join(self.dye_names)}
-        use_z = {', '.join([str(i) for i in range(self.n_planes)])}
-        anchor_round = {self.n_rounds}
         use_rounds = {', '.join([str(i) for i in range(self.n_rounds)])}
-
+        use_z = {', '.join([str(i) for i in range(self.n_planes)])}
+        anchor_round = {self.n_rounds if self.include_anchor else ''}
+        anchor_channel = {self.anchor_channel if self.include_anchor else ''}
+        
         [register]
         z_subvols = 1
         x_subvols = 8
@@ -671,9 +700,9 @@ class RoboMinnie:
                     name=f'anchor, c={c}', 
                     visible=False
                 )
-            if self.include_preseq:
+            if self.include_presequence:
                 viewer.add_image(
-                    self.preseq_image[tile,c].transpose([2,0,1]), 
+                    self.presequence_image[tile,c].transpose([2,0,1]), 
                     name=f'preseq, c={c}',
                     visible=False,
                 )

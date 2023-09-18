@@ -3,7 +3,7 @@ import numpy as np
 from coppafish.robominnie import RoboMinnie
 import warnings
 
-codebook_contents = """Bcl11b 1234560
+codebook_contents_73g = """Bcl11b 1234560
 Cadps2 2345601
 Calb1 3456012
 Calb2 4560123
@@ -81,7 +81,7 @@ Yjefn3 1661545
 def test_integration_001() -> None:
     """
     Summary of input data: random spots and random, white noise.
-    No presequence round, single tile.
+    No presequence round, anchor round, single tile.
     """
     output_dir = '/tmp/integration'
     codebook_path = ''
@@ -95,7 +95,7 @@ def test_integration_001() -> None:
     # Save codebook as .txt file
     codebook_path = os.path.join(output_dir, 'codebook.txt')
     with open(codebook_path, 'w') as f:
-        f.write(codebook_contents)
+        f.write(codebook_contents_73g)
 
     robominnie = RoboMinnie(include_anchor=True, seed=94)
     robominnie.Add_Spots(n_spots=n_spots, bleed_matrix=bleed_matrix, gene_codebook_path=codebook_path, 
@@ -127,7 +127,7 @@ def test_integration_001() -> None:
 def test_integration_002() -> None:
     """
     Summary of input data: random spots, pink noise (represents biological features) and random, white noise.
-    No presequence round, single tile.
+    No presequence round, anchor round, single tile.
     """
     output_dir = '/tmp/integration'
     codebook_path = ''
@@ -141,7 +141,7 @@ def test_integration_002() -> None:
     # Save codebook as .txt file
     codebook_path = os.path.join(output_dir, 'codebook.txt')
     with open(codebook_path, 'w') as f:
-        f.write(codebook_contents)
+        f.write(codebook_contents_73g)
 
     robominnie = RoboMinnie(include_anchor=True, seed=146)
     robominnie.Generate_Pink_Noise(noise_amplitude=0.0015, noise_spatial_scale=0.16)
