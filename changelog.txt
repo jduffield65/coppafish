@@ -4,7 +4,7 @@
  * Updated bleed matrix to allow inter-tile variation.
  * Updated the bleed matrix calculation.
  * Added weighted dot product method with backwards compatibility.
- * Error handling when tiles in use are not connected.
+ * Error handling unconnected tiles.
  * Changed spot_no array from uint16 to uint32 for great spot number support.
  * Registration pipeline now uses DAPI images when necessary.
  * Registration pipeline now computes camera transforms from fluorescent beads.
