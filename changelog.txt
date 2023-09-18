@@ -12,3 +12,4 @@
  * Added new config variable [file_names][initial_bleed_matrix] to give a path to a `.npy` initial bleed matrix. \
    If left empty, will use the default initial bleed matrix found in the code.
  * Presequence .npy raw files support.
+ * Fixed anchor auto threshold being set to zero due to regularisation.
