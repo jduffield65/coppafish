@@ -191,8 +191,7 @@ def run_register(nb: setup.Notebook):
     if not nb.has_page("register"):
         nbp, nbp_debug = register(nb.basic_info, nb.file_names, nb.extract, nb.find_spots, config['register'],
                                   np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant',
-                                         constant_values=1),
-                                  pre_seq_blur_radius=config['extract']['pre_seq_blur_radius'],
+                                         constant_values=1), pre_seq_blur_radius=nb.extract_debug.r2,
                                   num_rotations=config['extract']['num_rotations'])
         nb += nbp
         nb += nbp_debug

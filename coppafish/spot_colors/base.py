@@ -96,6 +96,8 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         - `yxz_base` - `int16 [n_spots_in_bounds x 3]`.
             If `return_in_bounds`, the `yxz_base` corresponding to spots in bounds for all `use_rounds` / `use_channels`
             will be returned. It is likely that `n_spots_in_bounds` won't be the same as `n_spots`.
+        - `bg_colours` - `int32 [n_spots_in_bounds x n_rounds x n_channels_use]`. Background colour for each spot
+            in each round and channel. Only returned if `bg_scale_offset` is not None.
     """
     if bg_scale_offset is not None:
         assert nbp_basic.use_preseq, "Can't subtract background if preseq round doesn't exist!"
@@ -178,6 +180,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
     spot_colors = spot_colors - nbp_basic.tile_pixel_value_shift
     if use_bg:
         spot_colors = spot_colors - bg_colours
+        return spot_colors, bg_colours
     invalid_value = -nbp_basic.tile_pixel_value_shift
     if return_in_bounds:
         good = ~np.any(spot_colors == invalid_value, axis=(1, 2))

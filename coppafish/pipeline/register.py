@@ -98,7 +98,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             if nbp_basic.use_preseq:
                 round_image += [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t,
                                                      r=n_rounds+nbp_basic.use_anchor+nbp_basic.use_preseq-1,
-                                                     c=round_registration_channel))]
+                                                     c=round_registration_channel, suffix='_raw'))]
             round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
             # Now save the data
             non_anchor_rounds = use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
@@ -135,10 +135,12 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     # Part 3: ICP
     if 'icp' not in registration_data.keys():
         # Initialise variables for ICP step
-        icp_transform = np.zeros((n_tiles, n_rounds + nbp_basic.use_preseq, n_channels, 4, 3))
-        n_matches = np.zeros((n_tiles, n_rounds + nbp_basic.use_preseq, n_channels, config['icp_max_iter']))
-        mse = np.zeros((n_tiles, n_rounds + nbp_basic.use_preseq, n_channels, config['icp_max_iter']))
-        converged = np.zeros((n_tiles, n_rounds + nbp_basic.use_preseq, n_channels), dtype=bool)
+        icp_transform = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels, 4, 3))
+        n_matches = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels,
+                              config['icp_max_iter']))
+        mse = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels,
+                        config['icp_max_iter']))
+        converged = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels), dtype=bool)
         # Create a progress bar for the ICP step
         with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
             pbar.set_description(f"Running ICP on all tiles")
@@ -218,19 +220,22 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     #             transform_pre[:3, 3] -= shift
     #             registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c] = zyx_to_yxz_affine(transform_pre)
 
+    # Now blur the pre seq round images
+    if registration_data['blur'] is False:
+        for t, c in tqdm(itertools.product(use_tiles, use_channels + [nbp_basic.dapi_channel])):
+            print(f" Blurring pre-seq tile {t}, channel {c}")
+            # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
+            im = load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c, suffix='_raw')
+            for z in tqdm(range(len(nbp_basic.use_z))):
+                im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3,
+                                       preserve_range=True)
+            # Save the blurred image (no need to rotate this, as the rotation was done in extract)
+            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+        registration_data['blur'] = True
+
     # Save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
-
-    # Now blur the pre seq round images
-    print(f" Blurring pre-seq tile {t}, channel {c}")
-    for t, c in tqdm(itertools.product(use_tiles, use_channels)):
-        im = load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c)
-        for z in tqdm(range(len(nbp_basic.use_z))):
-            im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3,
-                                   preserve_range=True)
-        utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=num_rotations)
-
     # Add round statistics to debugging page.
     nbp_debug.position = registration_data['round_registration']['position']
     nbp_debug.round_shift = registration_data['round_registration']['shift']
@@ -252,8 +257,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     # combine icp transform, channel transform and initial transform to get final transform
     transform = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels, 4, 3))
     transform[:, use_rounds] = registration_data['icp']['transform'][:, use_rounds]
-    transform[:, nbp_basic.pres_seq_round] = registration_data['icp']['transform'][:, -1]
-    nbp.transform = registration_data['icp_transform']
+    transform[:, nbp_basic.pre_seq_round] = registration_data['icp']['transform'][:, -1]
+    nbp.transform = transform
 
     # Load in the middle z-plane of each tile and compute the scale factors to be used when removing background
     # fluorescence

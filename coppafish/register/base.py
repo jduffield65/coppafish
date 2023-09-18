@@ -557,7 +557,7 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=Fals
     return transform, n_matches, error, converged
 
 
-def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile=90):
+def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: int = 90, sub_image_size: int = 500):
     """
     Function to find scale factor m and constant c such that m * preseq + c ~ seq. This is done by a regression on
     the pixels of brightness < brightness_thresh_percentile as these likely won't be spots. The regression is done by
@@ -570,6 +570,8 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile=9
         seq: (n_y x n_x) ndarray of sequence image
         intensity_percentile: float brightness percentile such that all pixels with brightness less than this
             are used for regression
+        sub_image_size: int size of sub-images to use for regression. This is because the images are not perfectly
+            registered and so we need to find the best registered sub-image to use for regression
     Returns:
         scale, offset:
         sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression
@@ -582,7 +584,6 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile=9
     # registered sub-images
     assert preseq.shape == seq.shape, "Presequence and sequence images must have the same shape"
     tile_size = seq.shape[0]
-    sub_image_size = 200
     n_sub_images = int(tile_size / sub_image_size)
     sub_image_shifts = np.zeros((n_sub_images, n_sub_images, 2))
     sub_image_shift_score = np.zeros((n_sub_images, n_sub_images))
@@ -605,14 +606,15 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile=9
     sub_image_seq = custom_shift(sub_image_seq, sub_image_shifts[best_sub_image[0], best_sub_image[1]].astype(int))
 
     # Now find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
-    mask_pre = sub_image_preseq < np.percentile(sub_image_preseq, intensity_percentile)
-    mask_seq = sub_image_seq < np.percentile(sub_image_seq, intensity_percentile)
-    mask = mask_pre & mask_seq
-    sub_image_preseq = sub_image_preseq[mask].ravel()
-    sub_image_seq = sub_image_seq[mask].ravel()
+    mask_seq = np.abs(sub_image_seq) < np.percentile(np.abs(sub_image_seq), intensity_percentile)
+    mask_pre = np.abs(sub_image_preseq) < np.percentile(np.abs(sub_image_preseq), intensity_percentile)
+    mask = mask_pre * mask_seq
+
+    sub_image_preseq_flat = sub_image_preseq[mask].ravel()
+    sub_image_seq_flat = sub_image_seq[mask].ravel()
     # Least squares to find im = m * im_pre + c best fit coefficients
     # im_pre_masked_pad is padded with ones to allow for an intercept, c
-    sub_image_preseq = np.vstack([sub_image_preseq, np.ones(sub_image_preseq.shape[0])]).T
-    m, c = np.linalg.lstsq(sub_image_preseq, sub_image_seq, rcond=None)[0]
+    sub_image_preseq_flat= np.vstack([sub_image_preseq_flat, np.ones(sub_image_preseq_flat.shape[0])]).T
+    m, c = np.linalg.lstsq(sub_image_preseq_flat, sub_image_seq_flat, rcond=None)[0]
 
     return np.array([m, c]), sub_image_seq, sub_image_preseq

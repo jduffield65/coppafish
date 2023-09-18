@@ -48,7 +48,7 @@ def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarr
 
 def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_file: NotebookPage,
                     nbp_basic: NotebookPage, use_rounds: Optional[List[int]] = None,
-                    use_channels: Optional[List[int]] = None,return_in_bounds: bool = False,
+                    use_channels: Optional[List[int]] = None, return_in_bounds: bool = False,
                     bg_scale_offset: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, jnp.ndarray]]:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
@@ -101,8 +101,9 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
         - `yxz_base` - `int16 [n_spots_in_bounds x 3]`.
             If `return_in_bounds`, the `yxz_base` corresponding to spots in bounds for all `use_rounds` / `use_channels`
             will be returned. It is likely that `n_spots_in_bounds` won't be the same as `n_spots`.
+        - `bg_colours` - `int32 [n_spots x n_channels_use]`.
     """
-    if bg_scale_offset is not None and nbp_basic.use_preseq is False:
+    if bg_scale_offset is not None:
         assert nbp_basic.use_preseq, "Can't subtract background if preseq round doesn't exist!"
         use_bg = True
     else:
@@ -184,10 +185,14 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
     # Remove shift so now spots outside bounds have color equal to - nbp_basic.tile_pixel_shift_value.
     # It is impossible for any actual spot color to be this due to clipping at the extract stage.
     spot_colors = spot_colors - nbp_basic.tile_pixel_value_shift
-    if use_bg:
+    if use_bg and not return_in_bounds:
         spot_colors = spot_colors - bg_colours
+        return spot_colors, bg_colours
     invalid_value = -nbp_basic.tile_pixel_value_shift
-    if return_in_bounds:
+    if use_bg and return_in_bounds:
+        good = ~np.any(spot_colors == invalid_value, axis=(1, 2))
+        return spot_colors[good], yxz_base[good], bg_colours[good]
+    elif not use_bg and return_in_bounds:
         good = ~np.any(spot_colors == invalid_value, axis=(1, 2))
         return spot_colors[good], yxz_base[good]
     else:

@@ -1399,7 +1399,8 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
     napari.run()
 
 
-def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, percentile: int = 90):
+def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, percentile: int = 99,
+                                          sub_image_size: int = 500):
 
     print(f"Computing background scale for tile {t}, round {r}, channel {c}")
     num_z = nb.basic_info.tile_centre[2].astype(int)
@@ -1412,20 +1413,27 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
                                yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
     preseq = affine_transform(preseq, transform_pre, order=0)[5]
     seq = affine_transform(seq, transform_seq, order=0)[5]
-    bg_scale_offset, sub_seq, sub_preseq = brightness_scale(preseq, seq, percentile)
-    mask_seq = sub_seq < np.percentile(sub_seq, percentile)
-    mask_pre = sub_preseq < np.percentile(sub_preseq, percentile)
-    mask = mask_seq & mask_pre
+    # Apply background scale
+    bg_scale_offset, sub_seq, sub_preseq = brightness_scale(preseq, seq, percentile, sub_image_size)
+    mask_pre = np.abs(sub_seq) < np.percentile(np.abs(sub_seq), percentile)
+    mask_seq = np.abs(sub_preseq) < np.percentile(np.abs(sub_preseq), percentile)
+    mask = mask_pre * mask_seq
+    diff = sub_seq - (bg_scale_offset[0] * sub_preseq + bg_scale_offset[1])
 
     # View overlay and view regression
     viewer = napari.Viewer()
     viewer.add_image(sub_seq, name='seq', colormap='green', blending='additive')
     viewer.add_image(sub_preseq, name='preseq', colormap='red', blending='additive')
     viewer.add_image(mask, name='mask', colormap='blue', blending='additive', visible=False)
+    viewer.add_image(diff, name='diff', colormap='blue', blending='additive', visible=False)
 
     # View regression
-    plt.scatter(sub_preseq[mask], sub_seq[mask])
-    x = np.linspace(0, np.max(sub_preseq[mask]), 100)
+    num_vals = [len(set(sub_preseq[mask])), len(set(sub_seq[mask]))]
+    plt.hist2d(sub_preseq[mask], sub_seq[mask], bins=num_vals)
+    # jitter_preseq = sub_preseq + np.random.uniform(-0.5, 0.5, size=sub_preseq.shape)
+    # jitter_seq = sub_seq + np.random.uniform(-0.5, 0.5, size=sub_seq.shape)
+    # plt.scatter(jitter_preseq[mask], jitter_seq[mask], c='w', s=1, alpha=0.1)
+    x = np.linspace(np.min(sub_preseq[mask]), np.max(sub_seq[mask]), 100)
     y = bg_scale_offset[0] * x + bg_scale_offset[1]
     plt.plot(x, y, 'r')
     plt.xlabel('Preseq')

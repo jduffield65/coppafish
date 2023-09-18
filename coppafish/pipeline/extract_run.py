@@ -47,7 +47,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 nbp_basic.n_channels), dtype=int)
     nbp.hist_values = np.arange(-nbp_basic.tile_pixel_value_shift, np.iinfo(np.uint16).max -
                                 nbp_basic.tile_pixel_value_shift + 2, 1)
-    nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int)
+    nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                                nbp_basic.n_channels), dtype=int)
     hist_bin_edges = np.concatenate((nbp.hist_values - 0.5, nbp.hist_values[-1:] + 0.5))
     # initialise debugging info as 'debug' page
     nbp_debug.n_clip_pixels = np.zeros_like(nbp.auto_thresh, dtype=int)
@@ -249,7 +250,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     else:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
                     if nbp_basic.is_3d:
-                        file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                        if r != pre_seq_round:
+                            file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                        else:
+                            file_path = nbp_file.tile[t][r][c]
+                            file_path = file_path[:file_path.index('.npy')] + '_raw.npy'
+                            file_exists = os.path.isfile(file_path)
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                     if file_exists:
                         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
@@ -258,15 +264,16 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             # Only need to load in mid-z plane if 3D.
                             if nbp_basic.is_3d:
                                 im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
-                                                         yxz=[None, None, nbp_debug.z_info])
+                                                         yxz=[None, None, nbp_debug.z_info],
+                                                         suffix=''+'_raw'*(r == pre_seq_round))
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
-                            if r != pre_seq_round:
-                                nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
-                                nbp_debug.clip_extract_scale[t, r, c] = \
-                                    extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
-                                                             max_tiff_pixel_value, scale)
-                            if r != nbp_basic.anchor_round and r != pre_seq_round:
+                            nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
+                            nbp_debug.clip_extract_scale[t, r, c] = \
+                                extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
+                                                         max_tiff_pixel_value, scale)
+                            if r != nbp_basic.anchor_round:
+                                # Does hist counts ad all tiles?
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     else:
                         im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
@@ -326,22 +333,25 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                     nbp.hist_counts[:, r, c] += hist_counts_trc
                             # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
-                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
+                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c,
+                                                suffix=''+'_raw'*(r == pre_seq_round),
+                                                num_rotations=config['num_rotations'])
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)
                 if not nbp_basic.is_3d:
-                    utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
+                    utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r,
+                                        suffix=''+'_raw'*(r == pre_seq_round))
     pbar.close()
 
     # Now remove outliers from nbp.auto_thresh
-    auto_thresh_raw = nbp.auto_thresh.copy()
-    auto_thresh_reg = np.zeros_like(auto_thresh_raw)
-    auto_thresh_reg[np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels)] = \
-        extract.regularise_auto_thresh(auto_thresh_raw[np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds,
-                                                              nbp_basic.use_channels)])
-    del nbp.auto_thresh
-    nbp.auto_thresh = auto_thresh_reg
+    # auto_thresh_raw = nbp.auto_thresh.copy()
+    # auto_thresh_reg = np.zeros_like(auto_thresh_raw)
+    # auto_thresh_reg[np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels)] = \
+    #     extract.regularise_auto_thresh(auto_thresh_raw[np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds,
+    #                                                           nbp_basic.use_channels)])
+    # del nbp.auto_thresh
+    # nbp.auto_thresh = auto_thresh_reg
 
     if not nbp_basic.use_anchor:
         nbp_debug.scale_anchor_tile = None

@@ -50,8 +50,8 @@ def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict)
         channel_registration = {'transform': np.zeros((n_channels, 3, 4))}
         registration_data = {'round_registration': round_registration,
                              'channel_registration': channel_registration,
-                             'initial_transform': np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
-                             }
+                             'initial_transform': np.zeros((n_tiles, n_rounds, n_channels, 4, 3)),
+                             'blur': False}
     return registration_data
 
 
