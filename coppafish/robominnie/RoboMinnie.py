@@ -38,7 +38,7 @@ class RoboMinnie:
     """
     RoboMinnie
     ==========
-    The fastest coppafish integration testing suite
+    Fast coppafish integration testing suite
     
     Provides:
     ---------
@@ -102,8 +102,7 @@ class RoboMinnie:
         self.shape = (self.n_rounds, self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], 
             self.n_planes)
         self.anchor_shape = (self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], self.n_planes)
-        self.preseq_shape = (self.n_rounds, self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], 
-            self.n_planes)
+        self.preseq_shape = (self.n_tiles, self.n_channels, self.n_yx[0], self.n_yx[1], self.n_planes)
         # This is the image we will build up throughout this script and eventually return. Starting with just 
         # zeroes
         self.image = np.zeros(self.shape, dtype=float)
@@ -162,15 +161,15 @@ class RoboMinnie:
             self.anchor_image[:,:] += pink_noise
 
 
-    def Generate_Random_Noise(self, noise_amplitude : float, noise_std : float, noise_mean : float = 0, 
+    def Generate_Random_Noise(self, noise_std : float, noise_mean_amplitude : float = 0, 
         noise_type : str = 'normal', include_anchor : bool = True, include_preseq : bool = True) -> None:
         """
-        Superimpose random, white noise onto every pixel individually.
+        Superimpose random, white noise onto every pixel individually. Good for modelling random noise from the 
+        camera
 
         Args:
-            noise_amplitude(float): Maximum amplitude of abs(noise)
+            noise_mean_amplitude(float, optional): Mean amplitude of random noise. Default: 0
             noise_std(float): Standard deviation/width of random noise
-            noise_mean(float, optional): Mean of random noise. Default: 0
             noise_type(str('normal' or 'uniform'), optional): Type of random noise to apply. Default: 'normal'
             include_anchor(bool, optional): Whether to apply random noise to anchor round. Default: true
             include_preseq(bool, optional): Whether to apply random noise to presequence rounds. Default: true
@@ -178,26 +177,24 @@ class RoboMinnie:
         self.instructions.append(_funcname())
         print(f'Generating random noise')
 
-        assert noise_amplitude > 0, f'Noise amplitude must be > 0, got {noise_amplitude}'
         assert noise_std > 0, f'Noise standard deviation must be > 0, got {noise_std}'
-        assert noise_mean >= 0, f'Noise mean must be >= 0, got {noise_mean}'
 
         # Create random pixel noise        
         rng = np.random.RandomState(self.seed)
         if noise_type == 'normal':
-            noise = rng.normal(noise_mean, noise_std, size=self.shape)
+            noise = rng.normal(noise_mean_amplitude, noise_std, size=self.shape)
             if include_anchor and self.include_anchor:
-                anchor_noise = rng.normal(noise_mean, noise_std, size=self.anchor_shape)
+                anchor_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.anchor_shape)
             if include_preseq and self.include_preseq:
-                preseq_noise = rng.normal(noise_mean, noise_std, size=self.preseq_shape)
+                preseq_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.preseq_shape)
         elif noise_type == 'uniform':
-            noise = rng.uniform(noise_mean - noise_std/2, noise_mean+noise_std/2, size=self.shape)
+            noise = rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.shape)
             if include_anchor and self.include_anchor:
                 anchor_noise = \
-                    rng.uniform(noise_mean - noise_std/2, noise_mean+noise_std/2, size=self.anchor_shape)
+                    rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.anchor_shape)
             if include_preseq and self.include_preseq:
                 preseq_noise = \
-                    rng.uniform(noise_mean - noise_std/2, noise_mean+noise_std/2, size=self.preseq_shape)
+                    rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.preseq_shape)
         else:
             raise ValueError(f'Unknown noise type: {noise_type}')
         
@@ -554,6 +551,9 @@ class RoboMinnie:
             respectively, where a wrong positive is a spot assigned to the wrong gene, but found in the location 
             of a spot
         """
+        assert 'Run_Coppafish' in self.instructions, \
+            'Run_Coppafish must be called before comparing OMP to ground truth spots'
+
         self.instructions.append(_funcname())
         print(f'Comparing OMP to known spot locations')
 
@@ -576,9 +576,8 @@ class RoboMinnie:
         omp_spot_positions_yxz = omp_spot_positions_yxz[indices]
         del indices
 
-        #! Note: self.true_spot_positions_pixels has the form yxz and omp_spot_positions has the form yxz
+        #! Note: self.true_spot_positions_pixels has the form yxz and omp_spot_positions has the form yxz also
 
-        # TODO: Optimise this and remove the for loop through all coppafish found spots in OMP
         omp_spot_count = omp_spot_positions_yxz.shape[0]
         true_spot_count = self.true_spot_positions_pixels.shape[0]
         # Indices of every true spot index that has been paired to an omp result spot already
@@ -664,12 +663,20 @@ class RoboMinnie:
         viewer = napari.Viewer(title=f'RoboMinnie, tile={tile}')
         for c in range(self.n_channels):
             for r in range(self.n_rounds):
-                # z index must be in the first axis for napari to view
-                viewer.add_image(self.image[r,tile,c].transpose([2,0,1]), name=f'r={r}, c={c}')    
-                if self.include_preseq:
-                    viewer.add_image(self.preseq_image[r,tile,c].transpose([2,0,1]), name=f'preseq, r={r}, c={c}')    
+                # z index must be the first axis for napari to view
+                viewer.add_image(self.image[r,tile,c].transpose([2,0,1]), name=f'r={r}, c={c}', visible=False)
             if self.include_anchor:
-                viewer.add_image(self.anchor_image[tile,c].transpose([2,0,1]), name=f'anchor, c={c}')
+                viewer.add_image(
+                    self.anchor_image[tile,c].transpose([2,0,1]), 
+                    name=f'anchor, c={c}', 
+                    visible=False
+                )
+            if self.include_preseq:
+                viewer.add_image(
+                    self.preseq_image[tile,c].transpose([2,0,1]), 
+                    name=f'preseq, c={c}',
+                    visible=False,
+                )
         # viewer.show()
         napari.run()
 
