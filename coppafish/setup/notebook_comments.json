@@ -84,7 +84,7 @@
       "Name of *nd2* file for the pre-sequencing round. `None` if not used"],
     "initial_bleed_matrix": [
       "Directory or None",
-      "Location of initial bleed matrix file. `None` if one is not given, use default bleed matrix"]
+      "Location of initial bleed matrix file. `None` if one is not given, then use default bleed matrix"]
   },
 
   "basic_info":

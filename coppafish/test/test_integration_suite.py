@@ -85,7 +85,7 @@ def test_integration_001() -> None:
     """
     output_dir = '/tmp/integration'
     codebook_path = ''
-    bleed_matrix = np.diag([.2, .3, .4, .5, .6, .7, .8])
+    bleed_matrix = np.diag(np.ones(7))
     n_spots = 10_000
     spot_size = np.array([1.5, 1.5, 1.5])
 
@@ -131,7 +131,7 @@ def test_integration_002() -> None:
     """
     output_dir = '/tmp/integration'
     codebook_path = ''
-    bleed_matrix = np.diag([.2, .3, .4, .5, .6, .7, .8])
+    bleed_matrix = np.diag(np.ones(7))
     n_spots = 10_000
     spot_size = np.array([1.5, 1.5, 1.5])
 
