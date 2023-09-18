@@ -25,7 +25,7 @@ setup(
     install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'scikit-learn', 'opencv-python-headless',
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx', 'pytest'],
-    extras_require={'optimised': ['jax', 'jaxlib'], 'plotting': ['matplotlib', 'distinctipy', 'PyQt5', 'mplcursors',
+    extras_require={'optimised': ['jax[cpu]'], 'plotting': ['matplotlib', 'distinctipy', 'PyQt5', 'mplcursors',
                                                                  'magicgui', 'ipympl', 'napari<=0.4.17', 'npe2', 'hsluv']},
     package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json',
                                       'dye_camera_laser_raw_intensity.csv'],
