@@ -38,7 +38,7 @@ class RoboMinnie:
     """
     RoboMinnie
     ==========
-    Fast coppafish integration testing suite
+    Fast coppafish integration suite
     
     Provides:
     ---------
