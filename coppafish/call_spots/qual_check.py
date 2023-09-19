@@ -19,11 +19,11 @@ def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
             ```[s]``` is the intensity of spot ```s```.
     """
     check_spot = np.random.randint(spot_colors.shape[0])
-    # diff_to_int = np.round(spot_colors[check_spot]).astype(int) - spot_colors[check_spot]
-    # if np.abs(diff_to_int).max() == 0:
-    #     raise ValueError(f"spot_intensities should be found using normalised spot_colors."
-    #                      f"\nBut for spot {check_spot}, spot_colors given are integers indicating they are "
-    #                      f"the raw intensities.")
+    diff_to_int = np.round(spot_colors[check_spot]).astype(int) - spot_colors[check_spot]
+    if np.abs(diff_to_int).max() == 0:
+        raise ValueError(f"spot_intensities should be found using normalised spot_colors."
+                         f"\nBut for spot {check_spot}, spot_colors given are integers indicating they are "
+                         f"the raw intensities.")
     round_max_color = np.max(spot_colors, axis=2)
     return np.median(round_max_color, axis=1)
 

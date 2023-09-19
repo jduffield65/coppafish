@@ -153,7 +153,7 @@ class RoboMinnie:
     Usage:
     ------
     Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
-        ``RoboMinnie.py`` functions for choices). Call ``Save_Coppafish`` then ``Run_Coppafish``. Use \
+        ``RoboMinnie.py`` functions for options). Call ``Save_Coppafish`` then ``Run_Coppafish``. Use \
         ``Compare_Spots_OMP`` to evaluate OMP results.
     """
     #TODO: Multi-tile support
@@ -449,9 +449,9 @@ class RoboMinnie:
         Shift every image pixel, in all tiles, by a constant value
 
         args:
-            constant(float): Shift value
-            include_anchor(bool, optional): Include anchor images in the shift if exists. Default: true
-            include_presequence(bool, optional): Include preseq images in the shift if exists. Default: true
+            constant (float): Shift value
+            include_anchor (bool, optional): Include anchor images in the shift if exists. Default: true
+            include_presequence (bool, optional): Include preseq images in the shift if exists. Default: true
         """
         self.instructions.append(_funcname())
         print(f'Shifting image by {constant}')
@@ -463,15 +463,17 @@ class RoboMinnie:
             np.add(self.presequence_image, constant, out=self.presequence_image)
 
 
-    def Save_Coppafish(self, output_dir : str, overwrite : bool = False) -> None:
+    def Save_Coppafish(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 5) -> None:
         """
         Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and \
             config.ini file for coppafish pipeline run. Output directory must be empty.
         
         args:
-            output_dir(str): Save directory
-            overwrite(bool, optional): If True, overwrite any saved coppafish data inside the directory, \
+            output_dir (str): Save directory
+            overwrite (bool, optional): If True, overwrite any saved coppafish data inside the directory, \
                 delete old notebook.npz file if there is one and ignore any other files inside the directory
+            omp_iterations (int, optional): Number of OMP iterations on every pixel. Increasing this may improve \
+                gene scoring. Default: 5
         """
         self.instructions.append(_funcname())
         print(f'Saving as coppafish data')
@@ -594,11 +596,12 @@ class RoboMinnie:
         anchor_channel = {self.anchor_channel if self.include_anchor else ''}
         
         [register]
-        z_subvols = 1
-        x_subvols = 8
-        y_subvols = 8
+        subvols = {1}, {8}, {8}
         box_size = {np.min([self.n_planes, 12])}, 300, 300
         pearson_r_thresh = 0.25
+
+        [omp]
+        max_genes = {omp_iterations}
         """
         # Remove any large spaces in the config contents
         config_file_contents = config_file_contents.replace('  ', '')
@@ -614,8 +617,8 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, jax_profile_omp : bool = False) \
-        -> None:
+    def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, \
+        jax_profile_omp : bool = False) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
@@ -662,7 +665,7 @@ class RoboMinnie:
             end_time = time.time()
             print(
                 f'Coppafish pipeline run: {round(end_time - start_time, 1)}s. ' + \
-                '{round((end_time - start_time)//(self.n_planes * self.n_tiles), 1)}s per z plane.'
+                f'{round((end_time - start_time)//(self.n_planes * self.n_tiles), 1)}s per z plane per tile.'
             )
 
         # Keep the OMP spot intensities, assigned gene, assigned tile number and the spot positions in the class instance
@@ -686,7 +689,9 @@ class RoboMinnie:
             they are considered the same spot in both coppafish output and synthetic data. If two or more spots \
             are close enough to a true spot, then the closest one is chosen. If equidistant, then take the spot \
             with the correct gene code. If not applicable, then just take the spot with the lowest index \
-            (effectively choose one of them at random, but consistent way).
+            (effectively choose one of them at random, but consistent way). Will save the results in `self` \
+            (overwrites other earlier comparison calls), so can call the `Overall_Score` function afterwards \
+            without inputting parameters.
 
         args:
             score_threshold (float, optional): Reference spot score threshold, any spots below this intensity are \
@@ -738,6 +743,11 @@ class RoboMinnie:
                 self.codes,
                 'Checking reference spots',
             )
+        # Save results in `self` (overwrites)
+        self.true_positives  = true_positives
+        self.wrong_positives = wrong_positives
+        self.false_positives = false_positives
+        self.false_negatives = false_negatives
         return (true_positives, wrong_positives, false_positives, false_negatives)
 
 
@@ -749,7 +759,8 @@ class RoboMinnie:
         the same spot in both coppafish output and synthetic data. If two or more spots are close enough to a true 
         spot, then the closest one is chosen. If equidistant, then take the spot with the correct gene code. If 
         not applicable, then just take the spot with the lowest index (effectively choose one of them at random, 
-        but consistent way).
+        but consistent way). Will save the results in `self` (overwrites other earlier comparison calls), so can 
+        call the `Overall_Score` function afterwards without inputting parameters.
 
         args:
             omp_intensity_threshold (float, optional): OMP intensity threshold, any spots below this intensity \
@@ -776,8 +787,8 @@ class RoboMinnie:
         location_threshold_squared = location_threshold ** 2
 
         # Convert local spot positions into global coordinates using global tile positions
-        omp_spot_positions_yxz = self.omp_spot_local_positions
-        np.add(omp_spot_positions_yxz, self.tile_origins[self.ref_spots_tile], out=omp_spot_positions_yxz)
+        omp_spot_positions_yxz = self.omp_spot_local_positions.astype(np.float64)
+        np.add(omp_spot_positions_yxz, self.tile_origins[self.omp_tile_number], out=omp_spot_positions_yxz)
 
         omp_gene_numbers = self.omp_gene_numbers
 
@@ -798,34 +809,65 @@ class RoboMinnie:
                 self.codes,
                 'Checking OMP spots',
             )
+        # Save results in `self` (overwrites)
+        self.true_positives  = true_positives
+        self.wrong_positives = wrong_positives
+        self.false_positives = false_positives
+        self.false_negatives = false_negatives
         return (true_positives, wrong_positives, false_positives, false_negatives)
 
 
+    def Overall_Score(self, true_positives : int = None, wrong_positives : int = None, false_positives : int = None, \
+        false_negatives : int = None) -> float:
+        """
+        Overall score from a spot-to-spot comparison, such as `Compare_OMP_Spots`.
+
+        args:
+            true_positives (int, optional): True positives spot count. Default: value stored in `self`
+            wrong_positives (int, optional): Wrong positives spot count. Default: value stored in `self`
+            false_positives (int, optional): False positives spot count. Default: value stored in `self`
+            false_negatives (int, optional): False negatives spot count. Default: value stored in `self`
+
+        returns:
+            float: Overall score
+        """
+        if true_positives == None:
+            true_positives  = self.true_positives
+        if wrong_positives == None:
+            wrong_positives = self.wrong_positives
+        if false_positives == None:
+            false_positives = self.false_positives
+        if false_negatives == None:
+            false_negatives = self.false_negatives
+        return float(true_positives / (true_positives + wrong_positives + false_positives + false_negatives))
+
+
     # Debugging Function:
-    def View_Images(self, tile : int = 0):
+    def View_Images(self, tiles : list[int] = [0]):
         """
         View all images in `napari` for tile index `t`, including a presequence and anchor image, if they exist.
 
         args:
-            tile (int, optional): Tile index. Default: 0
+            tile (list of int, optional): Tile index. Default: [0]
         """
-        viewer = napari.Viewer(title=f'RoboMinnie, tile={tile}')
-        for c in range(self.n_channels):
-            for r in range(self.n_rounds):
-                # z index must be the first axis for napari to view
-                viewer.add_image(self.image[r,tile,c].transpose([2,0,1]), name=f'r={r}, c={c}', visible=False)
-            if self.include_anchor:
-                viewer.add_image(
-                    self.anchor_image[tile,c].transpose([2,0,1]), 
-                    name=f'anchor, c={c}', 
-                    visible=False
-                )
-            if self.include_presequence:
-                viewer.add_image(
-                    self.presequence_image[tile,c].transpose([2,0,1]), 
-                    name=f'preseq, c={c}',
-                    visible=False,
-                )
+        viewer = napari.Viewer(title=f'RoboMinnie, tiles={tiles}')
+        for t in tiles:
+            for c in range(self.n_channels):
+                for r in range(self.n_rounds):
+                    # z index must be the first axis for napari to view
+                    viewer.add_image(self.image[r,t,c].transpose([2,0,1]), name=f't={t}, r={r}, c={c}', visible=False)
+                if self.include_anchor:
+                    viewer.add_image(
+                        self.anchor_image[t,c].transpose([2,0,1]), 
+                        name=f'anchor, t={t}, c={c}', 
+                        visible=False
+                    )
+                if self.include_presequence:
+                    viewer.add_image(
+                        self.presequence_image[t,c].transpose([2,0,1]), 
+                        name=f'preseq, t={t}, c={c}',
+                        visible=False,
+                    )
         # viewer.show()
         napari.run()
 

@@ -12,6 +12,7 @@ import os
 import warnings
 from scipy import sparse
 from typing import Optional
+import psutil
 try:
     import jax.numpy as jnp
 except ImportError:
@@ -156,7 +157,11 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in use_tiles:
         pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
-        z_chunk_size = 5
+        # Total PC's available memory in GB
+        available_memory = psutil.virtual_memory().available // 1000**3
+        # Scale the z_chunk_size linearly based on PC's available memory, with a maximum of 8
+        z_chunk_size = available_memory // 16
+        z_chunk_size = np.clip(z_chunk_size, 1, 8, dtype=int)
         z_chunks = len(use_z) // z_chunk_size + 1
         # n_jobs = 5
         for z_chunk in range(z_chunks):
