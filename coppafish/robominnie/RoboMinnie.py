@@ -79,18 +79,19 @@ def _compare_spots(
             position_delta[:,1] * position_delta[:,1] + \
             position_delta[:,2] * position_delta[:,2]
         
-        # Find true spots close enough and closest to the spot, stored as a boolean array of spots
+        # Find true spots close enough and closest to the spot, stored as a boolean array
         matches = np.logical_and(position_delta_squared <= location_threshold_squared, \
             position_delta_squared == np.min(position_delta_squared))
         
         # True spot indices
         matches_indices = np.where(matches)
         delete_indices = []
-        # Ignore true spots close enough to the spot if already paired to a previous spot
-        for i in range(len(matches_indices)):
-            if matches_indices[i] in true_spots_paired:
-                delete_indices.append(i)
-                matches[matches_indices[i]] = False
+        if np.sum(matches) > 0:
+            # Ignore true spots close enough to the spot if already paired to a previous spot
+            for i in range(len(matches_indices)):
+                if matches_indices[i] in true_spots_paired:
+                    delete_indices.append(i)
+                    matches[matches_indices[i]] = False
         delete_indices = np.array(delete_indices, dtype=int)
         if delete_indices.size > 0:
             matches_indices = np.delete(matches_indices, delete_indices)
@@ -613,16 +614,16 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def Run_Coppafish(self, time_pipeline : bool = True, run_omp : bool = True, jax_profile_omp : bool = False) \
+    def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, jax_profile_omp : bool = False) \
         -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         args:
-            time_pipeline(bool, optional): If true, print the time taken to run the coppafish pipeline. Default: \
+            time_pipeline (bool, optional): If true, print the time taken to run the coppafish pipeline. Default: \
                 true
-            run_omp(bool, optional): If true, run up to and including coppafish OMP stage
-            jax_profile_omp(bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
+            include_omp (bool, optional): If true, run up to and including coppafish OMP stage
+            jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
                 Likely requires > 32GB of RAM and more CPU time to run. Default: false
         """
         self.instructions.append(_funcname())
@@ -638,11 +639,18 @@ class RoboMinnie:
             start_time = time.time()
         run_tile_indep_pipeline(nb)
         run_stitch(nb)
-        # Keep the stitch information to convert local tiles into global coordinates
+        # Keep the stitch information to convert local tiles coordinates into global coordinates when comparing 
+        # to true spots
         self.tile_origins = nb.stitch.tile_origin
         run_reference_spots(nb, overwrite_ref_spots=False)
+        # Keep reference spot information to compare to true spots, if wanted
+        self.ref_spots_scores              = nb.ref_spots.score
+        self.ref_spots_local_positions_yxz = nb.ref_spots.local_yxz
+        self.ref_spots_intensities         = nb.ref_spots.intensity
+        self.ref_spots_gene_indices        = nb.ref_spots.gene_no
+        self.ref_spots_tile                = nb.ref_spots.tile
 
-        if run_omp == False:
+        if include_omp == False:
             return
         
         if jax_profile_omp:
@@ -662,15 +670,78 @@ class RoboMinnie:
         self.omp_gene_numbers = nb.omp.gene_no
         self.omp_tile_number = nb.omp.tile
         self.omp_spot_local_positions = nb.omp.local_yxz # yxz position of each gene found
-        assert self.omp_gene_numbers.shape[0] == self.omp_spot_local_positions.shape[0], 'Mismatch in spot count in ' + \
-            'omp.gene_numbers and omp.local_positions'
+        assert self.omp_gene_numbers.shape[0] == self.omp_spot_local_positions.shape[0], \
+            'Mismatch in spot count in omp.gene_numbers and omp.local_positions'
         self.omp_spot_count = self.omp_gene_numbers.shape[0]
 
         if self.omp_spot_count == 0:
             warnings.warn('Copppafish OMP found zero spots')
 
 
-    def Compare_Spots_OMP(self, omp_intensity_threshold : float = 0.2, location_threshold : float = 2) \
+    def Compare_Ref_Spots(self, score_threshold : float = 0.5, intensity_threshold : float = 0.7, \
+        location_threshold : float = 2) -> Tuple[int,int,int,int]:
+        """
+        Compare spot positions and gene codes from coppafish ref_spots results to the known spot locations. If \
+            the spots are close enough and the true spot has not been already assigned to a reference spot, then \
+            they are considered the same spot in both coppafish output and synthetic data. If two or more spots \
+            are close enough to a true spot, then the closest one is chosen. If equidistant, then take the spot \
+            with the correct gene code. If not applicable, then just take the spot with the lowest index \
+            (effectively choose one of them at random, but consistent way).
+
+        args:
+            score_threshold (float, optional): Reference spot score threshold, any spots below this intensity are \
+                ignored. Default: 0.5
+            intensity_threshold (float, optional): Reference spot intensity threshold. Default: 0.7
+            location_threshold (float, optional): Max distance two spots can be apart to be considered the same \
+                spot in pixels, inclusive. Default: 2
+
+        returns:
+            Tuple (true_positives : int, wrong_positives : int, false_positives : int, false_negatives : int): \
+                The number of spots assigned to true positive, wrong positive, false positive and false negative \
+                respectively, where a wrong positive is a spot assigned to the wrong gene, but found in the \
+                location of a true spot
+        """
+        assert 'Run_Coppafish' in self.instructions, \
+            'Run_Coppafish must be called before comparing reference spots to ground truth spots'
+
+        self.instructions.append(_funcname())
+        print(f'Comparing reference spots to known spots')
+
+        assert score_threshold >= 0 and score_threshold <= 1, \
+            f'Intensity threshold must be (0,1), got {score_threshold}'
+        assert location_threshold >= 0, f'Location threshold must be >= 0, got {location_threshold}'
+
+        location_threshold_squared = location_threshold ** 2
+
+        # Convert local spot positions into global coordinates using global tile positions
+        ref_spots_positions_yxz = self.ref_spots_local_positions_yxz.astype(np.float64)
+        np.add(ref_spots_positions_yxz, self.tile_origins[self.ref_spots_tile], out=ref_spots_positions_yxz)
+
+        ref_spots_gene_indices = self.ref_spots_gene_indices
+        ref_spots_intensities  = self.ref_spots_intensities
+        ref_spots_scores       = self.ref_spots_scores
+
+        # Eliminate any reference spots below the thresholds
+        indices = np.logical_and(ref_spots_intensities >= intensity_threshold, ref_spots_scores > score_threshold)
+        ref_spots_gene_indices = ref_spots_gene_indices[indices]
+        ref_spots_positions_yxz = ref_spots_positions_yxz[indices]
+        del indices
+
+        # Note: self.true_spot_positions_pixels and ref_spots_positions_yxz has the form yxz
+        true_positives, wrong_positives, false_positives, false_negatives = \
+            _compare_spots(
+                ref_spots_positions_yxz,
+                ref_spots_gene_indices,
+                self.true_spot_positions_pixels,
+                self.true_spot_identities,
+                location_threshold_squared,
+                self.codes,
+                'Checking reference spots',
+            )
+        return (true_positives, wrong_positives, false_positives, false_negatives)
+
+
+    def Compare_OMP_Spots(self, omp_intensity_threshold : float = 0.2, location_threshold : float = 2) \
         -> Tuple[int,int,int,int]:
         """
         Compare spot positions and gene codes from coppafish OMP results to the known spot locations. If the spots 
@@ -678,25 +749,25 @@ class RoboMinnie:
         the same spot in both coppafish output and synthetic data. If two or more spots are close enough to a true 
         spot, then the closest one is chosen. If equidistant, then take the spot with the correct gene code. If 
         not applicable, then just take the spot with the lowest index (effectively choose one of them at random, 
-        but in a consistent way).
+        but consistent way).
 
         args:
-            omp_intensity_threshold(float, optional): OMP intensity threshold, any spots below this intensity are \
-                ignored. Default: 0.2
-            location_threshold(float, optional): Max distance two spots can be apart to be considered the same 
-            spot in pixels, inclusive. Default: 2
+            omp_intensity_threshold (float, optional): OMP intensity threshold, any spots below this intensity \
+                are ignored. Default: 0.2
+            location_threshold (float, optional): Max distance two spots can be apart to be considered the same \
+                spot in pixels, inclusive. Default: 2
 
         returns:
-            Tuple(true_positives : int, wrong_positives : int, false_positives : int, false_negatives : int): The 
-            number of spots assigned to true positive, wrong positive, false positive and false negative 
-            respectively, where a wrong positive is a spot assigned to the wrong gene, but found in the location 
-            of a spot
+            Tuple (true_positives : int, wrong_positives : int, false_positives : int, false_negatives : int): \
+                The number of spots assigned to true positive, wrong positive, false positive and false negative \
+                respectively, where a wrong positive is a spot assigned to the wrong gene, but found in the \
+                location of a true spot
         """
         assert 'Run_Coppafish' in self.instructions, \
-            'Run_Coppafish must be called before comparing OMP to ground truth spots'
+            'Run_Coppafish must be called before comparing OMP spots to ground truth spots'
 
         self.instructions.append(_funcname())
-        print(f'Comparing OMP to known spot locations')
+        print(f'Comparing OMP spots to known spots')
 
         assert omp_intensity_threshold >= 0 and omp_intensity_threshold <= 1, \
             f'Intensity threshold must be between 0 and 1, got {omp_intensity_threshold}'
@@ -704,11 +775,14 @@ class RoboMinnie:
 
         location_threshold_squared = location_threshold ** 2
 
+        # Convert local spot positions into global coordinates using global tile positions
+        omp_spot_positions_yxz = self.omp_spot_local_positions
+        np.add(omp_spot_positions_yxz, self.tile_origins[self.ref_spots_tile], out=omp_spot_positions_yxz)
+
+        omp_gene_numbers = self.omp_gene_numbers
 
         # Eliminate OMP spots below threshold
-        omp_gene_numbers = self.omp_gene_numbers
-        omp_spot_positions_yxz = self.omp_spot_local_positions
-        indices = self.omp_spot_intensities > omp_intensity_threshold
+        indices = self.omp_spot_intensities >= omp_intensity_threshold
         omp_gene_numbers = omp_gene_numbers[indices]
         omp_spot_positions_yxz = omp_spot_positions_yxz[indices]
         del indices
@@ -733,7 +807,7 @@ class RoboMinnie:
         View all images in `napari` for tile index `t`, including a presequence and anchor image, if they exist.
 
         args:
-            tile(int, optional): Tile index. Default: 0
+            tile (int, optional): Tile index. Default: 0
         """
         viewer = napari.Viewer(title=f'RoboMinnie, tile={tile}')
         for c in range(self.n_channels):
@@ -761,9 +835,9 @@ class RoboMinnie:
         Save `RoboMinnie` instance using the amazing tool pickle inside output_dir directory.
 
         args:
-            output_dir(str): 
-            filename(str, optional): Name of the pickled `RoboMinnie` object. Default: 'robominnie.pkl'
-            compress(bool, optional): If True, compress pickle binary file using bzip2 compression in the \
+            output_dir (str): 
+            filename (str, optional): Name of the pickled `RoboMinnie` object. Default: 'robominnie.pkl'
+            compress (bool, optional): If True, compress pickle binary file using bzip2 compression in the \
                 default python package `bz2`. Default: False
         """
         self.instructions.append(_funcname())
@@ -793,10 +867,10 @@ class RoboMinnie:
         Load `RoboMinnie` instance using the handy pickled information saved inside input_dir.
 
         args:
-            input_dir(str): The directory where the RoboMinnie data is stored
-            filename(str, optional): Name of the pickle RoboMinnie object. Default: 'robominnie.pkl'
-            overwrite_self(bool, optional): If true, become the RoboMinnie instance loaded from disk
-            compressed(bool, optional): If True, try decompress pickle binary file assuming a bzip2 compression. \
+            input_dir (str): The directory where the RoboMinnie data is stored
+            filename (str, optional): Name of the pickle RoboMinnie object. Default: 'robominnie.pkl'
+            overwrite_self (bool, optional): If true, become the RoboMinnie instance loaded from disk
+            compressed (bool, optional): If True, try decompress pickle binary file assuming a bzip2 compression. \
                 Default: False
 
         Returns:
