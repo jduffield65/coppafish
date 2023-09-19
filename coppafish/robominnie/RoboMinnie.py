@@ -34,6 +34,109 @@ def _funcname():
     return str(inspect.stack()[1][3])
 
 
+
+def _compare_spots(
+    spot_positions_yxz : np.ndarray, spot_gene_indices : np.ndarray, true_spot_positions_yxz : np.ndarray, \
+    true_spot_gene_identities : np.ndarray, location_threshold_squared : float, codes : dict[str:str],
+    description : str,
+    ) -> Tuple[int,int,int,int]:
+    """
+    Compare two collections of spots (one is the ground truth) based on their positions and gene identities.
+
+    Args:
+        spot_positions_yxz ((n_spots x 3) ndarray): The assigned spot positions
+        spot_gene_indices ((n_spots) ndarray): The indices for the gene identities assigned to each spot. The \
+            genes are assumed to be in the order that they are found in the genes parameter
+        true_spot_positions_yxz (ndarray): The ground truth spot positions
+        true_spot_gene_identities ((n_true_spots) ndarray): Array of every ground truth gene name, given as a \
+            `str`
+        location_threshold_squared (float): The square of the maximum distance two spots can be apart to be \
+            paired.
+        codes (dict of str: str): Each code name as a key is mapped to a unique code, both stored as `str`
+        description (str, optional): Description of progress bar for printing. Default: empty
+
+    Returns:
+        Tuple[int,int,int,int]: _description_
+    """
+    true_positives  = 0
+    wrong_positives = 0
+    false_positives = 0
+    false_negatives = 0
+
+    spot_count = spot_positions_yxz.shape[0]
+    true_spot_count = true_spot_positions_yxz.shape[0]
+    # Stores the indices of every true spot index that has been paired to a spot already
+    true_spots_paired = np.empty(0, dtype=int)
+    for s in trange(spot_count, ascii=True, desc=description, unit='spots'):
+        x = spot_positions_yxz[s,1]
+        y = spot_positions_yxz[s,0]
+        z = spot_positions_yxz[s,2]
+        position_s = np.repeat([[y, x, z]], true_spot_count, axis=0)
+        # Subtract the spot position along all true spots
+        position_delta = np.subtract(true_spot_positions_yxz, position_s)
+        position_delta_squared = \
+            position_delta[:,0] * position_delta[:,0] + \
+            position_delta[:,1] * position_delta[:,1] + \
+            position_delta[:,2] * position_delta[:,2]
+        
+        # Find true spots close enough and closest to the spot, stored as a boolean array of spots
+        matches = np.logical_and(position_delta_squared <= location_threshold_squared, \
+            position_delta_squared == np.min(position_delta_squared))
+        
+        # True spot indices
+        matches_indices = np.where(matches)
+        delete_indices = []
+        # Ignore true spots close enough to the spot if already paired to a previous spot
+        for i in range(len(matches_indices)):
+            if matches_indices[i] in true_spots_paired:
+                delete_indices.append(i)
+                matches[matches_indices[i]] = False
+        delete_indices = np.array(delete_indices, dtype=int)
+        if delete_indices.size > 0:
+            matches_indices = np.delete(matches_indices, delete_indices)
+        matches_count = np.sum(matches)
+
+        if matches_count == 0:
+            # This spot is considered a false positive because there are no true spots close enough to it that 
+            # have not already been paired
+            false_positives += 1
+            continue
+        if matches_count == 1:
+            # Found a single true spot matching the spot, see if they are the same gene (true positive)
+
+            # Get the spot gene name from the gene number. For some reason coppafish adds a new gene called 
+            # Bcl11b, hence the -1
+            spot_gene_name = \
+                str(list(codes.keys())[spot_gene_indices[s]])
+            # Actual true spot gene name as a string
+            true_gene_name = str(true_spot_gene_identities[matches][0])
+            matching_gene = spot_gene_name == true_gene_name
+            true_positives  += matching_gene
+            wrong_positives += not matching_gene
+            true_spots_paired = np.append(true_spots_paired, matches_indices[0])
+            continue
+        
+        # Logic for dealing with multiple, equidistant true spots near the spot
+        for match_index in matches_indices:
+            spot_gene_name = \
+                str(list(codes.keys())[spot_gene_indices[s]])
+            # Actual true spot gene names as strings
+            true_gene_name = str(true_spot_gene_identities[matches[match_index][0]])
+            matching_gene = spot_gene_name == true_gene_name
+            if matching_gene:
+                true_positives += 1
+                true_spots_paired = np.append(true_spots_paired, match_index)
+                continue
+        # If reaching here, all close true spots are not the spot gene
+        # Assign the first true spot in the array as the pair and label it a wrong_positive
+        true_spots_paired = np.append(true_spots_paired, matches_indices[0])
+        wrong_positives += 1
+        continue
+    # False negatives are any true spots that have not been paired to a spot
+    false_negatives = true_spot_count - true_spots_paired.size
+    return (true_positives, wrong_positives, false_positives, false_negatives)
+
+
 class RoboMinnie:
     """
     RoboMinnie
@@ -510,13 +613,15 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def Run_Coppafish(self, time_pipeline : bool = True, jax_profile_omp : bool = False) -> None:
+    def Run_Coppafish(self, time_pipeline : bool = True, run_omp : bool = True, jax_profile_omp : bool = False) \
+        -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         args:
             time_pipeline(bool, optional): If true, print the time taken to run the coppafish pipeline. Default: \
                 true
+            run_omp(bool, optional): If true, run up to and including coppafish OMP stage
             jax_profile_omp(bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
                 Likely requires > 32GB of RAM and more CPU time to run. Default: false
         """
@@ -533,7 +638,13 @@ class RoboMinnie:
             start_time = time.time()
         run_tile_indep_pipeline(nb)
         run_stitch(nb)
+        # Keep the stitch information to convert local tiles into global coordinates
+        self.tile_origins = nb.stitch.tile_origin
         run_reference_spots(nb, overwrite_ref_spots=False)
+
+        if run_omp == False:
+            return
+        
         if jax_profile_omp:
             jax.profiler.start_trace(self.coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
         run_omp(nb)
@@ -541,10 +652,11 @@ class RoboMinnie:
             jax.profiler.stop_trace()
         if time_pipeline:
             end_time = time.time()
-            print(f'Coppafish pipeline run: {round(end_time - start_time, 1)}s. {round((end_time - start_time)//(self.n_planes * self.n_tiles), 1)}s per z plane.')
+            print(
+                f'Coppafish pipeline run: {round(end_time - start_time, 1)}s. ' + \
+                '{round((end_time - start_time)//(self.n_planes * self.n_tiles), 1)}s per z plane.'
+            )
 
-        # Keep the stitch information to convert local tiles into global coordinates
-        self.tile_origins = nb.stitch.tile_origin
         # Keep the OMP spot intensities, assigned gene, assigned tile number and the spot positions in the class instance
         self.omp_spot_intensities = nb.omp.intensity
         self.omp_gene_numbers = nb.omp.gene_no
@@ -566,7 +678,7 @@ class RoboMinnie:
         the same spot in both coppafish output and synthetic data. If two or more spots are close enough to a true 
         spot, then the closest one is chosen. If equidistant, then take the spot with the correct gene code. If 
         not applicable, then just take the spot with the lowest index (effectively choose one of them at random, 
-        but in a reproducible way).
+        but in a consistent way).
 
         args:
             omp_intensity_threshold(float, optional): OMP intensity threshold, any spots below this intensity are \
@@ -592,10 +704,6 @@ class RoboMinnie:
 
         location_threshold_squared = location_threshold ** 2
 
-        true_positives  = 0
-        wrong_positives = 0
-        false_positives = 0
-        false_negatives = 0
 
         # Eliminate OMP spots below threshold
         omp_gene_numbers = self.omp_gene_numbers
@@ -605,79 +713,17 @@ class RoboMinnie:
         omp_spot_positions_yxz = omp_spot_positions_yxz[indices]
         del indices
 
-        #! Note: self.true_spot_positions_pixels has the form yxz and omp_spot_positions has the form yxz also
-
-        omp_spot_count = omp_spot_positions_yxz.shape[0]
-        true_spot_count = self.true_spot_positions_pixels.shape[0]
-        # Indices of every true spot index that has been paired to an omp result spot already
-        true_spots_paired = np.empty(0, dtype=int)
-        for s in trange(omp_spot_count, ascii=True, desc='Checking OMP spots', unit='spots'):
-            omp_x = omp_spot_positions_yxz[s,1]
-            omp_y = omp_spot_positions_yxz[s,0]
-            omp_z = omp_spot_positions_yxz[s,2]
-            omp_position_s = np.repeat([[omp_y, omp_x, omp_z]], true_spot_count, axis=0)
-            # Subtract the omp position along all true spots
-            position_delta = np.subtract(self.true_spot_positions_pixels, omp_position_s)
-            position_delta_squared = \
-                position_delta[:,0] * position_delta[:,0] + \
-                position_delta[:,1] * position_delta[:,1] + \
-                position_delta[:,2] * position_delta[:,2]
-            
-            # Find true spots close enough and closest to the OMP spot, stored as a boolean array of spots
-            matches = np.logical_and(position_delta_squared <= location_threshold_squared, \
-                position_delta_squared == np.min(position_delta_squared))
-            
-            # True spot indices
-            matches_indices = np.where(matches)
-            delete_indices = []
-            # Ignore true spots close enough to the OMP spot if already paired to a previous OMP spot
-            for i in range(len(matches_indices)):
-                if matches_indices[i] in true_spots_paired:
-                    delete_indices.append(i)
-                    matches[matches_indices[i]] = False
-            delete_indices = np.array(delete_indices, dtype=int)
-            if delete_indices.size > 0:
-                matches_indices = np.delete(matches_indices, delete_indices)
-            matches_count = np.sum(matches)
-
-            if matches_count == 0:
-                # This omp spot is considered a false positive because there are no true spots close enough to it 
-                # that have not already been paired
-                false_positives += 1
-                continue
-            if matches_count == 1:
-                # Found a single true spot matching the omp spot, see if they are the same gene (true positive)
-
-                # Get the OMP spot gene name from the gene number. For some reason coppafish adds a new gene 
-                # called Bcl11b, hence the -1
-                omp_gene_name = \
-                    str(list(self.codes.keys())[omp_gene_numbers[s]])
-                # Actual true spot gene name as a string
-                true_gene_name = str(self.true_spot_identities[matches][0])
-                matching_gene = omp_gene_name == true_gene_name
-                true_positives  += matching_gene
-                wrong_positives += not matching_gene
-                true_spots_paired = np.append(true_spots_paired, matches_indices[0])
-                continue
-            
-            # Logic for dealing with multiple, equidistant true spots near the omp spot
-            for match_index in matches_indices:
-                omp_gene_name = \
-                    str(list(self.codes.keys())[omp_gene_numbers[s]])
-                # Actual true spot gene names as strings
-                true_gene_name = str(self.true_spot_identities[matches[match_index][0]])
-                matching_gene = omp_gene_name == true_gene_name
-                if matching_gene:
-                    true_positives += 1
-                    true_spots_paired = np.append(true_spots_paired, match_index)
-                    continue
-            # If reaching here, all close true spots are not the OMP gene
-            # Assign the first true spot in the array as the pair and label it a wrong_positive
-            true_spots_paired = np.append(true_spots_paired, matches_indices[0])
-            wrong_positives += 1
-            continue
-        # False negatives are any true spots that have not been paired to an OMP spot
-        false_negatives = true_spot_count - true_spots_paired.size
+        # Note: self.true_spot_positions_pixels and omp_spot_positions has the form yxz
+        true_positives, wrong_positives, false_positives, false_negatives = \
+            _compare_spots(
+                omp_spot_positions_yxz,
+                omp_gene_numbers,
+                self.true_spot_positions_pixels,
+                self.true_spot_identities,
+                location_threshold_squared,
+                self.codes,
+                'Checking OMP spots',
+            )
         return (true_positives, wrong_positives, false_positives, false_negatives)
 
 
