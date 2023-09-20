@@ -465,11 +465,12 @@ class RoboMinnie:
             np.add(self.presequence_image, constant, out=self.presequence_image)
 
 
-    def Save_Coppafish(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 5, \
+    def Save_Raw_Images(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 5, \
         omp_initial_intensity_thresh_percentile : int = 25) -> None:
         """
         Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and \
-            config.ini file for coppafish pipeline run. Output directory must be empty.
+            config.ini file for coppafish pipeline run. Output directory must be empty. After saving, able to \
+            call function `Run_Coppafish` to run the coppafish pipeline.
         
         args:
             output_dir (str): Save directory
@@ -635,7 +636,8 @@ class RoboMinnie:
                 true
             include_omp (bool, optional): If true, run up to and including coppafish OMP stage
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
-                Likely requires > 32GB of RAM and more CPU time to run. Default: false
+                Requires tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. \
+                Default: false
             save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing \
                 ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage
         """

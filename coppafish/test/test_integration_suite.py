@@ -100,7 +100,7 @@ def test_integration_001() -> None:
     robominnie.Fix_Image_Minimum(minimum=0)
     # Save the synthetic data in coppafish format as raw .npy files
     # NOTE: We are shortening the pipeline runtime by making the initial intensity threshold strict for OMP
-    robominnie.Save_Coppafish(output_dir=output_dir, overwrite=True, omp_initial_intensity_thresh_percentile=90)
+    robominnie.Save_Raw_Images(output_dir=output_dir, overwrite=True, omp_iterations=2, omp_initial_intensity_thresh_percentile=90)
     robominnie.Run_Coppafish(save_ref_spots_data=True)
 
     robominnie.Compare_Ref_Spots()
