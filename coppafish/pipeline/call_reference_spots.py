@@ -87,7 +87,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # save pixel intensity and delete pixel_colors to save memory
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors / colour_norm_factor[None]))
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
-    del pixel_colors
+    del pixel_colors, pixel_intensity
 
     # 2. Bleed matrix calculation and bled codes
     # 2.1 Calculate bleed matrix, this just involves normalising the bleed matrix template with the colour norm factor,

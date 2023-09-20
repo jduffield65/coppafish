@@ -17,7 +17,7 @@ from ..register.preprocessing import compose_affine, invert_affine, zyx_to_yxz_a
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
              nbp_find_spots: NotebookPage, config: dict, tile_origin: np.ndarray,
-             pre_seq_blur_radius: float, num_rotations: int) -> NotebookPage:
+             pre_seq_blur_radius: float) -> NotebookPage:
     """
     Registration pipeline. Returns register Notebook Page.
     Finds affine transforms by using linear regression to find the best matrix (in the least squares sense) taking a
@@ -173,62 +173,15 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
             pickle.dump(registration_data, f)
 
-    # # If no fluorescent beads were provided, then we'd like to save the channel transforms we learnt from ICP
-    # if nbp_file.fluorescent_bead_path is None:
-    #     # Find a tile where sum(converged) is maximised. Round will be chosen to be last round as z-scales are all
-    #     # close to 1
-    #     converged_sum = np.sum(registration_data['icp']['converged'], axis=(1, 2))
-    #     best_tile = np.argmax(converged_sum)
-    #     best_round = n_rounds - 1
-    #     # NOTE: Channel transforms always go from the anchor channel to the other channels, while round transforms
-    #     # will always go from the anchor round to the other rounds, but may be computed from any channel. This is
-    #     # assuming round transforms are independent of channel and channel transforms are independent of round.
-    #     for c in use_channels:
-    #         transform_rc = yxz_to_zyx_affine(registration_data['icp']['transform'][best_tile, best_round, c])
-    #         transform_r_ref_c = yxz_to_zyx_affine(registration_data['icp']['transform'][best_tile, best_round,
-    #                                               nbp_basic.anchor_channel])
-    #         c_transform = compose_affine(transform_rc, invert_affine(transform_r_ref_c))
-    #         registration_data['channel_registration']['transform'][c] = c_transform
-
-    # Since the pre-sequencing round is not corrected in ICP, let's just do a small correction here
-    # if nbp_basic.use_preseq:
-    #     if 'shift_correction' not in registration_data.keys():
-    #         registration_data['shift_correction'] = np.zeros((n_tiles, n_channels, 3))
-    #         for t, c in tqdm(itertools.product(use_tiles, use_channels)):
-    #             # compose the preseq round transform with the (possibly new) channel transform
-    #             registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c] = \
-    #                 zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
-    #                                                  registration_data['round_registration']['transform']
-    #                                                  [t, nbp_basic.pre_seq_round]))
-    #             # For each image, apply the transform and compute any residual shift. This gets around the problem that
-    #             # the round transform may vary slightly from channel to channel.
-    #             # To do this, take a central round and the preseq round and put them in the same coordinate system. Then
-    #             # compute the shift between them
-    #             transform_pre = yxz_to_zyx_affine(registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c])
-    #             transform_seq = yxz_to_zyx_affine(registration_data['icp']['transform'][t, 3, c])
-    #             # Load in the images (downsampled in x and y for speed)
-    #             seq_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=3, c=c))
-    #             seq_image = affine_transform(seq_image, transform_seq, order=0)
-    #             preseq_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c))
-    #             preseq_image = affine_transform(preseq_image, transform_pre, order=0)
-    #             # Apply low pass (gaussian) filter to seq image (preseq image already has this applied). This will
-    #             # remove spots
-    #             seq_image = gaussian(seq_image, pre_seq_blur_radius, truncate=3, preserve_range=True)
-    #             shift = phase_cross_correlation(preseq_image, seq_image, upsample_factor=100)[0]
-    #             print(f"Tile {t}, channel {c} has shift correction {shift}")
-    #             registration_data['shift_correction'][t, c] = -shift
-    #             transform_pre[:3, 3] -= shift
-    #             registration_data['initial_transform'][t, nbp_basic.pre_seq_round, c] = zyx_to_yxz_affine(transform_pre)
-
     # Now blur the pre seq round images
     if registration_data['blur'] is False:
         for t, c in tqdm(itertools.product(use_tiles, use_channels + [nbp_basic.dapi_channel])):
             print(f" Blurring pre-seq tile {t}, channel {c}")
             # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
             im = load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c, suffix='_raw')
-            for z in tqdm(range(len(nbp_basic.use_z))):
-                im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3,
-                                       preserve_range=True)
+            if pre_seq_blur_radius > 0:
+                for z in tqdm(range(len(nbp_basic.use_z))):
+                    im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
             # Save the blurred image (no need to rotate this, as the rotation was done in extract)
             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
         registration_data['blur'] = True
@@ -265,7 +218,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     if nbp_basic.use_preseq:
         nbp_extract.finalized = False
         del nbp_extract.bg_scale # Delete this so that it is not saved to file
-        bg_scale = np.zeros((n_tiles, n_rounds, n_channels, 2))
+        bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         num_z = nbp_basic.tile_centre[2].astype(int)
         for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")

@@ -1400,7 +1400,7 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
 
 
 def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, percentile: int = 99,
-                                          sub_image_size: int = 500):
+                                          sub_image_size: int = 500, bg_blur: bool = True):
 
     print(f"Computing background scale for tile {t}, round {r}, channel {c}")
     num_z = nb.basic_info.tile_centre[2].astype(int)
@@ -1408,7 +1408,7 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
                                       new_origin=np.array([num_z - 5, 0, 0]))
     transform_seq = yxz_to_zyx_affine(nb.register.transform[t, r, c], new_origin=np.array([num_z - 5, 0, 0]))
     preseq = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t=t, r=nb.basic_info.pre_seq_round, c=c,
-                                  yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
+                                  yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * bg_blur))
     seq = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t=t, r=r, c=c,
                                yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
     preseq = affine_transform(preseq, transform_pre, order=0)[5]
@@ -1418,23 +1418,42 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
     bg_scale, sub_seq, sub_preseq = brightness_scale(preseq, seq, percentile, sub_image_size)
     mask = sub_preseq > np.percentile(sub_preseq, percentile)
     diff = sub_seq - bg_scale * sub_preseq
+    ratio = sub_seq[mask] / sub_preseq[mask]
+    estimate_scales = np.percentile(ratio, [25, 75])
+    diff_low = sub_seq - estimate_scales[0] * sub_preseq
+    diff_high = sub_seq - estimate_scales[1] * sub_preseq
 
     # View overlay and view regression
     viewer = napari.Viewer()
     viewer.add_image(sub_seq, name='seq', colormap='green', blending='additive')
     viewer.add_image(sub_preseq, name='preseq', colormap='red', blending='additive')
     viewer.add_image(diff, name='diff', colormap='gray', blending='translucent', visible=False)
+    viewer.add_image(diff_low, name='bg_scale = 25%', colormap='gray', blending='translucent', visible=False)
+    viewer.add_image(diff_high, name='bg_scale = 75%', colormap='gray', blending='translucent', visible=False)
     viewer.add_image(mask, name='mask', colormap='blue', blending='additive', visible=False)
 
     # View regression
+    plt.subplot(1, 2, 1)
     bins = 25
     plt.hist2d(sub_preseq[mask], sub_seq[mask], bins=[np.linspace(0, np.percentile(sub_preseq[mask], 90), bins),
                                                       np.linspace(0, np.percentile(sub_seq[mask], 90), bins)])
     x = np.linspace(0, np.percentile(sub_seq[mask], 90), 100)
     y = bg_scale * x
     plt.plot(x, y, 'r')
+    plt.plot(x, estimate_scales[0] * x, 'g')
+    plt.plot(x, estimate_scales[1] * x, 'g')
     plt.xlabel('Preseq')
     plt.ylabel('Seq')
     plt.title('Regression of preseq vs seq. Scale = ' + str(np.round(bg_scale[0], 3)))
+
+    plt.subplot(1, 2, 2)
+    plt.hist(sub_seq[mask] / sub_preseq[mask], bins=100)
+    max_bin_val = np.max(np.histogram(sub_seq[mask] / sub_preseq[mask], bins=100)[0])
+    plt.vlines(bg_scale, 0, max_bin_val, colors='r')
+    plt.vlines(estimate_scales, 0, max_bin_val, colors='g')
+    plt.xlabel('Seq / Preseq')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of seq / preseq. Scale = ' + str(np.round(bg_scale[0], 3)))
+    plt.show()
 
     napari.run()

@@ -557,7 +557,7 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=Fals
     return transform, n_matches, error, converged
 
 
-def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: int = 90, sub_image_size: int = 500):
+def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: int = 99, sub_image_size: int = 500):
     """
     Function to find scale factor m and constant c such that m * preseq + c ~ seq. This is done by a regression on
     the pixels of brightness < brightness_thresh_percentile as these likely won't be spots. The regression is done by
