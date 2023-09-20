@@ -406,7 +406,7 @@ class RoboMinnie:
         indices = np.indices(ind_size)-ind_size[:,None,None,None]//2
         spot_img = scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels).pdf(indices.transpose(1,2,3,0))
         for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), 
-            desc='Superimposing spots', ascii=True, unit='spots', total=true_spot_positions_pixels.shape[0]):
+            desc='Superimposing spots', ascii=True, unit='spots', total=n_spots):
 
             p = np.asarray(p).astype(int)
             p_chan = np.round([self.n_channels//2, p[0], p[1], p[2]]).astype(int)
@@ -626,7 +626,7 @@ class RoboMinnie:
 
 
     def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, \
-        jax_profile_omp : bool = False) -> None:
+        jax_profile_omp : bool = False, save_ref_spots_data : bool = False) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
@@ -636,6 +636,8 @@ class RoboMinnie:
             include_omp (bool, optional): If true, run up to and including coppafish OMP stage
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
                 Likely requires > 32GB of RAM and more CPU time to run. Default: false
+            save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing \
+                ref_spots results to the true robominnie spots. Default: false
         """
         self.instructions.append(_funcname())
         print(f'Running coppafish')
@@ -659,11 +661,12 @@ class RoboMinnie:
 
         # Keep reference spot information to compare to true spots, if wanted
         assert nb.ref_spots is not None, f'Reference spots not found in notebook at {self.config_filepath}'
-        self.ref_spots_scores              = nb.ref_spots.score
-        self.ref_spots_local_positions_yxz = nb.ref_spots.local_yxz
-        self.ref_spots_intensities         = nb.ref_spots.intensity
-        self.ref_spots_gene_indices        = nb.ref_spots.gene_no
-        self.ref_spots_tile                = nb.ref_spots.tile
+        if save_ref_spots_data:
+            self.ref_spots_scores              = nb.ref_spots.score
+            self.ref_spots_local_positions_yxz = nb.ref_spots.local_yxz
+            self.ref_spots_intensities         = nb.ref_spots.intensity
+            self.ref_spots_gene_indices        = nb.ref_spots.gene_no
+            self.ref_spots_tile                = nb.ref_spots.tile
 
         if include_omp == False:
             return
