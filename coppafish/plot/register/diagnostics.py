@@ -1413,7 +1413,8 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
                                yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
     preseq = affine_transform(preseq, transform_pre, order=0)[5]
     seq = affine_transform(seq, transform_seq, order=0)[5]
-    # Apply background scale
+    # Apply background scale. Don't subtract bg from pixels that are <= 0 in seq as blurring in preseq can cause
+    # negative values in seq
     bg_scale, sub_seq, sub_preseq = brightness_scale(preseq, seq, percentile, sub_image_size)
     mask = sub_preseq > np.percentile(sub_preseq, percentile)
     diff = sub_seq - bg_scale * sub_preseq
@@ -1422,21 +1423,18 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
     viewer = napari.Viewer()
     viewer.add_image(sub_seq, name='seq', colormap='green', blending='additive')
     viewer.add_image(sub_preseq, name='preseq', colormap='red', blending='additive')
+    viewer.add_image(diff, name='diff', colormap='gray', blending='translucent', visible=False)
     viewer.add_image(mask, name='mask', colormap='blue', blending='additive', visible=False)
-    viewer.add_image(diff, name='diff', colormap='blue', blending='additive', visible=False)
 
     # View regression
     bins = 25
     plt.hist2d(sub_preseq[mask], sub_seq[mask], bins=[np.linspace(0, np.percentile(sub_preseq[mask], 90), bins),
                                                       np.linspace(0, np.percentile(sub_seq[mask], 90), bins)])
-    # jitter_preseq = sub_preseq + np.random.uniform(-0.5, 0.5, size=sub_preseq.shape)
-    # jitter_seq = sub_seq + np.random.uniform(-0.5, 0.5, size=sub_seq.shape)
-    # plt.scatter(jitter_preseq[mask], jitter_seq[mask], c='w', s=1, alpha=0.1)
     x = np.linspace(0, np.percentile(sub_seq[mask], 90), 100)
     y = bg_scale * x
     plt.plot(x, y, 'r')
     plt.xlabel('Preseq')
     plt.ylabel('Seq')
-    plt.title('Regression of preseq vs seq')
+    plt.title('Regression of preseq vs seq. Scale = ' + str(np.round(bg_scale[0], 3)))
 
     napari.run()

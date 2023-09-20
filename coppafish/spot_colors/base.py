@@ -43,7 +43,7 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray,
 def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_file: NotebookPage,
                     nbp_basic: NotebookPage, use_rounds: Optional[List[int]] = None,
                     use_channels: Optional[List[int]] = None, return_in_bounds: bool = False,
-                    bg_scale_offset: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                    bg_scale: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
@@ -83,8 +83,8 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
             Otherwise, `spot_colors` will be returned for all the given `yxz_base` but if spot `s` is out of bounds on
             round `r`, channel `c`, then `spot_colors[s, r, c] = invalid_value = -nbp_basic.tile_pixel_value_shift`.
             This is the only scenario for which `spot_colors = invalid_value` due to clipping in the extract step.
-        bg_scale_offset: 'float [n_tiles x n_rounds x n_channels_use x 2]' normalisation factor for each
-            of the tiles/rounds and channels. bg_round[t, c] * bg_scale_offset[t, r, c, 0] + bg_scale_offset[t, r, c, 1]
+        bg_scale: 'float [n_tiles x n_rounds x n_channels_use x 2]' normalisation factor for each
+            of the tiles/rounds and channels. bg_round[t, c] * bg_scale[t, r, c]
             will equalise the background brightness profile to the same as that of tile t, round r, channel c. If None,
             no normalisation will be performed.
 
@@ -97,9 +97,9 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
             If `return_in_bounds`, the `yxz_base` corresponding to spots in bounds for all `use_rounds` / `use_channels`
             will be returned. It is likely that `n_spots_in_bounds` won't be the same as `n_spots`.
         - `bg_colours` - `int32 [n_spots_in_bounds x n_rounds x n_channels_use]`. Background colour for each spot
-            in each round and channel. Only returned if `bg_scale_offset` is not None.
+            in each round and channel. Only returned if `bg_scale` is not None.
     """
-    if bg_scale_offset is not None:
+    if bg_scale is not None:
         assert nbp_basic.use_preseq, "Can't subtract background if preseq round doesn't exist!"
         use_bg = True
     else:
@@ -173,8 +173,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         bg_colours[valid] = bg_colours[valid] - nbp_basic.tile_pixel_value_shift
         # repeat bg_colours so it is the same shape as spot_colors
         bg_colours = np.repeat(bg_colours[:, None, :], n_use_rounds, axis=1)
-        bg_colours[valid] = bg_colours[valid] * bg_scale_offset[t, use_rounds, use_channels, 0][None] + \
-                     bg_scale_offset[t, use_rounds, use_channels, 1][None]
+        bg_colours[valid] = bg_colours[valid] * bg_scale[t, use_rounds, use_channels]
     # Remove shift so now spots outside bounds have color equal to - nbp_basic.tile_pixel_shift_value.
     # It is impossible for any actual spot color to be this due to clipping at the extract stage.
     spot_colors = spot_colors - nbp_basic.tile_pixel_value_shift

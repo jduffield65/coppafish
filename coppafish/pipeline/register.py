@@ -264,8 +264,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     # fluorescence
     if nbp_basic.use_preseq:
         nbp_extract.finalized = False
-        del nbp_extract.bg_scale_offset # Delete this so that it is not saved to file
-        bg_scale_offset = np.zeros((n_tiles, n_rounds, n_channels,2))
+        del nbp_extract.bg_scale # Delete this so that it is not saved to file
+        bg_scale = np.zeros((n_tiles, n_rounds, n_channels, 2))
         num_z = nbp_basic.tile_centre[2].astype(int)
         for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
@@ -278,8 +278,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                                        yxz=[None, None, np.arange(num_z-5, num_z+5)]))
             preseq = affine_transform(preseq, transform_pre, order=0)[5]
             seq = affine_transform(seq, transform_seq, order=0)[5]
-            bg_scale_offset[t, r, c] = brightness_scale(preseq, seq)[0]
-        nbp_extract.bg_scale_offset = bg_scale_offset
+            bg_scale[t, r, c] = brightness_scale(preseq, seq)[0]
+        nbp_extract.bg_scale = bg_scale
         nbp_extract.finalized = True
 
     return nbp, nbp_debug

@@ -358,6 +358,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_anchor_z = None
         nbp_debug.scale_anchor = None
     # add a variable for bg_scale
-    nbp.bg_scale_offset = None
+    nbp.bg_scale = None
 
     return nbp, nbp_debug

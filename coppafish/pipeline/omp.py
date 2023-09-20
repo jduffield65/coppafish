@@ -168,7 +168,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             pixel_colors_tz, pixel_yxz_tz, bg_colours = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
                                                                           np.arange(z_min, z_max)), int(t), transform,
                                                             nbp_file, nbp_basic, return_in_bounds=True,
-                                                            bg_scale_offset=nbp_extract.bg_scale_offset)
+                                                            bg_scale=nbp_extract.bg_scale)
             if pixel_colors_tz.shape[0] == 0:
                 continue
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
@@ -312,7 +312,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         if np.sum(in_tile) > 0:
             nd_spot_colors_use[in_tile], bg_colours = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
                                                           transform, nbp_file, nbp_basic,
-                                                          bg_scale_offset=nbp_extract.bg_scale_offset)
+                                                          bg_scale=nbp_extract.bg_scale)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
     nbp.intensity = np.asarray(get_spot_intensity(spot_colors_norm))
