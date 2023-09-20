@@ -637,7 +637,7 @@ class RoboMinnie:
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
                 Likely requires > 32GB of RAM and more CPU time to run. Default: false
             save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing \
-                ref_spots results to the true robominnie spots. Default: false
+                ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage
         """
         self.instructions.append(_funcname())
         print(f'Running coppafish')
