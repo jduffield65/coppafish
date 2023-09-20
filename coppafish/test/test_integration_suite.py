@@ -99,7 +99,7 @@ def test_integration_001() -> None:
     robominnie.Generate_Random_Noise(noise_mean_amplitude=0, noise_std=0.001, noise_type='normal')
     robominnie.Fix_Image_Minimum(minimum=0)
     # Save the synthetic data in coppafish format as raw .npy files
-    robominnie.Save_Coppafish(output_dir=output_dir, overwrite=True)
+    robominnie.Save_Coppafish(output_dir=output_dir, overwrite=True, omp_initial_intensity_thresh_percentile=50)
     robominnie.Run_Coppafish()
 
     robominnie.Compare_Ref_Spots()

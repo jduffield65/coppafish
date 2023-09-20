@@ -26,6 +26,10 @@ from tqdm import tqdm, trange
 import bz2
 import napari
 
+# Typing imports
+from typing import Dict, List
+import numpy.typing as npt
+
 
 DEFAULT_INSTANCE_FILENAME = 'robominnie.pkl'
 
@@ -36,14 +40,14 @@ def _funcname():
 
 
 def _compare_spots(
-    spot_positions_yxz : np.ndarray, spot_gene_indices : np.ndarray, true_spot_positions_yxz : np.ndarray, \
-    true_spot_gene_identities : np.ndarray, location_threshold_squared : float, codes : dict[str:str],
+    spot_positions_yxz : npt.NDArray, spot_gene_indices : npt.NDArray, true_spot_positions_yxz : npt.NDArray, \
+    true_spot_gene_identities : npt.NDArray, location_threshold_squared : float, codes : Dict[str,str],
     description : str,
     ) -> Tuple[int,int,int,int]:
     """
     Compare two collections of spots (one is the ground truth) based on their positions and gene identities.
 
-    Args:
+    args:
         spot_positions_yxz ((n_spots x 3) ndarray): The assigned spot positions
         spot_gene_indices ((n_spots) ndarray): The indices for the gene identities assigned to each spot. The \
             genes are assumed to be in the order that they are found in the genes parameter
@@ -210,10 +214,8 @@ class RoboMinnie:
         # This is the image we will build up throughout this script and eventually return. Starting with just 
         # zeroes
         self.image = np.zeros(self.shape, dtype=float)
-        if self.include_anchor:
-            self.anchor_image = np.zeros(self.anchor_shape, dtype=float)
-        if self.include_presequence:
-            self.presequence_image = np.zeros(self.presequence_shape, dtype=float)
+        self.anchor_image = np.zeros(self.anchor_shape, dtype=float)
+        self.presequence_image = np.zeros(self.presequence_shape, dtype=float)
         if self.n_tiles > 1:
             raise NotImplementedError('Multiple tile support is not implemented yet')
         if self.n_yx[0] != self.n_yx[1]:
@@ -271,7 +273,7 @@ class RoboMinnie:
         Superimpose random, white noise onto every pixel individually. Good for modelling random noise from the 
         camera
 
-        Args:
+        args:
             noise_mean_amplitude(float, optional): Mean amplitude of random noise. Default: 0
             noise_std(float): Standard deviation/width of random noise
             noise_type(str('normal' or 'uniform'), optional): Type of random noise to apply. Default: 'normal'
@@ -285,6 +287,8 @@ class RoboMinnie:
 
         # Create random pixel noise        
         rng = np.random.RandomState(self.seed)
+        anchor_noise = np.zeros(shape=self.anchor_shape)
+        presequence_noise = np.zeros(shape=self.anchor_shape)
         if noise_type == 'normal':
             noise = rng.normal(noise_mean_amplitude, noise_std, size=self.shape)
             if include_anchor and self.include_anchor:
@@ -304,14 +308,12 @@ class RoboMinnie:
         
         # Add new random noise to each pixel
         np.add(self.image, noise, out=self.image)
-        if include_anchor and self.include_anchor:
-            np.add(self.anchor_image, anchor_noise, out=self.anchor_image)
-        if include_presequence and self.include_presequence:
-            np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
+        np.add(self.anchor_image, anchor_noise, out=self.anchor_image)
+        np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
 
 
-    def Add_Spots(self, n_spots : int, bleed_matrix : np.ndarray[float, float], gene_codebook_path : str, 
-        spot_size_pixels : np.ndarray[float]) -> None:
+    def Add_Spots(self, n_spots : int, bleed_matrix : npt.NDArray, gene_codebook_path : str, 
+        spot_size_pixels : npt.NDArray) -> None:
         """
         Superimpose spots onto images in both space and channels (based on the bleed matrix). Also applied to the 
         anchor when included. The spots are uniformly, randomly distributed across each image. Never applied to 
@@ -404,7 +406,7 @@ class RoboMinnie:
         indices = np.indices(ind_size)-ind_size[:,None,None,None]//2
         spot_img = scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels).pdf(indices.transpose(1,2,3,0))
         for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), 
-            desc='Superimposing spots', ascii=True, unit='spots', mininterval=0.001):
+            desc='Superimposing spots', ascii=True, unit='spots', total=true_spot_positions_pixels.shape[0]):
 
             p = np.asarray(p).astype(int)
             p_chan = np.round([self.n_channels//2, p[0], p[1], p[2]]).astype(int)
@@ -463,7 +465,8 @@ class RoboMinnie:
             np.add(self.presequence_image, constant, out=self.presequence_image)
 
 
-    def Save_Coppafish(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 5) -> None:
+    def Save_Coppafish(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 5, \
+        omp_initial_intensity_thresh_percentile : int = 25) -> None:
         """
         Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and \
             config.ini file for coppafish pipeline run. Output directory must be empty.
@@ -474,6 +477,10 @@ class RoboMinnie:
                 delete old notebook.npz file if there is one and ignore any other files inside the directory
             omp_iterations (int, optional): Number of OMP iterations on every pixel. Increasing this may improve \
                 gene scoring. Default: 5
+            omp_initial_intensity_thresh_percentile (float, optional): percentile of the absolute intensity of \
+                all pixels in the mid z-plane of the central tile. Used as a threshold for pixels to decide what \
+                to apply OMP on. A higher number leads to stricter picking of pixels. Default: 25, the default \
+                coppafish value
         """
         self.instructions.append(_funcname())
         print(f'Saving as coppafish data')
@@ -602,6 +609,7 @@ class RoboMinnie:
 
         [omp]
         max_genes = {omp_iterations}
+        initial_intensity_thresh_percentile = {omp_initial_intensity_thresh_percentile}
         """
         # Remove any large spaces in the config contents
         config_file_contents = config_file_contents.replace('  ', '')
@@ -642,11 +650,15 @@ class RoboMinnie:
             start_time = time.time()
         run_tile_indep_pipeline(nb)
         run_stitch(nb)
+
+        assert nb.stitch is not None, f'Stitch not found in notebook at {self.config_filepath}'
         # Keep the stitch information to convert local tiles coordinates into global coordinates when comparing 
         # to true spots
         self.tile_origins = nb.stitch.tile_origin
         run_reference_spots(nb, overwrite_ref_spots=False)
+
         # Keep reference spot information to compare to true spots, if wanted
+        assert nb.ref_spots is not None, f'Reference spots not found in notebook at {self.config_filepath}'
         self.ref_spots_scores              = nb.ref_spots.score
         self.ref_spots_local_positions_yxz = nb.ref_spots.local_yxz
         self.ref_spots_intensities         = nb.ref_spots.intensity
@@ -668,6 +680,7 @@ class RoboMinnie:
                 f'{round((end_time - start_time)//(self.n_planes * self.n_tiles), 1)}s per z plane per tile.'
             )
 
+        assert nb.omp is not None, f'OMP not found in notebook at {self.config_filepath}'
         # Keep the OMP spot intensities, assigned gene, assigned tile number and the spot positions in the class instance
         self.omp_spot_intensities = nb.omp.intensity
         self.omp_gene_numbers = nb.omp.gene_no
