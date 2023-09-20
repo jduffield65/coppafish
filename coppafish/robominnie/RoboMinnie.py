@@ -32,6 +32,7 @@ import numpy.typing as npt
 
 
 DEFAULT_INSTANCE_FILENAME = 'robominnie.pkl'
+USE_INSTANCE_GENE_CODES = None
 
 
 def _funcname():
@@ -197,6 +198,7 @@ class RoboMinnie:
         self.anchor_channel = anchor_channel
         self.seed = seed
         self.instructions = [] # Keep track of the functions called inside RoboMinnie, in order
+        self.instructions.append(_funcname())
         assert self.n_channels > 0, 'Require at least one channel'
         assert self.n_tiles > 0, 'Require at least one tile'
         assert self.n_rounds > 0, 'Require at least one round'
@@ -225,9 +227,76 @@ class RoboMinnie:
                 ' assumptions about a tile size of 2048 in the x and y directions')
         if self.n_planes < 4:
             warnings.warn('Coppafish may break with fewer than 4 z planes')
-
-        self.instructions.append(_funcname())
     
+
+    def Generate_Gene_Codes(self, n_rounds : int = None, n_genes : int = 73) -> Dict:
+        """
+        Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible \
+            based on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The \
+            `i`th gene name will be `gene_i`
+
+        args:
+            n_rounds (int, optional): Number of sequencing rounds. Default: Use round number saved in `self` \
+                RoboMinnie instance.
+            n_genes (int, optional): Number of gene codes to generate. Default: 73.
+
+        returns:
+            Dict (str:str): Gene names as keys, gene codes as values.
+        """
+        self.instructions.append(_funcname())
+        print('Generating gene codes')
+        if n_rounds == None:
+            n_rounds = self.n_rounds
+        assert n_rounds > 1, 'Require at least two round'
+        assert n_genes > 0, 'Require at least one gene'
+        degree = 0
+        # Find the smallest degree polynomial required to produce `n_genes` unique gene codes. We use the smallest 
+        # degree polynomial because this will have the smallest amount of overlap between gene codes
+        while True:
+            max_unique_codes = int(n_rounds**degree - n_rounds)
+            if max_unique_codes >= n_genes:
+                break
+            degree += 1
+            assert degree < 100, 'Degree too large, breaking from loop...'
+        
+        # Create a `degree` degree polynomial, where each coefficient goes between (0, n_rounds] to generate each 
+        # unique gene code
+
+        codes = dict()
+
+        # Index 0 is for constant, index 1 for linear coefficient, etc..
+        most_recent_coefficient_set = np.array(np.zeros(degree+1))
+        for n_gene in trange(n_genes, ascii=True, unit='Codes', desc='Generating gene codes'):
+            # Find the next coefficient set that works, which is not just constant across all rounds (like 
+            # a background code)
+            
+            while True:
+                # Iterate to next working coefficient set, by mod n_rounds addition
+                most_recent_coefficient_set[0] += 1
+                for i in range(most_recent_coefficient_set.size):
+                    if most_recent_coefficient_set[i] >= n_rounds:
+                        # Cycle back around to 0, then add one to next coefficient
+                        most_recent_coefficient_set[i]   =  0
+                        most_recent_coefficient_set[i+1] += 1
+                if np.all(most_recent_coefficient_set[1:degree+1] == 0):
+                    continue
+                break
+
+            # Generate new gene code
+            new_code  = ''
+            gene_name = f'gene_{n_gene}'
+            for r in range(n_rounds):
+                result = 0
+                for j in range(degree + 1):
+                    result += most_recent_coefficient_set[j] * r**j
+                result = int(result)
+                result %= n_rounds
+                new_code += str(result)
+            # Add new code to dictionary
+            codes[gene_name] = new_code
+        self.codes = codes
+        return codes
+
 
     def Generate_Pink_Noise(self, noise_amplitude : float, noise_spatial_scale : float) -> None:
         """
@@ -312,8 +381,8 @@ class RoboMinnie:
         np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
 
 
-    def Add_Spots(self, n_spots : int, bleed_matrix : npt.NDArray, gene_codebook_path : str, 
-        spot_size_pixels : npt.NDArray) -> None:
+    def Add_Spots(self, n_spots : int, bleed_matrix : npt.NDArray, spot_size_pixels : npt.NDArray, \
+        gene_codebook_path : str = USE_INSTANCE_GENE_CODES) -> None:
         """
         Superimpose spots onto images in both space and channels (based on the bleed matrix). Also applied to the 
         anchor when included. The spots are uniformly, randomly distributed across each image. Never applied to 
@@ -323,9 +392,10 @@ class RoboMinnie:
             n_spots (int): Number of spots to add
             bleed_matrix (n_dyes x n_channels ndarray[float, float]): The bleed matrix, used to map each dye to 
             its pattern as viewed by the camera in each channel.
-            gene_codebook_path (str): Path to the gene codebook, saved as a .txt file.
-            spot_size_pixels (ndarray[float, float, float]): The spot's standard deviation in directions x, y, z 
+            spot_size_pixels (ndarray[float, float, float]): The spot's standard deviation in directions x, y, z \
             respectively.
+            gene_codebook_path (str): Path to the gene codebook, saved as a .txt file. Default: use `self` gene \
+                codes instead
         """
         self.instructions.append(_funcname())
         
@@ -359,7 +429,8 @@ class RoboMinnie:
         assert bleed_matrix.shape[1] == self.n_channels, \
             f'Bleed matrix does not have n_channels={self.n_channels} as expected'
         assert n_spots > 0, f'Expected n_spots > 0, got {n_spots}'
-        assert os.path.isfile(gene_codebook_path), f'Gene codebook at {gene_codebook_path} does not exist'
+        if gene_codebook_path != USE_INSTANCE_GENE_CODES:
+            assert os.path.isfile(gene_codebook_path), f'Gene codebook at {gene_codebook_path} does not exist'
         assert spot_size_pixels.size == 3, 'Spot size must be in three dimensions'
         if bleed_matrix.shape[0] != bleed_matrix.shape[1]:
             warnings.warn(f'Given bleed matrix does not have equal channel and dye counts like usual')
@@ -370,24 +441,23 @@ class RoboMinnie:
 
         self.n_spots += n_spots
 
-        # # Read in the gene codebook txt file
-        # _codes = pandas.read_csv(gene_codebook_path, sep="\t", dtype=str).to_numpy().T
-        # self.codes = {k:v for k,v in zip(*_codes)}
+        if gene_codebook_path != USE_INSTANCE_GENE_CODES:
+            # Read in the gene codebook txt file
+            _codes = dict()
+            with open(gene_codebook_path, 'r') as f:
+                lines = f.readlines()
+                for line in tqdm(lines, desc='Reading genebook', ascii=True, unit='genes'):
+                    if not line:
+                        # Skip empty lines
+                        continue
+                    phrases = line.split()
+                    gene, code = phrases[0], phrases[1]
+                    # Save the gene name as a key, the value is the gene's code
+                    _codes[gene] = code
+            self.codes = _codes
 
-        _codes = dict()
-        with open(gene_codebook_path, 'r') as f:
-            lines = f.readlines()
-            for line in tqdm(lines, desc='Reading genebook', ascii=True, unit='genes'):
-                if not line:
-                    # Skip empty lines
-                    continue
-                phrases = line.split()
-                gene, code = phrases[0], phrases[1]
-                # Save the gene name as a key, the value is the gene's code
-                _codes[gene] = code
-        values = list(_codes.values())
-        assert len(values) == len(set(values)), f'Duplicate gene code found in dictionary: {_codes}'
-        self.codes = _codes
+        values = list(self.codes.values())
+        assert len(values) == len(set(values)), f'Duplicate gene code found in dictionary: {self.codes}'
 
         # Generate the random spots
         rng = np.random.RandomState(self.seed)
