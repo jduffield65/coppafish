@@ -159,7 +159,7 @@ class RoboMinnie:
     #TODO: Multi-tile support
     #TODO: Presequence support
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
-        n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_presequence : bool = False, 
+        n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_presequence : bool = True, 
         anchor_channel : int = 0, seed : int = 0) -> None:
         """
         Create a new RoboMinnie instance. Used to manipulate, create and save synthetic data in a modular,
@@ -174,7 +174,7 @@ class RoboMinnie:
             n_yx (Tuple[int, int], optional): Number of pixels for each tile in the y and x directions \
                 respectively. Default: (2048, 2048).
             include_anchor (bool, optional): Whether to include the anchor round. Default:  true
-            include_presequence (bool, optional): Whether to include the pre-sequence round. Default: false
+            include_presequence (bool, optional): Whether to include the pre-sequence round. Default: true
             anchor_channel (int, optional): The anchor channel. Default: 0.
             seed (int, optional): Seed used throughout the generation of random data, specify integer value for \
                 reproducible output. If None, seed is randomly picked. Default: 0.
