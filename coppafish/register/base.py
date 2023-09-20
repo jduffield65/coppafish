@@ -291,6 +291,9 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
 
     # open the fluorescent bead images as nd2 files
     fluorescent_beads = nd2.ND2File(fluorescent_bead_path).asarray()
+    # if fluorescent bead images are for all channels, just take one from each camera
+    if fluorescent_beads.shape[0] == 28:
+        fluorescent_beads = fluorescent_beads[[0, 9, 18, 23]]
 
     # Now we'll turn each image into a point cloud
     bead_point_clouds = []
