@@ -229,16 +229,17 @@ class RoboMinnie:
             warnings.warn('Coppafish may break with fewer than 4 z planes')
     
 
-    def Generate_Gene_Codes(self, n_rounds : int = None, n_genes : int = 73) -> Dict:
+    def Generate_Gene_Codes(self, n_genes : int = 73, n_rounds : int = None) -> Dict:
         """
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible \
             based on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The \
-            `i`th gene name will be `gene_i`
+            `i`th gene name will be `gene_i`. `ValueError` is raised if all gene codes created are not unique. \
+            We assume that `n_rounds` is also the number of unique dyes.
 
         args:
+            n_genes (int, optional): Number of unique gene codes to generate. Default: 73
             n_rounds (int, optional): Number of sequencing rounds. Default: Use round number saved in `self` \
                 RoboMinnie instance.
-            n_genes (int, optional): Number of gene codes to generate. Default: 73.
 
         returns:
             Dict (str:str): Gene names as keys, gene codes as values.
@@ -246,7 +247,7 @@ class RoboMinnie:
         self.instructions.append(_funcname())
         if n_rounds == None:
             n_rounds = self.n_rounds
-        assert n_rounds > 1, 'Require at least two round'
+        assert n_rounds > 1, 'Require at least two rounds'
         assert n_genes > 0, 'Require at least one gene'
         degree = 0
         # Find the smallest degree polynomial required to produce `n_genes` unique gene codes. We use the smallest 
@@ -293,6 +294,10 @@ class RoboMinnie:
                 new_code += str(result)
             # Add new code to dictionary
             codes[gene_name] = new_code
+        values = list(codes.values())
+        if len(values) != len(set(values)):
+            # Not every gene code is unique
+            raise ValueError(f'Could not generate {n_genes} unique gene codes with {n_rounds} rounds/dyes')
         self.codes = codes
         return codes
 
