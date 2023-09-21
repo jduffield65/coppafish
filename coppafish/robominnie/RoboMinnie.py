@@ -234,7 +234,7 @@ class RoboMinnie:
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible \
             based on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The \
             `i`th gene name will be `gene_i`. `ValueError` is raised if all gene codes created are not unique. \
-            We assume that `n_rounds` is also the number of unique dyes.
+            We assume that n_rounds is also the number of unique dyes, each dye is labelled between (0, n_rounds].
 
         args:
             n_genes (int, optional): Number of unique gene codes to generate. Default: 73
