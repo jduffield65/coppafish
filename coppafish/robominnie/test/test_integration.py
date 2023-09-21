@@ -2,8 +2,10 @@ import os
 import numpy as np
 from coppafish.robominnie import RoboMinnie
 import warnings
+import pytest
 
 
+@pytest.mark.slow
 def test_integration_001() -> None:
     """
     Summary of input data: random spots and random, white noise.\n
