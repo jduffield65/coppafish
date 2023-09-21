@@ -160,7 +160,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         # Total PC's available memory in GB
         available_memory = psutil.virtual_memory().available // 1000**3
         # Scale the z_chunk_size linearly based on PC's available memory, with a maximum of 8
-        z_chunk_size = available_memory // 16
+        z_chunk_size = available_memory // 14
         if z_chunk_size < 1:
             warnings.warn(
                 UserWarning('Available memory for OMP call spots is <16GB. ' + \
