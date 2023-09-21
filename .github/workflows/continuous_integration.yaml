@@ -28,7 +28,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: python -m pip install pytest ./coppafish[plotting, optimised]
+        run: python -m pip install pytest .[plotting,optimised]
 
       - name: Run tests
         run: pytest
