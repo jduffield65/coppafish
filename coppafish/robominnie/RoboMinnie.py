@@ -234,7 +234,9 @@ class RoboMinnie:
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible \
             based on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The \
             `i`th gene name will be `gene_i`. `ValueError` is raised if all gene codes created are not unique. \
-            We assume that n_rounds is also the number of unique dyes, each dye is labelled between (0, n_rounds].
+            We assume that n_rounds is also the number of unique dyes, each dye is labelled between \
+            (0, n_rounds]. See https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction for more \
+            details.
 
         args:
             n_genes (int, optional): Number of unique gene codes to generate. Default: 73
@@ -935,7 +937,7 @@ class RoboMinnie:
 
 
     # Debugging Function:
-    def View_Images(self, tiles : list[int] = [0]):
+    def View_Images(self, tiles : List = [0]):
         """
         View all images in `napari` for tile index `t`, including a presequence and anchor image, if they exist.
 
