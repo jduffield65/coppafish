@@ -20,6 +20,7 @@ def test_get_non_duplicate():
 
 def test_get_bled_codes():
     # TODO: Flesh this unit test out to not just test output dimensions
+    # TODO: Test this with a particular bleed matrix with a known output
     n_genes = 1
     n_rounds = 2
     n_channels = 3
@@ -32,7 +33,6 @@ def test_get_bled_codes():
     bled_codes = get_bled_codes(gene_codes, bleed_matrix, gene_efficiency)
     assert bled_codes.shape == (n_genes, n_rounds, n_channels), \
         'Expected (n_genes x n_rounds x n_channels) output shape'
-    # TODO: Test this with a particular bleed matrix with a known output
 
 
 def test_compute_gene_efficiency():
