@@ -244,7 +244,6 @@ class RoboMinnie:
             Dict (str:str): Gene names as keys, gene codes as values.
         """
         self.instructions.append(_funcname())
-        print('Generating gene codes')
         if n_rounds == None:
             n_rounds = self.n_rounds
         assert n_rounds > 1, 'Require at least two round'
