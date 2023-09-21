@@ -10,7 +10,7 @@ def test_integration_001() -> None:
     Includes presequence round, anchor round, sequencing rounds, single tile.\n
     Compares ground truth spots to OMP spots and reference spots.
     """
-    output_dir = '/tmp/integration'
+    output_dir = './integration_dir'
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
