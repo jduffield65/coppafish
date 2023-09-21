@@ -15,7 +15,7 @@ def test_integration_001() -> None:
         os.mkdir(output_dir)
 
     robominnie = RoboMinnie(include_anchor=True, include_presequence=True, seed=94)
-    robominnie.Generate_Gene_Codes(n_genes=10)
+    robominnie.Generate_Gene_Codes(n_genes=15)
     robominnie.Add_Spots(n_spots=10_000, bleed_matrix=np.diag(np.ones(7)), \
                          spot_size_pixels=np.array([1.5, 1.5, 1.5]))
     robominnie.Generate_Random_Noise(noise_mean_amplitude=0, noise_std=0.001, noise_type='normal')
