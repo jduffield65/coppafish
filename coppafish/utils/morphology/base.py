@@ -40,7 +40,7 @@ def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
     h = a[1] * p1
     rows = inset[0]
     cols = inset[1]
-    h[rows, cols] += a[0] * p0
+    h[rows, cols] += a[0][0] * p0
     for i in range(2, n + 1):
         p2 = 2 * scipy.signal.convolve2d(t, p1)
         rows = rows + inset[0]
