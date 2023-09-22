@@ -1,4 +1,4 @@
-name: Unit Testing
+name: Unit Tests
 
 # Trigger on any push or pull requests
 on:
