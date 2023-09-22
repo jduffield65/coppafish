@@ -1,4 +1,4 @@
-name: Continuous Testing
+name: Unit Testing
 
 # Trigger on any push or pull requests
 on:
