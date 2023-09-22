@@ -1,5 +1,7 @@
 # coppafish
 
+![](https://github.com/reillytilbury/coppafish/actions/workflows/continuous_integration.yaml/badge.svg)
+
 ![](https://github.com/jduffield65/coppafish/blob/main/docs/images/readme_viewer.png?raw=true)
 
 *coppafish* is a data analysis pipeline for decoding *coppaFISH* (combinatorial padlock-probe-amplified fluorescence in 
@@ -13,7 +15,7 @@ and channels. *coppafish* then determines the distribution of genes via
 
 
 ## Prerequisites
-Python >= 3.8
+Python >= 3.8, < 3.11
 
 ## Documentation
 For more information on installation and usage, please see the 

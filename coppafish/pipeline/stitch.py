@@ -61,7 +61,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
                                                axis=1) == 2)[0]
             for j in directions:
                 pbar.set_postfix({'tile': t, 'direction': j})
-                if t_neighb[j] in nbp_basic.use_tiles:
+                if t_neighb[j].size > 0 and t_neighb[j] in nbp_basic.use_tiles:
                     shift, score, score_thresh = compute_shift(spot_yxz(local_yxz, t, r, c, spot_no),
                                                                spot_yxz(local_yxz, t_neighb[j][0], r, c, spot_no),
                                                                config['shift_score_thresh'],

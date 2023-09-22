@@ -386,6 +386,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
         return nbp
 
     if os.path.isfile(os.path.join(config_file['input_dir'], config_file['pre_seq'] + '.nd2')):
+
         nbp.use_preseq = True
         nbp.pre_seq_round = nbp.anchor_round + 1
         n_extra_rounds = nbp.n_extra_rounds
@@ -394,8 +395,8 @@ def set_basic_info_new(config: dict) -> NotebookPage:
     else:
         nbp.use_preseq = False
         nbp.pre_seq_round = None
-        warnings.warn(f"Pre-sequencing round not found. Setting pre_seq_round to False. If this is not what you want,"
-                      f"please check that the pre_seq_round variable in the config file is set to the correct file "
-                      f"name.")
+        warnings.warn(f"Pre-sequencing round not found at {preseq_filepath}. Setting pre_seq_round to False. If "
+                      "this is not what you want, please check that the pre_seq_round variable in the config "
+                      "file is set to the correct file name.")
 
     return nbp

@@ -82,6 +82,7 @@
       "Path to *nd2* file containing fluorescent beads. `None` if not used."],
     "pre_seq": ["String or None",
       "Name of *nd2* file for the pre-sequencing round. `None` if not used"]
+
   },
 
   "basic_info":
