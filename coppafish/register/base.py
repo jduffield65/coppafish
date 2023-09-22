@@ -180,6 +180,12 @@ def huber_regression(shift, position, predict_shift=True):
     position = position[~np.isnan(shift[:, 0])]
     shift = shift[~np.isnan(shift[:, 0])]
 
+    if shift.shape[0] == 0 and predict_shift:
+        transform = np.zeros((3, 4))
+        return transform
+    elif shift.shape[0] == 0 and not predict_shift:
+        transform = np.eye(3, 4)
+        return transform
     # Do robust regression
     # Check we have at least 3 z-coords in position
     if len(set(position[:, 0])) <= 2:
