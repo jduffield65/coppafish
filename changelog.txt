@@ -13,4 +13,4 @@
    If left empty, will use the default initial bleed matrix found in the code.
  * Presequence .npy raw files support.
  * Fixed anchor auto threshold being set to zero due to regularisation.
- * NOTE: RAM usage for coppafish has increased during the OMP stage. 32GB of RAM will likely not be enough.
+ * OMP's z-chunking now scales with the PC's available memory. We think that more memory means slightly faster OMP.
