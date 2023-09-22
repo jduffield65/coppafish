@@ -28,7 +28,7 @@ def get_thresholds_page(nb: Notebook) -> NotebookPage:
     return nbp
 
 
-def export_to_pciseq(nb: Notebook):
+def export_to_pciseq(nb: Notebook, intensity_thresh: float = 0, score_thresh: float = 0):
     """
     This saves .csv files containing plotting information for pciseq-
 
@@ -47,6 +47,8 @@ def export_to_pciseq(nb: Notebook):
 
     Args:
         nb: Notebook for the experiment containing at least the *ref_spots* page.
+        intensity_thresh: Intensity threshold for spots included.
+        score_thresh: Score threshold for spots included.
 
     """
     page_names = ['omp', 'ref_spots']
@@ -59,7 +61,12 @@ def export_to_pciseq(nb: Notebook):
         if os.path.isfile(nb.file_names.pciseq[i]):
             warnings.warn(f"File {nb.file_names.pciseq[i]} already exists")
             continue
-        qual_ok = quality_threshold(nb, method[i])  # only keep spots which pass quality thresholding
+
+        if intensity_thresh > 0 or score_thresh > 0:
+            qual_ok = (nb.ref_spots.score > score_thresh) * (nb.ref_spots.intensity > intensity_thresh)
+        else:
+            qual_ok = quality_threshold(nb, method[i])  # only keep spots which pass quality thresholding
+
         # get coordinates in stitched image
         global_spot_yxz = nb.__getattribute__(page_names[i]).local_yxz + \
                           nb.stitch.tile_origin[nb.__getattribute__(page_names[i]).tile]

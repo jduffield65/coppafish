@@ -45,7 +45,7 @@ def set_file_names(nb, nbp):
 
     nbp.round = config['round']
     nbp.anchor = config['anchor']
-    nbp.pre_seq_round = config['pre_seq_round']
+    nbp.pre_seq = config['pre_seq']
     nbp.raw_extension = config['raw_extension']
     nbp.raw_metadata = config['raw_metadata']
     nbp.initial_bleed_matrix = config['initial_bleed_matrix']
@@ -116,8 +116,8 @@ def set_file_names(nb, nbp):
     else:
         round_files = config['round']
 
-    if config['pre_seq_round'] is not None:
-        round_files = round_files + [config['pre_seq_round']]
+    if config['pre_seq'] is not None:
+        round_files = round_files + [config['pre_seq']]
 
     if config['raw_extension'] == 'jobs':
         if nb.basic_info.is_3d:

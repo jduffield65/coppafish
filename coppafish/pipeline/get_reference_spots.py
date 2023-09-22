@@ -10,7 +10,7 @@ from ..setup.notebook import NotebookPage
 
 
 def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_find_spots: NotebookPage,
-                        tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
+                        nbp_extract: NotebookPage, tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
 
     """
     This takes each spot found on the reference round/channel and computes the corresponding intensity
@@ -89,6 +89,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     use_tiles = np.array(nbp_basic.use_tiles.copy())
     n_use_tiles = len(use_tiles)
     nd_spot_colors_use = np.zeros((nd_local_tile.shape[0], n_use_rounds, n_use_channels), dtype=np.int32)
+    bg_colours = np.zeros_like(nd_spot_colors_use)
     transform = jnp.asarray(transform)
     print('Reading in spot_colors for ref_round spots')
     for t in nbp_basic.use_tiles:
@@ -96,8 +97,9 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
         if np.sum(in_tile) > 0:
             print(f"Tile {np.where(use_tiles==t)[0][0]+1}/{n_use_tiles}")
             # this line will return invalid_value for spots outside tile bounds on particular r/c.
-            nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t,
-                                                          transform, nbp_file, nbp_basic)
+            nd_spot_colors_use[in_tile], bg_colours[in_tile] = get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t,
+                                                                               transform, nbp_file, nbp_basic,
+                                                                               bg_scale=nbp_extract.bg_scale)
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
     good = ~np.any(nd_spot_colors_use == invalid_value, axis=(1, 2))
 
@@ -115,6 +117,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     nbp.isolated = good_isolated
     nbp.tile = good_local_tile
     nbp.colors = good_spot_colors
+    nbp.bg_colours = bg_colours
 
     # Set variables added in call_reference_spots to None so can save to Notebook.
     # I.e. if call_reference_spots hit error, but we did not do this, we would have to run get_reference_spots again.
