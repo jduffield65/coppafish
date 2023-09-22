@@ -1,4 +1,4 @@
-25/09/2023 Update:
+22/09/2023 Update:
  * Added background subtraction with 3D registration with DAPI.
  * Cross-tile brightness difference correction support, probably caused by microscope auto gain control.
  * Updated bleed matrix to allow inter-tile variation.
