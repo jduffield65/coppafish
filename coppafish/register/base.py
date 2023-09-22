@@ -86,7 +86,7 @@ def find_z_tower_shifts(subvol_base, subvol_target, position, pearson_r_threshol
     return shift, shift_corr
 
 
-def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
+def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.9):
     """
     This function takes in 2 3d images and finds the optimal shift from one to the other. We use a phase cross
     correlation method to find the shift.
@@ -102,8 +102,7 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
     """
     if subvol_base.shape != subvol_target.shape:
         raise ValueError("Subvolume arrays have different shapes")
-    shift, _, _ = phase_cross_correlation(reference_image=subvol_target, moving_image=subvol_base,
-                                                   upsample_factor=10)
+    shift, _, _ = phase_cross_correlation(reference_image=subvol_target, moving_image=subvol_base, upsample_factor=10)
     alt_shift = np.copy(shift)
     # now anti alias the shift in z. To do this, consider that the other possible aliased z shift is the either one
     # subvolume above or below the current shift. (In theory, we could also consider the subvolume 2 above or below,
@@ -121,15 +120,20 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.4):
     shift_corr = np.corrcoef(shift_base[mask], subvol_target[mask])[0, 1]
     mask = alt_shift_base != 0
     alt_shift_corr = np.corrcoef(alt_shift_base[mask], subvol_target[mask])[0, 1]
+    mask = subvol_base != 0
+    base_corr = np.corrcoef(subvol_base[mask], subvol_target[mask])[0, 1]
 
     # Now return the shift with the highest correlation coefficient
     if alt_shift_corr > shift_corr:
         shift = alt_shift
         shift_corr = alt_shift_corr
+    if base_corr > shift_corr:
+        shift = np.array([0, 0, 0])
+        shift_corr = base_corr
     # Now check if the correlation coefficient is above the threshold. If not, set the shift to nan
     if shift_corr < pearson_r_threshold:
         shift = np.array([np.nan, np.nan, np.nan])
-        shift_corr = max(shift_corr, alt_shift_corr)
+        shift_corr = np.max([shift_corr, alt_shift_corr, base_corr])
 
     return shift, shift_corr
 
@@ -598,6 +602,9 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
                                                       custom_shift(sub_image_seq, sub_image_shifts[i, j].astype(int))
                                                       .ravel())[0, 1]
     # Now find the best sub-image
+    if np.sum(np.isnan(sub_image_shift_score)) == n_sub_images ** 2:
+        print('Warning: No sub-image shifts found. Setting scale to 1 and returning original images.')
+        return 1, sub_image_seq, sub_image_preseq
     best_sub_image = np.argwhere(sub_image_shift_score == np.nanmax(sub_image_shift_score))[0]
     sub_image_seq = seq[best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
                         best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
