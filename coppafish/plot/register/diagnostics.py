@@ -11,7 +11,7 @@ import matplotlib.gridspec as gridspec
 from ...setup import Notebook
 from skimage.filters import sobel
 from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, yxz_to_zyx
-from coppafish.register.base import huber_regression
+from coppafish.register.base import huber_regression, brightness_scale
 from coppafish.utils.npy import load_tile
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
@@ -78,6 +78,14 @@ class RegistrationViewer:
         self.anchor_contrast_limits_slider.valueChanged.connect(lambda x:
                                                                 self.change_anchor_layer_contrast(x[0], x[1]))
         self.im_contrast_limits_slider.valueChanged.connect(lambda x: self.change_imaging_layer_contrast(x[0], x[1]))
+
+        # Add a single button to turn off the base images and a single button to turn off the target images
+        self.switch_buttons = ButtonOnOffWindow()
+        # This allows us to link clickng to slot functions
+        self.switch_buttons.button_base.clicked.connect(self.button_base_images_clicked)
+        self.switch_buttons.button_target.clicked.connect(self.button_target_images_clicked)
+        # Add these buttons as widgets in napari viewer
+        self.viewer.window.add_dock_widget(self.switch_buttons, area="left", name='Switch', add_vertical_stretch=False)
 
         # Add buttons to change between registration methods
         self.method_buttons = ButtonMethodWindow('SVR')
@@ -182,6 +190,16 @@ class RegistrationViewer:
             self.update_plot()
 
         return tile_button_clicked
+
+    def button_base_images_clicked(self):
+        n_images = len(self.viewer.layers)
+        for i in range(0, n_images, 2):
+            self.viewer.layers[i].visible = self.switch_buttons.button_base.isChecked()
+
+    def button_target_images_clicked(self):
+        n_images = len(self.viewer.layers)
+        for i in range(1, n_images, 2):
+            self.viewer.layers[i].visible = self.switch_buttons.button_target.isChecked()
 
     # Contrast
     def change_anchor_layer_contrast(self, low, high):
@@ -342,7 +360,7 @@ class RegistrationViewer:
         # populate target arrays
         for r in use_rounds:
             file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.round_registration_channel)+'.npy'
-            affine = yxz_to_zyx_affine(A=self.transform[t, r, self.round_registration_channel],
+            affine = yxz_to_zyx_affine(A=self.transform[t, r, self.c_ref],
                                        new_origin=self.new_origin)
             # Reset the spline interpolation order to 1 to speed things up
             self.target_round_image.append(affine_transform(np.load(os.path.join(self.output_dir, file)),
@@ -428,6 +446,18 @@ class ButtonMethodWindow(QMainWindow):
             self.method = 'SVR'
         else:
             raise ValueError(f"active_button should be 'SVR' or 'ICP' but {active_button} was given.")
+
+
+class ButtonOnOffWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.button_base = QPushButton('Base', self)
+        self.button_base.setCheckable(True)
+        self.button_base.setGeometry(75, 2, 50, 28)
+
+        self.button_target = QPushButton('Target', self)
+        self.button_target.setCheckable(True)
+        self.button_target.setGeometry(140, 2, 50, 28)
 
 
 class ButtonTileWindow(QMainWindow):
@@ -637,7 +667,7 @@ def view_round_regression_scatter(nb: Notebook, t: int, r: int):
     # Transpose shift and position variables so coord is dimension 0, makes plotting easier
     shift = nb.register_debug.round_shift[t, r]
     corr = nb.register_debug.round_shift_corr[t, r]
-    position = nb.register_debug.position
+    position = nb.register_debug.position[t, r]
     initial_transform = nb.register_debug.round_transform_raw[t, r]
     icp_transform = yxz_to_zyx_affine(A=nb.register.transform[t, r, nb.basic_info.anchor_channel])
 
@@ -1333,3 +1363,97 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
                      blending='additive', opacity=0)
     napari.run()
 
+
+def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
+    """
+    Overlays tile t, round r, channel c with the preseq image for the same tile, and the same channel. The preseq image
+    is in red, and the seq image is in green. Both are registered.
+    Args:
+        nb: Notebook
+        t: tile
+        r: round
+        c: channel
+    """
+
+    if c in nb.basic_info.use_channels:
+        transform_preseq = yxz_to_zyx_affine(nb.register.transform[t, nb.basic_info.pre_seq_round, c])
+        transform_seq = yxz_to_zyx_affine(nb.register.transform[t, r, c])
+    elif c == 0:
+        transform_preseq = yxz_to_zyx_affine(nb.register.round_transform[t, nb.basic_info.pre_seq_round])
+        if r == nb.basic_info.anchor_round:
+            transform_seq = np.eye(4)
+        else:
+            transform_seq = yxz_to_zyx_affine(nb.register.round_transform[t, r])
+    seq = yxz_to_zyx(load_tile(nb.file_names,nb.basic_info, t, r, c))
+    preseq = yxz_to_zyx(load_tile(nb.file_names,nb.basic_info, t, nb.basic_info.pre_seq_round, c))
+
+    print('Starting Application of Seq Transform')
+    seq = affine_transform(seq, transform_seq, order=1)
+    print('Starting Application of Preseq Transform')
+    preseq = affine_transform(preseq, transform_preseq, order=1)
+    print('Finished Transformations')
+
+    viewer = napari.Viewer()
+    viewer.add_image(seq, name='seq', colormap='green', blending='additive')
+    viewer.add_image(preseq, name='preseq', colormap='red', blending='additive')
+    napari.run()
+
+
+def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, percentile: int = 99,
+                                          sub_image_size: int = 500, bg_blur: bool = True):
+
+    print(f"Computing background scale for tile {t}, round {r}, channel {c}")
+    num_z = nb.basic_info.tile_centre[2].astype(int)
+    transform_pre = yxz_to_zyx_affine(nb.register.transform[t, nb.basic_info.pre_seq_round, c],
+                                      new_origin=np.array([num_z - 5, 0, 0]))
+    transform_seq = yxz_to_zyx_affine(nb.register.transform[t, r, c], new_origin=np.array([num_z - 5, 0, 0]))
+    preseq = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t=t, r=nb.basic_info.pre_seq_round, c=c,
+                                  yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * bg_blur))
+    seq = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t=t, r=r, c=c,
+                               yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
+    preseq = affine_transform(preseq, transform_pre, order=0)[5]
+    seq = affine_transform(seq, transform_seq, order=0)[5]
+    # Apply background scale. Don't subtract bg from pixels that are <= 0 in seq as blurring in preseq can cause
+    # negative values in seq
+    bg_scale, sub_seq, sub_preseq = brightness_scale(preseq, seq, percentile, sub_image_size)
+    mask = sub_preseq > np.percentile(sub_preseq, percentile)
+    diff = sub_seq - bg_scale * sub_preseq
+    ratio = sub_seq[mask] / sub_preseq[mask]
+    estimate_scales = np.percentile(ratio, [25, 75])
+    diff_low = sub_seq - estimate_scales[0] * sub_preseq
+    diff_high = sub_seq - estimate_scales[1] * sub_preseq
+
+    # View overlay and view regression
+    viewer = napari.Viewer()
+    viewer.add_image(sub_seq, name='seq', colormap='green', blending='additive')
+    viewer.add_image(sub_preseq, name='preseq', colormap='red', blending='additive')
+    viewer.add_image(diff, name='diff', colormap='gray', blending='translucent', visible=False)
+    viewer.add_image(diff_low, name='bg_scale = 25%', colormap='gray', blending='translucent', visible=False)
+    viewer.add_image(diff_high, name='bg_scale = 75%', colormap='gray', blending='translucent', visible=False)
+    viewer.add_image(mask, name='mask', colormap='blue', blending='additive', visible=False)
+
+    # View regression
+    plt.subplot(1, 2, 1)
+    bins = 25
+    plt.hist2d(sub_preseq[mask], sub_seq[mask], bins=[np.linspace(0, np.percentile(sub_preseq[mask], 90), bins),
+                                                      np.linspace(0, np.percentile(sub_seq[mask], 90), bins)])
+    x = np.linspace(0, np.percentile(sub_seq[mask], 90), 100)
+    y = bg_scale * x
+    plt.plot(x, y, 'r')
+    plt.plot(x, estimate_scales[0] * x, 'g')
+    plt.plot(x, estimate_scales[1] * x, 'g')
+    plt.xlabel('Preseq')
+    plt.ylabel('Seq')
+    plt.title('Regression of preseq vs seq. Scale = ' + str(np.round(bg_scale[0], 3)))
+
+    plt.subplot(1, 2, 2)
+    plt.hist(sub_seq[mask] / sub_preseq[mask], bins=100)
+    max_bin_val = np.max(np.histogram(sub_seq[mask] / sub_preseq[mask], bins=100)[0])
+    plt.vlines(bg_scale, 0, max_bin_val, colors='r')
+    plt.vlines(estimate_scales, 0, max_bin_val, colors='g')
+    plt.xlabel('Seq / Preseq')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of seq / preseq. Scale = ' + str(np.round(bg_scale[0], 3)))
+    plt.show()
+
+    napari.run()

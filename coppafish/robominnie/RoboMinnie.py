@@ -666,7 +666,7 @@ class RoboMinnie:
         initial_bleed_matrix = {self.initial_bleed_matrix_filepath}
         round = {', '.join([str(i) for i in range(self.n_rounds)])}
         anchor = {self.n_rounds if self.include_anchor else ''}
-        pre_seq_round = {presequence_directory if self.include_presequence else ''}
+        pre_seq = {presequence_directory if self.include_presequence else ''}
         code_book = {self.codebook_filepath}
         raw_extension = .npy
         raw_metadata = {self.metadata_filepath}

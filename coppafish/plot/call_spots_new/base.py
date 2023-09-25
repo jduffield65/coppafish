@@ -572,7 +572,7 @@ class BGNormViewer():
 
         spot_colour_raw = nb.ref_spots.colors.copy()[isolated][:, :, nb.basic_info.use_channels]
         spot_colour_no_bg = spot_colour_raw - background_noise
-        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor
+        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor[None, :, :]
         # Now we'd like to order the spots by background noise in descending order
         background_noise = np.sum(abs(background_noise), axis=(1, 2))
         spot_colour_raw = spot_colour_raw[np.argsort(background_noise)[::-1]]
@@ -900,6 +900,7 @@ class GEScatter():
         # Update the gene number and gene name
         self.gene_no = int(val)
         self.gene_text.set_text(self.nb.call_spots.gene_names[self.gene_no])
+
 
 class GeneProbs():
     def __init__(self, nb: Notebook, gene_no: int = 0):
