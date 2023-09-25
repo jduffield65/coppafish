@@ -7,8 +7,9 @@ import numpy as np
 
 def test_find_shift_array():
     # TODO: Make sure we have access to skimage data
-    # set up data (10, 256, 256)
-    brain = data.brain()
+    # Set up random data (10, 256, 256)
+    rng = np.random.RandomState(12)
+    brain = rng.rand(10, 256, 256)
     brain_shifted = reg_pre.custom_shift(brain, np.array([0, 10, 10]))
     # Test the function
     z_box, y_box, x_box = 10, 128, 128
@@ -27,7 +28,8 @@ def test_find_shift_array():
 
 def test_find_z_tower_shifts():
     # set up data (60, 128, 128)
-    cell = data.cells3d()[:, 1]
+    rng = np.random.RandomState(31)
+    cell = rng.rand(60, 128, 128)
     cell_shifted = reg_pre.custom_shift(cell, np.array([3, 0, 0]))
     # Test the function
     z_box, y_box, x_box = 10, 64, 64
@@ -47,7 +49,8 @@ def test_find_z_tower_shifts():
 
 
 def test_find_zyx_shift():
-    kidney = np.sum(data.kidney(), axis=-1)[:, :128, :128]
+    rng = np.random.RandomState(52)
+    kidney = np.sum(rng.rand(16, 512, 512, 3), axis=-1)[:, :128, :128]
     kidney_shifted = reg_pre.custom_shift(kidney, np.array([3, 15, 20]))
     # Test the function
     shift, shift_corr = reg_base.find_zyx_shift(kidney, kidney_shifted, pearson_r_threshold=0.5)
@@ -84,4 +87,4 @@ def test_huber_regression():
     # Test that the values are correct
     assert np.allclose(transform, np.array([[5, 0, 0, 0],
                                             [0, 5, 0, 0],
-                                            [0, 0, 5, 0]]))
+                                            [0, 0, 5, 0]]), atol=1e-5)

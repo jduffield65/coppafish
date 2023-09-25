@@ -198,9 +198,9 @@ def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     # Final piece of metadata is n_rounds. Note num_files = num_rounds * num_tiles * num_lasers
     n_files = len(os.listdir(input_dir))
     n_lasers = len(set(laser))
-    use_preseq = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq_round']))
+    preseq_exists = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq_round']))
     metadata['n_rounds'] = n_files // (n_lasers * metadata['n_tiles'])
-    metadata['n_rounds'] -= use_preseq
+    metadata['n_rounds'] -= preseq_exists
 
     return metadata
 

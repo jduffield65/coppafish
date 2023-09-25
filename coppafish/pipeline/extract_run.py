@@ -3,6 +3,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from ..setup.notebook import NotebookPage, Notebook
+from skimage.filters import gaussian
 from typing import Tuple
 import warnings
 
@@ -30,12 +31,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
             but may be useful for debugging purposes.
     """
+    # TODO: Refactor this function to make it more readable
     # Check scaling won't cause clipping when saving as uint16
     scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
     if config['scale_norm'] >= scale_norm_max:
         raise ValueError(f"\nconfig['extract']['scale_norm'] = {config['scale_norm']} but it must be below "
                          f"{scale_norm_max}")
-
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config['deconvolve'] = False  # only deconvolve if 3d pipeline
@@ -46,7 +47,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 nbp_basic.n_channels), dtype=int)
     nbp.hist_values = np.arange(-nbp_basic.tile_pixel_value_shift, np.iinfo(np.uint16).max -
                                 nbp_basic.tile_pixel_value_shift + 2, 1)
-    nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds, nbp_basic.n_channels), dtype=int)
+    nbp.hist_counts = np.zeros((len(nbp.hist_values), nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                                nbp_basic.n_channels), dtype=int)
     hist_bin_edges = np.concatenate((nbp.hist_values - 0.5, nbp.hist_values[-1:] + 0.5))
     # initialise debugging info as 'debug' page
     nbp_debug.n_clip_pixels = np.zeros_like(nbp.auto_thresh, dtype=int)
@@ -64,6 +66,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     if config['r_dapi'] is None:
         if config['r_dapi_auto_microns'] is not None:
             config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
+    if config['pre_seq_blur_radius'] is None:
+        config['pre_seq_blur_radius'] = config['r2']
     nbp_debug.r1 = config['r1']
     nbp_debug.r2 = config['r2']
     nbp_debug.r_dapi = config['r_dapi']
@@ -186,7 +190,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
-        round_files = round_files + [nbp_file.pre_seq_round]
+        round_files = round_files + [nbp_file.pre_seq]
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
         n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
@@ -248,7 +252,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     else:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
                     if nbp_basic.is_3d:
-                        file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                        if r != pre_seq_round:
+                            file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                        else:
+                            file_path = nbp_file.tile[t][r][c]
+                            file_path = file_path[:file_path.index('.npy')] + '_raw.npy'
+                            file_exists = os.path.isfile(file_path)
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                     if file_exists:
                         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
@@ -257,7 +266,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             # Only need to load in mid-z plane if 3D.
                             if nbp_basic.is_3d:
                                 im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
-                                                         yxz=[None, None, nbp_debug.z_info])
+                                                         yxz=[None, None, nbp_debug.z_info],
+                                                         suffix=''+'_raw'*(r == pre_seq_round))
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
@@ -265,6 +275,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 extract.get_extract_info(im, config['auto_thresh_multiplier'], hist_bin_edges,
                                                          max_tiff_pixel_value, scale)
                             if r != nbp_basic.anchor_round:
+                                # Does hist counts ad all tiles?
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     else:
                         im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
@@ -322,13 +333,17 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
                                 if r != nbp_basic.anchor_round:
                                     nbp.hist_counts[:, r, c] += hist_counts_trc
+                            # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
-                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c, num_rotations=config['num_rotations'])
+                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c,
+                                                suffix=''+'_raw'*(r == pre_seq_round),
+                                                num_rotations=config['num_rotations'])
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)
                 if not nbp_basic.is_3d:
-                    utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
+                    utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r,
+                                        suffix=''+'_raw'*(r == pre_seq_round))
     pbar.close()
 
     # Now remove outliers from nbp.auto_thresh
@@ -344,5 +359,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_anchor_tile = None
         nbp_debug.scale_anchor_z = None
         nbp_debug.scale_anchor = None
+    # add a variable for bg_scale
+    nbp.bg_scale = None
 
     return nbp, nbp_debug

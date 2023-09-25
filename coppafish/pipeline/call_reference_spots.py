@@ -9,7 +9,7 @@ import warnings
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
-                         nbp_ref_spots: NotebookPage, transform: np.ndarray,
+                         nbp_ref_spots: NotebookPage, nbp_extract: NotebookPage, transform: np.ndarray,
                          overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
@@ -81,13 +81,13 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                    return_in_bounds=True)[0]
     # normalise pixel colours by round and channel and then remove background
     # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
-    colour_norm_factor = np.percentile(abs(pixel_colors), 99.9, axis=0)
+    colour_norm_factor = np.percentile(abs(pixel_colors), 99, axis=0)
     spot_colours = spot_colours_background_removed / colour_norm_factor[None]
 
     # save pixel intensity and delete pixel_colors to save memory
     pixel_intensity = get_spot_intensity(np.abs(pixel_colors / colour_norm_factor[None]))
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
-    del pixel_colors
+    del pixel_colors, pixel_intensity
 
     # 2. Bleed matrix calculation and bled codes
     # 2.1 Calculate bleed matrix, this just involves normalising the bleed matrix template with the colour norm factor,
@@ -165,7 +165,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                                          gene_no=gene_no, gene_score=gene_score,
                                                          gene_codes=gene_codes, intensity=intensity,
                                                          score_threshold=0.8,
-                                                         intensity_threshold=np.percentile(intensity, 25))
+                                                         intensity_threshold=np.percentile(intensity, 50))
     # 3.2 Update bled codes
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
 

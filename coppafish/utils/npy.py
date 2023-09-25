@@ -12,7 +12,7 @@ import numbers
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,
-              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0):
+              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = ''):
     """
     Wrapper function to save tiles as npy files with correct shift.
     Moves z-axis to start before saving as it is quicker to load in this order.
@@ -26,6 +26,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         r: Round considering
         c: Channel considering
         num_rotations: Number of rotations to apply to image before saving. (Default = 0, done from y to x axis)
+        suffix: Suffix to add to file name.
     """
     if nbp_basic.is_3d:
         if c is None:
@@ -50,7 +51,9 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         # Now rotate image
         if num_rotations != 0:
             image = np.rot90(image, k=num_rotations, axes=(1, 2))
-        np.save(nbp_file.tile[t][r][c], image)
+        file_path = nbp_file.tile[t][r][c]
+        file_path= file_path[:file_path.index('.npy')] + suffix + '.npy'
+        np.save(file_path, image)
     else:
         # Don't need to apply rotations here as 2D data obtained from upstairs microscope without this issue
         if r == nbp_basic.anchor_round:
@@ -70,13 +73,14 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         expected_shape = (nbp_basic.n_channels, nbp_basic.tile_sz, nbp_basic.tile_sz)
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
-
-        np.save(nbp_file.tile[t][r], image)
+        file_path = nbp_file.tile[t][r][c]
+        file_path = file_path[file_path.index('.npy'):] + suffix + '.npy'
+        np.save(file_path, image)
 
 
 def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c: int,
               yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None,
-              apply_shift: bool = True) -> np.ndarray:
+              apply_shift: bool = True, suffix: str = '') -> np.ndarray:
     """
     Loads in image corresponding to desired tile, round and channel from the relavent npy file.
 
@@ -99,11 +103,14 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
             with the pixels values shifted by `+nbp_basic.tile_pixel_value_shift`.
             May want to disable `apply_shift` to save memory and/or make loading quicker as there will be
             no dtype conversion. If loading in DAPI, dtype always uint16 as is no shift.
+        suffix: Suffix to add to file name to load from.
 
     Returns:
         `int32 [ny x nx (x nz)]` or `int32 [n_pixels x (2 or 3)]`
             Loaded image.
     """
+    file_path = nbp_file.tile[t][r][c]
+    file_path = file_path[:file_path.index('.npy')] + suffix + '.npy'
     if yxz is not None:
         # Use mmap when only loading in part of image
         if isinstance(yxz, (list, tuple)):
@@ -112,14 +119,14 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
                     raise ValueError(f'Loading in a 3D tile but dimension of coordinates given is {len(yxz)}.')
                 if yxz[0] is None and yxz[1] is None:
                     try:
-                        image = np.load(nbp_file.tile[t][r][c], mmap_mode='r')[yxz[2]]
+                        image = np.load(file_path, mmap_mode='r')[yxz[2]]
                     except ValueError:
-                        image = np.load(nbp_file.tile[t][r][c], mmap_mode='r+')[yxz[2]]
+                        image = np.load(file_path, mmap_mode='r+')[yxz[2]]
                     if image.ndim == 3:
                         image = np.moveaxis(image, 0, 2)
                 else:
                     coord_index = np.ix_(yxz[0], yxz[1], yxz[2])
-                    image = np.moveaxis(np.load(nbp_file.tile[t][r][c], mmap_mode='r'), 0, 2)[coord_index]
+                    image = np.moveaxis(np.load(file_path, mmap_mode='r'), 0, 2)[coord_index]
             else:
                 if len(yxz) != 2:
                     raise ValueError(f'Loading in a 2D tile but dimension of coordinates given is {len(yxz)}.')
@@ -131,7 +138,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
                 if yxz.shape[1] != 3:
                     raise ValueError(f'Loading in a 3D tile but dimension of coordinates given is {yxz.shape[1]}.')
                 coord_index = tuple(np.asarray(yxz[:, i]) for i in range(3))
-                image = np.moveaxis(np.load(nbp_file.tile[t][r][c], mmap_mode='r'), 0, 2)[coord_index]
+                image = np.moveaxis(np.load(file_path, mmap_mode='r'), 0, 2)[coord_index]
             else:
                 if yxz.shape[1] != 2:
                     raise ValueError(f'Loading in a 2D tile but dimension of coordinates given is {yxz.shape[1]}.')
@@ -145,7 +152,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
     else:
         if nbp_basic.is_3d :
             # Don't use mmap when loading in whole image
-            image = np.moveaxis(np.load(nbp_file.tile[t][r][c]), 0, 2)
+            image = np.moveaxis(np.load(file_path), 0, 2)
         else:
             # Use mmap when only loading in part of image
             image = np.load(nbp_file.tile[t][r], mmap_mode='r')[c]
