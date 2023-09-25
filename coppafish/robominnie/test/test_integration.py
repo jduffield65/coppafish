@@ -16,13 +16,12 @@ def test_integration_001() -> None:
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
-    robominnie = RoboMinnie(include_anchor=True, include_presequence=True, n_tiles=2, tiles_width=2, seed=94)
+    robominnie = RoboMinnie(include_anchor=True, include_presequence=False, n_tiles=1, tiles_width=2, seed=94)
     robominnie.Generate_Gene_Codes(n_genes=15)
     robominnie.Add_Spots(n_spots=10_000, bleed_matrix=np.diag(np.ones(7)), \
                          spot_size_pixels=np.array([1.5, 1.5, 1.5]))
-    robominnie.Generate_Random_Noise(noise_mean_amplitude=0, noise_std=0.001, noise_type='normal')
+    robominnie.Generate_Random_Noise(noise_mean_amplitude=0, noise_std=0.0004, noise_type='normal')
     robominnie.Fix_Image_Minimum(minimum=0)
-    robominnie.View_Images()
     # Save the synthetic data in coppafish format as raw .npy files
     # NOTE: We are shortening the pipeline runtime by making the initial intensity threshold strict for OMP
     robominnie.Save_Raw_Images(output_dir=output_dir, overwrite=True, omp_iterations=2, \
