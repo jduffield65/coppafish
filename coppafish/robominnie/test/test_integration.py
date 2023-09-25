@@ -9,7 +9,7 @@ import pytest
 def test_integration_001() -> None:
     """
     Summary of input data: random spots and random, white noise.\n
-    Includes presequence round, anchor round, sequencing rounds, two neighbouring tiles.\n
+    Includes anchor round, sequencing rounds, one tile.\n
     Compares ground truth spots to OMP spots and reference spots.
     """
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'integration_dir')

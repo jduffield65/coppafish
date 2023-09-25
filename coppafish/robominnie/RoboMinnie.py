@@ -153,7 +153,7 @@ class RoboMinnie:
     1. Single tile, modular, customisable synthetic data generation for coppafish
     2. Coppafish raw .npy file generation for pipeline running
     3. Coppafish scoring using ground-truth spot data
-
+    
     Usage:
     ------
     Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
@@ -161,7 +161,7 @@ class RoboMinnie:
         ``Compare_Spots_OMP`` to evaluate OMP results.
     """
     #TODO: Multi-tile support
-    #TODO: Presequence support
+    #TODO: DAPI support
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
         n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_presequence : bool = True, 
         anchor_channel : int = 0, tiles_width : int = None, seed : int = 0) -> None:
@@ -208,6 +208,8 @@ class RoboMinnie:
         assert self.n_yx[1] > 0, 'Require x size to be at least 1 pixel'
         if tiles_width == None:
             self.tiles_width = np.floor(np.sqrt(self.n_tiles))
+            if self.tiles_width < 1:
+                self.tiles_width = 1
         else:
             self.tiles_width = tiles_width
         assert self.tiles_width > 0, f'Require a tile width > 0, got {self.tiles_width}'
@@ -320,7 +322,8 @@ class RoboMinnie:
         values = list(codes.values())
         if len(values) != len(set(values)):
             # Not every gene code is unique
-            raise ValueError(f'Could not generate {n_genes} unique gene codes with {n_rounds} rounds/dyes')
+            raise ValueError(f'Could not generate {n_genes} unique gene codes with {n_rounds} rounds/dyes. ' + \
+                             'Maybe try decreasing the number of genes or increasing the number of rounds.')
         self.codes = codes
         return codes
 
@@ -662,12 +665,26 @@ class RoboMinnie:
             save_path = os.path.join(output_dir, f'{r}')
             if not os.path.isdir(save_path):
                 os.mkdir(save_path)
+            # Clear the raw .npy directories before dask saving, so old multi-tile data is not left in the 
+            # directories
+            for filename in os.listdir(save_path):
+                filepath = os.path.join(save_path, filename)
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+                else:
+                    raise IsADirectoryError(f'Found unexpected directory in {save_path}')
             image_dask = dask.array.from_array(all_images[r], chunks=dask_chunks)
             dask.array.to_npy_stack(save_path, image_dask)
             del image_dask
         if self.include_presequence:
             # Save the presequence image in `coppafish_output/preseq/`
             presequence_save_path = os.path.join(output_dir, presequence_directory)
+            for filename in os.listdir(presequence_save_path):
+                filepath = os.path.join(presequence_save_path, filename)
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+                else:
+                    raise IsADirectoryError(f'Found unexpected directory in {presequence_save_path}')
             image_dask = dask.array.from_array(self.presequence_image, chunks=dask_chunks)
             dask.array.to_npy_stack(presequence_save_path, image_dask)
             del image_dask
