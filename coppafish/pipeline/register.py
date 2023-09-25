@@ -174,7 +174,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             pickle.dump(registration_data, f)
 
     # Now blur the pre seq round images
-    if registration_data['blur'] is False:
+    if registration_data['blur'] is False and nbp_basic.use_preseq:
         for t, c in tqdm(itertools.product(use_tiles, use_channels + [nbp_basic.dapi_channel])):
             print(f" Blurring pre-seq tile {t}, channel {c}")
             # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
