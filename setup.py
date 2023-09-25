@@ -1,3 +1,4 @@
+import os
 from setuptools import setup, find_packages
 
 with open("coppafish/_version.py", "r") as f:
@@ -26,7 +27,8 @@ setup(
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'cloudpickle', 'dask', 'joblib', 'threadpoolctl',
                       'cachey', 'sphinx', 'psutil', 'pytest'],
     extras_require={'optimised': ['jax[cpu]'], 'plotting': ['matplotlib', 'distinctipy', 'PyQt5', 'mplcursors',
-                                                                 'magicgui', 'ipympl', 'napari<=0.4.17', 'npe2', 'hsluv']},
+                                                            'magicgui', 'ipympl', 'napari[all]<=0.4.17', 
+                                                            'npe2', 'hsluv']},
     package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json',
                                       'dye_camera_laser_raw_intensity.csv'],
                   'coppafish.plot.results_viewer': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
