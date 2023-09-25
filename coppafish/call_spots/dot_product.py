@@ -21,10 +21,10 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
     # If no weighting is given, use equal weighting
     if weight_squared is None:
         weight_squared = np.ones((n_spots, spot_colours.shape[1], spot_colours.shape[2]))
-    else:
+    # else:
         # First convert these matrices to vectors so that we can use the dot product.
         # copy weight_squared along new axis
-        weight_squared = np.repeat(weight_squared[np.newaxis, :, :], n_spots, axis=0)
+        # weight_squared = np.repeat(weight_squared[np.newaxis, :, :], n_spots, axis=0)
     weight_squared = weight_squared.reshape(n_spots, -1)
     spot_colours = spot_colours.reshape(n_spots, -1)
     spot_colours = spot_colours / (np.linalg.norm(spot_colours, axis=1)[:, None] + norm_shift)

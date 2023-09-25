@@ -48,9 +48,11 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
     spot_info = fs.load_spot_info(nbp_file, nbp_basic)
     # Define use_indices as a [n_tiles x n_rounds x n_channels] boolean array where use_indices[t, r, c] is True if
     # we want to use tile `t`, round `r`, channel `c` to find spots.
-    use_indices = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.n_extra_rounds, nbp_basic.n_channels),
+    use_indices = np.zeros((nbp_basic.n_tiles, nbp_basic.n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq,
+                            nbp_basic.n_channels),
                            dtype=bool)
-    for t, r, c in itertools.product(use_tiles, use_rounds, use_channels):
+    for t, r, c in itertools.product(use_tiles, use_rounds + nbp_basic.use_preseq * [nbp_basic.pre_seq_round],
+                                     use_channels):
         use_indices[t, r, c] = True
     for t in use_tiles:
         use_indices[t, nbp_basic.anchor_round, nbp_basic.anchor_channel] = True
@@ -65,7 +67,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         for t, r, c in np.argwhere(uncompleted):
             pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
             # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
-            image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
+            image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False, suffix='' + '_raw' * (r == nbp_basic.pre_seq_round))
             local_yxz, spot_intensity = fs.detect_spots(image,
                                                        auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
                                                        config['radius_xy'], config['radius_z'], True)
@@ -89,6 +91,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
             spot_info['spot_yxz'] = np.vstack((spot_info['spot_yxz'], local_yxz))
             spot_info['spot_no'][t, r, c] = local_yxz.shape[0]
             spot_info['completed'][t, r, c] = True
+            assert spot_info['spot_yxz'].shape[0] == np.sum(spot_info['spot_no']), \
+                "spot_yxz and spot_no do not match. Tile {}, round {}, channel {}".format(t, r, c)
             np.savez(nbp_file.spot_details_info, spot_info['spot_yxz'], spot_info['spot_no'], spot_info['isolated'],
                      spot_info['completed'])
             pbar.update(1)

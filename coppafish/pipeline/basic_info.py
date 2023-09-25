@@ -379,25 +379,39 @@ def set_basic_info_new(config: dict) -> NotebookPage:
 
     # If preseq round is a file, set pre_seq_round to True, else False and raise warning that pre_seq_round is not a
     # file
-    if config_file['pre_seq_round'] is None:
+    if config_file['pre_seq'] is None:
         nbp.use_preseq = False
         nbp.pre_seq_round = None
         # Return here as we don't need to check if the file exists
         return nbp
 
-    # Support for presequence .npy raw files
-    if raw_extension == '.nd2':
-        preseq_filepath = os.path.join(config_file['input_dir'], config_file['pre_seq_round'] + raw_extension)
+    if raw_extension == 'nd2':
+        if os.path.isfile(os.path.join(config_file['input_dir'], config_file['pre_seq'] + '.nd2')):
+            nbp.use_preseq = True
+            nbp.pre_seq_round = nbp.anchor_round + 1
+            n_extra_rounds = nbp.n_extra_rounds
+            del nbp.n_extra_rounds
+            nbp.n_extra_rounds = n_extra_rounds + 1
+        else:
+            nbp.use_preseq = False
+            nbp.pre_seq_round = None
+            warnings.warn(f"Pre-sequencing round not found at "
+                          f"{os.path.join(config_file['input_dir'], config_file['pre_seq'] +'.nd2')}. "
+                          f"Setting pre_seq_round to False. If this is not what you want, please check that the "
+                          f"pre_seq_round variable in the config file is set to the correct file name.")
     elif raw_extension == '.npy':
-        preseq_filepath = os.path.join(config_file['input_dir'], config_file['pre_seq_round'], '0.npy')
-    if os.path.isfile(preseq_filepath):
-        nbp.use_preseq = True
-        nbp.pre_seq_round = nbp.anchor_round + 1
-    else:
-        nbp.use_preseq = False
-        nbp.pre_seq_round = None
-        warnings.warn(f"Pre-sequencing round not found at {preseq_filepath}. Setting pre_seq_round to False. If "
-                      "this is not what you want, please check that the pre_seq_round variable in the config "
-                      "file is set to the correct file name.")
+        if os.path.isdir(os.path.join(config_file['input_dir'], config_file['pre_seq'])):
+            nbp.use_preseq = True
+            nbp.pre_seq_round = nbp.anchor_round + 1
+            n_extra_rounds = nbp.n_extra_rounds
+            del nbp.n_extra_rounds
+            nbp.n_extra_rounds = n_extra_rounds + 1
+        else:
+            nbp.use_preseq = False
+            nbp.pre_seq_round = None
+            warnings.warn(f"Pre-sequencing round not found at "
+                          f"{os.path.join(config_file['input_dir'], config_file['pre_seq'] +'.nd2')}. "
+                          f"Setting pre_seq_round to False. If this is not what you want, please check that the "
+                          f"pre_seq_round variable in the config file is set to the correct file name.")
 
     return nbp
