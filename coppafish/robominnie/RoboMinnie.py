@@ -39,7 +39,6 @@ def _funcname():
     return str(inspect.stack()[1][3])
 
 
-
 def _compare_spots(
     spot_positions_yxz : npt.NDArray, spot_gene_indices : npt.NDArray, true_spot_positions_yxz : npt.NDArray, \
     true_spot_gene_identities : npt.NDArray, location_threshold_squared : float, codes : Dict[str,str],
@@ -165,7 +164,7 @@ class RoboMinnie:
     #TODO: Presequence support
     def __init__(self, n_channels : int = 7, n_tiles : int = 1, n_rounds : int = 7, n_planes : int = 4, 
         n_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, include_presequence : bool = True, 
-        anchor_channel : int = 0, seed : int = 0) -> None:
+        anchor_channel : int = 0, tiles_width : int = None, seed : int = 0) -> None:
         """
         Create a new RoboMinnie instance. Used to manipulate, create and save synthetic data in a modular,
         customisable way. Synthetic data is saved as raw .npy files and includes everything needed for coppafish 
@@ -181,6 +180,8 @@ class RoboMinnie:
             include_anchor (bool, optional): Whether to include the anchor round. Default:  true
             include_presequence (bool, optional): Whether to include the pre-sequence round. Default: true
             anchor_channel (int, optional): The anchor channel. Default: 0.
+            tiles_width (int, optional): Number of tiles aligned along the x axis together. Default: \
+                `floor(sqrt(n_tiles))`
             seed (int, optional): Seed used throughout the generation of random data, specify integer value for \
                 reproducible output. If None, seed is randomly picked. Default: 0.
         """
@@ -205,6 +206,11 @@ class RoboMinnie:
         assert self.n_planes > 0, 'Require at least one z plane'
         assert self.n_yx[0] > 0, 'Require y size to be at least 1 pixel'
         assert self.n_yx[1] > 0, 'Require x size to be at least 1 pixel'
+        if tiles_width == None:
+            self.tiles_width = np.floor(np.sqrt(self.n_tiles))
+        else:
+            self.tiles_width = tiles_width
+        assert self.tiles_width >= 0, f'Require a tile width >= 0, got {self.tiles_width}'
         if self.include_anchor:
             assert self.anchor_channel >= 0 and self.anchor_channel < self.n_channels, \
                 f'Anchor channel must be in range 0 to {self.n_channels - 1}, but got {self.anchor_channel}'
@@ -218,16 +224,27 @@ class RoboMinnie:
         self.image = np.zeros(self.shape, dtype=float)
         self.anchor_image = np.zeros(self.anchor_shape, dtype=float)
         self.presequence_image = np.zeros(self.presequence_shape, dtype=float)
-        if self.n_tiles > 1:
-            raise NotImplementedError('Multiple tile support is not implemented yet')
+        # if self.n_tiles > 1:
+        #     raise NotImplementedError('Multiple tile support is not implemented yet')
         if self.n_yx[0] != self.n_yx[1]:
             raise NotImplementedError('Coppafish does not support non-square tiles')
         if self.n_yx[0] < 2_000 or self.n_yx[1] < 2_000:
             warnings.warn('Coppafish may not support tile sizes that are too small due to implicit' + \
                 ' assumptions about a tile size of 2048 in the x and y directions')
         if self.n_planes < 4:
-            warnings.warn('Coppafish may break with fewer than 4 z planes')
-    
+            warnings.warn('Coppafish may break with fewer than four z planes')
+        # Calculate tile origins, store in `self.tile_origins_yx`
+        self.tile_origins_yx = []
+        max_x = self.tiles_width * self.n_yx[1]
+        x = max_x
+        y = np.ceil(self.n_yx[0] * self.n_tiles / self.tiles_width)
+        for t in range(self.n_tiles):
+            if x <= 0:
+                x = max_x
+                y -= self.n_yx[0]
+            self.tile_origins_yx.append([int(y),int(x)])
+            x -= self.n_yx[1]
+
 
     def Generate_Gene_Codes(self, n_genes : int = 73, n_rounds : int = None) -> Dict:
         """
@@ -349,42 +366,54 @@ class RoboMinnie:
         camera
 
         args:
-            noise_mean_amplitude(float, optional): Mean amplitude of random noise. Default: 0
-            noise_std(float): Standard deviation/width of random noise
-            noise_type(str('normal' or 'uniform'), optional): Type of random noise to apply. Default: 'normal'
-            include_anchor(bool, optional): Whether to apply random noise to anchor round. Default: true
-            include_presequence(bool, optional): Whether to apply random noise to presequence rounds. Default: true
+            noise_mean_amplitude (float, optional): Mean amplitude of random noise. Default: 0
+            noise_std (float): Standard deviation/width of random noise
+            noise_type (str('normal' or 'uniform'), optional): Type of random noise to apply. Default: 'normal'
+            include_anchor (bool, optional): Whether to apply random noise to anchor round. Default: true
+            include_presequence (bool, optional): Whether to apply random noise to presequence rounds. Default: true
         """
         self.instructions.append(_funcname())
-        print(f'Generating random noise')
 
         assert noise_std > 0, f'Noise standard deviation must be > 0, got {noise_std}'
 
-        # Create random pixel noise        
         rng = np.random.RandomState(self.seed)
-        anchor_noise = np.zeros(shape=self.anchor_shape)
-        presequence_noise = np.zeros(shape=self.anchor_shape)
-        if noise_type == 'normal':
-            noise = rng.normal(noise_mean_amplitude, noise_std, size=self.shape)
-            if include_anchor and self.include_anchor:
-                anchor_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.anchor_shape)
-            if include_presequence and self.include_presequence:
-                presequence_noise = rng.normal(noise_mean_amplitude, noise_std, size=self.presequence_shape)
-        elif noise_type == 'uniform':
-            noise = rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.shape)
-            if include_anchor and self.include_anchor:
-                anchor_noise = \
-                    rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.anchor_shape)
-            if include_presequence and self.include_presequence:
-                presequence_noise = \
-                    rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=self.presequence_shape)
-        else:
-            raise ValueError(f'Unknown noise type: {noise_type}')
-        
-        # Add new random noise to each pixel
-        np.add(self.image, noise, out=self.image)
-        np.add(self.anchor_image, anchor_noise, out=self.anchor_image)
-        np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
+        anchor_shape_single_tile = (1, *self.anchor_shape[1:])
+        shape_single_tile = (self.shape[0], 1, *self.shape[2:])
+        presequence_shape_single_tile = (1, *self.presequence_shape[1:])
+
+        for t in trange(self.n_tiles, ascii=True, desc=f'Generating random noise', unit='tiles'):
+            anchor_noise = np.zeros(shape=anchor_shape_single_tile)
+            presequence_noise = np.zeros(shape=presequence_shape_single_tile)
+            if noise_type == 'normal':
+                noise = rng.normal(noise_mean_amplitude, noise_std, size=shape_single_tile)
+                if include_anchor and self.include_anchor:
+                    anchor_noise = rng.normal(noise_mean_amplitude, noise_std, size=anchor_shape_single_tile)
+                if include_presequence and self.include_presequence:
+                    presequence_noise = rng.normal(noise_mean_amplitude, noise_std, size=presequence_shape_single_tile)
+            elif noise_type == 'uniform':
+                noise = rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=shape_single_tile)
+                if include_anchor and self.include_anchor:
+                    anchor_noise = \
+                        rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=anchor_shape_single_tile)
+                if include_presequence and self.include_presequence:
+                    presequence_noise = \
+                        rng.uniform(noise_mean_amplitude - noise_std/2, noise_mean_amplitude + noise_std/2, size=presequence_shape_single_tile)
+            else:
+                raise ValueError(f'Unknown noise type: {noise_type}')
+            
+            # Add new random noise to each pixel
+            print(self.image.shape)
+            print(self.anchor_image.shape)
+            print(self.presequence_image.shape)
+            np.add(self.image[:,t], noise[:,0], out=self.image[:,t])
+            np.add(self.anchor_image[t], anchor_noise[0], out=self.anchor_image[t])
+            np.add(self.presequence_image[t], presequence_noise[0], out=self.presequence_image[t])
+            del noise
+            del anchor_noise
+            del presequence_noise
+            print(self.image.shape)
+            print(self.anchor_image.shape)
+            print(self.presequence_image.shape)
 
 
     def Add_Spots(self, n_spots : int, bleed_matrix : npt.NDArray, spot_size_pixels : npt.NDArray, \
@@ -480,16 +509,17 @@ class RoboMinnie:
         # anchor.
         ind_size = np.ceil(spot_size_pixels*1.5).astype(int)*2+1
         indices = np.indices(ind_size)-ind_size[:,None,None,None]//2
-        spot_img = scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels).pdf(indices.transpose(1,2,3,0))
-        for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), 
-            desc='Superimposing spots', ascii=True, unit='spots', total=n_spots):
-
+        spot_img = \
+            scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels).pdf(indices.transpose(1,2,3,0))
+        # TODO: Add spots to multiple tiles, not just zeroth tile
+        for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), \
+                            desc='Superimposing spots', ascii=True, unit='spots', total=n_spots):
             p = np.asarray(p).astype(int)
             p_chan = np.round([self.n_channels//2, p[0], p[1], p[2]]).astype(int)
-            for rnd in range(self.n_rounds):
-                dye = int(self.codes[ident][rnd])
+            for r in range(self.n_rounds):
+                dye = int(self.codes[ident][r])
                 # The second index on image is for one tile
-                blit(spot_img[None,:] * bleed_matrix[dye][:,None,None,None], self.image[rnd,0], p_chan)
+                blit(spot_img[None,:] * bleed_matrix[dye][:,None,None,None], self.image[r,0], p_chan)
             blit(spot_img, self.anchor_image[0,self.anchor_channel], p)
 
         # Append just in case spots are created multiple times
@@ -599,7 +629,7 @@ class RoboMinnie:
         )
         df.to_csv(os.path.join(output_dir, "gene_locations.csv"))
 
-        #TODO: Update metadata entries for multiple tile support
+        #TODO: Update metadata entries for multiple tile support, fix this
         metadata = {
             "n_tiles": self.n_tiles, 
             "n_rounds": self.n_rounds, 
@@ -608,11 +638,11 @@ class RoboMinnie:
             "pixel_size_xy": 0.26, 
             "pixel_size_z": 0.9, 
             "tile_centre": [self.n_yx[0]//2,self.n_yx[1]//2,self.n_planes//2], 
-            "tilepos_yx": [[0,0]], 
-            "tilepos_yx_nd2": [[0,0]], 
+            "tilepos_yx": self.tile_origins_yx, 
+            "tilepos_yx_nd2": self.tile_origins_yx, 
             "channel_camera": [1,1,2,3,2,3,3], 
             "channel_laser": [1,1,2,3,2,3,3], 
-            "xy_pos": [[0,0]],
+            "xy_pos": self.tile_origins_yx, 
         }
         self.metadata_filepath = os.path.join(output_dir, 'metadata.json')
         with open(self.metadata_filepath, 'w') as f:
@@ -622,20 +652,24 @@ class RoboMinnie:
         # coppafish expects every rounds (and anchor and presequence) in its own directory.
         all_images = self.image
         presequence_directory = f'presequence'
-        dask_save_shape = self.shape[1:]
+        dask_chunks = self.shape[1:]
+        # Dask should save each tile as a separate .npy file for coppafish to read
+        dask_chunks = list(dask_chunks)
+        dask_chunks[0] = 1
+        dask_chunks = tuple(dask_chunks)
         if self.include_anchor:
             all_images = np.concatenate([self.image, self.anchor_image[None]]).astype(np.float32)
         for r in range(self.n_rounds + self.include_anchor):
             save_path = os.path.join(output_dir, f'{r}')
             if not os.path.isdir(save_path):
                 os.mkdir(save_path)
-            image_dask = dask.array.from_array(all_images[r], chunks=dask_save_shape)
+            image_dask = dask.array.from_array(all_images[r], chunks=dask_chunks)
             dask.array.to_npy_stack(save_path, image_dask)
             del image_dask
         if self.include_presequence:
             # Save the presequence image in `coppafish_output/preseq/`
             presequence_save_path = os.path.join(output_dir, presequence_directory)
-            image_dask = dask.array.from_array(self.presequence_image, chunks=dask_save_shape)
+            image_dask = dask.array.from_array(self.presequence_image, chunks=dask_chunks)
             dask.array.to_npy_stack(presequence_save_path, image_dask)
             del image_dask
         del all_images
@@ -654,8 +688,8 @@ class RoboMinnie:
         #! Note: Older coppafish software used to take settings ['register']['z_box'] for each dimension 
         # subvolume. Newer coppafish software (supported here) uses ['register']['box_size'] to change subvolume 
         # size in each dimension in one setting
-        self.dye_names = ['ATTO425', 'AF488', 'DY520XL', 'AF532', 'AF594', 'AF647', 'AF750']
-        self.dye_names = self.dye_names[:np.min([len(self.dye_names), self.n_channels])]
+        self.dye_names = map(''.join, zip(['dye_']*self.n_channels, list(np.arange(self.n_channels).astype(str))))
+        self.dye_names = list(self.dye_names)
 
         config_file_contents = f"""; This config file is auto-generated by RoboMinnie. 
         [file_names]
@@ -676,6 +710,7 @@ class RoboMinnie:
         dye_names = {', '.join(self.dye_names)}
         use_rounds = {', '.join([str(i) for i in range(self.n_rounds)])}
         use_z = {', '.join([str(i) for i in range(self.n_planes)])}
+        use_tiles = {', '.join(str(i) for i in range(self.n_tiles))}
         anchor_round = {self.n_rounds if self.include_anchor else ''}
         anchor_channel = {self.anchor_channel if self.include_anchor else ''}
         
@@ -734,7 +769,7 @@ class RoboMinnie:
         assert nb.stitch is not None, f'Stitch not found in notebook at {self.config_filepath}'
         # Keep the stitch information to convert local tiles coordinates into global coordinates when comparing 
         # to true spots
-        self.tile_origins = nb.stitch.tile_origin
+        self.stitch_tile_origins = nb.stitch.tile_origin
         run_reference_spots(nb, overwrite_ref_spots=False)
 
         # Keep reference spot information to compare to true spots, if wanted
@@ -814,7 +849,7 @@ class RoboMinnie:
 
         # Convert local spot positions into global coordinates using global tile positions
         ref_spots_positions_yxz = self.ref_spots_local_positions_yxz.astype(np.float64)
-        np.add(ref_spots_positions_yxz, self.tile_origins[self.ref_spots_tile], out=ref_spots_positions_yxz)
+        np.add(ref_spots_positions_yxz, self.stitch_tile_origins[self.ref_spots_tile], out=ref_spots_positions_yxz)
 
         ref_spots_gene_indices = self.ref_spots_gene_indices
         ref_spots_intensities  = self.ref_spots_intensities
@@ -882,7 +917,7 @@ class RoboMinnie:
 
         # Convert local spot positions into global coordinates using global tile positions
         omp_spot_positions_yxz = self.omp_spot_local_positions.astype(np.float64)
-        np.add(omp_spot_positions_yxz, self.tile_origins[self.omp_tile_number], out=omp_spot_positions_yxz)
+        np.add(omp_spot_positions_yxz, self.stitch_tile_origins[self.omp_tile_number], out=omp_spot_positions_yxz)
 
         omp_gene_numbers = self.omp_gene_numbers
 
