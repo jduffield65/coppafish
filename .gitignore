@@ -2,3 +2,4 @@ build
 coppafish.egg-info
 **/__pycache__
 **/integration_dir
+**/*.egg
