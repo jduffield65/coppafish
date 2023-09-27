@@ -195,14 +195,19 @@ def run_register(nb: setup.Notebook):
         nb += nbp
         nb += nbp_debug
         # Save reg images
+        round_registration_channel = config['register']['round_registration_channel']
         for t in nb.basic_info.use_tiles:
             for r in nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round]:
-                generate_reg_images(nb, t, r, config['register']['round_registration_channel'])
+                if round_registration_channel is not None:
+                    generate_reg_images(nb, t, r, round_registration_channel)
+                if round_registration_channel is None:
+                    generate_reg_images(nb, t, r, nb.basic_info.anchor_channel)
                 print(t, r)
             for c in nb.basic_info.use_channels:
                 generate_reg_images(nb, t, 3, c)
                 print(t, c)
-            generate_reg_images(nb, t, nb.basic_info.anchor_round, config['register']['round_registration_channel'])
+            if round_registration_channel is not None:
+                generate_reg_images(nb, t, nb.basic_info.anchor_round, round_registration_channel)
             generate_reg_images(nb, t, nb.basic_info.anchor_round, nb.basic_info.anchor_channel)
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
