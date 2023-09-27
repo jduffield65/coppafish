@@ -54,6 +54,9 @@ class Viewer:
         if gene_marker_file is None:
             gene_marker_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gene_color.csv')
         gene_legend_info = pd.read_csv(gene_marker_file)
+        # add a row at the bottom for other gens. These should have a symbol of 'o' and a colour of grey
+        gene_legend_info = gene_legend_info.append({'GeneNames': 'Other', 'ColorR': 0.75, 'ColorG': 0.75, 'ColorB': 0.75,
+                                                    'napari_symbol': 'disc', 'mpl_symbol': 'o'}, ignore_index=True)
 
         # indices of genes in notebook to gene_color data - quicker to look up integers than names
         # in change_threshold
@@ -62,30 +65,31 @@ class Viewer:
         # 2. number
         # 3. colour
         # 4. symbol
-        # The name and number must be provided, but if the colour or symbol is not provided then they will be generated
-        # randomly
+        self.call_spots_gene_names = np.asarray([n if n in gene_legend_info['GeneNames'].tolist() else
+                                                 "other" for n in self.nb.call_spots.gene_names])
         n_legend_genes = len(gene_legend_info['GeneNames'])
         self.legend_gene_symbol = np.asarray(gene_legend_info['mpl_symbol'])
         self.legend_gene_no = np.ones(n_legend_genes, dtype=int) * -1
+        self.legend_gene_no = self.legend_gene_no.tolist()
+        self.legend_gene_no[-1] = []
         for i in range(n_legend_genes):
-            gene_ind = np.where(self.nb.call_spots.gene_names == gene_legend_info['GeneNames'][i])[0]
+            gene_ind = np.where(self.call_spots_gene_names == gene_legend_info['GeneNames'][i])[0]
             if len(gene_ind) > 0:
                 # We assign the gene no to the intersection of active genes and genes in the gene_color.csv
                 self.legend_gene_no[i] = gene_ind[0]
 
-        # color to plot for all genes in the notebook, by default this is random rgb values, but if genes exist in
+        # color to plot for all genes in the notebook, by default this is grey rgb values, but if genes exist in
         # legend they will be set to that value
-        gene_color = np.random.rand(len(self.nb.call_spots.gene_names), 3)
+        gene_color = np.ones((len(self.call_spots_gene_names), 3)) * 0.75
         for i in range(n_legend_genes):
-            if self.legend_gene_no[i] != -1:
-                gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
-                                                      gene_legend_info.loc[i, 'ColorG'],
-                                                      gene_legend_info.loc[i, 'ColorB']]
+            gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
+                                                  gene_legend_info.loc[i, 'ColorG'],
+                                                  gene_legend_info.loc[i, 'ColorB']]
 
         # Next we assign each gene its symbol, or a random symbol if none exists
         available_symbols = np.unique(np.array(gene_legend_info['napari_symbol']))
-        # Now allocate symbols randomly, correcting when a choice has been given
-        self.gene_symbol = np.random.choice(available_symbols, len(self.nb.call_spots.gene_names))
+        # Now allocate symbols
+        self.gene_symbol = np.asarray(['disc'] * len(self.call_spots_gene_names))
         for i in range(n_legend_genes):
             if self.legend_gene_no[i] != -1:
                 self.gene_symbol[self.legend_gene_no[i]] = gene_legend_info['napari_symbol'][i]
@@ -177,13 +181,13 @@ class Viewer:
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
         self.legend['fig'], self.legend['ax'], n_gene_label_letters = \
-            add_legend(gene_legend_info=gene_legend_info, genes=nb.call_spots.gene_names)
+            add_legend(gene_legend_info=gene_legend_info, genes=self.call_spots_gene_names)
         # xy is position of each symbol in legend, need to see which gene clicked on.
         self.legend['xy'] = np.zeros((len(self.legend['ax'].collections), 2), dtype=float)
         self.legend['gene_no'] = np.zeros(len(self.legend['ax'].collections), dtype=int)
         # In legend, each gene name label has at most n_gene_label_letters letters so need to crop
         # gene_names in notebook when looking for corresponding gene in legend.
-        gene_names_crop = np.asarray([gene_name[:n_gene_label_letters] for gene_name in nb.call_spots.gene_names])
+        gene_names_crop = np.asarray([gene_name[:n_gene_label_letters] for gene_name in self.call_spots_gene_names])
         for i in range(self.legend['xy'].shape[0]):
             # Position of label for each gene in legend window
             self.legend['xy'][i] = np.asarray(self.legend['ax'].collections[i].get_offsets())
@@ -192,7 +196,7 @@ class Viewer:
                 np.where(gene_names_crop == self.legend['ax'].texts[i].get_text())[0][0]
         self.legend['fig'].mpl_connect('button_press_event', self.update_genes)
         self.viewer.window.add_dock_widget(self.legend['fig'], area='left', name='Genes')
-        self.active_genes = np.arange(len(nb.call_spots.gene_names))  # start with all genes shown
+        self.active_genes = np.arange(len(self.call_spots_gene_names))  # start with all genes shown
 
         for i in range(len(background_image)):
             # Slider to change background image contrast
@@ -307,9 +311,9 @@ class Viewer:
                     spot_no = list(selectedData)[0]
                     if self.method_buttons.method == 'OMP':
                         spot_no = spot_no - self.omp_0_ind
-                        spot_gene = self.nb.call_spots.gene_names[self.nb.omp.gene_no[spot_no]]
+                        spot_gene = self.call_spots_gene_names[self.nb.omp.gene_no[spot_no]]
                     else:
-                        spot_gene = self.nb.call_spots.gene_names[self.nb.ref_spots.gene_no[spot_no]]
+                        spot_gene = self.call_spots_gene_names[self.nb.ref_spots.gene_no[spot_no]]
                     self.viewer.status = f'Spot {spot_no}, {spot_gene} Selected'
                 elif n_selected > 1:
                     self.viewer.status = f'{n_selected} spots selected'
