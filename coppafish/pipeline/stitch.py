@@ -150,8 +150,9 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
                                       shift_info['east']['pairs'], shift_info['east']['shifts'],
                                       nbp_basic.n_tiles, centre_tile)
     elif no_tiles_connected:
-        warnings.warn("No tiles used are connected, so cannot find tile origins. "
-                      "Setting all tile origins to non-overlapping values.")
+        if nbp_basic.n_tiles > 1:
+            warnings.warn("No tiles used are connected, so cannot find tile origins. "
+                        "Setting all tile origins to non-overlapping values.")
         tile_origin = np.zeros((nbp_basic.n_tiles, 3))
         tile_origin[:, 2] = nbp_basic.nz / 2
         tile_origin[:, :2] = nbp_basic.tilepos_yx * (1 - config['expected_overlap']) * nbp_basic.tile_sz
