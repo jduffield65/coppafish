@@ -159,8 +159,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
         # Total PC's available memory in GB
         available_memory = psutil.virtual_memory().available // 1000**3
-        # Scale the z_chunk_size linearly based on PC's available memory, with a maximum of 8
-        z_chunk_size = available_memory // 14
+        # Scale the z_chunk_size linearly based on PC's available memory and tile x by y area, with a maximum of 8
+        z_chunk_size = available_memory * 4194304 // (6 * nbp_basic.tile_sz * nbp_basic.tile_sz)
         if z_chunk_size < 1:
             warnings.warn(
                 UserWarning('Available memory for OMP call spots is <16GB. ' + \
