@@ -28,7 +28,7 @@ def get_thresholds_page(nb: Notebook) -> NotebookPage:
     return nbp
 
 
-def export_to_pciseq(nb: Notebook, intensity_thresh: float = 0, score_thresh: float = 0):
+def export_to_pciseq(nb: Notebook, method = 'omp', intensity_thresh: float = 0, score_thresh: float = 0):
     """
     This saves .csv files containing plotting information for pciseq-
 
@@ -42,49 +42,31 @@ def export_to_pciseq(nb: Notebook, intensity_thresh: float = 0, score_thresh: fl
 
     One .csv file is saved for each method: *omp* and *ref_spots* if the notebook contains
     both pages.
-    Also adds the *thresholds* page to the notebook and re-saves.
-    This is so the *thresholds* section in the config file cannot be further changed.
 
     Args:
         nb: Notebook for the experiment containing at least the *ref_spots* page.
+        method: `'ref'` or `'omp'` indicating which spots to consider.
         intensity_thresh: Intensity threshold for spots included.
         score_thresh: Score threshold for spots included.
 
     """
-    page_names = ['omp', 'ref_spots']
-    method = ['omp', 'anchor']  # for calling qual_ok
-    files_saved = 0
-    for i in range(2):
-        if not nb.has_page(page_names[i]):
-            warnings.warn(f'No file saved for method {method[i]} as notebook does not have a {page_names[i]} page.')
-            continue
-        if os.path.isfile(nb.file_names.pciseq[i]):
-            warnings.warn(f"File {nb.file_names.pciseq[i]} already exists")
-            continue
+    if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
+        raise ValueError(f"method must be 'omp' or 'anchor' but {method} given.")
+    page_name = 'omp' if method.lower() == 'omp' else 'ref_spots'
+    index = 0 if method.lower() == 'omp' else 1
+    if not nb.has_page(page_name):
+        raise ValueError(f"Notebook does not contain {page_name} page.")
+    if os.path.isfile(nb.file_names.pciseq[index]):
+        raise FileExistsError(f"File already exists: {nb.file_names.pciseq[index]}")
+    qual_ok = quality_threshold(nb, method, intensity_thresh, score_thresh)
 
-        if intensity_thresh > 0 or score_thresh > 0:
-            qual_ok = (nb.ref_spots.score > score_thresh) * (nb.ref_spots.intensity > intensity_thresh)
-        else:
-            qual_ok = quality_threshold(nb, method[i])  # only keep spots which pass quality thresholding
+    # get coordinates in stitched image
+    global_spot_yxz = nb.__getattribute__(page_name).local_yxz + \
+                      nb.stitch.tile_origin[nb.__getattribute__(page_name).tile]
+    spot_gene = nb.call_spots.gene_names[nb.__getattribute__(page_name).gene_no[qual_ok]]
+    global_spot_yxz = global_spot_yxz[qual_ok]
+    df_to_export = pd.DataFrame(data=global_spot_yxz, index=spot_gene, columns=['y', 'x', 'z_stack'])
+    df_to_export['Gene'] = df_to_export.index
+    df_to_export.to_csv(nb.file_names.pciseq[index], index=False)
+    print(f'pciSeq file saved for method = {method}: ' + nb.file_names.pciseq[index])
 
-        # get coordinates in stitched image
-        global_spot_yxz = nb.__getattribute__(page_names[i]).local_yxz + \
-                          nb.stitch.tile_origin[nb.__getattribute__(page_names[i]).tile]
-        spot_gene = nb.call_spots.gene_names[nb.__getattribute__(page_names[i]).gene_no[qual_ok]]
-        global_spot_yxz = global_spot_yxz[qual_ok]
-        df_to_export = pd.DataFrame(data=global_spot_yxz, index=spot_gene, columns=['y', 'x', 'z_stack'])
-        df_to_export['Gene'] = df_to_export.index
-        df_to_export.to_csv(nb.file_names.pciseq[i], index=False)
-        print(f'pciSeq file saved for method = {method[i]}: ' + nb.file_names.pciseq[i])
-        files_saved += 1
-
-    if files_saved > 0:
-        # If saved any files, add thresholds page to notebook so cannot make any further changes to
-        # config - will trigger save
-        if not nb.has_page('thresholds'):
-            nbp_thresholds = get_thresholds_page(nb)
-            nb += nbp_thresholds
-        else:
-            warnings.warn('thresholds', utils.warnings.NotebookPageWarning)
-    else:
-        warnings.warn(f"No files saved")

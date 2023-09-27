@@ -76,13 +76,16 @@ def get_intensity_thresh(nb: Notebook) -> float:
     return intensity_thresh
 
 
-def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
+def quality_threshold(nb: Notebook, method: str = 'omp', intensity_thresh: float = 0,
+                      score_thresh: float = 0) -> np.ndarray:
     """
     Indicates which spots pass both the score and intensity quality thresholding.
 
     Args:
         nb: Notebook containing at least the `ref_spots` page.
         method: `'ref'` or `'omp'` indicating which spots to consider.
+        intensity_thresh: Intensity threshold for spots included.
+        score_thresh: Score threshold for spots included.
 
     Returns:
         `bool [n_spots]` indicating which spots pass quality thresholding.
@@ -90,25 +93,21 @@ def quality_threshold(nb: Notebook, method: str = 'omp') -> np.ndarray:
     """
     if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
         raise ValueError(f"method must be 'omp' or 'anchor' but {method} given.")
-    # intensity_thresh = get_intensity_thresh(nb)
-    if nb.has_page('thresholds'):
-        if method.lower() == 'omp':
-            score_thresh = nb.thresholds.score_omp
-            score_multiplier = nb.thresholds.score_omp_multiplier
-        else:
-            score_thresh = nb.thresholds.score_ref
-    else:
+    method_omp = method.lower() == 'omp'
+    # If thresholds are not given, get them from config file or notebook (preferably from notebook)
+    if intensity_thresh == 0 and score_thresh == 0:
+        intensity_thresh = get_intensity_thresh(nb)
         config = nb.get_config()['thresholds']
-        if method.lower() == 'omp':
-            score_thresh = config['score_omp']
-            score_multiplier = config['score_omp_multiplier']
-        else:
-            score_thresh = config['score_ref']
-    if method.lower() == 'omp':
-        intensity = nb.omp.intensity
-        score = omp_spot_score(nb.omp, score_multiplier)
+        score_thresh = config['score_omp'] if method_omp else config['score_ref']
+        score_multiplier = config['score_omp_multiplier'] if method_omp else None
+        # if thresholds page exists, use those values to override config file
+        if nb.has_page('thresholds'):
+            score_thresh = nb.thresholds.score_omp if method_omp else nb.thresholds.score_ref
+            score_multiplier = nb.thresholds.score_omp_multiplier if method_omp else None
     else:
-        intensity = nb.ref_spots.intensity
-        score = nb.ref_spots.score
-    qual_ok = np.array([score > score_thresh, intensity > 0]).all(axis=0)
+        score_multiplier = 1
+
+    intensity = nb.omp.intensity if method_omp else nb.ref_spots.intensity
+    score = omp_spot_score(nb.omp, score_multiplier) if method_omp else nb.ref_spots.score
+    qual_ok = np.array([score > score_thresh, intensity > intensity_thresh]).all(axis=0)
     return qual_ok
