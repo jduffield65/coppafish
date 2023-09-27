@@ -134,7 +134,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         expected_shape = (len(nbp_basic.use_channels), len(nbp_basic.dye_names))
         assert initial_bleed_matrix.shape == expected_shape, \
             f'Initial bleed matrix at {nbp_file.initial_bleed_matrix} has shape {initial_bleed_matrix.shape}, ' + \
-                'expected {expected_shape}.'
+                f'expected {expected_shape}.'
     # normalise bleed matrix across channels, then once again across dyes so each column has norm 1
     bleed_norm = np.median(colour_norm_factor, axis=0)
     # Want to divide each row by bleed_norm, so reshape bleed_norm to be n_channels x n_rounds
