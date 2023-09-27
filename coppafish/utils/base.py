@@ -13,7 +13,7 @@ def round_any(x: Union[float, np.ndarray], base: float, round_type: str = 'round
 
             - `'round'`
             - `'ceil'`
-            - `'float'`
+            - `'floor'`
 
     Returns:
         Rounded version of `x`.
