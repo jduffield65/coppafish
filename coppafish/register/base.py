@@ -198,8 +198,8 @@ def huber_regression(shift, position, predict_shift=True):
         huber_z = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 0])
         z_coef = huber_z.coef_
         z_shift = huber_z.intercept_
-    huber_y = HuberRegressor(tol=1e-6).fit(X=position, y=shift[:, 1])
-    huber_x = HuberRegressor(tol=1e-6).fit(X=position, y=shift[:, 2])
+    huber_y = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 1])
+    huber_x = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 2])
     transform = np.vstack((np.append(z_coef, z_shift),
                            np.append(huber_y.coef_, huber_y.intercept_),
                            np.append(huber_x.coef_, huber_x.intercept_)))
