@@ -353,6 +353,7 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
         filter: whether to apply sobel filter
         image_value_range: tuple of min and max values to clip each output image to
     """
+    #TODO: Add support for datasets with fewer than 10 z planes
     yx_centre = nb.basic_info.tile_centre.astype(int)[:2]
     z_centre = np.median(nb.basic_info.use_z).astype(int)
     tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
