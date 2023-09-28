@@ -174,7 +174,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             pickle.dump(registration_data, f)
 
     # Now blur the pre seq round images
-    if registration_data['blur'] is False:
+    if registration_data['blur'] is False and nbp_basic.use_preseq:
         for t, c in tqdm(itertools.product(use_tiles, use_channels + [nbp_basic.dapi_channel])):
             print(f" Blurring pre-seq tile {t}, channel {c}")
             # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
@@ -220,17 +220,18 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         del nbp_extract.bg_scale # Delete this so that it is not saved to file
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         num_z = nbp_basic.tile_centre[2].astype(int)
+        num_z_offset = np.min([len(nbp_basic.use_z) // 2, 5])
         for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
             transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
-                                              new_origin=np.array([num_z-5, 0, 0]))
-            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([num_z-5, 0, 0]))
+                                              new_origin=np.array([num_z-num_z_offset, 0, 0]))
+            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([num_z-num_z_offset, 0, 0]))
             preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
-                                          yxz=[None, None, np.arange(num_z-5, num_z+5)]))
+                                          yxz=[None, None, np.arange(num_z-num_z_offset, num_z+num_z_offset)]))
             seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
-                                       yxz=[None, None, np.arange(num_z-5, num_z+5)]))
-            preseq = affine_transform(preseq, transform_pre, order=0)[5]
-            seq = affine_transform(seq, transform_seq, order=0)[5]
+                                       yxz=[None, None, np.arange(num_z-num_z_offset, num_z+num_z_offset)]))
+            preseq = affine_transform(preseq, transform_pre, order=0)[num_z]
+            seq = affine_transform(seq, transform_seq, order=0)[num_z]
             bg_scale[t, r, c] = brightness_scale(preseq, seq)[0]
         nbp_extract.bg_scale = bg_scale
         nbp_extract.finalized = True

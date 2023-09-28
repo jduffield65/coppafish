@@ -195,11 +195,11 @@ def huber_regression(shift, position, predict_shift=True):
         print('Warning: Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of '
               'mean(shift)')
     else:
-        huber_z = HuberRegressor(max_iter=200).fit(X=position, y=shift[:, 0])
+        huber_z = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 0])
         z_coef = huber_z.coef_
         z_shift = huber_z.intercept_
-    huber_y = HuberRegressor().fit(X=position, y=shift[:, 1])
-    huber_x = HuberRegressor().fit(X=position, y=shift[:, 2])
+    huber_y = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 1])
+    huber_x = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 2])
     transform = np.vstack((np.append(z_coef, z_shift),
                            np.append(huber_y.coef_, huber_y.intercept_),
                            np.append(huber_x.coef_, huber_x.intercept_)))

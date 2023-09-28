@@ -87,4 +87,4 @@ def test_huber_regression():
     # Test that the values are correct
     assert np.allclose(transform, np.array([[5, 0, 0, 0],
                                             [0, 5, 0, 0],
-                                            [0, 0, 5, 0]]), atol=1e-5)
+                                            [0, 0, 5, 0]]), atol=2e-6)
