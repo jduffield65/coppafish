@@ -110,14 +110,15 @@ def ensure_odd_kernel(kernel: np.ndarray, pad_location: str = 'start') -> np.nda
     Replicates MATLAB way of dealing with even kernels.
 
     Args:
-        kernel: `float [kernel_sz1 x kernel_sz2 x ... x kernel_szN]`.
-        pad_location: One of the following, indicating where to pad with zeros -
+        kernel (`float [kernel_sz1 x kernel_sz2 x ... x kernel_szN]`).
+        pad_location (str, optional): One of the following, indicating where to pad with zeros -
 
             - `'start'` - Zeros at start of kernel.
             - `'end'` - Zeros at end of kernel.
+        Default: `'start'`.
 
     Returns:
-        `float [odd_kernel_sz1 x odd_kernel_sz2 x ... x odd_kernel_szN]`.
+        `float [odd_kernel_sz1 x odd_kernel_sz2 x ... x odd_kernel_szN]`:
             `kernel` padded with zeros so each dimension is odd.
 
     Example:
