@@ -55,8 +55,9 @@ class Viewer:
             gene_marker_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gene_color.csv')
         gene_legend_info = pd.read_csv(gene_marker_file)
         # add a row at the bottom for other gens. These should have a symbol of 'o' and a colour of grey
-        gene_legend_info = gene_legend_info.append({'GeneNames': 'Other', 'ColorR': 0.75, 'ColorG': 0.75, 'ColorB': 0.75,
-                                                    'napari_symbol': 'disc', 'mpl_symbol': 'o'}, ignore_index=True)
+        new_row = pd.DataFrame({'GeneNames': 'Other', 'ColorR': 0.75, 'ColorG': 0.75, 'ColorB': 0.75, 
+                                'napari_symbol': 'disc', 'mpl_symbol': 'o'}, index=[0])
+        gene_legend_info = pd.concat([gene_legend_info, new_row], ignore_index=True)
 
         # indices of genes in notebook to gene_color data - quicker to look up integers than names
         # in change_threshold
