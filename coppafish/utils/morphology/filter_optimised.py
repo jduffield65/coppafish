@@ -85,9 +85,9 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
 
             - numeric scalar - Input array values outside the bounds of the array are assigned the value `X`.
                 When no padding option is specified, the default is `0`.
-            - `‘symmetric’` - Input array values outside the bounds of the array are computed by
+            - `'symmetric'` - Input array values outside the bounds of the array are computed by
                 mirror-reflecting the array across the array border.
-            - `‘edge’`- Input array values outside the bounds of the array are assumed to equal
+            - `'edge'`- Input array values outside the bounds of the array are assumed to equal
                 the nearest array border value.
             - `'wrap'` - Input array values outside the bounds of the array are computed by implicitly
                 assuming the input array is periodic.

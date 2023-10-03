@@ -9,15 +9,15 @@ def get_spot_images(image: np.ndarray, spot_yxz: np.ndarray, shape: Union[np.nda
     Builds an image around each spot of size given by shape and returns array containing all of these.
 
     Args:
-        image: ```float [nY x nX (x nZ)]```.
+        image: ``float [nY x nX (x nZ)]``.
             Image that spots were found on.
-        spot_yxz: ```int [n_peaks x image.ndim]```.
+        spot_yxz: ``int [n_peaks x image.ndim]``.
             yx or yxz location of spots found.
-        shape: ```int [image.ndim]```
-            ```[y_shape, x_shape, (z_shape)]```: Desired size of image for each spot in each direction.
+        shape: ``int [image.ndim]`` or ``list of int``
+            ``[y_shape, x_shape, (z_shape)]``: Desired size of image for each spot in each direction.
 
     Returns:
-        ```float [n_peaks x y_shape x x_shape (x z_shape)]```. ```[s]``` is the small image surrounding spot ```s```.
+        ``float [n_peaks x y_shape x x_shape (x z_shape)]``. ``[s]`` is the small image surrounding spot ``s``.
     """
     if min(np.array(shape) % 2) == 0:
         raise ValueError(f"Require shape to be odd in each dimension but given shape was {shape}.")
@@ -55,27 +55,27 @@ def get_average_spot_image(spot_images: np.ndarray, av_type: str = 'mean', symme
     Given an array of spot images, this returns the average spot image.
 
     Args:
-        spot_images: ```float [n_peaks x y_shape x x_shape (x z_shape)]```.
-            ```spot_images[s]``` is the small image surrounding spot ```s```.
+        spot_images (``float [n_peaks x y_shape x x_shape (x z_shape)]``):
+            ``spot_images[s]`` is the small image surrounding spot ``s``.
             Any nan values will be ignored when computing the average spot image.
-        av_type: Optional, one of the following indicating which average to use:
-
-            - ```'mean'```
-            - ```'median'```
-        symmetry: Optional, one of the following:
-
-            - ```None``` - Just finds mean at every pixel.
-            - ```'quadrant_2d'``` - Assumes each quadrant of each z-plane expected to look the same so concatenates
+        av_type (str, optional): one of the following indicating which average to use:
+            - ``'mean'``
+            - ``'median'``
+            Default: mean.
+        symmetry (int, optional): one of the following:
+            - ``None`` - Just finds mean at every pixel.
+            - ``'quadrant_2d'`` - Assumes each quadrant of each z-plane expected to look the same so concatenates
                 these.
-            - ```'annulus_2d'``` - assumes each z-plane is circularly symmetric about central pixel.
+            - ``'annulus_2d'`` - assumes each z-plane is circularly symmetric about central pixel.
                 I.e. only finds only pixel value from all pixels a certain distance from centre.
-            - ```'annulus_3d'``` - Same as ```'annulus_2d'```, except now z-planes are symmetric about the mid-plane.
+            - ``'annulus_3d'`` - Same as ``'annulus_2d'``, except now z-planes are symmetric about the mid-plane.
                 I.e. `av_image[:,:,mid-i] = av_image[:,:,mid+i]` for all `i`.
-        annulus_width: If ```symmetry = 'annulus'```, this specifies how big an annulus to use,
-            within which we expect all pixel values to be the same.
+            Default: None.
+        annulus_width (float, optional): If ``symmetry = 'annulus'``, this specifies how big an annulus to use, 
+            within which we expect all pixel values to be the same. Default: 1.
 
     Returns:
-        ```float [y_shape x x_shape (x z_shape)]```. Average small image about a spot.
+        ``float [y_shape x x_shape (x z_shape)]``. Average small image about a spot.
     """
     # avoid nan in average because some spot_images may have nans because the image ran out of bounds of the tile.
     if av_type == 'mean':

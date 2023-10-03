@@ -13,7 +13,7 @@ def round_any(x: Union[float, np.ndarray], base: float, round_type: str = 'round
 
             - `'round'`
             - `'ceil'`
-            - `'float'`
+            - `'floor'`
 
     Returns:
         Rounded version of `x`.
@@ -37,12 +37,12 @@ def round_any(x: Union[float, np.ndarray], base: float, round_type: str = 'round
 
 def setdiff2d(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
     """
-    Finds all elements in `array1` that are not in `array2`.
-    Returned array will only contain unique elements E.g.
-
-    If `array1` has `[4,0]` twice, `array2` has `[4,0]` once, returned array will not have `[4,0]`.
+    Finds all unique elements in `array1` that are also not in `array2`. Each element is appended along the first \
+    axis. E.g.
 
     If `array1` has `[4,0]` twice, `array2` does not have `[4,0]`, returned array will have `[4,0]` once.
+
+    If `array1` has `[4,0]` twice, `array2` has `[4,0]` once, returned array will not have `[4,0]`.
 
     Args:
         array1: `float [n_elements1 x element_dim]`.
@@ -56,7 +56,7 @@ def setdiff2d(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
     return np.array(list(set1-set2))
 
 
-def expand_channels(array: np.ndarray, use_channels: list, n_channels:int) -> np.ndarray:
+def expand_channels(array: np.ndarray, use_channels: list, n_channels: int) -> np.ndarray:
     """
     Expands `array` to have `n_channels` channels, with the values in `array` being in the channels specified by
     `use_channels`.
