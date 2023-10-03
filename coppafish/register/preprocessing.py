@@ -355,14 +355,17 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     """
     #TODO: Add support for datasets with fewer than 10 z planes
     yx_centre = nb.basic_info.tile_centre.astype(int)[:2]
+    yx_radius = np.min([250, nb.basic_info.tile_sz//2])
     z_centre = np.median(nb.basic_info.use_z).astype(int)
+    z_radius = np.min([5, len(nb.basic_info.use_z)//2])
     tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
     # Get the image for the tile and channel
     # TODO: This gives a bug when we run on a subset of z planes
     im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c,
-                              [np.arange(tile_centre[0] - 250, tile_centre[0] + 250),
-                               np.arange(tile_centre[1] - 250, tile_centre[1] + 250),
-                               np.arange(10)],
+                              [np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius),
+                               np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius),
+                               np.arange(tile_centre[2] - z_radius, tile_centre[2] + z_radius),
+                               ],
                               apply_shift=False))
     # Clip the image to the specified range if required
     if image_value_range is None:

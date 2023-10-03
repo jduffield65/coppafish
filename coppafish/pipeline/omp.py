@@ -175,10 +175,16 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             # While iterating through tiles, only save info for rounds/channels using
             # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
             z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
-            pixel_colors_tz, pixel_yxz_tz, bg_colours = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz,
-                                                                          np.arange(z_min, z_max)), int(t), transform,
-                                                            nbp_file, nbp_basic, return_in_bounds=True,
-                                                            bg_scale=nbp_extract.bg_scale)
+            if nbp_basic.use_preseq:
+                pixel_colors_tz, pixel_yxz_tz, bg_colours = \
+                    get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
+                                    int(t), transform, nbp_file, nbp_basic, return_in_bounds=True, 
+                                    bg_scale=nbp_extract.bg_scale)
+            else:
+                pixel_colors_tz, pixel_yxz_tz = \
+                    get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
+                                    int(t), transform, nbp_file, nbp_basic, return_in_bounds=True, 
+                                    bg_scale=nbp_extract.bg_scale)
             if pixel_colors_tz.shape[0] == 0:
                 continue
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
@@ -320,9 +326,14 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            nd_spot_colors_use[in_tile], bg_colours = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                          transform, nbp_file, nbp_basic,
-                                                          bg_scale=nbp_extract.bg_scale)
+            if nbp_basic.use_preseq:
+                nd_spot_colors_use[in_tile], bg_colours = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
+                                                            transform, nbp_file, nbp_basic,
+                                                            bg_scale=nbp_extract.bg_scale)
+            else:
+                nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
+                                                              transform, nbp_file, nbp_basic,
+                                                              bg_scale=nbp_extract.bg_scale)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
     nbp.intensity = np.asarray(get_spot_intensity(spot_colors_norm))

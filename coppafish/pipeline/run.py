@@ -197,7 +197,7 @@ def run_register(nb: setup.Notebook):
         # Save reg images
         round_registration_channel = config['register']['round_registration_channel']
         for t in nb.basic_info.use_tiles:
-            for r in nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round]:
+            for r in nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round] * nb.basic_info.use_preseq:
                 if round_registration_channel is not None:
                     generate_reg_images(nb, t, r, round_registration_channel)
                 if round_registration_channel is None:

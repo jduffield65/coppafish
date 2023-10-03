@@ -210,7 +210,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     # combine icp transform, channel transform and initial transform to get final transform
     transform = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels, 4, 3))
     transform[:, use_rounds] = registration_data['icp']['transform'][:, use_rounds]
-    transform[:, nbp_basic.pre_seq_round] = registration_data['icp']['transform'][:, -1]
+    if nbp_basic.use_preseq:
+        transform[:, nbp_basic.pre_seq_round] = registration_data['icp']['transform'][:, -1]
     nbp.transform = transform
 
     # Load in the middle z-plane of each tile and compute the scale factors to be used when removing background
