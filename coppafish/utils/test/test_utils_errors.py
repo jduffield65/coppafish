@@ -61,4 +61,3 @@ def test_check_color_nan():
                 # Set co,r,c to a non invalid value
                 array[s,r,c] = rng.randint(0, 100, dtype=int)
     check_color_nan(array, nbp_basic)
-

@@ -3,6 +3,20 @@ from coppafish.utils.morphology import ftrans2, hanning_diff, convolve_2d, ensur
 import numpy as np
 
 
+def test_hanning_diff():
+    output_0 = hanning_diff(1,2)
+    assert output_0.shape == (2*2+1, 2*2+1), 'Unexpected output shape'
+    assert np.unravel_index(np.argmax(output_0, axis=None), output_0.shape) == (2,2), \
+        'Expected maximum of kernel at centre'
+    assert np.allclose(output_0.sum(), 0), 'Expected output to sum to zero'
+    output_1 = hanning_diff(10,11)
+    for i in range(11):
+        if i == 0:
+            continue
+        assert output_1[i+1,11] > output_1[i,11], \
+            'Expected hanning difference to monotonically increase along one axis'
+
+
 def test_convolve_2d():
     size_0 = 11
     size_1 = 6
@@ -32,3 +46,26 @@ def test_ensure_odd_kernel():
     assert np.allclose(output_end  [-1,:,:,-1], 0), 'Expected zeros as padding'
     assert np.allclose(output_start[1:,:,:, 1:], array_even), 'Unexpected output'
     assert np.allclose(output_end  [:2,:,:,:10], array_even), 'Unexpected output'
+
+
+# def test_top_hat():
+#     rng = np.random.RandomState(52)
+#     image_x = 23
+#     image_y = 11
+#     image_shape  = (image_y, image_x)
+#     image_centre = (image_y//2, image_x//2)
+#     image_0 = rng.rand(image_y, image_x).astype(np.float64)
+#     image_1 = rng.randint(2**16-1, size=image_shape, dtype=np.uint16)
+#     kernel_0 = np.ones(image_shape, dtype=np.uint8)
+#     kernel_1 = rng.randint(2, size=image_shape, dtype=np.uint8)
+#     # Check every combination of kernel and image together
+#     images = [image_0, image_1]
+#     kernels = [kernel_0, kernel_1]
+#     for image in images:
+#         for kernel in kernels:
+#             kernel_centre = (kernel.shape[0]//2, kernel.shape[1]//2)
+#             output = top_hat(image, kernel)
+#             expected_centre_pixel = np.multiply(image[
+#                 image_centre[0] - kernel_centre[0]:image_centre[0] + kernel_centre[0] + 1, 
+#                 image_centre[1] - kernel_centre[1]:image_centre[1] + kernel_centre[1] + 1], kernel).sum()
+#             assert np.allclose(output[image_centre], expected_centre_pixel), 'Unexpected central pixel result'
