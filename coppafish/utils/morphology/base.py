@@ -4,9 +4,10 @@ from scipy.ndimage import grey_dilation
 from coppafish.utils import errors
 import cv2
 from typing import Optional
+import numpy.typing as npt
 
 
-def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
+def ftrans2(b: npt.NDArray[np.float_], t: Optional[npt.NDArray[np.float_]] = None) -> npt.NDArray[np.float_]:
     """
     Produces a 2D convolve kernel that corresponds to the 1D convolve kernel, `b`, using the transform, `t`.
     Copied from [MATLAB `ftrans2`](https://www.mathworks.com/help/images/ref/ftrans2.html).
@@ -57,7 +58,7 @@ def ftrans2(b: np.ndarray, t: Optional[np.ndarray] = None) -> np.ndarray:
     return h
 
 
-def hanning_diff(r1: int, r2: int) -> np.ndarray:
+def hanning_diff(r1: int, r2: int) -> npt.NDArray[np.float_]:
     """
     Gets difference of two hanning window 2D convolve kernel.
     Central positive, outer negative with sum of `0`.
@@ -84,7 +85,7 @@ def hanning_diff(r1: int, r2: int) -> np.ndarray:
     return h
 
 
-def convolve_2d(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+def convolve_2d(image: npt.NDArray[np.float_], kernel: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
     """
     Convolves `image` with `kernel`, padding by replicating border pixels.
 
@@ -104,7 +105,7 @@ def convolve_2d(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     return cv2.filter2D(image.astype(float), -1, np.flip(kernel), borderType=cv2.BORDER_REPLICATE)
 
 
-def ensure_odd_kernel(kernel: np.ndarray, pad_location: str = 'start') -> np.ndarray:
+def ensure_odd_kernel(kernel: npt.NDArray[np.float_], pad_location: str = 'start') -> npt.NDArray[np.float_]:
     """
     This ensures all dimensions of `kernel` are odd by padding even dimensions with zeros.
     Replicates MATLAB way of dealing with even kernels.
@@ -137,19 +138,20 @@ def ensure_odd_kernel(kernel: np.ndarray, pad_location: str = 'start') -> np.nda
         return kernel
 
 
-def top_hat(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+def top_hat(image: npt.NDArray[np.float64 | np.uint16], kernel: npt.NDArray[np.uint8]) -> \
+    npt.NDArray[np.float64 | np.uint16]:
     """
-    Does tophat filtering of `image` with `kernel`.
+    Tophat filtering of `image` with `kernel`.
 
     Args:
-        image: `float [image_sz1 x image_sz2]`.
+        image: `float or np.float64 or np.uint16 [image_sz1 x image_sz2]`.
             Image to filter.
         kernel: `np.uint8 [kernel_sz1 x kernel_sz2]`.
             Top hat `kernel` containing only zeros or ones.
 
     Returns:
-        `float [image_sz1 x image_sz2]`.
-            `image` after being top hat filtered with `kernel`.
+        `float or np.float64 [image_sz1 x image_sz2]`.
+            `image` after being top hat filtered with `kernel`. Returned as same dtype as `image`.
     """
     if kernel.dtype != np.uint8:
         if sum(np.unique(kernel) == [0, 1]) == len(np.unique(kernel)):
@@ -169,7 +171,7 @@ def top_hat(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel).astype(image_dtype)
 
 
-def dilate(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+def dilate(image: npt.NDArray[np.float_], kernel: npt.NDArray[np.int_]) -> npt.NDArray[np.float_]:
     """
     Dilates `image` with `kernel`, using zero padding.
 
