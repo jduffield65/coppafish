@@ -241,6 +241,9 @@ class RoboMinnie:
         if self.include_dapi:
             assert self.dapi_channel != self.anchor_channel, 'Cannot have DAPI and anchor channel identical, ' + \
                 'because they are both saved in the same anchor raw file'
+        if bool(self.include_dapi) != bool(self.include_presequence):
+            # XOR operation
+            warnings.warn(f'DAPI and presequence images are not included together. Will likely crash coppafish')
         # Ordering for data matrices is round x tile x channel x Y x X x Z, like the nd2 raw files for coppafish
         # Extra channel for DAPI channel support
         self.shape = (self.n_rounds, self.n_tiles, self.n_channels + 1, self.n_yx[0], 
@@ -749,11 +752,11 @@ class RoboMinnie:
         )
         df.to_csv(os.path.join(output_dir, "gene_locations.csv"))
 
-        #TODO: Update metadata entries for multiple tile support, fix this
+        #TODO: Fix this for multiple tile support
         metadata = {
             "n_tiles": self.n_tiles, 
             "n_rounds": self.n_rounds, 
-            "n_channels": self.n_channels + self.include_dapi, 
+            "n_channels": self.n_channels + 1, 
             "tile_sz": self.n_yx[0], 
             "pixel_size_xy": 0.26, 
             "pixel_size_z": 0.9, 
@@ -898,29 +901,36 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, \
-        jax_profile_omp : bool = False, save_ref_spots_data : bool = False) -> None:
+    def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, jax_profile : bool = False, \
+        jax_profile_omp : bool = False, profile_omp : bool = False, save_ref_spots_data : bool = False) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         Args:
             time_pipeline (bool, optional): If true, print the time taken to run the coppafish pipeline. Default: \
                 true
-            include_omp (bool, optional): If true, run up to and including coppafish OMP stage
+            include_omp (bool, optional): If true, run up to and including coppafish OMP stage. Default: true.
+            jax_profile (bool, optional): If true, profile entire coppafish pipeline. Default: false.
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
                 Requires tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. \
-                Default: false
+                Default: false.
+            profile_omp (bool, optional): Profile coppafish OMP stage using a default Python profiler called \
+                `cprofile`. Dumps the results into a text file in output_coppafish. Default: false.
             save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing \
-                ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage
+                ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage.
         """
         self.instructions.append(_funcname())
         print(f'Running coppafish')
+        if jax_profile or jax_profile_omp:
+            assert jax_profile != jax_profile_omp, 'Cannot run two jax profilers at once'
+
         from coppafish.pipeline.run import initialize_nb, run_tile_indep_pipeline, run_stitch, \
             run_reference_spots, run_omp
-        if jax_profile_omp:
-            import jax
         
-        # Run the non-parallel pipeline code\
+        if jax_profile:
+            import jax
+            jax.profiler.start_trace(self.coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
+        # Run the non-parallel pipeline code
         nb = initialize_nb(self.config_filepath)
         if time_pipeline:
             start_time = time.time()
@@ -946,9 +956,20 @@ class RoboMinnie:
             return
         
         if jax_profile_omp:
+            import jax
             jax.profiler.start_trace(self.coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
+        if profile_omp:
+            import cProfile, pstats
+            profiler = cProfile.Profile()
+            profiler.enable()
         run_omp(nb)
+        if profile_omp:
+            profiler.disable()
+            stats = pstats.Stats(profiler).sort_stats('tottime')
+            stats.dump_stats(os.path.join(self.coppafish_output, 'cprofile'))
         if jax_profile_omp:
+            jax.profiler.stop_trace()
+        if jax_profile:
             jax.profiler.stop_trace()
         if time_pipeline:
             end_time = time.time()
@@ -958,7 +979,8 @@ class RoboMinnie:
             )
 
         assert nb.omp is not None, f'OMP not found in notebook at {self.config_filepath}'
-        # Keep the OMP spot intensities, assigned gene, assigned tile number and the spot positions in the class instance
+        # Keep the OMP spot intensities, assigned gene, assigned tile number and the spot positions in the class 
+        # instance
         self.omp_spot_intensities = nb.omp.intensity
         self.omp_gene_numbers = nb.omp.gene_no
         self.omp_tile_number = nb.omp.tile
@@ -1107,8 +1129,8 @@ class RoboMinnie:
         return (true_positives, wrong_positives, false_positives, false_negatives)
 
 
-    def Overall_Score(self, true_positives : int = None, wrong_positives : int = None, false_positives : int = None, \
-        false_negatives : int = None) -> float:
+    def Overall_Score(self, true_positives : int = None, wrong_positives : int = None, 
+                      false_positives : int = None, false_negatives : int = None) -> float:
         """
         Overall score from a spot-to-spot comparison, such as `Compare_OMP_Spots`.
 
@@ -1145,7 +1167,11 @@ class RoboMinnie:
             for c in range(self.n_channels):
                 for r in range(self.n_rounds):
                     # z index must be the first axis for napari to view
-                    viewer.add_image(self.image[r,t,c].transpose([2,0,1]), name=f't={t}, r={r}, c={c}', visible=False)
+                    viewer.add_image(
+                        self.image[r,t,c].transpose([2,0,1]), 
+                        name=f't={t}, r={r}, c={c}', 
+                        visible=False
+                    )
                 if self.include_presequence:
                     viewer.add_image(
                         self.presequence_image[t,c].transpose([2,0,1]), 
