@@ -3,7 +3,7 @@ import scipy.signal
 from scipy.ndimage import grey_dilation
 from coppafish.utils import errors
 import cv2
-from typing import Optional
+from typing import Optional, Union
 import numpy.typing as npt
 
 
@@ -138,8 +138,8 @@ def ensure_odd_kernel(kernel: npt.NDArray[np.float_], pad_location: str = 'start
         return kernel
 
 
-def top_hat(image: npt.NDArray[np.float64 | np.uint16], kernel: npt.NDArray[np.uint8]) -> \
-    npt.NDArray[np.float64 | np.uint16]:
+def top_hat(image: npt.NDArray[Union[np.float64, np.uint16]], kernel: npt.NDArray[np.uint8]) -> \
+    npt.NDArray[Union[np.float64, np.uint16]]:
     """
     Tophat filtering of `image` with `kernel`.
 
