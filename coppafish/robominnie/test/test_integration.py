@@ -8,8 +8,10 @@ import pytest
 @pytest.mark.slow
 def test_integration_001() -> None:
     """
-    Summary of input data: random spots and random, white noise.\n
-    Includes anchor round, sequencing rounds, one tile.\n
+    Summary of input data: random spots and random, white noise.
+
+    Includes anchor round, sequencing rounds, one tile.
+
     Compares ground truth spots to OMP spots and reference spots.
     """
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'integration_dir')
@@ -27,7 +29,7 @@ def test_integration_001() -> None:
     # NOTE: We are shortening the pipeline runtime by making the initial intensity threshold strict for OMP
     robominnie.Save_Raw_Images(output_dir=output_dir, overwrite=True, omp_iterations=1, \
                                omp_initial_intensity_thresh_percentile=90)
-    robominnie.Run_Coppafish(save_ref_spots_data=True)
+    robominnie.Run_Coppafish()
 
     robominnie.Compare_Ref_Spots()
     # Basic scoring system for integration test
@@ -49,8 +51,10 @@ def test_integration_001() -> None:
 @pytest.mark.slow
 def test_integration_002() -> None:
     """
-    Summary of input data: random spots and random, white noise.\n
-    Includes anchor round, DAPI image, presequence round, sequencing rounds, one tile.\n
+    Summary of input data: random spots and random, white noise.
+
+    Includes anchor round, DAPI image, presequence round, sequencing rounds, one tile.
+
     Compares ground truth spots to OMP spots and reference spots.
     """
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'integration_dir')
@@ -70,9 +74,9 @@ def test_integration_002() -> None:
     # robominnie.View_Images()
     # Save the synthetic data in coppafish format as raw .npy files
     # NOTE: We are shortening the pipeline runtime by making the initial intensity threshold strict for OMP
-    robominnie.Save_Raw_Images(output_dir=output_dir, overwrite=True, omp_iterations=1, \
+    robominnie.Save_Raw_Images(output_dir=output_dir, overwrite=True, omp_iterations=1,
                                omp_initial_intensity_thresh_percentile=90)
-    robominnie.Run_Coppafish(save_ref_spots_data=True)
+    robominnie.Run_Coppafish()
 
     robominnie.Compare_Ref_Spots()
     # Basic scoring system for integration test

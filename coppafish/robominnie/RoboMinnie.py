@@ -9,14 +9,13 @@
 # positions within these tile boundaries, and if it falls into an overlap, then
 # put it on both tiles.
 #
-# Originally by Max Shinn, August 2023
+# Originally created by Max Shinn, August 2023
 # Refactored and expanded by Paul Shuker, September 2023
 import os
 import numpy as np
 import scipy.stats
 import pandas
 import dask.array
-from typing import Tuple
 import warnings
 import json
 import inspect
@@ -25,9 +24,11 @@ import pickle
 from tqdm import tqdm, trange
 import bz2
 import napari
+from numpy.fft import fftshift, ifftshift
+from scipy.fft import fftn, ifftn
 
 # Typing imports
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple, Union
 import numpy.typing as npt
 from numpy.random import Generator
 
@@ -41,11 +42,10 @@ def _funcname():
     return str(inspect.stack()[1][3])
 
 
-def _compare_spots(
-    spot_positions_yxz : npt.NDArray, spot_gene_indices : npt.NDArray, true_spot_positions_yxz : npt.NDArray, \
-    true_spot_gene_identities : npt.NDArray, location_threshold_squared : float, codes : Dict[str,str],
-    description : str,
-    ) -> Tuple[int,int,int,int]:
+def _compare_spots(spot_positions_yxz : npt.NDArray[np.float64], spot_gene_indices : npt.NDArray[np.int_], \
+                   true_spot_positions_yxz : npt.NDArray[np.float64], \
+                   true_spot_gene_identities : npt.NDArray[np.str_], location_threshold_squared : float, \
+                   codes : Dict[str,str], description : str) -> Tuple[int,int,int,int]:
     """
     Compare two collections of spots (one is the ground truth) based on their positions and gene identities. See \
     ``RoboMinnie.Compare_Ref_Spots`` or ``RoboMinnie.Compare_OMP_Spots`` for more details.
@@ -379,9 +379,6 @@ class RoboMinnie:
         self.instructions.append(_funcname())
         print('Generating pink noise')
 
-        from numpy.fft import fftshift, ifftshift
-        from scipy.fft import fftn, ifftn
-
         #TODO: Loop over each tile and generate a new pink noise image
         # True spatial scale should be maintained regardless of the image size, so we
         # scale it as such.
@@ -434,7 +431,7 @@ class RoboMinnie:
 
 
         def _generate_noise(_rng : Generator, _noise_type : str, _noise_mean_amplitude : float, 
-                            _noise_std : float, _size : tuple) -> npt.NDArray:
+                            _noise_std : float, _size : tuple) -> npt.NDArray[np.float64]:
             """
             Generate noise based on the specified noise type and parameters.
 
@@ -443,7 +440,7 @@ class RoboMinnie:
                 _noise_type (str): Type of noise ('normal' or 'uniform').
                 _noise_mean_amplitude (float): Mean or center of the noise distribution.
                 _noise_std (float): Standard deviation or spread of the noise distribution.
-                size (tuple of int, int, int): Size of the noise array.
+                _size (tuple of int, int, int): Size of the noise array.
 
             Returns:
                 ndarray: Generated noise array.
@@ -454,7 +451,8 @@ class RoboMinnie:
             if _noise_type == 'normal':
                 return _rng.normal(_noise_mean_amplitude, _noise_std, _size)
             elif _noise_type == 'uniform':
-                return _rng.uniform(_noise_mean_amplitude - _noise_std/2, _noise_mean_amplitude + _noise_std/2, _size)
+                return _rng.uniform(_noise_mean_amplitude - _noise_std/2, _noise_mean_amplitude + _noise_std/2, 
+                                    _size)
             else:
                 raise ValueError(f'Unknown noise type: {_noise_type}')
 
@@ -500,10 +498,10 @@ class RoboMinnie:
             del presequence_noise
 
 
-    def Add_Spots(self, n_spots : int, bleed_matrix : npt.NDArray, spot_size_pixels : npt.NDArray, 
-                  gene_codebook_path : str = USE_INSTANCE_GENE_CODES, spot_amplitude : float = 1, 
-                  include_dapi : bool = False, spot_size_pixels_dapi : npt.NDArray = None, 
-                  spot_amplitude_dapi : float = 1, 
+    def Add_Spots(self, n_spots : int, bleed_matrix : npt.NDArray[np.float_], \
+                  spot_size_pixels : npt.NDArray[np.float_], gene_codebook_path : str = USE_INSTANCE_GENE_CODES, \
+                  spot_amplitude : float = 1, include_dapi : bool = False, \
+                  spot_size_pixels_dapi : npt.NDArray[np.float_] = None, spot_amplitude_dapi : float = 1, 
                   ) -> None:
         """
         Superimpose spots onto images in both space and channels (based on the bleed matrix). Also applied to the 
@@ -719,7 +717,14 @@ class RoboMinnie:
         if not overwrite:
             assert len(os.listdir(output_dir)) == 0, f'Output directory {output_dir} must be empty'
 
+        self.image = self.image.astype(self.image_dtype)
+        if self.include_anchor:
+            self.anchor_image = self.anchor_image.astype(self.image_dtype)
+        if self.include_presequence:
+            self.presequence_image = self.presequence_image.astype(self.image_dtype)
+
         # Create an output_dir/output_coppafish directory for coppafish pipeline output saved to disk
+        self.output = output_dir
         self.coppafish_output = os.path.join(output_dir, 'output_coppafish')
         if not os.path.isdir(self.coppafish_output):
             os.mkdir(self.coppafish_output)
@@ -902,7 +907,8 @@ class RoboMinnie:
 
 
     def Run_Coppafish(self, time_pipeline : bool = True, include_omp : bool = True, jax_profile : bool = False, \
-        jax_profile_omp : bool = False, profile_omp : bool = False, save_ref_spots_data : bool = False) -> None:
+                      jax_profile_omp : bool = False, profile_omp : bool = False, save_ref_spots_data : bool = True) \
+        -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
@@ -912,12 +918,13 @@ class RoboMinnie:
             include_omp (bool, optional): If true, run up to and including coppafish OMP stage. Default: true.
             jax_profile (bool, optional): If true, profile entire coppafish pipeline. Default: false.
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. \
-                Requires tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. \
-                Default: false.
+                Requires tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. Default: \
+                false.
             profile_omp (bool, optional): Profile coppafish OMP stage using a default Python profiler called \
                 `cprofile`. Dumps the results into a text file in output_coppafish. Default: false.
             save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing \
-                ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage.
+                ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage. \
+                Default: true.
         """
         self.instructions.append(_funcname())
         print(f'Running coppafish')
@@ -927,37 +934,33 @@ class RoboMinnie:
         from coppafish.pipeline.run import initialize_nb, run_tile_indep_pipeline, run_stitch, \
             run_reference_spots, run_omp
         
+        coppafish_output = self.coppafish_output
+        config_filepath = self.config_filepath
+        n_planes = self.n_planes
+        n_tiles = self.n_tiles
+        
         if jax_profile:
             import jax
-            jax.profiler.start_trace(self.coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
+            jax.profiler.start_trace(coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
         # Run the non-parallel pipeline code
-        nb = initialize_nb(self.config_filepath)
+        nb = initialize_nb(config_filepath)
         if time_pipeline:
             start_time = time.time()
         run_tile_indep_pipeline(nb)
         run_stitch(nb)
 
-        assert nb.stitch is not None, f'Stitch not found in notebook at {self.config_filepath}'
-        # Keep the stitch information to convert local tiles coordinates into global coordinates when comparing 
-        # to true spots
-        self.stitch_tile_origins = nb.stitch.tile_origin
+        assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'
         run_reference_spots(nb, overwrite_ref_spots=False)
 
         # Keep reference spot information to compare to true spots, if wanted
-        assert nb.ref_spots is not None, f'Reference spots not found in notebook at {self.config_filepath}'
-        if save_ref_spots_data:
-            self.ref_spots_scores              = nb.ref_spots.score
-            self.ref_spots_local_positions_yxz = nb.ref_spots.local_yxz
-            self.ref_spots_intensities         = nb.ref_spots.intensity
-            self.ref_spots_gene_indices        = nb.ref_spots.gene_no
-            self.ref_spots_tile                = nb.ref_spots.tile
+        assert nb.ref_spots is not None, f'Reference spots not found in notebook at {config_filepath}'
 
         if include_omp == False:
             return
         
         if jax_profile_omp:
             import jax
-            jax.profiler.start_trace(self.coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
+            jax.profiler.start_trace(coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
         if profile_omp:
             import cProfile, pstats
             profiler = cProfile.Profile()
@@ -966,7 +969,7 @@ class RoboMinnie:
         if profile_omp:
             profiler.disable()
             stats = pstats.Stats(profiler).sort_stats('tottime')
-            stats.dump_stats(os.path.join(self.coppafish_output, 'cprofile'))
+            stats.dump_stats(os.path.join(coppafish_output, 'cprofile'))
         if jax_profile_omp:
             jax.profiler.stop_trace()
         if jax_profile:
@@ -975,10 +978,21 @@ class RoboMinnie:
             end_time = time.time()
             print(
                 f'Coppafish pipeline run: {round(end_time - start_time, 1)}s. ' + \
-                f'{round((end_time - start_time)//(self.n_planes * self.n_tiles), 1)}s per z plane per tile.'
+                f'{round((end_time - start_time)//(n_planes * n_tiles), 1)}s per z plane per tile.'
             )
 
-        assert nb.omp is not None, f'OMP not found in notebook at {self.config_filepath}'
+        assert nb.omp is not None, f'OMP not found in notebook at {config_filepath}'
+
+        # Keep the stitch information to convert local tiles coordinates into global coordinates when comparing 
+        # to true spots
+        self.stitch_tile_origins = nb.stitch.tile_origin
+
+        if save_ref_spots_data:
+            self.ref_spots_scores              = nb.ref_spots.score
+            self.ref_spots_local_positions_yxz = nb.ref_spots.local_yxz
+            self.ref_spots_intensities         = nb.ref_spots.intensity
+            self.ref_spots_gene_indices        = nb.ref_spots.gene_no
+            self.ref_spots_tile                = nb.ref_spots.tile
         # Keep the OMP spot intensities, assigned gene, assigned tile number and the spot positions in the class 
         # instance
         self.omp_spot_intensities = nb.omp.intensity
@@ -1204,14 +1218,15 @@ class RoboMinnie:
         napari.run()
 
 
-    def Save(self, output_dir : str, filename : str = None, compress : bool = False) -> None:
+    def Save(self, output_dir : str, filename : str = None, overwrite : bool = True, compress : bool = False) -> None:
         """
         Save `RoboMinnie` instance using the amazing tool pickle inside output_dir directory.
 
         Args:
             output_dir (str): 
             filename (str, optional): Name of the pickled `RoboMinnie` object. Default: 'robominnie.pkl'
-            compress (bool, optional): If True, compress pickle binary file using bzip2 compression in the \
+            overwrite (bool, optional): Overwrite any robominnie saved instance. Default: true.
+            compress (bool, optional): Compress pickle binary file using bzip2 compression in the \
                 default python package `bz2`. Default: False
         """
         self.instructions.append(_funcname())
@@ -1225,8 +1240,9 @@ class RoboMinnie:
             os.mkdir(instance_output_dir)
 
         instance_filepath = os.path.join(instance_output_dir, instance_filename)
-        assert not os.path.isfile(instance_filepath), \
-            f'RoboMinnie instance already saved as {instance_filepath}'
+        if not overwrite:
+            assert not os.path.isfile(instance_filepath), \
+                f'RoboMinnie instance already saved as {instance_filepath}'
 
         if not compress:
             with open(instance_filepath, 'wb') as f:
@@ -1236,7 +1252,8 @@ class RoboMinnie:
                 pickle.dump(self, f)
 
 
-    def Load(self, input_dir : str, filename : str = None, overwrite_self : bool = True, compressed : bool = False):
+    def Load(self, input_dir : str, filename : str = None, overwrite_self : bool = True, \
+             compressed : bool = False):
         """
         Load `RoboMinnie` instance using the handy pickled information saved inside input_dir.
 
