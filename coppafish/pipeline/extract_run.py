@@ -343,7 +343,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     pbar.update(1)
                 if not nbp_basic.is_3d:
                     utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r,
-                                        suffix=''+'_raw'*(r == pre_seq_round))
+                                        suffix='_raw' if r == pre_seq_round else '')
     pbar.close()
 
     # Now remove outliers from nbp.auto_thresh
