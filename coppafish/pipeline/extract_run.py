@@ -267,7 +267,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             if nbp_basic.is_3d:
                                 im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
                                                          yxz=[None, None, nbp_debug.z_info],
-                                                         suffix=''+'_raw'*(r == pre_seq_round))
+                                                         suffix='_raw' if r == pre_seq_round else '')
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
@@ -336,14 +336,14 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c,
-                                                suffix=''+'_raw'*(r == pre_seq_round),
+                                                suffix='_raw' if r == pre_seq_round else '',
                                                 num_rotations=config['num_rotations'])
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)
                 if not nbp_basic.is_3d:
                     utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r,
-                                        suffix=''+'_raw'*(r == pre_seq_round))
+                                        suffix='_raw' if r == pre_seq_round else '')
     pbar.close()
 
     # Now remove outliers from nbp.auto_thresh
