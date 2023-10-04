@@ -375,7 +375,8 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     if filter:
         im = sobel(im)
     # Save the image as uint8
-    im = im / np.max(im) * 255  # Scale to 0-255
+    if np.max(im) != 0:
+        im = im / np.max(im) * 255  # Scale to 0-255
     im = im.astype(np.uint8)
     output_dir = os.path.join(nb.file_names.output_dir, 'reg_images')
     if not os.path.isdir(output_dir):
