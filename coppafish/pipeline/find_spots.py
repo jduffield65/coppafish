@@ -67,7 +67,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         for t, r, c in np.argwhere(uncompleted):
             pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
             # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
-            image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False, suffix='' + '_raw' * (r == nbp_basic.pre_seq_round))
+            image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False, 
+                                        suffix='_raw' if r == nbp_basic.pre_seq_round else '')
             local_yxz, spot_intensity = fs.detect_spots(image,
                                                        auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
                                                        config['radius_xy'], config['radius_z'], True)
