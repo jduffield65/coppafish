@@ -267,7 +267,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             if nbp_basic.is_3d:
                                 im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
                                                          yxz=[None, None, nbp_debug.z_info],
-                                                         suffix=''+'_raw'*(r == pre_seq_round))
+                                                         suffix='_raw' if r == pre_seq_round else '')
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             nbp.auto_thresh[t, r, c], hist_counts_trc, nbp_debug.n_clip_pixels[t, r, c], \
