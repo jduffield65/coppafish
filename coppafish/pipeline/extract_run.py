@@ -336,7 +336,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                             # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
                             utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c,
-                                                suffix=''+'_raw'*(r == pre_seq_round),
+                                                suffix='_raw' if r == pre_seq_round else '',
                                                 num_rotations=config['num_rotations'])
                         else:
                             im_all_channels_2d[c] = im
