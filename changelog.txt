@@ -1,4 +1,4 @@
-2023/10/09 Alpha Update (v0.1.7):
+2023/10/09 Alpha Update (v0.2.0):
  * Added background subtraction with 3D registration using DAPI images.
  * Cross-tile brightness difference correction support, probably caused by microscope auto gain control.
  * Updated bleed matrix to allow inter-tile variation.
