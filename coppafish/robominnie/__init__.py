@@ -1,1 +1,1 @@
-from .RoboMinnie import RoboMinnie
+from .robominnie import RoboMinnie

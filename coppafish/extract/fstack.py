@@ -2,19 +2,20 @@ import numpy as np
 from scipy import ndimage
 from scipy.signal import medfilt2d
 import cv2
-from typing import Optional, Tuple
+import numpy.typing as npt
+from typing import Optional, Tuple, Union
 
 
-def rgb2gray(im: np.ndarray) -> np.ndarray:
+def rgb2gray(im: npt.NDArray[Union[np.float_, np.int_]]) -> npt.NDArray[np.float_]:
     """
-    Converts RGB ```m x n x 3``` color image into ```m x n``` greyscale image.
+    Converts RGB ``m x n x 3`` color image into ``m x n`` greyscale image.
     Uses weighted sum indicated [here](https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 
     Args:
-        im: ```float [m x n x 3]```. RGB image
+        im: ``float or int [m x n x 3]``. RGB image
 
     Returns:
-        ```float [m x n]```. Greyscale image.
+        ``float [m x n]``. Greyscale image.
 
     """
     im_R = im[:, :, 0]
@@ -27,51 +28,57 @@ def rgb2gray(im: np.ndarray) -> np.ndarray:
     return im_output
 
 
-def im2double(im: np.ndarray) -> np.ndarray:
+def im2double(im: npt.NDArray[Union[np.int_, np.uint, np.float_]]) -> npt.NDArray[np.float64]:
     """
-    Equivalent to Matlab im2double function.
+    Divide image by the maximum possible value and convert to ``float64``. Values can only range from (0,1) for ``uint`` 
+    and (-1,1) for other datatypes.
+
     Follows answer
     [here](https://stackoverflow.com/questions/29100722/equivalent-im2double-function-in-opencv-python/29104511).
 
     Args:
-        im: ```int```/```uint``````[m x n x ...]```. Image tom convert.
+        im: ``int`` or ``uint`` or ``float`` ``[m x n x ...]``. Image to convert.
 
     Returns:
-        ```float [m x n x ...]```. Converted image.
+        ``float [m x n x ...]``. Converted image.
     """
-    info = np.iinfo(im.dtype)  # Get the data type of the input image
+    if im.dtype.kind == 'f':
+        info = np.finfo(im.dtype)
+    else:
+        info = np.iinfo(im.dtype)  # Get the data type of the input image
     return im.astype(float) / info.max  # Divide all values by the largest possible value in the datatype
 
 
-def focus_stack(im_stack: np.ndarray, nhsize: int = 9, focus: Optional[np.ndarray] = None, alpha: float = 0.2,
-                sth: float = 13) -> np.ndarray:
+def focus_stack(im_stack: npt.NDArray[Union[np.uint8, np.uint16]], nhsize: int = 9, 
+                focus: Optional[npt.NDArray[np.int_]] = None, alpha: float = 0.2, sth: float = 13) \
+                    -> npt.NDArray[Union[np.int_, np.uint8]]:
     """
     Generate extended depth-of-field image from focus sequence
     using noise-robust selective all-in-focus algorithm [1].
     Input images may be grayscale or color. For color images,
     the algorithm is applied to each color plane independently.
 
-    For further details, see:
-    [1] Pertuz et. al. "Generation of all-in-focus images by
-      noise-robust selective fusion of limited depth-of-field
-      images" IEEE Trans. Image Process, 22(3):1242 - 1251, 2013.
-
-    S. Pertuz, Jan/2016
-
-    Modified by Josh, 2021
-
     Args:
-        im_stack: Element ```[:,:,p,:]``` is greyscale or RGB image at z-plane ```p```.
-            RGB: ```uint8 [M x N x P x 3]```
-            Gray: ```uint16 [M x N x P]```
-        nhsize: Size of default window.
-        focus: ```int [P]``` or ```None```.
-            Vector with focus of each frame. If ```None```, will use ```np.arange(P)```.
-        alpha: A scalar in ```[0,1]```. See [1] for details.
-        sth: A scalar. See [1] for details.
+        im_stack (Element ``[:,:,p,:]``): greyscale or RGB image at z-plane ``p``:
+            RGB: ``uint8 [M x N x P x 3]``.
+
+            Gray: ``uint16 [M x N x P]``.
+        nhsize (``int``, optional): Size of default window. Default: 9.
+        focus (``int`` or ``any``, optional): ``int [P]`` or ``None``.
+            Vector with focus of each frame. If ``None``, will use ``np.arange(P)``. Default: ``None``.
+        alpha (``float``, optional): A scalar in ``[0,1]``. See [1] for details. Default: ``0.2``.
+        sth (``float``, optional): A scalar ``> 0``. See [1] for details. Default: ``13``.
 
     Returns:
-        ```int [M x N]```. All In Focus (AIF) image.
+        ``int [M x N x 3]`` if RGB, ``[M x N]`` otherwise: All In Focus (AIF) image.
+
+    References:
+        [1] Pertuz et. al. "Generation of all-in-focus images by noise-robust selective fusion of limited 
+        depth-of-field images" IEEE Trans. Image Process, 22(3):1242 - 1251, 2013.
+
+        S. Pertuz, Jan/2016
+
+        Modified by Josh, 2021
     """
     rgb = np.ndim(im_stack) == 4
     if focus is None:
@@ -96,18 +103,18 @@ def focus_stack(im_stack: np.ndarray, nhsize: int = 9, focus: Optional[np.ndarra
     return im
 
 
-def get_fmeasure(im_stack: np.ndarray, nhsize: int) -> np.ndarray:
+def get_fmeasure(im_stack: npt.NDArray, nhsize: int) -> npt.NDArray:
     """
     Returns focus measure value for each pixel.
 
     Args:
-        im_stack: Element ```[:,:,p,:]``` is greyscale or RGB image at z-plane ```p```.
-            RGB: ```uint8 [M x N x P x 3]```.
-            Gray: ```uint16 [M x N x P]```.
-        nhsize: Size of focus measure window. Typical: ```M/200```.
+        im_stack: Element ``[:,:,p,:]`` is greyscale or RGB image at z-plane ``p``.
+            RGB: ``uint8 [M x N x P x 3]``.
+            Gray: ``uint16 [M x N x P]``.
+        nhsize: Size of focus measure window. Typical: ``M/200``.
 
     Returns:
-        ```float [M x N x P]```. Focus measure image.
+        ``float [M x N x P]``. Focus measure image.
     """
     rgb = np.ndim(im_stack) == 4
     im_shape = np.shape(im_stack)
@@ -121,20 +128,20 @@ def get_fmeasure(im_stack: np.ndarray, nhsize: int) -> np.ndarray:
     return fm
 
 
-def get_smeasure(fm: np.ndarray, nhsize: int, focus: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def get_smeasure(fm: npt.NDArray, nhsize: int, focus: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
     """
     Returns selectivity measure value for each pixel.
 
     Args:
-        fm: ```float [M x N x P]```.
+        fm: ``float [M x N x P]``.
             Focus Measure Image.
-        nhsize: Size of focus measure window. Typical: ```M/200```.
-        focus: ```int [P]```.
-            Vector with focus of each frame. Typical: ```np.arange(P)```.
+        nhsize: Size of focus measure window. Typical: ``M/200``.
+        focus: ``int [P]``.
+            Vector with focus of each frame. Typical: ``np.arange(P)``.
 
     Returns:
-        - ```S``` - ```float [M x N]```. Selectivity measure image.
-        - ```fm``` - ```float [M x N x P]```. Normalised focus measure image.
+        - ``S`` - ``float [M x N]``. Selectivity measure image.
+        - ``fm`` - ``float [M x N x P]``. Normalised focus measure image.
     """
     M, N, P = np.shape(fm)
     u, s_squared, A, fmax = gauss3p(focus, fm)
@@ -153,21 +160,21 @@ def get_smeasure(fm: np.ndarray, nhsize: int, focus: np.ndarray) -> Tuple[np.nda
     return S, fm
 
 
-def get_weights(S: np.ndarray, fm: np.ndarray, alpha: float, sth: float) -> np.ndarray:
+def get_weights(S: npt.NDArray, fm: npt.NDArray, alpha: float, sth: float) -> npt.NDArray:
     """
     Computes sharpening parameter phi and then
-    returns cut off frequency for high pass convolve_2d, ```omega```.
+    returns cut off frequency for high pass convolve_2d, ``omega``.
 
     Args:
-        S: ```float [M x N]```.
+        S: ``float [M x N]``.
             Selectivity measure image.
-        fm: ```float [M x N x P]```.
+        fm: ``float [M x N x P]``.
             Normalised focus measure image.
-        alpha: A scalar in ```[0, 1]```. Typical: ```0.2```.
-        sth: A scalar. Typical: ```13```.
+        alpha: A scalar in ``[0, 1]``. Typical: ``0.2``.
+        sth: A scalar. Typical: ``13``.
 
     Returns:
-        ```float [M x N]```. Cut off frequency for high pass convolve_2d.
+        ``float [M x N]``. Cut off frequency for high pass convolve_2d.
     """
     phi = 0.5 * (1 + np.tanh(alpha * (S - sth))) / alpha
     phi = medfilt2d(phi, 3)
@@ -175,17 +182,17 @@ def get_weights(S: np.ndarray, fm: np.ndarray, alpha: float, sth: float) -> np.n
     return omega
 
 
-def gfocus(im: np.ndarray, w_size: int) -> np.ndarray:
+def gfocus(im: npt.NDArray, w_size: int) -> npt.NDArray:
     """
     Compute focus measure using gray level local variance.
 
     Args:
-        im: ```float [M x N]```.
+        im: ``float [M x N]``.
             Gray scale image.
-        w_size: Size of convolve_2d window. Typical: ```M/200```.
+        w_size: Size of convolve_2d window. Typical: ``M/200``.
 
     Returns:
-        ```float [M x N]```. Focus measure image.
+        ``float [M x N]``. Focus measure image.
     """
     mean_f = np.ones((w_size, w_size)) / (w_size ** 2)
     #u = ndimage.correlate(im, mean_f, mode='nearest')
@@ -196,25 +203,25 @@ def gfocus(im: np.ndarray, w_size: int) -> np.ndarray:
     return fm
 
 
-def gauss3p(x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def gauss3p(x: npt.NDArray, y: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
     """
     Fast 3-point gaussian interpolation.
 
     Args:
-        x: ```int [P]```.
-            Vector with focus of each frame. Typical: ```np.arange(P)```.
-        y: ```float [M x N x P]```.
+        x: ``int [P]``.
+            Vector with focus of each frame. Typical: ``np.arange(P)``.
+        y: ``float [M x N x P]``.
             Image to interpolate.
 
     Returns:
-        - ```u``` - ```float [M x N]```.
+        - ``u`` - ``float [M x N]``.
             Mean value of gaussian function.
-        - ```s_squared``` - ```float [M x N]```.
+        - ``s_squared`` - ``float [M x N]``.
             Variance.
-        - ```A``` - ```float [M x N]```.
+        - ``A`` - ``float [M x N]``.
             Max value of gaussian function.
-        - ```y_max``` - ```float [M x N]```.
-            Max projection of image ```y```.
+        - ``y_max`` - ``float [M x N]``.
+            Max projection of image ``y``.
     """
     step = 2  # internal parameter
     M, N, P = np.shape(y)

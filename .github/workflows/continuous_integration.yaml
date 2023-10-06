@@ -35,8 +35,8 @@ jobs:
       - name: Install dependencies
         run: python -m pip install pytest pytest-cov .[plotting,optimised]
 
-      - name: Unit test coverage
-        run: pytest -m 'not slow' --cov
+      # - name: Unit test coverage
+      #   run: pytest -m 'not slow' --cov
 
       - name: Run unit tests
         run: pytest -m 'not slow'
