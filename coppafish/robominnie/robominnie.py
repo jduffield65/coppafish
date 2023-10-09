@@ -37,7 +37,7 @@ DEFAULT_IMAGE_DTYPE = float
 DEFAULT_INSTANCE_FILENAME = 'robominnie.pkl'
 USE_INSTANCE_GENE_CODES = None
 # Y, X, Z giant image padding. Useful for extra space when rotating/translating tiles when "un-stitching"
-IMAGE_PADDING = [200, 200, 2]
+IMAGE_PADDING = [200, 200, 0]
 
 
 def _funcname():
@@ -170,7 +170,9 @@ class RoboMinnie:
     def __init__(self, n_channels : int = 7, n_tiles_x : int = 1, n_tiles_y : int = 1, n_rounds : int = 7, 
                  n_planes : int = 4, n_tile_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, 
                  include_presequence : bool = True, include_dapi : bool = True, anchor_channel : int = 1, 
-                 tile_overlap : float = 0.1, image_minimum : float = 0, image_dtype : Any = None, seed : int = 0) \
+                 tile_overlap : float = 0.1, image_minimum : float = 0, image_dtype : Any = None, 
+                 brightness_scale_factor : npt.NDArray[np.float_] = None, seed : int = 0, 
+                 ) \
         -> None:
         """
         Create a new RoboMinnie instance. Used to manipulate, create and save synthetic data in a modular, customisable 
@@ -181,7 +183,7 @@ class RoboMinnie:
             n_channels (int, optional): Number of sequencing channels. Default: `7`.
             n_tiles_x (int, optional): Number of tiles along the x axis. Default: `1`.
             n_tiles_y (int, optional): Number of tiles along the y axis. Default: `1`.
-            n_rounds (int, optional): Number of rounds. Not including anchor or pre-sequencing. Default: `7`.
+            n_rounds (int, optional): Number of sequencing rounds. Default: `7`.
             n_planes (int, optional): Number of z planes. Default: `4`.
             n_tile_yx (`tuple[int, int]`, optional): Number of pixels in each tile in the y and x directions 
                 respectively. Default: `(2048, 2048)`.
@@ -197,6 +199,9 @@ class RoboMinnie:
             image_minimum (float, optional): Minimum pixel value possible. Images will be shifted to be at least 
                 `image_minimum` before saving the raw image files. Default: `0`.
             image_dtype (any, optional): Datatype of images. Default: float.
+            brightness_scale_factor (`(n_tiles x n_total_rounds x n_channels) ndarray[float]`): A brightness scale 
+                factor, applied to each image before saving as raw `.npy` images for a coppafish run. Default: Ones 
+                everywhere.
             seed (int, optional): Seed used throughout the generation of random data, specify integer value for 
                 reproducible output. If None, seed is randomly picked. Default: `0`.
         
@@ -224,15 +229,29 @@ class RoboMinnie:
         self.image_minimum = image_minimum
         # DAPI channel should be appended to the start of the sequencing images array
         self.dapi_channel = 0
-        if image_dtype == None:
+        if image_dtype is None:
             self.image_dtype = DEFAULT_IMAGE_DTYPE
         else:
             self.image_dtype = image_dtype
         self.seed = seed
-        # n_yx is the minimum giant image size required to fit all the tiles in, with the given tile overlap
+        if brightness_scale_factor is None:
+            self.brightness_scale_factor = np.ones(
+                (self.n_tiles, self.n_rounds + self.include_anchor + self.include_presequence, self.n_channels + 1)
+            )
+        if brightness_scale_factor is not None:
+            self.brightness_scale_factor = brightness_scale_factor
+        expected_brightness_scale_factor_shape = (self.n_tiles, 
+                                                  self.n_rounds + self.include_anchor + self.include_presequence, 
+                                                  self.n_channels + 1
+                                                  )
+        assert self.brightness_scale_factor.shape == expected_brightness_scale_factor_shape, \
+            f'Unexpected brightness_scale_factor shape, expected {expected_brightness_scale_factor_shape}'
+        # n_yx is the calculated giant image size required to fit all the tiles in, with the given tile overlap
         self.n_yxz = (
-            IMAGE_PADDING[0] + self.n_tile_yx[0] * self.n_tiles_y - round(tile_overlap * self.n_tile_yx[0] * (self.n_tiles_y - 1)),           
-            IMAGE_PADDING[1] + self.n_tile_yx[1] * self.n_tiles_x - round(tile_overlap * self.n_tile_yx[1] * (self.n_tiles_x - 1)),
+            IMAGE_PADDING[0] + self.n_tile_yx[0] * self.n_tiles_y - \
+                round(tile_overlap * self.n_tile_yx[0] * (self.n_tiles_y - 1)),           
+            IMAGE_PADDING[1] + self.n_tile_yx[1] * self.n_tiles_x - \
+                round(tile_overlap * self.n_tile_yx[1] * (self.n_tiles_x - 1)),
             IMAGE_PADDING[2] + self.n_planes,
         )
         self.instructions = [] # Keep track of the functions called inside RoboMinnie, in order
@@ -504,7 +523,6 @@ class RoboMinnie:
                   spot_amplitude : float = 1, include_dapi : bool = False, 
                   spot_size_pixels_dapi : npt.NDArray[np.float_] = None, spot_amplitude_dapi : float = 1, 
                   gene_efficiency : npt.NDArray[np.float_] = None, background_offset : npt.NDArray[np.float_] = None, 
-                  brightness_scale_factor : npt.NDArray[np.float_] = None, 
                   ) -> None:
         """
         Superimpose spots onto images in both space and channels (based on the bleed matrix). Also applied to the 
@@ -526,13 +544,10 @@ class RoboMinnie:
                 DAPI image. Default: Same as `spot_size_pixels`.
             spot_amplitude_dapi (float, optional): Peak DAPI spot brightness scale factor. Default: `1`.
             gene_efficiency (`(n_genes x n_rounds) ndarray[float]`): Gene efficiency scale factor (sometimes denoted 
-                by lambda), each spot is multiplied by this value, can be unique for every round. Default: Ones 
-                everywhere.
+                by lambda), each spot is multiplied by this value, can be unique for every sequencing round and anchor 
+                round. Not applied to the DAPI spots. Default: Ones everywhere.
             background_offset (`(n_spots x n_channels) ndarray[float]`): After `gene_efficiency` is applied, a 
                 background offset is added to every spot, which is channel-dependent. Default: Zero offset.
-            brightness_scale_factor (`(n_rounds x n_channels) ndarray[float]`): A brightness scale factor 
-                applied to each spots brightness after applying `gene_efficiency` and `background_offset`. Default: 
-                Ones everywhere.
         """
         self.instructions.append(_funcname())
         
@@ -579,19 +594,14 @@ class RoboMinnie:
             spot_size_pixels_dapi = spot_size_pixels.copy()
         assert spot_size_pixels_dapi.size == 3, 'DAPI spot size must be in three dimensions'
         if gene_efficiency is None:
-            gene_efficiency = np.ones((len(self.codes), self.n_rounds))
-        assert gene_efficiency.shape == (len(self.codes), self.n_rounds), \
-            f'Gene efficiency must have shape `n_genes x n_rounds`=={(len(self.codes), self.n_rounds)}, ' + \
-                'got {gene_efficiency.shape}'
+            gene_efficiency = np.ones((len(self.codes), self.n_rounds + self.include_anchor))
+        assert gene_efficiency.shape == (len(self.codes), self.n_rounds + self.include_anchor), \
+            f'Gene efficiency must have shape `n_genes x n_rounds`==\
+                {(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
         if background_offset is None:
             background_offset = np.zeros((n_spots, self.n_channels))
         assert background_offset.shape == (n_spots, self.n_channels), \
             f'background_offset must have shape {(n_spots, self.n_channels)}, got {background_offset.shape}'
-        if brightness_scale_factor is None:
-            brightness_scale_factor = np.ones((self.n_rounds, self.n_channels))
-        assert brightness_scale_factor.shape == (self.n_rounds, self.n_channels), \
-            f'brightness_scale_factor must have shape {(self.n_rounds, self.n_channels)}, got ' + \
-                f'{brightness_scale_factor.shape}'
 
         self.n_spots += n_spots
 
@@ -621,6 +631,8 @@ class RoboMinnie:
         true_spot_positions_pixels = rng.rand(n_spots, 3) * [*self.n_yxz]
         true_spot_identities = list(rng.choice(list(self.codes.keys()), n_spots))
 
+        codes_list = list(self.codes.items())
+
         # We assume each spot is a multivariate gaussian with a diagonal covariance,
         # where variance in each dimension is given by the spot size.  We create a spot
         # template image and then iterate through spots.  Each iteration, we add
@@ -639,19 +651,30 @@ class RoboMinnie:
         spot_img_dapi = \
             scipy.stats.multivariate_normal([0, 0, 0], np.eye(3)*spot_size_pixels_dapi).pdf(indices.transpose(1,2,3,0))
         np.multiply(spot_img_dapi, spot_amplitude_dapi * np.prod(spot_size_pixels_dapi) / 3.375, out=spot_img_dapi)
+        s = 0
         for p,ident in tqdm(zip(true_spot_positions_pixels, true_spot_identities), 
                             desc='Superimposing spots', ascii=True, unit='spots', total=n_spots):
+            gene_index = [idx for idx, key in enumerate(codes_list) if key[0] == ident][0]
             p = np.asarray(p).astype(int)
             p_chan = np.round([self.n_channels//2, p[0], p[1], p[2]]).astype(int)
             for r in range(self.n_rounds):
                 dye = int(self.codes[ident][r])
-                _blit(spot_img[None,:] * bleed_matrix[dye][:,None,None,None], self.image[r,(self.dapi_channel + 1):], 
-                      p_chan)
+                ge = gene_efficiency[gene_index, r]
+                source = (spot_img * ge)[None,:] * bleed_matrix[dye][:,None,None,None]
+                for c in range(source.shape[0]):
+                    bg_offset = background_offset[s,c]
+                    source[c] -= bg_offset
+
+                _blit(source, self.image[r,(self.dapi_channel + 1):], p_chan)
                 if include_dapi and self.include_dapi:
                     _blit(spot_img_dapi, self.image[r,self.dapi_channel], p)
-            _blit(spot_img, self.anchor_image[self.anchor_channel], p)
-            if include_dapi and self.include_dapi:
+            if self.include_anchor:
+                ge = gene_efficiency[gene_index, self.n_rounds]
+                bg_offset = background_offset[s,self.anchor_channel]
+                _blit(spot_img * ge - bg_offset, self.anchor_image[self.anchor_channel], p)
+            if include_dapi and self.include_dapi and self.include_anchor:
                 _blit(spot_img_dapi, self.anchor_image[self.dapi_channel], p)
+            s += 1
 
         # Append just in case spots are superimposed multiple times
         self.true_spot_identities       = np.append(self.true_spot_identities, np.asarray(true_spot_identities))
@@ -712,8 +735,8 @@ class RoboMinnie:
             np.add(self.anchor_image[:,self.dapi_channel], constant, out=self.anchor_image[:,self.dapi_channel])
 
 
-    def save_raw_images(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 5, 
-                        omp_initial_intensity_thresh_percentile : int = 25) -> None:
+    def save_raw_images(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 1, 
+                        omp_initial_intensity_thresh_percentile : int = 90) -> None:
         """
         Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and ``config.ini`` 
         file for coppafish pipeline run. Output directory must be empty. After saving, able to call function 
@@ -724,10 +747,10 @@ class RoboMinnie:
             overwrite (bool, optional): If True, overwrite any saved coppafish data inside the directory, delete old 
                 notebook.npz file if there is one and ignore any other files inside the directory.
             omp_iterations (int, optional): Number of OMP iterations on every pixel. Increasing this may improve gene 
-                scoring. Default: `5`.
+                scoring. Default: `1`.
             omp_initial_intensity_thresh_percentile (float, optional): percentile of the absolute intensity of all 
                 pixels in the mid z-plane of the central tile. Used as a threshold for pixels to decide what to apply 
-                OMP on. A higher number leads to stricter picking of pixels. Default: `25`, the default coppafish value.
+                OMP on. A higher number leads to stricter picking of pixels. Default: `90`.
         """
         self.fix_image_minimum(self.image_minimum)
 
@@ -1067,8 +1090,8 @@ class RoboMinnie:
             warnings.warn('Copppafish OMP found zero spots')
 
 
-    def compare_spots(self, spot_types : str = 'ref', score_threshold : float = 0.5, 
-                          intensity_threshold : float = 0.7, location_threshold : float = 4) -> Tuple[int,int,int,int]:
+    def compare_spots(self, spot_types : str = 'ref', score_threshold : float = 0.99, 
+                          intensity_threshold : float = 0.7, location_threshold : float = 2) -> Tuple[int,int,int,int]:
         """
         Compare spot positions and gene codes from coppafish results to the known spot locations. If the spots are 
         close enough and the true spot has not been already assigned to a reference spot, then they are considered the 
@@ -1081,7 +1104,7 @@ class RoboMinnie:
         Args:
             spot_types (str, optional): Coppafish spot type to compare to. Either `'ref'` or `'omp'`.
             score_threshold (float, optional): Spot score threshold, any spots below this intensity are ignored. Only 
-                relevant to reference spots. Default: `0.5`.
+                relevant to reference spots. Default: `0.99`.
             intensity_threshold (float, optional): Reference spot intensity threshold. Default: `0.7`.
             location_threshold (float, optional): Maximum distance, in pixels, two spots can be apart to be considered 
                 the same spot. Default: `4`.
@@ -1200,7 +1223,7 @@ class RoboMinnie:
         View all images in `napari` for tile index `t`, including a presequence, anchor and DAPI images, if they exist.
 
         Args:
-            tiles (`list` of `int`, optional): Tile indices. Default: View the giant image, containing all tiles.
+            tiles (`list` of `int`, optional): Tile indices. Default: View the giant image, containing all tiles within.
         """
         print(f'Viewing images')
         viewer = napari.Viewer(title=f'RoboMinnie')
@@ -1242,12 +1265,39 @@ class RoboMinnie:
                         name=f'dapi, r={r}',
                         visible=False,
                     )
+        if tiles is not None:
+            #TODO: Complete this to add all tile images, including the presequence and sequence images
+            # image_tiles, tile_origins_yx, tile_yxz_pos = self._unstich_image(
+            #     self.image, 
+            #     np.asarray([*self.n_tile_yx, self.n_planes]), 
+            #     self.tile_overlap,
+            #     self.n_tiles_y,
+            #     self.n_tiles_x,
+            #     update_global_spots=False,
+            # )
+            if self.include_anchor:
+                anchor_image_tiles = self._unstich_image(
+                    self.anchor_image[None], 
+                    np.asarray([*self.n_tile_yx, self.n_planes]), 
+                    self.tile_overlap,
+                    self.n_tiles_y,
+                    self.n_tiles_x,
+                )[0][0]
+                for t in range(self.n_tiles):
+                    viewer.add_image(
+                        anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
+                        name=f'anchor, t={t}, c={self.anchor_channel}', 
+                        visible=False,
+                    )
         napari.run()
 
 
     def _unstich_image(self, image : npt.NDArray[np.float_], tile_size_yxz : npt.NDArray[np.int_], 
-                       tile_overlap : float, n_tiles_y : int, n_tiles_x : int, update_global_spots : bool = False) \
-        -> Tuple[npt.NDArray[np.float_], List[List[int]], List[List[float]]]:
+                       tile_overlap : float, n_tiles_y : int, n_tiles_x : int, update_global_spots : bool = False, 
+                       scale_factors_sequence : npt.NDArray[np.float_] = None, 
+                       scale_factors_presequence : npt.NDArray[np.float_] = None, 
+                       scale_factors_anchor : npt.NDArray[np.float_] = None, 
+                       ) -> Tuple[npt.NDArray[np.float_], List[List[int]], List[List[float]]]:
         """
         Separate given image into multiple tiles with a tile overlap.
 
@@ -1258,21 +1308,44 @@ class RoboMinnie:
             tile_overlap (float): overlap of tiles in the x and y directions, given in fraction of tile length.
             n_tiles_y (int): Number of tiles in the y direction.
             n_tiles_x (int): Number of tiles in the x direction.
-            update_global_spots (bool, optional): Update ``self.true_spot_identities`` and 
-                ``self.true_spot_positions_pixels`` to account for overlapping spots (by double counting overlaps) and 
-                removing true spot positions that are not visible to coppafish.
+            update_global_spots (bool, optional): Update ``self.true_spot_identities``, `self.true_spot_tile_numbers` 
+                and ``self.true_spot_positions_pixels`` to account for overlapping spots (by saving overlapping spots 
+                twice) and removing true spot positions that are not visible to coppafish.
+            scale_factors_sequence (`(n_tiles x n_rounds x n_channels) ndarray[float]`, optional): scale 
+                factors applied to each sequence image. Includes the DAPI channel at index `0`, even if not included. 
+                Default: All ones.
+            scale_factors_presequence (`(n_tiles x 1 x n_channels) ndarray[float]`, optional): presequence image scale 
+                factors. Default: All ones.
+            scale_factors_anchor (`(n_tiles x 1 x 2) ndarray[float]`, optional): anchor image scale factors. 
+                Channel (`3`rd axis) index `0` is for the DAPI channel, even if not included. Default: All ones.
 
         Returns:
             - (`n_rounds x n_tiles x n_channels x tile_size_yxz[0] x tile_size_yxz[1] x tile_size_yxz[2]`) 
                 `ndarray[float]`: tile images.
             - (`list` of `list` of `int`): list of tile indices of form `[y_index, x_index]`.
-            - (`list` of `list` of `float`): list of tile bottom-right corner positions, starting from `[0,0,0]` 
+            - (`list` of `list` of `float`): list of tile bottom-right corner positions, starting from `[0,0,0]`, 
                 in the form `[y,x,z]`.
         """
         #TODO: Add support for affine-transformed tile images
+        scale_factors_sequence_shape = (self.n_tiles, self.n_rounds, self.n_channels + 1)
+        if scale_factors_sequence is None:
+            scale_factors_sequence = np.ones(scale_factors_sequence_shape)
+        else:
+            raise NotImplementedError('Not added scale factors yet')
+        assert scale_factors_sequence.shape == scale_factors_sequence_shape
+        scale_factors_presequence_shape = (self.n_tiles, 1, self.n_channels + 1)
+        if scale_factors_presequence is None:
+            scale_factors_presequence = np.ones(scale_factors_presequence_shape)
+        else:
+            raise NotImplementedError('Not added scale factors yet')
+        assert scale_factors_presequence.shape == scale_factors_presequence_shape
+        scale_factors_anchor_shape = (self.n_tiles, 1, 2)
+        if scale_factors_anchor is None:
+            scale_factors_anchor = np.ones(scale_factors_anchor_shape)
+        else:
+            raise NotImplementedError('Not added scale factors yet')
+        assert scale_factors_anchor.shape == scale_factors_anchor_shape
 
-        self.true_spot_positions_pixels
-        self.true_spot_identities
         new_true_spot_positions_pixels = np.zeros((0,3), dtype=float) # `n_true_spots x 3`
         new_true_spot_identities = np.empty((0), dtype=str) # `n_true_spots`
         new_true_spot_tile_numbers = np.zeros(0) # Tile indices for each spot
@@ -1325,9 +1398,10 @@ class RoboMinnie:
                 )
                 new_true_spot_tile_numbers = np.append(new_true_spot_tile_numbers, [t]*np.sum(indices), axis=0)
                 t += 1
-        self.true_spot_positions_pixels = new_true_spot_positions_pixels
-        self.true_spot_identities = new_true_spot_identities
-        self.true_spot_tile_numbers = new_true_spot_tile_numbers
+        if update_global_spots:
+            self.true_spot_positions_pixels = new_true_spot_positions_pixels
+            self.true_spot_identities = new_true_spot_identities
+            self.true_spot_tile_numbers = new_true_spot_tile_numbers
         return tile_images, tile_indices, tile_positions_yxz
 
 
