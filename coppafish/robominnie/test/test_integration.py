@@ -119,6 +119,7 @@ def test_integration_003() -> None:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
 
 
+@pytest.mark.slow
 def test_bg_subtraction():
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'integration_dir')
     if not os.path.isdir(output_dir):
