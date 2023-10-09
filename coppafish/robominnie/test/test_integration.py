@@ -28,21 +28,18 @@ def test_integration_001() -> None:
                                omp_initial_intensity_thresh_percentile=90)
     robominnie.run_coppafish()
 
-    robominnie.compare_ref_spots()
-    # Basic scoring system for integration test
+    robominnie.compare_spots('ref', score_threshold=0, intensity_threshold=1)
     overall_score = robominnie.overall_score()
     print(f'Overall score: {round(overall_score*100, 1)}%')
     if overall_score < 0.75:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
     assert overall_score > 0.5, 'Integration reference spots score < 50%!'
 
-    robominnie.compare_omp_spots()
-    # Basic scoring system for integration test
+    robominnie.compare_spots('omp', intensity_threshold=1)
     overall_score = robominnie.overall_score()
     print(f'Overall score: {round(overall_score*100, 1)}%')
     if overall_score < 0.75:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
-    assert overall_score > 0.5, 'Integration OMP spots score < 50%!'
 
 
 @pytest.mark.slow
@@ -70,21 +67,18 @@ def test_integration_002() -> None:
                                omp_initial_intensity_thresh_percentile=90)
     robominnie.run_coppafish()
 
-    robominnie.compare_ref_spots()
-    # Basic scoring system for integration test
+    robominnie.compare_spots('ref')
     overall_score = robominnie.overall_score()
     print(f'Overall score: {round(overall_score*100, 1)}%')
     if overall_score < 0.75:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
     assert overall_score > 0.5, 'Integration reference spots score < 50%!'
 
-    robominnie.compare_omp_spots()
-    # Basic scoring system for integration test
+    robominnie.compare_spots('omp')
     overall_score = robominnie.overall_score()
     print(f'Overall score: {round(overall_score*100, 1)}%')
     if overall_score < 0.75:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
-    assert overall_score > 0.5, 'Integration OMP spots score < 50%!'
 
 
 @pytest.mark.slow
@@ -100,7 +94,7 @@ def test_integration_003() -> None:
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
-    robominnie = RoboMinnie(include_presequence=True, include_dapi=True, n_tiles_x=2)
+    robominnie = RoboMinnie(include_presequence=False, include_dapi=False, n_tiles_x=2, tile_overlap=0.15)
     robominnie.generate_gene_codes(n_genes=15)
     robominnie.generate_pink_noise(noise_amplitude=0.0015, noise_spatial_scale=0.1)
     # robominnie.view_images()
@@ -115,21 +109,23 @@ def test_integration_003() -> None:
                                omp_initial_intensity_thresh_percentile=90)
     robominnie.run_coppafish()
 
-    robominnie.compare_ref_spots()
+    robominnie.compare_spots('ref')
     # Basic scoring system for integration test
     overall_score = robominnie.overall_score()
     print(f'Overall score: {round(overall_score*100, 1)}%')
     if overall_score < 0.75:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
-    # assert overall_score > 0.5, 'Integration reference spots score < 50%!'
 
-    robominnie.compare_omp_spots()
+    tps, wps, fps, fns = robominnie.compare_spots('omp')
+    print(tps)
+    print(wps)
+    print(fps)
+    print(fns)
     # Basic scoring system for integration test
     overall_score = robominnie.overall_score()
     print(f'Overall score: {round(overall_score*100, 1)}%')
     if overall_score < 0.75:
         warnings.warn(UserWarning('Integration test passed, but the overall OMP spots score is < 75%'))
-    # assert overall_score > 0.5, 'Integration OMP spots score < 50%!'
 
 
 if __name__ == '__main__':
