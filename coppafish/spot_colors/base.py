@@ -279,16 +279,3 @@ def remove_background(spot_colours: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
             spot_colours[s] = spot_colours[s] - background_noise[s, c] * background_code
 
     return spot_colours, background_noise
-
-
-def neighbour_normalisation(im1: np.ndarray, im2: np.ndarray):
-    """
-    im1 and im2 will come from adjacent tiles and will be their registered overlap.
-    We want to normalise the intersection so that their intensities match.
-    Args:
-        im1: 'uint16 n_pixels' image from tile1 overlap
-        im2: 'uint16 n_pixels' image from tile2 overlap
-
-    Returns:
-        alpha: 'float32' normalisation factor for im1
-    """

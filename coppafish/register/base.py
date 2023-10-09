@@ -179,11 +179,11 @@ def huber_regression(shift, position, predict_shift=True):
     # We are going to get rid of the shifts where any of the values are nan for regression
     position = position[~np.isnan(shift[:, 0])]
     shift = shift[~np.isnan(shift[:, 0])]
-
-    if shift.shape[0] == 0 and predict_shift:
+    # Check if we have any shifts to predict
+    if len(shift) == 0 and predict_shift:
         transform = np.zeros((3, 4))
         return transform
-    elif shift.shape[0] == 0 and not predict_shift:
+    elif len(shift) == 0 and not predict_shift:
         transform = np.eye(3, 4)
         return transform
     # Do robust regression
@@ -195,11 +195,11 @@ def huber_regression(shift, position, predict_shift=True):
         print('Warning: Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of '
               'mean(shift)')
     else:
-        huber_z = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 0])
+        huber_z = HuberRegressor(epsilon=2, max_iter=400, tol=1e-4).fit(X=position, y=shift[:, 0])
         z_coef = huber_z.coef_
         z_shift = huber_z.intercept_
-    huber_y = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 1])
-    huber_x = HuberRegressor(max_iter=400, tol=1e-6).fit(X=position, y=shift[:, 2])
+    huber_y = HuberRegressor(epsilon=2, max_iter=400, tol=1e-4).fit(X=position, y=shift[:, 1])
+    huber_x = HuberRegressor(epsilon=2, max_iter=400, tol=1e-4).fit(X=position, y=shift[:, 2])
     transform = np.vstack((np.append(z_coef, z_shift),
                            np.append(huber_y.coef_, huber_y.intercept_),
                            np.append(huber_x.coef_, huber_x.intercept_)))
@@ -579,8 +579,8 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     This function isn't really registration but needs registration to be run before it can be used and here seems
     like a good place to put it.
     Args:
-        preseq: (n_y x n_x) ndarray of presequence image
-        seq: (n_y x n_x) ndarray of sequence image
+        preseq: (n_z x n_y x n_x) ndarray of presequence image
+        seq: (n_z x n_y x n_x) ndarray of sequence image
         intensity_percentile: float brightness percentile such that all pixels with brightness > this percentile
         (in the preseq im only) are used for regression
         sub_image_size: int size of sub-images to use for regression. This is because the images are not perfectly
@@ -596,15 +596,15 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     # small sub-images, and find the shifts between them. We'll then do the brightness matching on the best 
     # registered sub-images
     assert preseq.shape == seq.shape, "Presequence and sequence images must have the same shape"
-    tile_size = seq.shape[0]
+    tile_size = seq.shape[-1]
     n_sub_images = int(tile_size / sub_image_size)
-    sub_image_shifts = np.zeros((n_sub_images, n_sub_images, 2))
+    sub_image_shifts = np.zeros((n_sub_images, n_sub_images, 3))
     sub_image_shift_score = np.zeros((n_sub_images, n_sub_images))
     for i in range(n_sub_images):
         for j in range(n_sub_images):
-            sub_image_preseq = preseq[i * sub_image_size:(i + 1) * sub_image_size,
+            sub_image_preseq = preseq[:, i * sub_image_size:(i + 1) * sub_image_size,
                               j * sub_image_size:(j + 1) * sub_image_size]
-            sub_image_seq = seq[i * sub_image_size:(i + 1) * sub_image_size,
+            sub_image_seq = seq[:, i * sub_image_size:(i + 1) * sub_image_size,
                             j * sub_image_size:(j + 1) * sub_image_size]
             sub_image_shifts[i, j] = phase_cross_correlation(sub_image_preseq, sub_image_seq)[0]
             sub_image_shift_score[i, j] = np.corrcoef(sub_image_preseq.ravel(),
@@ -615,9 +615,9 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
         print('Warning: No sub-image shifts found. Setting scale to 1 and returning original images.')
         return 1, sub_image_seq, sub_image_preseq
     best_sub_image = np.argwhere(sub_image_shift_score == np.nanmax(sub_image_shift_score))[0]
-    sub_image_seq = seq[best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
+    sub_image_seq = seq[:, best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
                         best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
-    sub_image_preseq = preseq[best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
+    sub_image_preseq = preseq[:, best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
                               best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
     sub_image_seq = custom_shift(sub_image_seq, sub_image_shifts[best_sub_image[0], best_sub_image[1]].astype(int))
 

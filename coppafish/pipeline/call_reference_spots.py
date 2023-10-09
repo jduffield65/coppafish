@@ -68,7 +68,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # 0. Initialise frequently used variables
     n_rounds, use_channels = nbp_basic.n_rounds, nbp_basic.use_channels
     spot_colours = nbp_ref_spots.colors[:, :, nbp_basic.use_channels]
-    isolated = nbp_ref_spots.isolated
 
     # 1. Remove background from spots and normalise channels and rounds
     # Find middle tile to calculate intensity threshold
@@ -77,7 +76,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
     central_tile = nbp_basic.use_tiles[np.argmin(dist)]
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   central_tile, transform, nbp_file, nbp_basic,
+                                   central_tile, transform, nbp_file, nbp_basic, bg_scale=nbp_extract.bg_scale,
                                    return_in_bounds=True)[0]
     # normalise pixel colours by round and channel and then remove background
     # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
@@ -155,17 +154,16 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     gene_prob = gene_prob_score(spot_colours=spot_colours, bled_codes=bled_codes)
     gene_no = np.argmax(gene_prob, axis=1)
     gene_score = np.max(gene_prob, axis=1)
-    gene_score_second = np.sort(gene_prob, axis=1)[:, -2]
 
     # 3. Gene efficiency calculation.
     # GE calculation is done iteratively in a similar way to scaled k-means clustering. We start with our initial
     # score distribution and bled codes and then these 2 parameters are iteratively updated until convergence.
     # 3.1 Calculate gene efficiency
-    ge_intensity_thresh = np.percentile(intensity, config['gene_efficiency_intensity_thresh_percentile'])
+    ge_intensity_thresh = nbp.abs_intensity_percentile[int(config['gene_efficiency_intensity_thresh_percentile'])]
     gene_efficiency, use_ge, _ = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
                                                          gene_no=gene_no, gene_score=gene_score,
                                                          gene_codes=gene_codes, intensity=intensity,
-                                                         score_threshold=0.8,
+                                                         score_threshold=0.6,
                                                          intensity_threshold=ge_intensity_thresh)
     # 3.2 Update bled codes
     bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
@@ -198,6 +196,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
                                                     gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
-    nbp.gene_efficiency_intensity_thresh = ge_intensity_thresh
+    nbp.gene_efficiency_intensity_thresh = float(np.round(ge_intensity_thresh, 2))
 
     return nbp, nbp_ref_spots

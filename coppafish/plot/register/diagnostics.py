@@ -1,4 +1,5 @@
 import os
+import nd2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -135,18 +136,18 @@ class RegistrationViewer:
                                            add_vertical_stretch=False)
 
         # Create a single widget containing buttons for cross tile outlier removal
-        self.outlier_buttons = ButtonOutlierWindow()
+        # self.outlier_buttons = ButtonOutlierWindow()
         # Now connect buttons to functions
-        self.outlier_buttons.button_vec_field_r.clicked.connect(self.button_vec_field_r_clicked)
-        self.outlier_buttons.button_vec_field_c.clicked.connect(self.button_vec_field_c_clicked)
-        self.outlier_buttons.button_shift_cmap_r.clicked.connect(self.button_shift_cmap_r_clicked)
-        self.outlier_buttons.button_shift_cmap_c.clicked.connect(self.button_shift_cmap_c_clicked)
-        self.outlier_buttons.button_scale_r.clicked.connect(self.button_scale_r_clicked)
-        self.outlier_buttons.button_scale_c.clicked.connect(self.button_scale_c_clicked)
-
+        # self.outlier_buttons.button_vec_field_r.clicked.connect(self.button_vec_field_r_clicked)
+        # self.outlier_buttons.button_vec_field_c.clicked.connect(self.button_vec_field_c_clicked)
+        # self.outlier_buttons.button_shift_cmap_r.clicked.connect(self.button_shift_cmap_r_clicked)
+        # self.outlier_buttons.button_shift_cmap_c.clicked.connect(self.button_shift_cmap_c_clicked)
+        # self.outlier_buttons.button_scale_r.clicked.connect(self.button_scale_r_clicked)
+        # self.outlier_buttons.button_scale_c.clicked.connect(self.button_scale_c_clicked)
+        #
         # Finally, add these buttons as widgets in napari viewer
-        self.viewer.window.add_dock_widget(self.outlier_buttons, area="left", name='Cross Tile Outlier Removal',
-                                           add_vertical_stretch=False)
+        # self.viewer.window.add_dock_widget(self.outlier_buttons, area="left", name='Cross Tile Outlier Removal',
+        #                                    add_vertical_stretch=False)
 
         # Create a single widget containing buttons for ICP diagnostics
         self.icp_buttons = ButtonICPWindow()
@@ -166,6 +167,25 @@ class RegistrationViewer:
         # Add buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.overlay_buttons, area="left", name='Overlay Diagnostics',
                                              add_vertical_stretch=False)
+
+        # Create a single widget containing buttons for BG Subtraction diagnostics if bg subtraction has been run
+        if self.nb.basic_info.use_preseq:
+            self.bg_sub_buttons = ButtonBGWindow()
+            # Now connect buttons to function
+            self.bg_sub_buttons.button_overlay.clicked.connect(self.button_bg_sub_overlay_clicked)
+            self.bg_sub_buttons.button_brightness_scale.clicked.connect(self.button_brightness_scale_clicked)
+            # Add buttons as widgets in napari viewer
+            self.viewer.window.add_dock_widget(self.bg_sub_buttons, area="left", name='BG Subtraction Diagnostics',
+                                                 add_vertical_stretch=False)
+
+        # Create a widget containing buttons for fluorescent bead diagnostics if fluorescent beads have been used
+        if self.nb.file_names.fluorescent_bead_path is not None:
+            self.bead_buttons = ButtonBeadWindow()
+            # Now connect buttons to function
+            self.bead_buttons.button_fluorescent_beads.clicked.connect(self.button_fluorescent_beads_clicked)
+            # Add buttons as widgets in napari viewer
+            self.viewer.window.add_dock_widget(self.bead_buttons, area="left", name='Fluorescent Bead Diagnostics',
+                                                 add_vertical_stretch=False)
 
         # Get target images and anchor image
         self.get_images()
@@ -336,6 +356,41 @@ class RegistrationViewer:
         # Reset view button to unchecked and filter button to unchecked
         self.overlay_buttons.button_overlay.setChecked(False)
         self.overlay_buttons.button_filter.setChecked(False)
+
+    # bg subtraction
+    def button_bg_sub_overlay_clicked(self):
+        t_view = int(self.bg_sub_buttons.textbox_tile.text())
+        r_view = int(self.bg_sub_buttons.textbox_round.text())
+        c_view = int(self.bg_sub_buttons.textbox_channel.text())
+        # Run view_background_overlay.
+        try:
+            view_background_overlay(nb=self.nb, t=t_view, r=r_view, c=c_view)
+        except:
+            print('Error: could not view overlay')
+        # Reset view button to unchecked and filter button to unchecked
+        self.bg_sub_buttons.button_overlay.setChecked(False)
+
+    # bg subtraction
+    def button_brightness_scale_clicked(self):
+        t_view = int(self.bg_sub_buttons.textbox_tile.text())
+        r_view = int(self.bg_sub_buttons.textbox_round.text())
+        c_view = int(self.bg_sub_buttons.textbox_channel.text())
+        # Run view_background_overlay.
+        try:
+            view_background_brightness_correction(nb=self.nb, t=t_view, r=r_view, c=c_view)
+        except:
+            print('Error: could not view brightness scale')
+        # Reset view button to unchecked and filter button to unchecked
+        self.bg_sub_buttons.button_brightness_scale.setChecked(False)
+
+    # fluorescent beads
+    def button_fluorescent_beads_clicked(self):
+        try:
+            view_camera_correction(nb=self.nb)
+        except:
+            print('Error: could not view fluorescent beads')
+        # Reset view button to unchecked and filter button to unchecked
+        self.bead_buttons.button_fluorescent_beads.setChecked(False)
 
     # Button functions end here
     def update_plot(self):
@@ -636,6 +691,57 @@ class ButtonOverlayWindow(QMainWindow):
         self.button_filter = QPushButton('Filter', self)
         self.button_filter.setCheckable(True)
         self.button_filter.setGeometry(140, 160, 100, 28)
+
+
+class ButtonBGWindow(QMainWindow):
+    """
+    This class creates a window with buttons for viewing background images overlayed with foreground images
+    """
+    def __init__(self):
+        super().__init__()
+        self.button_overlay = QPushButton('View Overlay', self)
+        self.button_overlay.setCheckable(True)
+        self.button_overlay.setGeometry(20, 20, 220, 28)
+
+        self.button_brightness_scale = QPushButton('View BG Scale', self)
+        self.button_brightness_scale.setCheckable(True)
+        self.button_brightness_scale.setGeometry(20, 70, 220, 28)
+
+        # Add title to each textbox
+        label_tile = QLabel(self)
+        label_tile.setText('Tile')
+        label_tile.setGeometry(20, 130, 100, 28)
+        self.textbox_tile = QLineEdit(self)
+        self.textbox_tile.setFont(QFont('Arial', 8))
+        self.textbox_tile.setText('0')
+        self.textbox_tile.setGeometry(20, 160, 100, 28)
+
+        label_round = QLabel(self)
+        label_round.setText('Round')
+        label_round.setGeometry(140, 130, 100, 28)
+        self.textbox_round = QLineEdit(self)
+        self.textbox_round.setFont(QFont('Arial', 8))
+        self.textbox_round.setText('0')
+        self.textbox_round.setGeometry(140, 160, 100, 28)
+
+        label_channel = QLabel(self)
+        label_channel.setText('Channel')
+        label_channel.setGeometry(20, 190, 100, 28)
+        self.textbox_channel = QLineEdit(self)
+        self.textbox_channel.setFont(QFont('Arial', 8))
+        self.textbox_channel.setText('18')
+        self.textbox_channel.setGeometry(20, 220, 100, 28)
+
+
+class ButtonBeadWindow(QMainWindow):
+    """
+    This class creates a window with buttons for viewing fluorescent bead images
+    """
+    def __init__(self):
+        super().__init__()
+        self.button_fluorescent_beads = QPushButton('View Fluorescent Beads', self)
+        self.button_fluorescent_beads.setCheckable(True)
+        self.button_fluorescent_beads.setGeometry(20, 20, 220, 28)
 
 
 def set_style(button):
@@ -1408,11 +1514,11 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
                                       new_origin=np.array([num_z - 5, 0, 0]))
     transform_seq = yxz_to_zyx_affine(nb.register.transform[t, r, c], new_origin=np.array([num_z - 5, 0, 0]))
     preseq = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t=t, r=nb.basic_info.pre_seq_round, c=c,
-                                  yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * bg_blur))
+                                  yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * (1-bg_blur)))
     seq = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t=t, r=r, c=c,
                                yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
-    preseq = affine_transform(preseq, transform_pre, order=0)[5]
-    seq = affine_transform(seq, transform_seq, order=0)[5]
+    preseq = affine_transform(preseq, transform_pre, order=5)
+    seq = affine_transform(seq, transform_seq, order=5)
     # Apply background scale. Don't subtract bg from pixels that are <= 0 in seq as blurring in preseq can cause
     # negative values in seq
     bg_scale, sub_seq, sub_preseq = brightness_scale(preseq, seq, percentile, sub_image_size)
@@ -1455,5 +1561,38 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
     plt.ylabel('Frequency')
     plt.title('Histogram of seq / preseq. Scale = ' + str(np.round(bg_scale[0], 3)))
     plt.show()
+
+    napari.run()
+
+
+def view_camera_correction(nb: Notebook):
+    """
+    Plots the camera correction for each camera against the anchor camera
+    Args:
+        nb: Notebook (must have register page and a path to fluorescent bead images)
+    """
+    # One transform for each camera
+    viewer = napari.Viewer()
+    fluorescent_bead_path = nb.file_names.fluorescent_bead_path
+    # open the fluorescent bead images as nd2 files
+    fluorescent_beads = nd2.ND2File(fluorescent_bead_path).asarray()
+    # if fluorescent bead images are for all channels, just take one from each camera
+    cam_channels = [0, 9, 18, 23]
+    if len(fluorescent_beads) == 28:
+        fluorescent_beads = fluorescent_beads[cam_channels]
+    transform = nb.register.channel_transform[cam_channels][:, 1:, 1:]
+
+    # Apply the transform to the fluorescent bead images
+    fluorescent_beads_transformed = np.zeros(fluorescent_beads.shape)
+    for c in range(4):
+        fluorescent_beads_transformed[c] = affine_transform(fluorescent_beads[c], transform[c], order=3)
+
+    # Add the images to napari
+    colours = ['yellow', 'red', 'green', 'blue']
+    for c in range(1, 4):
+        viewer.add_image(fluorescent_beads[c], name='Camera ' + str(cam_channels[c]), colormap=colours[c],
+                         blending='additive', visible=False)
+        viewer.add_image(fluorescent_beads_transformed[c], name='Camera ' + str(cam_channels[c]) + ' transformed',
+                         colormap=colours[c], blending='additive', visible=True)
 
     napari.run()

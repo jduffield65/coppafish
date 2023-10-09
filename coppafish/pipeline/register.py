@@ -218,21 +218,21 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     # fluorescence
     if nbp_basic.use_preseq:
         nbp_extract.finalized = False
-        del nbp_extract.bg_scale # Delete this so that it is not saved to file
+        del nbp_extract.bg_scale # Delete this so that we can overwrite it
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
-        num_z = nbp_basic.tile_centre[2].astype(int)
-        num_z_offset = np.min([len(nbp_basic.use_z) // 2, 5])
+        mid_z = nbp_basic.tile_centre[2].astype(int)
+        z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
         for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
             transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
-                                              new_origin=np.array([num_z-num_z_offset, 0, 0]))
-            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([num_z-num_z_offset, 0, 0]))
+                                              new_origin=np.array([mid_z-z_rad, 0, 0]))
+            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
             preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
-                                          yxz=[None, None, np.arange(num_z-num_z_offset, num_z+num_z_offset)]))
+                                          yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
             seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
-                                       yxz=[None, None, np.arange(num_z-num_z_offset, num_z+num_z_offset)]))
-            preseq = affine_transform(preseq, transform_pre, order=0)[num_z]
-            seq = affine_transform(seq, transform_seq, order=0)[num_z]
+                                       yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+            preseq = affine_transform(preseq, transform_pre)
+            seq = affine_transform(seq, transform_seq)
             bg_scale[t, r, c] = brightness_scale(preseq, seq)[0]
         nbp_extract.bg_scale = bg_scale
         nbp_extract.finalized = True

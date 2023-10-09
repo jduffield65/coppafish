@@ -160,15 +160,15 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         # Total PC's available memory in GB
         available_memory = psutil.virtual_memory().available // 1000**3
         # Scale the z_chunk_size linearly based on PC's available memory and tile x by y area, with a maximum of 8
-        z_chunk_size = available_memory * 4194304 // (6 * nbp_basic.tile_sz * nbp_basic.tile_sz)
+        z_chunk_size = available_memory * 4194304 // (2 * 6 * nbp_basic.tile_sz * nbp_basic.tile_sz)
         if z_chunk_size < 1:
             warnings.warn(
                 UserWarning('Available memory for OMP call spots is <16GB. ' + \
                     'If pipeline gets killed, try freeing up more memory before running OMP.')
             )
         z_chunk_size = np.clip(z_chunk_size, 1, 8, dtype=int)
+        # z_chunk_size = 2
         z_chunks = len(use_z) // z_chunk_size + 1
-        # n_jobs = 5
         for z_chunk in range(z_chunks):
             print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
             print(f"z_chunk {z_chunk + 1}/{z_chunks}")
@@ -198,15 +198,6 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             pixel_colors_tz = pixel_colors_tz[keep]
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
-
-            # Parallelize coef finding over z-chunks.
-            # n_spots = pixel_colors_tz.shape[0]
-            # spot_chunk_size = n_spots // n_jobs + 1
-            # Parallel(n_jobs=n_jobs)(delayed(omp.get_all_coefs)(pixel_colors_tz[i*spot_chunk_size:
-            #                                                                    min(n_spots, (i+1 * spot_chunk_size))],
-            #                                                    bled_codes, 0, dp_norm_shift, config['dp_thresh'],
-            #                                                    config['alpha'], config['beta'], config['max_genes'],
-            #                                                    config['weight_coef_fit'][0]) for i in range(n_jobs))
 
             pixel_coefs_tz = sparse.csr_matrix(
                 omp.get_all_coefs(pixel_colors_tz, bled_codes,

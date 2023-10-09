@@ -173,6 +173,7 @@ _options = {
             'gene_efficiency_min_spots': 'int',
             'gene_efficiency_score_thresh': 'number',
             'gene_efficiency_intensity_thresh': 'number',
+            'gene_efficiency_intensity_thresh_percentile': 'number',
             'alpha': 'number',
             'beta': 'number',
         },
