@@ -63,11 +63,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         config['r1'] = extract.get_pixel_length(config['r1_auto_microns'], nbp_basic.pixel_size_xy)
     if config['r2'] is None:
         config['r2'] = config['r1'] * 2
-    if config['r_dapi'] is None:
-        if config['r_dapi_auto_microns'] is not None:
-            config['r_dapi'] = extract.get_pixel_length(config['r_dapi_auto_microns'], nbp_basic.pixel_size_xy)
-    if config['pre_seq_blur_radius'] is None:
-        config['pre_seq_blur_radius'] = config['r2']
     nbp_debug.r1 = config['r1']
     nbp_debug.r2 = config['r2']
     nbp_debug.r_dapi = config['r_dapi']
@@ -173,9 +168,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     # get rounds to iterate over
     use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
     use_channels_anchor.sort()
-    if filter_kernel_dapi is None:
-        # If not filtering DAPI, skip over the DAPI channel.
-        use_channels_anchor = np.setdiff1d(use_channels_anchor, nbp_basic.dapi_channel)
     if nbp_basic.use_anchor:
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]
@@ -284,7 +276,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns
                         if config['deconvolve']:
                             im = extract.wiener_deconvolve(im, config['wiener_pad_shape'], wiener_filter)
-                        if c == nbp_basic.dapi_channel:
+                        if c == nbp_basic.dapi_channel and filter_kernel_dapi is not None:
                             im = utils.morphology.top_hat(im, filter_kernel_dapi)
                             im[:, bad_columns] = 0
                         else:

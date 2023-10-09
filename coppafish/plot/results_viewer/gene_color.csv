@@ -3,8 +3,8 @@
 1,Cplx2,0,0,1,disc,.
 2,Lhx6,0,0,1,square,s
 3,Col25a1,0,0,1,triangle_up,^
-4,Pnoc,0,0,1,vbar,|
-5,Rab3c,0,0,1,hbar,_
+4,Pnoc,0,0,1,hbar,|
+5,Rab3c,0,0,1,vbar,_
 6,Gad1,0,0,1,star,*
 7,Slc6a1,0,0,1,arrow,>
 8,Th,0,0.7,1,cross,+
@@ -15,8 +15,8 @@
 13,Chodl,0,0.7,1,square,s
 14,Cort,0,0.7,1,diamond,d
 15,Reln,0,0.7,1,triangle_up,^
-16,Serpini1,0,0.7,1,hbar,_
-17,Satb1,0,0.7,1,vbar,|
+16,Serpini1,0,0.7,1,vbar,_
+17,Satb1,0,0.7,1,hbar,|
 18,Grin3a,0,0.7,1,star,*
 19,Tac1,0.36,0.2,1,ring,o
 20,Pvalb,0.36,0.2,1,clobber,$♣$
@@ -31,7 +31,7 @@
 29,Kit,1,0,0.9,square,s
 30,Ndnf,1,0,0.9,diamond,d
 31,Nos1,1,0,0.9,triangle_up,^
-32,Lamp5,1,0,0.9,vbar,|
+32,Lamp5,1,0,0.9,hbar,|
 33,Cplx3,1,0,0.9,arrow,>
 34,Cadps2,0.6,0.36,0,ring,o
 35,Cxcl14,0.6,0.36,0,clobber,$♣$
@@ -45,8 +45,8 @@
 43,Sema3c,1,0,0,square,s
 44,Syt6,1,0,0,triangle_up,^
 45,Yjefn3,1,0,0,triangle_down,v
-46,Rgs10,1,0,0,vbar,|
-47,Nov,1,0,0,hbar,_
+46,Rgs10,1,0,0,hbar,|
+47,Nov,1,0,0,vbar,_
 48,Kctd12,1,0,0,star,*
 49,Slc17a8,1,0,0,arrow,>
 50,Tac2,1,0.78,0,cross,+
@@ -57,7 +57,7 @@
 55,Penk,1,0.78,0,square,s
 56,Pthlh,1,0.78,0,triangle_up,^
 57,Vip,1,0.78,0,triangle_down,v
-58,Crh,1,0.78,0,vbar,|
+58,Crh,1,0.78,0,hbar,|
 59,Qrfpr,1,0.78,0,star,*
 60,Zcchc12,0.588,0.7,0.56,cross,+
 61,Calb1,0.588,0.7,0.56,clobber,$♣$
@@ -65,8 +65,8 @@
 63,Tmsb10,0.588,0.7,0.56,diamond,d
 64,Rbp4,0.588,0.7,0.56,triangle_down,v
 65,Fxyd6,0.588,0.7,0.56,triangle_up,^
-66,6330403K07Rik,0.588,0.7,0.56,hbar,_
-67,Scg2,0.588,0.7,0.56,vbar,|
+66,6330403K07Rik,0.588,0.7,0.56,vbar,_
+67,Scg2,0.588,0.7,0.56,hbar,|
 68,Gap43,0.588,0.7,0.56,star,*
 69,Nrsn1,0.588,0.7,0.56,arrow,>
 70,Gda,0.25,0.5,0.35,cross,+
@@ -78,8 +78,8 @@
 76,Prkca,0.25,0.5,0.35,diamond,d
 77,Cdh13,0.25,0.5,0.35,triangle_up,^
 78,Atp1b1,0.25,0.5,0.35,triangle_down,v
-79,Pde1a,0.25,0.5,0.35,hbar,_
-80,Calm2,0.25,0.5,0.35,vbar,|
+79,Pde1a,0.25,0.5,0.35,vbar,_
+80,Calm2,0.25,0.5,0.35,hbar,|
 81,Sema3e,0.25,0.5,0.35,arrow,>
 82,Nrn1,0,1,0,clobber,$♣$
 83,Pcp4,0,1,0,disc,.
@@ -88,9 +88,9 @@
 86,Rorb,0,1,0,ring,o
 87,Rasgrf2,0,1,0,square,s
 88,Wfs1,0,1,0,diamond,d
-89,Fos,0,1,0,vbar,|
+89,Fos,0,1,0,hbar,|
 90,Plcxd2,0,1,0,triangle_down,v
-91,Crym,0,1,0,hbar,_
+91,Crym,0,1,0,vbar,_
 92,3110035E14Rik,0,1,0,triangle_up,^
 93,Foxp2,0,1,0,star,*
 94,Pvrl3,0,1,0,arrow,>
@@ -100,7 +100,7 @@
 98,Kcnk2,0.266,0.7,0,disc,.
 99,Arpp21,0.266,0.7,0,square,s
 100,Enc1,0.266,0.7,0,triangle_down,v
-101,Fam19a1,0.266,0.7,0,vbar,|
+101,Fam19a1,0.266,0.7,0,hbar,|
 102,Vim,1,1,1,clobber,$♣$
 103,Slc1a2,1,1,1,disc,.
 104,Pax6,1,1,1,square,s
@@ -117,8 +117,8 @@
 115,C1qC,1,0.5,0.5,diamond,d
 116,Ccr5,1,0.5,0.5,triangle_up,^
 117,Csf1r,1,0.5,0.5,triangle_down,v
-118,Cx3cr1,1,0.5,0.5,hbar,_
-119,Cyfip1,1,0.5,0.5,vbar,|
+118,Cx3cr1,1,0.5,0.5,vbar,_
+119,Cyfip1,1,0.5,0.5,hbar,|
 120,Grn,1,0.5,0.5,star,*
 121,Laptm5,1,0.5,0.5,arrow,>
 122,Olfml3,0.9,0.63,0.63,cross,+
