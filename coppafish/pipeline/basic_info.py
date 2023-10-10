@@ -385,7 +385,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
         # Return here as we don't need to check if the file exists
         return nbp
 
-    if raw_extension == 'nd2':
+    if raw_extension == '.nd2':
         if os.path.isfile(os.path.join(config_file['input_dir'], config_file['pre_seq'] + '.nd2')):
             nbp.use_preseq = True
             nbp.pre_seq_round = nbp.anchor_round + 1
