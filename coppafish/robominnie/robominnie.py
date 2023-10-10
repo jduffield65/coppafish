@@ -170,7 +170,7 @@ class RoboMinnie:
     def __init__(self, n_channels : int = 7, n_tiles_x : int = 1, n_tiles_y : int = 1, n_rounds : int = 7, 
                  n_planes : int = 4, n_tile_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, 
                  include_presequence : bool = True, include_dapi : bool = True, anchor_channel : int = 1, 
-                 tile_overlap : float = 0.1, image_minimum : float = 0, image_dtype : Any = None, 
+                 tile_overlap : float = 0.15, image_minimum : float = 0, image_dtype : Any = None, 
                  brightness_scale_factor : npt.NDArray[np.float_] = None, seed : int = 0, 
                  ) \
         -> None:
@@ -195,13 +195,13 @@ class RoboMinnie:
                 sequencing channels. Default: true.
             anchor_channel (int, optional): The anchor channel, cannot be the same as the dapi channel (0). Default: 
                 `1`.
-            tile_overlap (float, optional): Amount of tile overlap, as a fraction of tile length. Default: 0.
+            tile_overlap (float, optional): Amount of tile overlap, as a fraction of tile length. Default: `0.15`.
             image_minimum (float, optional): Minimum pixel value possible. Images will be shifted to be at least 
                 `image_minimum` before saving the raw image files. Default: `0`.
             image_dtype (any, optional): Datatype of images. Default: float.
-            brightness_scale_factor (`(n_tiles x n_total_rounds x n_channels) ndarray[float]`): A brightness scale 
-                factor, applied to each image before saving as raw `.npy` images for a coppafish run. Default: Ones 
-                everywhere.
+            brightness_scale_factor (`(n_tiles x (n_rounds + 2) x n_channels) ndarray[float]`): A brightness scale 
+                factor, applied to each image before saving as raw `.npy` images for a coppafish run. Round 0 is the 
+                preseq, rounds (1 to self.n_rounds) is sequence, self.n_rounds + 1 is anchor round. Default: All ones.
             seed (int, optional): Seed used throughout the generation of random data, specify integer value for 
                 reproducible output. If None, seed is randomly picked. Default: `0`.
         
@@ -234,16 +234,12 @@ class RoboMinnie:
         else:
             self.image_dtype = image_dtype
         self.seed = seed
+        expected_brightness_scale_factor_shape = (self.n_tiles, self.n_rounds + 2, self.n_channels + 1)
         if brightness_scale_factor is None:
-            self.brightness_scale_factor = np.ones(
-                (self.n_tiles, self.n_rounds + self.include_anchor + self.include_presequence, self.n_channels + 1)
-            )
+            self.brightness_scale_factor = np.ones(expected_brightness_scale_factor_shape)
         if brightness_scale_factor is not None:
             self.brightness_scale_factor = brightness_scale_factor
-        expected_brightness_scale_factor_shape = (self.n_tiles, 
-                                                  self.n_rounds + self.include_anchor + self.include_presequence, 
-                                                  self.n_channels + 1
-                                                  )
+        
         assert self.brightness_scale_factor.shape == expected_brightness_scale_factor_shape, \
             f'Unexpected brightness_scale_factor shape, expected {expected_brightness_scale_factor_shape}'
         # n_yx is the calculated giant image size required to fit all the tiles in, with the given tile overlap
@@ -311,7 +307,7 @@ class RoboMinnie:
             warnings.warn('Coppafish may break with fewer than four z planes')
 
 
-    def generate_gene_codes(self, n_genes : int = 73, n_rounds : int = None) -> Dict:
+    def generate_gene_codes(self, n_genes : int = 15, n_rounds : int = None) -> Dict:
         """
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible based 
         on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The `i`th gene name 
@@ -383,7 +379,7 @@ class RoboMinnie:
         return codes
 
 
-    def generate_pink_noise(self, noise_amplitude : float, noise_spatial_scale : float, 
+    def generate_pink_noise(self, noise_amplitude : float = 1.5e-3, noise_spatial_scale : float = 0.1, 
                             include_sequence : bool = True, include_anchor : bool = True, 
                             include_presequence : bool = True, include_dapi : bool = True) -> None:
         """
@@ -393,8 +389,8 @@ class RoboMinnie:
         DAPI image to include pink noise that is not part of the other images because of the distinct nuclei staining.
 
         Args:
-            noise_amplitude (float): The maximum possible noise intensity.
-            noise_spatial_scale (float): Spatial scale of noise. Scales with image size.
+            noise_amplitude (float): The maximum possible noise intensity. Default: `0.0015`.
+            noise_spatial_scale (float): Spatial scale of noise. Scales with image size. Default: `0.1`.
             include_sequence (bool, optional): Include sequencing images. Default: true.
             include_anchor (bool, optional): Include anchor image. Default: true.
             include_presequence (bool, optional): Include pre-sequencing images. Default: true.
@@ -547,7 +543,7 @@ class RoboMinnie:
                 by lambda), each spot is multiplied by this value, can be unique for every sequencing round and anchor 
                 round. Not applied to the DAPI spots. Default: Ones everywhere.
             background_offset (`(n_spots x n_channels) ndarray[float]`): After `gene_efficiency` is applied, a 
-                background offset is added to every spot, which is channel-dependent. Default: Zero offset.
+                background offset[s,c] is added to spot `s` in channel `c`. Default: Zero offset.
         """
         self.instructions.append(_funcname())
         
@@ -766,29 +762,54 @@ class RoboMinnie:
             update_global_spots=True,
         )
         del self.image
+        # Sequence brightness scaling
+        for r in range(self.n_rounds):
+            for t in range(self.n_tiles):
+                for c in range(self.n_channels + 1):
+                    np.multiply(
+                        self.image_tiles[r,t,c], 
+                        self.brightness_scale_factor[t,r + 1,c], 
+                        out=self.image_tiles[r,t,c]
+                    )
         self.tile_xy_pos = self.tile_yxz_pos[:2]
         self.tilepos_yx_nd2 = self.tile_xy_pos
 
         if self.include_presequence:
-            self.presequence_image_tiles, _, _ = self._unstich_image(
+            self.presequence_image_tiles = self._unstich_image(
                 self.presequence_image[None], 
                 np.asarray([*self.n_tile_yx, self.n_planes]), 
                 self.tile_overlap,
                 self.n_tiles_y,
                 self.n_tiles_x,
-            )
+            )[0]
             self.presequence_image_tiles = self.presequence_image_tiles[0]
             del self.presequence_image
+            # Presequence brightness scaling
+            for t in range(self.n_tiles):
+                for c in range(self.n_channels + 1):
+                    np.multiply(
+                        self.presequence_image_tiles[t,c], 
+                        self.brightness_scale_factor[t,0,c], 
+                        out=self.presequence_image_tiles[t,c]
+                    )
         if self.include_anchor:
-            self.anchor_image_tiles, _, _ = self._unstich_image(
+            self.anchor_image_tiles = self._unstich_image(
                 self.anchor_image[None], 
                 np.asarray([*self.n_tile_yx, self.n_planes]), 
                 self.tile_overlap,
                 self.n_tiles_y,
                 self.n_tiles_x,
-            )
+            )[0]
             self.anchor_image_tiles = self.anchor_image_tiles[0]
             del self.anchor_image
+            # Anchor brightness scaling
+            for t in range(self.n_tiles):
+                for c in range(self.n_channels + 1):
+                    np.multiply(
+                        self.anchor_image_tiles[t,c], 
+                        self.brightness_scale_factor[t,self.n_rounds + 1,c], 
+                        out=self.anchor_image_tiles[t,c]
+                    )
 
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
@@ -1294,12 +1315,9 @@ class RoboMinnie:
 
     def _unstich_image(self, image : npt.NDArray[np.float_], tile_size_yxz : npt.NDArray[np.int_], 
                        tile_overlap : float, n_tiles_y : int, n_tiles_x : int, update_global_spots : bool = False, 
-                       scale_factors_sequence : npt.NDArray[np.float_] = None, 
-                       scale_factors_presequence : npt.NDArray[np.float_] = None, 
-                       scale_factors_anchor : npt.NDArray[np.float_] = None, 
                        ) -> Tuple[npt.NDArray[np.float_], List[List[int]], List[List[float]]]:
         """
-        Separate given image into multiple tiles with a tile overlap.
+        Separate image into multiple tiles with a tile overlap.
 
         Args:
             image ((`n_rounds x n_channels x image_y x image_x x image_z`) `ndarray[float]`): giant image to separate 
@@ -1311,41 +1329,15 @@ class RoboMinnie:
             update_global_spots (bool, optional): Update ``self.true_spot_identities``, `self.true_spot_tile_numbers` 
                 and ``self.true_spot_positions_pixels`` to account for overlapping spots (by saving overlapping spots 
                 twice) and removing true spot positions that are not visible to coppafish.
-            scale_factors_sequence (`(n_tiles x n_rounds x n_channels) ndarray[float]`, optional): scale 
-                factors applied to each sequence image. Includes the DAPI channel at index `0`, even if not included. 
-                Default: All ones.
-            scale_factors_presequence (`(n_tiles x 1 x n_channels) ndarray[float]`, optional): presequence image scale 
-                factors. Default: All ones.
-            scale_factors_anchor (`(n_tiles x 1 x 2) ndarray[float]`, optional): anchor image scale factors. 
-                Channel (`3`rd axis) index `0` is for the DAPI channel, even if not included. Default: All ones.
 
         Returns:
             - (`n_rounds x n_tiles x n_channels x tile_size_yxz[0] x tile_size_yxz[1] x tile_size_yxz[2]`) 
-                `ndarray[float]`: tile images.
+                `ndarray[float]`: tile images, copy of `image`.
             - (`list` of `list` of `int`): list of tile indices of form `[y_index, x_index]`.
             - (`list` of `list` of `float`): list of tile bottom-right corner positions, starting from `[0,0,0]`, 
                 in the form `[y,x,z]`.
         """
         #TODO: Add support for affine-transformed tile images
-        scale_factors_sequence_shape = (self.n_tiles, self.n_rounds, self.n_channels + 1)
-        if scale_factors_sequence is None:
-            scale_factors_sequence = np.ones(scale_factors_sequence_shape)
-        else:
-            raise NotImplementedError('Not added scale factors yet')
-        assert scale_factors_sequence.shape == scale_factors_sequence_shape
-        scale_factors_presequence_shape = (self.n_tiles, 1, self.n_channels + 1)
-        if scale_factors_presequence is None:
-            scale_factors_presequence = np.ones(scale_factors_presequence_shape)
-        else:
-            raise NotImplementedError('Not added scale factors yet')
-        assert scale_factors_presequence.shape == scale_factors_presequence_shape
-        scale_factors_anchor_shape = (self.n_tiles, 1, 2)
-        if scale_factors_anchor is None:
-            scale_factors_anchor = np.ones(scale_factors_anchor_shape)
-        else:
-            raise NotImplementedError('Not added scale factors yet')
-        assert scale_factors_anchor.shape == scale_factors_anchor_shape
-
         new_true_spot_positions_pixels = np.zeros((0,3), dtype=float) # `n_true_spots x 3`
         new_true_spot_identities = np.empty((0), dtype=str) # `n_true_spots`
         new_true_spot_tile_numbers = np.zeros(0) # Tile indices for each spot

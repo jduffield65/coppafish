@@ -19,8 +19,8 @@ def test_integration_001() -> None:
         os.mkdir(output_dir)
 
     robominnie = RoboMinnie(include_presequence=False, include_dapi=False)
-    robominnie.generate_gene_codes(n_genes=15)
-    robominnie.generate_pink_noise(noise_amplitude=0.0015, noise_spatial_scale=0.1)
+    robominnie.generate_gene_codes()
+    robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000, bleed_matrix=np.diag(np.ones(7)), spot_size_pixels=np.array([1.5, 1.5, 1.5]))
     robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
     robominnie.run_coppafish()
@@ -53,8 +53,8 @@ def test_integration_002() -> None:
         os.mkdir(output_dir)
 
     robominnie = RoboMinnie()
-    robominnie.generate_gene_codes(n_genes=15)
-    robominnie.generate_pink_noise(noise_amplitude=0.0015, noise_spatial_scale=0.1)
+    robominnie.generate_gene_codes()
+    robominnie.generate_pink_noise()
     # Add spots to DAPI image as larger spots
     robominnie.add_spots(n_spots=10_000, bleed_matrix=np.diag(np.ones(7)), spot_size_pixels=np.array([1.5, 1.5, 1.5]), 
                          spot_size_pixels_dapi=np.array([9, 9, 9]), include_dapi=True, spot_amplitude_dapi=0.05)
@@ -89,9 +89,9 @@ def test_integration_003() -> None:
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
-    robominnie = RoboMinnie(include_presequence=False, include_dapi=False, n_tiles_x=2, tile_overlap=0.15)
-    robominnie.generate_gene_codes(n_genes=15)
-    robominnie.generate_pink_noise(noise_amplitude=0.0015, noise_spatial_scale=0.1)
+    robominnie = RoboMinnie(include_presequence=False, include_dapi=False, n_tiles_x=2)
+    robominnie.generate_gene_codes()
+    robominnie.generate_pink_noise()
     # Add spots to DAPI image as larger spots
     robominnie.add_spots(n_spots=25_000, bleed_matrix=np.diag(np.ones(7)), 
                          spot_size_pixels=np.array([1.5, 1.5, 1.5]), include_dapi=True, 
@@ -127,9 +127,10 @@ def test_bg_subtraction():
     
     rng = np.random.RandomState(0)
 
-    robominnie = RoboMinnie(include_presequence=True, include_dapi=True)
-    robominnie.generate_gene_codes(n_genes=15)
-    robominnie.generate_pink_noise(noise_amplitude=0.0015, noise_spatial_scale=0.1)
+    robominnie = RoboMinnie(include_presequence=True, include_dapi=True, 
+                            brightness_scale_factor=2 * (0.1 + rng.rand(1, 9, 8)))
+    robominnie.generate_gene_codes()
+    robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000, bleed_matrix=np.diag(np.ones(7)), spot_size_pixels=np.array([1.5, 1.5, 1.5]),
                          gene_efficiency=0.5 * (rng.rand(15, 8) + 1), background_offset=1e-7*rng.rand(15_000, 7))
     robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
@@ -151,4 +152,4 @@ def test_bg_subtraction():
 
 
 if __name__ == '__main__':
-    test_integration_001()
+    test_bg_subtraction()
