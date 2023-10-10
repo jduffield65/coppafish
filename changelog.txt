@@ -1,4 +1,4 @@
-2023/10/09 Alpha Update (v0.2.0):
+2023/10/10 Alpha Update (v0.2.0):
  * Added background subtraction with 3D registration using DAPI images.
  * Cross-tile brightness difference correction support, probably caused by microscope auto gain control.
  * Updated bleed matrix to allow inter-tile variation.
@@ -8,11 +8,11 @@
  * Changed spot_no array from uint16 to uint32 for greater spot number support.
  * Registration pipeline now uses DAPI images when necessary.
  * Registration pipeline now computes camera transforms from fluorescent beads, if they exist.
- * Added new config variable [file_names][initial_bleed_matrix] to give a path to a `.npy` initial bleed matrix. \
-   If left empty, will use the default initial bleed matrix in the source code.
+ * Added new config variable [file_names][initial_bleed_matrix] to give a path to a `.npy` initial bleed matrix. 
+    If left empty, will use the default initial bleed matrix in the source code.
  * Presequence .npy raw files support.
  * Fixed anchor auto threshold being set to zero due to regularisation.
  * OMP's z-chunking now scales with the PC's available memory. We think that more memory means slightly faster OMP.
  * Various bug, warning and deprecation fixes.
  * Utils, call spots and register unit tests.
- * RoboMinnie integration testing for single tile dataset.
+ * RoboMinnie integration testing for single and multiple tile dataset generation.

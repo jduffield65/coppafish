@@ -51,6 +51,7 @@ def gene_ax(ax: plt.Axes, gene_legend_info: pd.DataFrame, genes: np.ndarray):
     added_ind = 0
     n_columns = int(np.ceil(genes.size/n_labels_per_column))
     n_genes_per_column = int(np.ceil(genes.size/n_columns))
+    x = None
     for g in gene_legend_info.index:
         if np.isin(gene_legend_info['GeneNames'][g], genes):
             gene_color = (gene_legend_info.loc[g, 'ColorR'], gene_legend_info.loc[g, 'ColorG'],
@@ -67,7 +68,8 @@ def gene_ax(ax: plt.Axes, gene_legend_info: pd.DataFrame, genes: np.ndarray):
 
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_xlim((-.05, x+0.5))  # last x value is the maximum
+    if x is not None:
+        ax.set_xlim((-.05, x+0.5))  # last x value is the maximum
 
     return ax
 
