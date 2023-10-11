@@ -41,7 +41,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
             image = np.clip(image + nbp_basic.tile_pixel_value_shift, 1, np.iinfo(np.uint16).max,
                             np.zeros_like(image, dtype=np.uint16), casting="unsafe")
         # In 3D, cannot possibly save any un-used channel hence no exception for this case.
-        expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
+        expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z))
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
         # yxz -> zxy
@@ -254,7 +254,7 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
                 pbar.set_postfix({'tile': t, 'z': z})
                 if nbp_basic.is_3d:
                     file_z = z - z_origin[t]
-                    if file_z < 0 or file_z >= nbp_basic.nz:
+                    if file_z < 0 or file_z >= len(nbp_basic.use_z):
                         # Set tile to 0 if currently outside its area
                         local_image = np.zeros((nbp_basic.tile_sz, nbp_basic.tile_sz))
                     else:

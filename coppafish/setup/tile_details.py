@@ -121,14 +121,13 @@ def get_tile_file_names(tile_directory: str, file_base: List[str],
                             get_tile_name(tile_directory, file_base, r, t, c)
     else:
         n_lasers = 7  # TODO: should have the option to pass n_lasers as an argument for better generalisation
-        n_rounds = int(len(file_base) / n_tiles / n_lasers)
+        n_rounds = len(file_base)
         tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
 
         for r in range(n_rounds):
-            round_files = file_base[r*n_tiles*n_lasers:(r+1)*n_tiles*n_lasers]
 
             for t in range(n_tiles):
-                raw_tile_files = round_files[t * n_lasers: (t + 1) * n_lasers]
+                raw_tile_files = file_base[r][t * n_lasers: (t + 1) * n_lasers]
 
                 for c in range(n_channels):
                     f_index = int(np.floor(c/4))
