@@ -416,7 +416,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
                           f"pre_seq_round variable in the config file is set to the correct file name.")
 
     elif raw_extension == 'jobs':
-        if os.path.isdir(config_file['pre_seq_dir']):
+        if config_file['pre_seq']:
             nbp.use_preseq = True
             nbp.pre_seq_round = nbp.anchor_round + 1
             n_extra_rounds = nbp.n_extra_rounds
@@ -426,7 +426,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
             nbp.use_preseq = False
             nbp.pre_seq_round = None
             warnings.warn(f"Pre-sequencing round not found at "
-                          f"{config['pre_seq_dir']}."
+                          f"{config['input_dir']}."
                           f"Setting pre_seq_round to False. If this is not what you want, please check that the "
                           f"pre_seq_round variable in the config file is set to the correct file name.")
 
