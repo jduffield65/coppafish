@@ -82,7 +82,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
               yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None,
               apply_shift: bool = True, suffix: str = '') -> np.ndarray:
     """
-    Loads in image corresponding to desired tile, round and channel from the relavent npy file.
+    Loads in image corresponding to desired tile, round and channel from the relevant npy file.
 
     Args:
         nbp_file: `file_names` notebook page
