@@ -76,7 +76,6 @@ _options = {
             'fluorescent_bead_path': 'maybe_str',
             'pre_seq': 'maybe_str',
             'initial_bleed_matrix': 'maybe_str',
-            'pre_seq_jobs': 'bool'
         },
     'extract':
         {

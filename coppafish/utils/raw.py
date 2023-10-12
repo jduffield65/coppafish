@@ -121,13 +121,21 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             round_dask_array = dask.array.from_npy_stack(round_file)
     else:
         # Now deal with the case where files are split by laser
+        if nbp_basic.use_anchor:
+            # always have anchor as first round after imaging rounds
+            round_files = nbp_file.round + [nbp_file.anchor]
+        else:
+            round_files = nbp_file.round
+        if nbp_basic.use_preseq:
+            round_files = round_files + [nbp_file.pre_seq]
+
         round_laser_dask_array = []
         # Deal with non anchor round first as this follows a different format to anchor round
         if r != nbp_basic.anchor_round:
 
             for t in tqdm(range(n_tiles), desc='Loading tiles in dask array'):
                 #Get all the files of a given tiles (should be 7)
-                tile_files = nbp_file.round[r][t*n_lasers: (t+1)*n_lasers]
+                tile_files = round_files[r][t*n_lasers: (t+1)*n_lasers]
                 tile_dask_array = []
 
                 for f in tile_files:

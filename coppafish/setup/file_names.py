@@ -28,7 +28,7 @@ def set_file_names(nb, nbp):
     # remove file extension from round and anchor file names if it is present
     if config['raw_extension'] == 'jobs':
 
-        if config['pre_seq_jobs']:
+        if bool(config['pre_seq']):
             all_files = os.listdir(config['input_dir'])
             all_files.sort()  # Sort files by ascending number
             n_tiles = int(len(all_files)/7/9)
