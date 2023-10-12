@@ -100,6 +100,11 @@ class view_find_spots:
                               f' channel {c}')
             self.show_isolated = False
 
+        if nb.extract.file_type == '.npy':
+            from ...utils.npy import load_tile, save_tile
+        elif nb.extract.file_type == '.zarr':
+            from ...utils.zarray import load_tile, save_tile
+
         self.is_3d = nb.basic_info.is_3d
         if self.is_3d:
             tile_file = nb.file_names.tile[t][r][c]
@@ -109,7 +114,7 @@ class view_find_spots:
             warnings.warn(f"The file {tile_file}\ndoes not exist so loading raw image and filtering it")
             self.image = get_filtered_image(nb, t, r, c)
         else:
-            self.image = utils.npy.load_tile(nb.file_names, nb.basic_info, t, r, c)
+            self.image = load_tile(nb.file_names, nb.basic_info, t, r, c)
             scale = 1  # Can be any value as not actually used but needed as argument in get_extract_info
 
         # Get auto_threshold value used to detect spots

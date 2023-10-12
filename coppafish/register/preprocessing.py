@@ -5,7 +5,6 @@ import numpy as np
 from tqdm import tqdm
 from skimage.filters import sobel
 from coppafish.setup import NotebookPage
-from coppafish.utils.npy import load_tile
 from typing import Optional, Tuple
 
 
@@ -360,6 +359,12 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     z_radius = np.min([5, len(nb.basic_info.use_z)//2])
     tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
     # Get the image for the tile and channel
+
+    if nb.extract.file_type == '.npy':
+        from ..utils.npy import load_tile
+    elif nb.extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile
+
     # TODO: This gives a bug when we run on a subset of z planes
     im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c,
                               [np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius),

@@ -30,10 +30,11 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     `get_reference_spots` won't have to be re-run.
 
     Args:
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
+        nbp_file: `file_names` notebook page.
+        nbp_basic: `basic_info` notebook page.
         nbp_find_spots: 'find_spots' notebook page.
             Here we will use find_spots, spot_no and isolated_spots variables from this page
+        nbp_extract: `extract` notebook page.
         tile_origin: `float [n_tiles x 3]`.
             `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
             yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
@@ -99,11 +100,11 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             # this line will return invalid_value for spots outside tile bounds on particular r/c.
             if nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile], bg_colours[in_tile] = \
-                    get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, 
+                    get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
                                     bg_scale=nbp_extract.bg_scale)
             if not nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile] = \
-                    get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, 
+                    get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
                                     bg_scale=nbp_extract.bg_scale)
 
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.

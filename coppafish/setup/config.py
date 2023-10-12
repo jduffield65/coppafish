@@ -80,6 +80,7 @@ _options = {
         },
     'extract':
         {
+            'file_type': 'str',
             'wait_time': 'int',
             'r1': 'maybe_int',
             'r2': 'maybe_int',
