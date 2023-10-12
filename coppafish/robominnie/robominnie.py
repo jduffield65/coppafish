@@ -298,7 +298,7 @@ class RoboMinnie:
         self.presequence_image = np.zeros(self.presequence_shape, dtype=self.image_dtype)
         if self.n_tile_yx[0] != self.n_tile_yx[1]:
             raise NotImplementedError('Coppafish does not support non-square tiles')
-        if self.n_tiles_x < 2_000 or self.n_tiles_y < 2_000:
+        if self.n_tile_yx[0] < 2_000 or self.n_tile_yx[1] < 2_000:
             warnings.warn(
                 'Coppafish may not support tile sizes that are too small due to implicit assumptions about a tile ' + \
                 'size of 2048 in the x and y directions'
@@ -816,12 +816,6 @@ class RoboMinnie:
         if not overwrite:
             assert len(os.listdir(output_dir)) == 0, f'Output directory {output_dir} must be empty'
 
-        # self.image = self.image.astype(self.image_dtype)
-        # if self.include_anchor:
-        #     self.anchor_image = self.anchor_image.astype(self.image_dtype)
-        # if self.include_presequence:
-        #     self.presequence_image = self.presequence_image.astype(self.image_dtype)
-
         # Create an output_dir/output_coppafish directory for coppafish pipeline output saved to disk
         self.output = output_dir
         self.coppafish_output = os.path.join(output_dir, 'output_coppafish')
@@ -833,6 +827,11 @@ class RoboMinnie:
                 filepath = os.path.join(self.coppafish_output, filename)
                 if os.path.isfile(filepath):
                     os.remove(filepath)
+                if filename == 'reg_images':
+                    for reg_image_name in os.listdir(filepath):
+                        reg_filepath = os.path.join(filepath, reg_image_name)
+                        if os.path.isfile(reg_filepath):
+                            os.remove(reg_filepath)
 
         # Create an output_dir/output_coppafish/tiles directory for coppafish extract output
         self.coppafish_tiles = os.path.join(self.coppafish_output, 'tiles')
@@ -869,8 +868,8 @@ class RoboMinnie:
             "channel_camera": [1,1,2,3,2,3,3,3],
             "channel_laser": [1,1,2,3,2,3,3,3],
             "xy_pos": self.tile_xy_pos,
+            "nz": self.n_planes,
         }
-
         self.metadata_filepath = os.path.join(output_dir, 'metadata.json')
         with open(self.metadata_filepath, 'w') as f:
             json.dump(metadata, f, indent=4)
@@ -978,6 +977,7 @@ class RoboMinnie:
         ;psf_detect_radius_xy = 1
         ;psf_detect_radius_z = 1
         ;deconvolve = {True}
+        file_type = .zarr
         r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
