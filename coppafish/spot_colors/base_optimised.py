@@ -136,10 +136,11 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
         tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz], dtype=jnp.int16)
 
     with tqdm(total=n_use_rounds * n_use_channels, disable=no_verbose) as pbar:
-        pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from npy files")
+        pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from {nbp_extract.file_type} files")
         for r in range(n_use_rounds):
             if not nbp_basic.is_3d:
                 # If 2D, load in all channels first
+                # FIXME: use load_tile function for .zarr support with 2D
                 image_all_channels = np.load(nbp_file.tile[t][use_rounds[r]], mmap_mode='r')
             for c in range(n_use_channels):
                 transform_rc = transforms[t, use_rounds[r], use_channels[c]]
@@ -164,7 +165,9 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
                 pbar.update(1)
     if use_bg:
         with tqdm(total=n_use_channels, disable=no_verbose) as pbar:
-            pbar.set_description(f"Reading {n_spots} background spot_colors found on tile {t} from npy files")
+            pbar.set_description(
+                f"Reading {n_spots} background spot_colors found on tile {t} from {nbp_extract.file_type} files"
+            )
             for c in range(n_use_channels):
                 transform_rc = transforms[t, nbp_basic.pre_seq_round, use_channels[c]]
                 pbar.set_postfix({'round': use_rounds[r], 'channel': use_channels[c]})
