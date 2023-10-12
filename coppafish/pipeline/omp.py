@@ -70,7 +70,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
     if nbp_basic.is_3d:
         detect_radius_z = config['radius_z']
-        n_z = nbp_basic.nz
+        n_z = len(nbp_basic.use_z)
     else:
         detect_radius_z = None
         n_z = 1

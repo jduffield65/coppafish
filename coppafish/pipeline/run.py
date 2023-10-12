@@ -12,7 +12,7 @@ import numpy as np
 from scipy import sparse
 
 
-def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: bool = False) -> setup.Notebook:
+def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: bool = False, n_jobs: int = 8) -> setup.Notebook:
     """
     Bridge function to run every step of the pipeline.
 
@@ -30,6 +30,7 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: 
             if they are all set to `None`, otherwise an error will occur.
         parallel: Boolean, if 'True' will run the pipeline in parallel by splitting the data into tiles and running
             each tile in parallel.
+        n_jobs: number of joblib threads to run
     Returns:
         `Notebook` containing all information gathered during the pipeline.
     """
@@ -42,8 +43,13 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: 
     else:
         config_files = setup.split_config(config_file)
         nb_list = [initialize_nb(f) for f in config_files]
-        Parallel(n_jobs=len(nb_list))(delayed(run_tile_indep_pipeline)(n) for n in nb_list)
+        Parallel(n_jobs=n_jobs)(delayed(run_extract)(n) for n in nb_list)
         nb = setup.merge_notebooks(nb_list, master_nb=nb)
+        run_find_spots(nb)
+        run_register(nb)
+        run_stitch(nb)
+        run_register(nb, overwrite_ref_spots)
+        run_omp(nb)
 
     return nb
 
@@ -75,13 +81,6 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     nb = setup.Notebook(config_file=config_file)
 
     config = nb.get_config()
-
-    if config['file_names']['raw_extension'] == 'jobs':
-        all_files = os.listdir(config['file_names']['input_dir'])
-        all_files.sort()  # Sort files by ascending number
-        n_tiles = int(len(all_files)/7/8)
-        config['file_names']['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
-        config['file_names']['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*7*7:]]
 
     if not nb.has_page("basic_info"):
         nbp_basic = set_basic_info_new(config)

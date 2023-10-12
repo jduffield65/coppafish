@@ -320,7 +320,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
 
     # Stage 3: Fill in all the metadata except the last item, xy_pos
     for key, value in metadata.items():
-        if key != 'xy_pos':
+        if key != 'xy_pos' and key != 'nz':
             nbp.__setattr__(key=key, value=value)
 
     # Stage 4: If anything from the first 12 entries has been left blank, deal with that here.
@@ -351,7 +351,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
         if config_file['round'] is not None and raw_extension != 'jobs':
             nbp.use_rounds = np.arange(len(config_file['round'])).tolist()
         else:
-            nbp.use_rounds = []
+            nbp.use_rounds = np.arange(0, nbp.n_rounds).tolist()
 
     if nbp.use_channels is None:
         del nbp.use_channels
@@ -360,9 +360,9 @@ def set_basic_info_new(config: dict) -> NotebookPage:
     # If no use_z given, default to all except the first if ignore_first_z_plane = True
     if nbp.use_z is None:
         del nbp.use_z
-        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), int(2 * metadata['tile_centre'][2]) + 1).tolist()
+        nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), metadata['nz']).tolist()
     # This has not been assigned yet but now we can be sure that use_z not None!
-    nbp.nz = len(nbp.use_z)
+    nbp.nz = metadata['nz']
 
     if nbp.use_dyes is None:
         del nbp.use_dyes
@@ -385,7 +385,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
         # Return here as we don't need to check if the file exists
         return nbp
 
-    if raw_extension == 'nd2':
+    if raw_extension == '.nd2':
         if os.path.isfile(os.path.join(config_file['input_dir'], config_file['pre_seq'] + '.nd2')):
             nbp.use_preseq = True
             nbp.pre_seq_round = nbp.anchor_round + 1
@@ -399,6 +399,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
                           f"{os.path.join(config_file['input_dir'], config_file['pre_seq'] +'.nd2')}. "
                           f"Setting pre_seq_round to False. If this is not what you want, please check that the "
                           f"pre_seq_round variable in the config file is set to the correct file name.")
+
     elif raw_extension == '.npy':
         if os.path.isdir(os.path.join(config_file['input_dir'], config_file['pre_seq'])):
             nbp.use_preseq = True
@@ -411,6 +412,21 @@ def set_basic_info_new(config: dict) -> NotebookPage:
             nbp.pre_seq_round = None
             warnings.warn(f"Pre-sequencing round not found at "
                           f"{os.path.join(config_file['input_dir'], config_file['pre_seq'] +'.nd2')}. "
+                          f"Setting pre_seq_round to False. If this is not what you want, please check that the "
+                          f"pre_seq_round variable in the config file is set to the correct file name.")
+
+    elif raw_extension == 'jobs':
+        if config_file['pre_seq']:
+            nbp.use_preseq = True
+            nbp.pre_seq_round = nbp.anchor_round + 1
+            n_extra_rounds = nbp.n_extra_rounds
+            del nbp.n_extra_rounds
+            nbp.n_extra_rounds = n_extra_rounds + 1
+        else:
+            nbp.use_preseq = False
+            nbp.pre_seq_round = None
+            warnings.warn(f"Pre-sequencing round not found at "
+                          f"{config['input_dir']}."
                           f"Setting pre_seq_round to False. If this is not what you want, please check that the "
                           f"pre_seq_round variable in the config file is set to the correct file name.")
 

@@ -75,8 +75,7 @@ _options = {
             'pciseq': 'list_str',
             'fluorescent_bead_path': 'maybe_str',
             'pre_seq': 'maybe_str',
-            'initial_bleed_matrix': 'maybe_str'
-
+            'initial_bleed_matrix': 'maybe_str',
         },
     'extract':
         {
