@@ -193,7 +193,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         config['n_clip_error'] = int(nbp_basic.tile_sz * nbp_basic.tile_sz / 100)
 
     with tqdm(total=n_images) as pbar:
-        pbar.set_description(f'Loading in tiles from {nbp_file.raw_extension}, filtering and saving as .npy')
+        pbar.set_description(f'Loading {nbp_file.raw_extension} tiles, filtering and saving as {config["file_type"]}')
 
         for r in use_rounds:
             # set scale and channels to use

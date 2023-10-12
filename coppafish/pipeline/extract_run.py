@@ -204,7 +204,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
     with tqdm(total=n_images) as pbar:
         pbar.set_description(
-            f'Loading in tiles from {nbp_file.raw_extension}, filtering and saving as {config["file_type"]}'
+            f'Loading {nbp_file.raw_extension} tiles, filtering and saving as {config["file_type"]}'
         )
         for r in use_rounds:
             # set scale and channels to use
