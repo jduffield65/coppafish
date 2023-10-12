@@ -106,7 +106,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
     if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy', 'jobs']):
         raise ValueError(f"nbp_file.raw_extension must be '.nd2', '.npy' or 'jobs' but it is {nbp_file.raw_extension}.")
 
-    if not nbp_file.raw_extension == 'jobs':
+    if nbp_file.raw_extension != 'jobs':
         if nbp_basic.use_anchor:
             # always have anchor as first round after imaging rounds
             round_files = nbp_file.round + [nbp_file.anchor]
@@ -121,16 +121,21 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             round_dask_array = dask.array.from_npy_stack(round_file)
     else:
         # Now deal with the case where files are split by laser
+        if nbp_basic.use_anchor:
+            # always have anchor as first round after imaging rounds
+            round_files = nbp_file.round + [nbp_file.anchor]
+        else:
+            round_files = nbp_file.round
+        if nbp_basic.use_preseq:
+            round_files = round_files + [nbp_file.pre_seq]
+
         round_laser_dask_array = []
         # Deal with non anchor round first as this follows a different format to anchor round
         if r != nbp_basic.anchor_round:
 
-            #Get all files of a given round
-            round_files = nbp_file.round[r*n_tiles*n_lasers:(r+1)*n_tiles*n_lasers]
-
             for t in tqdm(range(n_tiles), desc='Loading tiles in dask array'):
                 #Get all the files of a given tiles (should be 7)
-                tile_files = round_files[t*n_lasers: (t+1)*n_lasers]
+                tile_files = round_files[r][t*n_lasers: (t+1)*n_lasers]
                 tile_dask_array = []
 
                 for f in tile_files:
@@ -162,7 +167,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
                         laser_file = os.path.join(nbp_file.input_dir, f + '.nd2')
                         tile_dask_array.append(nd2.load(laser_file))
                     else:
-                        tile_dask_array.append(dask.array.zeros((nz+1, tile_sz, tile_sz, n_cams)))
+                        tile_dask_array.append(dask.array.zeros((nz, tile_sz, tile_sz, n_cams)))
                         # TODO find a better fix for nz. here it is different because of basic_info use_z
                         # Ideally it should have the same shape as the array for dapi
 

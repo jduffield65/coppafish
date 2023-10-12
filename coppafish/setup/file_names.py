@@ -27,11 +27,24 @@ def set_file_names(nb, nbp):
 
     # remove file extension from round and anchor file names if it is present
     if config['raw_extension'] == 'jobs':
-        all_files = os.listdir(config['input_dir'])
-        all_files.sort()  # Sort files by ascending number
-        n_tiles = int(len(all_files)/7/8)
-        config['round'] = [r.replace('.nd2', '') for r in all_files[:n_tiles*7*7]]
-        config['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*7*7:]]
+
+        if bool(config['pre_seq']):
+            all_files = os.listdir(config['input_dir'])
+            all_files.sort()  # Sort files by ascending number
+            n_tiles = int(len(all_files)/7/9)
+            config['pre_seq'] = [r.replace('.nd2', '') for r in all_files[:n_tiles * 7]]
+            config['round'] = [[f.replace('.nd2', '') for f in all_files[n_tiles*r*7:n_tiles*(r+1)*7]]
+                               for r in range(1, 8)]
+            # TODO replace range(7) by the by the number of rounds?
+            config['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*8*7:]]
+
+        else:
+            all_files = os.listdir(config['input_dir'])
+            all_files.sort()  # Sort files by ascending number
+            n_tiles = int(len(all_files)/7/8)
+            config['round'] = [f.replace('.nd2', '') for f in all_files[n_tiles*r*7:n_tiles*(r+1)*7] for r in range(7)]
+            # TODO replace range(7) by the by the number of rounds?
+            config['anchor'] = [r.replace('.nd2', '') for r in all_files[n_tiles*7*7:]]
 
     else:
         if config['round'] is None:
@@ -121,10 +134,9 @@ def set_file_names(nb, nbp):
 
     if config['raw_extension'] == 'jobs':
         if nb.basic_info.is_3d:
-            round_files = config['round'] + config['anchor']
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
-                                             nb.get_config()['extract']['file_type'], nb.basic_info.n_channels, 
-                                             jobs=True)
+            round_files = config['round'] + [config['anchor']] + [config['pre_seq']]
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
+                                             nb.basic_info.n_channels, jobs=True)
         else:
             raise ValueError('JOBs file format is only compatible with 3D')
     else:

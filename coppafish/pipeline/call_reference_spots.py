@@ -94,7 +94,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # with a median of the colour norm factor across rounds.
     if nbp_file.initial_bleed_matrix is None:
         dye_info = \
-            {'ATTO425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
+            {'Atto425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
                                 51750, 2817, 226, 100, 22559, 124, 124, 100, 100,
                                 260, 169, 100, 100, 114, 134, 100, 100, 99,
                                 103]),

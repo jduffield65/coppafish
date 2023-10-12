@@ -54,11 +54,12 @@ def get_raw_extension(input_dir: str) -> str:
     else:
         # Get the first nd2 file here
         index = min([i for i in range(len(files)) if files[i].endswith('nd2')])
-        image = nd2.ND2File(os.path.join(input_dir, files[index]))
-        if 'P' in image.sizes.keys():
-            raw_extension = '.nd2'
-        else:
-            raw_extension = 'jobs'
+
+        with nd2.ND2File(os.path.join(input_dir, files[index])) as image:
+            if 'P' in image.sizes.keys():
+                raw_extension = '.nd2'
+            else:
+                raw_extension = 'jobs'
     return raw_extension
 
 
@@ -72,7 +73,7 @@ def get_metadata(file_path: str, config: dict) -> dict:
         config: config dictionary
 
     Returns:
-        Dictionary containing - n_tiles, n_channels, tile_sz, pixel_size_xy, pixel_size_z, tile_centre, xy_pos,
+        Dictionary containing - n_tiles, n_channels, tile_sz, pixel_size_xy, pixel_size_z, tile_centre, xy_pos, nz,
         tilepos_yx_nd2, tilepos_yx, channel_laser, channel_camera, n_rounds
 
     """
@@ -89,7 +90,7 @@ def get_metadata(file_path: str, config: dict) -> dict:
         # Check if data is 3d
         if 'Z' in images.sizes:
             # subtract 1 as we always ignore first z plane
-            nz = images.sizes['Z'] - 1
+            nz = images.sizes['Z']
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz'], nz])/2
         else:
             metadata['tile_centre'] = np.array([metadata['tile_sz'], metadata['tile_sz']])/2
@@ -115,6 +116,7 @@ def get_metadata(file_path: str, config: dict) -> dict:
         metadata['channel_camera'] = camera.tolist()
         # Get the entire input directory to list
         metadata['n_rounds'] = len(config['file_names']['round'])
+        metadata['nz'] = nz
 
     return metadata
 
@@ -198,9 +200,16 @@ def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     # Final piece of metadata is n_rounds. Note num_files = num_rounds * num_tiles * num_lasers
     n_files = len(os.listdir(input_dir))
     n_lasers = len(set(laser))
-    preseq_exists = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq_round']))
+
+    if config['file_names']['raw_extension'] != 'jobs':
+        preseq_exists = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq_round']))
+    elif config['file_names']['raw_extension'] == 'jobs':
+        preseq_exists = bool(config['file_names']['pre_seq'])
     metadata['n_rounds'] = n_files // (n_lasers * metadata['n_tiles'])
     metadata['n_rounds'] -= preseq_exists
+    # TODO find a better solution to fix the number of rounds
+    metadata['n_rounds'] -= 1
+    metadata['nz'] = nz
 
     return metadata
 

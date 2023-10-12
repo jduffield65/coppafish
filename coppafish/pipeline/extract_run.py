@@ -123,7 +123,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         # normalise psf so min is 0 and max is 1.
         psf = psf - psf.min()
         psf = psf / psf.max()
-        pad_im_shape = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz]) + \
+        pad_im_shape = np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z)]) + \
                        np.array(config['wiener_pad_shape']) * 2
         wiener_filter = extract.get_wiener_filter(psf, pad_im_shape, config['wiener_constant'])
         nbp_debug.psf = psf
@@ -207,12 +207,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
             f'Loading raw {nbp_file.raw_extension} tiles, filtering and saving as {config["file_type"]}'
         )
         for r in use_rounds:
-            # set scale and channels to use
-            im_file = os.path.join(nbp_file.input_dir, round_files[r])
-            if nbp_file.raw_extension == '.npy':
-                extract.wait_for_data(im_file, config['wait_time'], dir=True)
-            else:
-                extract.wait_for_data(im_file + nbp_file.raw_extension, config['wait_time'])
+
             round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
             if r == nbp_basic.anchor_round:
                 n_clip_error_images = 0  # reset for anchor as different scale used.
