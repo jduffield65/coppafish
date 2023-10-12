@@ -68,7 +68,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nb
 
     # Phase 2: Detect spots on uncompleted tiles, rounds and channels
     with tqdm(total=np.sum(uncompleted)) as pbar:
-        pbar.set_description(f"Detecting spots on filtered images saved as npy")
+        pbar.set_description(f"Detecting spots on filtered images saved as {nbp_extract.file_type}")
         # Loop over uncompleted tiles, rounds and channels
         for t, r, c in np.argwhere(uncompleted):
             pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
