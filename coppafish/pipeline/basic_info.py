@@ -361,8 +361,9 @@ def set_basic_info_new(config: dict) -> NotebookPage:
     if nbp.use_z is None:
         del nbp.use_z
         nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), int(2 * metadata['tile_centre'][2]) + 1).tolist()
-    # This has not been assigned yet but now we can be sure that use_z not None!
-    nbp.nz = len(nbp.use_z)
+    if nbp.nz is None:
+        # This has not been assigned yet but now we can be sure that use_z not None!
+        nbp.nz = len(nbp.use_z)
 
     if nbp.use_dyes is None:
         del nbp.use_dyes
