@@ -37,6 +37,11 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         raise ValueError(f"\nconfig['extract']['scale_norm'] = {config['scale_norm']} but it must be below "
                          f"{scale_norm_max}")
 
+    if config['file_type'].lower() == '.npy':
+        from ..utils.npy import load_tile, save_tile
+    elif config['file_type'].lower() == '.zarr':
+        from ..utils.zarray import load_tile, save_tile
+
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config['deconvolve'] = False  # only deconvolve if 3d pipeline
@@ -188,7 +193,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         config['n_clip_error'] = int(nbp_basic.tile_sz * nbp_basic.tile_sz / 100)
 
     with tqdm(total=n_images) as pbar:
-        pbar.set_description(f'Loading in tiles from {nbp_file.raw_extension}, filtering and saving as .npy')
+        pbar.set_description(f'Loading raw {nbp_file.raw_extension} tiles, filtering and saving as {config["file_type"]}')
 
         for r in use_rounds:
             # set scale and channels to use
@@ -255,7 +260,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         else:
                             # Only need to load in mid-z plane if 3D.
                             # if nbp_basic.is_3d:
-                            im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c,
+                            im = load_tile(nbp_file, nbp_basic, t, r, c,
                                                      yxz=[None, None, nbp_debug.z_info])
                             # else:
                             #     im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
@@ -324,12 +329,12 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
 
                         if nbp_basic.is_3d:
-                            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+                            save_tile(nbp_file, nbp_basic, im, t, r, c)
                         # else:
                         #     im_all_channels_2d[c] = im
                     pbar.update(1)
                 # if not nbp_basic.is_3d:
-                #     utils.npy.save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
+                #     save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r)
     pbar.close()
 
     if not nbp_basic.use_anchor:
@@ -342,9 +347,9 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
                             nbp_basic: NotebookPage, n_workers: int = 1) -> Tuple[NotebookPage, NotebookPage]:
     """
-    This reads in images from the raw `nd2` files, filters them and then saves them as npy files in the tile directory.
-    Also gets `auto_thresh` for use in turning images to point clouds and `hist_values`, `hist_counts` required for
-    normalisation between channels.
+    This reads in images from the raw `nd2` files, filters them and then saves them as npy or zarr files in the tile 
+    directory. Also gets `auto_thresh` for use in turning images to point clouds and `hist_values`, `hist_counts` 
+    required for normalisation between channels.
 
     Returns the `extract` and `extract_debug` notebook pages.
 
@@ -600,6 +605,11 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
     n_clip_pixels = []
     clip_extract_scale = []
 
+    if config['file_type'].lower() == '.npy':
+        from ..utils.npy import load_tile, save_tile
+    elif config['file_type'].lower() == '.zarr':
+        from ..utils.zarray import load_tile, save_tile
+
     for c in use_channels:
 
         if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
@@ -618,7 +628,7 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
             else:
                 # Only need to load in mid-z plane if 3D.
                 try:
-                    im = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, yxz=[None, None, z_info])
+                    im = load_tile(nbp_file, nbp_basic, t, r, c, yxz=[None, None, z_info])
                 except:
                     raise ValueError(f'Round {r}, Tile {t}, Channel {c} is probably compromised. Remove it & re-run')
 
@@ -681,7 +691,7 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
                     #                   f", the extract step of the algorithm will be interrupted.")
 
             if nbp_basic.is_3d:
-                utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+                save_tile(nbp_file, nbp_basic, im, t, r, c)
 
         auto_thresh.append(auto_thresh_c)
         hist_counts_trc.append(hist_counts_trc_c)

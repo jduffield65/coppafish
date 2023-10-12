@@ -57,7 +57,7 @@ def get_tilepos(xy_pos: np.ndarray, tile_sz: int, expected_overlap: float) -> Tu
     return tilepos_yx_nd2, tilepos_yx_npy
 
 
-def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: Optional[int] = None) -> str:
+def get_tile_name(tile_directory: str, file_base: List[str], suffix: str, r: int, t: int, c: Optional[int] = None) -> str:
     """
     Finds the full path to tile, `t`, of particular round, `r`, and channel, `c`, in `tile_directory`.
 
@@ -65,6 +65,7 @@ def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: 
         tile_directory: Path to folder where tiles npy files saved.
         file_base: `str [n_rounds]`.
             `file_base[r]` is identifier for round `r`.
+        suffix (str): File name suffix.
         r: Round of desired npy image.
         t: Tile of desired npy image.
         c: Channel of desired npy image.
@@ -73,14 +74,14 @@ def get_tile_name(tile_directory: str, file_base: List[str], r: int, t: int, c: 
         Full path of tile npy file.
     """
     if c is None:
-        tile_name = os.path.join(tile_directory, '{}_t{}.npy'.format(file_base[r], t))
+        tile_name = os.path.join(tile_directory, '{}_t{}{}'.format(file_base[r], t, suffix))
     else:
-        tile_name = os.path.join(tile_directory, '{}_t{}c{}.npy'.format(file_base[r], t, c))
+        tile_name = os.path.join(tile_directory, '{}_t{}c{}{}'.format(file_base[r], t, c, suffix))
     return tile_name
 
 
-def get_tile_file_names(tile_directory: str, file_base: List[str],
-                        n_tiles: int, n_channels: int = 0, jobs: bool = False) -> np.ndarray:
+def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int, suffix: str, n_channels: int = 0, 
+                        jobs: bool = False) -> np.ndarray:
     """
     Gets array of all tile file paths which will be saved in tile directory.
 
@@ -89,6 +90,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str],
         file_base: `str [n_rounds]`.
             `file_base[r]` is identifier for round `r`.
         n_tiles: Number of tiles in data set.
+        suffix (str): file name suffix. For example, for numpy file saves, will be `'.npy'`.
         n_channels: Total number of imaging channels if using 3D.
             `0` if using 2D pipeline as all channels saved in same file.
         jobs: Set True if file were acquired using JOBs (i.e. tiles are split by laser)
@@ -110,7 +112,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str],
             for r in range(n_rounds):
                 for t in range(n_tiles):
                     tile_files[t, r] = \
-                        get_tile_name(tile_directory, file_base, r, t)
+                        get_tile_name(tile_directory, file_base, suffix, r, t)
         else:
             # 3D
             tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
@@ -118,7 +120,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str],
                 for t in range(n_tiles):
                     for c in range(n_channels):
                         tile_files[t, r, c] = \
-                            get_tile_name(tile_directory, file_base, r, t, c)
+                            get_tile_name(tile_directory, file_base, suffix, r, t, c)
     else:
         n_lasers = 7  # TODO: should have the option to pass n_lasers as an argument for better generalisation
         n_rounds = len(file_base)
@@ -131,7 +133,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str],
 
                 for c in range(n_channels):
                     f_index = int(np.floor(c/4))
-                    t_name = os.path.join(tile_directory, '{}_t{}c{}.npy'.format(raw_tile_files[f_index], t, c))
+                    t_name = os.path.join(tile_directory, '{}_t{}c{}{}'.format(raw_tile_files[f_index], t, c, suffix))
                     tile_files[t, r, c] = t_name
 
     return tile_files

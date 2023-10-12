@@ -122,7 +122,7 @@ def run_sep_round_reg(config_file: str, config_file_full: str, channels_to_save:
             from_nd2 = False
         else:
             from_nd2 = True
-        image_stitch = utils.npy.save_stitched(None, nb.file_names, nb.basic_info, nb.stitch.tile_origin,
+        image_stitch = utils.npy.save_stitched(None, nb.file_names, nb.basic_info, nb.extract, nb.stitch.tile_origin,
                                                nb.basic_info.anchor_round, c, from_nd2,
                                                config['stitch']['save_image_zero_thresh'])
 

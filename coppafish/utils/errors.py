@@ -117,10 +117,8 @@ def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage) -> None:
             `use_channels` and `tile_pixel_value_shift`.
     """
     diff_to_int = np.array([], dtype=int)
-    for color in colors.ravel():
-        if np.isnan(color):
-            continue
-        diff_to_int = np.append(diff_to_int, [np.round(color).astype(int) - color])
+    not_nan = ~np.isnan(colors)
+    diff_to_int = np.append(diff_to_int, [np.round(colors[not_nan]).astype(int) - colors[not_nan]])
     if np.abs(diff_to_int).max() == 0:
         # if not normalised, then invalid_value is an integer value that is impossible for a spot_color to be
         invalid_value = -nbp_basic.tile_pixel_value_shift
