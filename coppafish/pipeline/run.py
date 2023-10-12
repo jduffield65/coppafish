@@ -207,7 +207,8 @@ def run_register(nb: setup.Notebook):
                 print(t, c)
             if round_registration_channel is not None:
                 generate_reg_images(nb, t, nb.basic_info.anchor_round, round_registration_channel)
-            generate_reg_images(nb, t, nb.basic_info.anchor_round, nb.basic_info.anchor_channel)
+            else:
+                generate_reg_images(nb, t, nb.basic_info.anchor_round, nb.basic_info.anchor_channel, filter=config['register']['sobel'])
     else:
         warnings.warn('register', utils.warnings.NotebookPageWarning)
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
