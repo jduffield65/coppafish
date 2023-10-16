@@ -1575,7 +1575,12 @@ def view_camera_correction(nb: Notebook):
     viewer = napari.Viewer()
     fluorescent_bead_path = nb.file_names.fluorescent_bead_path
     # open the fluorescent bead images as nd2 files
-    fluorescent_beads = nd2.ND2File(fluorescent_bead_path).asarray()
+    with nd2.ND2File(fluorescent_bead_path) as fbim:
+        fluorescent_beads = fbim.asarray()
+
+    if len(fluorescent_beads.shape) ==4:
+        mid_z = fluorescent_beads.shape[0] // 2
+        fluorescent_beads = fluorescent_beads[mid_z, :, :, :]
     # if fluorescent bead images are for all channels, just take one from each camera
     cam_channels = [0, 9, 18, 23]
     if len(fluorescent_beads) == 28:
