@@ -647,7 +647,7 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
                              queue: Queue = None):
     """
     Applies affine transforms to the presequence and sequence image for tile t, round r, channel c. Then applies 
-    `brightness_scale`.
+    `brightness_scale` on the transformed images.
 
     Args:
         nbp (NotebookPage): `register` notebook page.
