@@ -163,9 +163,9 @@ class RoboMinnie:
 
     Usage:
     ------
-    Create new RoboMinnie instance for each integration test. Call functions for data generation (see \
-        ``robominnie.py`` functions for options). Call ``save_raw_data``, then ``run_coppafish``. Use \
-        ``compare_spots_omp`` or ``compare_ref_spots`` to evaluate spot results.
+    Create new RoboMinnie instance for each integration test. Call functions for data generation (see ``robominnie.py`` 
+    functions for options). Call ``save_raw_data``, then ``run_coppafish``. Use ``compare_spots_omp`` or 
+    ``compare_ref_spots`` to evaluate spot results.
     """
     def __init__(self, n_channels: int = 7, n_tiles_x: int = 1, n_tiles_y: int = 1, n_rounds: int = 7, 
                  n_planes: int = 4, n_tile_yx: Tuple[int, int] = (2048, 2048), include_anchor: bool = True, 
