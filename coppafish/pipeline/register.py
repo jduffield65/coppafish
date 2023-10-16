@@ -100,20 +100,21 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             # anchor channel
             anchor_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round,
                                                 c=round_registration_channel))
-            round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel))
-                           for r in use_rounds]
-            if nbp_basic.use_preseq:
-                round_image += [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t,
-                                                     r=n_rounds+nbp_basic.use_anchor+nbp_basic.use_preseq-1,
-                                                     c=round_registration_channel, suffix='_raw'))]
-            round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
-            # Now save the data
-            non_anchor_rounds = use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
-            registration_data['round_registration']['transform_raw'][t, non_anchor_rounds] = round_reg_data['transform']
-            registration_data['round_registration']['transform'][t, nbp_basic.anchor_round] = np.eye(3, 4)
-            registration_data['round_registration']['shift'][t, non_anchor_rounds] = round_reg_data['shift']
-            registration_data['round_registration']['shift_corr'][t, non_anchor_rounds] = round_reg_data['shift_corr']
-            registration_data['round_registration']['position'][t, non_anchor_rounds] = round_reg_data['position']
+            use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
+            # split the rounds into two chunks, as we can't fit all of them into memory at once
+            round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
+            for i in range(2):
+                round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel,
+                                                    suffix='_raw' if r == nbp_basic.pre_seq_round else ''))
+                               for r in round_chunks[i]]
+                round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
+                # Now save the data
+                registration_data['round_registration']['transform_raw'][t, round_chunks[i]] = round_reg_data[
+                    'transform']
+                registration_data['round_registration']['shift'][t, round_chunks[i]] = round_reg_data['shift']
+                registration_data['round_registration']['shift_corr'][t, round_chunks[i]] = round_reg_data['shift_corr']
+                registration_data['round_registration']['position'][t, round_chunks[i]] = round_reg_data['position']
+            # Now append anchor info and tile number to the registration data, then save to file
             registration_data['round_registration']['tiles_completed'].append(t)
             # Save the data to file
             with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:

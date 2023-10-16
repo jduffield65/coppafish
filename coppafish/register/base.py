@@ -134,7 +134,7 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.9):
     # Now check if the correlation coefficient is above the threshold. If not, set the shift to nan
     if shift_corr < pearson_r_threshold:
         shift = np.array([np.nan, np.nan, np.nan])
-        shift_corr = np.max([shift_corr, alt_shift_corr, base_corr])
+        shift_corr = np.nanmax([shift_corr, alt_shift_corr, base_corr])
 
     return shift, shift_corr
 
@@ -254,7 +254,7 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
         # Find the subvolume shifts
         shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
         transform = huber_regression(shift, position, predict_shift=False)
-        adjusted_target = affine_transform(round_image[r], transform, order=0)
+        adjusted_target = affine_transform(round_image[r], transform, order=3)
         global_shift_correction = phase_cross_correlation(reference_image=adjusted_target, moving_image=anchor_image)[0]
         transform[:, 3] += global_shift_correction
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
