@@ -155,7 +155,8 @@ _options = {
             'icp_min_spots': 'int',
             'icp_max_iter': 'int',
             'round_registration_channel': 'maybe_int',
-            'sobel': 'bool'
+            'sobel': 'bool',
+            'n_background_compute_threads': 'maybe_int'
         },
     'call_spots':
         {
