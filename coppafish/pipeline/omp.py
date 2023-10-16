@@ -33,8 +33,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
     Args:
         config: Dictionary obtained from `'omp'` section of config file.
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
+        nbp_file: `file_names` notebook page.
+        nbp_basic: `basic_info` notebook page.
+        nbp_extract: `extract` notebook page.
         nbp_call_spots:
         tile_origin: `float [n_tiles x 3]`.
             `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
@@ -159,8 +160,10 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
         # Total PC's available memory in GB
         available_memory = psutil.virtual_memory().available // 1000**3
-        # Scale the z_chunk_size linearly based on PC's available memory and tile x by y area, with a maximum of 8
-        z_chunk_size = available_memory * 4194304 // (2 * 6 * nbp_basic.tile_sz * nbp_basic.tile_sz)
+        # Scale the z_chunk_size linearly based on PC's available memory and inversely with tile volume, with a 
+        # maximum z chunk size of 8
+        z_chunk_size = \
+            available_memory * 16777216 // (2 * nbp_basic.tile_sz * nbp_basic.tile_sz * len(nbp_basic.use_z))
         if z_chunk_size < 1:
             warnings.warn(
                 UserWarning('Available memory for OMP call spots is <16GB. ' + \
@@ -178,12 +181,12 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             if nbp_basic.use_preseq:
                 pixel_colors_tz, pixel_yxz_tz, bg_colours = \
                     get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                                    int(t), transform, nbp_file, nbp_basic, return_in_bounds=True, 
+                                    int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
                                     bg_scale=nbp_extract.bg_scale)
             else:
                 pixel_colors_tz, pixel_yxz_tz = \
                     get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                                    int(t), transform, nbp_file, nbp_basic, return_in_bounds=True, 
+                                    int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
                                     bg_scale=nbp_extract.bg_scale)
             if pixel_colors_tz.shape[0] == 0:
                 continue
@@ -319,11 +322,11 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         if np.sum(in_tile) > 0:
             if nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile], bg_colours = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                            transform, nbp_file, nbp_basic,
+                                                            transform, nbp_file, nbp_basic, nbp_extract, 
                                                             bg_scale=nbp_extract.bg_scale)
             else:
                 nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                              transform, nbp_file, nbp_basic,
+                                                              transform, nbp_file, nbp_basic, nbp_extract, 
                                                               bg_scale=nbp_extract.bg_scale)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
