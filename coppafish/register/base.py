@@ -645,12 +645,27 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
 def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_file: NotebookPage, 
                              nbp_extract: NotebookPage, mid_z: int, z_rad: int, t: int, r: int, c: int, 
                              queue: Queue = None):
-    # if nbp_extract.file_type == '.npy':
-        # from ..utils.npy import load_tile
-    # elif nbp_extract.file_type == '.zarr':
-        # from ..utils.zarray import load_tile
-    from ..utils.npy import load_tile
-    # TODO: Add zarr support here when merging.
+    """
+    Applies affine transforms to the presequence and sequence image for tile t, round r, channel c. Then applies 
+    `brightness_scale`.
+
+    Args:
+        nbp (NotebookPage): `register` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_extract (NotebookPage): `extract` notebook page.
+        mid_z (int): middle z plane to be used.
+        z_rad (int): span on z planes, +- from `mid_z`.
+        t (int): tile index.
+        r (int): round index.
+        c (int): channel index.
+        queue (Queue, optional): multiprocess `Queue` object, the return is `put` into this object. Default: None, no 
+            queue object.
+    """
+    if nbp_extract.file_type == '.npy':
+        from ..utils.npy import load_tile
+    elif nbp_extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile
 
     transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
                                         new_origin=np.array([mid_z-z_rad, 0, 0]))
