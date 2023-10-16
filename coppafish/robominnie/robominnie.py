@@ -44,10 +44,10 @@ def _funcname():
     return str(inspect.stack()[1][3])
 
 
-def _compare_spots(spot_positions_yxz : npt.NDArray[np.float64], spot_gene_indices : npt.NDArray[np.int_], \
-                   true_spot_positions_yxz : npt.NDArray[np.float64], \
-                   true_spot_gene_identities : npt.NDArray[np.str_], location_threshold_squared : float, \
-                   codes : Dict[str,str], description : str) -> Tuple[int,int,int,int]:
+def _compare_spots(spot_positions_yxz: npt.NDArray[np.float64], spot_gene_indices: npt.NDArray[np.int_], \
+                   true_spot_positions_yxz: npt.NDArray[np.float64], \
+                   true_spot_gene_identities: npt.NDArray[np.str_], location_threshold_squared: float, \
+                   codes: Dict[str,str], description: str) -> Tuple[int,int,int,int]:
     """
     Compare two collections of spots (one is the ground truth) based on their positions and gene identities.
 
@@ -62,7 +62,7 @@ def _compare_spots(spot_positions_yxz : npt.NDArray[np.float64], spot_gene_indic
         description (`str`, optional): Description of progress bar for printing. Default: empty.
 
     Returns:
-        `tuple` (true_positives : int, wrong_positives : int, false_positives : int, false_negatives : int): The \
+        `tuple` (true_positives: int, wrong_positives: int, false_positives: int, false_negatives: int): The \
             number of spots assigned to true positive, wrong positive, false positive and false negative respectively, \
             where a wrong positive is a spot assigned to the wrong gene, but found in the location of a true spot.
     
@@ -167,11 +167,11 @@ class RoboMinnie:
         ``robominnie.py`` functions for options). Call ``save_raw_data``, then ``run_coppafish``. Use \
         ``compare_spots_omp`` or ``compare_ref_spots`` to evaluate spot results.
     """
-    def __init__(self, n_channels : int = 7, n_tiles_x : int = 1, n_tiles_y : int = 1, n_rounds : int = 7, 
-                 n_planes : int = 4, n_tile_yx : Tuple[int, int] = (2048, 2048), include_anchor : bool = True, 
-                 include_presequence : bool = True, include_dapi : bool = True, anchor_channel : int = 1, 
-                 tile_overlap : float = 0.15, image_minimum : float = 0, image_dtype : Any = None, 
-                 brightness_scale_factor : npt.NDArray[np.float_] = None, seed : int = 0, 
+    def __init__(self, n_channels: int = 7, n_tiles_x: int = 1, n_tiles_y: int = 1, n_rounds: int = 7, 
+                 n_planes: int = 4, n_tile_yx: Tuple[int, int] = (2048, 2048), include_anchor: bool = True, 
+                 include_presequence: bool = True, include_dapi: bool = True, anchor_channel: int = 1, 
+                 tile_overlap: float = 0.15, image_minimum: float = 0, image_dtype: Any = None, 
+                 brightness_scale_factor: npt.NDArray[np.float_] = None, seed: int = 0, 
                  ) \
         -> None:
         """
@@ -307,7 +307,7 @@ class RoboMinnie:
             warnings.warn('Coppafish may break with fewer than four z planes')
 
 
-    def generate_gene_codes(self, n_genes : int = 15, n_rounds : int = None) -> Dict:
+    def generate_gene_codes(self, n_genes: int = 15, n_rounds: int = None) -> Dict:
         """
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible based 
         on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The `i`th gene name 
@@ -379,9 +379,9 @@ class RoboMinnie:
         return codes
 
 
-    def generate_pink_noise(self, noise_amplitude : float = 1.5e-3, noise_spatial_scale : float = 0.1, 
-                            include_sequence : bool = True, include_anchor : bool = True, 
-                            include_presequence : bool = True, include_dapi : bool = True) -> None:
+    def generate_pink_noise(self, noise_amplitude: float = 1.5e-3, noise_spatial_scale: float = 0.1, 
+                            include_sequence: bool = True, include_anchor: bool = True, 
+                            include_presequence: bool = True, include_dapi: bool = True) -> None:
         """
         Superimpose pink noise onto images, if used. The noise is identical on all images because pink noise is a good 
         estimation for biological things that fluoresce. See 
@@ -430,9 +430,9 @@ class RoboMinnie:
             self.presequence_image[self.dapi_channel] += pink_noise
 
 
-    def generate_random_noise(self, noise_std : float, noise_mean_amplitude : float = 0, 
-        noise_type : str = 'normal', include_anchor : bool = True, include_presequence : bool = True, 
-        include_dapi : bool = True) -> None:
+    def generate_random_noise(self, noise_std: float, noise_mean_amplitude: float = 0, 
+        noise_type: str = 'normal', include_anchor: bool = True, include_presequence: bool = True, 
+        include_dapi: bool = True) -> None:
         """
         Superimpose random, white noise onto every pixel individually. Good for modelling random noise from the camera.
 
@@ -449,8 +449,8 @@ class RoboMinnie:
 
         assert noise_std > 0, f'Noise standard deviation must be > 0, got {noise_std}'
 
-        def _generate_noise(_rng : Generator, _noise_type : str, _noise_mean_amplitude : float, 
-                            _noise_std : float, _size : tuple) -> npt.NDArray[np.float64]:
+        def _generate_noise(_rng: Generator, _noise_type: str, _noise_mean_amplitude: float, 
+                            _noise_std: float, _size: tuple) -> npt.NDArray[np.float64]:
             """
             Generate noise based on the specified noise type and parameters.
 
@@ -514,11 +514,11 @@ class RoboMinnie:
         np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
 
 
-    def add_spots(self, n_spots : int, bleed_matrix : npt.NDArray[np.float_] = None, 
-                  spot_size_pixels : npt.NDArray[np.float_] = None, gene_codebook_path : str = USE_INSTANCE_GENE_CODES, 
-                  spot_amplitude : float = 1, include_dapi : bool = False, 
-                  spot_size_pixels_dapi : npt.NDArray[np.float_] = None, spot_amplitude_dapi : float = 1, 
-                  gene_efficiency : npt.NDArray[np.float_] = None, background_offset : npt.NDArray[np.float_] = None, 
+    def add_spots(self, n_spots: int, bleed_matrix: npt.NDArray[np.float_] = None, 
+                  spot_size_pixels: npt.NDArray[np.float_] = None, gene_codebook_path: str = USE_INSTANCE_GENE_CODES, 
+                  spot_amplitude: float = 1, include_dapi: bool = False, 
+                  spot_size_pixels_dapi: npt.NDArray[np.float_] = None, spot_amplitude_dapi: float = 1, 
+                  gene_efficiency: npt.NDArray[np.float_] = None, background_offset: npt.NDArray[np.float_] = None, 
                   ) -> None:
         """
         Superimpose spots onto images in both space and channels (based on the bleed matrix). Also applied to the 
@@ -682,7 +682,7 @@ class RoboMinnie:
 
 
     # Post-Processing function
-    def fix_image_minimum(self, minimum : float = 0.) -> None:
+    def fix_image_minimum(self, minimum: float = 0.) -> None:
         """
         Ensure all pixels in the images are greater than or equal to given value (minimum). Includes the presequence 
         and anchor images, if they exist.
@@ -710,8 +710,8 @@ class RoboMinnie:
 
 
     # Post-Processing function
-    def offset_images_by(self, constant : float, include_anchor : bool = True, include_presequence : bool = True, 
-                         include_dapi : bool = True) -> None:
+    def offset_images_by(self, constant: float, include_anchor: bool = True, include_presequence: bool = True, 
+                         include_dapi: bool = True) -> None:
         """
         Shift every image pixel, in all tiles, by a constant value.
 
@@ -735,8 +735,8 @@ class RoboMinnie:
             np.add(self.anchor_image[:,self.dapi_channel], constant, out=self.anchor_image[:,self.dapi_channel])
 
 
-    def save_raw_images(self, output_dir : str, overwrite : bool = False, omp_iterations : int = 1, 
-                        omp_initial_intensity_thresh_percentile : int = 90) -> None:
+    def save_raw_images(self, output_dir: str, overwrite: bool = False, omp_iterations: int = 1, 
+                        omp_initial_intensity_thresh_percentile: int = 90, register_with_dapi: bool = True) -> None:
         """
         Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and ``config.ini`` 
         file for coppafish pipeline run. Output directory must be empty. After saving, able to call function 
@@ -751,6 +751,7 @@ class RoboMinnie:
             omp_initial_intensity_thresh_percentile (float, optional): percentile of the absolute intensity of all 
                 pixels in the mid z-plane of the central tile. Used as a threshold for pixels to decide what to apply 
                 OMP on. A higher number leads to stricter picking of pixels. Default: `90`.
+            register_with_dapi (bool, optional): Apply channel registration using the DAPI images. Default: true.
         """
         self.fix_image_minimum(self.image_minimum)
 
@@ -993,7 +994,7 @@ class RoboMinnie:
         subvols = {1}, {8}, {8}
         box_size = {np.min([self.n_planes, 12])}, 300, 300
         pearson_r_thresh = 0.25
-        round_registration_channel = {self.dapi_channel if self.include_dapi else ''}
+        round_registration_channel = {self.dapi_channel if (self.include_dapi and register_with_dapi) else ''}
         sobel = {not self.include_dapi}
 
         [omp]
@@ -1014,8 +1015,8 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def run_coppafish(self, time_pipeline : bool = True, include_omp : bool = True, jax_profile : bool = False,
-                      jax_profile_omp : bool = False, profile_omp : bool = False, save_ref_spots_data : bool = True) \
+    def run_coppafish(self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False,
+                      jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True) \
         -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
@@ -1115,8 +1116,8 @@ class RoboMinnie:
             warnings.warn('Copppafish OMP found zero spots')
 
 
-    def compare_spots(self, spot_types : str = 'ref', score_threshold : float = 0.99, 
-                          intensity_threshold : float = 0.7, location_threshold : float = 2) -> Tuple[int,int,int,int]:
+    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0.99, 
+                          intensity_threshold: float = 0.7, location_threshold: float = 2) -> Tuple[int,int,int,int]:
         """
         Compare spot positions and gene codes from coppafish results to the known spot locations. If the spots are 
         close enough and the true spot has not been already assigned to a reference spot, then they are considered the 
@@ -1135,8 +1136,8 @@ class RoboMinnie:
                 the same spot. Default: `4`.
 
         Returns:
-            `tuple` (true_positives : `list` of `int`, wrong_positives : `list` of `int`, 
-                false_positives : `list` of `int`, false_negatives : `list` of `int`): The number of spots assigned to 
+            `tuple` (true_positives: `list` of `int`, wrong_positives: `list` of `int`, 
+                false_positives: `list` of `int`, false_negatives: `list` of `int`): The number of spots assigned to 
                 true positive, wrong positive, false positive and false negative as a list for each tile index, where a 
                 wrong positive is a spot assigned to the wrong gene, but found in the location of a true spot.
         """
@@ -1208,8 +1209,8 @@ class RoboMinnie:
         return (true_positives, wrong_positives, false_positives, false_negatives)
 
 
-    def overall_score(self, true_positives : int = None, wrong_positives : int = None, 
-                      false_positives : int = None, false_negatives : int = None) -> float:
+    def overall_score(self, true_positives: int = None, wrong_positives: int = None, 
+                      false_positives: int = None, false_negatives: int = None) -> float:
         """
         Overall score from a spot-to-spot comparison, such as `Compare_OMP_Spots`.
 
@@ -1243,7 +1244,7 @@ class RoboMinnie:
 
 
     # Debugging Function:
-    def view_images(self, tiles : List[int] = None):
+    def view_images(self, tiles: List[int] = None):
         """
         View all images in `napari` for tile index `t`, including a presequence, anchor and DAPI images, if they exist.
 
@@ -1317,8 +1318,8 @@ class RoboMinnie:
         napari.run()
 
 
-    def _unstich_image(self, image : npt.NDArray[np.float_], tile_size_yxz : npt.NDArray[np.int_], 
-                       tile_overlap : float, n_tiles_y : int, n_tiles_x : int, update_global_spots : bool = False, 
+    def _unstich_image(self, image: npt.NDArray[np.float_], tile_size_yxz: npt.NDArray[np.int_], 
+                       tile_overlap: float, n_tiles_y: int, n_tiles_x: int, update_global_spots: bool = False, 
                        ) -> Tuple[npt.NDArray[np.float_], List[List[int]], List[List[float]]]:
         """
         Separate image into multiple tiles with a tile overlap.
@@ -1401,7 +1402,7 @@ class RoboMinnie:
         return tile_images, tile_indices, tile_positions_yxz
 
 
-    def save(self, output_dir : str, filename : str = None, overwrite : bool = True, compress : bool = False) -> None:
+    def save(self, output_dir: str, filename: str = None, overwrite: bool = True, compress: bool = False) -> None:
         """
         Save `RoboMinnie` instance using the amazing tool pickle inside output_dir directory.
 
@@ -1435,8 +1436,8 @@ class RoboMinnie:
                 pickle.dump(self, f)
 
 
-    def load(self, input_dir : str, filename : str = None, overwrite_self : bool = True, \
-             compressed : bool = False):
+    def load(self, input_dir: str, filename: str = None, overwrite_self: bool = True, \
+             compressed: bool = False):
         """
         Load `RoboMinnie` instance using the handy pickled information saved inside input_dir.
 
@@ -1463,10 +1464,10 @@ class RoboMinnie:
 
         if not compressed:
             with open(instance_filepath, 'rb') as f:
-                instance : RoboMinnie = pickle.load(f)
+                instance: RoboMinnie = pickle.load(f)
         else:
             with bz2.open(instance_filepath, 'rb') as f:
-                instance : RoboMinnie = pickle.load(f)
+                instance: RoboMinnie = pickle.load(f)
 
         if overwrite_self:
             self = instance
