@@ -54,11 +54,10 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
         file_path = file_path[:file_path.index('.zarr')] + suffix + '.zarr'
         # We chunk each z plane individually, since single z planes are often retrieved. We chunk so that each chunk is 
         # at least 1MB, as suggested in the documentation.
-        filters = [Delta(dtype='u2')]
         compressor = Blosc(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE)
         chunks = (None, 750, 750)
         zarray = zarr.open(file_path, mode='w', zarr_version=2, shape=image.shape, chunks=chunks, dtype='|u2', 
-                           synchronizer=zarr.ThreadSynchronizer(), filters=filters, compressor=compressor)
+                           synchronizer=zarr.ThreadSynchronizer(), compressor=compressor)
         zarray[:] = image
     if not nbp_basic.is_3d:
         # Don't need to apply rotations here as 2D data obtained from upstairs microscope without this issue
@@ -81,11 +80,10 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
         file_path = nbp_file.tile[t][r][c]
         file_path = file_path[file_path.index('.zarr'):] + suffix + '.zarr'
-        filters = [Delta(dtype='u2')]
         compressor = Blosc(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE)
         chunks = (750, 750)
         zarray = zarr.open(file_path, mode='w', zarr_version=2, shape=image.shape, chunks=chunks, dtype='|u2', 
-                           synchronizer=zarr.ThreadSynchronizer(), filters=filters, compressor=compressor)
+                           synchronizer=zarr.ThreadSynchronizer(), compressor=compressor)
         zarray[:] = image
 
 
