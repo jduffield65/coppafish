@@ -228,6 +228,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         n_threads = config['n_background_compute_threads']
         if n_threads is None:
             n_threads = psutil.cpu_count()
+            if n_threads is None:
+                n_threads = 0
         current_t_r_c = []
         processes = []
         # i ranges from 0 to len(use_tiles) * len(use_rounds) * len(use_channels)
