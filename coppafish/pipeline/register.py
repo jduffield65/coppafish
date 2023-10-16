@@ -225,7 +225,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        n_threads = config['n_background_compute_threads']
+        n_threads = config['n_background_scale_threads']
         if n_threads is None:
             n_threads = psutil.cpu_count()
             if n_threads is None:
