@@ -249,8 +249,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                 # Start subprocesses altogether
                 [p.start() for p in processes]
                 # Retrieve scale factors from the multiprocess queue
-                for trc in current_t_r_c:
-                    bg_scale[trc[0], trc[1], trc[2]] = queue.get()[0]
+                for current_trc in current_t_r_c:
+                    bg_scale[current_trc[0], current_trc[1], current_trc[2]] = queue.get()[0]
                 processes = []
                 current_t_r_c = []
             i += 1
