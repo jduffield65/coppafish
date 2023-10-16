@@ -10,7 +10,6 @@ from skimage.filters import gaussian
 from multiprocessing import Queue, Process
 from .. import utils
 from ..setup import NotebookPage
-from ..utils.npy import load_tile
 from ..find_spots import spot_yxz
 from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale, \
     compute_brightness_scale
@@ -64,6 +63,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         neighb_dist_thresh = config['neighb_dist_thresh_3d']
     else:
         neighb_dist_thresh = config['neighb_dist_thresh_2d']
+
+    if nbp_extract.file_type == '.npy':
+        from ..utils.npy import load_tile, save_tile
+    elif nbp_extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile, save_tile
 
     # Load in registration data from previous runs of the software
     registration_data = load_reg_data(nbp_file, nbp_basic, config)
@@ -186,7 +190,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                 for z in tqdm(range(len(nbp_basic.use_z))):
                     im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
             # Save the blurred image (no need to rotate this, as the rotation was done in extract)
-            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+            save_tile(nbp_file, nbp_basic, im, t, r, c)
         registration_data['blur'] = True
 
     # Save registration data externally

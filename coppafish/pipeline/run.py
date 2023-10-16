@@ -125,7 +125,7 @@ def run_find_spots(nb: setup.Notebook):
     """
     if not nb.has_page("find_spots"):
         config = nb.get_config()
-        nbp = find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract.auto_thresh)
+        nbp = find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.extract.auto_thresh)
         nb += nbp
         check_n_spots(nb)  # error if too few spots - may indicate tile or channel which should not be included
     else:
@@ -158,14 +158,14 @@ def run_stitch(nb: setup.Notebook):
     if nb.file_names.big_dapi_image is not None and not os.path.isfile(nb.file_names.big_dapi_image):
         # save stitched dapi
         # Will load in from nd2 file if nb.extract_debug.r_dapi is None i.e. if no DAPI filtering performed.
-        utils.npy.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info,
+        utils.npy.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info, nb.extract, 
                                 nb.stitch.tile_origin, nb.basic_info.anchor_round,
                                 nb.basic_info.dapi_channel, nb.extract_debug.r_dapi is None,
                                 config['stitch']['save_image_zero_thresh'], config['extract']['num_rotations'])
 
     if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
-        utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info,
+        utils.npy.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info, nb.extract,
                                 nb.stitch.tile_origin, nb.basic_info.anchor_round,
                                 nb.basic_info.anchor_channel, False, config['stitch']['save_image_zero_thresh'],
                                 config['extract']['num_rotations'])

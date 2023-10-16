@@ -141,10 +141,11 @@ def set_file_names(nb, nbp):
             raise ValueError('JOBs file format is only compatible with 3D')
     else:
         if nb.basic_info.is_3d:
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
-                                             nb.basic_info.n_channels)
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
+                                             nb.get_config()['extract']['file_type'], nb.basic_info.n_channels)
         else:
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles)
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
+                                             nb.get_config()['extract']['file_type'])
     
-    nbp.tile = tile_names.tolist()  # npy tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
+    nbp.tile = tile_names.tolist()  # npy or zarr tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
     nb += nbp
