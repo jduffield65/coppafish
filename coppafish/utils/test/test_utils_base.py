@@ -32,5 +32,15 @@ def test_setdiff2d():
 
 
 def test_expand_channels():
-    #TODO: Create unit test
-    assert True
+    rng = np.random.RandomState(0)
+    array = rng.rand(1,2,2,5,6,3)
+    use_channels = [6, 2, 1]
+    not_use_channels = [0, 3, 4, 5]
+    n_channels = 7
+    output = expand_channels(array=array, use_channels=use_channels, n_channels=n_channels)
+    assert output.shape == (*array.shape[:-1], n_channels), 'Unexpected output shape'
+    for i, c in enumerate(use_channels):
+        assert np.allclose(output[...,c], array[...,i]), 'Unexpected output'
+    assert np.allclose(output[...,not_use_channels], 0), \
+        'Expected zeroes in the new expanded channels that were not assigned'
+    assert np.allclose(expand_channels(array, [], 5), 0), 'Expected all zeroes'
