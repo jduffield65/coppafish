@@ -254,9 +254,13 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
         # Find the subvolume shifts
         shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
         transform = huber_regression(shift, position, predict_shift=False)
-        adjusted_target = affine_transform(round_image[r], transform, order=3)
-        global_shift_correction = phase_cross_correlation(reference_image=adjusted_target, moving_image=anchor_image)[0]
-        transform[:, 3] += global_shift_correction
+        # The global shift correction should already be accounted for in the affine transform, however, as it is
+        # the most important part of the transform, we will fit any residual global shift correction here
+        # NB: This is only reliable if using dapi so don't do it otherwise
+        if config['round_registration_channel'] == 0:
+            adjusted_target = affine_transform(round_image[r], transform, order=3)
+            global_shift_correction = phase_cross_correlation(reference_image=adjusted_target, moving_image=anchor_image)[0]
+            transform[:, 3] += global_shift_correction
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
         round_registration_data['shift'].append(shift)
         round_registration_data['shift_corr'].append(corr)
