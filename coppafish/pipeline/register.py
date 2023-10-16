@@ -1,15 +1,18 @@
 import os
 import pickle
+import psutil
 import itertools
 import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import affine_transform
 from skimage.registration import phase_cross_correlation
 from skimage.filters import gaussian
+from multiprocessing import Queue, Process
 from .. import utils
 from ..setup import NotebookPage
 from ..find_spots import spot_yxz
-from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale
+from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale, \
+    compute_brightness_scale
 from ..register.preprocessing import compose_affine, invert_affine, zyx_to_yxz_affine, yxz_to_zyx_affine, \
     load_reg_data, yxz_to_zyx
 
@@ -226,19 +229,32 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
+        n_threads = config['n_background_scale_threads']
+        if n_threads is None:
+            n_threads = psutil.cpu_count(logical=True)
+            if n_threads is None:
+                n_threads = 1
+        n_threads = np.clip(n_threads, 1, 999, dtype=int)
+        current_trcs = []
+        processes = []
+        queue = Queue()
+        for i, trc in tqdm(enumerate(itertools.product(use_tiles, use_rounds, use_channels))):
+            t, r, c = trc
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
-            transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
-                                              new_origin=np.array([mid_z-z_rad, 0, 0]))
-            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-            preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
-                                          yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-            seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
-                                       yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-            preseq = affine_transform(preseq, transform_pre)
-            seq = affine_transform(seq, transform_seq)
-            bg_scale[t, r, c] = brightness_scale(preseq, seq)[0]
+            # We run brightness_scale in parallel to speed up the pipeline
+            current_trcs.append([t, r, c])
+            processes.append(Process(target=compute_brightness_scale, args=(nbp, nbp_basic, nbp_file, nbp_extract, 
+                                                                            mid_z, z_rad, t, r, c, queue)))
+            if len(current_trcs) >= n_threads or i >= len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
+                # Start subprocesses altogether
+                [p.start() for p in processes]
+                # Retrieve scale factors from the multiprocess queue
+                for current_trc in current_trcs:
+                    bg_scale[current_trc[0], current_trc[1], current_trc[2]] = queue.get()[0]
+                processes = []
+                current_trcs = []
+            i += 1
         nbp_extract.bg_scale = bg_scale
-        nbp_extract.finalized = True
+    nbp_extract.finalized = True
 
     return nbp, nbp_debug

@@ -9,8 +9,9 @@ from scipy.ndimage import affine_transform
 from scipy import stats
 from skimage.filters import sobel
 from coppafish.register.preprocessing import custom_shift, split_3d_image, replace_scale, populate_full, \
-    merge_subvols, yxz_to_zyx_affine
+    merge_subvols, yxz_to_zyx_affine, yxz_to_zyx, NotebookPage
 from skimage.registration import phase_cross_correlation
+from multiprocessing import Queue
 
 
 def find_shift_array(subvol_base, subvol_target, position, r_threshold):
@@ -577,7 +578,8 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=Fals
     return transform, n_matches, error, converged
 
 
-def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: int = 99, sub_image_size: int = 500):
+def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: int = 99, 
+                     sub_image_size: int = 500):
     """
     Function to find scale factor m and constant c such that m * preseq + c ~ seq. This is done by a regression on
     the pixels of brightness < brightness_thresh_percentile as these likely won't be spots. The regression is done by
@@ -586,16 +588,17 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     This function isn't really registration but needs registration to be run before it can be used and here seems
     like a good place to put it.
     Args:
-        preseq: (n_z x n_y x n_x) ndarray of presequence image
-        seq: (n_z x n_y x n_x) ndarray of sequence image
+        preseq: (n_z x n_y x n_x) ndarray of presequence image.
+        seq: (n_z x n_y x n_x) ndarray of sequence image.
         intensity_percentile: float brightness percentile such that all pixels with brightness > this percentile
-        (in the preseq im only) are used for regression
+        (in the preseq im only) are used for regression. Default: `99`.
         sub_image_size: int size of sub-images to use for regression. This is because the images are not perfectly
-            registered and so we need to find the best registered sub-image to use for regression
+            registered and so we need to find the best registered sub-image to use for regression. Default: `500`.
+
     Returns:
-        scale: float scale factor m
-        sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression
-        sub_image_preseq: (sub_image_size, sub_image_size) ndarray of presequence image used for regression
+        scale: float scale factor `m`.
+        sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression.
+        sub_image_preseq: (sub_image_size, sub_image_size) ndarray of presequence image used for regression.
     """
     # Find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
     # Create 2 masks, and take the intersection of them
@@ -635,5 +638,46 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     sub_image_seq_flat = sub_image_seq[mask].ravel()
     # Least squares to find im = m * im_pre best fit coefficients
     m = np.linalg.lstsq(sub_image_preseq_flat[:, None], sub_image_seq_flat, rcond=None)[0]
-
+    
     return m, sub_image_seq, sub_image_preseq
+
+
+def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_file: NotebookPage, 
+                             nbp_extract: NotebookPage, mid_z: int, z_rad: int, t: int, r: int, c: int, 
+                             queue: Queue = None):
+    """
+    Applies affine transforms to the presequence and sequence image for tile t, round r, channel c. Then applies 
+    `brightness_scale` on the transformed images.
+
+    Args:
+        nbp (NotebookPage): `register` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_extract (NotebookPage): `extract` notebook page.
+        mid_z (int): middle z plane to be used.
+        z_rad (int): span on z planes, +- from `mid_z`.
+        t (int): tile index.
+        r (int): round index.
+        c (int): channel index.
+        queue (Queue, optional): multiprocess `Queue` object, the return is `put` into this object. Default: None, no 
+            queue object.
+    """
+    if nbp_extract.file_type == '.npy':
+        from ..utils.npy import load_tile
+    elif nbp_extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile
+
+    transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
+                                        new_origin=np.array([mid_z-z_rad, 0, 0]))
+    transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
+    preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
+                                    yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
+                                yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    preseq = affine_transform(preseq, transform_pre)
+    seq = affine_transform(seq, transform_seq)
+    output = brightness_scale(preseq, seq)
+    if queue is not None:
+        queue.put(output)
+
+    return output
