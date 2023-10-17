@@ -95,4 +95,4 @@ def test_get_average_spot_image():
         'Unexpected 2d output with nan values'
     assert np.allclose(get_average_spot_image(spot_images_3d, 'median'), np.median(fill_values[2:])), \
         'Unexpected 3d output with nan values'
-    #TODO: Add unit tests for symmetric parameters included
+    #TODO: Add unit tests with symmetric parameters included
