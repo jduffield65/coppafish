@@ -5,7 +5,6 @@ import numpy as np
 from tqdm import tqdm
 from skimage.filters import sobel
 from coppafish.setup import NotebookPage
-from coppafish.utils.npy import load_tile
 from typing import Optional, Tuple
 
 
@@ -343,28 +342,35 @@ def merge_subvols(position, subvol):
 
 def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_value_range: Optional[Tuple] = None):
     """
-    Function to generate registration images. These are 500 x 500 x 10 images centred in the middle of the tile and
-    saved as uint8. They are saved in the reg_images folder in the output directory and should be very quick to load.
+    Function to generate registration images. These are 500 x 500 x min(10, n_planes) images centred in the middle of 
+    the tile and saved as uint8. They are saved as .npy files in the reg_images folder in the output directory and 
+    should be very quick to load.
+
     Args:
         nb: Notebook
-        t: tile
-        r: round
-        c: channel
-        filter: whether to apply sobel filter
-        image_value_range: tuple of min and max values to clip each output image to
+        t (int): tile
+        r (int): round
+        c (int): channel
+        filter (bool, optional): whether to apply sobel filter. Default: false.
+        image_value_range (`tuple` of `float`, optional): tuple of min and max image pixel values to clip. Default: no 
+            clipping.
     """
-    #TODO: Add support for datasets with fewer than 10 z planes
     yx_centre = nb.basic_info.tile_centre.astype(int)[:2]
     yx_radius = np.min([250, nb.basic_info.tile_sz//2])
-    z_centre = np.median(nb.basic_info.use_z).astype(int)
+    z_centre = round(np.median(nb.basic_info.use_z))
     z_radius = np.min([5, len(nb.basic_info.use_z)//2])
     tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
+
+    if nb.extract.file_type == '.npy':
+        from ..utils.npy import load_tile
+    elif nb.extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile
+
     # Get the image for the tile and channel
-    # TODO: This gives a bug when we run on a subset of z planes
     im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c,
                               [np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius),
                                np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius),
-                               np.arange(tile_centre[2] - z_radius, tile_centre[2] + z_radius),
+                               np.arange(tile_centre[2] -  z_radius, tile_centre[2] +  z_radius),
                                ],
                               apply_shift=False))
     # Clip the image to the specified range if required

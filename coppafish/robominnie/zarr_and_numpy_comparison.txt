@@ -1,0 +1,21 @@
+On RoboMinnie test_integration_002, includes preseq and dapi, 1 tile, all locally:
+    .zarr total time: 8.3 minutes or 124.0s per z plane per tile
+    .zarr tiles size: 1.2GB (50% compression)
+    .npy total time: 8.3 minutes or 124.0s per z plane per tile
+    .npy tiles size: 2.4GB
+
+On RoboMinnie test_integration_002, includes preseq and dapi, 1 tile, raw and extracted tiles saved on zaru:
+    .zarr total time: 15.4 minutes
+    .zarr extract time: 3.3 minutes
+    .zarr tiles size: 1.3GB
+    .npy total time: 12.5 minutes
+    .npy extract time: 2.6 minutes
+    .npy tiles size: 2.5GB
+
+On Dante, tile 4, dapi and preseq, all locally:
+    .zarr total time: 173.3 minutes
+    .zarr extract time: 1hr 17mins 59secs
+    .zarr tiles size: 18.7GB (50% compression)
+    .npy total time: 177.1 minutes
+    .npy extract time: 1hr 29mins 30secs
+    .npy tiles size: 39.3GB

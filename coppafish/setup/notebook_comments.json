@@ -186,7 +186,9 @@
     "bg_scale": ["Numpy float array `[n_tiles x n_rounds x n_channels x 2]`",
       "`bg_scale[t, r, c]` is the scale factor applied to the preseq round of tile $t$, channel $c$",
       "to match the colour profile of the sequencing image in tile t, round r, channel c.",
-      "None if not using preseq round."]
+      "None if not using preseq round."],
+    "file_type": ["String",
+      "File type used to save tiles after extraction."]
   },
 
   "extract_debug":

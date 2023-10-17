@@ -1,4 +1,3 @@
-from .. import utils
 from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
@@ -6,7 +5,8 @@ import itertools
 from ..setup.notebook import NotebookPage
 
 
-def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, auto_thresh: np.ndarray) -> NotebookPage:
+def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
+               auto_thresh: np.ndarray) -> NotebookPage:
     """
     This function turns each tiff file in the tile directory into a point cloud, saving the results
     as `spot_details` in the `find_spots` notebook page.
@@ -18,6 +18,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         config: Dictionary obtained from `'find_spots'` section of config file.
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
+        nbp_extract: `extract` notebook page
         auto_thresh: `float [n_tiles x n_rounds x n_channels]`.
             `auto_thresh[t, r, c]` is the threshold for the tiff file corresponding to tile `t`, round `r`, channel `c`
             such that all local maxima with pixel values greater than this are considered spots.
@@ -34,6 +35,11 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
         max_spots = config['max_spots_2d']
     else:
         max_spots = config['max_spots_3d']
+
+    if nbp_extract.file_type == '.npy':
+        from ..utils.npy import load_tile
+    elif nbp_extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile
 
     # record threshold for isolated spots in each tile of reference round/channel
     if config['isolation_thresh'] is None:
@@ -62,12 +68,12 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, au
 
     # Phase 2: Detect spots on uncompleted tiles, rounds and channels
     with tqdm(total=np.sum(uncompleted)) as pbar:
-        pbar.set_description(f"Detecting spots on filtered images saved as npy")
+        pbar.set_description(f"Detecting spots on filtered {nbp_extract.file_type} images")
         # Loop over uncompleted tiles, rounds and channels
         for t, r, c in np.argwhere(uncompleted):
             pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
             # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
-            image = utils.npy.load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False, 
+            image = load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False, 
                                         suffix='_raw' if r == nbp_basic.pre_seq_round else '')
             local_yxz, spot_intensity = fs.detect_spots(image,
                                                        auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,

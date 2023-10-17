@@ -76,8 +76,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
     central_tile = nbp_basic.use_tiles[np.argmin(dist)]
     pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   central_tile, transform, nbp_file, nbp_basic, bg_scale=nbp_extract.bg_scale,
-                                   return_in_bounds=True)[0]
+                                   central_tile, transform, nbp_file, nbp_basic, nbp_extract, 
+                                   bg_scale=nbp_extract.bg_scale, return_in_bounds=True)[0]
     # normalise pixel colours by round and channel and then remove background
     # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
     colour_norm_factor = np.percentile(abs(pixel_colors), 99, axis=0)
@@ -94,7 +94,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # with a median of the colour norm factor across rounds.
     if nbp_file.initial_bleed_matrix is None:
         dye_info = \
-            {'Atto425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
+            {'ATTO425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
                                 51750, 2817, 226, 100, 22559, 124, 124, 100, 100,
                                 260, 169, 100, 100, 114, 134, 100, 100, 99,
                                 103]),

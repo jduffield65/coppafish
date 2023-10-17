@@ -1,3 +1,10 @@
+2023/mm/dd Alpha Update (v0.3.0):
+ * Saving extracted tiles as .zarr is now the default save file type. Can be changed back to .npy by setting 
+    config['extract']['file_type'] = .npy.
+ * Compatibility with JOBS datasets.
+ * Computing background scale factors is now parallelised when subtracting presequence images.
+
+
 2023/10/10 Alpha Update (v0.2.0):
  * Added background subtraction with 3D registration using DAPI images.
  * Cross-tile brightness difference correction support, probably caused by microscope auto gain control.

@@ -1,16 +1,18 @@
 import os
 import pickle
+import psutil
 import itertools
 import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import affine_transform
 from skimage.registration import phase_cross_correlation
 from skimage.filters import gaussian
+from multiprocessing import Queue, Process
 from .. import utils
 from ..setup import NotebookPage
-from ..utils.npy import load_tile
 from ..find_spots import spot_yxz
-from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale
+from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale, \
+    compute_brightness_scale
 from ..register.preprocessing import compose_affine, invert_affine, zyx_to_yxz_affine, yxz_to_zyx_affine, \
     load_reg_data, yxz_to_zyx
 
@@ -62,6 +64,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     else:
         neighb_dist_thresh = config['neighb_dist_thresh_2d']
 
+    if nbp_extract.file_type == '.npy':
+        from ..utils.npy import load_tile, save_tile
+    elif nbp_extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile, save_tile
+
     # Load in registration data from previous runs of the software
     registration_data = load_reg_data(nbp_file, nbp_basic, config)
     uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['round_registration']['tiles_completed'])
@@ -93,20 +100,21 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             # anchor channel
             anchor_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round,
                                                 c=round_registration_channel))
-            round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel))
-                           for r in use_rounds]
-            if nbp_basic.use_preseq:
-                round_image += [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t,
-                                                     r=n_rounds+nbp_basic.use_anchor+nbp_basic.use_preseq-1,
-                                                     c=round_registration_channel, suffix='_raw'))]
-            round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
-            # Now save the data
-            non_anchor_rounds = use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
-            registration_data['round_registration']['transform_raw'][t, non_anchor_rounds] = round_reg_data['transform']
-            registration_data['round_registration']['transform'][t, nbp_basic.anchor_round] = np.eye(3, 4)
-            registration_data['round_registration']['shift'][t, non_anchor_rounds] = round_reg_data['shift']
-            registration_data['round_registration']['shift_corr'][t, non_anchor_rounds] = round_reg_data['shift_corr']
-            registration_data['round_registration']['position'][t, non_anchor_rounds] = round_reg_data['position']
+            use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
+            # split the rounds into two chunks, as we can't fit all of them into memory at once
+            round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
+            for i in range(2):
+                round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel,
+                                                    suffix='_raw' if r == nbp_basic.pre_seq_round else ''))
+                               for r in round_chunks[i]]
+                round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
+                # Now save the data
+                registration_data['round_registration']['transform_raw'][t, round_chunks[i]] = round_reg_data[
+                    'transform']
+                registration_data['round_registration']['shift'][t, round_chunks[i]] = round_reg_data['shift']
+                registration_data['round_registration']['shift_corr'][t, round_chunks[i]] = round_reg_data['shift_corr']
+                registration_data['round_registration']['position'][t, round_chunks[i]] = round_reg_data['position']
+            # Now append anchor info and tile number to the registration data, then save to file
             registration_data['round_registration']['tiles_completed'].append(t)
             # Save the data to file
             with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
@@ -183,7 +191,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                 for z in tqdm(range(len(nbp_basic.use_z))):
                     im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
             # Save the blurred image (no need to rotate this, as the rotation was done in extract)
-            utils.npy.save_tile(nbp_file, nbp_basic, im, t, r, c)
+            save_tile(nbp_file, nbp_basic, im, t, r, c)
         registration_data['blur'] = True
 
     # Save registration data externally
@@ -222,19 +230,32 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        for t, r, c in tqdm(itertools.product(use_tiles, use_rounds, use_channels)):
+        n_threads = config['n_background_scale_threads']
+        if n_threads is None:
+            n_threads = psutil.cpu_count(logical=True)
+            if n_threads is None:
+                n_threads = 1
+        n_threads = np.clip(n_threads, 1, 999, dtype=int)
+        current_trcs = []
+        processes = []
+        queue = Queue()
+        for i, trc in tqdm(enumerate(itertools.product(use_tiles, use_rounds, use_channels))):
+            t, r, c = trc
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
-            transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
-                                              new_origin=np.array([mid_z-z_rad, 0, 0]))
-            transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-            preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
-                                          yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-            seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
-                                       yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-            preseq = affine_transform(preseq, transform_pre)
-            seq = affine_transform(seq, transform_seq)
-            bg_scale[t, r, c] = brightness_scale(preseq, seq)[0]
+            # We run brightness_scale in parallel to speed up the pipeline
+            current_trcs.append([t, r, c])
+            processes.append(Process(target=compute_brightness_scale, args=(nbp, nbp_basic, nbp_file, nbp_extract, 
+                                                                            mid_z, z_rad, t, r, c, queue)))
+            if len(current_trcs) >= n_threads or i >= len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
+                # Start subprocesses altogether
+                [p.start() for p in processes]
+                # Retrieve scale factors from the multiprocess queue
+                for current_trc in current_trcs:
+                    bg_scale[current_trc[0], current_trc[1], current_trc[2]] = queue.get()[0]
+                processes = []
+                current_trcs = []
+            i += 1
         nbp_extract.bg_scale = bg_scale
-        nbp_extract.finalized = True
+    nbp_extract.finalized = True
 
     return nbp, nbp_debug

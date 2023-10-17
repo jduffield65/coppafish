@@ -211,7 +211,7 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
         else:
             config_basic['use_dyes'] = list(np.arange(n_dyes))
     nbp.use_dyes = config_basic['use_dyes']
-    nbp.dye_names = config_basic['dye_names']
+    nbp.dye_names = [dye_name.upper() for dye_name in config_basic['dye_names']]
     nbp.channel_camera = config_basic['channel_camera']
     nbp.channel_laser = config_basic['channel_laser']
 
@@ -362,7 +362,7 @@ def set_basic_info_new(config: dict) -> NotebookPage:
         del nbp.use_z
         nbp.use_z = np.arange(int(config_basic['ignore_first_z_plane']), metadata['nz']).tolist()
     # This has not been assigned yet but now we can be sure that use_z not None!
-    nbp.nz = metadata['nz']
+    nbp.nz = len(nbp.use_z)
 
     if nbp.use_dyes is None:
         del nbp.use_dyes

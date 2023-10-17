@@ -79,6 +79,7 @@ _options = {
         },
     'extract':
         {
+            'file_type': 'str',
             'wait_time': 'int',
             'r1': 'maybe_int',
             'r2': 'maybe_int',
@@ -155,7 +156,8 @@ _options = {
             'icp_min_spots': 'int',
             'icp_max_iter': 'int',
             'round_registration_channel': 'maybe_int',
-            'sobel': 'bool'
+            'sobel': 'bool',
+            'n_background_scale_threads': 'maybe_int'
         },
     'call_spots':
         {

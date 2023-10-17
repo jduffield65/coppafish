@@ -83,7 +83,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
               yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None,
               apply_shift: bool = True, suffix: str = '') -> np.ndarray:
     """
-    Loads in image corresponding to desired tile, round and channel from the relavent npy file.
+    Loads in image corresponding to desired tile, round and channel from the relevant npy file.
 
     Args:
         nbp_file (NotebookPage): `file_names` notebook page.
@@ -195,8 +195,9 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
         return npy_index
 
 
-def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, tile_origin: np.ndarray,
-                  r: int, c: int, from_raw: bool = False, zero_thresh: int = 0, num_rotations: int = 0):
+def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
+                  tile_origin: np.ndarray, r: int, c: int, from_raw: bool = False, zero_thresh: int = 0, 
+                  num_rotations: int = 0):
     """
     Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
     Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
@@ -205,8 +206,9 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     Args:
         im_file: Path to save file.
             If `None`, stitched `image` is returned (with z axis last) instead of saved.
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
+        nbp_file: `file_names` notebook page.
+        nbp_basic: `basic_info` notebook page.
+        nbp_extract: `extract` notebook page.
         tile_origin: `float [n_tiles x 3]`.
             yxz origin of each tile on round `r`.
         r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
@@ -219,6 +221,10 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
     yx_size = np.max(yx_origin, axis=0) + nbp_basic.tile_sz
+    if nbp_extract.file_type == '.zarr':
+        from ..utils.zarray import load_tile
+    elif nbp_extract.file_type == '.npy':
+        from ..utils.npy import load_tile
     if nbp_basic.is_3d:
         z_size = z_origin.max() + nbp_basic.nz
         stitched_image = np.zeros(np.append(z_size, yx_size), dtype=np.uint16)
@@ -252,7 +258,7 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
                     image_t = np.rot90(image_t, k=num_rotations, axes=(1, 2))
             else:
                 if nbp_basic.is_3d:
-                    image_t = np.load(nbp_file.tile[t][r][c], mmap_mode='r')
+                    image_t = load_tile(nbp_file, nbp_basic, t, r, c).transpose((2,0,1))
                 else:
                     image_t = load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
             for z in range(z_size):
