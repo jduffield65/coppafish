@@ -4,6 +4,7 @@ from coppafish.utils.npy import load_tile, save_tile, save_stitched, get_npy_til
 import os
 import numpy as np
 
+
 def test_npy_save_load_tile():
     directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'unit_test_dir')
 
