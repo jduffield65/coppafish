@@ -16,8 +16,9 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: npt.NDArra
               t: int, r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> None:
     """
     Wrapper function to save tiles as npy files with correct shift. Moves z-axis to first axis before saving as it is 
-    quicker to load in this order. Tile `t` is saved to the path `nbp_file.tile[t,r,c]`. The tile is saved as a 
-    `uint16`, so clipping may occur if the image contains really large values.
+    quicker to load in this order. Tile `t` is saved to the path `nbp_file.tile[t,r,c]`, the path must contain an 
+    extension of `'.npy'`. The tile is saved as a `uint16`, so clipping may occur if the image contains really large 
+    values.
 
     Args:
         nbp_file (NotebookPage): `file_names` notebook page.
