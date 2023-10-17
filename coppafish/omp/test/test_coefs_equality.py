@@ -70,11 +70,17 @@ def test_get_best_gene_first_iter_equality():
     best_gene, pass_score_thresh, background_var, best_score = \
         get_best_gene_first_iter(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift, score_thresh, 
                                  alpha, beta, background_genes)
+    assert best_gene.shape == (n_pixels, ), 'Unexpected shape for `best_gene` output'
+    assert pass_score_thresh.shape == (n_pixels, ), 'Unexpected shape for `pass_score_thresh` output'
+    assert background_var.shape == (n_pixels, n_rounds * n_channels), 'Unexpected shape for `background_var` output'
     assert best_score.shape == (n_pixels, ), 'Unexpected shape for `best_score` output'
     from coppafish.omp.coefs_optimised import get_best_gene_first_iter
     best_gene_optimised, pass_score_thresh_optimised, background_var_optimised = \
         get_best_gene_first_iter(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift, score_thresh, 
                                  alpha, beta, background_genes)
+    assert best_gene.shape == (n_pixels, ), 'Unexpected shape for `best_gene` output'
+    assert pass_score_thresh.shape == (n_pixels, ), 'Unexpected shape for `pass_score_thresh` output'
+    assert background_var.shape == (n_pixels, n_rounds * n_channels), 'Unexpected shape for `background_var` output'
     # assert np.allclose(best_gene, best_gene_optimised, atol=1e-4), \
     #     'Expected similar `best_gene` from optimised and non-optimised OMP'
     assert np.allclose(pass_score_thresh, pass_score_thresh_optimised, atol=1e-4), \
