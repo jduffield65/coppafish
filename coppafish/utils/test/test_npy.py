@@ -51,3 +51,7 @@ def test_npy_save_load_tile():
     # TODO: Make 2d work, potentially errors in the script itself
     # save_tile(nbp_file_2d, nbp_basic_2d, array_2, 0, 0, 0, num_rotations=1, suffix='suffix_array_2')
     # output = load_tile(nbp_file_2d, nbp_basic_2d, 0, 0, 0, suffix='suffix_array_2')
+
+
+# TODO: save_stitched and get_npy_tile_ind unit tests
+get_npy_tile_ind
