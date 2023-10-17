@@ -13,22 +13,25 @@ import numbers
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: npt.NDArray[np.int32],
-              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = ''):
+              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> None:
     """
     Wrapper function to save tiles as npy files with correct shift. Moves z-axis to first axis before saving as it is 
-    quicker to load in this order.
+    quicker to load in this order. Tile `t` is saved to the path `nbp_file.tile[t,r,c]`. The tile is saved as a 
+    `uint16`, so clipping may occur if the image contains really large values.
 
     Args:
         nbp_file (NotebookPage): `file_names` notebook page.
         nbp_basic (NotebookPage): `basic_info` notebook page.
-        image (`[ny x nx x nz] ndarray[int32]` or `[n_channels x ny x nx]` ndarray[int32]): image to save.
+        image (`[ny x nx x nz] ndarray[int32]` or `[n_channels x ny x nx] ndarray[int32]`): image to save.
         t (int): npy tile index considering.
         r (int): round considering.
         c (int, optional): channel considering. Default: not given, raises error when `nbp_basic.is_3d == True`.
         num_rotations (int, optional): Number of `90` degree clockwise rotations to apply to image before saving. 
-            Applied to the `x` and `y` axes only. Default: `0`.
+            Applied to the `x` and `y` axes, to 3d `image` data only. Default: `0`.
         suffix (str, optional): suffix to add to file name. Default: no suffix.
     """
+    assert image.ndim == 3, '`image` must be 3 dimensional'
+
     if nbp_basic.is_3d:
         if c is None:
             raise ValueError('3d image but channel not given.')
@@ -81,7 +84,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: npt.NDArra
 
 def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c: int,
               yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None,
-              apply_shift: bool = True, suffix: str = '') -> np.ndarray:
+              apply_shift: bool = True, suffix: str = '') -> npt.NDArray[Union[np.int32, np.uint16]]:
     """
     Loads in image corresponding to desired tile, round and channel from the relevant npy file.
 
@@ -115,8 +118,9 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c
         May want to disable `apply_shift` to save memory and/or make loading quicker as there will be no dtype 
         conversion. If loading in DAPI, dtype always `uint16` as there is no shift.
     """
-    file_path = nbp_file.tile[t][r][c]
-    file_path = file_path[:file_path.index('.npy')] + suffix + '.npy'
+    if nbp_basic.is_3d:
+        file_path = nbp_file.tile[t][r][c]
+        file_path = file_path[:file_path.index('.npy')] + suffix + '.npy'
     if yxz is not None:
         # Use mmap when only loading in part of image
         if isinstance(yxz, (list, tuple)):
