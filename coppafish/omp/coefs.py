@@ -107,6 +107,8 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
             `dot_product_score` for spot `s` with gene `best_gene[s]`.
 
     """
+    # FIXME: This function takes in a differently shaped parameter residual_pixel_colors compared to optimised jax, 
+    # FIXME: according to the docstring.
     # calculate score including background genes as if best gene is background, then stop iteration.
     best_gene, best_score, _ = dot_product_score(residual_pixel_colors, all_bled_codes, inverse_var, norm_shift)
     # if best_gene is in ignore_gene, set score below score_thresh.
@@ -154,13 +156,13 @@ def get_best_gene_first_iter(residual_pixel_colors: np.ndarray, all_bled_codes: 
             Variance in each round/channel based on just the background.
         - best_score - `float [n_pixels]`.
             `dot_product_score` for spot `s` with gene `best_gene[s]`.
-
     """
     background_var = np.square(background_coefs) @ np.square(all_bled_codes[background_genes]) * alpha + beta ** 2
     ignore_genes = np.tile(background_genes, [background_var.shape[0], 1])
     best_gene, pass_score_thresh, best_score = \
         get_best_gene_base(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh, 1 / background_var,
                            ignore_genes)
+    # FIXME: `best_gene` for this non-jax function is not the same as the jax version 
     return best_gene, pass_score_thresh, background_var, best_score
 
 
