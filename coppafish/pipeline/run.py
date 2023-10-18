@@ -18,7 +18,8 @@ from . import get_reference_spots
 from . import omp
 
 
-def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: bool = False, n_jobs: int = 8) -> setup.Notebook:
+def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: bool = False, n_jobs: int = 8) \
+    -> setup.Notebook:
     """
     Bridge function to run every step of the pipeline.
 
