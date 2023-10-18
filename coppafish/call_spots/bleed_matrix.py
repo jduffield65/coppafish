@@ -1,8 +1,8 @@
 import numpy as np
-from .. import utils
 from typing import Tuple, List, Union
 import itertools
-import matplotlib.pyplot as plt
+
+from .. import utils
 
 
 def get_dye_channel_intensity_guess(csv_file_name: str, dyes: Union[List[str], np.ndarray],

@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Tuple
-import warnings
 
 
 def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

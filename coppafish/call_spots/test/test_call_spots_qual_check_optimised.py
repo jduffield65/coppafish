@@ -1,6 +1,6 @@
-from coppafish.call_spots.qual_check_optimised import get_spot_intensity
-
 import numpy as np
+
+from coppafish.call_spots.qual_check_optimised import get_spot_intensity
 
 
 def test_get_spot_intensity():

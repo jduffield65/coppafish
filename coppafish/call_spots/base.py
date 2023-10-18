@@ -1,7 +1,8 @@
 from scipy.spatial import KDTree
 import numpy as np
+from typing import List, Tuple
+
 from .. import utils
-from typing import Union, List, Tuple
 
 
 def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.ndarray,

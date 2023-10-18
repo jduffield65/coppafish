@@ -1,6 +1,6 @@
-from coppafish.call_spots.background import fit_background
-
 import numpy as np
+
+from coppafish.call_spots.background import fit_background
 
 
 def test_fit_background():

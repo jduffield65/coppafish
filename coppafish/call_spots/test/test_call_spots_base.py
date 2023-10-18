@@ -1,6 +1,6 @@
-from coppafish.call_spots.base import get_non_duplicate, get_bled_codes, compute_gene_efficiency
-
 import numpy as np
+
+from coppafish.call_spots.base import get_non_duplicate, get_bled_codes, compute_gene_efficiency
 
 
 def test_get_non_duplicate():

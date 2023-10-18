@@ -1,6 +1,6 @@
-from coppafish.call_spots.dot_product_optimised import dot_product_score_no_weight, dot_product_score
-
 import numpy as np
+
+from coppafish.call_spots.dot_product_optimised import dot_product_score_no_weight, dot_product_score
 
 
 def test_dot_product_score_no_weight():
