@@ -1,8 +1,9 @@
 import numpy as np
-from coppafish.call_spots import fit_background, dot_product_score
 from typing import Tuple, Union
 from tqdm import tqdm
 import warnings
+
+from coppafish import call_spots
 
 
 def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -12,16 +13,16 @@ def fit_coefs(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np.ndarra
     Can also find weighted least squared solution if `weight` provided.
 
     Args:
-        bled_codes: `float [(n_rounds x n_channels) x n_genes]`.
+        bled_codes: `float [(n_rounds * n_channels) x n_genes]`.
             Flattened then transposed bled codes which usually has the shape `[n_genes x n_rounds x n_channels]`.
-        pixel_colors: `float [(n_rounds x n_channels) x n_pixels]` if `n_genes==1`
-            otherwise  `float [(n_rounds x n_channels)]`.
+        pixel_colors: `float [(n_rounds * n_channels) x n_pixels]` if `n_genes==1`
+            otherwise  `float [(n_rounds * n_channels)]`.
             Flattened then transposed pixel colors which usually has the shape `[n_pixels x n_rounds x n_channels]`.
         genes: `int [n_pixels x n_genes_add]`.
             Indices of codes in bled_codes to find coefficients for which best explain each pixel_color.
 
     Returns:
-        - residual - `float [n_pixels x (n_rounds x n_channels)]`.
+        - residual - `float [n_pixels x (n_rounds * n_channels)]`.
             Residual pixel_colors after removing bled_codes with coefficients specified by coef.
         - coefs - `float [n_pixels x n_genes_add]` if n_genes == 1 otherwise `float [n_genes]` if n_pixels == 1.
             coefficient found through least squares fitting for each gene.
@@ -44,19 +45,19 @@ def fit_coefs_weight(bled_codes: np.ndarray, pixel_colors: np.ndarray, genes: np
     Can also find weighted least squared solution if `weight` provided.
 
     Args:
-        bled_codes: `float [(n_rounds x n_channels) x n_genes]`.
+        bled_codes: `float [(n_rounds * n_channels) x n_genes]`.
             Flattened then transposed bled codes which usually has the shape `[n_genes x n_rounds x n_channels]`.
-        pixel_colors: `float [(n_rounds x n_channels) x n_pixels]` if `n_genes==1`
-            otherwise  `float [(n_rounds x n_channels)]`.
+        pixel_colors: `float [(n_rounds * n_channels) x n_pixels]` if `n_genes==1`
+            otherwise  `float [(n_rounds * n_channels)]`.
             Flattened then transposed pixel colors which usually has the shape `[n_pixels x n_rounds x n_channels]`.
         genes: `int [n_pixels x n_genes_add]`.
             Indices of codes in bled_codes to find coefficients for which best explain each pixel_color.
-        weight: `float [n_pixels x (n_rounds x n_channels)]`.
+        weight: `float [n_pixels x (n_rounds * n_channels)]`.
             `weight[s, i]` is the weight to be applied to round_channel `i` when computing coefficient of each
             `bled_code` for pixel `s`.
 
     Returns:
-        - residual - `float [n_pixels x (n_rounds x n_channels)]`.
+        - residual - `float [n_pixels x (n_rounds * n_channels)]`.
             Residual pixel_colors after removing bled_codes with coefficients specified by coef.
         - coefs - `float [n_pixels x n_genes_add]` if n_genes == 1 otherwise `float [n_genes]` if n_pixels == 1.
             coefficient found through least squares fitting for each gene.
@@ -83,16 +84,16 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
     then `pass_score_thresh` will be False.
 
     Args:
-        residual_pixel_colors: `float [n_pixels x (n_rounds x n_channels)]`.
+        residual_pixel_colors: `float [n_pixels x (n_rounds * n_channels)]`.
             Residual pixel color from previous iteration of omp.
-        all_bled_codes: `float [n_genes x (n_rounds x n_channels)]`.
+        all_bled_codes: `float [n_genes x (n_rounds * n_channels)]`.
             `bled_codes` such that `spot_color` of a gene `g`
             in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
             Includes codes of genes and background.
         norm_shift: shift to apply to normalisation of spot_colors to limit boost of weak spots.
         score_thresh: `dot_product_score` of the best gene for a pixel must exceed this
             for that gene to be added in the current iteration.
-        inverse_var: `float [(n_rounds x n_channels)]`.
+        inverse_var: `float [(n_rounds * n_channels)]`.
             Inverse of variance in each round/channel based on genes fit on previous iteration.
             Used as `weight_squared` when computing `dot_product_score`.
         ignore_genes: `int [n_pixels x n_genes_ignore]`.
@@ -110,7 +111,7 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
     # FIXME: This function takes in a differently shaped parameter residual_pixel_colors compared to optimised jax, 
     # FIXME: according to the docstring.
     # calculate score including background genes as if best gene is background, then stop iteration.
-    best_gene, best_score, _ = dot_product_score(residual_pixel_colors, all_bled_codes, inverse_var, norm_shift)
+    best_gene, best_score, _ = call_spots.dot_product_score(residual_pixel_colors, all_bled_codes, inverse_var, norm_shift)
     # if best_gene is in ignore_gene, set score below score_thresh.
     is_ignore_gene = (best_gene[:, np.newaxis] == ignore_genes).any(axis=1)
     best_score = best_score * np.invert(is_ignore_gene)
@@ -129,32 +130,30 @@ def get_best_gene_first_iter(residual_pixel_colors: np.ndarray, all_bled_codes: 
     or genes that can be added which will cause `pass_score_thresh` to be `False`.
 
     Args:
-        residual_pixel_colors: `float [n_pixels x (n_rounds x n_channels)]`.
-            Residual pixel color from previous iteration of omp.
-        all_bled_codes: `float [n_genes x (n_rounds x n_channels)]`.
-            `bled_codes` such that `spot_color` of a gene `g`
-            in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
-            Includes codes of genes and background.
-        background_coefs: `float [n_pixels x n_channels]`.
-            `coefs[g]` is the weighting for gene `background_genes[g]` found by the omp algorithm.
-             All are non-zero.
-        norm_shift: shift to apply to normalisation of spot_colors to limit boost of weak spots.
-        score_thresh: `dot_product_score` of the best gene for a pixel must exceed this
-            for that gene to be added in the current iteration.
-        alpha: Used for `fitting_variance`, by how much to increase variance as genes added.
-        beta: Used for `fitting_variance`, the variance with no genes added (`coef=0`) is `beta**2`.
-        background_genes: `int [n_channels]`.
-            Indices of codes in all_bled_codes which correspond to background.
-            If the best gene for pixel `s` is set to one of `background_genes`, `pass_score_thresh[s]` will be False.
+        residual_pixel_colors (`[n_pixels x (n_rounds * n_channels)] ndarray[float]`): residual pixel color from 
+            previous iteration of omp.
+        all_bled_codes (`[n_genes x (n_rounds * n_channels)] ndarray[float]`): `bled_codes` such that `spot_color` of a 
+            gene `g` in round `r` is expected to be a constant multiple of `bled_codes[g, r]`. Includes codes of genes 
+            and background.
+        background_coefs (`[n_pixels x n_channels] ndarray[float]`): `coefs[g]` is the weighting for gene 
+            `background_genes[g]` found by the omp algorithm. All are non-zero.
+        norm_shift (float): shift to apply to normalisation of spot_colors to limit boost of weak spots.
+        score_thresh (float): `dot_product_score` of the best gene for a pixel must exceed this for that gene to be 
+            added in the current iteration.
+        alpha (float): Used for `fitting_variance`, by how much to increase variance as genes added.
+        beta (float): Used for `fitting_variance`, the variance with no genes added (`coef=0`) is `beta**2`.
+        background_genes (`[n_channels] ndarray[int]`): Indices of codes in `all_bled_codes` which correspond to 
+            background. If the best gene for pixel `s` is set to one of `background_genes`, `pass_score_thresh[s]` 
+            will be `False`.
 
     Returns:
-        - best_gene - `int [n_pixels]`.
+        - best_gene (`[n_pixels] ndarray[int]`).
             `best_gene[s]` is the best gene to add to pixel `s` next.
-        - pass_score_thresh - `bool [n_pixels]`.
+        - pass_score_thresh (`[n_pixels] ndarray[bool]`).
             `True` if `best_score > score_thresh`.
-        - background_var - `float [n_pixels x (n_rounds x n_channels)]`.
+        - background_var (`[n_pixels x (n_rounds * n_channels)] ndarray[float]`).
             Variance in each round/channel based on just the background.
-        - best_score - `float [n_pixels]`.
+        - best_score - (`[n_pixels] ndarray[float]`).
             `dot_product_score` for spot `s` with gene `best_gene[s]`.
     """
     background_var = np.square(background_coefs) @ np.square(all_bled_codes[background_genes]) * alpha + beta ** 2
@@ -182,9 +181,9 @@ def get_best_gene(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
         the rounds/channels which already have genes in will contribute less.
 
     Args:
-        residual_pixel_colors: `float [n_pixels x (n_rounds x n_channels)]`.
+        residual_pixel_colors: `float [n_pixels x (n_rounds * n_channels)]`.
             Residual pixel colors from previous iteration of omp.
-        all_bled_codes: `float [n_genes x (n_rounds x n_channels)]`.
+        all_bled_codes: `float [n_genes x (n_rounds * n_channels)]`.
             `bled_codes` such that `spot_color` of a gene `g`
             in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
             Includes codes of genes and background.
@@ -201,7 +200,7 @@ def get_best_gene(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
         background_genes: `int [n_channels]`.
             Indices of codes in all_bled_codes which correspond to background.
             If the best gene for pixel `s` is set to one of `background_genes`, `pass_score_thresh[s]` will be False.
-        background_var: `float [n_pixels x (n_rounds x n_channels)]`.
+        background_var: `float [n_pixels x (n_rounds * n_channels)]`.
             Contribution of background genes to variance (which does not change throughout omp iterations)  i.e.
             `background_coefs**2 @ all_bled_codes[background_genes]**2 * alpha + beta ** 2`.
 
@@ -210,7 +209,7 @@ def get_best_gene(residual_pixel_colors: np.ndarray, all_bled_codes: np.ndarray,
             `best_gene[s]` is the best gene to add to pixel `s` next.
         - pass_score_thresh - `bool [n_pixels]`.
             `True` if `best_score > score_thresh`.
-        - inverse_var - `float [n_pixels x (n_rounds x n_channels)]`.
+        - inverse_var - `float [n_pixels x (n_rounds * n_channels)]`.
             Inverse of variance of each pixel in each round/channel based on genes fit on previous iteration.
             Includes both background and gene contribution.
         - best_score - `float [n_pixels]`.
@@ -314,7 +313,7 @@ def get_all_coefs(pixel_colors: np.ndarray, bled_codes: np.ndarray, background_s
 
     # Fit background and override initial pixel_colors
     gene_coefs = np.zeros((n_pixels, n_genes), dtype=np.float32)  # coefs of all genes and background
-    pixel_colors, background_coefs, background_codes = fit_background(pixel_colors, background_shift)
+    pixel_colors, background_coefs, background_codes = call_spots.fit_background(pixel_colors, background_shift)
 
     if track:
         track_info['residual'][1] = pixel_colors[0]
