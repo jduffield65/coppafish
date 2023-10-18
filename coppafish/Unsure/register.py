@@ -1,9 +1,10 @@
 # from .. import register
-from coppafish.Unsure.register import icp
-from coppafish.find_spots import spot_yxz, get_isolated_points
 import numpy as np
-from coppafish.setup.notebook import NotebookPage
 from typing import Tuple
+
+from coppafish.Unsure import register as unsure_register
+from coppafish import find_spots
+from coppafish.setup.notebook import NotebookPage
 
 
 def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, spot_no: np.ndarray,
@@ -45,14 +46,15 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
     n_matches_thresh = np.zeros_like(spot_yxz_imaging, dtype=float)
 
     for t in nbp_basic.use_tiles:
-        spot_yxz_ref[t] = spot_yxz(spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
-                                   spot_no) * np.array([1, 1, z_scale])
+        spot_yxz_ref[t] = find_spots.spot_yxz(spot_details, t, nbp_basic.anchor_round, nbp_basic.anchor_channel, 
+                                              spot_no) * np.array([1, 1, z_scale])
         for r in nbp_basic.use_rounds:
             for c in nbp_basic.use_channels:
-                spot_yxz_imaging[t, r, c] = spot_yxz(spot_details, t, r, c, spot_no) * np.array([1, 1, z_scale])
+                spot_yxz_imaging[t, r, c] = \
+                    find_spots.spot_yxz(spot_details, t, r, c, spot_no) * np.array([1, 1, z_scale])
                 if neighb_dist_thresh < 50:
                     # only keep isolated spots, those whose second neighbour is far away
-                    isolated = get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
+                    isolated = find_spots.get_isolated_points(spot_yxz_imaging[t, r, c], 2 * neighb_dist_thresh)
                     spot_yxz_imaging[t, r, c] = spot_yxz_imaging[t, r, c][isolated, :]
                 n_matches_thresh[t, r, c] = (config['matches_thresh_fract'] *
                                              np.min([spot_yxz_ref[t].shape[0], spot_yxz_imaging[t, r, c].shape[0]]))
@@ -81,7 +83,7 @@ def register(config: dict, nbp_basic: NotebookPage, spot_details: np.ndarray, sp
 
     # get ICP output only for tiles/rounds/channels that we are using
     final_transform[trc_ind], pcr_debug = \
-        icp(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
+        unsure_register.icp(spot_yxz_ref[nbp_basic.use_tiles], spot_yxz_imaging[trc_ind],
             start_transform[trc_ind], config['n_iter'], neighb_dist_thresh,
             n_matches_thresh[trc_ind], config['scale_dev_thresh'], config['shift_dev_thresh'],
             reg_constant_scale, reg_constant_shift)

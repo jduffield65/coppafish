@@ -1,9 +1,10 @@
 import numpy as np
+import pytest
 
-from coppafish.call_spots import qual_check_optimised
 
-
+@pytest.mark.optimised
 def test_get_spot_intensity():
+    from coppafish.call_spots import qual_check_optimised
     n_spots = 2
     n_rounds = 3
     n_channels = 4

@@ -1,7 +1,9 @@
 import warnings
 from typing import Optional, Tuple
 import numpy as np
+
 from .. import utils
+
 
 # This method is a bit silly, I think that the small random number means that the same spot in 2 diff round channels
 # may have a different location depending on where the random number has put it

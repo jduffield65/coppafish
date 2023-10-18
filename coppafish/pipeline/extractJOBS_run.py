@@ -1,11 +1,12 @@
-from .. import utils, extract
 import numpy as np
 import os, time
 from tqdm import tqdm
-from ..setup.notebook import NotebookPage, Notebook
 from typing import Tuple
 import warnings
-from joblib import Parallel, delayed
+import joblib
+
+from ..setup.notebook import NotebookPage, Notebook
+from .. import utils, extract
 
 
 def extract_and_filter(config: dict, nbp_file: NotebookPage,
@@ -578,8 +579,9 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
                     raise ValueError(f'Tiles {t} seems to have a problem')
             return results
 
-        results = Parallel(n_jobs=n_workers, verbose=10)(delayed(parallel_extract)
-                                                         (t=t, **kwargs) for t in nbp_basic.use_tiles)
+        results = joblib.Parallel(n_jobs=n_workers, verbose=10)(joblib.delayed(
+            parallel_extract)(t=t, **kwargs) for t in nbp_basic.use_tiles
+        )
 
         for t in tqdm(nbp_basic.use_tiles, desc='Filling notebook'):
             for c_id, c in enumerate(use_channels):

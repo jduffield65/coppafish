@@ -1,11 +1,11 @@
-from ..call_spots import get_bled_codes, compute_bleed_matrix, compute_gene_efficiency, dot_product_score, \
-    get_spot_intensity, gene_prob_score
-from ..spot_colors import remove_background, normalise_rc, all_pixel_yxz, get_spot_colors
-from ..setup.notebook import NotebookPage
-from ..utils.base import expand_channels
 import numpy as np
 from typing import Tuple
 import warnings
+
+from ..setup.notebook import NotebookPage
+from .. import call_spots
+from .. import spot_colors
+from .. import utils
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
@@ -71,20 +71,21 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     # 1. Remove background from spots and normalise channels and rounds
     # Find middle tile to calculate intensity threshold
-    spot_colours_background_removed, background_noise = remove_background(spot_colours=spot_colours.copy())
+    spot_colours_background_removed, background_noise = spot_colors.remove_background(spot_colours=spot_colours.copy())
     median_tile = int(np.median(nbp_basic.use_tiles))
     dist = np.linalg.norm(nbp_basic.tilepos_yx - nbp_basic.tilepos_yx[median_tile], axis=1)[nbp_basic.use_tiles]
     central_tile = nbp_basic.use_tiles[np.argmin(dist)]
-    pixel_colors = get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz // 2),
-                                   central_tile, transform, nbp_file, nbp_basic, nbp_extract, 
-                                   bg_scale=nbp_extract.bg_scale, return_in_bounds=True)[0]
+    pixel_colors = spot_colors.get_spot_colors(spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
+                                                                         nbp_basic.nz // 2), 
+                                               central_tile, transform, nbp_file, nbp_basic, nbp_extract, 
+                                               bg_scale=nbp_extract.bg_scale, return_in_bounds=True)[0]
     # normalise pixel colours by round and channel and then remove background
     # colour_norm_factor = normalise_rc(pixel_colors.astype(float), spot_colours_background_removed)
     colour_norm_factor = np.percentile(abs(pixel_colors), 99, axis=0)
     spot_colours = spot_colours_background_removed / colour_norm_factor[None]
 
     # save pixel intensity and delete pixel_colors to save memory
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors / colour_norm_factor[None]))
+    pixel_intensity = call_spots.get_spot_intensity(np.abs(pixel_colors / colour_norm_factor[None]))
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
     del pixel_colors, pixel_intensity
 
@@ -143,15 +144,15 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
     # Repeat bleed n_rounds times along a new 0th axis
     bleed_matrix = np.repeat(bleed_matrix[np.newaxis, :, :], n_rounds, axis=0)
-    intensity = get_spot_intensity(spot_colors=spot_colours)
+    intensity = call_spots.get_spot_intensity(spot_colors=spot_colours)
 
     # 2.2 Calculate bled codes and gene probabilities
     gene_names, gene_codes = np.genfromtxt(nbp_file.code_book, dtype=(str, str)).transpose()
     gene_codes = np.array([[int(i) for i in gene_codes[j]] for j in range(len(gene_codes))])
     n_genes = len(gene_names)
     ge_initial = np.ones((n_genes, n_rounds))
-    bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=ge_initial)
-    gene_prob = gene_prob_score(spot_colours=spot_colours, bled_codes=bled_codes)
+    bled_codes = call_spots.get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=ge_initial)
+    gene_prob = call_spots.gene_prob_score(spot_colours=spot_colours, bled_codes=bled_codes)
     gene_no = np.argmax(gene_prob, axis=1)
     gene_score = np.max(gene_prob, axis=1)
 
@@ -160,16 +161,18 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # score distribution and bled codes and then these 2 parameters are iteratively updated until convergence.
     # 3.1 Calculate gene efficiency
     ge_intensity_thresh = nbp.abs_intensity_percentile[int(config['gene_efficiency_intensity_thresh_percentile'])]
-    gene_efficiency, use_ge, _ = compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes,
-                                                         gene_no=gene_no, gene_score=gene_score,
-                                                         gene_codes=gene_codes, intensity=intensity,
-                                                         score_threshold=0.6,
-                                                         intensity_threshold=ge_intensity_thresh)
+    gene_efficiency, use_ge, _ = call_spots.compute_gene_efficiency(spot_colours=spot_colours, bled_codes=bled_codes, 
+                                                                    gene_no=gene_no, gene_score=gene_score, 
+                                                                    gene_codes=gene_codes, intensity=intensity, 
+                                                                    score_threshold=0.6, 
+                                                                    intensity_threshold=ge_intensity_thresh)
     # 3.2 Update bled codes
-    bled_codes = get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, gene_efficiency=gene_efficiency)
+    bled_codes = call_spots.get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix, 
+                                           gene_efficiency=gene_efficiency)
 
     # 3.3 Update gene coefficients
-    gene_no, gene_score, gene_score_second = dot_product_score(spot_colours=spot_colours, bled_codes=bled_codes)
+    gene_no, gene_score, gene_score_second = call_spots.dot_product_score(spot_colours=spot_colours, 
+                                                                          bled_codes=bled_codes)
 
     # save overwritable variables in nbp_ref_spots
     nbp_ref_spots.gene_no = gene_no
@@ -187,14 +190,17 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_codes = gene_codes
     # Now expand variables to have n_channels channels instead of n_channels_use channels. For some variables, we
     # also need to swap axes as the expand channels function assumes the last axis is the channel axis.
-    nbp.color_norm_factor = expand_channels(colour_norm_factor, use_channels, nbp_basic.n_channels)
-    nbp.initial_bleed_matrix = expand_channels(initial_bleed_matrix.T, use_channels, nbp_basic.n_channels).T
-    nbp.bleed_matrix = expand_channels(bleed_matrix.swapaxes(1, 2), use_channels, nbp_basic.n_channels).swapaxes(1, 2)
+    nbp.color_norm_factor = utils.base.expand_channels(colour_norm_factor, use_channels, nbp_basic.n_channels)
+    nbp.initial_bleed_matrix = utils.base.expand_channels(initial_bleed_matrix.T, use_channels, nbp_basic.n_channels).T
+    nbp.bleed_matrix = utils.base.expand_channels(bleed_matrix.swapaxes(1, 2), use_channels, 
+                                                  nbp_basic.n_channels).swapaxes(1, 2)
     # bled_codes_ge is what we have been calling bled_codes. Haven't kept a record of bled_codes before gene efficiency
     # was applied, so we need to recalculate it here.
-    nbp.bled_codes_ge = expand_channels(bled_codes, use_channels, nbp_basic.n_channels)
-    nbp.bled_codes = expand_channels(get_bled_codes(gene_codes=gene_codes, bleed_matrix=bleed_matrix,
-                                                    gene_efficiency=ge_initial), use_channels, nbp_basic.n_channels)
+    nbp.bled_codes_ge = utils.base.expand_channels(bled_codes, use_channels, nbp_basic.n_channels)
+    nbp.bled_codes = utils.base.expand_channels(call_spots.get_bled_codes(gene_codes=gene_codes, 
+                                                                          bleed_matrix=bleed_matrix, 
+                                                                          gene_efficiency=ge_initial), 
+                                                use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
     nbp.gene_efficiency_intensity_thresh = float(np.round(ge_intensity_thresh, 2))
 

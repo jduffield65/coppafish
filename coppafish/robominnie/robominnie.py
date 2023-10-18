@@ -26,11 +26,11 @@ import bz2
 import napari
 from numpy.fft import fftshift, ifftshift
 from scipy.fft import fftn, ifftn
-
-# Typing imports
-from typing import Dict, List, Any, Tuple, Union
+from typing import Dict, List, Any, Tuple
 import numpy.typing as npt
 from numpy.random import Generator
+
+from coppafish.pipeline import run
 
 
 DEFAULT_IMAGE_DTYPE = float
@@ -1039,9 +1039,6 @@ class RoboMinnie:
         print(f'Running coppafish')
         if jax_profile or jax_profile_omp:
             assert jax_profile != jax_profile_omp, 'Cannot run two jax profilers at once'
-
-        from coppafish.pipeline.run import initialize_nb, run_tile_indep_pipeline, run_stitch, \
-            run_reference_spots, run_omp
         
         coppafish_output = self.coppafish_output
         config_filepath = self.config_filepath
@@ -1052,14 +1049,14 @@ class RoboMinnie:
             import jax
             jax.profiler.start_trace(coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
         # Run the non-parallel pipeline code
-        nb = initialize_nb(config_filepath)
+        nb = run.initialize_nb(config_filepath)
         if time_pipeline:
             start_time = time.time()
-        run_tile_indep_pipeline(nb)
-        run_stitch(nb)
+        run.run_tile_indep_pipeline(nb)
+        run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'
-        run_reference_spots(nb, overwrite_ref_spots=False)
+        run.run_reference_spots(nb, overwrite_ref_spots=False)
 
         # Keep reference spot information to compare to true spots, if wanted
         assert nb.ref_spots is not None, f'Reference spots not found in notebook at {config_filepath}'
@@ -1074,7 +1071,7 @@ class RoboMinnie:
             import cProfile, pstats
             profiler = cProfile.Profile()
             profiler.enable()
-        run_omp(nb)
+        run.run_omp(nb)
         if profile_omp:
             profiler.disable()
             stats = pstats.Stats(profiler).sort_stats('tottime')

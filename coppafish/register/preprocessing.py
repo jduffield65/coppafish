@@ -1,11 +1,10 @@
 import os
 import pickle
-import itertools
+import skimage
 import numpy as np
-from tqdm import tqdm
-from skimage.filters import sobel
-from coppafish.setup import NotebookPage
 from typing import Optional, Tuple
+
+from ..setup import NotebookPage
 
 
 def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):
@@ -379,7 +378,7 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     im = np.clip(im, image_value_range[0], image_value_range[1]) - image_value_range[0]
     # Filter the image if required
     if filter:
-        im = sobel(im)
+        im = skimage.filters.sobel(im)
     # Save the image as uint8
     if np.max(im) != 0:
         im = im / np.max(im) * 255  # Scale to 0-255

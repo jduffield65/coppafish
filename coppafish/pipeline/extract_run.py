@@ -1,11 +1,11 @@
-from .. import utils, extract
 import numpy as np
 import os
 from tqdm import tqdm
-from ..setup.notebook import NotebookPage, Notebook
-from skimage.filters import gaussian
 from typing import Tuple
 import warnings
+
+from ..setup.notebook import NotebookPage, Notebook
+from .. import utils, extract
 
 
 def extract_and_filter(config: dict, nbp_file: NotebookPage,

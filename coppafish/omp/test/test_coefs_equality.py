@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 
 
+@pytest.mark.optimised
 def test_fit_coefs_equality():
     # We want to test that the function `fit_coefs` is giving similar results in the jax and non-jax code
     rng = np.random.RandomState(5)
@@ -26,6 +28,7 @@ def test_fit_coefs_equality():
         'Expected similar coefs from optimised and non-optimised OMP'
 
 
+@pytest.mark.optimised
 def test_fit_coefs_weight_equality():
     rng = np.random.RandomState(5)
     n_rounds = 3
@@ -51,6 +54,7 @@ def test_fit_coefs_weight_equality():
         'Expected similar coefs from optimised and non-optimised OMP'
 
 
+@pytest.mark.optimised
 def test_get_best_gene_first_iter_equality():
     rng = np.random.RandomState(47)
     n_rounds = 3

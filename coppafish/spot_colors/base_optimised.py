@@ -1,11 +1,11 @@
 from functools import partial
 import numpy as np
-from .. import utils
-from ..setup.notebook import NotebookPage
 from typing import List, Optional, Tuple, Union
 from tqdm import tqdm
 import jax.numpy as jnp
 import jax
+
+from ..setup.notebook import NotebookPage
 
 
 def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, bool]:

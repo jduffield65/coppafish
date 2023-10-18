@@ -1,9 +1,10 @@
 import numpy as np
+import pytest
 
-from coppafish.call_spots import dot_product_optimised
 
-
+@pytest.mark.optimised
 def test_dot_product_score_no_weight():
+    from coppafish.call_spots import dot_product_optimised
     # Just use two spots, one round and one channel
     spot_colors = np.ones((2,1))
     # Set second spot colour to 0.5
@@ -18,7 +19,9 @@ def test_dot_product_score_no_weight():
     assert output.shape[1] == n_genes, 'Expected second dimension to be the gene count'
 
 
+@pytest.mark.optimised
 def test_dot_product_score():
+    from coppafish.call_spots import dot_product_optimised
     # Dot product score but with the weighting matrix applied
     # Just use two spots, one round and one channel
     spot_colors = np.ones((2,1))

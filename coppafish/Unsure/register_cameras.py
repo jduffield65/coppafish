@@ -1,10 +1,11 @@
 import numpy as np
-from coppafish import utils
-from coppafish.setup import NotebookPage
 # from skimage.registration import phase_cross_correlation
 # from skimage.filters import sobel
 from skimage import filters
 from skimage import registration
+
+from coppafish import utils
+from coppafish.setup import NotebookPage
 
 
 def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
