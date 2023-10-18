@@ -1,7 +1,6 @@
 import numpy as np
-from skimage.exposure import equalize_hist
-import tifffile as tf
 import yaml
+
 from coppafish import Notebook, NotebookPage
 
 

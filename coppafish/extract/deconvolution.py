@@ -1,10 +1,10 @@
 import numpy as np
+from typing import List, Union, Optional, Tuple
+
 from .. import utils
-from ..find_spots import detect_spots, check_neighbour_intensity, get_isolated_points
+from .. import find_spots
 from . import scale
 from ..setup import NotebookPage
-from typing import List, Union, Optional, Tuple
-from ..utils.spot_images import get_spot_images, get_average_spot_image
 
 
 def psf_pad(psf: np.ndarray, image_shape: Union[np.ndarray, List[int]]) -> np.ndarray:
@@ -79,16 +79,16 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
         elif intensity_thresh <= median_im or intensity_thresh >= np.iinfo(np.uint16).max:
             raise utils.errors.OutOfBoundsError("intensity_thresh", intensity_thresh, median_im,
                                                 np.iinfo(np.uint16).max)
-        spot_yxz, _ = detect_spots(im, intensity_thresh, radius_xy, radius_z, True)
+        spot_yxz, _ = find_spots.detect_spots(im, intensity_thresh, radius_xy, radius_z, True)
         # check fall off in intensity not too large
-        not_single_pixel = check_neighbour_intensity(im, spot_yxz, median_im)
-        isolated = get_isolated_points(spot_yxz, isolation_dist)
+        not_single_pixel = find_spots.check_neighbour_intensity(im, spot_yxz, median_im)
+        isolated = find_spots.get_isolated_points(spot_yxz, isolation_dist)
         spot_yxz = spot_yxz[np.logical_and(isolated, not_single_pixel), :]
         if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots / 4:
             # raise error on first tile if looks like we are going to use more than 4 tiles
             raise ValueError(f"\nFirst tile, {t}, only found {np.shape(spot_yxz)[0]} spots."
                              f"\nMaybe consider lowering intensity_thresh from current value of {intensity_thresh}.")
-        spot_images = np.append(spot_images, get_spot_images(im, spot_yxz, shape), axis=0)
+        spot_images = np.append(spot_images, utils.spot_images.get_spot_images(im, spot_yxz, shape), axis=0)
         n_spots = np.shape(spot_images)[0]
         use_tiles = np.setdiff1d(use_tiles, t)
         tiles_used.append(t)
@@ -117,7 +117,7 @@ def get_psf(spot_images: np.ndarray, annulus_width: float) -> np.ndarray:
     # Found that this works well as taper psf anyway, which gives reduced intensity as move away from centre.
     spot_images = spot_images - np.expand_dims(np.nanmedian(spot_images, axis=[1, 2]), [1, 2])
     spot_images = spot_images / np.expand_dims(np.nanmax(spot_images, axis=(1, 2)), [1, 2])
-    psf = get_average_spot_image(spot_images, 'median', 'annulus_2d', annulus_width)
+    psf = utils.spot_images.get_average_spot_image(spot_images, 'median', 'annulus_2d', annulus_width)
     # normalise psf so min is 0 and max is 1.
     psf = psf - psf.min()
     psf = psf / psf.max()

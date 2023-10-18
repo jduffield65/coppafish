@@ -1,8 +1,7 @@
-from coppafish.extract.fstack import rgb2gray, im2double, focus_stack, get_fmeasure, get_smeasure, get_weights, \
-    gfocus, gauss3p
-
 import numpy as np
-from coppafish.register.preprocessing import custom_shift
+
+from coppafish.extract import fstack
+from coppafish.register import preprocessing
 
 
 def test_rgb2gray():
@@ -20,7 +19,7 @@ def test_rgb2gray():
     images.append(rng.randint(2**64-1, size=(8, 18, 3), dtype=np.uint64))
     images.append(rng.randint(2**63-1, size=(8, 18, 3), dtype=np.int64))
     for image in images:
-        output = rgb2gray(image)
+        output = fstack.rgb2gray(image)
         assert output.ndim == 2, 'Expected two dimensional output'
         assert output.shape == image.shape[:2], f'Expected shape {image.shape[:2]}, got {output.shape}'
         assert output.dtype == image.dtype, 'Expected output as the same dtype as input'
@@ -41,7 +40,7 @@ def test_im2double():
     images.append(rng.randint(2**64-1, size=(8, 18), dtype=np.uint64))
     images.append(rng.randint(2**63-1, size=(8, 18, 7), dtype=np.int64))
     for image in images:
-        output = im2double(image)
+        output = fstack.im2double(image)
         assert output.ndim == image.ndim, f'Expected {image.ndim} dimensions, got {output.ndim}'
         assert output.shape == image.shape, f'Expected shape {image.shape}, got {output.shape}'
         assert output.dtype == np.float64, f'Expected float64 dtype output, got {output.dtype}'
@@ -55,8 +54,8 @@ def test_focus_stack():
     images.append(rng.randint(1, 2**8-1, size=(5, 6, 7, 3), dtype=np.uint8))
     images.append(rng.randint(1, 2**16-1, size=(8, 9, 10), dtype=np.uint16))
     for image in images:
-        output_0 = focus_stack(image, nhsize=rng.randint(np.min(list(image.shape)), dtype=np.int64), alpha=rng.rand(), 
-                               sth=rng.rand()*(2**63-1))
+        output_0 = fstack.focus_stack(image, nhsize=rng.randint(np.min(list(image.shape)), dtype=np.int64), 
+                                      alpha=rng.rand(), sth=rng.rand()*(2**63-1))
         if image.ndim == 4:
             assert output_0.shape == (image.shape[0], image.shape[1], 3), f'Unexpected output shape'
         else:
@@ -67,9 +66,9 @@ def test_focus_stack():
     offset = rng.randint(5, size=(4))
     # No z shift because it is not clear how it will affect the output
     offset[2], offset[3] = 0, 0
-    image_shifted = custom_shift(image, offset)
-    output = focus_stack(image)
-    output_shifted = focus_stack(image_shifted)
+    image_shifted = preprocessing.custom_shift(image, offset)
+    output = fstack.focus_stack(image)
+    output_shifted = fstack.focus_stack(image_shifted)
     assert np.allclose(
         output[7:15,7:15,:], 
         output_shifted[7+offset[0]:15+offset[0],7+offset[1]:15+offset[1],:]

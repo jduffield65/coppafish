@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import ndimage
-from scipy.signal import medfilt2d
+from scipy import signal
 import cv2
 import numpy.typing as npt
 from typing import Optional, Tuple, Union
@@ -177,7 +177,7 @@ def get_weights(S: npt.NDArray, fm: npt.NDArray, alpha: float, sth: float) -> np
         ``float [M x N]``. Cut off frequency for high pass convolve_2d.
     """
     phi = 0.5 * (1 + np.tanh(alpha * (S - sth))) / alpha
-    phi = medfilt2d(phi, 3)
+    phi = signal.medfilt2d(phi, 3)
     omega = 0.5 + 0.5 * np.tanh(np.expand_dims(phi, 2) * (fm - 1))
     return omega
 
