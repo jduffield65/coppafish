@@ -1,14 +1,15 @@
 import zarr
 import numpy.typing as npt
-from numcodecs import Blosc, Delta
+from numcodecs import Blosc
 import numpy as np
-from ..setup import NotebookPage
-from .. import utils
 from typing import Optional, Union, Tuple, List
 try:
     import jax.numpy as jnp
 except ImportError:
     import numpy as jnp
+
+from ..setup import NotebookPage
+from .. import utils
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: npt.NDArray[np.int32],

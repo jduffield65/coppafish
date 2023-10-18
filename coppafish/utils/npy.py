@@ -1,7 +1,5 @@
 import numpy as np
 import numpy.typing as npt
-from ..setup import NotebookPage
-from .. import utils, extract
 try:
     import jax.numpy as jnp
 except ImportError:
@@ -10,6 +8,9 @@ from typing import List, Tuple, Union, Optional
 from tqdm import tqdm
 import numpy_indexed
 import numbers
+
+from ..setup import NotebookPage
+from .. import utils, extract
 
 
 def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: npt.NDArray[np.int32],

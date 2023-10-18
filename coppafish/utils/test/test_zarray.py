@@ -1,8 +1,8 @@
-from coppafish import NotebookPage
-from coppafish.utils.zarray import load_tile, save_tile
-
 import os
 import numpy as np
+
+from coppafish import NotebookPage
+from coppafish.utils import zarray
 
 
 def test_zarray_save_load_tile():
@@ -38,16 +38,16 @@ def test_zarray_save_load_tile():
         'n_channels': 2,
     })
     # 3d
-    save_tile(nbp_file_3d, nbp_basic_3d, array_1, 0, 0, 0)
-    output = load_tile(nbp_file_3d, nbp_basic_3d, 0, 0, 0, None)
+    zarray.save_tile(nbp_file_3d, nbp_basic_3d, array_1, 0, 0, 0)
+    output = zarray.load_tile(nbp_file_3d, nbp_basic_3d, 0, 0, 0, None)
     assert np.allclose(array_1, output), 'Loaded in tile does not have the same values as starting tile'
-    save_tile(nbp_file_3d, nbp_basic_3d, array_1, 0, 0, 0, num_rotations=2)
-    output = load_tile(nbp_file_3d, nbp_basic_3d, 0, 0, 0, None)
+    zarray.save_tile(nbp_file_3d, nbp_basic_3d, array_1, 0, 0, 0, num_rotations=2)
+    output = zarray.load_tile(nbp_file_3d, nbp_basic_3d, 0, 0, 0, None)
     assert np.allclose(np.rot90(array_1, 2, axes=(0, 1)), output), 'Expected a rotated tile to be loaded in'
     yxz = [None, None, 1]
-    save_tile(nbp_file_3d, nbp_basic_3d, array_1, 0, 0, 0)
-    output = load_tile(nbp_file_3d, nbp_basic_3d, 0, 0, 0, yxz=yxz)
+    zarray.save_tile(nbp_file_3d, nbp_basic_3d, array_1, 0, 0, 0)
+    output = zarray.load_tile(nbp_file_3d, nbp_basic_3d, 0, 0, 0, yxz=yxz)
     assert np.allclose(array_1[:,:,1], output), 'Expected a subvolume to be loaded in'
     # TODO: Make 2d work, potentially errors in the script itself
-    # save_tile(nbp_file_2d, nbp_basic_2d, array_2, 0, 0, 0, num_rotations=1, suffix='suffix_array_2')
-    # output = load_tile(nbp_file_2d, nbp_basic_2d, 0, 0, 0, suffix='suffix_array_2')
+    # zarray.save_tile(nbp_file_2d, nbp_basic_2d, array_2, 0, 0, 0, num_rotations=1, suffix='suffix_array_2')
+    # output = zarray.load_tile(nbp_file_2d, nbp_basic_2d, 0, 0, 0, suffix='suffix_array_2')

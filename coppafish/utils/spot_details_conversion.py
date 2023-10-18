@@ -1,6 +1,7 @@
-from coppafish import Notebook
 import numpy as np
-from coppafish.pipeline.run import run_find_spots
+
+from coppafish import Notebook
+from coppafish.pipeline import run
 
 
 def spot_details_conversion(nb: Notebook, spot_details_info_dir: str):
@@ -55,7 +56,7 @@ def spot_details_conversion(nb: Notebook, spot_details_info_dir: str):
     # Delete old find_spots page
     del nb.find_spots
     # Run find_spots again, but this time with new spot_details_info saved
-    run_find_spots(nb)
+    run.run_find_spots(nb)
 
     return nb
 

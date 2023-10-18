@@ -1,14 +1,16 @@
 import numpy as np
 import nd2
-from ..setup import NotebookPage, get_tilepos
-from ..utils import raw
 import os
-from . import errors
 from typing import Optional, List, Union
 import json
 import numpy_indexed
 import numbers
 from tqdm import tqdm
+
+from .. import setup
+from ..setup import NotebookPage
+from ..utils import raw
+from . import errors
 
 
 # bioformats ssl certificate error solution:
@@ -99,9 +101,9 @@ def get_metadata(file_path: str, config: dict) -> dict:
                            for i in range(images.sizes['P'])])
         xy_pos = (xy_pos - np.min(xy_pos, 0)) / metadata['pixel_size_xy']
         metadata['xy_pos'] = xy_pos
-        metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
-                                                                         expected_overlap=config['stitch']
-                                                                         ['expected_overlap'])
+        metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = \
+            setup.get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'], 
+                              expected_overlap=config['stitch']['expected_overlap'])
         # Now also extract the laser and camera associated with each channel
         desc = images.text_info['description']
         channel_metadata = desc.split('Plane #')[1:]
@@ -190,9 +192,9 @@ def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     xy_pos = np.array(xy_pos)
     xy_pos = (xy_pos - np.min(xy_pos, axis=0)) / cal
     metadata['xy_pos'] = xy_pos
-    metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'],
-                                                                     expected_overlap=config['stitch']
-                                                                     ['expected_overlap'])
+    metadata['tilepos_yx_nd2'], metadata['tilepos_yx'] = \
+        setup.get_tilepos(xy_pos=xy_pos, tile_sz=metadata['tile_sz'], 
+                          expected_overlap=config['stitch']['expected_overlap'])
     metadata['n_tiles'] = len(metadata['tilepos_yx_nd2'])
     # get n_channels and channel info
     metadata['channel_laser'], metadata['channel_camera'] = laser, camera
