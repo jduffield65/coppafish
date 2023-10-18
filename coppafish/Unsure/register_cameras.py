@@ -1,6 +1,4 @@
 import numpy as np
-# from skimage.registration import phase_cross_correlation
-# from skimage.filters import sobel
 from skimage import filters
 from skimage import registration
 
