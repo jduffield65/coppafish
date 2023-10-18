@@ -4,3 +4,4 @@ coppafish.egg-info
 **/integration_dir
 **/unit_test_dir
 **/*.egg
+**/.DS_Store
