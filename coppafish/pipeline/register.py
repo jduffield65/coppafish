@@ -228,7 +228,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        n_threads = int(config['n_background_scale_threads'])
+        n_threads = config['n_background_scale_threads']
         # Maximum threads physically possible is (potentially) bottlenecked by available RAM
         max_n_threads = int(psutil.virtual_memory().available // 4.2e8 - 10)
         if n_threads is None:
