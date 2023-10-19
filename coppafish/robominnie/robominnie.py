@@ -320,7 +320,7 @@ class RoboMinnie:
                 RoboMinnie instance.
 
         Returns:
-            Dict (str:str): Gene names as keys, gene codes as values.
+            Dict (str: str): Gene names as keys, gene codes as values.
 
         Notes:
             See [here](https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction) for more details.
