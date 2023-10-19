@@ -78,4 +78,5 @@ def test_dilate():
     for image, kernel in zip(images, kernels):
         output = morphology.base.dilate(image, kernel)
         assert output.shape == image.shape, 'Expected the dilated `image` shape to equal input `image` shape'
-        assert not np.allclose(output, image), 'Expected dilated `image` to be different to the input `image`'
+        assert not np.allclose(output, image), \
+            'Expected dilated `image` to contain different values to the original `image`'
