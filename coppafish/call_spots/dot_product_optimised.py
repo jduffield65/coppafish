@@ -1,6 +1,6 @@
 from functools import partial
 import jax
-from jax import numpy as jnp
+import jax.numpy as jnp
 
 
 def dot_product_score_single(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, norm_shift: float,

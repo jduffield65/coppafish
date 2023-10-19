@@ -1,10 +1,8 @@
 import pandas as pd
-from ..call_spots.qual_check import quality_threshold
-from ..setup import NotebookPage, Notebook
-from .. import utils
-from typing import Optional
-import warnings
 import os
+
+from ..call_spots import qual_check
+from ..setup import NotebookPage, Notebook
 
 
 def get_thresholds_page(nb: Notebook) -> NotebookPage:
@@ -58,7 +56,7 @@ def export_to_pciseq(nb: Notebook, method = 'omp', intensity_thresh: float = 0, 
         raise ValueError(f"Notebook does not contain {page_name} page.")
     if os.path.isfile(nb.file_names.pciseq[index]):
         raise FileExistsError(f"File already exists: {nb.file_names.pciseq[index]}")
-    qual_ok = quality_threshold(nb, method, intensity_thresh, score_thresh)
+    qual_ok = qual_check.quality_threshold(nb, method, intensity_thresh, score_thresh)
 
     # get coordinates in stitched image
     global_spot_yxz = nb.__getattribute__(page_name).local_yxz + \

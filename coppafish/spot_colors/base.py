@@ -1,7 +1,7 @@
 from typing import Optional, List, Union, Tuple
 import numpy as np
 from tqdm import tqdm
-from .. import utils
+
 from ..setup import NotebookPage
 
 

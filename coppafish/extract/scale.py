@@ -1,9 +1,10 @@
 import numpy as np
-from .. import utils
-from ..setup import NotebookPage
 from typing import List, Tuple, Optional
 import os
 import warnings
+
+from .. import utils
+from ..setup import NotebookPage
 
 
 def get_scale_from_txt(txt_file: str, scale: Optional[float], scale_anchor: Optional[float],

@@ -1,13 +1,5 @@
-from .. import utils
 import numpy as np
 import numpy_indexed
-from ..setup.notebook import NotebookPage
-from ..extract import scale
-from ..spot_colors import get_spot_colors, all_pixel_yxz
-from ..call_spots import get_spot_intensity, get_non_duplicate
-from .. import omp
-from ..utils.base import round_any
-from joblib import Parallel, delayed
 import os
 import warnings
 from scipy import sparse
@@ -18,6 +10,13 @@ try:
 except ImportError:
     warnings.warn('Jax is not installed so call_spots_omp will be slow')
     import numpy as jnp
+
+from .. import utils
+from ..setup.notebook import NotebookPage
+from ..extract import scale
+from .. import spot_colors
+from .. import call_spots
+from .. import omp
 
 
 def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage,
@@ -127,8 +126,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             sparse.save_npz(nbp_file.omp_spot_coef, spot_coefs)
         elif spot_coefs.shape[0] < spot_info.shape[0]:
             # If more spots in info than coefs then likely because duplicates removed from coefs but not spot_info.
-            not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre,
-                                              spot_info[:, :3], spot_info[:, 6])
+            not_duplicate = call_spots.get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, 
+                                                         spot_info[:, :3], spot_info[:, 6])
             if not_duplicate.size == spot_info.shape[0]:
                 warnings.warn(f'There were less spots in\n{nbp_file.omp_spot_info}\nthan\n{nbp_file.omp_spot_coef} '
                               f'because duplicates were deleted for spot_coefs but not for spot_info.\n'
@@ -180,21 +179,23 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
             if nbp_basic.use_preseq:
                 pixel_colors_tz, pixel_yxz_tz, bg_colours = \
-                    get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                                    int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                                    bg_scale=nbp_extract.bg_scale)
+                    spot_colors.get_spot_colors(
+                        spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
+                        int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                        bg_scale=nbp_extract.bg_scale)
             else:
                 pixel_colors_tz, pixel_yxz_tz = \
-                    get_spot_colors(all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                                    int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                                    bg_scale=nbp_extract.bg_scale)
+                    spot_colors.get_spot_colors(
+                        spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
+                        int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                        bg_scale=nbp_extract.bg_scale)
             if pixel_colors_tz.shape[0] == 0:
                 continue
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
-            pixel_intensity_tz = get_spot_intensity(jnp.abs(pixel_colors_tz))
+            pixel_intensity_tz = call_spots.get_spot_intensity(jnp.abs(pixel_colors_tz))
             keep = pixel_intensity_tz > nbp.initial_intensity_thresh
             if not keep.any():
                 continue
@@ -242,7 +243,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                     message += "This contains no negative values either, so OMP section needs re-running with " \
                                "config['file_names']['omp_spot_shape'] specified"
                 else:
-                    max_neg_value = round_any(np.abs(shape_neg_values).max(), 0.001, 'floor')
+                    max_neg_value = utils.base.round_any(np.abs(shape_neg_values).max(), 0.001, 'floor')
                     message += f"OMP section needs re-running with\n" \
                                f"config['omp']['shape_sign_thresh'] < {max_neg_value} or " \
                                f"config['file_names']['omp_spot_shape'] specified"
@@ -305,8 +306,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
     spot_info = np.load(nbp_file.omp_spot_info)
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
-    not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre,
-                                      spot_info[:, :3], spot_info[:, 6])
+    not_duplicate = call_spots.get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, 
+                                                 spot_info[:, :3], spot_info[:, 6])
 
     # Add spot info to notebook page
     nbp.local_yxz = spot_info[not_duplicate, :3]
@@ -321,16 +322,16 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
             if nbp_basic.use_preseq:
-                nd_spot_colors_use[in_tile], bg_colours = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                            transform, nbp_file, nbp_basic, nbp_extract, 
-                                                            bg_scale=nbp_extract.bg_scale)
+                nd_spot_colors_use[in_tile], bg_colours = spot_colors.get_spot_colors(
+                    jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
+                    bg_scale=nbp_extract.bg_scale)
             else:
-                nd_spot_colors_use[in_tile] = get_spot_colors(jnp.asarray(nbp.local_yxz[in_tile]), t,
-                                                              transform, nbp_file, nbp_basic, nbp_extract, 
-                                                              bg_scale=nbp_extract.bg_scale)
+                nd_spot_colors_use[in_tile] = spot_colors.get_spot_colors(
+                    jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
+                    bg_scale=nbp_extract.bg_scale)
 
     spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
-    nbp.intensity = np.asarray(get_spot_intensity(spot_colors_norm))
+    nbp.intensity = np.asarray(call_spots.get_spot_intensity(spot_colors_norm))
     del spot_colors_norm
 
     # When saving to notebook, include unused rounds/channels.

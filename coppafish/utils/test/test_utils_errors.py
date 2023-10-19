@@ -1,7 +1,7 @@
-from coppafish.utils.errors import check_shape, check_color_nan
-from coppafish import NotebookPage
-
 import numpy as np
+
+from coppafish.utils import errors
+from coppafish import NotebookPage
 
 
 def test_check_shape():
@@ -11,21 +11,21 @@ def test_check_shape():
     wrong_shape_3 = (5, 10, 4)
     wrong_shape_4 = (5, 10, 4, 2, 20)
     array = np.empty(shape)
-    assert check_shape(array, shape)
-    assert not check_shape(array, wrong_shape_1)
-    assert not check_shape(array, wrong_shape_2)
-    assert not check_shape(array, wrong_shape_3)
-    assert not check_shape(array, wrong_shape_4)
-    assert check_shape(array, list(shape))
-    assert not check_shape(array, list(wrong_shape_1))
-    assert not check_shape(array, list(wrong_shape_2))
-    assert not check_shape(array, list(wrong_shape_3))
-    assert not check_shape(array, list(wrong_shape_4))
-    assert check_shape(array, np.array(shape))
-    assert not check_shape(array, np.array(wrong_shape_1))
-    assert not check_shape(array, np.array(wrong_shape_2))
-    assert not check_shape(array, np.array(wrong_shape_3))
-    assert not check_shape(array, np.array(wrong_shape_4))
+    assert errors.check_shape(array, shape)
+    assert not errors.check_shape(array, wrong_shape_1)
+    assert not errors.check_shape(array, wrong_shape_2)
+    assert not errors.check_shape(array, wrong_shape_3)
+    assert not errors.check_shape(array, wrong_shape_4)
+    assert errors.check_shape(array, list(shape))
+    assert not errors.check_shape(array, list(wrong_shape_1))
+    assert not errors.check_shape(array, list(wrong_shape_2))
+    assert not errors.check_shape(array, list(wrong_shape_3))
+    assert not errors.check_shape(array, list(wrong_shape_4))
+    assert errors.check_shape(array, np.array(shape))
+    assert not errors.check_shape(array, np.array(wrong_shape_1))
+    assert not errors.check_shape(array, np.array(wrong_shape_2))
+    assert not errors.check_shape(array, np.array(wrong_shape_3))
+    assert not errors.check_shape(array, np.array(wrong_shape_4))
 
 
 def test_check_color_nan():
@@ -48,7 +48,7 @@ def test_check_color_nan():
                     continue
                 # Set co,r,c to a non invalid value
                 array[s,r,c] = rng.rand()
-    check_color_nan(array, nbp_basic)
+    errors.check_color_nan(array, nbp_basic)
     del array
     array = np.full(shape, fill_value=-nbp_basic.tile_pixel_value_shift, dtype=int)
     for s in range(n_codes):
@@ -60,4 +60,4 @@ def test_check_color_nan():
                     continue
                 # Set co,r,c to a non invalid value
                 array[s,r,c] = rng.randint(0, 100, dtype=int)
-    check_color_nan(array, nbp_basic)
+    errors.check_color_nan(array, nbp_basic)

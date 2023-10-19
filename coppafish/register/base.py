@@ -1,17 +1,13 @@
 import nd2
+import scipy
 import numpy as np
+import skimage
 from tqdm import tqdm
-from skimage.transform import hough_circle, hough_circle_peaks
-from skimage.feature import canny
-from sklearn.linear_model import HuberRegressor
-from scipy.spatial import KDTree
-from scipy.ndimage import affine_transform
-from scipy import stats
-from skimage.filters import sobel
-from coppafish.register.preprocessing import custom_shift, split_3d_image, replace_scale, populate_full, \
-    merge_subvols, yxz_to_zyx_affine, yxz_to_zyx, NotebookPage
-from skimage.registration import phase_cross_correlation
 from multiprocessing import Queue
+from sklearn.linear_model import HuberRegressor
+
+from .preprocessing import NotebookPage
+from . import preprocessing
 
 
 def find_shift_array(subvol_base, subvol_target, position, r_threshold):
@@ -75,8 +71,8 @@ def find_z_tower_shifts(subvol_base, subvol_target, position, pearson_r_threshol
     shift_corr = np.zeros(z_subvolumes)
     for z in range(z_subvolumes):
         z_start, z_end = int(max(0, z - z_neighbours)), int(min(z_subvolumes, z + z_neighbours + 1))
-        merged_subvol_target = merge_subvols(position=np.copy(position[z_start:z_end]),
-                                             subvol=subvol_target[z_start:z_end])
+        merged_subvol_target = preprocessing.merge_subvols(position=np.copy(position[z_start:z_end]), 
+                                                           subvol=subvol_target[z_start:z_end])
         merged_subvol_base = np.zeros(merged_subvol_target.shape)
         box_bottom = position[z_start, 0]
         merged_subvol_base[position[z, 0] - box_bottom:position[z, 0] - box_bottom + z_box] = subvol_base[z]
@@ -103,7 +99,8 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.9):
     """
     if subvol_base.shape != subvol_target.shape:
         raise ValueError("Subvolume arrays have different shapes")
-    shift, _, _ = phase_cross_correlation(reference_image=subvol_target, moving_image=subvol_base, upsample_factor=10)
+    shift, _, _ = skimage.registration.phase_cross_correlation(reference_image=subvol_target, moving_image=subvol_base, 
+                                                               upsample_factor=10)
     alt_shift = np.copy(shift)
     # now anti alias the shift in z. To do this, consider that the other possible aliased z shift is the either one
     # subvolume above or below the current shift. (In theory, we could also consider the subvolume 2 above or below,
@@ -114,8 +111,8 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.9):
         alt_shift[0] = shift[0] + subvol_base.shape[0]
 
     # Now we need to compute the correlation coefficient of the shift and the anti aliased shift
-    shift_base = custom_shift(subvol_base, shift.astype(int))
-    alt_shift_base = custom_shift(subvol_base, alt_shift.astype(int))
+    shift_base = preprocessing.custom_shift(subvol_base, shift.astype(int))
+    alt_shift_base = preprocessing.custom_shift(subvol_base, alt_shift.astype(int))
     # Now compute the correlation coefficients. First create a mask of the nonzero values
     mask = shift_base != 0
     shift_corr = np.corrcoef(shift_base[mask], subvol_target[mask])[0, 1]
@@ -235,8 +232,8 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
     round_registration_data = {'position': [], 'shift': [], 'shift_corr': [], 'transform': []}
 
     if config['sobel']:
-        anchor_image = sobel(anchor_image)
-        round_image = [sobel(r) for r in round_image]
+        anchor_image = skimage.filters.sobel(anchor_image)
+        round_image = [skimage.filters.sobel(r) for r in round_image]
 
     # Now compute round shifts for this tile and the affine transform for each round
     pbar = tqdm(total=len(round_image), desc='Computing round transforms')
@@ -245,11 +242,12 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
         pbar.set_description('Computing shifts for round ' + str(r))
 
         # next we split image into overlapping cuboids
-        subvol_base, position = split_3d_image(image=anchor_image, z_subvolumes=z_subvols,
-                                               y_subvolumes=y_subvols, x_subvolumes=x_subvols,
-                                               z_box=z_box, y_box=y_box, x_box=x_box)
-        subvol_target, _ = split_3d_image(image=round_image[r], z_subvolumes=z_subvols, y_subvolumes=y_subvols,
-                                          x_subvolumes=x_subvols, z_box=z_box, y_box=y_box, x_box=x_box)
+        subvol_base, position = preprocessing.split_3d_image(image=anchor_image, z_subvolumes=z_subvols, 
+                                                             y_subvolumes=y_subvols, x_subvolumes=x_subvols, 
+                                                             z_box=z_box, y_box=y_box, x_box=x_box)
+        subvol_target, _ = preprocessing.split_3d_image(image=round_image[r], z_subvolumes=z_subvols, 
+                                                        y_subvolumes=y_subvols, x_subvolumes=x_subvols, z_box=z_box, 
+                                                        y_box=y_box, x_box=x_box)
 
         # Find the subvolume shifts
         shift, corr = find_shift_array(subvol_base, subvol_target, position=position.copy(), r_threshold=r_thresh)
@@ -258,8 +256,9 @@ def round_registration(anchor_image: np.ndarray, round_image: list, config: dict
         # the most important part of the transform, we will fit any residual global shift correction here
         # NB: This is only reliable if using dapi so don't do it otherwise
         if config['round_registration_channel'] == 0:
-            adjusted_target = affine_transform(round_image[r], transform, order=3)
-            global_shift_correction = phase_cross_correlation(reference_image=adjusted_target, moving_image=anchor_image)[0]
+            adjusted_target = scipy.ndimage.affine_transform(round_image[r], transform, order=3)
+            global_shift_correction = skimage.registration.phase_cross_correlation(reference_image=adjusted_target, 
+                                                                                  moving_image=anchor_image)[0]
             transform[:, 3] += global_shift_correction
         # Append these arrays to the round_shift, round_shift_corr, round_transform and position storage
         round_registration_data['shift'].append(shift)
@@ -322,9 +321,10 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
     # Now we'll turn each image into a point cloud
     bead_point_clouds = []
     for i in range(n_cams):
-        edges = canny(fluorescent_beads[i],  sigma=3, low_threshold=10, high_threshold=50)
-        hough_res = hough_circle(edges, bead_radii)
-        accums, cx, cy, radii = hough_circle_peaks(hough_res, bead_radii, min_xdistance=10, min_ydistance=10)
+        edges = skimage.feature.canny(fluorescent_beads[i],  sigma=3, low_threshold=10, high_threshold=50)
+        hough_res = skimage.transform.hough_circle(edges, bead_radii)
+        accums, cx, cy, radii = skimage.transform.hough_circle_peaks(hough_res, bead_radii, min_xdistance=10, 
+                                                                     min_ydistance=10)
         bead_point_clouds.append(np.vstack((cy, cx)).T)
 
     # Now convert the point clouds from yx to yxz. This is because our ICP algorithm assumes that the point clouds
@@ -358,7 +358,7 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
     # Convert transforms from yxz to zyx
     transform_zyx = np.zeros((4, 3, 4))
     for i in range(4):
-        transform_zyx[i] = yxz_to_zyx_affine(transform[i])
+        transform_zyx[i] = preprocessing.yxz_to_zyx_affine(transform[i])
 
     return transform_zyx
 
@@ -421,7 +421,7 @@ def regularise_round_scaling(scale: np.ndarray):
     # b.) those that increase when the majority decrease or those that decrease when majority increase
     # First carry out removal of outliers of type (a)
     median_z_scale = np.repeat(np.median(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
-    iqr_z_scale = np.repeat(stats.iqr(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
+    iqr_z_scale = np.repeat(scipy.stats.iqr(z_scale, axis=0)[np.newaxis, :], n_tiles, axis=0)
     outlier_z = np.abs(z_scale - median_z_scale) > iqr_z_scale
     z_scale[outlier_z] = median_z_scale[outlier_z]
 
@@ -467,10 +467,9 @@ def regularise_transforms(registration_data: dict, tile_origin: np.ndarray, resi
                                                    residual_threshold=residual_threshold)
     round_scale = np.array([round_transform[:, :, 0, 0], round_transform[:, :, 1, 1], round_transform[:, :, 2, 2]])
     round_scale_regularised = regularise_round_scaling(round_scale)
-    round_transform = replace_scale(transform=round_transform, scale=round_scale_regularised)
-    round_transform = populate_full(sublist_1=use_tiles, list_1=np.arange(n_tiles),
-                                    sublist_2=use_rounds, list_2=np.arange(n_rounds),
-                                    array=round_transform)
+    round_transform = preprocessing.replace_scale(transform=round_transform, scale=round_scale_regularised)
+    round_transform = preprocessing.populate_full(sublist_1=use_tiles, list_1=np.arange(n_tiles), sublist_2=use_rounds, 
+                                                  list_2=np.arange(n_rounds), array=round_transform)
 
     registration_data['round_registration']['transform'] = round_transform
 
@@ -511,7 +510,7 @@ def get_transform(yxz_base: np.ndarray, yxz_target: np.ndarray, transform_old: n
     # their nearest neighbours within yxz_transform, which is the initial transform applied to yxz_base
     yxz_base_pad = np.pad(yxz_base, [(0, 0), (0, 1)], constant_values=1)
     yxz_transform = yxz_base_pad @ transform_old
-    yxz_transform_tree = KDTree(yxz_transform)
+    yxz_transform_tree = scipy.spatial.KDTree(yxz_transform)
     # the next query works the following way. For each point in yxz_target, we look for the closest neighbour in the
     # anchor, which we have now applied the initial transform to. If this is below dist_thresh, we append its distance
     # to distances and append the index of this neighbour to neighbour
@@ -620,10 +619,11 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
                               j * sub_image_size:(j + 1) * sub_image_size]
             sub_image_seq = seq[:, i * sub_image_size:(i + 1) * sub_image_size,
                             j * sub_image_size:(j + 1) * sub_image_size]
-            sub_image_shifts[i, j] = phase_cross_correlation(sub_image_preseq, sub_image_seq)[0]
-            sub_image_shift_score[i, j] = np.corrcoef(sub_image_preseq.ravel(),
-                                                      custom_shift(sub_image_seq, sub_image_shifts[i, j].astype(int))
-                                                      .ravel())[0, 1]
+            sub_image_shifts[i, j] = skimage.registration.phase_cross_correlation(sub_image_preseq, sub_image_seq)[0]
+            sub_image_shift_score[i, j] = np.corrcoef(
+                sub_image_preseq.ravel(),
+                preprocessing.custom_shift(sub_image_seq, sub_image_shifts[i, j].astype(int)).ravel()
+            )[0, 1]
     # Now find the best sub-image
     if np.sum(np.isnan(sub_image_shift_score)) == n_sub_images ** 2:
         print('Warning: No sub-image shifts found. Setting scale to 1 and returning original images.')
@@ -633,7 +633,8 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
                         best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
     sub_image_preseq = preseq[:, best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
                               best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
-    sub_image_seq = custom_shift(sub_image_seq, sub_image_shifts[best_sub_image[0], best_sub_image[1]].astype(int))
+    sub_image_seq = preprocessing.custom_shift(sub_image_seq, sub_image_shifts[best_sub_image[0], 
+                                                                               best_sub_image[1]].astype(int))
 
     # Now find the top intensity_percentile pixels from the image to linear regress with any background
     mask = sub_image_preseq > np.percentile(sub_image_preseq, intensity_percentile)
@@ -671,15 +672,15 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
     elif nbp_extract.file_type == '.zarr':
         from ..utils.zarray import load_tile
 
-    transform_pre = yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c],
-                                        new_origin=np.array([mid_z-z_rad, 0, 0]))
-    transform_seq = yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-    preseq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c,
-                                    yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-    seq = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c,
-                                yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-    preseq = affine_transform(preseq, transform_pre)
-    seq = affine_transform(seq, transform_seq)
+    transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
+                                                    new_origin=np.array([mid_z-z_rad, 0, 0]))
+    transform_seq = preprocessing.yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
+    preseq = preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c, 
+                                                yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    seq = preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c, 
+                                             yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    preseq = scipy.ndimage.affine_transform(preseq, transform_pre)
+    seq = scipy.ndimage.affine_transform(seq, transform_seq)
     output = brightness_scale(preseq, seq)
     if queue is not None:
         queue.put(output)

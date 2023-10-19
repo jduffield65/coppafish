@@ -1,6 +1,5 @@
 from typing import Tuple
 import numpy as np
-from tqdm import tqdm
 
 
 def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_squared: np.ndarray = None,

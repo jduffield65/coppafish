@@ -1,8 +1,9 @@
-from math import floor, ceil
+import math as maths
 import cv2
 import numpy as np
-from .morphology import dilate
 from typing import Optional
+
+from . import morphology
 
 
 def periodic_line(p: int, v: np.ndarray) -> np.ndarray:
@@ -92,9 +93,9 @@ def disk(r: int, n: int = 4) -> np.ndarray:
         nhood = np.ones((2 * r - 1, 2 * r - 1), np.uint8) * -np.inf
         nhood[int((nhood.shape[0] - 1) / 2), int((nhood.shape[0] - 1) / 2)] = 1
         for q in range(n):
-            rp = int(np.floor(k / np.linalg.norm(v[q, :])))
+            rp = int(np.maths.floor(k / np.linalg.norm(v[q, :])))
             decomposition = periodic_line(rp, v[q, :])
-            nhood = dilate(nhood, decomposition)
+            nhood = morphology.dilate(nhood, decomposition)
         nhood = nhood > 0
 
         # Now we are going to add additional vertical and horizontal line
@@ -147,12 +148,12 @@ def annulus(r0: float, r_xy: float, r_z: Optional[float] = None) -> np.ndarray:
         `int [2*floor(r_xy1)+1, 2*floor(r_xy1)+1, 2*floor(r_z1)+1]`.
             Structuring element with each element either `0` or `1`.
     """
-    r_xy1_int = floor(r_xy)
+    r_xy1_int = maths.floor(r_xy)
     if r_z is None:
         y, x = np.meshgrid(np.arange(-r_xy1_int, r_xy1_int + 1), np.arange(-r_xy1_int, r_xy1_int + 1))
         m = x ** 2 + y ** 2
     else:
-        r_z1_int = floor(r_z)
+        r_z1_int = maths.floor(r_z)
         y, x, z = np.meshgrid(np.arange(-r_xy1_int, r_xy1_int + 1), np.arange(-r_xy1_int, r_xy1_int + 1),
                               np.arange(-r_z1_int, r_z1_int + 1))
         m = x ** 2 + y ** 2 + z ** 2
@@ -180,7 +181,7 @@ def fspecial(r_y: float, r_x: Optional[float] = None, r_z: Optional[float] = Non
     """
     if r_x is None and r_z is None:
         r = r_y
-        crad = ceil(r - 0.5)
+        crad = maths.ceil(r - 0.5)
         x, y = np.meshgrid(np.arange(-crad, crad + 1), np.arange(-crad, crad + 1))
         max_xy = np.maximum(np.abs(x), np.abs(y))
         min_xy = np.minimum(np.abs(x), np.abs(y))
@@ -215,8 +216,9 @@ def fspecial(r_y: float, r_x: Optional[float] = None, r_z: Optional[float] = Non
         sgrid[crad, crad] = min(sgrid[crad, crad], 1)
         h = sgrid / np.sum(sgrid)
     else:
-        x, y, z = np.meshgrid(np.arange(-ceil(r_x), ceil(r_x) + 1), np.arange(-ceil(r_y), ceil(r_y) + 1),
-                              np.arange(-ceil(r_z), ceil(r_z) + 1))
+        x, y, z = np.meshgrid(np.arange(-maths.ceil(r_x), maths.ceil(r_x) + 1), 
+                              np.arange(-maths.ceil(r_y), maths.ceil(r_y) + 1),
+                              np.arange(-maths.ceil(r_z), maths.ceil(r_z) + 1))
         h = (1 - x ** 2 / r_x ** 2 - y ** 2 / r_y ** 2 - z ** 2 / r_z ** 2) >= 0
         h = h / np.sum(h)
     return h

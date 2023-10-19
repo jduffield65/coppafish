@@ -4,17 +4,13 @@ import psutil
 import itertools
 import numpy as np
 from tqdm import tqdm
-from scipy.ndimage import affine_transform
-from skimage.registration import phase_cross_correlation
-from skimage.filters import gaussian
+from skimage import filters
 from multiprocessing import Queue, Process
-from .. import utils
+
 from ..setup import NotebookPage
-from ..find_spots import spot_yxz
-from ..register.base import icp, regularise_transforms, round_registration, channel_registration, brightness_scale, \
-    compute_brightness_scale
-from ..register.preprocessing import compose_affine, invert_affine, zyx_to_yxz_affine, yxz_to_zyx_affine, \
-    load_reg_data, yxz_to_zyx
+from .. import find_spots
+from ..register import preprocessing
+from ..register import base as register_base
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
@@ -70,7 +66,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         from ..utils.zarray import load_tile, save_tile
 
     # Load in registration data from previous runs of the software
-    registration_data = load_reg_data(nbp_file, nbp_basic, config)
+    registration_data = preprocessing.load_reg_data(nbp_file, nbp_basic, config)
     uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['round_registration']['tiles_completed'])
 
     # Part 1: Initial affine transform
@@ -84,9 +80,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             cameras = list(set(nbp_basic.channel_camera))
         cameras.sort()
         anchor_cam_idx = cameras.index(nbp_basic.channel_camera[nbp_basic.anchor_channel])
-        cam_transform = channel_registration(fluorescent_bead_path=nbp_file.fluorescent_bead_path,
-                                             anchor_cam_idx=anchor_cam_idx, n_cams=len(cameras),
-                                             bead_radii=config['bead_radii'])
+        cam_transform = register_base.channel_registration(fluorescent_bead_path=nbp_file.fluorescent_bead_path, 
+                                                           anchor_cam_idx=anchor_cam_idx, n_cams=len(cameras), 
+                                                           bead_radii=config['bead_radii'])
         # Now loop through all channels and set the channel transform to its cam transform
         for c in use_channels:
             cam_idx = cameras.index(nbp_basic.channel_camera[c])
@@ -98,16 +94,18 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t in uncompleted_tiles:
             # Load in the anchor image and the round images. Note that here anchor means anchor round, not necessarily
             # anchor channel
-            anchor_image = yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round,
-                                                c=round_registration_channel))
+            anchor_image = preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round, 
+                                                              c=round_registration_channel))
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
             for i in range(2):
-                round_image = [yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel,
-                                                    suffix='_raw' if r == nbp_basic.pre_seq_round else ''))
-                               for r in round_chunks[i]]
-                round_reg_data = round_registration(anchor_image=anchor_image, round_image=round_image, config=config)
+                round_image = [
+                    preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel, 
+                                                       suffix='_raw' if r == nbp_basic.pre_seq_round else '')) 
+                    for r in round_chunks[i]]
+                round_reg_data = register_base.round_registration(anchor_image=anchor_image, round_image=round_image, 
+                                                                  config=config)
                 # Now save the data
                 registration_data['round_registration']['transform_raw'][t, round_chunks[i]] = round_reg_data[
                     'transform']
@@ -122,20 +120,20 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             pbar.update(1)
 
     # Part 2: Regularisation
-    registration_data = regularise_transforms(registration_data=registration_data,
-                                              tile_origin=np.roll(tile_origin, 1, axis=1),
-                                              residual_threshold=config['residual_thresh'],
-                                              use_tiles=nbp_basic.use_tiles,
-                                              use_rounds=nbp_basic.use_rounds +
-                                                         [nbp_basic.pre_seq_round] * nbp_basic.use_preseq)
+    registration_data = register_base.regularise_transforms(registration_data=registration_data, 
+                                                            tile_origin=np.roll(tile_origin, 1, axis=1), 
+                                                            residual_threshold=config['residual_thresh'], 
+                                                            use_tiles=nbp_basic.use_tiles, 
+                                                            use_rounds=nbp_basic.use_rounds 
+                                                            + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq)
 
     # Now combine all of these into single sub-vol transform array via composition
-    for t in use_tiles:
-        for r in use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq:
-            for c in use_channels:
-                registration_data['initial_transform'][t, r, c] = \
-                    zyx_to_yxz_affine(compose_affine(registration_data['channel_registration']['transform'][c],
-                                                     registration_data['round_registration']['transform'][t, r]))
+    for t, r, c in itertools.product(use_tiles, use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq, 
+                                     use_channels):
+        registration_data['initial_transform'][t, r, c] = preprocessing.zyx_to_yxz_affine(preprocessing.compose_affine(
+            registration_data['channel_registration']['transform'][c], 
+            registration_data['round_registration']['transform'][t, r])
+        )
     # Now save registration data externally
     with open(os.path.join(nbp_file.output_dir, 'registration_data.pkl'), 'wb') as f:
         pickle.dump(registration_data, f)
@@ -153,8 +151,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
             pbar.set_description(f"Running ICP on all tiles")
             for t in use_tiles:
-                ref_spots_t = spot_yxz(nbp_find_spots.spot_yxz, t, nbp_basic.anchor_round, nbp_basic.anchor_channel,
-                                       nbp_find_spots.spot_no)
+                ref_spots_t = find_spots.spot_yxz(nbp_find_spots.spot_yxz, t, nbp_basic.anchor_round, 
+                                                  nbp_basic.anchor_channel, nbp_find_spots.spot_no)
                 for r, c in itertools.product(use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq,
                                               use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
@@ -165,8 +163,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                               f" instead.")
                         icp_transform[t, r, c] = registration_data['initial_transform'][t, r, c]
                         continue
-                    imaging_spots_trc = spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
-                    icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = icp(
+                    imaging_spots_trc = find_spots.spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
+                    icp_transform[t, r, c], n_matches[t, r, c], mse[t, r, c], converged[t, r, c] = register_base.icp(
                         yxz_base=ref_spots_t,
                         yxz_target=imaging_spots_trc,
                         dist_thresh=neighb_dist_thresh,
@@ -189,7 +187,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             im = load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c, suffix='_raw')
             if pre_seq_blur_radius > 0:
                 for z in tqdm(range(len(nbp_basic.use_z))):
-                    im[:, :, z] = gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
+                    im[:, :, z] = filters.gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
             # Save the blurred image (no need to rotate this, as the rotation was done in extract)
             save_tile(nbp_file, nbp_basic, im, t, r, c)
         registration_data['blur'] = True
@@ -231,11 +229,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
         n_threads = config['n_background_scale_threads']
+        # Maximum threads physically possible is (potentially) bottlenecked by available RAM
+        max_n_threads = psutil.virtual_memory().available // 4.2e8 - 10
         if n_threads is None:
             n_threads = psutil.cpu_count(logical=True)
             if n_threads is None:
                 n_threads = 1
-        n_threads = np.clip(n_threads, 1, 999, dtype=int)
+        n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
         processes = []
         queue = Queue()
@@ -244,8 +244,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
             # We run brightness_scale in parallel to speed up the pipeline
             current_trcs.append([t, r, c])
-            processes.append(Process(target=compute_brightness_scale, args=(nbp, nbp_basic, nbp_file, nbp_extract, 
-                                                                            mid_z, z_rad, t, r, c, queue)))
+            processes.append(Process(target=register_base.compute_brightness_scale, 
+                                     args=(nbp, nbp_basic, nbp_file, nbp_extract, mid_z, z_rad, t, r, c, queue)))
             if len(current_trcs) >= n_threads or i >= len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
                 # Start subprocesses altogether
                 [p.start() for p in processes]

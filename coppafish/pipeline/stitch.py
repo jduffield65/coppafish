@@ -1,8 +1,11 @@
-from ..stitch import compute_shift, update_shifts, get_tile_origin, get_shifts_to_search
 from tqdm import tqdm
-from ..find_spots import spot_yxz
 import numpy as np
 import warnings
+
+from ..stitch import starting_shifts as stitch_starting_shifts
+from ..stitch import shift as stich_shift
+from ..stitch import tile_origin as stitch_tile_origin
+from ..find_spots import base as find_spots_base
 from ..setup.notebook import NotebookPage
 
 
@@ -30,7 +33,7 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
     nbp_debug = NotebookPage("stitch")
     directions = ['north', 'east']
     coords = ['y', 'x', 'z']
-    shifts = get_shifts_to_search(config, nbp_basic, nbp_debug)
+    shifts = stitch_starting_shifts.get_shifts_to_search(config, nbp_basic, nbp_debug)
 
     if not nbp_basic.is_3d:
         config['nz_collapse'] = None
@@ -62,17 +65,19 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
             for j in directions:
                 pbar.set_postfix({'tile': t, 'direction': j})
                 if t_neighb[j].size > 0 and t_neighb[j] in nbp_basic.use_tiles:
-                    shift, score, score_thresh = compute_shift(spot_yxz(local_yxz, t, r, c, spot_no),
-                                                               spot_yxz(local_yxz, t_neighb[j][0], r, c, spot_no),
-                                                               config['shift_score_thresh'],
-                                                               config['shift_score_thresh_multiplier'],
-                                                               config['shift_score_thresh_min_dist'],
-                                                               config['shift_score_thresh_max_dist'],
-                                                               config['neighb_dist_thresh'], shifts[j]['y'],
-                                                               shifts[j]['x'], shifts[j]['z'],
-                                                               config['shift_widen'], config['shift_max_range'],
-                                                               z_scale, config['nz_collapse'],
-                                                               config['shift_step'][2])[:3]
+                    shift, score, score_thresh = stich_shift.compute_shift(
+                        find_spots_base.spot_yxz(local_yxz, t, r, c, spot_no),
+                        find_spots_base.spot_yxz(local_yxz, t_neighb[j][0], r, c, spot_no),
+                        config['shift_score_thresh'],
+                        config['shift_score_thresh_multiplier'],
+                        config['shift_score_thresh_min_dist'],
+                        config['shift_score_thresh_max_dist'],
+                        config['neighb_dist_thresh'], shifts[j]['y'],
+                        shifts[j]['x'], shifts[j]['z'],
+                        config['shift_widen'], config['shift_max_range'],
+                        z_scale, config['nz_collapse'],
+                        config['shift_step'][2]
+                    )[:3]
                     shift_info[j]['pairs'] = np.append(shift_info[j]['pairs'],
                                                        np.array([t, t_neighb[j][0]]).reshape(1, 2), axis=0)
                     shift_info[j]['shifts'] = np.append(shift_info[j]['shifts'], np.array(shift).reshape(1, 3), axis=0)
@@ -83,8 +88,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
                     if np.sum(good_shifts) >= 3:
                         # once found shifts, refine shifts to be searched around these
                         for i in range(len(coords)):
-                            shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]],
-                                                                 shift_info[j]['shifts'][good_shifts, i])
+                            shifts[j][coords[i]] = stich_shift.update_shifts(shifts[j][coords[i]], 
+                                                                             shift_info[j]['shifts'][good_shifts, i])
                 pbar.update(1)
     pbar.close()
 
@@ -95,9 +100,10 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
             # change shift search to be near good shifts found
             # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
             if np.sum(good_shifts) > 0:
-                shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][good_shifts, i])
+                shifts[j][coords[i]] = stich_shift.update_shifts(shifts[j][coords[i]], 
+                                                                 shift_info[j]['shifts'][good_shifts, i])
             elif good_shifts.size > 0:
-                shifts[j][coords[i]] = update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][:, i])
+                shifts[j][coords[i]] = stich_shift.update_shifts(shifts[j][coords[i]], shift_info[j]['shifts'][:, i])
         # add outlier variable to shift_info to keep track of those shifts which are changed.
         shift_info[j]['outlier_shifts'] = shift_info[j]['shifts'].copy()
         shift_info[j]['outlier_score'] = shift_info[j]['score'].copy()
@@ -112,11 +118,12 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # Don't allow any widening so shift found must be in this range.
             # score_thresh given is 0, so it is not re-computed.
-            shift_info[j]['shifts'][i], shift_info[j]['score'][i] = \
-                compute_shift(spot_yxz(local_yxz, t, r, c, spot_no),
-                              spot_yxz(local_yxz, t_neighb, r, c, spot_no), 0, None, None,
-                              None, config['neighb_dist_thresh'], shifts[j]['y'], shifts[j]['x'], shifts[j]['z'],
-                              None, None, z_scale, config['nz_collapse'], config['shift_step'][2])[:2]
+            shift_info[j]['shifts'][i], shift_info[j]['score'][i] = stich_shift.compute_shift(
+                find_spots_base.spot_yxz(local_yxz, t, r, c, spot_no),
+                find_spots_base.spot_yxz(local_yxz, t_neighb, r, c, spot_no), 0, None, None,
+                None, config['neighb_dist_thresh'], shifts[j]['y'], shifts[j]['x'], shifts[j]['z'],
+                None, None, z_scale, config['nz_collapse'], config['shift_step'][2]
+            )[:2]
             warnings.warn(f"\nShift from tile {t} to tile {t_neighb} changed from\n"
                           f"{shift_info[j]['outlier_shifts'][i]} to {shift_info[j]['shifts'][i]}.")
 
@@ -146,9 +153,9 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
     no_tiles_connected = np.all(min_hamming_dist > 1)
 
     if all_tiles_connected:
-        tile_origin = get_tile_origin(shift_info['north']['pairs'], shift_info['north']['shifts'],
-                                      shift_info['east']['pairs'], shift_info['east']['shifts'],
-                                      nbp_basic.n_tiles, centre_tile)
+        tile_origin = stitch_tile_origin.get_tile_origin(shift_info['north']['pairs'], shift_info['north']['shifts'], 
+                                                         shift_info['east']['pairs'], shift_info['east']['shifts'], 
+                                                         nbp_basic.n_tiles, centre_tile)
     elif no_tiles_connected:
         if nbp_basic.n_tiles > 1:
             warnings.warn("No tiles used are connected, so cannot find tile origins. "

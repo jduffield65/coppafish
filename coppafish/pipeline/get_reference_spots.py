@@ -1,11 +1,13 @@
-from coppafish.spot_colors import get_spot_colors
-from ..call_spots import get_non_duplicate
-from .. import find_spots as fs
 import numpy as np
+
 try:
     import jax.numpy as jnp
+    from ..spot_colors import base_optimised as spot_colors_base
 except ImportError:
     import numpy as jnp
+    from ..spot_colors import base as spot_colors_base
+from ..call_spots import base as call_spots_base
+from .. import find_spots as fs
 from ..setup.notebook import NotebookPage
 
 
@@ -76,8 +78,8 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             all_local_tile = np.append(all_local_tile, np.ones_like(t_isolated, dtype=np.int16) * t)
 
     # find duplicate spots as those detected on a tile which is not tile centre they are closest to
-    not_duplicate = get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, all_local_yxz,
-                                      all_local_tile)
+    not_duplicate = call_spots_base.get_non_duplicate(tile_origin, nbp_basic.use_tiles, nbp_basic.tile_centre, 
+                                                      all_local_yxz, all_local_tile)
 
     # nd means all spots that are not duplicate
     nd_local_yxz = all_local_yxz[not_duplicate]
@@ -100,12 +102,12 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             # this line will return invalid_value for spots outside tile bounds on particular r/c.
             if nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile], bg_colours[in_tile] = \
-                    get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
-                                    bg_scale=nbp_extract.bg_scale)
+                    spot_colors_base.get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, 
+                                                     nbp_basic, nbp_extract, bg_scale=nbp_extract.bg_scale)
             if not nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile] = \
-                    get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
-                                    bg_scale=nbp_extract.bg_scale)
+                    spot_colors_base.get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, 
+                                                     nbp_basic, nbp_extract, bg_scale=nbp_extract.bg_scale)
 
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
     good = ~np.any(nd_spot_colors_use == invalid_value, axis=(1, 2))

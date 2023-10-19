@@ -1,31 +1,35 @@
 import zarr
-from numcodecs import Blosc, Delta
+import numpy.typing as npt
+from numcodecs import Blosc
 import numpy as np
-from ..setup import NotebookPage
-from .. import utils
 from typing import Optional, Union, Tuple, List
 try:
     import jax.numpy as jnp
 except ImportError:
     import numpy as jnp
 
+from ..setup import NotebookPage
+from .. import utils
 
-def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray,
-              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = ''):
+
+def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: npt.NDArray[np.int32],
+              t: int, r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> None:
     """
-    Wrapper function to save tiles as zarr files with correct shift.
-    Moves z-axis to start before saving as it is quicker to load in this order.
+    Wrapper function to save tiles as zarr files with correct shift. Moves z-axis to first axis before saving as it is 
+    quicker to load in this order. Tile `t` is saved to the path `nbp_file.tile[t,r,c]`, the path must contain an 
+    extension of `'.zarr'`. The tile is saved as a `uint16`, so clipping may occur if the image contains really large 
+    values.
 
     Args:
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
-        image: `int32 [ny x nx x nz]` or `int32 [n_channels x ny x nx]`.
-            Image to save.
-        t: npy tile index considering
-        r: Round considering
-        c: Channel considering
-        num_rotations: Number of rotations to apply to image before saving. (Default = 0, done from y to x axis)
-        suffix: Suffix to add to file name.
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        image (`[ny x nx x nz] ndarray[int32]` or `[n_channels x ny x nx] ndarray[int32]`): image to save.
+        t (int): zarr tile index considering.
+        r (int): round considering.
+        c (int, optional): channel considering. Default: not given, raises error when `nbp_basic.is_3d == True`.
+        num_rotations (int, optional): Number of `90` degree clockwise rotations to apply to image before saving. 
+            Applied to the `x` and `y` axes, to 3d `image` data only. Default: `0`.
+        suffix (str, optional): suffix to add to file name. Default: no suffix.
     """
     if nbp_basic.is_3d:
         if c is None:
@@ -40,7 +44,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
             image = np.clip(image + nbp_basic.tile_pixel_value_shift, 1, np.iinfo(np.uint16).max,
                             np.zeros_like(image, dtype=np.uint16), casting="unsafe")
         # In 3D, cannot possibly save any un-used channel hence no exception for this case.
-        expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, nbp_basic.nz)
+        expected_shape = (nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z))
         if not utils.errors.check_shape(image, expected_shape):
             raise utils.errors.ShapeError("tile to be saved", image.shape, expected_shape)
         # yxz -> zxy
@@ -89,34 +93,39 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, image: np.ndarray
 
 def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, r: int, c: int,
               yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None,
-              apply_shift: bool = True, suffix: str = '') -> np.ndarray:
+              apply_shift: bool = True, suffix: str = '') -> npt.NDArray[Union[np.int32, np.uint16]]:
     """
     Loads in image corresponding to desired tile, round and channel from the relevant zarr file.
 
     Args:
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
-        t: npy tile index considering
-        r: Round considering
-        c: Channel considering
-        yxz: If `None`, whole image is loaded otherwise there are two choices:
-            - `int [2 or 3]`. `list` containing y,x,z coordinates of sub image to load in.
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        t (int): zarr tile index considering.
+        r (int): round considering.
+        c (int): channel considering.
+        yxz (`list` of `int` or `ndarray[int]`, optional): If `None`, whole image is loaded otherwise there are two 
+            choices 
+            - `list` of `int [2 or 3]`. List containing y,x,z coordinates of sub image to load in.
                 E.g. if `yxz = [np.array([5]), np.array([10,11,12]), np.array([8,9])]`
                 returned `image` will have shape `[1 x 3 x 2]`.
                 if `yxz = [None, None, z_planes]`, all pixels on given z_planes will be returned
                 i.e. shape of image will be `[tile_sz x tile_sz x n_z_planes]`.
-            - `int [n_pixels x (2 or 3)]`. Array containing yxz coordinates for which the pixel value is desired.
-                E.g. if `yxz = np.ones((10,3))`,
-                returned `image` will have shape `[10,]` with all values indicating the pixel value at `[1,1,1]`.
-        apply_shift: If `True`, dtype will be `int32` otherwise dtype will be `uint16`
-            with the pixels values shifted by `+nbp_basic.tile_pixel_value_shift`.
-            May want to disable `apply_shift` to save memory and/or make loading quicker as there will be
-            no dtype conversion. If loading in DAPI, dtype always uint16 as is no shift.
-        suffix: Suffix to add to file name to load from.
+            - `[n_pixels x (2 or 3)] ndarray[int]`. Array containing yxz coordinates for which the pixel value is 
+                desired. E.g. if `yxz = np.ones((10,3))`, returned `image` will have shape `[10,]` with all values 
+                indicating the pixel value at `[1,1,1]`.
+            Default: `None`. 
+            
+        apply_shift (bool, optional): if true, dtype will be `int32` otherwise dtype will be `uint16` with the pixels 
+            values shifted by `+nbp_basic.tile_pixel_value_shift`. Default: true.
+        suffix (str, optional): suffix to add to file name to load from. Default: no suffix.
 
     Returns:
-        `(ny x nx (x nz)) ndarray[int32]` or `(n_pixels x (2 or 3)) ndarray[int32]`
+        `int32 [ny x nx (x nz)]` or `int32 [n_pixels x (2 or 3)]`
             Loaded image.
+
+    Notes:
+        May want to disable `apply_shift` to save memory and/or make loading quicker as there will be no dtype 
+        conversion. If loading in DAPI, dtype always `uint16` as there is no shift.
     """
     file_path = nbp_file.tile[t][r][c]
     file_path = file_path[:file_path.index('.zarr')] + suffix + '.zarr'

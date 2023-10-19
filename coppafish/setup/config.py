@@ -20,10 +20,7 @@
 #    "type".  (The types are denied below in the "_option_type_checkers" and
 #    "_option_formatters" dictionaries.)
 # 2. Add it, and a description of what it does, to "config.default.ini".
-
 import configparser
-import copy
-import os.path
 import os
 import re
 

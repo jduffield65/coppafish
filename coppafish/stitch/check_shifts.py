@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+
 from ..setup import Notebook
 
 

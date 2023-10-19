@@ -1,12 +1,13 @@
+import skimage
 import warnings
 import numpy as np
 from tqdm import tqdm
-from coppafish.stitch import compute_shift, update_shifts
-from coppafish.find_spots import spot_yxz
-from coppafish import utils
-from coppafish.setup import Notebook, NotebookPage
-from skimage.registration import phase_cross_correlation
 from skimage.filters import sobel
+
+from coppafish import stitch
+from coppafish import find_spots
+from coppafish import utils
+from coppafish.setup import NotebookPage
 
 
 def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
@@ -77,7 +78,7 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
 
     # Now for each sample image, detect the shift taking cam[shift_channel] to cam[c]
     for i in range(filtered_sample_image.shape[0]):
-        cam_shift[i], _, _ = phase_cross_correlation(filtered_sample_image[i], shift_channel_image)
+        cam_shift[i], _, _ = skimage.registration.phase_cross_correlation(filtered_sample_image[i], shift_channel_image)
 
     # Final part is to populate the shift array. Loop through all channels in use and update them accordingly
     for c in nbp_basic.use_channels:
@@ -144,10 +145,12 @@ def register_initial_scale(nbp_basic: NotebookPage, nbp_file: NotebookPage):
     lower_shift, upper_shift = np.zeros((len(use_rounds), 3)), np.zeros((len(use_rounds), 3))
     # loop through all rounds and fill in the respective shifts
     for r in range(len(use_rounds)):
-        lower_shift[r], _, _ = phase_cross_correlation(filtered_image[r, :, :, :len(use_z)//3],
-                                                       anchor_image[:, :, :len(use_z)//3])
-        upper_shift[r], _, _ = phase_cross_correlation(filtered_image[r, :, :, 2 * len(use_z) // 3:],
-                                                       anchor_image[:, :, 2 * len(use_z) // 3:])
+        lower_shift[r], _, _ = skimage.registration.phase_cross_correlation(
+            filtered_image[r, :, :, :len(use_z)//3], anchor_image[:, :, :len(use_z)//3]
+        )
+        upper_shift[r], _, _ = skimage.registration.phase_cross_correlation(
+            filtered_image[r, :, :, 2 * len(use_z) // 3:], anchor_image[:, :, 2 * len(use_z) // 3:]
+        )
 
     # Now assume that these shifts have perfectly aligned the middle of lower regions to the middle of the anchor's
     # lower region (haha) and likewise with the upper regions. Then the ratio of the new length of this interval
@@ -230,18 +233,22 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
             for t in nbp_basic.use_tiles:
                 pbar.set_postfix({'round': r, 'tile': t})
                 shift[t, r], shift_score[t, r], shift_score_thresh[t, r] = \
-                    compute_shift(spot_yxz(spot_details, t, r_ref, c_ref, spot_no) * [1, 1, z_expansion[r]],
-                                  spot_yxz(spot_details, t, r, c_imaging, spot_no),
-                                  config['shift_score_thresh'], config['shift_score_thresh_multiplier'],
-                                  config['shift_score_thresh_min_dist'], config['shift_score_thresh_max_dist'],
-                                  config['neighb_dist_thresh'], shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
-                                  config['shift_widen'], config['shift_max_range'], z_scale,
-                                  config['nz_collapse'], config['shift_step'][2])[:3]
+                    stitch.compute_shift(find_spots.spot_yxz(spot_details, t, r_ref, c_ref, spot_no)
+                                          * [1, 1, z_expansion[r]], 
+                                         find_spots.spot_yxz(spot_details, t, r, c_imaging, spot_no), 
+                                         config['shift_score_thresh'], 
+                                         config['shift_score_thresh_multiplier'], 
+                                         config['shift_score_thresh_min_dist'], 
+                                         config['shift_score_thresh_max_dist'], 
+                                         config['neighb_dist_thresh'], 
+                                         shifts[r]['y'], shifts[r]['x'], shifts[r]['z'],
+                                         config['shift_widen'], config['shift_max_range'], z_scale,
+                                         config['nz_collapse'], config['shift_step'][2])[:3]
                 good_shifts = shift_score[:, r] > shift_score_thresh[:, r]
                 if np.sum(good_shifts) >= 3:
                     # once found shifts, refine shifts to be searched around these
                     for i in range(len(coords)):
-                        shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
+                        shifts[r][coords[i]] = stitch.update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
                 pbar.update(1)
     pbar.close()
 
@@ -257,9 +264,9 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
             # change shift search to be near good shifts found
             # this will only do something if 3>sum(good_shifts)>0, otherwise will have been done in previous loop.
             if np.sum(good_shifts) > 0:
-                shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
+                shifts[r][coords[i]] = stitch.update_shifts(shifts[r][coords[i]], shift[good_shifts, r, i])
             elif good_shifts.size > 0:
-                shifts[r][coords[i]] = update_shifts(shifts[r][coords[i]], shift[:, r, i])
+                shifts[r][coords[i]] = stitch.update_shifts(shifts[r][coords[i]], shift[:, r, i])
         final_shift_search[r, :, 0] = [np.min(shifts[r][key]) for key in shifts[r].keys()]
         final_shift_search[r, :, 1] = [np.max(shifts[r][key]) for key in shifts[r].keys()]
         shift_outlier[good_shifts, r] = 0  # only keep outlier information for not good shifts
@@ -272,11 +279,14 @@ def register_initial(config: dict, nbp_basic: NotebookPage, nbp_file: NotebookPa
                 continue
             # re-find shifts that fell below threshold by only looking at shifts near to others found
             # score set to 0 so will find do refined search no matter what.
-            shift[t, r], shift_score[t, r] = compute_shift(spot_yxz(spot_details, t, r_ref, c_ref, spot_no),
-                                                           spot_yxz(spot_details, t, r, c_imaging, spot_no), 0, None,
-                                                           None, None, config['neighb_dist_thresh'], shifts[r]['y'],
-                                                           shifts[r]['x'], shifts[r]['z'], None, None, z_scale,
-                                                           config['nz_collapse'], config['shift_step'][2])[:2]
+            shift[t, r], shift_score[t, r] = stitch.compute_shift(find_spots.spot_yxz(spot_details, t, r_ref, c_ref, 
+                                                                                      spot_no), 
+                                                                  find_spots.spot_yxz(spot_details, t, r, c_imaging, 
+                                                                                      spot_no), 
+                                                                  0, None, None, None, config['neighb_dist_thresh'], 
+                                                                  shifts[r]['y'], shifts[r]['x'], shifts[r]['z'], None, 
+                                                                  None, z_scale, config['nz_collapse'], 
+                                                                  config['shift_step'][2])[:2]
             warnings.warn(f"\nShift for tile {t} to round {r} changed from\n"
                           f"{shift_outlier[t, r]} to {shift[t, r]}.")
 

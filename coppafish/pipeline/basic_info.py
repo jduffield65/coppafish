@@ -1,9 +1,10 @@
 import numpy as np
 import os
-from .. import utils, setup
 import warnings
-from ..setup.notebook import NotebookPage
 import json
+
+from ..setup.notebook import NotebookPage
+from .. import utils, setup
 
 
 def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> NotebookPage:

@@ -1,9 +1,10 @@
 from scipy.spatial import KDTree
-from .. import utils
-from ..setup import NotebookPage
 import numpy as np
 import os
 from typing import Optional
+
+from .. import utils
+from ..setup import NotebookPage
 
 
 def spot_yxz(local_yxz: np.ndarray, tile: int, round: int, channel: int, spot_no: np.ndarray) -> np.ndarray:

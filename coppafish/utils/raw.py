@@ -1,13 +1,14 @@
 import os
 import re
 import numpy as np
-from typing import List, Optional, Union
+from typing import List, Optional
 import warnings
+import dask.array
+from tqdm import tqdm
+
 from .errors import OutOfBoundsError
 from ..utils import nd2
 from ..setup import NotebookPage
-import dask.array
-from tqdm import tqdm
 
 
 def get_tile_indices(folder: str) -> List:

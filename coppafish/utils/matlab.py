@@ -2,8 +2,9 @@ import h5py
 import numpy as np
 from scipy import io
 from typing import Union, List
+
 from ..setup.notebook import Notebook, NotebookPage
-from ..call_spots.qual_check import quality_threshold
+from ..call_spots import qual_check
 
 
 def load_v_less_7_3(file_name: str, var_names: Union[str, List[str]]) -> Union[tuple, np.ndarray]:
@@ -103,9 +104,9 @@ def update_dict(nbp: NotebookPage, nb: Notebook, spots_info_dict: dict, score_th
     del nbp.score_thresh
     nbp.score_thresh = score_thresh
     if pf == 'omp_':
-        keep = quality_threshold(nb, 'omp')
+        keep = qual_check.quality_threshold(nb, 'omp')
     else:
-        keep = quality_threshold(nb, 'ref')
+        keep = qual_check.quality_threshold(nb, 'ref')
     del nbp.score_thresh
     nbp.score_thresh = score_thresh_old
     nbp.finalized = True

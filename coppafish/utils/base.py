@@ -1,8 +1,9 @@
 import numpy as np
-from typing import Union
+import numpy.typing as npt
+from typing import Union, List
 
 
-def round_any(x: Union[float, np.ndarray], base: float, round_type: str = 'round') -> Union[float, np.ndarray]:
+def round_any(x: Union[float, npt.NDArray], base: float, round_type: str = 'round') -> Union[float, npt.NDArray]:
     """
     Rounds `x` to the nearest multiple of `base` with the rounding done according to `round_type`.
 
@@ -35,14 +36,14 @@ def round_any(x: Union[float, np.ndarray], base: float, round_type: str = 'round
                          f"round, ceil, floor")
 
 
-def setdiff2d(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
+def setdiff2d(array1: npt.NDArray[np.float_], array2: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
     """
-    Finds all unique elements in `array1` that are also not in `array2`. Each element is appended along the first \
-    axis. E.g.
+    Finds all unique elements in `array1` that are also not in `array2`. Each element is appended along the first axis. 
+    E.g.
 
-    If `array1` has `[4,0]` twice, `array2` does not have `[4,0]`, returned array will have `[4,0]` once.
+    - If `array1` has `[4,0]` twice, `array2` does not have `[4,0]`, returned array will have `[4,0]` once.
 
-    If `array1` has `[4,0]` twice, `array2` has `[4,0]` once, returned array will not have `[4,0]`.
+    - If `array1` has `[4,0]` twice, `array2` has `[4,0]` once, returned array will not have `[4,0]`.
 
     Args:
         array1: `float [n_elements1 x element_dim]`.
@@ -56,19 +57,22 @@ def setdiff2d(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
     return np.array(list(set1-set2))
 
 
-def expand_channels(array: np.ndarray, use_channels: list, n_channels: int) -> np.ndarray:
+def expand_channels(array: npt.NDArray[np.float_], use_channels: List[int], n_channels: int) -> npt.NDArray[np.float_]:
     """
-    Expands `array` to have `n_channels` channels, with the values in `array` being in the channels specified by
-    `use_channels`.
+    Expands `array` to have `n_channels` channels. The `i`th channel from `array` is placed into the new channel index 
+    `use_channels[i]` in the new array. Any channels unset in the new array are set to zeroes.
 
     Args:
-        array: `float [n1 x n2 x ... x n_k x n_channels_use]`.
-        use_channels: list of channels to use from `array`.
-        n_channels: Number of channels to expand `array` to.
+        array (`[n1 x n2 x ... x n_k x n_channels_use] ndarray[float]`): array to expand.
+        use_channels (`list` of `int`): list of channels to use from `array`.
+        n_channels (int): Number of channels to expand `array` to.
 
     Returns:
-        expanded_array: `float [n1 x n2 x ... x n_k x n_channels_use].
+        (`[n1 x n2 x ... x n_k x n_channels_use] ndarray[float]`): expanded_array copy.
     """
+    assert len(use_channels) <= array.shape[-1], 'use_channels is greater than the number of channels found in `array`'
+    assert n_channels >= array.shape[-1], 'Require n_channels >= the number of channels currently in `array`'
+
     old_array_shape = np.array(array.shape)
     new_array_shape = old_array_shape.copy()
     new_array_shape[-1] = n_channels

@@ -1,7 +1,8 @@
-from .. import find_spots as fs
 from tqdm import tqdm
 import numpy as np
 import itertools
+
+from .. import find_spots as fs
 from ..setup.notebook import NotebookPage
 
 

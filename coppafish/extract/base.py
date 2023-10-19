@@ -3,9 +3,9 @@ import os
 import warnings
 import time
 from tqdm import tqdm
-from .. import utils
-from ..setup import NotebookPage
 from typing import Tuple, Optional
+
+from .. import utils
 
 
 def wait_for_data(data_path: str, wait_time: int, dir: bool = False):

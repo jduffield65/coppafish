@@ -1,5 +1,6 @@
 import numpy as np
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
+
 from ..setup.notebook import NotebookPage
 
 

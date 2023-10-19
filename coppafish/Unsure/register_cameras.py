@@ -1,8 +1,9 @@
 import numpy as np
+from skimage import filters
+from skimage import registration
+
 from coppafish import utils
 from coppafish.setup import NotebookPage
-from skimage.registration import phase_cross_correlation
-from skimage.filters import sobel
 
 
 def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: dict):
@@ -30,9 +31,10 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
     sample_tile = min(nbp_basic.use_tiles)
     sample_round = min([i for i in nbp_basic.use_rounds if i > 0])
     # Load and filter anchor image
-    shift_channel_image = sobel(utils.nd2.get_raw_images(nbp_basic, nbp_file, [sample_tile], [sample_round],
-                                                         [shift_channel], list(np.arange(nbp_basic.nz // 2 - 10,
-                                                                                         nbp_basic.nz // 2 + 10)))[0, 0, 0])
+    shift_channel_image = \
+        filters.sobel(utils.nd2.get_raw_images(nbp_basic, nbp_file, [sample_tile], [sample_round], 
+                                               [shift_channel], list(np.arange(nbp_basic.nz // 2 - 10,
+                                               nbp_basic.nz // 2 + 10)))[0, 0, 0])
     # Initialise the variable that we will return
     shift = np.zeros((nbp_basic.n_channels, 3), dtype=int)
 
@@ -63,7 +65,7 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
     filtered_sample_image = np.zeros(sample_image.shape)
     # Filter each image with a Sobel filter to improve registration
     for i in range(sample_image.shape[0]):
-        filtered_sample_image[i] = sobel(sample_image[i])
+        filtered_sample_image[i] = filters.sobel(sample_image[i])
     # Delete sample_image to save memory
     del sample_image
 
@@ -72,7 +74,7 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
 
     # Now for each sample image, detect the shift taking cam[shift_channel] to cam[c]
     for i in range(filtered_sample_image.shape[0]):
-        cam_shift[i], _, _ = phase_cross_correlation(filtered_sample_image[i], shift_channel_image)
+        cam_shift[i], _, _ = registration.phase_cross_correlation(filtered_sample_image[i], shift_channel_image)
 
     # Final part is to populate the shift array. Loop through all channels in use and update them accordingly
     for c in nbp_basic.use_channels:
@@ -80,8 +82,8 @@ def register_cameras(nbp_basic: NotebookPage, nbp_file: NotebookPage, config: di
         if cam[c] != cam[shift_channel]:
             # First get the index of the camera of channel c, as listed in use_cams
             camera_index = use_cams.index(cam[c])
-            # Now to find the shift from anchor cam to channel c cam, we add the shift from anchor cam to shift cam, and
-            # then from shift cam to channel c cam
+            # Now to find the shift from anchor cam to channel c cam, we add the shift from anchor cam to shift cam, 
+            # and then from shift cam to channel c cam
             shift[c] = cam_shift[camera_index]
 
     # Reformat shift array from n_channels x 3 to n_tiles x n_rounds x n_channels x 3 for consistency with other code

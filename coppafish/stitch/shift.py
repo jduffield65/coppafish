@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.spatial import KDTree
-from sklearn.metrics import pairwise_distances
-from ..utils.base import setdiff2d
+import sklearn
 from typing import Tuple, Optional, List, Union
 import warnings
 import numpy_indexed
+
+from ..utils import base as utils_base
 
 
 def shift_score(distances: np.ndarray, thresh: float) -> float:
@@ -165,7 +166,7 @@ def get_best_shift_3d(yxz_base: np.ndarray, yxz_transform_tree: KDTree, neighb_d
     """
     all_shifts = np.array(np.meshgrid(y_shifts, x_shifts, z_shifts)).T.reshape(-1, 3)
     if ignore_shifts is not None:
-        all_shifts = setdiff2d(all_shifts, ignore_shifts)
+        all_shifts = utils_base.setdiff2d(all_shifts, ignore_shifts)
     score = np.zeros(all_shifts.shape[0])
     dist_upper_bound = 3 * neighb_dist_thresh  # beyond this, score < exp(-4.5) and quicker to use this.
     for i in range(all_shifts.shape[0]):
@@ -207,7 +208,7 @@ def get_best_shift_2d(yx_base_slices: List[np.ndarray], yx_transform_trees: List
     """
     all_shifts = np.array(np.meshgrid(y_shifts, x_shifts)).T.reshape(-1, 2)
     if ignore_shifts is not None:
-        all_shifts = setdiff2d(all_shifts, ignore_shifts)
+        all_shifts = utils_base.setdiff2d(all_shifts, ignore_shifts)
     score = np.zeros(all_shifts.shape[0])
     n_trees = len(yx_transform_trees)
     dist_upper_bound = 3 * neighb_dist_thresh  # beyond this, score < exp(-4.5) and quicker to use this.
@@ -249,7 +250,7 @@ def get_score_thresh(all_shifts: np.ndarray, all_scores: np.ndarray, best_shift:
             shift corresponding to `score_thresh`. Will be None if there were no shifts
             in the range set by `min_dist` and `max_dist`.
     """
-    dist_to_best = pairwise_distances(np.array(all_shifts), np.array(best_shift)[np.newaxis]).squeeze()
+    dist_to_best = sklearn.metrics.pairwise_distances(np.array(all_shifts), np.array(best_shift)[np.newaxis]).squeeze()
     use = np.where(np.logical_and(dist_to_best <= max_dist, dist_to_best >= min_dist))[0]
     if len(use) > 0:
         thresh_ind = use[np.argmax(all_scores[use])]
