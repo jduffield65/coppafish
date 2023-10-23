@@ -237,7 +237,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             if n_threads is None:
                 n_threads = 1
             else:
-                n_threads -= 1
+                n_threads -= 2
         n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
         processes = []
