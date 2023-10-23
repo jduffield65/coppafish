@@ -237,6 +237,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             n_threads = psutil.cpu_count(logical=True)
             if n_threads is None:
                 n_threads = 1
+            else:
+                n_threads -= 1
         n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
         processes = []
