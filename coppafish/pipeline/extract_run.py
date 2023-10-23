@@ -180,9 +180,9 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]
         use_rounds = np.arange(len(round_files))
-        n_images = (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels) + \
-                   len(nbp_basic.use_tiles) * len(use_channels_anchor) \
-                   + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * config['continuous_dapi']
+        n_images = (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels) \
+            + len(nbp_basic.use_tiles) * len(use_channels_anchor) \
+            + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * config['continuous_dapi']
     else:
         round_files = nbp_file.round
         use_rounds = nbp_basic.use_rounds
