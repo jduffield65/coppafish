@@ -163,7 +163,8 @@ def test_bg_subtraction():
     robominnie.generate_gene_codes()
     robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000, gene_efficiency=0.5 * (rng.rand(15, 8) + 1), 
-                         background_offset=1e-7*rng.rand(15_000, 7))
+                         background_offset=1e-7*rng.rand(15_000, 7), include_dapi=True, 
+                         spot_size_pixels_dapi=np.asarray([5, 5, 5]))
     robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
     robominnie.run_coppafish()
 
@@ -183,4 +184,4 @@ def test_bg_subtraction():
 
 
 if __name__ == '__main__':
-    test_integration_001()
+    test_bg_subtraction()
