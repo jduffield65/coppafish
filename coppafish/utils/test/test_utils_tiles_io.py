@@ -15,10 +15,10 @@ def test_tiles_io_save_load_tile():
         array_1 = rng.randint(2**16, size=(3,3,4), dtype=np.int32)
         array_2 = rng.randint(2**16, size=(2,4,4), dtype=np.int32)
         nbp_file_3d = NotebookPage('file_names', {
-            'tile': [[[os.path.join(directory, 'array.npy')]]]
+            'tile': [[[os.path.join(directory, f'array{file_type}')]]]
         })
         nbp_file_2d = NotebookPage('file_names', {
-            'tile': [[os.path.join(directory, 'array.npy')]]
+            'tile': [[os.path.join(directory, f'array{file_type}')]]
         })
         nbp_basic_3d = NotebookPage('basic_info', {
             'is_3d': True,
