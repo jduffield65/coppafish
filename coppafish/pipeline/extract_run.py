@@ -304,7 +304,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                     warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
                                                   f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
                                                   f"that will be clipped when converting to uint16.")
-                                if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_error']:
+                                if c != nbp_basic.dapi_channel and nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_error']:
                                     n_clip_error_images += 1
                                     message = f"\nNumber of images for which more than {config['n_clip_error']} pixels " \
                                               f"clipped in conversion to uint16 is {n_clip_error_images}."
