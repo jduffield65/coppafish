@@ -300,7 +300,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                                              nbp_debug.z_info)
 
                                 # Deal with pixels outside uint16 range when saving
-                                if nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
+                                if c != nbp_basic.dapi_channel and nbp_debug.n_clip_pixels[t, r, c] > config['n_clip_warn']:
                                     warnings.warn(f"\nTile {t}, round {r}, channel {c} has "
                                                   f"{nbp_debug.n_clip_pixels[t, r, c]} pixels\n"
                                                   f"that will be clipped when converting to uint16.")
