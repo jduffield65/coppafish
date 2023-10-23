@@ -15,7 +15,7 @@ from ..setup import NotebookPage
 from .. import utils, extract
 
 
-def save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray[np.uint16]], file_path: str, file_type: str) -> None:
+def save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: str, file_type: str) -> None:
     """
     Save image in `file_path` location.
 
