@@ -3,13 +3,15 @@ import numpy as np
 import os
 import warnings
 from typing import Optional
-from ...setup import Notebook
-from ..raw import get_raw_images, number_to_list, add_basic_info_no_save
-from ... import extract, utils
-from ...find_spots import check_neighbour_intensity
 from qtpy.QtCore import Qt
 from PyQt5.QtWidgets import QSlider
 import time
+
+from ...setup import Notebook
+from ..raw import get_raw_images, number_to_list, add_basic_info_no_save
+from ... import extract, utils
+from ...utils import tiles_io
+from ...find_spots import check_neighbour_intensity
 
 
 def get_filtered_image(nb: Notebook, t: int, r: int, c: int) -> np.ndarray:
@@ -100,11 +102,6 @@ class view_find_spots:
                               f' channel {c}')
             self.show_isolated = False
 
-        if nb.extract.file_type == '.npy':
-            from ...utils.npy import load_tile, save_tile
-        elif nb.extract.file_type == '.zarr':
-            from ...utils.zarray import load_tile, save_tile
-
         self.is_3d = nb.basic_info.is_3d
         if self.is_3d:
             tile_file = nb.file_names.tile[t][r][c]
@@ -114,7 +111,7 @@ class view_find_spots:
             warnings.warn(f"The file {tile_file}\ndoes not exist so loading raw image and filtering it")
             self.image = get_filtered_image(nb, t, r, c)
         else:
-            self.image = load_tile(nb.file_names, nb.basic_info, t, r, c)
+            self.image = tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c)
             scale = 1  # Can be any value as not actually used but needed as argument in get_extract_info
 
         # Get auto_threshold value used to detect spots

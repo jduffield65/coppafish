@@ -8,6 +8,7 @@ from sklearn.linear_model import HuberRegressor
 
 from .preprocessing import NotebookPage
 from . import preprocessing
+from ..utils import tiles_io
 
 
 def find_shift_array(subvol_base, subvol_target, position, r_threshold):
@@ -311,9 +312,9 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
     # if fluorescent bead images are for all channels, just take one from each camera
 
     # TODO better deal with 3D
-    if len(fluorescent_beads.shape) == 4:
+    if fluorescent_beads.ndim == 4:
         nz = fluorescent_beads.shape[0]
-        fluorescent_beads = fluorescent_beads[int(nz/2), :, :, :]
+        fluorescent_beads = fluorescent_beads[int(nz/2)]
 
     if fluorescent_beads.shape[0] == 28:
         fluorescent_beads = fluorescent_beads[[0, 9, 18, 23]]
@@ -667,17 +668,13 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
         queue (Queue, optional): multiprocess `Queue` object, the return is `put` into this object. Default: None, no 
             queue object.
     """
-    if nbp_extract.file_type == '.npy':
-        from ..utils.npy import load_tile
-    elif nbp_extract.file_type == '.zarr':
-        from ..utils.zarray import load_tile
-
     transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
                                                     new_origin=np.array([mid_z-z_rad, 0, 0]))
     transform_seq = preprocessing.yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-    preseq = preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c, 
-                                                yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-    seq = preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=c, 
+    preseq = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
+                                                         r=nbp_basic.pre_seq_round, c=c, 
+                                                         yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    seq = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, 
                                              yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
     preseq = scipy.ndimage.affine_transform(preseq, transform_pre)
     seq = scipy.ndimage.affine_transform(seq, transform_seq)

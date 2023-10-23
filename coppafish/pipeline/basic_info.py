@@ -169,7 +169,7 @@ def set_basic_info(config_file: dict, config_basic: dict, n_rounds: int = 7) -> 
 
     if config_file['raw_extension'] == '.npy':
         # Read tile indices from raw data folder and set to use_tiles if not specified already.
-        use_tiles_folder = utils.npy.get_npy_tile_ind(use_tiles_nd2, tilepos_yx_nd2, tilepos_yx)
+        use_tiles_folder = utils.tiles_io.get_npy_tile_ind(use_tiles_nd2, tilepos_yx_nd2, tilepos_yx)
         if config_basic['use_tiles'] is None:
             config_basic['use_tiles'] = use_tiles_folder
         elif np.setdiff1d(config_basic['use_tiles'], use_tiles_folder).size > 0:
