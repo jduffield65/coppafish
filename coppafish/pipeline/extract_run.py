@@ -6,6 +6,7 @@ import warnings
 
 from ..setup.notebook import NotebookPage, Notebook
 from .. import utils, extract
+from ..utils import tiles_io
 
 
 def extract_and_filter(config: dict, nbp_file: NotebookPage,
@@ -40,11 +41,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config['deconvolve'] = False  # only deconvolve if 3d pipeline
-    if config['file_type'].lower() == '.npy':
-        from ..utils.npy import load_tile, save_tile
-    elif config['file_type'].lower() == '.zarr':
-        from ..utils.zarray import load_tile, save_tile
-    else:
+    if config['file_type'] not in ['.npy', '.zarr']:
         ValueError(f"Unknown config['extract']['file_type']: {config['file_type']}")
         
     nbp = NotebookPage("extract")
@@ -262,7 +259,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         else:
                             # Only need to load in mid-z plane if 3D.
                             if nbp_basic.is_3d:
-                                im = load_tile(nbp_file, nbp_basic, t, r, c,
+                                im = tiles_io.load_tile(nbp_file, nbp_basic, config['file_type'], t, r, c,
                                                          yxz=[None, None, nbp_debug.z_info],
                                                          suffix='_raw' if r == pre_seq_round else '')
                             else:
@@ -332,14 +329,14 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                     nbp.hist_counts[:, r, c] += hist_counts_trc
                             # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
-                            save_tile(nbp_file, nbp_basic, im, t, r, c,
+                            tiles_io.save_tile(nbp_file, nbp_basic, config['file_type'], im, t, r, c,
                                       suffix='_raw' if r == pre_seq_round else '',
                                       num_rotations=config['num_rotations'])
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)
                 if not nbp_basic.is_3d:
-                    save_tile(nbp_file, nbp_basic, im_all_channels_2d, t, r, 
+                    tiles_io.save_tile(nbp_file, nbp_basic, config['file_type'], im_all_channels_2d, t, r, 
                               suffix='_raw' if r == pre_seq_round else '')
     pbar.close()
 

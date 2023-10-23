@@ -4,6 +4,7 @@ import itertools
 
 from .. import find_spots as fs
 from ..setup.notebook import NotebookPage
+from ..utils import tiles_io
 
 
 def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
@@ -37,11 +38,6 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nb
     else:
         max_spots = config['max_spots_3d']
 
-    if nbp_extract.file_type == '.npy':
-        from ..utils.npy import load_tile
-    elif nbp_extract.file_type == '.zarr':
-        from ..utils.zarray import load_tile
-
     # record threshold for isolated spots in each tile of reference round/channel
     if config['isolation_thresh'] is None:
         nbp.isolation_thresh = auto_thresh[:, nbp_basic.anchor_round, nbp_basic.anchor_channel] * \
@@ -74,7 +70,7 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nb
         for t, r, c in np.argwhere(uncompleted):
             pbar.set_postfix({'tile': t, 'round': r, 'channel': c})
             # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
-            image = load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False, 
+            image = tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False, 
                                         suffix='_raw' if r == nbp_basic.pre_seq_round else '')
             local_yxz, spot_intensity = fs.detect_spots(image,
                                                        auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,

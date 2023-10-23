@@ -280,10 +280,6 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
     yx_size = np.max(yx_origin, axis=0) + nbp_basic.tile_sz
-    if nbp_extract.file_type == '.zarr':
-        from ..utils.zarray import load_tile
-    elif nbp_extract.file_type == '.npy':
-        from ..utils.npy import load_tile
     if nbp_basic.is_3d:
         z_size = z_origin.max() + nbp_basic.nz
         stitched_image = np.zeros(np.append(z_size, yx_size), dtype=np.uint16)
@@ -317,9 +313,9 @@ def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: Not
                     image_t = np.rot90(image_t, k=num_rotations, axes=(1, 2))
             else:
                 if nbp_basic.is_3d:
-                    image_t = load_tile(nbp_file, nbp_basic, t, r, c).transpose((2,0,1))
+                    image_t = load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c).transpose((2,0,1))
                 else:
-                    image_t = load_tile(nbp_file, nbp_basic, t, r, c, apply_shift=False)
+                    image_t = load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False)
             for z in range(z_size):
                 # any tiles not used will be kept as 0.
                 pbar.set_postfix({'tile': t, 'z': z})
