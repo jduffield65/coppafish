@@ -128,7 +128,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                                                             + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq)
 
     # Now combine all of these into single sub-vol transform array via composition
-    for t, r, c in itertools.product(use_tiles, use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq, 
+    for t, r, c in itertools.product(use_tiles, 
+                                     nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq, 
                                      use_channels):
         registration_data['initial_transform'][t, r, c] = preprocessing.zyx_to_yxz_affine(preprocessing.compose_affine(
             registration_data['channel_registration']['transform'][c], 
@@ -153,7 +154,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             for t in use_tiles:
                 ref_spots_t = find_spots.spot_yxz(nbp_find_spots.spot_yxz, t, nbp_basic.anchor_round, 
                                                   nbp_basic.anchor_channel, nbp_find_spots.spot_no)
-                for r, c in itertools.product(use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq,
+                for r, c in itertools.product(nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq,
                                               use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
                     # Only do ICP on non-degenerate tiles with more than ~ 100 spots, otherwise just use the
@@ -225,16 +226,19 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     if nbp_basic.use_preseq:
         nbp_extract.finalized = False
         del nbp_extract.bg_scale # Delete this so that we can overwrite it
-        bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
+        use_rounds = nbp_basic.use_rounds
+        bg_scale = np.zeros((n_tiles, len(use_rounds), n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
         n_threads = config['n_background_scale_threads']
         # Maximum threads physically possible is (potentially) bottlenecked by available RAM
-        max_n_threads = psutil.virtual_memory().available // 4.2e8 - 10
+        max_n_threads = int(psutil.virtual_memory().available // 4.2e8 - 10)
         if n_threads is None:
             n_threads = psutil.cpu_count(logical=True)
             if n_threads is None:
                 n_threads = 1
+            else:
+                n_threads -= 1
         n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
         processes = []
@@ -246,7 +250,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             current_trcs.append([t, r, c])
             processes.append(Process(target=register_base.compute_brightness_scale, 
                                      args=(nbp, nbp_basic, nbp_file, nbp_extract, mid_z, z_rad, t, r, c, queue)))
-            if len(current_trcs) >= n_threads or i >= len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
+            if len(current_trcs) == n_threads or i == len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
                 # Start subprocesses altogether
                 [p.start() for p in processes]
                 # Retrieve scale factors from the multiprocess queue
@@ -254,7 +258,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                     bg_scale[current_trc[0], current_trc[1], current_trc[2]] = queue.get()[0]
                 processes = []
                 current_trcs = []
-            i += 1
         nbp_extract.bg_scale = bg_scale
     nbp_extract.finalized = True
 
