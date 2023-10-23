@@ -312,9 +312,9 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
     # if fluorescent bead images are for all channels, just take one from each camera
 
     # TODO better deal with 3D
-    if len(fluorescent_beads.shape) == 4:
+    if fluorescent_beads.ndim == 4:
         nz = fluorescent_beads.shape[0]
-        fluorescent_beads = fluorescent_beads[int(nz/2), :, :, :]
+        fluorescent_beads = fluorescent_beads[int(nz/2)]
 
     if fluorescent_beads.shape[0] == 28:
         fluorescent_beads = fluorescent_beads[[0, 9, 18, 23]]
