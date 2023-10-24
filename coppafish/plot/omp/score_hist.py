@@ -72,18 +72,22 @@ class histogram_score:
         self.use = np.isin(self.gene_no, self.genes_use)  # which spots to plot
 
         # DP score
-        self.score[:, 0] = dot_product_score(spot_colors, bled_codes_ge)[1]
+        n_spots = spot_colors.shape[0]
+        n_genes = bled_codes.shape[0]
+        self.score[:, 0] = dot_product_score(spot_colors.reshape((n_spots, -1)), bled_codes_ge.reshape((n_genes, -1)))[1]
         if method.lower() != 'omp' and check:
             if np.max(np.abs(self.score[:, 0] - nb.ref_spots.score)) > self.check_tol:
                 raise ValueError(f"nb.ref_spots.score differs to that computed here\n"
                                  f"Set check=False to get past this error")
 
         # DP score no background
-        self.score[:, 1] = dot_product_score(spot_colors_background, bled_codes_ge)[1]
+        self.score[:, 1] = dot_product_score(spot_colors_background.reshape((n_spots, -1)), 
+                                             bled_codes_ge.reshape((n_genes, -1)))[1]
         # DP score no gene efficiency
-        self.score[:, 2] = dot_product_score(spot_colors, bled_codes)[1]
+        self.score[:, 2] = dot_product_score(spot_colors.reshape((n_spots, -1)), bled_codes.reshape((n_genes, -1)))[1]
         # DP score no background or gene efficiency
-        self.score[:, 3] = dot_product_score(spot_colors_background, bled_codes)[1]
+        self.score[:, 3] = dot_product_score(spot_colors_background.reshape((n_spots, -1)), 
+                                             bled_codes.reshape((n_genes, -1)))[1]
 
         # Initialise plot
         self.fig, self.ax = plt.subplots(1, 1, figsize=(11, 5))

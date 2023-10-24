@@ -171,8 +171,11 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                            gene_efficiency=gene_efficiency)
 
     # 3.3 Update gene coefficients
-    gene_no, gene_score, gene_score_second = call_spots.dot_product_score(spot_colours=spot_colours, 
-                                                                          bled_codes=bled_codes)
+    n_spots = spot_colours.shape[0]
+    n_genes = bled_codes.shape[0]
+    gene_no, gene_score, gene_score_second = \
+        call_spots.dot_product_score(spot_colours=spot_colours.reshape((n_spots, -1)), 
+                                     bled_codes=bled_codes.reshape((n_genes, -1)))
 
     # save overwritable variables in nbp_ref_spots
     nbp_ref_spots.gene_no = gene_no
