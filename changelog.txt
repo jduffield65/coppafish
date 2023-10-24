@@ -3,6 +3,7 @@
     config['extract']['file_type'] = .zarr.
  * Compatibility with JOBS datasets.
  * Computing background scale factors is now parallelised.
+ * Various bug and warning fixes.
 
 
 2023/10/10 Alpha Update (v0.2.0):
