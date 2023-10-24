@@ -1083,7 +1083,7 @@ class RoboMinnie:
             jax.profiler.stop_trace()
         if time_pipeline:
             end_time = time.time()
-            print(f'OMP run time: {round((end_time - start_time_omp)/60, 1)}mins')
+            print(f'OMP run time: {round((end_time - start_time_omp)/60, 2)}mins')
             print(
                 f'Coppafish pipeline run: {round((end_time - start_time)/60, 1)}mins\n' + \
                 f'{round((end_time - start_time)//(n_planes * n_tiles), 1)}s per z plane per tile.'
