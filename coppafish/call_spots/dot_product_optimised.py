@@ -36,12 +36,11 @@ def dot_product_score(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, norm_sh
             with `bled_codes` vector `c`.
     """
     # Normalise `bled_codes` outside of the for loop, since it does not loop over n_spots
-    bled_codes = bled_codes.copy()
     bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
-    score = jax.vmap(dot_product_score_single, in_axes=(0, None, None, 0), out_axes=0)(spot_colors.copy(), 
+    score = jax.vmap(dot_product_score_single, in_axes=(0, None, None, 0), out_axes=0)(spot_colors,
                                                                                        bled_codes, 
                                                                                        norm_shift, 
-                                                                                       weight_squared.copy())
+                                                                                       weight_squared)
     return score
 
 
