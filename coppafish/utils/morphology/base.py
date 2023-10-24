@@ -186,7 +186,7 @@ def dilate(image: npt.NDArray[Union[np.float32, np.float64]], kernel: npt.NDArra
         As of scipy version `1.10.1`, `image` with datatype np.float16 is not supported when applying `grey_dilation`.
     """
     assert np.allclose(np.unique(kernel), np.asarray([0, 1])) or np.allclose(np.unique(kernel), np.asarray([0])) \
-        or np.allclose(np.unique(kernel), np.asarray([0, 1])), 'Kernel can only contain ones and zeroes'
+        or np.allclose(np.unique(kernel), np.asarray([1])), 'Kernel can only contain ones and zeroes'
 
     kernel = ensure_odd_kernel(kernel)
     # mode refers to the padding. We pad with zeros to keep results the same as MATLAB
