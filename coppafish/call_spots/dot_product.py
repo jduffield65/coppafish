@@ -9,7 +9,7 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
     Args:
         spot_colours: np.ndarray of spot colours [n_spots, n_rounds, n_channels_use]
         bled_codes: np.ndarray of normalised bled codes [n_genes, n_rounds, n_channels_use]
-        weight_squared: np.ndarray of weights [n_rounds, n_channels_use]
+        weight_squared: np.ndarray of weights [n_spots, n_rounds, n_channels_use]
         norm_shift: float to add to the norm of each spot colour to avoid boosting weak spots too much
     Returns:
         gene_no: np.ndarray of gene numbers [n_spots]
