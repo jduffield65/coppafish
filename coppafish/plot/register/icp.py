@@ -6,7 +6,6 @@ from coppafish.Unsure.register import get_single_affine_transform
 from ...spot_colors.base import apply_transform
 from ..stitch import view_point_clouds
 from ...setup import Notebook
-from ...utils.npy import load_tile
 import distinctipy
 from skimage.filters import sobel
 from typing import Optional, List

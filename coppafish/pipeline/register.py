@@ -11,6 +11,7 @@ from ..setup import NotebookPage
 from .. import find_spots
 from ..register import preprocessing
 from ..register import base as register_base
+from ..utils import tiles_io
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
@@ -60,11 +61,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     else:
         neighb_dist_thresh = config['neighb_dist_thresh_2d']
 
-    if nbp_extract.file_type == '.npy':
-        from ..utils.npy import load_tile, save_tile
-    elif nbp_extract.file_type == '.zarr':
-        from ..utils.zarray import load_tile, save_tile
-
     # Load in registration data from previous runs of the software
     registration_data = preprocessing.load_reg_data(nbp_file, nbp_basic, config)
     uncompleted_tiles = np.setdiff1d(use_tiles, registration_data['round_registration']['tiles_completed'])
@@ -94,15 +90,17 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t in uncompleted_tiles:
             # Load in the anchor image and the round images. Note that here anchor means anchor round, not necessarily
             # anchor channel
-            anchor_image = preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.anchor_round, 
-                                                              c=round_registration_channel))
+            anchor_image = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
+                                                                       r=nbp_basic.anchor_round, 
+                                                                       c=round_registration_channel))
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
             for i in range(2):
                 round_image = [
-                    preprocessing.yxz_to_zyx(load_tile(nbp_file, nbp_basic, t=t, r=r, c=round_registration_channel, 
-                                                       suffix='_raw' if r == nbp_basic.pre_seq_round else '')) 
+                    preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, 
+                                                                c=round_registration_channel, 
+                                                                suffix='_raw' if r == nbp_basic.pre_seq_round else '')) 
                     for r in round_chunks[i]]
                 round_reg_data = register_base.round_registration(anchor_image=anchor_image, round_image=round_image, 
                                                                   config=config)
@@ -128,7 +126,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                                                             + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq)
 
     # Now combine all of these into single sub-vol transform array via composition
-    for t, r, c in itertools.product(use_tiles, use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq, 
+    for t, r, c in itertools.product(use_tiles, 
+                                     nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq, 
                                      use_channels):
         registration_data['initial_transform'][t, r, c] = preprocessing.zyx_to_yxz_affine(preprocessing.compose_affine(
             registration_data['channel_registration']['transform'][c], 
@@ -153,7 +152,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             for t in use_tiles:
                 ref_spots_t = find_spots.spot_yxz(nbp_find_spots.spot_yxz, t, nbp_basic.anchor_round, 
                                                   nbp_basic.anchor_channel, nbp_find_spots.spot_no)
-                for r, c in itertools.product(use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq,
+                for r, c in itertools.product(nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq,
                                               use_channels):
                     pbar.set_postfix({"Tile": t, "Round": r, "Channel": c})
                     # Only do ICP on non-degenerate tiles with more than ~ 100 spots, otherwise just use the
@@ -184,12 +183,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t, c in tqdm(itertools.product(use_tiles, use_channels + [nbp_basic.dapi_channel])):
             print(f" Blurring pre-seq tile {t}, channel {c}")
             # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
-            im = load_tile(nbp_file, nbp_basic, t=t, r=nbp_basic.pre_seq_round, c=c, suffix='_raw')
+            im = tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=nbp_basic.pre_seq_round, c=c, 
+                                    suffix='_raw')
             if pre_seq_blur_radius > 0:
                 for z in tqdm(range(len(nbp_basic.use_z))):
                     im[:, :, z] = filters.gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
             # Save the blurred image (no need to rotate this, as the rotation was done in extract)
-            save_tile(nbp_file, nbp_basic, im, t, r, c)
+            tiles_io.save_tile(nbp_file, nbp_basic, nbp_extract.file_type, im, t, r, c)
         registration_data['blur'] = True
 
     # Save registration data externally
@@ -225,16 +225,19 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     if nbp_basic.use_preseq:
         nbp_extract.finalized = False
         del nbp_extract.bg_scale # Delete this so that we can overwrite it
-        bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
+        use_rounds = nbp_basic.use_rounds
+        bg_scale = np.zeros((n_tiles, len(use_rounds), n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
         n_threads = config['n_background_scale_threads']
         # Maximum threads physically possible is (potentially) bottlenecked by available RAM
-        max_n_threads = psutil.virtual_memory().available // 4.2e8 - 10
+        max_n_threads = int(psutil.virtual_memory().available // 4.2e8 - 10)
         if n_threads is None:
             n_threads = psutil.cpu_count(logical=True)
             if n_threads is None:
                 n_threads = 1
+            else:
+                n_threads -= 2
         n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
         processes = []
@@ -246,7 +249,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             current_trcs.append([t, r, c])
             processes.append(Process(target=register_base.compute_brightness_scale, 
                                      args=(nbp, nbp_basic, nbp_file, nbp_extract, mid_z, z_rad, t, r, c, queue)))
-            if len(current_trcs) >= n_threads or i >= len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
+            if len(current_trcs) == n_threads or i == len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
                 # Start subprocesses altogether
                 [p.start() for p in processes]
                 # Retrieve scale factors from the multiprocess queue
@@ -254,7 +257,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                     bg_scale[current_trc[0], current_trc[1], current_trc[2]] = queue.get()[0]
                 processes = []
                 current_trcs = []
-            i += 1
         nbp_extract.bg_scale = bg_scale
     nbp_extract.finalized = True
 

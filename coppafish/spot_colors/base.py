@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ..setup import NotebookPage
+from ..utils import tiles_io
 
 
 def apply_transform(yxz: np.ndarray, transform: np.ndarray,
@@ -109,11 +110,6 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
         use_rounds = nbp_basic.use_rounds
     if use_channels is None:
         use_channels = nbp_basic.use_channels
-    
-    if nbp_extract.file_type == '.npy':
-        from ..utils.npy import load_tile, save_tile
-    elif nbp_extract.file_type == '.zarr':
-        from ..utils.zarray import load_tile, save_tile
 
     n_spots = yxz_base.shape[0]
     no_verbose = n_spots < 10000
@@ -148,9 +144,9 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
                 if yxz_transform.shape[0] > 0:
                     # Read in the shifted uint16 colors here, and remove shift later.
                     if nbp_basic.is_3d:
-                        spot_colors[in_range, r, c] = load_tile(nbp_file, nbp_basic, t, use_rounds[r],
-                                                                          use_channels[c], yxz_transform,
-                                                                          apply_shift=False)
+                        spot_colors[in_range, r, c] = tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, 
+                                                                         use_rounds[r], use_channels[c], yxz_transform,
+                                                                         apply_shift=False)
                     else:
                         spot_colors[in_range, r, c] = image_all_channels[use_channels[c]][
                             tuple(np.asarray(yxz_transform[:, i]) for i in range(2))]
@@ -173,8 +169,8 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
                     # Read in the shifted uint16 colors here, and remove shift later.
                     if nbp_basic.is_3d:
                         bg_colours[in_range, c] = \
-                            load_tile(nbp_file, nbp_basic, t, nbp_basic.pre_seq_round, use_channels[c],
-                                                yxz_transform, apply_shift=False)
+                            tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, nbp_basic.pre_seq_round, 
+                                               use_channels[c], yxz_transform, apply_shift=False)
                 pbar.update(1)
         # subtract tile pixel shift value so that bg_colours are in range -15_000 to 50_000 (approx)
         valid = bg_colours > 0

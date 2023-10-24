@@ -5,6 +5,7 @@ import numpy as np
 from typing import Optional, Tuple
 
 from ..setup import NotebookPage
+from ..utils import tiles_io
 
 
 def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):
@@ -360,18 +361,14 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     z_radius = np.min([5, len(nb.basic_info.use_z)//2])
     tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
 
-    if nb.extract.file_type == '.npy':
-        from ..utils.npy import load_tile
-    elif nb.extract.file_type == '.zarr':
-        from ..utils.zarray import load_tile
-
     # Get the image for the tile and channel
-    im = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c,
-                              [np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius),
-                               np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius),
-                               np.arange(tile_centre[2] -  z_radius, tile_centre[2] +  z_radius),
-                               ],
-                              apply_shift=False))
+    im = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c,
+                    [
+                        np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius), 
+                        np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius), 
+                        np.arange(tile_centre[2] -  z_radius, tile_centre[2] +  z_radius),
+                    ],
+                    apply_shift=False))
     # Clip the image to the specified range if required
     if image_value_range is None:
         image_value_range = (np.min(im), np.max(im))
