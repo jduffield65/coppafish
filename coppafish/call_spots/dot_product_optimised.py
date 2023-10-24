@@ -7,7 +7,6 @@ def dot_product_score_single(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, 
                              weight_squared: jnp.ndarray) -> jnp.ndarray:
     n_genes, n_round_channels = bled_codes.shape
     spot_colors = spot_colors / (jnp.linalg.norm(spot_colors) + norm_shift)
-    bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
     spot_colors = spot_colors * weight_squared
     score = spot_colors @ bled_codes.transpose()
     score = score / jnp.sum(weight_squared) * n_round_channels
@@ -36,8 +35,13 @@ def dot_product_score(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, norm_sh
             `score` such that `score[d, c]` gives dot product between `spot_colors` vector `d`
             with `bled_codes` vector `c`.
     """
-    score = jax.vmap(dot_product_score_single, in_axes=(0, None, None, 0), out_axes=0)(spot_colors, bled_codes,
-                                                                                       norm_shift, weight_squared)
+    # Normalise `bled_codes` outside of the for loop, since it does not loop over n_spots
+    bled_codes = bled_codes.copy()
+    bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
+    score = jax.vmap(dot_product_score_single, in_axes=(0, None, None, 0), out_axes=0)(spot_colors.copy(), 
+                                                                                       bled_codes, 
+                                                                                       norm_shift, 
+                                                                                       weight_squared.copy())
     return score
 
 
