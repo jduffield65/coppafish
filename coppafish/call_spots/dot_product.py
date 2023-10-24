@@ -17,6 +17,7 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
         gene_score_second: np.ndarray of second-best gene scores [n_spots]
     """
     n_spots, n_genes = spot_colours.shape[0], bled_codes.shape[0]
+    n_rounds, n_channels_use = spot_colours.shape[1], spot_colours.shape[2]
     # If no weighting is given, use equal weighting
     if weight_squared is None:
         weight_squared = np.ones((n_spots, spot_colours.shape[1], spot_colours.shape[2]))
@@ -24,7 +25,8 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
         # First convert these matrices to vectors so that we can use the dot product.
         # copy weight_squared along new axis
         # weight_squared = np.repeat(weight_squared[np.newaxis, :, :], n_spots, axis=0)
-    weight_squared = weight_squared.reshape(n_spots, -1)
+    weight_squared = weight_squared.reshape(n_spots, -1) * n_rounds * n_channels_use
+    weight_squared = weight_squared / np.sum(weight_squared, axis=1)[:, None]
     spot_colours = spot_colours.reshape(n_spots, -1)
     spot_colours = spot_colours / (np.linalg.norm(spot_colours, axis=1)[:, None] + norm_shift)
     spot_colours = spot_colours * weight_squared
