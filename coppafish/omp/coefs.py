@@ -110,8 +110,11 @@ def get_best_gene_base(residual_pixel_colors: np.ndarray, all_bled_codes: np.nda
     """
     # FIXME: This function takes in a differently shaped parameter residual_pixel_colors compared to optimised jax, 
     # FIXME: according to the docstring.
+    if inverse_var.ndim == 1:
+        inverse_var = inverse_var.reshape(1, -1)
     # calculate score including background genes as if best gene is background, then stop iteration.
-    best_gene, best_score, _ = call_spots.dot_product_score(residual_pixel_colors, all_bled_codes, inverse_var, norm_shift)
+    best_gene, best_score, _ = call_spots.dot_product_score(residual_pixel_colors, all_bled_codes, 
+                                                            inverse_var, norm_shift)
     # if best_gene is in ignore_gene, set score below score_thresh.
     is_ignore_gene = (best_gene[:, np.newaxis] == ignore_genes).any(axis=1)
     best_score = best_score * np.invert(is_ignore_gene)

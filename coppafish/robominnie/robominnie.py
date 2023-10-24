@@ -320,7 +320,7 @@ class RoboMinnie:
                 RoboMinnie instance.
 
         Returns:
-            Dict (str:str): Gene names as keys, gene codes as values.
+            Dict (str: str): Gene names as keys, gene codes as values.
 
         Notes:
             See [here](https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction) for more details.
@@ -1022,8 +1022,7 @@ class RoboMinnie:
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         Args:
-            time_pipeline (bool, optional): If true, print the time taken to run the coppafish pipeline. Default: 
-                true
+            time_pipeline (bool, optional): Print the time taken to run the coppafish pipeline and OMP. Default: true
             include_omp (bool, optional): If true, run up to and including coppafish OMP stage. Default: true.
             jax_profile (bool, optional): If true, profile entire coppafish pipeline. Default: false.
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. 
@@ -1064,6 +1063,8 @@ class RoboMinnie:
         if include_omp == False:
             return
         
+        if time_pipeline:
+            start_time_omp = time.time()
         if jax_profile_omp:
             import jax
             jax.profiler.start_trace(coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
@@ -1082,6 +1083,7 @@ class RoboMinnie:
             jax.profiler.stop_trace()
         if time_pipeline:
             end_time = time.time()
+            print(f'OMP run time: {round((end_time - start_time_omp)/60, 2)}mins')
             print(
                 f'Coppafish pipeline run: {round((end_time - start_time)/60, 1)}mins\n' + \
                 f'{round((end_time - start_time)//(n_planes * n_tiles), 1)}s per z plane per tile.'
@@ -1113,8 +1115,8 @@ class RoboMinnie:
             warnings.warn('Copppafish OMP found zero spots')
 
 
-    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0.99, 
-                          intensity_threshold: float = 0.7, location_threshold: float = 2) -> Tuple[int,int,int,int]:
+    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0.0, 
+                          intensity_threshold: float = 0.0, location_threshold: float = 2) -> Tuple[int,int,int,int]:
         """
         Compare spot positions and gene codes from coppafish results to the known spot locations. If the spots are 
         close enough and the true spot has not been already assigned to a reference spot, then they are considered the 

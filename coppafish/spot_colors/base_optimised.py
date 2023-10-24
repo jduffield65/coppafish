@@ -18,7 +18,7 @@ def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jn
     return yxz_transform, in_range
 
 
-@partial(jax.jit, static_argnums=3)
+@partial(jax.jit)
 def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This transforms the coordinates yxz based on an affine transform.
