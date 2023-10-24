@@ -1,6 +1,6 @@
 2023/mm/dd Alpha Update (v0.3.0):
- * Saving extracted tiles as .zarr is now the default save file type. Can be changed back to .npy by setting 
-    config['extract']['file_type'] = .npy.
+ * Saving extracted tiles as .npy is the default save file type. Can be changed to .zarr (50% compression) by setting 
+    config['extract']['file_type'] = .zarr.
  * Compatibility with JOBS datasets.
  * Computing background scale factors is now parallelised.
 
