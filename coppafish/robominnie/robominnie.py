@@ -1022,8 +1022,7 @@ class RoboMinnie:
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         Args:
-            time_pipeline (bool, optional): If true, print the time taken to run the coppafish pipeline. Default: 
-                true
+            time_pipeline (bool, optional): Print the time taken to run the coppafish pipeline and OMP. Default: true
             include_omp (bool, optional): If true, run up to and including coppafish OMP stage. Default: true.
             jax_profile (bool, optional): If true, profile entire coppafish pipeline. Default: false.
             jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. 
@@ -1064,6 +1063,8 @@ class RoboMinnie:
         if include_omp == False:
             return
         
+        if time_pipeline:
+            start_time_omp = time.time()
         if jax_profile_omp:
             import jax
             jax.profiler.start_trace(coppafish_output, create_perfetto_link=True, create_perfetto_trace=True)
@@ -1082,6 +1083,7 @@ class RoboMinnie:
             jax.profiler.stop_trace()
         if time_pipeline:
             end_time = time.time()
+            print(f'OMP run time: {round((end_time - start_time_omp)/60, 1)}mins')
             print(
                 f'Coppafish pipeline run: {round((end_time - start_time)/60, 1)}mins\n' + \
                 f'{round((end_time - start_time)//(n_planes * n_tiles), 1)}s per z plane per tile.'
