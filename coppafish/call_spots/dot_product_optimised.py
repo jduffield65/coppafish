@@ -9,7 +9,7 @@ def dot_product_score_single(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, 
     spot_colors = spot_colors / (jnp.linalg.norm(spot_colors) + norm_shift)
     spot_colors = spot_colors * weight_squared
     score = spot_colors @ bled_codes.transpose()
-    score = score / jnp.sum(weight_squared) * n_round_channels
+    score = n_round_channels * score / jnp.sum(weight_squared)
     return score
 
 

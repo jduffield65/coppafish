@@ -20,3 +20,5 @@ def test_dot_product_score_equality():
     from coppafish.call_spots.dot_product_optimised import dot_product_score
     score = dot_product_score(spot_colours, bled_codes, norm_shift, weight_squared)
     assert score.shape == (n_spots, n_genes), 'Unexpected dot product score shape'
+    assert np.allclose(gene_score, np.max(score, axis=1), atol=1e-4), 'Expected best scores to be similar'
+    assert np.allclose(gene_no, np.argmax(score, axis=1)), 'Expected the same best gene numbers'

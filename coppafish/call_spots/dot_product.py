@@ -8,15 +8,15 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
     Simple dot product score assigning each spot to the gene with the highest score.
 
     Args:
-        spot_colours: np.ndarray of spot colours [n_spots, (n_rounds * n_channels_use)]
-        bled_codes: np.ndarray of normalised bled codes [n_genes, (n_rounds * n_channels_use)]
-        weight_squared: np.ndarray of weights [n_spots, (n_rounds * n_channels_use)]
-        norm_shift: float to add to the norm of each spot colour to avoid boosting weak spots too much
+        spot_colours (`[n_spots x (n_rounds * n_channels_use)] ndarray[float]`): spot colours.
+        bled_codes (`[n_genes x (n_rounds * n_channels_use)] ndarray[float]`): normalised bled codes.
+        weight_squared (`[n_spots x (n_rounds * n_channels_use)] ndarray[float]`): array of weights.
+        norm_shift (float): added to the norm of each spot colour to avoid boosting weak spots too much.
 
     Returns:
-        gene_no: np.ndarray of gene numbers [n_spots]
-        gene_score: np.ndarray of gene scores [n_spots]
-        gene_score_second: np.ndarray of second-best gene scores [n_spots]
+        - gene_no: np.ndarray of gene numbers [n_spots]
+        - gene_score: np.ndarray of gene scores [n_spots]
+        - gene_score_second: np.ndarray of second-best gene scores [n_spots]
     """
     n_spots, n_genes = spot_colours.shape[0], bled_codes.shape[0]
     n_rounds_channels_use = spot_colours.shape[1]
@@ -27,10 +27,11 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
         # First convert these matrices to vectors so that we can use the dot product.
         # copy weight_squared along new axis
         # weight_squared = np.repeat(weight_squared[np.newaxis, :, :], n_spots, axis=0)
-    weight_squared = weight_squared * n_rounds_channels_use
+    # Ensure bled_codes is normalised for each gene
+    bled_codes = bled_codes / np.linalg.norm(bled_codes, axis=1, keepdims=True)
     weight_squared = weight_squared / np.sum(weight_squared, axis=1)[:, None]
     spot_colours = spot_colours / (np.linalg.norm(spot_colours, axis=1)[:, None] + norm_shift)
-    spot_colours = spot_colours * weight_squared
+    spot_colours = n_rounds_channels_use * spot_colours * weight_squared
 
     # Now we can obtain the dot product score for each spot and each gene
     all_score = spot_colours @ bled_codes.T
