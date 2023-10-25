@@ -143,9 +143,9 @@ def get_best_gene_base(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.nd
         - best_gene - The best gene to add next.
         - pass_score_thresh - `True` if `best_score > score_thresh` and `best_gene` not in `ignore_genes`.
     """
-    # calculate score including background genes as if best gene is background, then stop iteration.
-    all_scores = dot_product_optimised.dot_product_score_single(residual_pixel_color, all_bled_codes, norm_shift, 
-                                                                inverse_var)
+    # Calculate score including background genes as if best gene is background, then stop iteration.
+    all_scores = dot_product_optimised.dot_product_score(residual_pixel_color[None], all_bled_codes, norm_shift, 
+                                                         inverse_var[None])[0]
     best_gene = jnp.argmax(jnp.abs(all_scores))
     # if best_gene is background, set score below score_thresh.
     best_score = all_scores[best_gene] * jnp.isin(best_gene, ignore_genes, invert=True)
@@ -395,8 +395,7 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
 
     # Fit background and override initial pixel_colors
     gene_coefs = np.zeros((n_pixels, n_genes), dtype=np.float32)  # coefs of all genes and background
-    pixel_colors, background_coefs, background_codes = call_spots.fit_background(pixel_colors,
-                                                                      background_shift)
+    pixel_colors, background_coefs, background_codes = call_spots.fit_background(pixel_colors, background_shift)
 
     background_genes = jnp.arange(n_genes, n_genes + n_channels)
 
@@ -461,4 +460,4 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
             pbar.update(1)
     pbar.close()
 
-    return gene_coefs.astype(np.float32), np.asarray(background_coefs).astype(np.float32)
+    return gene_coefs.astype(np.float32), np.asarray(background_coefs, dtype=np.float32)

@@ -26,7 +26,6 @@ def fit_background(spot_colors: np.ndarray, weight_shift: float = 0) -> Tuple[np
             coefficient value for each background vector found for each spot.
         - background_vectors `float [n_channels x n_rounds x n_channels]`.
             background_vectors[c] is the background vector for channel c.
-
     """
     # if weight_shift < 1e-20:
     #     warnings.warn(f'weight_shift value given, {weight_shift} is below 1e-20.'
