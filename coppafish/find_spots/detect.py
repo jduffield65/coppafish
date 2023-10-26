@@ -1,20 +1,12 @@
 import warnings
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import numpy as np
 
 from .. import utils
 
 
-# This method is a bit silly, I think that the small random number means that the same spot in 2 diff round channels
-# may have a different location depending on where the random number has put it
-# Don't really understand why we are dilating it? We have already convolved with a kernel.
-# Dilation here means producing a new image by sliding the structuring element over all pixels of the original image
-# and then taking the largest pixel within that window (even though the wikipedia definition implies dilation = max + 1)
-# So when image + epsilon > dilation, this just means that the pixel is a local maxima within the ngbd defined by the
-# structuring element
-def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int],
-                 radius_z: Optional[int] = None, remove_duplicates: bool = False,
-                 se: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int], radius_z: Optional[int] = None,
+                 remove_duplicates: bool = False, se: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     Finds local maxima in image exceeding ```intensity_thresh```.
     This is achieved through a dilation being run on the whole image.
@@ -44,26 +36,85 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
         # Default is a cuboid se of all ones as is quicker than disk and very similar results.
         if radius_z is not None:
             se = np.ones((2*radius_xy-1, 2*radius_xy-1, 2*radius_z-1), dtype=int)
+            pad_size_z = radius_z-1
         else:
             se = np.ones((2*radius_xy-1, 2*radius_xy-1), dtype=int)
+            pad_size_z = 0
+        pad_size_y = radius_xy - 1
+        pad_size_x = radius_xy - 1
+    else:
+        se = utils.morphology.ensure_odd_kernel(se)
+        pad_size_y = int((se.shape[0]-1)/2)
+        pad_size_x = int((se.shape[1]-1)/2)
+        if se.ndim == 3:
+            pad_size_z = int((se.shape[2] - 1) / 2)
+        else:
+            pad_size_z = 0
     if image.ndim == 2 and se.ndim == 3:
         mid_z = int(np.floor((se.shape[2]-1)/2))
         warnings.warn(f"2D image provided but 3D filter asked for.\n"
                       f"Using the middle plane ({mid_z}) of this filter.")
         se = se[:, :, mid_z]
 
-    small = 1e-6  # for computing local maxima: shouldn't matter what it is (keep below 0.01 for int image).
+    # set central pixel to 0
+    se[np.ix_(*[(np.floor((se.shape[i] - 1) / 2).astype(int),) for i in range(se.ndim)])] = 0
+    se_shifts = utils.morphology.filter.get_shifts_from_kernel(se)
+
+    consider_yxz = np.where(image > intensity_thresh)
+    n_consider = consider_yxz[0].shape[0]
     if remove_duplicates:
         # perturb image by small amount so two neighbouring pixels that did have the same value now differ slightly.
         # hence when find maxima, will only get one of the pixels not both.
         rng = np.random.default_rng(0)   # So shift is always the same.
         # rand_shift must be larger than small to detect a single spot.
-        rand_im_shift = rng.uniform(low=small*2, high=0.2, size=image.shape)
-        image = image + rand_im_shift
+        rand_im_shift = rng.uniform(low=2e-6, high=0.2, size=n_consider).astype(np.float32)
+        image = image.astype(np.float32)
+        image[consider_yxz] = image[consider_yxz] + rand_im_shift
 
-    dilate = utils.morphology.dilate(image, se)
-    spots = np.logical_and(image + small > dilate, image > intensity_thresh)
-    peak_pos = np.where(spots)
-    peak_yxz = np.concatenate([coord.reshape(-1, 1) for coord in peak_pos], axis=1)
-    peak_intensity = image[spots]
+    consider_intensity = image[consider_yxz]
+    consider_yxz = list(consider_yxz)
+
+    keep = np.asarray(get_local_maxima(image, se_shifts, pad_size_y, pad_size_x, pad_size_z, consider_yxz,
+                                           consider_intensity))
+    if remove_duplicates:
+        peak_intensity = np.round(consider_intensity[keep]).astype(int)
+    else:
+        peak_intensity = consider_intensity[keep]
+    peak_yxz = np.array(consider_yxz).transpose()[keep]
     return peak_yxz, peak_intensity
+
+
+def get_local_maxima(image: np.ndarray, se_shifts: Tuple[np.ndarray, np.ndarray, np.ndarray], pad_size_y: int, 
+                     pad_size_x: int, pad_size_z: int, consider_yxz: List[np.ndarray], consider_intensity: np.ndarray) \
+                        -> np.ndarray:
+    """
+    Finds the local maxima from a given set of pixels to consider.
+
+    Args:
+        image: ```float [n_y x n_x x n_z]```.
+            ```image``` to find spots on.
+        se_shifts: `(image.ndim x  int [n_shifts])`.
+            y, x, z shifts which indicate neighbourhood about each spot where local maxima search carried out.
+        pad_size_y: How much to zero pad image in y.
+        pad_size_x: How much to zero pad image in x.
+        pad_size_z: How much to zero pad image in z.
+        consider_yxz: `[3 x int [n_consider]]`.
+            All yxz coordinates where value in image is greater than an intensity threshold.
+        consider_intensity: `float [n_consider]`.
+            Value of image at coordinates given by `consider_yxz`.
+
+    Returns:
+        `bool [n_consider]`
+            Whether each point in `consider_yxz` is a local maxima or not.
+    """
+    pad_size = [(pad_size_y, pad_size_y), (pad_size_x, pad_size_x), (pad_size_z, pad_size_z)][:image.ndim]
+    consider_yxz_padded = [None] * len(consider_yxz)
+    image = np.pad(image, pad_size, mode='constant', constant_values=0)
+    for i in range(len(pad_size)):
+        consider_yxz_padded[i] = consider_yxz[i] + pad_size[i][0]
+    keep = np.ones(consider_yxz_padded[0].shape[0], dtype=bool)
+    for i in range(se_shifts[0].shape[0]):
+        # Note that in each iteration, only consider coordinates which can still possibly be local maxima.
+        keep = keep * (image[tuple([consider_yxz_padded[j] + se_shifts[j][i] for j in range(image.ndim)])] <=
+                       consider_intensity)
+    return keep

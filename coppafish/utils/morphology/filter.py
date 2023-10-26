@@ -1,6 +1,7 @@
 import numbers
 from typing import Union, Tuple
 import numpy as np
+import numpy.typing as npt
 from scipy.ndimage import correlate, convolve
 from scipy.signal import oaconvolve
 from .base import ensure_odd_kernel
@@ -106,3 +107,25 @@ def imfilter_coords(image: np.ndarray, kernel: np.ndarray, coords: np.ndarray, p
     """
     im_filt = imfilter(image.astype(int), kernel, padding, corr_or_conv, oa=False)
     return im_filt[tuple([coords[:, j] for j in range(im_filt.ndim)])]
+
+
+def get_shifts_from_kernel(kernel: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
+    """
+    Returns where kernel is positive as shifts in y, x and z.
+    I.e. `kernel=jnp.ones((3,3,3))` would return `y_shifts = x_shifts = z_shifts = -1, 0, 1`.
+
+    Args:
+        kernel (`[kernel_szY x kernel_szX x kernel_szY] ndarray[int]`): the kernel.
+
+    Returns:
+        - `int [n_shifts]`.
+            y_shifts.
+        - `int [n_shifts]`.
+            x_shifts.
+        - `int [n_shifts]`.
+            z_shifts.
+    """
+    shifts = list(np.where(kernel > 0))
+    for i in range(kernel.ndim):
+        shifts[i] = (shifts[i] - (kernel.shape[i] - 1) / 2).astype(int)
+    return tuple(shifts)

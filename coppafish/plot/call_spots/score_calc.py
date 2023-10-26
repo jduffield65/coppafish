@@ -57,6 +57,6 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray) -> Tu
     """
     n_spots = spot_colors.shape[0]
     n_genes = bled_codes.shape[0]
-    gene_no, score, _ = dot_product_score(spot_colors.reshape((n_spots, -1)), bled_codes.reshape((n_genes, -1)))
+    gene_no, score = dot_product_score(spot_colors.reshape((n_spots, -1)), bled_codes.reshape((n_genes, -1)))[:2]
 
     return score, gene_no

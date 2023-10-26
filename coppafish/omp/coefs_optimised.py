@@ -83,7 +83,7 @@ def fit_coefs_weight_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, g
         - coefs - `float [n_genes_add]`.
             Coefficients found through least squares fitting for each gene.
     """
-    coefs = jnp.linalg.lstsq(bled_codes[:, genes] * weight[:, jnp.newaxis], pixel_color * weight)[0]
+    coefs = jnp.linalg.lstsq(bled_codes[:, genes] * weight[:, jnp.newaxis], pixel_color * weight, rcond=-1)[0]
     residual = pixel_color * weight - jnp.matmul(bled_codes[:, genes] * weight[:, jnp.newaxis], coefs)
     return residual / weight, coefs
 
@@ -150,6 +150,8 @@ def get_best_gene_base(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.nd
     # if best_gene is background, set score below score_thresh.
     best_score = all_scores[best_gene] * jnp.isin(best_gene, ignore_genes, invert=True)
     pass_score_thresh = jnp.abs(best_score) > score_thresh
+    if type(best_gene) == jnp.ndarray:
+        best_gene = best_gene[0]
     return best_gene, pass_score_thresh
 
 
@@ -301,12 +303,6 @@ def get_best_gene(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarra
     If `best_gene[s]` is in `background_genes`, already in `genes_added[s]` or `best_score[s] < score_thresh`,
     then `pass_score_thresh[s] = False`.
 
-    !!!note
-        The variance computed is based on maximum likelihood estimation - it accounts for all genes and background
-        fit in each round/channel. The more genes added, the greater the variance so if the inverse is used as a
-        weighting for omp fitting or choosing the next gene,
-        the rounds/channels which already have genes in will contribute less.
-
     Args:
         residual_pixel_colors: `float [n_pixels x (n_rounds * n_channels)]`.
             Residual pixel colors from previous iteration of omp.
@@ -339,6 +335,12 @@ def get_best_gene(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarra
         - inverse_var - `float [n_pixels x (n_rounds * n_channels)]`.
             Inverse of variance of each pixel in each round/channel based on genes fit on previous iteration.
             Includes both background and gene contribution.
+
+    Notes:
+        - The variance computed is based on maximum likelihood estimation - it accounts for all genes and background 
+            fit in each round/channel. The more genes added, the greater the variance so if the inverse is used as a 
+            weighting for omp fitting or choosing the next gene, the rounds/channels which already have genes in will 
+            contribute less.
     """
     return jax.vmap(get_best_gene_single, in_axes=(0, None, 0, 0, None, None, None, None, 0),
                     out_axes=(0, 0, 0))(residual_pixel_colors, all_bled_codes, coefs, genes_added, norm_shift,
@@ -349,11 +351,8 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
                   dp_shift: float, dp_thresh: float, alpha: float, beta: float, max_genes: int,
                   weight_coef_fit: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """
-    This performs omp on every pixel, the stopping criterion is that the dot_product_score
-    when selecting the next gene to add exceeds dp_thresh or the number of genes added to the pixel exceeds max_genes.
-
-    !!! note
-        Background vectors are fitted first and then not updated again.
+    This performs omp on every pixel, the stopping criterion is that the dot_product_score when selecting the next gene 
+    to add exceeds dp_thresh or the number of genes added to the pixel exceeds max_genes.
 
     Args:
         pixel_colors: `float [n_pixels x n_rounds x n_channels]`.
@@ -378,10 +377,14 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
             `gene_coefs[s, g]` is the weighting of pixel `s` for gene `g` found by the omp algorithm. Most are zero.
         - background_coefs - `float32 [n_pixels x n_channels]`.
             coefficient value for each background vector found for each pixel.
+
+    Notes:
+        - Background vectors are fitted first and then not updated again.
     """
     n_pixels = pixel_colors.shape[0]
 
-    check_spot = np.random.randint(n_pixels)
+    rng = np.random.RandomState(0)
+    check_spot = rng.randint(n_pixels)
     diff_to_int = jnp.round(pixel_colors[check_spot]).astype(int) - pixel_colors[check_spot]
     if jnp.abs(diff_to_int).max() == 0:
         raise ValueError(f"pixel_coefs should be found using normalised pixel_colors."
