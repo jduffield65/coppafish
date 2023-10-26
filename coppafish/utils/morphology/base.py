@@ -1,8 +1,7 @@
-import numpy as np
-import scipy.signal
-from scipy.ndimage import grey_dilation
-from coppafish.utils import errors
 import cv2
+import scipy
+import numpy as np
+from coppafish.utils import errors
 from typing import Optional, Union
 import numpy.typing as npt
 
@@ -171,20 +170,24 @@ def top_hat(image: npt.NDArray[Union[np.float64, np.uint16]], kernel: npt.NDArra
     return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel).astype(image_dtype)
 
 
-def dilate(image: npt.NDArray[np.float_], kernel: npt.NDArray[np.int_]) -> npt.NDArray[np.float_]:
+def dilate(image: npt.NDArray[Union[np.float32, np.float64]], kernel: npt.NDArray[np.int_]) \
+    -> npt.NDArray[Union[np.float32, np.float64]]:
     """
     Dilates `image` with `kernel`, using zero padding.
 
     Args:
-        image: `float [image_sz1 x ... x image_szN]`.
-            Image to be dilated.
-        kernel: `int [kernel_sz1 x ... x kernel_szN]`.
-            Dilation kernel containing only zeros or ones.
+        image (`[image_sz1 x ... x image_szN] ndarray[float32 or float64]`): image to be dilated.
+        kernel: `[kernel_sz1 x ... x kernel_szN] ndarray[int]`): dilation kernel containing only zeros or ones.
 
     Returns:
-        `float [image_sz1 x image_sz2]`.
-            `image` after being dilated with `kernel`.
+        `[image_sz1 x ... x image_szN] ndarray[float32 or float64]`: dilated `image`.
+    
+    Notes:
+        As of scipy version `1.10.1`, `image` with datatype np.float16 is not supported when applying `grey_dilation`.
     """
+    assert np.allclose(np.unique(kernel), np.asarray([0, 1])) or np.allclose(np.unique(kernel), np.asarray([0])) \
+        or np.allclose(np.unique(kernel), np.asarray([1])), 'Kernel can only contain ones and zeroes'
+
     kernel = ensure_odd_kernel(kernel)
     # mode refers to the padding. We pad with zeros to keep results the same as MATLAB
-    return grey_dilation(image, footprint=kernel, mode='constant')
+    return scipy.ndimage.grey_dilation(image, footprint=kernel, mode='constant')
