@@ -11,28 +11,28 @@ from .. import utils
 def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int], radius_z: Optional[int] = None,
                  remove_duplicates: bool = False, se: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Finds local maxima in image exceeding ```intensity_thresh```.
+    Finds local maxima in image exceeding `intensity_thresh`.
     This is achieved by looking at neighbours of pixels above intensity_thresh.
     Should use for a small `se` and high `intensity_thresh`.
 
     Args:
-        image: ```float [n_y x n_x x n_z]```.
-            ```image``` to find spots on.
-        intensity_thresh: Spots are local maxima in image with ```pixel_value > intensity_thresh```.
+        image: `float [n_y x n_x x n_z]`.
+            `image` to find spots on.
+        intensity_thresh: Spots are local maxima in image with `pixel_value > intensity_thresh`.
         radius_xy: Radius of dilation structuring element in xy plane (approximately spot radius).
         radius_z: Radius of dilation structuring element in z direction (approximately spot radius).
             Must be more than 1 to be 3D.
-            If ```None```, 2D filter is used.
+            If `None`, 2D filter is used.
         remove_duplicates: Whether to only keep one pixel if two or more pixels are local maxima and have
             same intensity. Only works with integer image.
-        se: ```int [se_sz_y x se_sz_x x se_sz_z]```.
+        se: `int [se_sz_y x se_sz_x x se_sz_z]`.
             Can give structuring element manually rather than using a cuboid element.
             Must only contain zeros and ones.
 
     Returns:
-        - ```peak_yxz``` - ```int [n_peaks x image.ndim]```.
+        - `peak_yxz` - `int [n_peaks x image.ndim]`.
             yx or yxz location of spots found.
-        - ```peak_intensity``` - ```float [n_peaks]```.
+        - `peak_intensity` - `float [n_peaks]`.
             Pixel value of spots found.
     """
     if se is None:
@@ -95,8 +95,8 @@ def get_local_maxima_jax(image: jnp.ndarray, se_shifts: Tuple[jnp.ndarray, jnp.n
     Finds the local maxima from a given set of pixels to consider.
 
     Args:
-        image: ```float [n_y x n_x x n_z]```.
-            ```image``` to find spots on.
+        image: `float [n_y x n_x x n_z]`.
+            `image` to find spots on.
         se_shifts: `(image.ndim x  int [n_shifts])`.
             y, x, z shifts which indicate neighbourhood about each spot where local maxima search carried out.
         pad_size_y: How much to zero pad image in y.
@@ -112,12 +112,13 @@ def get_local_maxima_jax(image: jnp.ndarray, se_shifts: Tuple[jnp.ndarray, jnp.n
             Whether each point in `consider_yxz` is a local maxima or not.
     """
     pad_size = [(pad_size_y, pad_size_y), (pad_size_x, pad_size_x), (pad_size_z, pad_size_z)][:image.ndim]
-    image = jnp.pad(image, pad_size)
+    consider_yxz_padded = [None] * len(consider_yxz)
+    image = jnp.pad(image, pad_size, mode='constant', constant_values=0)
     for i in range(len(pad_size)):
-        consider_yxz[i] = consider_yxz[i] + pad_size[i][0]
-    keep = jnp.ones(consider_yxz[0].shape[0], dtype=bool)
+        consider_yxz_padded[i] = consider_yxz[i].copy() + pad_size[i][0]
+    keep = jnp.ones(consider_yxz_padded[0].shape[0], dtype=bool)
     for i in range(se_shifts[0].shape[0]):
         # Note that in each iteration, only consider coordinates which can still possibly be local maxima.
-        keep = keep * (image[tuple([consider_yxz[j] + se_shifts[j][i] for j in range(image.ndim)])] <=
+        keep = keep * (image[tuple([consider_yxz_padded[j] + se_shifts[j][i] for j in range(image.ndim)])] <=
                        consider_intensity)
     return keep

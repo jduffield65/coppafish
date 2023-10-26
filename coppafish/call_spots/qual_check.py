@@ -1,32 +1,36 @@
 from typing import Optional, Union, List
 import numpy as np
+import numpy.typing as npt
 
 from ..setup import NotebookPage, Notebook
 
 
-def get_spot_intensity(spot_colors: np.ndarray) -> np.ndarray:
+def get_spot_intensity(spot_colors: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
     """
     Finds the max intensity for each imaging round across all imaging channels for each spot.
     Then median of these max round intensities is returned.
-    Logic is that we expect spots that are genes to have at least one large intensity value in each round
-    so high spot intensity is more indicative of a gene.
 
     Args:
-        spot_colors: ```float [n_spots x n_rounds x n_channels]```.
-            Spot colors normalised to equalise intensities between channels (and rounds).
+        spot_colors (`[n_spots x n_rounds x n_channels] ndarray[float]`: spot colors normalised to equalise intensities 
+            between channels (and rounds).
 
     Returns:
-        ```float [n_spots]```.
-            ```[s]``` is the intensity of spot ```s```.
+        `[n_spots] ndarray[float]`: index `s` is the intensity of spot `s`.
+
+    Notes:
+        Logic is that we expect spots that are genes to have at least one large intensity value in each round
+        so high spot intensity is more indicative of a gene.
     """
-    check_spot = np.random.randint(spot_colors.shape[0])
+    rng = np.random.RandomState(0)
+    check_spot = rng.randint(spot_colors.shape[0])
     diff_to_int = np.round(spot_colors[check_spot]).astype(int) - spot_colors[check_spot]
     if np.abs(diff_to_int).max() == 0:
         raise ValueError(f"spot_intensities should be found using normalised spot_colors."
                          f"\nBut for spot {check_spot}, spot_colors given are integers indicating they are "
                          f"the raw intensities.")
-    round_max_color = np.max(spot_colors, axis=2)
-    return np.median(round_max_color, axis=1)
+    # Max over all channels, then median over all rounds
+    intensities = np.median(np.max(spot_colors, axis=2), axis=1)
+    return intensities
 
 
 def omp_spot_score(nbp: NotebookPage, score_multiplier: float,

@@ -18,11 +18,12 @@ def apply_transform_single(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jn
     return yxz_transform, in_range
 
 
-@partial(jax.jit, static_argnums=3)
+@partial(jax.jit)
 def apply_transform(yxz: jnp.ndarray, transform: jnp.ndarray, tile_sz: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     This transforms the coordinates yxz based on an affine transform.
     E.g. to find coordinates of spots on the same tile but on a different round and channel.
+
     Args:
         yxz: ```int16 [n_spots x 3]```.
             ```yxz[i, :2]``` are the non-centered yx coordinates in ```yx_pixels``` for spot ```i```.
@@ -55,16 +56,6 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
     By default, will run on `nbp_basic.use_rounds` and `nbp_basic.use_channels`.
-
-    !!! note
-        Returned spot colors have dimension `n_spots x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)` not
-        `n_pixels x nbp_basic.n_rounds x nbp_basic.n_channels`.
-
-    !!! note
-        `invalid_value = -nbp_basic.tile_pixel_value_shift` is the lowest possible value saved in the npy file
-        minus 1 (due to clipping in extract step), so it is impossible for spot_color to be this.
-        Hence I use this as integer nan. It will be `invalid_value` if the registered coordinate of
-        spot `s` is outside the tile in round `r`, channel `c`.
 
     Args:
         yxz_base: `int16 [n_spots x 3]`.
@@ -104,6 +95,14 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
             If `return_in_bounds`, the `yxz_base` corresponding to spots in bounds for all `use_rounds` / `use_channels`
             will be returned. It is likely that `n_spots_in_bounds` won't be the same as `n_spots`.
         - `bg_colours` - `int32 [n_spots x n_channels_use]`.
+
+    Notes:
+        - Returned spot colors have dimension `n_spots x len(nbp_basic.use_rounds) x len(nbp_basic.use_channels)` not
+            `n_pixels x nbp_basic.n_rounds x nbp_basic.n_channels`.
+        - `invalid_value = -nbp_basic.tile_pixel_value_shift` is the lowest possible value saved in the npy file minus 
+            1 (due to clipping in extract step), so it is impossible for spot_color to be this. Hence I use this as 
+            integer nan. It will be `invalid_value` if the registered coordinate of spot `s` is outside the tile in 
+            round `r`, channel `c`.
     """
     if bg_scale is not None:
         assert nbp_basic.use_preseq, "Can't subtract background if preseq round doesn't exist!"
@@ -121,15 +120,14 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
     n_use_rounds = len(use_rounds)
     n_use_channels = len(use_channels)
     # spots outside tile bounds on particular r/c will initially be set to 0.
-    # TODO: Should this be jax.numpy?
     spot_colors = np.zeros((n_spots, n_use_rounds, n_use_channels), dtype=np.int32)
     if use_bg:
         bg_colours = np.zeros((n_spots, n_use_channels), dtype=np.int32)
     if not nbp_basic.is_3d:
         # use numpy not jax.numpy as reading in tiff is done in numpy.
-        tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz, 1], dtype=jnp.int16)
+        tile_sz = np.asarray([nbp_basic.tile_sz, nbp_basic.tile_sz, 1], dtype=np.int16)
     else:
-        tile_sz = jnp.array([nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z)], dtype=jnp.int16)
+        tile_sz = np.asarray([nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z)], dtype=np.int16)
 
     with tqdm(total=n_use_rounds * n_use_channels, disable=no_verbose) as pbar:
         pbar.set_description(f"Reading {n_spots} spot_colors found on tile {t} from {nbp_extract.file_type} files")

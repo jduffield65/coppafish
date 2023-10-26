@@ -55,6 +55,8 @@ def get_dot_product_score(spot_colors: np.ndarray, bled_codes: np.ndarray) -> Tu
             Dot product score for each spot.
         `spot_gene_no` - will be same as input if given, otherwise will be the best gene assigned.
     """
-    gene_no, score, _ = dot_product_score(spot_colors, bled_codes)
+    n_spots = spot_colors.shape[0]
+    n_genes = bled_codes.shape[0]
+    gene_no, score = dot_product_score(spot_colors.reshape((n_spots, -1)), bled_codes.reshape((n_genes, -1)))[:2]
 
     return score, gene_no
