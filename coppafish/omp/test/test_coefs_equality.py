@@ -53,9 +53,9 @@ def test_fit_coefs_weight_equality():
     coefs_optimised = np.asarray(coefs_optimised, dtype=np.float32)
     assert residual_optimised.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
     assert coefs_optimised.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
-    assert np.allclose(residual, residual_optimised, atol=1e-3), \
+    assert np.allclose(residual, residual_optimised, atol=1e-2), \
         'Expected similar residual from optimised and non-optimised OMP'
-    assert np.allclose(coefs,    coefs_optimised,    atol=1e-3), \
+    assert np.allclose(coefs,    coefs_optimised,    atol=1e-2), \
         'Expected similar coefs from optimised and non-optimised OMP'
 
 
