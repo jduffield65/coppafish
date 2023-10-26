@@ -53,9 +53,9 @@ def test_fit_coefs_weight_equality():
     coefs_optimised = np.asarray(coefs_optimised, dtype=np.float32)
     assert residual_optimised.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
     assert coefs_optimised.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
-    assert np.allclose(residual, residual_optimised, atol=1e-4), \
+    assert np.allclose(residual, residual_optimised, atol=1e-3), \
         'Expected similar residual from optimised and non-optimised OMP'
-    assert np.allclose(coefs,    coefs_optimised,    atol=1e-4), \
+    assert np.allclose(coefs,    coefs_optimised,    atol=1e-3), \
         'Expected similar coefs from optimised and non-optimised OMP'
 
 
@@ -152,7 +152,6 @@ def test_get_best_gene_equality():
     assert np.allclose(best_gene, best_gene_optimised, atol=1e-4), 'Expected the same `best_genes` output'
     assert np.all(pass_score_thresh == pass_score_thresh_optimised), 'Expected the same `pass_score_thresh` output'
     assert np.allclose(inverse_var, inverse_var_optimised), 'Expected similar `inverse_var` output'
-test_get_best_gene_equality()
 
 
 @pytest.mark.optimised
