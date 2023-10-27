@@ -192,6 +192,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             if pixel_colors_tz.shape[0] == 0:
                 continue
             pixel_colors_tz = pixel_colors_tz / color_norm_factor
+            np.asarray(pixel_colors_tz, dtype=np.float32)
 
             # Only keep pixels with significant absolute intensity to save memory.
             # absolute because important to find negative coefficients as well.
@@ -203,10 +204,10 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             pixel_yxz_tz = pixel_yxz_tz[keep]
             del pixel_intensity_tz, keep
 
-            pixel_coefs_tz = sparse.csr_matrix(
-                omp.get_all_coefs(pixel_colors_tz, bled_codes,
-                                  0, dp_norm_shift, config['dp_thresh'],
-                                  config['alpha'], config['beta'], config['max_genes'], config['weight_coef_fit'])[0])
+            pixel_coefs_tz = omp.get_all_coefs(pixel_colors_tz, bled_codes, 0, dp_norm_shift, config['dp_thresh'], 
+                                               config['alpha'], config['beta'], config['max_genes'], 
+                                               config['weight_coef_fit'])[0]
+            pixel_coefs_tz = np.asarray(pixel_coefs_tz)
             del pixel_colors_tz
             # Only keep pixels for which at least one gene has non-zero coefficient.
             keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
@@ -215,7 +216,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
             # TODO: check order of np.asarray and keep, which is quicker - think this is quickest though
             pixel_yxz_t = np.append(pixel_yxz_t, np.asarray(pixel_yxz_tz[keep]), axis=0)
             del pixel_yxz_tz
-            pixel_coefs_t = sparse.vstack((pixel_coefs_t, pixel_coefs_tz[keep]))
+            pixel_coefs_t = sparse.vstack((pixel_coefs_t, sparse.csr_matrix(pixel_coefs_tz[keep])))
             del pixel_coefs_tz, keep
 
         if spot_shape is None:

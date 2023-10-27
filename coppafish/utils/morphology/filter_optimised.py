@@ -10,6 +10,7 @@ def get_shifts_from_kernel(kernel: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarra
     """
     Returns where kernel is positive as shifts in y, x and z.
     I.e. `kernel=jnp.ones((3,3,3))` would return `y_shifts = x_shifts = z_shifts = -1, 0, 1`.
+    
     Args:
         kernel: int [kernel_szY x kernel_szX x kernel_szY]
 

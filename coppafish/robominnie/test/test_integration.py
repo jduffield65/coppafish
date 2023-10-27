@@ -183,4 +183,4 @@ def test_bg_subtraction():
 
 
 if __name__ == '__main__':
-    test_integration_001()
+    test_integration_003()

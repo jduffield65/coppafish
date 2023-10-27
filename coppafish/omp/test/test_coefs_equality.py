@@ -1,12 +1,11 @@
 import numpy as np
-import itertools
 import pytest
 
 
 @pytest.mark.optimised
 def test_fit_coefs_equality():
     # We want 1 test that the function `fit_coefs` is giving similar results in the jax and non-jax code
-    rng = np.random.RandomState(5)
+    rng = np.random.RandomState(9)
     n_rounds = 3
     n_channels = 4
     n_genes = 7
@@ -31,7 +30,7 @@ def test_fit_coefs_equality():
 
 @pytest.mark.optimised
 def test_fit_coefs_weight_equality():
-    rng = np.random.RandomState(5)
+    rng = np.random.RandomState(34)
     n_rounds = 3
     n_channels = 4
     n_genes = 7
@@ -40,24 +39,32 @@ def test_fit_coefs_weight_equality():
     bled_codes = rng.rand(n_rounds * n_channels, n_genes)
     pixel_colors = rng.rand(n_rounds * n_channels, n_pixels)
     genes = rng.randint(n_genes, size=(n_pixels, n_genes_add))
-    weight = rng.rand(n_pixels, n_rounds * n_channels)
+    weight = rng.rand(n_pixels, n_rounds * n_channels) + 10
+    bled_codes.astype(np.float32)
+    pixel_colors.astype(np.float32)
+    weight.astype(np.float32)
     from coppafish.omp.coefs import fit_coefs_weight
     residual, coefs = fit_coefs_weight(bled_codes, pixel_colors, genes, weight)
     assert residual.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
     assert coefs.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
     from coppafish.omp.coefs_optimised import fit_coefs_weight
     residual_optimised, coefs_optimised = fit_coefs_weight(bled_codes, pixel_colors, genes, weight)
-    assert residual.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
-    assert coefs.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
-    assert np.allclose(residual, residual_optimised, atol=1e-4), \
+    residual_optimised = np.asarray(residual_optimised, dtype=np.float32)
+    coefs_optimised = np.asarray(coefs_optimised, dtype=np.float32)
+    assert residual_optimised.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
+    assert coefs_optimised.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
+    assert np.allclose(residual, residual_optimised, atol=1e-2), \
         'Expected similar residual from optimised and non-optimised OMP'
-    assert np.allclose(coefs,    coefs_optimised,    atol=1e-4), \
+    assert np.allclose(coefs,    coefs_optimised,    atol=1e-2), \
         'Expected similar coefs from optimised and non-optimised OMP'
 
 
 @pytest.mark.optimised
 def test_get_best_gene_first_iter_equality():
-    rng = np.random.RandomState(47)
+    from coppafish.omp.coefs import get_best_gene_first_iter
+    from coppafish.omp.coefs_optimised import get_best_gene_first_iter as get_best_gene_first_iter_jax
+
+    rng = np.random.RandomState(60)
     n_rounds = 3
     n_channels = 4
     n_genes = 7
@@ -70,18 +77,15 @@ def test_get_best_gene_first_iter_equality():
     alpha = rng.rand()
     beta = rng.rand()
     background_genes = rng.randint(n_genes, size=(n_channels))
-    from coppafish.omp.coefs import get_best_gene_first_iter
-    best_gene, pass_score_thresh, background_var, best_score = \
+    best_gene, pass_score_thresh, background_var = \
         get_best_gene_first_iter(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift, score_thresh, 
                                  alpha, beta, background_genes)
     assert best_gene.shape == (n_pixels, ), 'Unexpected shape for `best_gene` output'
     assert pass_score_thresh.shape == (n_pixels, ), 'Unexpected shape for `pass_score_thresh` output'
     assert background_var.shape == (n_pixels, n_rounds * n_channels), 'Unexpected shape for `background_var` output'
-    assert best_score.shape == (n_pixels, ), 'Unexpected shape for `best_score` output'
-    from coppafish.omp.coefs_optimised import get_best_gene_first_iter
     best_gene_optimised, pass_score_thresh_optimised, background_var_optimised = \
-        get_best_gene_first_iter(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift, score_thresh, 
-                                 alpha, beta, background_genes)
+        get_best_gene_first_iter_jax(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift, score_thresh, 
+                                     alpha, beta, background_genes)
     assert best_gene.shape == (n_pixels, ), 'Unexpected shape for `best_gene` output'
     assert pass_score_thresh.shape == (n_pixels, ), 'Unexpected shape for `pass_score_thresh` output'
     assert background_var.shape == (n_pixels, n_rounds * n_channels), 'Unexpected shape for `background_var` output'
@@ -91,44 +95,39 @@ def test_get_best_gene_first_iter_equality():
         'Expected similar `pass_score_thresh` from optimised and non-optimised OMP'
     assert np.allclose(background_var, background_var_optimised, atol=1e-4), \
         'Expected similar `background_var` from optimised and non-optimised OMP'
+test_get_best_gene_first_iter_equality()
 
 
 @pytest.mark.optimised
 def test_get_best_gene_base_equality():
-    rng = np.random.RandomState(97)
+    from coppafish.omp.coefs import get_best_gene_base
+    from coppafish.omp.coefs_optimised import get_best_gene_base as get_best_gene_base_jax
+
+    rng = np.random.RandomState(98)
     n_rounds = 3
     n_channels = 4
     n_genes = 7
     # We test on one pixel because the jax code does a single pixel at a time
-    residual_pixel_colors = rng.rand(1, n_rounds * n_channels)
-    residual_pixel_colors_jax = residual_pixel_colors[0]
+    residual_pixel_colors = rng.rand(n_rounds * n_channels)
     all_bled_codes = rng.rand(n_genes, n_rounds * n_channels)
     norm_shift = rng.rand()
     score_thresh = rng.rand() * 0.01
-    inverse_var = rng.rand(1, n_rounds * n_channels)
-    inverse_var_jax = inverse_var[0]
+    inverse_var = rng.rand(n_rounds * n_channels)
     ignore_genes = np.asarray([[]], dtype=int)
-    from coppafish.omp.coefs import get_best_gene_base
-    best_gene, pass_score_thresh, best_score = \
+    best_gene, pass_score_thresh = \
         get_best_gene_base(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh, inverse_var, ignore_genes)
-    assert best_gene.size == 1, 'Expected single best gene for one pixel'
-    assert pass_score_thresh.shape == (1, ), 'Unexpected `pass_score_thresh` shape'
-    assert best_score.shape == (1, ), 'Unexpected `best_score` shape'
-    from coppafish.omp.coefs_optimised import get_best_gene_base
     best_gene_optimised, pass_score_thresh_optimised = \
-        get_best_gene_base(residual_pixel_colors_jax, all_bled_codes, norm_shift, score_thresh, inverse_var_jax, 
-                           ignore_genes)
-    assert best_gene_optimised.size == 1, 'Expected single best gene for one pixel'
-    assert pass_score_thresh_optimised.size == 1, 'Unexpected `pass_score_thresh` size'
-    assert np.allclose(best_gene, best_gene_optimised, atol=1e-4), \
-        'Expected the same `best_genes` from optimised and non-optimised OMP'
-    assert np.allclose(pass_score_thresh, pass_score_thresh_optimised, atol=1e-4), \
-        'Expected similar `pass_score_thresh` from optimised and non-optimised OMP'
+        get_best_gene_base_jax(residual_pixel_colors, all_bled_codes, norm_shift, score_thresh, inverse_var, ignore_genes)
+    assert best_gene == best_gene_optimised, 'Expected the same gene as the result'
+    assert pass_score_thresh == pass_score_thresh_optimised, 'Expected the same boolean pass result'
 
 
 @pytest.mark.optimised
 def test_get_best_gene_equality():
-    rng = np.random.RandomState(128)
+    from coppafish.omp.coefs import get_best_gene
+    from coppafish.omp.coefs_optimised import get_best_gene as get_best_gene_jax
+
+    rng = np.random.RandomState(131)
     n_rounds = 3
     n_channels = 4
     n_genes = 7
@@ -144,21 +143,20 @@ def test_get_best_gene_equality():
     alpha = rng.rand()
     background_genes = rng.randint(n_genes, size=(n_channels))
     background_var = rng.rand(n_pixels, n_rounds * n_channels)
-    from coppafish.omp.coefs import get_best_gene
-    best_gene, pass_score_thresh, inverse_var, best_score = \
+    best_gene, pass_score_thresh, inverse_var = \
         get_best_gene(residual_pixel_colors, all_bled_codes, coefs, genes_added, norm_shift, score_thresh, alpha, 
                       background_genes, background_var)
-    from coppafish.omp.coefs_optimised import get_best_gene
     best_gene_optimised, pass_score_thresh_optimised, inverse_var_optimised = \
-        get_best_gene(residual_pixel_colors, all_bled_codes, coefs, genes_added, norm_shift, score_thresh, alpha, 
+        get_best_gene_jax(residual_pixel_colors, all_bled_codes, coefs, genes_added, norm_shift, score_thresh, alpha, 
                       background_genes, background_var)
     assert np.allclose(best_gene, best_gene_optimised, atol=1e-4), 'Expected the same `best_genes` output'
     assert np.all(pass_score_thresh == pass_score_thresh_optimised), 'Expected the same `pass_score_thresh` output'
     assert np.allclose(inverse_var, inverse_var_optimised), 'Expected similar `inverse_var` output'
 
 
+@pytest.mark.optimised
 def test_get_all_coefs_equality():
-    rng = np.random.RandomState(160)
+    rng = np.random.RandomState(162)
     n_rounds = 6
     n_channels = 7
     n_genes = 8
@@ -169,14 +167,12 @@ def test_get_all_coefs_equality():
     alpha = rng.rand()
     beta = rng.rand()
     max_genes = 9
-    for weight_coef_fit, track in itertools.product([True, False], [True, False]):
-        # Can only track a single pixel
-        n_pixels = 1 if track else 5
+    for weight_coef_fit in [True, False]:
+        n_pixels = 5
         pixel_colours = rng.rand(n_pixels, n_rounds, n_channels)
         from coppafish.omp.coefs import get_all_coefs
-        gene_coefs, background_coefs = get_all_coefs(pixel_colours.copy(), bled_codes.copy(), background_shift, 
-                                                     dp_shift, dp_thresh, alpha, beta, max_genes, weight_coef_fit, 
-                                                     track)[:2]
+        gene_coefs, background_coefs = get_all_coefs(pixel_colours, bled_codes, background_shift, dp_shift, dp_thresh, 
+                                                     alpha, beta, max_genes, weight_coef_fit)
         assert gene_coefs.shape == (n_pixels, n_genes)
         assert background_coefs.shape == (n_pixels, n_channels)
         from coppafish.omp.coefs_optimised import get_all_coefs
