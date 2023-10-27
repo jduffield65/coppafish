@@ -120,13 +120,13 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
     good_spot_colors = np.full((n_good, nbp_basic.n_rounds,
                                 nbp_basic.n_channels), invalid_value, dtype=np.int32)
     good_spot_colors[np.ix_(np.arange(n_good), nbp_basic.use_rounds, nbp_basic.use_channels)] = nd_spot_colors_use[good]
-
+    good_bg_colors = bg_colours[good]
     # save spot info to notebook
     nbp.local_yxz = good_local_yxz
     nbp.isolated = good_isolated
     nbp.tile = good_local_tile
     nbp.colors = good_spot_colors
-    nbp.bg_colours = bg_colours
+    nbp.bg_colours = good_bg_colors
 
     # Set variables added in call_reference_spots to None so can save to Notebook.
     # I.e. if call_reference_spots hit error, but we did not do this, we would have to run get_reference_spots again.
