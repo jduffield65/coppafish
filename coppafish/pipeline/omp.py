@@ -7,9 +7,11 @@ from typing import Optional
 import psutil
 try:
     import jax.numpy as jnp
+    optimised = True
 except ImportError:
     warnings.warn('Jax is not installed so call_spots_omp will be slow')
     import numpy as jnp
+    optimised = False
 
 from .. import utils
 from ..setup.notebook import NotebookPage
