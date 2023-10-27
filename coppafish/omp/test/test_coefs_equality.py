@@ -39,6 +39,7 @@ def test_fit_coefs_weight_equality():
     bled_codes = rng.rand(n_rounds * n_channels, n_genes) + 1
     pixel_colors = rng.rand(n_rounds * n_channels, n_pixels) + 1
     genes = np.arange(n_genes_add, dtype=int)
+    genes = np.repeat([genes], n_pixels, axis=0)
     weight = rng.rand(n_pixels, n_rounds * n_channels) + 10
     bled_codes.astype(np.float32)
     pixel_colors.astype(np.float32)
