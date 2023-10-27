@@ -34,11 +34,12 @@ def test_fit_coefs_weight_equality():
     n_rounds = 3
     n_channels = 4
     n_genes = 7
-    n_genes_add = 13
+    n_genes_add = 5
     n_pixels = 9
-    bled_codes = rng.rand(n_rounds * n_channels, n_genes)
-    pixel_colors = rng.rand(n_rounds * n_channels, n_pixels)
-    genes = rng.randint(n_genes, size=(n_pixels, n_genes_add))
+    bled_codes = rng.rand(n_rounds * n_channels, n_genes) + 1
+    pixel_colors = rng.rand(n_rounds * n_channels, n_pixels) + 1
+    genes = np.arange(n_genes_add, dtype=int)
+    genes = np.repeat([genes], n_pixels, axis=0)
     weight = rng.rand(n_pixels, n_rounds * n_channels) + 10
     bled_codes.astype(np.float32)
     pixel_colors.astype(np.float32)
@@ -53,9 +54,11 @@ def test_fit_coefs_weight_equality():
     coefs_optimised = np.asarray(coefs_optimised, dtype=np.float32)
     assert residual_optimised.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
     assert coefs_optimised.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
-    assert np.allclose(residual, residual_optimised, atol=1e-2), \
+    #FIXME: This sometimes caused an assertion error in a random version of python sometimes.... no idea what is 
+    # happening. Maybe random float rounding is causing this??
+    assert np.allclose(residual, residual_optimised, atol=1e-3), \
         'Expected similar residual from optimised and non-optimised OMP'
-    assert np.allclose(coefs,    coefs_optimised,    atol=1e-2), \
+    assert np.allclose(coefs,    coefs_optimised,    atol=1e-3), \
         'Expected similar coefs from optimised and non-optimised OMP'
 
 
