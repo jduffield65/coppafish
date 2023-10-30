@@ -444,14 +444,7 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
     pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
     pixel_coefs_t = scipy.sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
 
-    if n_threads is None:
-        if n_threads is None:
-            n_threads = psutil.cpu_count(logical=True)
-            if n_threads is None:
-                n_threads = 1
-            else:
-                n_threads -= 2
-        n_threads = np.clip(n_threads, 1, 999, dtype=int)
+    n_threads = utils.threads.get_available_threads()
 
     z_chunks = len(use_z) // z_chunk_size + 1
     processes = []

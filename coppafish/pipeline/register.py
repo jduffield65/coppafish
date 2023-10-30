@@ -11,7 +11,7 @@ from ..setup import NotebookPage
 from .. import find_spots
 from ..register import preprocessing
 from ..register import base as register_base
-from ..utils import tiles_io
+from ..utils import tiles_io, threads
 
 
 def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
@@ -231,13 +231,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
         n_threads = config['n_background_scale_threads']
         # Maximum threads physically possible is (potentially) bottlenecked by available RAM
+        n_threads = threads.get_available_threads()
         max_n_threads = int(psutil.virtual_memory().available // 4.2e8 - 10)
-        if n_threads is None:
-            n_threads = psutil.cpu_count(logical=True)
-            if n_threads is None:
-                n_threads = 1
-            else:
-                n_threads -= 2
         n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
         processes = []
