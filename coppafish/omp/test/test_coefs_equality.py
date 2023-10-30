@@ -183,3 +183,5 @@ def test_get_all_coefs_equality():
         assert background_coefs_optimised.shape == (n_pixels, n_channels)
         assert np.allclose(gene_coefs, gene_coefs_optimised, atol=1e-4), 'Expected similar gene coefs'
         assert np.allclose(background_coefs, background_coefs_optimised, atol=1e-4), 'Expected similar background coefs'
+
+#TODO: Create a get_pixel_coefs_yxz unit test to test equality
