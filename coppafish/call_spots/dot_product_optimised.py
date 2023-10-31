@@ -53,6 +53,8 @@ def dot_product_score_no_weight_single(spot_colors: jnp.ndarray, bled_codes: jnp
     return spot_colors @ bled_codes.transpose()
 
 
+#?: We can probably eliminate this function entirely? It is not used anywhere in the actual coppafish code, it is unit 
+# tested though
 @partial(jax.jit, static_argnums=2)
 def dot_product_score_no_weight(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, norm_shift: float) -> jnp.ndarray:
     """

@@ -1,16 +1,19 @@
-from functools import partial
 from typing import Tuple, Union, List, Any
 from tqdm import tqdm
-import jax.numpy as jnp
+import math as maths
 import numpy as np
 import scipy
-import jax
+import os
 
 from .. import utils
 from .. import call_spots
 from .. import spot_colors
 from ..setup import NotebookPage
 from ..call_spots import dot_product_optimised
+
+os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_threads()}'
+import jax.numpy as jnp
+import jax
 
 
 def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
@@ -38,7 +41,6 @@ def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
     return residual, coefs
 
 
-@jax.jit
 def fit_coefs(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray,
               genes: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
@@ -54,12 +56,30 @@ def fit_coefs(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray,
             which best explain each pixel color.
 
     Returns:
-        - residual - `[n_pixels x (n_rounds * n_channels)] ndarray[float]`.
+        - residuals - `[n_pixels x (n_rounds * n_channels)] ndarray[float]`.
             Residual pixel_colors after removing bled_codes with coefficients specified by coefs.
         - coefs - `[n_pixels x n_genes_add] ndarray[float]`.
             Coefficients found through least squares fitting for each gene.
     """
-    return jax.vmap(fit_coefs_single, in_axes=(None, 1, 0), out_axes=(0, 0))(bled_codes, pixel_colors, genes)
+    n_devices = jax.local_device_count()
+    n_rounds_channels, n_pixels = pixel_colors.shape
+    n_genes_add = genes.shape[1]
+    greatest_batch_size = 1
+    while n_devices > 1:
+        batch_size = maths.gcd(n_devices, n_pixels)
+        if batch_size > greatest_batch_size:
+            greatest_batch_size = batch_size
+        n_devices -= 1
+    pixel_colors = pixel_colors.transpose((1, 0))
+    pixel_colors_batched = pixel_colors.reshape((greatest_batch_size, -1, n_rounds_channels))
+    genes_batched = genes.reshape((greatest_batch_size, -1, n_genes_add))
+    
+    vmap = jax.vmap(fit_coefs_single, in_axes=(None, 0, 0), out_axes=(0, 0))
+    residuals, coefs = jax.pmap(vmap, in_axes=(None, 0, 0), out_axes=(0, 0))(
+        bled_codes, pixel_colors_batched, genes_batched
+    )
+    # Combine batches
+    return residuals.reshape((n_pixels, n_rounds_channels)), coefs.reshape((n_pixels, n_genes_add))
 
 
 def fit_coefs_weight_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, genes: jnp.ndarray,
@@ -91,7 +111,6 @@ def fit_coefs_weight_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, g
     return residual / weight, coefs
 
 
-@jax.jit
 def fit_coefs_weight(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray, genes: jnp.ndarray,
                      weight: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
@@ -116,8 +135,26 @@ def fit_coefs_weight(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray, genes: 
         - coefs - `float [n_pixels x n_genes_add]`.
             Coefficients found through least squares fitting for each gene.
     """
-    return jax.vmap(fit_coefs_weight_single, in_axes=(None, 1, 0, 0), out_axes=(0, 0))(bled_codes, pixel_colors, genes,
-                                                                                       weight)
+    n_devices = jax.local_device_count()
+    n_rounds_channels, n_pixels = pixel_colors.shape
+    n_genes_add = genes.shape[1]
+    greatest_batch_size = 1
+    while n_devices > 1:
+        batch_size = maths.gcd(n_devices, n_pixels)
+        if batch_size > greatest_batch_size:
+            greatest_batch_size = batch_size
+        n_devices -= 1
+    pixel_colors = pixel_colors.transpose((1, 0))
+    pixel_colors_batched = pixel_colors.reshape((greatest_batch_size, -1, n_rounds_channels))
+    genes_batched = genes.reshape((greatest_batch_size, -1, n_genes_add))
+    weight_batched = weight.reshape((greatest_batch_size, -1, n_rounds_channels))
+    
+    vmap = jax.vmap(fit_coefs_weight_single, in_axes=(None, 0, 0, 0), out_axes=(0, 0))
+    residuals, coefs = jax.pmap(vmap, in_axes=(None, 0, 0, 0), out_axes=(0, 0))(
+        bled_codes, pixel_colors_batched, genes_batched, weight_batched
+    )
+    # Combine batches
+    return residuals.reshape((n_pixels, n_rounds_channels)), coefs.reshape((n_pixels, n_genes_add))
 
 
 def get_best_gene_base(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray,
@@ -200,10 +237,6 @@ def get_best_gene_first_iter_single(residual_pixel_color: jnp.ndarray, all_bled_
     return best_gene, pass_score_thresh, background_var
 
 
-# static_argnums refer to arguments which do not change.
-# arrays are not hashable hence all_bled_codes and background_genes not static.
-#  https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html#caching
-@partial(jax.jit, static_argnums=(3, 4, 5, 6))
 def get_best_gene_first_iter(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray,
                              background_coefs: jnp.ndarray, norm_shift: float,
                              score_thresh: float, alpha: float, beta: float,
@@ -239,9 +272,28 @@ def get_best_gene_first_iter(residual_pixel_colors: jnp.ndarray, all_bled_codes:
         - background_var (`[n_pixels x (n_rounds * n_channels)] ndarray[float]`).
             Variance in each round/channel based on just the background.
     """
-    return jax.vmap(get_best_gene_first_iter_single, in_axes=(0, None, 0, None, None, None, None, None),
-                    out_axes=(0, 0, 0))(residual_pixel_colors, all_bled_codes, background_coefs, norm_shift,
-                                           score_thresh, alpha, beta, background_genes)
+    n_pixels, n_rounds_channels = residual_pixel_colors.shape
+    n_channels = background_coefs.shape[1]
+    n_devices = jax.local_device_count()
+    greatest_batch_size = 1
+    while n_devices > 1:
+        batch_size = maths.gcd(n_devices, n_pixels)
+        if batch_size > greatest_batch_size:
+            greatest_batch_size = batch_size
+        n_devices -= 1
+    residual_pixel_colors_batched = residual_pixel_colors.reshape((greatest_batch_size, -1, n_rounds_channels))
+    background_coefs_batched = background_coefs.reshape((greatest_batch_size, -1, n_channels))
+
+    vmap = jax.vmap(get_best_gene_first_iter_single, in_axes=(0, None, 0, None, None, None, None, None), 
+                    out_axes=(0, 0, 0))
+    best_genes, pass_score_thresholds, backgrounds_vars \
+        = jax.pmap(vmap, in_axes=(0, None, 0, None, None, None, None, None), out_axes=(0, 0, 0))(
+            residual_pixel_colors_batched, all_bled_codes, background_coefs_batched, norm_shift, score_thresh, alpha, 
+            beta, background_genes, 
+        )
+    # Combine batches
+    return (best_genes.reshape((n_pixels)), pass_score_thresholds.reshape((n_pixels)), 
+            backgrounds_vars.reshape((n_pixels, n_rounds_channels)))
 
 
 def get_best_gene_single(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
@@ -296,7 +348,6 @@ def get_best_gene_single(residual_pixel_color: jnp.ndarray, all_bled_codes: jnp.
     return best_gene, pass_score_thresh, inverse_var
 
 
-@partial(jax.jit, static_argnums=(4, 5, 6))
 def get_best_gene(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarray, coefs: jnp.ndarray,
                   genes_added: jnp.array, norm_shift: float, score_thresh: float, alpha: float,
                   background_genes: jnp.ndarray,
@@ -345,9 +396,30 @@ def get_best_gene(residual_pixel_colors: jnp.ndarray, all_bled_codes: jnp.ndarra
             weighting for omp fitting or choosing the next gene, the rounds/channels which already have genes in will 
             contribute less.
     """
-    return jax.vmap(get_best_gene_single, in_axes=(0, None, 0, 0, None, None, None, None, 0),
-                    out_axes=(0, 0, 0))(residual_pixel_colors, all_bled_codes, coefs, genes_added, norm_shift,
-                                        score_thresh, alpha, background_genes, background_var)
+    n_pixels, n_rounds_channels = residual_pixel_colors.shape
+    n_genes_add = coefs.shape[1]
+    n_devices = jax.local_device_count()
+    greatest_batch_size = 1
+    while n_devices > 1:
+        batch_size = maths.gcd(n_devices, n_pixels)
+        if batch_size > greatest_batch_size:
+            greatest_batch_size = batch_size
+        n_devices -= 1
+    residual_pixel_colors_batched = residual_pixel_colors.reshape((greatest_batch_size, -1, n_rounds_channels))
+    coefs_batched = coefs.reshape((greatest_batch_size, -1, n_genes_add))
+    genes_added_batched = genes_added.reshape((greatest_batch_size, -1, n_genes_add))
+    background_var_batched = background_var.reshape((greatest_batch_size, -1, n_rounds_channels))
+    
+    in_axes = (0, None, 0, 0, None, None, None, None, 0)
+    out_axes = (0, 0, 0)
+    vmap = jax.vmap(get_best_gene_single, in_axes=in_axes, out_axes=out_axes)
+    best_genes, pass_score_thresholds, inverse_vars = jax.pmap(vmap, in_axes=in_axes, out_axes=out_axes)(
+        residual_pixel_colors_batched, all_bled_codes, coefs_batched, genes_added_batched, norm_shift, score_thresh, 
+        alpha, background_genes, background_var_batched, 
+    )
+    # Combine batches
+    return (best_genes.reshape((n_pixels)), pass_score_thresholds.reshape((n_pixels)), 
+            inverse_vars.reshape((n_pixels, n_rounds_channels)))
 
 
 def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background_shift: float,
@@ -505,12 +577,12 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
     pixel_coefs_t = scipy.sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
     
     z_chunks = len(use_z) // z_chunk_size + 1
-    #TODO: Parallelise z chunks via a jax.pmap over a new function, say get_pixel_coefs_yxz_single
     for z_chunk in range(z_chunks):
         print(f"z_chunk {z_chunk + 1}/{z_chunks}")
         # While iterating through tiles, only save info for rounds/channels using
         # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
         z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
+        #TODO: Parallelise the reading of spot colours separately from the jax pmapping
         if nbp_basic.use_preseq:
             pixel_colors_tz, pixel_yxz_tz, bg_colours = \
                 spot_colors.get_spot_colors(

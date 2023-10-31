@@ -4,6 +4,9 @@ import pytest
 
 @pytest.mark.optimised
 def test_fit_coefs_equality():
+    from coppafish.omp.coefs import fit_coefs
+    from coppafish.omp.coefs_optimised import fit_coefs as fit_coefs_jax
+    
     # We want 1 test that the function `fit_coefs` is giving similar results in the jax and non-jax code
     rng = np.random.RandomState(9)
     n_rounds = 3
@@ -14,12 +17,10 @@ def test_fit_coefs_equality():
     bled_codes = rng.rand(n_rounds * n_channels, n_genes)
     pixel_colors = rng.rand(n_rounds * n_channels, n_pixels)
     genes = rng.randint(n_genes, size=(n_pixels, n_genes_add))
-    from coppafish.omp.coefs import fit_coefs
     residual, coefs = fit_coefs(bled_codes, pixel_colors, genes)
     assert residual.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
     assert coefs.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
-    from coppafish.omp.coefs_optimised import fit_coefs
-    residual_optimised, coefs_optimised = fit_coefs(bled_codes, pixel_colors, genes)
+    residual_optimised, coefs_optimised = fit_coefs_jax(bled_codes, pixel_colors, genes)
     assert residual.shape == (n_pixels, n_rounds * n_channels), 'Unexpected output residual shape'
     assert coefs.shape == (n_pixels, n_genes_add), 'Unexpected output coefs shape'
     assert np.allclose(residual, residual_optimised, atol=1e-4), \
@@ -157,18 +158,18 @@ def test_get_best_gene_equality():
 @pytest.mark.optimised
 def test_get_all_coefs_equality():
     rng = np.random.RandomState(162)
+    n_pixels = 5
     n_rounds = 6
     n_channels = 7
     n_genes = 8
+    max_genes = 4
     bled_codes = rng.rand(n_genes, n_rounds, n_channels)
     background_shift = rng.rand() * 0.001
     dp_shift = rng.rand() * 0.001
     dp_thresh = rng.rand() * 0.001
     alpha = rng.rand()
     beta = rng.rand()
-    max_genes = 9
     for weight_coef_fit in [True, False]:
-        n_pixels = 5
         pixel_colours = rng.rand(n_pixels, n_rounds, n_channels)
         from coppafish.omp.coefs import get_all_coefs
         gene_coefs, background_coefs = get_all_coefs(pixel_colours, bled_codes, background_shift, dp_shift, dp_thresh, 
@@ -184,4 +185,4 @@ def test_get_all_coefs_equality():
         assert np.allclose(gene_coefs, gene_coefs_optimised, atol=1e-4), 'Expected similar gene coefs'
         assert np.allclose(background_coefs, background_coefs_optimised, atol=1e-4), 'Expected similar background coefs'
 
-#TODO: Create a get_pixel_coefs_yxz unit test to test equality
+#TODO: Create get_pixel_coefs_yxz unit test to test jax and non-jax equality
