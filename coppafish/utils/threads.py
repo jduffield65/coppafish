@@ -9,13 +9,11 @@ def get_available_threads() -> int:
     Returns:
         int: number of available threads.
     """
+    n_threads = psutil.cpu_count(logical=True)
     if n_threads is None:
-        if n_threads is None:
-            n_threads = psutil.cpu_count(logical=True)
-            if n_threads is None:
-                n_threads = 1
-            else:
-                n_threads -= 2
-        n_threads = np.clip(n_threads, 1, 999, dtype=int)
+        n_threads = 1
+    else:
+        n_threads -= 2
+    n_threads = np.clip(n_threads, 1, 999, dtype=int)
 
     return int(n_threads)
