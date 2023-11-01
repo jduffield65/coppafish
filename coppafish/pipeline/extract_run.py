@@ -231,6 +231,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                 if not nbp_basic.is_3d:
                     # for 2d all channels in same file
                     file_exists = os.path.isfile(nbp_file.tile[t][r])
+                    if config['file_type'] == '.zarr':
+                        file_exists = os.path.isdir(nbp_file.tile[t][r])
                     if file_exists:
                         # mmap load in image for all channels if tiff exists
                         im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode='r')
@@ -248,10 +250,14 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     if nbp_basic.is_3d:
                         if r != pre_seq_round:
                             file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                            if config['file_type'] == '.zarr':
+                                file_exists = os.path.isdir(nbp_file.tile[t][r][c])
                         else:
                             file_path = nbp_file.tile[t][r][c]
                             file_path = file_path[:file_path.index(config['file_type'])] + '_raw' + config['file_type']
                             file_exists = os.path.isfile(file_path)
+                            if config['file_type'] == '.zarr':
+                                file_exists = os.path.isdir(file_path)
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
                     if file_exists:
                         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
