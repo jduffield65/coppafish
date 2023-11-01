@@ -332,6 +332,7 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
                              f"whereas it should be more than coef_thresh = {coef_thresh} as it is listed as a spot.")
     with tqdm(total=n_genes) as pbar:
         # TODO: if 2D can do all genes together.
+        # TODO: Optimise with jax
         pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
         for g in range(n_genes):
             # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
