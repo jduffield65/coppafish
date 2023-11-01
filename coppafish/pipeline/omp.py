@@ -172,7 +172,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                 UserWarning('Available memory for OMP call spots is low. ' + \
                             'If pipeline gets killed, try freeing up more memory before running OMP.')
             )
-        z_chunk_size = np.clip(z_chunk_size, 1, 8, dtype=int) if optimised else 1
+        z_chunk_size = np.clip(z_chunk_size, 1, utils.threads.get_available_threads(), dtype=int) if optimised else 1
 
         pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, config, int(t), use_z, 
                                                              z_chunk_size, n_genes, transform, color_norm_factor, 

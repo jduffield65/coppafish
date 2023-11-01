@@ -96,7 +96,6 @@ def test_get_best_gene_first_iter_equality():
         'Expected similar `pass_score_thresh` from optimised and non-optimised OMP'
     assert np.allclose(background_var, background_var_optimised, atol=1e-4), \
         'Expected similar `background_var` from optimised and non-optimised OMP'
-test_get_best_gene_first_iter_equality()
 
 
 @pytest.mark.optimised

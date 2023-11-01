@@ -362,6 +362,77 @@ def get_all_coefs(pixel_colors: npt.NDArray, bled_codes: npt.NDArray, background
     return gene_coefs.astype(np.float32), np.asarray(background_coefs, dtype=np.float32)
 
 
+def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, tile: int, 
+                      z_chunk: int, z_chunk_size: int, transform: np.ndarray, colour_norm_factor: np.ndarray, 
+                      ) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Get the normalised pixel colours and their pixel positions for one z chunk.
+
+    Args:
+        nbp_basic (NotebookPage): 'basic_info' notebook page.
+        nbp_file (NotebookPage): 'file_names' notebook page.
+        nbp_extract (NotebookPage): 'extract' notebook page.
+        tile (int): tile index.
+        z_chunk (int): z chunk index.
+        z_chunk_size (int): z chunk size
+        transform (`[n_tiles x n_rounds x n_channels x 4 x 3] ndarray[float]`): `transform[t, r, c]` is the affine 
+            transform to get from tile `t`, `ref_round`, `ref_channel` to tile `t`, round `r`, channel `c`.
+        colour_norm_factor (`[n_rounds x n_channels] ndarray[float]`): Normalisation factors to divide colours by to 
+            equalise channel intensities.
+
+    Returns:
+        - (`[n_pixels x 3] ndarray[int16]`): `pixel_yxz_tz` is the y, x and z pixel positions of the pixel colours 
+            found. 
+        - (`[n_pixels x n_rounds x n_channels] ndarray[float32]`): `pixel_colours_tz` contains the colours for each 
+            pixel.
+    """
+    def get_z_plane_colours(z_index: int, q: multiprocessing.Queue) -> None:
+        no_output = None, None
+        if nbp_basic.use_preseq:
+            pixel_colors_t1, pixel_yxz_t1, _ = \
+                spot_colors.base.get_spot_colors(
+                    spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
+                                                   np.arange(z_index, z_index + 1)), 
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                    bg_scale=nbp_extract.bg_scale)
+        else:
+            pixel_colors_t1, pixel_yxz_t1 = \
+                spot_colors.base.get_spot_colors(
+                    spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
+                                                   np.arange(z_index, z_index + 1)), 
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                    bg_scale=nbp_extract.bg_scale)
+                
+        pixel_colors_t1 = pixel_colors_t1 / colour_norm_factor
+        if pixel_colors_t1.shape[0] == 0:
+            q.put(list(no_output))
+            return
+        q.put([pixel_yxz_t1.astype(np.int16), pixel_colors_t1.astype(np.float32)])
+        return
+    
+    z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(nbp_basic.use_z))
+    pixel_yxz_tz = np.zeros((0, 3), dtype=np.int16)
+    pixel_colors_tz = np.zeros((0, len(nbp_basic.use_rounds), len(nbp_basic.use_channels)), dtype=np.float32)
+    
+    queue = multiprocessing.Queue()
+    
+    for z_plane in range(z_min, z_max):
+        new_process = multiprocessing.Process(target=get_z_plane_colours, args=(z_plane, queue, ))
+        new_process.start()
+    
+    for _ in range(z_min, z_max):
+        pixel_yxz_t1, pixel_colors_t1 = queue.get()
+        
+        if pixel_yxz_t1 is None or pixel_colors_t1 is None:
+            continue
+        pixel_yxz_tz = np.append(pixel_yxz_tz, pixel_yxz_t1, axis=0)
+        pixel_colors_tz = np.append(pixel_colors_tz, pixel_colors_t1, axis=0)
+    
+    queue.close()
+    
+    return pixel_yxz_tz, pixel_colors_tz
+
+
 def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, config: dict, 
                         tile: int, use_z: List[int], z_chunk_size: int, n_genes: int, 
                         transform: Union[np.ndarray, np.ndarray], color_norm_factor: Union[np.ndarray, np.ndarray], 
