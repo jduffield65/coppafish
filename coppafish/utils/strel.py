@@ -93,7 +93,7 @@ def disk(r: int, n: int = 4) -> np.ndarray:
         nhood = np.ones((2 * r - 1, 2 * r - 1), np.uint8) * -np.inf
         nhood[int((nhood.shape[0] - 1) / 2), int((nhood.shape[0] - 1) / 2)] = 1
         for q in range(n):
-            rp = int(np.maths.floor(k / np.linalg.norm(v[q, :])))
+            rp = int(np.floor(k / np.linalg.norm(v[q, :])))
             decomposition = periodic_line(rp, v[q, :])
             nhood = morphology.dilate(nhood, decomposition)
         nhood = nhood > 0
