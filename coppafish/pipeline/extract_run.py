@@ -165,7 +165,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         nbp_debug.scale_z = None
         smooth_kernel_2d = None
     nbp_debug.scale = config['scale']
-    print(f"Scale: {nbp_debug.scale}")
 
     # save scale values incase need to re-run
     extract.save_scale(nbp_file.scale, nbp_debug.scale, config['scale_anchor'])
@@ -219,7 +218,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     nbp_debug.scale_anchor_tile = None
                     nbp_debug.scale_anchor_z = None
                 nbp_debug.scale_anchor = config['scale_anchor']
-                print(f"Scale_anchor: {nbp_debug.scale_anchor}")
                 scale = nbp_debug.scale_anchor
                 use_channels = use_channels_anchor
             else:
