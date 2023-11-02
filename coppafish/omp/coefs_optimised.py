@@ -10,10 +10,10 @@ from .. import call_spots
 from ..setup import NotebookPage
 from ..call_spots import dot_product_optimised
 
+import jax
+import jax.numpy as jnp
 if jax.default_backend() == 'cpu':
     os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_threads()}'
-import jax.numpy as jnp
-import jax
 
 
 def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
