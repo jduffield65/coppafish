@@ -160,20 +160,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     initial_pos_neighbour_thresh = config['initial_pos_neighbour_thresh']
     for t in use_tiles:
         print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
-        pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
-        pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
-        # Total PC's available memory in GB
-        available_memory = psutil.virtual_memory().available // 1000**3
-        # Scale the z_chunk_size linearly based on PC's available memory and inversely with tile volume, with a 
-        # maximum z chunk size of 8
-        z_chunk_size = available_memory * 4194304 // (2 * nbp_basic.tile_sz * nbp_basic.tile_sz)
-        if z_chunk_size < 1:
-            warnings.warn(
-                UserWarning('Available memory for OMP call spots is low. ' + \
-                            'If pipeline gets killed, try freeing up more memory before running OMP.')
-            )
-        z_chunk_size = np.clip(z_chunk_size, 1, utils.threads.get_available_threads(), dtype=int) if optimised else 1
-
+        
+        z_chunk_size = 4 if optimised else 1
         pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, config, int(t), use_z, 
                                                              z_chunk_size, n_genes, transform, color_norm_factor, 
                                                              nbp.initial_intensity_thresh, bled_codes, dp_norm_shift)
