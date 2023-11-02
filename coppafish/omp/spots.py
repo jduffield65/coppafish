@@ -1,12 +1,13 @@
 import warnings
 from typing import Union, List, Tuple, Optional
 import numpy as np
-from .. import utils
-from ..utils.spot_images import get_spot_images, get_average_spot_image
-from ..find_spots import detect_spots, get_isolated_points
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 import numpy_indexed
+
+from .. import utils
+from ..utils.spot_images import get_spot_images, get_average_spot_image
+from ..find_spots import detect_spots, get_isolated_points
 
 
 def count_spot_neighbours(image: np.ndarray, spot_yxz: np.ndarray,
@@ -332,6 +333,7 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
                              f"whereas it should be more than coef_thresh = {coef_thresh} as it is listed as a spot.")
     with tqdm(total=n_genes) as pbar:
         # TODO: if 2D can do all genes together.
+        # TODO: Optimise with jax
         pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
         for g in range(n_genes):
             # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.

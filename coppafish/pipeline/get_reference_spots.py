@@ -65,7 +65,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
 
     # Now we start looping through tiles and recording the local_yxz spots on this tile and the isolated status of each
     # We then append this to our all_local_yxz, ... arrays
-    for t in range(nbp_basic.n_tiles):
+    for t in nbp_basic.use_tiles:
         t_local_yxz = fs.spot_yxz(nbp_find_spots.spot_yxz, t, r, c, nbp_find_spots.spot_no)
         t_isolated = fs.spot_isolated(nbp_find_spots.isolated_spots, t, r, c, nbp_find_spots.spot_no)
         # np.shape(t_local_yxz)[0] is the number of spots found on this tile. If there's a nonzero number of spots found

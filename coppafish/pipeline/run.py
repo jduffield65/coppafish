@@ -278,7 +278,7 @@ def run_omp(nb: setup.Notebook):
         config = nb.get_config()
         # Use tile with most spots on to find spot shape in omp
         spots_tile = np.sum(nb.find_spots.spot_no, axis=(1, 2))
-        tile_most_spots = np.argmax(spots_tile)
+        tile_most_spots = nb.basic_info.use_tiles[np.argmax(spots_tile[nb.basic_info.use_tiles])]
         nbp = omp.call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.extract, nb.call_spots, 
                                  nb.stitch.tile_origin, nb.register.transform, tile_most_spots)
         nb += nbp

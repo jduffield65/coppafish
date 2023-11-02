@@ -27,10 +27,7 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
     # If no weighting is given, use equal weighting
     if weight_squared is None:
         weight_squared = np.ones((n_spots, n_rounds_channels_use))
-    # else:
-        # First convert these matrices to vectors so that we can use the dot product.
-        # copy weight_squared along new axis
-        # weight_squared = np.repeat(weight_squared[np.newaxis, :, :], n_spots, axis=0)
+        
     # Ensure bled_codes is normalised for each gene
     bled_codes = bled_codes / np.linalg.norm(bled_codes, axis=1, keepdims=True)
     weight_squared = weight_squared / np.sum(weight_squared, axis=1)[:, None]
@@ -45,40 +42,6 @@ def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_s
     gene_score_second = all_score_sorted[:, -2]
 
     return gene_no, gene_score, gene_score_second, all_score
-
-
-# def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-#     """
-#     Simple dot product score assigning each spot to the gene with the highest score.
-#     Args:
-#         spot_colours: np.ndarray of spot colours [n_spots, n_rounds, n_channels_use]
-#         bled_codes: np.ndarray of normalised bled codes [n_genes, n_rounds, n_channels_use]
-#     Returns:
-#         gene_no: np.ndarray of gene numbers [n_spots]
-#         gene_score: np.ndarray of gene scores [n_spots]
-#         gene_score_second: np.ndarray of second-best gene scores [n_spots]
-#     """
-#     n_spots, n_genes = spot_colours.shape[0], bled_codes.shape[0]
-#     # normalise each spot colour matrix so that for each spot s and round r, norm(spot_colours[s, r, :]) = 1
-#     spot_colours = spot_colours / np.linalg.norm(spot_colours, axis=2)[:, :, None]
-#     # Do the same for bled_codes
-#     bled_codes = bled_codes / np.linalg.norm(bled_codes, axis=2)[:, :, None]
-#     # At this point, reshape spot_colours to be [n_spots, n_rounds * n_channels_use] and bled_codes to be
-#     # [n_genes, n_rounds * n_channels_use]
-#     spot_colours = spot_colours.reshape((n_spots, -1))
-#     bled_codes = bled_codes.reshape(n_genes, -1)
-#     # earlier normalisation was to equalise across rounds, now ensure each spot has norm 1 and each gene has norm 1
-#     spot_colours = spot_colours / np.linalg.norm(spot_colours, axis=1)[:, None]
-#     bled_codes = bled_codes / np.linalg.norm(bled_codes, axis=1)[:, None]
-#
-#     # Now we can obtain the dot product score for each spot and each gene
-#     all_score = spot_colours @ bled_codes.T
-#     gene_no = np.argmax(all_score, axis=1)
-#     all_score = np.sort(all_score, axis=1)
-#     gene_score = all_score[:, -1]
-#     gene_score_second = all_score[:, -2]
-#
-#     return gene_no, gene_score, gene_score_second
 
 
 def gene_prob_score(spot_colours: np.ndarray, bled_codes: np.ndarray, kappa: float = 2) -> np.ndarray:

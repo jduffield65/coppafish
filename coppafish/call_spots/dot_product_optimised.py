@@ -3,16 +3,6 @@ import jax
 import jax.numpy as jnp
 
 
-def dot_product_score_single(spot_colours: jnp.ndarray, bled_codes: jnp.ndarray, norm_shift: float,
-                             weight_squared: jnp.ndarray) -> jnp.ndarray:
-    n_genes, n_round_channels = bled_codes.shape
-    spot_colours = spot_colours / (jnp.linalg.norm(spot_colours) + norm_shift)
-    spot_colours = spot_colours * weight_squared
-    score = spot_colours @ bled_codes.transpose()
-    score = n_round_channels * score / jnp.sum(weight_squared)
-    return score
-
-
 @partial(jax.jit, static_argnums=2)
 def dot_product_score(spot_colours: jnp.ndarray, bled_codes: jnp.ndarray, norm_shift: float = 0,
                       weight_squared: jnp.ndarray = None) -> jnp.ndarray:
@@ -37,13 +27,16 @@ def dot_product_score(spot_colours: jnp.ndarray, bled_codes: jnp.ndarray, norm_s
     # If no weighting is given, use equal weighting
     if weight_squared is None:
         weight_squared = jnp.ones((n_spots, n_rounds_channels_use))
-    # Normalise `bled_codes` outside of the for loop, since it does not loop over n_spots
+    
+    # Ensure bled_codes is normalised for each gene
     bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
-    score = jax.vmap(dot_product_score_single, in_axes=(0, None, None, 0), out_axes=0)(spot_colours,
-                                                                                       bled_codes, 
-                                                                                       norm_shift, 
-                                                                                       weight_squared)
-    return score
+    weight_squared = weight_squared / jnp.sum(weight_squared, axis=1)[:, None]
+    spot_colours = spot_colours / (jnp.linalg.norm(spot_colours, axis=1)[:, None] + norm_shift)
+    spot_colours = n_rounds_channels_use * spot_colours * weight_squared
+
+    # Now we can obtain the dot product score for each spot and each gene
+    all_scores = spot_colours @ bled_codes.T
+    return all_scores
 
 
 def dot_product_score_no_weight_single(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray,
@@ -53,6 +46,8 @@ def dot_product_score_no_weight_single(spot_colors: jnp.ndarray, bled_codes: jnp
     return spot_colors @ bled_codes.transpose()
 
 
+#?: We can probably eliminate this function entirely? It is not used anywhere in the actual coppafish code, it is unit 
+# tested though
 @partial(jax.jit, static_argnums=2)
 def dot_product_score_no_weight(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, norm_shift: float) -> jnp.ndarray:
     """
