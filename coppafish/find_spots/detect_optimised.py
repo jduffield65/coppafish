@@ -1,7 +1,5 @@
 import warnings
-from functools import partial
 from typing import Optional, Tuple, List
-import jax
 import numpy as np
 from jax import numpy as jnp
 
