@@ -3,7 +3,7 @@ import numpy as np
 
 
 def dot_product_score(spot_colours: np.ndarray, bled_codes: np.ndarray, weight_squared: np.ndarray = None,
-                      norm_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                      norm_shift: float = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Simple dot product score assigning each spot to the gene with the highest score.
 
