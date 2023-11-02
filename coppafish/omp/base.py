@@ -1,6 +1,7 @@
 import numpy as np
+
 from ..setup import NotebookPage
-from ..utils.base import round_any
+from .. import utils
 
 
 def get_initial_intensity_thresh(config: dict, nbp: NotebookPage) -> float:
@@ -20,7 +21,7 @@ def get_initial_intensity_thresh(config: dict, nbp: NotebookPage) -> float:
     initial_intensity_thresh = config['initial_intensity_thresh']
     if initial_intensity_thresh is None:
         config['initial_intensity_thresh'] = \
-            round_any(nbp.abs_intensity_percentile[config['initial_intensity_thresh_percentile']],
+            utils.base.round_any(nbp.abs_intensity_percentile[config['initial_intensity_thresh_percentile']],
                       config['initial_intensity_precision'])
     initial_intensity_thresh = \
         float(np.clip(config['initial_intensity_thresh'], config['initial_intensity_thresh_min'],
