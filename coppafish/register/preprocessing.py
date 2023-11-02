@@ -356,10 +356,10 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     """
     yx_centre = nb.basic_info.tile_centre.astype(int)[:2]
     yx_radius = np.min([250, nb.basic_info.tile_sz//2])
-    z_central_index = np.floor(np.median(len(nb.basic_info.use_z)))
     if len(nb.basic_info.use_z) < 10:
         z_planes = nb.basic_info.use_z
     else:
+        z_central_index = np.floor(np.median(len(nb.basic_info.use_z)))
         z_planes =  [nb.basic_info.use_z[i + z_central_index] for i in range(-4, 6)]
     tile_centre = np.array([yx_centre[0], yx_centre[1]])
 
