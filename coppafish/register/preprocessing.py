@@ -342,31 +342,33 @@ def merge_subvols(position, subvol):
 
 def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_value_range: Optional[Tuple] = None):
     """
-    Function to generate registration images. These are 500 x 500 x min(10, n_planes) images centred in the middle of 
-    the tile and saved as uint8. They are saved as .npy files in the reg_images folder in the output directory and 
-    should be very quick to load.
+    Function to generate registration images. These are `[500 x 500 x min(10, n_planes)]` images centred in the middle 
+    of the tile and saved as uint8. They are saved as .npy files in the reg_images folder in the output directory.
 
     Args:
-        nb: Notebook
-        t (int): tile
-        r (int): round
-        c (int): channel
-        filter (bool, optional): whether to apply sobel filter. Default: false.
+        nb: notebook.
+        t (int): tile index.
+        r (int): round index.
+        c (int): channel index.
+        filter (bool, optional): Apply the sobel filter. Default: false.
         image_value_range (`tuple` of `float`, optional): tuple of min and max image pixel values to clip. Default: no 
             clipping.
     """
     yx_centre = nb.basic_info.tile_centre.astype(int)[:2]
     yx_radius = np.min([250, nb.basic_info.tile_sz//2])
-    z_centre = round(np.median(nb.basic_info.use_z))
-    z_radius = np.min([5, len(nb.basic_info.use_z)//2 - 1])
-    tile_centre = np.array([yx_centre[0], yx_centre[1], z_centre])
+    if len(nb.basic_info.use_z) < 10:
+        z_planes = nb.basic_info.use_z
+    else:
+        z_central_index = np.floor(np.median(len(nb.basic_info.use_z)))
+        z_planes =  [nb.basic_info.use_z[i + z_central_index] for i in range(-4, 6)]
+    tile_centre = np.array([yx_centre[0], yx_centre[1]])
 
     # Get the image for the tile and channel
     im = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c,
                     [
                         np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius), 
                         np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius), 
-                        np.arange(tile_centre[2] -  z_radius, tile_centre[2] +  z_radius),
+                        np.asarray(z_planes),
                     ],
                     apply_shift=False))
     # Clip the image to the specified range if required

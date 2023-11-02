@@ -7,9 +7,10 @@ from typing import Optional
 import psutil
 try:
     import jax.numpy as jnp
+    optimised = True
 except ImportError:
-    warnings.warn('Jax is not installed so call_spots_omp will be slow')
     import numpy as jnp
+    optimised = False
 
 from .. import utils
 from ..setup.notebook import NotebookPage
@@ -52,6 +53,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         `NotebookPage[omp]` - Page contains gene assignments and info for spots using omp.
 
     """
+    if not optimised:
+        warnings.warn('Jax is not installed so call_spots_omp will be slow')
+
     nbp = NotebookPage("omp")
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
@@ -155,69 +159,12 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     print(f'Finding OMP coefficients for all pixels on tiles {use_tiles}:')
     initial_pos_neighbour_thresh = config['initial_pos_neighbour_thresh']
     for t in use_tiles:
-        pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
-        pixel_coefs_t = sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
-        # Total PC's available memory in GB
-        available_memory = psutil.virtual_memory().available // 1000**3
-        # Scale the z_chunk_size linearly based on PC's available memory and inversely with tile volume, with a 
-        # maximum z chunk size of 8
-        z_chunk_size = \
-            available_memory * 16777216 // (2 * nbp_basic.tile_sz * nbp_basic.tile_sz * len(nbp_basic.use_z))
-        if z_chunk_size < 1:
-            warnings.warn(
-                UserWarning('Available memory for OMP call spots is <16GB. ' + \
-                    'If pipeline gets killed, try freeing up more memory before running OMP.')
-            )
-        z_chunk_size = np.clip(z_chunk_size, 1, 8, dtype=int)
-        # z_chunk_size = 2
-        z_chunks = len(use_z) // z_chunk_size + 1
-        for z_chunk in range(z_chunks):
-            print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
-            print(f"z_chunk {z_chunk + 1}/{z_chunks}")
-            # While iterating through tiles, only save info for rounds/channels using
-            # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
-            z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(use_z))
-            if nbp_basic.use_preseq:
-                pixel_colors_tz, pixel_yxz_tz, bg_colours = \
-                    spot_colors.get_spot_colors(
-                        spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                        int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                        bg_scale=nbp_extract.bg_scale)
-            else:
-                pixel_colors_tz, pixel_yxz_tz = \
-                    spot_colors.get_spot_colors(
-                        spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                        int(t), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                        bg_scale=nbp_extract.bg_scale)
-            if pixel_colors_tz.shape[0] == 0:
-                continue
-            pixel_colors_tz = pixel_colors_tz / color_norm_factor
-            np.asarray(pixel_colors_tz, dtype=np.float32)
-
-            # Only keep pixels with significant absolute intensity to save memory.
-            # absolute because important to find negative coefficients as well.
-            pixel_intensity_tz = call_spots.get_spot_intensity(jnp.abs(pixel_colors_tz))
-            keep = pixel_intensity_tz > nbp.initial_intensity_thresh
-            if not keep.any():
-                continue
-            pixel_colors_tz = pixel_colors_tz[keep]
-            pixel_yxz_tz = pixel_yxz_tz[keep]
-            del pixel_intensity_tz, keep
-
-            pixel_coefs_tz = omp.get_all_coefs(pixel_colors_tz, bled_codes, 0, dp_norm_shift, config['dp_thresh'], 
-                                               config['alpha'], config['beta'], config['max_genes'], 
-                                               config['weight_coef_fit'])[0]
-            pixel_coefs_tz = np.asarray(pixel_coefs_tz)
-            del pixel_colors_tz
-            # Only keep pixels for which at least one gene has non-zero coefficient.
-            keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.
-            if len(keep) == 0:
-                continue
-            # TODO: check order of np.asarray and keep, which is quicker - think this is quickest though
-            pixel_yxz_t = np.append(pixel_yxz_t, np.asarray(pixel_yxz_tz[keep]), axis=0)
-            del pixel_yxz_tz
-            pixel_coefs_t = sparse.vstack((pixel_coefs_t, sparse.csr_matrix(pixel_coefs_tz[keep])))
-            del pixel_coefs_tz, keep
+        print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
+        
+        z_chunk_size = 4 if optimised else 1
+        pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, config, int(t), use_z, 
+                                                             z_chunk_size, n_genes, transform, color_norm_factor, 
+                                                             nbp.initial_intensity_thresh, bled_codes, dp_norm_shift)
 
         if spot_shape is None:
             nbp.shape_tile = int(t)

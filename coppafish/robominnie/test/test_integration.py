@@ -91,7 +91,6 @@ def test_integration_003() -> None:
     # Add spots to DAPI image as larger spots
     robominnie.add_spots(n_spots=25_000, include_dapi=True, spot_size_pixels_dapi=np.array([9, 9, 9]), 
                          spot_amplitude_dapi=0.05)
-    # robominnie.generate_random_noise(noise_mean_amplitude=0, noise_std=0.0004, noise_type='normal')
     robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
     robominnie.run_coppafish()
 

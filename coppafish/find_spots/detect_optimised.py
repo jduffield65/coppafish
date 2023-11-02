@@ -1,7 +1,5 @@
 import warnings
-from functools import partial
 from typing import Optional, Tuple, List
-import jax
 import numpy as np
 from jax import numpy as jnp
 
@@ -77,8 +75,9 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
     consider_intensity = image[consider_yxz]
     consider_yxz = list(consider_yxz)
 
-    keep = np.asarray(get_local_maxima_jax(image, se_shifts, pad_size_y, pad_size_x, pad_size_z, consider_yxz,
-                                           consider_intensity))
+    paddings = jnp.asarray([[pad_size_y, pad_size_y], [pad_size_x, pad_size_x], [pad_size_z, pad_size_z]])[:image.ndim]
+    keep = np.asarray(get_local_maxima_jax(image, jnp.asarray(se_shifts), paddings, jnp.asarray(consider_yxz), 
+                                               jnp.asarray(consider_intensity)))
     if remove_duplicates:
         peak_intensity = np.round(consider_intensity[keep]).astype(int)
     else:
@@ -87,38 +86,29 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
     return peak_yxz, peak_intensity
 
 
-@partial(jax.jit, static_argnums=(2, 3, 4))
 def get_local_maxima_jax(image: jnp.ndarray, se_shifts: Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
-                         pad_size_y: int, pad_size_x: int, pad_size_z: int,
-                         consider_yxz: List[jnp.ndarray], consider_intensity: jnp.ndarray) -> jnp.ndarray:
+                         pad_sizes: jnp.ndarray, consider_yxz: jnp.ndarray, consider_intensity: jnp.ndarray) \
+                             -> jnp.ndarray:
     """
     Finds the local maxima from a given set of pixels to consider.
 
     Args:
-        image: `float [n_y x n_x x n_z]`.
-            `image` to find spots on.
-        se_shifts: `(image.ndim x  int [n_shifts])`.
-            y, x, z shifts which indicate neighbourhood about each spot where local maxima search carried out.
-        pad_size_y: How much to zero pad image in y.
-        pad_size_x: How much to zero pad image in x.
-        pad_size_z: How much to zero pad image in z.
-        consider_yxz: `[3 x int [n_consider]]`.
-            All yxz coordinates where value in image is greater than an intensity threshold.
-        consider_intensity: `float [n_consider]`.
-            Value of image at coordinates given by `consider_yxz`.
+        image (`[n_y x n_x x n_z] ndarray[float]`): `image` to find spots on.
+        se_shifts (`[image.ndim x n_consider]` ndarray[int]): y, x, z shifts which indicate neighbourhood about each 
+            spot where local maxima search carried out.
+        pad_sizes ([image.ndim] ndarray[int]): `pad_sizes[i,0]` represents the top padding amount on the image for 
+            dimension `i`, `pad_sizes[i,1]` represents the bottom padding amount. `i=0,1,2` represent y, x and z.
+        consider_yxz (`[3 x n_consider] ndarray[int]`): all yxz coordinates where value in image is greater than an 
+            intensity threshold.
+        consider_intensity (`[n_consider] ndarray[float]`): value of image at coordinates given by `consider_yxz`.
 
     Returns:
-        `bool [n_consider]`
-            Whether each point in `consider_yxz` is a local maxima or not.
+        `[n_consider] ndarray[bool]`: whether each point in `consider_yxz` is a local maxima or not.
     """
-    pad_size = [(pad_size_y, pad_size_y), (pad_size_x, pad_size_x), (pad_size_z, pad_size_z)][:image.ndim]
-    consider_yxz_padded = [None] * len(consider_yxz)
-    image = jnp.pad(image, pad_size, mode='constant', constant_values=0)
-    for i in range(len(pad_size)):
-        consider_yxz_padded[i] = consider_yxz[i].copy() + pad_size[i][0]
-    keep = jnp.ones(consider_yxz_padded[0].shape[0], dtype=bool)
-    for i in range(se_shifts[0].shape[0]):
-        # Note that in each iteration, only consider coordinates which can still possibly be local maxima.
-        keep = keep * (image[tuple([consider_yxz_padded[j] + se_shifts[j][i] for j in range(image.ndim)])] <=
-                       consider_intensity)
+    image = jnp.pad(image, pad_sizes, mode='constant', constant_values=0)
+    consider_yxz_padded = jnp.add(consider_yxz, pad_sizes[:,0][:,None])
+    se_shifts_flat = se_shifts.reshape((image.ndim, -1))
+    consider_yxz_padded_shifted = jnp.add(consider_yxz_padded[..., None], se_shifts_flat[:, None, :])
+    keep = jnp.all(image[tuple(consider_yxz_padded_shifted)] <= consider_intensity[..., None], axis=-1)
+
     return keep

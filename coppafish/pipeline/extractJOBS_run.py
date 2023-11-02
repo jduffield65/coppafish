@@ -216,7 +216,6 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                     nbp_debug.scale_anchor_tile = None
                     nbp_debug.scale_anchor_z = None
                 nbp_debug.scale_anchor = config['scale_anchor']
-                print(f"Scale_anchor: {nbp_debug.scale_anchor}")
                 scale = nbp_debug.scale_anchor
                 use_channels = use_channels_anchor
             else:
@@ -536,7 +535,6 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
                 nbp_debug.scale_anchor_tile = None
                 nbp_debug.scale_anchor_z = None
             nbp_debug.scale_anchor = config['scale_anchor']
-            print(f"Scale_anchor: {nbp_debug.scale_anchor}")
             scale = nbp_debug.scale_anchor
             use_channels = use_channels_anchor
         else:
