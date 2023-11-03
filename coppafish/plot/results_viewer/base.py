@@ -1,28 +1,25 @@
 import os
+import yaml
+import time
+import napari
+import warnings
 import pandas as pd
 import numpy as np
-import yaml
-from ...call_spots.qual_check import quality_threshold
+from skimage import io
+from qtpy.QtCore import Qt
+from napari.layers.points import Points
+from napari.layers.points._points_constants import Mode
+from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
+from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
+from typing import Optional
+
+from ... import utils
+from ... import call_spots
 from .legend import add_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
-    view_scaled_k_means
 from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
-from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
 from ...setup import Notebook
-from ...utils import round_any
-import napari
-from napari.qt import thread_worker
-import time
-from skimage import io
-from qtpy.QtCore import Qt
-from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
-from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
-from napari.layers.points import Points
-from napari.layers.points._points_constants import Mode
-import warnings
-from typing import Optional
 
 
 class Viewer:
@@ -100,27 +97,28 @@ class Viewer:
         else:
             tile_origin = self.nb.stitch.tile_origin
 
+        self.has_omp = self.nb.has_page('omp')
         # concatenate anchor and omp spots so can use button to switch between them.
         self.omp_0_ind = self.nb.ref_spots.tile.size  # number of anchor spots
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             self.n_spots = self.omp_0_ind + self.nb.omp.tile.size  # number of anchor + number of omp spots
         else:
             self.n_spots = self.omp_0_ind
         self.spot_zyx = np.zeros((self.n_spots, 3))
         self.spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + tile_origin[self.nb.ref_spots.tile]
                                      )[:, [2, 0, 1]]
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             self.spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + tile_origin[self.nb.omp.tile]
                                          )[:, [2, 0, 1]]
         if not self.nb.basic_info.is_3d:
             self.spot_zyx = self.spot_zyx[:, 1:]
 
         # indicate spots shown when plot first opened - omp if exists, else anchor
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             show_spots = np.zeros(self.n_spots, dtype=bool)
-            show_spots[self.omp_0_ind:] = quality_threshold(self.nb, 'omp')
+            show_spots[self.omp_0_ind:] = call_spots.qual_check.quality_threshold(self.nb, 'omp')
         else:
-            show_spots = quality_threshold(self.nb, 'anchor')
+            show_spots = call_spots.qual_check.quality_threshold(self.nb, 'anchor')
 
         self.viewer = napari.Viewer()
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
@@ -155,6 +153,9 @@ class Viewer:
                     else:
                         background_image[i] = None
                         warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
+                    if np.allclose(np.unique(background_image[i])[0], 0):
+                        background_image[i] = None
+                        warnings.warn(f'Background image at \n\t{file_name}\ncontains just zeros, so not plotting')
                 if background_image[i] is not None:
                     self.viewer.add_image(background_image[i], blending='additive', colormap=background_image_colour[i])
 
@@ -219,7 +220,7 @@ class Viewer:
         # I'm not sure how this plots spots that are not mentioned in the legend. Their colour is by default set to 1,
         # but their marker is not defined
         # Break things up into 2 cases
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
         else:
             self.spot_gene_no = self.nb.ref_spots.gene_no
@@ -247,10 +248,10 @@ class Viewer:
         # Scores for anchor/omp are different so reset score range when change method
         # Max possible score is that found for ref_spots, as this can be more than 1.
         # Max possible omp score is 1.
-        max_score = np.around(round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
+        max_score = np.around(utils.round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
         max_score = float(np.clip(max_score, 1, np.inf))
         self.score_range = {'anchor': [config['score_ref'], max_score]}
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             self.score_range['omp'] = [config['score_omp'], max_score]
             self.score_thresh_slider.setValue(self.score_range['omp'])
         else:
@@ -273,7 +274,7 @@ class Viewer:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        intensity_thresh = get_intensity_thresh(nb)
+        intensity_thresh = call_spots.get_intensity_thresh(nb)
         self.intensity_thresh_slider.setValue(intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
@@ -281,14 +282,15 @@ class Viewer:
         self.intensity_thresh_slider.sliderReleased.connect(self.update_plot)
         self.viewer.window.add_dock_widget(self.intensity_thresh_slider, area="left", name='Intensity Threshold')
 
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             self.method_buttons = ButtonMethodWindow('OMP')  # Buttons to change between Anchor and OMP spots showing.
         else:
             self.method_buttons = ButtonMethodWindow('Anchor')
         # What does the below do?
+        # Below tells us what functions should be called when the button is clicked
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
-        if self.nb.has_page('omp'):
+        if self.has_omp:
             self.viewer.window.add_dock_widget(self.omp_score_multiplier_slider, area="left",
                                                name='OMP Score Multiplier')
             # Only have button to change method if have omp page too.
@@ -323,7 +325,7 @@ class Viewer:
         Listen to selected data changes
         """
 
-        @thread_worker(connect={'yielded': indicate_selected})
+        @napari.qt.thread_worker(connect={'yielded': indicate_selected})
         def _watchSelectedData(pointsLayer):
             selectedData = None
             while True:
@@ -340,7 +342,7 @@ class Viewer:
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
+            score = call_spots.omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
@@ -501,7 +503,7 @@ class Viewer:
 
         @self.viewer.bind_key('b')
         def call_to_view_bm(viewer):
-            view_bleed_matrix(self.nb)
+            call_spots.view_bleed_matrix(self.nb)
 
         @self.viewer.bind_key('n')
         def call_to_view_bg_norm(viewer):
@@ -513,7 +515,7 @@ class Viewer:
 
         @self.viewer.bind_key('g')
         def call_to_view_bm(viewer):
-            view_bled_codes(self.nb)
+            call_spots.view_bled_codes(self.nb)
 
         @self.viewer.bind_key('Shift-h')
         def call_to_view_all_hists(viewer):
@@ -525,7 +527,7 @@ class Viewer:
 
         @self.viewer.bind_key('Shift-g')
         def call_to_gene_counts(viewer):
-            if self.nb.has_page('omp'):
+            if self.has_omp:
                 score_multiplier = self.omp_score_multiplier_slider.value()
                 score_omp_thresh = self.score_range['omp'][0]
             else:
@@ -533,11 +535,11 @@ class Viewer:
                 score_omp_thresh = None
             score_thresh = self.score_range['anchor'][0]
             intensity_thresh = self.intensity_thresh_slider.value()
-            gene_counts(self.nb, None, None, score_thresh, intensity_thresh, score_omp_thresh, score_multiplier)
+            call_spots.gene_counts(self.nb, None, None, score_thresh, intensity_thresh, score_omp_thresh, score_multiplier)
 
         @self.viewer.bind_key('h')
         def call_to_view_omp_score(viewer):
-            if self.nb.has_page('omp'):
+            if self.has_omp:
                 score_multiplier = self.omp_score_multiplier_slider.value()
             else:
                 score_multiplier = None
@@ -545,24 +547,24 @@ class Viewer:
 
         # @self.viewer.bind_key('Shift-h')
         # def call_to_view_omp_score(viewer):
-        #     if self.nb.has_page('omp'):
+        #     if self.has_omp:
         #         histogram_2d_score(self.nb, self.omp_score_multiplier_slider.value())
 
         @self.viewer.bind_key('k')
         def call_to_view_omp_score(viewer):
-            view_scaled_k_means(self.nb)
+            call_spots.view_scaled_k_means(self.nb)
 
         @self.viewer.bind_key('c')
         def call_to_view_codes(viewer):
             spot_no = self.get_selected_spot()
             if spot_no is not None:
-                view_codes(self.nb, spot_no, self.method_buttons.method)
+                call_spots.view_codes(self.nb, spot_no, self.method_buttons.method)
 
         @self.viewer.bind_key('s')
         def call_to_view_spot(viewer):
             spot_no = self.get_selected_spot()
             if spot_no is not None:
-                view_spot(self.nb, spot_no, self.method_buttons.method)
+                call_spots.view_spot(self.nb, spot_no, self.method_buttons.method)
 
         @self.viewer.bind_key('d')
         def call_to_view_omp_score(viewer):
@@ -574,7 +576,7 @@ class Viewer:
         def call_to_view_omp_score(viewer):
             spot_no = self.get_selected_spot()
             if spot_no is not None:
-                view_intensity(self.nb, spot_no, self.method_buttons.method)
+                call_spots.view_intensity(self.nb, spot_no, self.method_buttons.method)
 
         @self.viewer.bind_key('o')
         def call_to_view_omp(viewer):
