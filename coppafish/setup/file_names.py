@@ -136,8 +136,9 @@ def set_file_names(nb, nbp):
     if config['raw_extension'] == 'jobs':
         if nb.basic_info.is_3d:
             round_files = config['round'] + [config['anchor']] + [config['pre_seq']]
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles,
-                                             nb.basic_info.n_channels, jobs=True)
+            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
+                                             nb.get_config()['extract']['file_type'], nb.basic_info.n_channels, 
+                                             jobs=True)
         else:
             raise ValueError('JOBs file format is only compatible with 3D')
     else:
