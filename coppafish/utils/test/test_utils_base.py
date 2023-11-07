@@ -3,6 +3,10 @@ import numpy as np
 from coppafish.utils import base
 
 
+def test_get_function_name():
+    assert base.get_function_name() == 'test_get_function_name'
+
+
 def test_round_any():
     assert np.allclose(base.round_any(100., 150., round_type='round'), 150.)
     assert np.allclose(base.round_any(0.1, 100., round_type='ceil'), 100.)
