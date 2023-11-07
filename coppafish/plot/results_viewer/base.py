@@ -153,9 +153,9 @@ class Viewer:
                     else:
                         background_image[i] = None
                         warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
-                    if np.allclose(np.unique(background_image[i])[0], 0):
+                    if background_image[i] is None or np.unique(background_image[i])[0].size == 1:
                         background_image[i] = None
-                        warnings.warn(f'Background image at \n\t{file_name}\ncontains just zeros, so not plotting')
+                        warnings.warn(f'Background image at \n\t{file_name}\nis constant throughout, so not plotting')
                 if background_image[i] is not None:
                     self.viewer.add_image(background_image[i], blending='additive', colormap=background_image_colour[i])
 
