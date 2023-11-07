@@ -2,7 +2,7 @@ import warnings
 from typing import Union, List, Tuple, Optional
 import numpy as np
 from scipy.sparse import csr_matrix
-from tqdm import tqdm
+from tqdm import trange
 import numpy_indexed
 
 from .. import utils
@@ -323,7 +323,8 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
 
     if spot_yxzg is not None:
         # check pixel coefficient is positive for random subset of 500 spots.
-        spots_to_check = np.random.choice(range(spot_yxzg.shape[0]), np.clip(500, 0, spot_yxzg.shape[0]), replace=False)
+        rng = np.random.RandomState(0)
+        spots_to_check = rng.choice(range(spot_yxzg.shape[0]), np.clip(500, 0, spot_yxzg.shape[0]), replace=False)
         pixel_index = numpy_indexed.indices(pixel_yxz, spot_yxzg[spots_to_check, :3].astype(pixel_yxz.dtype))
         spot_coefs_check = pixel_coefs[pixel_index, spot_yxzg[spots_to_check, 3]]
         if spot_coefs_check.min() <= coef_thresh:
@@ -331,39 +332,41 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
             raise ValueError(f"spot_yxzg provided but gene {spot_yxzg[bad_spot, 3]} coefficient for spot {bad_spot}\n"
                              f"at yxz = {spot_yxzg[bad_spot, :3]} is {spot_coefs_check.min()} \n"
                              f"whereas it should be more than coef_thresh = {coef_thresh} as it is listed as a spot.")
-    with tqdm(total=n_genes) as pbar:
-        # TODO: if 2D can do all genes together.
-        # TODO: Optimise with jax
-        pbar.set_description(f"Finding spots for all {n_genes} genes from omp_coef images.")
-        for g in range(n_genes):
-            # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
-            # Note size of image will be different for each gene.
-            coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
-            if coef_image is None:
-                # If no non-zero coefficients, go to next gene
-                continue
-            if spot_yxzg is None:
-                spot_yxz = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)[0]
-            else:
-                # spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.
-                spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g, :coef_image.ndim] - coord_shift[:coef_image.ndim]
-            if spot_yxz.shape[0] > 0:
-                if spot_shape is None:
-                    keep = np.ones(spot_yxz.shape[0], dtype=bool)
-                    spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
-                else:
-                    n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, spot_shape)
-                    keep = n_pos_neighb > pos_neighbour_thresh
-                    spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
-                    spot_info_g[:, 4] = n_pos_neighb[keep]
-                    spot_info_g[:, 5] = n_neg_neighb[keep]
+        del spots_to_check, pixel_index
+    # TODO: if 2D can do all genes together.
+    # TODO: Optimise with jax
+    for g in trange(n_genes, desc=f'Finding spots for all {n_genes} genes from omp_coef images'):
+        # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
+        # Note size of image will be different for each gene.
+        coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
+        if coef_image is None:
+            # If no non-zero coefficients, go to next gene
+            continue
+        if spot_yxzg is None:
+            spot_yxz = detect_spots(coef_image, coef_thresh, radius_xy, radius_z, False)[0]
+        else:
+            # spot_yxz match pixel_yxz so if crop pixel_yxz need to crop spot_yxz too.
+            spot_yxz = spot_yxzg[spot_yxzg[:, 3] == g,:coef_image.ndim] - coord_shift[:coef_image.ndim]
+        if spot_yxz.shape[0] == 0:
+            continue
+        if spot_shape is None:
+            keep = np.ones(spot_yxz.shape[0], dtype=bool)
+            spot_info_g = np.zeros((np.sum(keep), 4), dtype=int)
+        else:
+            n_pos_neighb, n_neg_neighb = count_spot_neighbours(coef_image, spot_yxz, spot_shape)
+            keep = n_pos_neighb > pos_neighbour_thresh
+            spot_info_g = np.zeros((np.sum(keep), 6), dtype=int)
+            spot_info_g[:, 4] = n_pos_neighb[keep]
+            spot_info_g[:, 5] = n_neg_neighb[keep]
+            del n_pos_neighb, n_neg_neighb
 
-                spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
-                spot_info_g[:, :3] = spot_info_g[:, :3] + coord_shift  # shift spot_yxz back
-                spot_info_g[:, 3] = g
-                spot_info = np.append(spot_info, spot_info_g, axis=0)
-            pbar.update(1)
-    pbar.close()
+        spot_info_g[:, :coef_image.ndim] = spot_yxz[keep]
+        del coef_image, spot_yxz
+        spot_info_g[:, :3] = spot_info_g[:, :3] + coord_shift  # shift spot_yxz back
+        del coord_shift
+        spot_info_g[:, 3] = g
+        spot_info = np.append(spot_info, spot_info_g, axis=0)
+        del spot_info_g, keep
 
     if spot_shape is None:
         return spot_info[:, :3], spot_info[:, 3]
