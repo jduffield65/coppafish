@@ -1,6 +1,8 @@
 import os
 import numpy as np
 from coppafish.robominnie import RoboMinnie
+from coppafish import Notebook, Viewer
+from coppafish.plot.register.diagnostics import RegistrationViewer
 import warnings
 import pytest
 
@@ -35,7 +37,7 @@ def test_integration_001() -> None:
     robominnie.generate_gene_codes()
     robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000)
-    robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
+    robominnie.save_raw_images(output_dir=output_dir)
     robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
@@ -59,7 +61,7 @@ def test_integration_002() -> None:
     robominnie.add_spots(n_spots=15_000, spot_size_pixels_dapi=np.array([9, 9, 9]), include_dapi=True, 
                          spot_amplitude_dapi=0.05)
     # robominnie.Generate_Random_Noise(noise_mean_amplitude=0, noise_std=0.0004, noise_type='normal')
-    robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
+    robominnie.save_raw_images(output_dir=output_dir)
     robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
@@ -82,7 +84,7 @@ def test_integration_003() -> None:
     # Add spots to DAPI image as larger spots
     robominnie.add_spots(n_spots=25_000, include_dapi=True, spot_size_pixels_dapi=np.array([9, 9, 9]), 
                          spot_amplitude_dapi=0.05)
-    robominnie.save_raw_images(output_dir=output_dir, overwrite=True)
+    robominnie.save_raw_images(output_dir=output_dir)
     robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
@@ -106,7 +108,7 @@ def test_integration_004():
     robominnie.add_spots(n_spots=15_000, spot_size_pixels_dapi=np.array([9, 9, 9]), include_dapi=True, 
                          spot_amplitude_dapi=0.05)
     # robominnie.Generate_Random_Noise(noise_mean_amplitude=0, noise_std=0.0004, noise_type='normal')
-    robominnie.save_raw_images(output_dir=output_dir, overwrite=True, register_with_dapi=False)
+    robominnie.save_raw_images(output_dir=output_dir, register_with_dapi=False)
     robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
@@ -129,11 +131,26 @@ def test_bg_subtraction():
                          include_dapi=True, 
                          spot_size_pixels_dapi=np.asarray([9, 9, 9]),
                          spot_amplitude_dapi=0.05)
-    robominnie.save_raw_images(output_dir=output_dir, overwrite=True, register_with_dapi=False)
+    robominnie.save_raw_images(output_dir=output_dir, register_with_dapi=False)
     robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
 
 
+@pytest.mark.slow
+def test_viewers():
+    """
+    Make sure the coppafish plotting is working without crashing.
+    
+    Notes:
+        - Requires a robominnie instance to have successfully run through first.
+    """
+    notebook_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                 'integration_dir/output_coppafish/notebook.npz')
+    notebook = Notebook(notebook_path)
+    Viewer(notebook)
+    RegistrationViewer(notebook)
+
+
 if __name__ == '__main__':
-    test_integration_003()
+    test_integration_001()
