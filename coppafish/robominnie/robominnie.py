@@ -1005,8 +1005,8 @@ class RoboMinnie:
             warnings.warn('Copppafish OMP found zero spots')
 
 
-    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0.90, 
-                          intensity_threshold: float = 0.7, location_threshold: float = 2) -> Tuple[int,int,int,int]:
+    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0, intensity_threshold: float = 0, 
+                      location_threshold: float = 2) -> Tuple[int,int,int,int]:
         """
         Compare spot positions and gene codes from coppafish results to the known spot locations. If the spots are 
         close enough and the true spot has not been already assigned to a reference spot, then they are considered the 
@@ -1019,8 +1019,8 @@ class RoboMinnie:
         Args:
             spot_types (str, optional): Coppafish spot type to compare to. Either `'ref'` or `'omp'`.
             score_threshold (float, optional): Spot score threshold, any spots below this intensity are ignored. Only 
-                relevant to reference spots. Default: `0.90`.
-            intensity_threshold (float, optional): Reference spot intensity threshold. Default: `0.7`.
+                relevant to reference spots. Default: `0`.
+            intensity_threshold (float, optional): Reference spot intensity threshold. Default: `0`.
             location_threshold (float, optional): Maximum distance, in pixels, two spots can be apart to be considered 
                 the same spot. Default: `4`.
 
