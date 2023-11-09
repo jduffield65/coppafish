@@ -16,8 +16,8 @@ def get_spot_intensity(spot_colors: jnp.ndarray) -> jnp.ndarray:
         `[n_spots] ndarray[float]`: index `s` is the intensity of spot `s`.
 
     Notes:
-        Logic is that we expect spots that are genes to have at least one large intensity value in each round
-        so high spot intensity is more indicative of a gene.
+        - We expect spots that are genes to have at least one large intensity value in each round so high spot 
+            intensity is more indicative of a gene.
     """
     # Max over all channels, then median over all rounds
     return jnp.median(jnp.max(spot_colors, axis=2), axis=1)
