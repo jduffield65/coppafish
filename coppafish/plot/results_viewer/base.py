@@ -290,7 +290,7 @@ class Viewer:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        intensity_thresh = get_intensity_thresh(nb)
+        intensity_thresh = call_spots.qual_check.get_intensity_thresh(nb)
         self.intensity_thresh_slider.setValue(intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
@@ -357,7 +357,7 @@ class Viewer:
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
+            score = call_spots.qual_check.omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
