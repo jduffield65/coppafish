@@ -351,7 +351,7 @@ class view_spot(ColorPlotBase):
                                       np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
-        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info)
+        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info, nb.extract)
         spot_colors = np.moveaxis(spot_colors, 1, 2)  # put round as the last axis to match color_norm
         spot_colors = spot_colors.reshape(im_yxz.shape[0], -1)
         # reshape
