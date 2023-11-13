@@ -25,8 +25,9 @@ from ...setup import Notebook
 
 
 class Viewer:
-    def __init__(self, nb: Notebook, background_image: Optional[list] = ['dapi'], background_image_colour:
-    Optional[list] = ['gray'], gene_marker_file: Optional[str] = None, zeta_tile_path: str = None):
+    def __init__(self, nb: Notebook, background_image: Optional[list] = ['dapi'], 
+                 background_image_colour: Optional[list] = ['gray'], 
+                 gene_marker_file: Optional[str] = None, zeta_tile_path: Optional[str] = None) -> None:
         """
         This is the function to view the results of the pipeline
         i.e. the spots found and which genes they were assigned to.
