@@ -4,13 +4,13 @@ import numpy as np
 import yaml
 import napari
 import time
-from skimage import io
+import skimage
+import warnings
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
 from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
-import warnings
 from typing import Optional
 
 from ...setup import Notebook
@@ -150,7 +150,7 @@ class Viewer:
                             # Assume image is first array if .npz file. Now replace the string with the actual image.
                             background_image[i] = np.load(file_name)
                         elif file_name.endswith('.tif'):
-                            background_image[i] = io.imread(file_name)
+                            background_image[i] = skimage.io.imread(file_name)
                     else:
                         background_image[i] = None
                         warnings.warn(f'No file exists with file name =\n\t{file_name}\nso plotting with no background.')
