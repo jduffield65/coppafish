@@ -10,8 +10,10 @@
 # put it on both tiles.
 #
 # Originally created by Max Shinn, August 2023
-# Refactored and expanded by Paul Shuker, September 2023
+# Refactored and expanded by Paul Shuker, September 2023 - present
 import os
+import csv
+import random
 import numpy as np
 import scipy.stats
 import pandas
@@ -822,11 +824,29 @@ class RoboMinnie:
             dask.array.to_npy_stack(presequence_save_path, image_dask)
             del image_dask
 
-        # Save the gene codebook in `coppafish_output`
+        # Save the gene codebook in `output_dir`
         self.codebook_filepath = os.path.join(output_dir, 'codebook.txt')
         with open(self.codebook_filepath, 'w') as f:
-            for genename, code in self.codes.items():
-                f.write(f'{genename} {code}\n')
+            for gene_name, code in self.codes.items():
+                f.write(f'{gene_name} {code}\n')
+        
+        # Save the gene colours, used for the coppafish `Viewer`, in `output_dir`
+        self.gene_colours_filepath = os.path.join(output_dir, 'gene_colours.csv')
+        rng = np.random.RandomState(self.seed)
+        with open(self.gene_colours_filepath, 'w') as f:
+            csvwriter = csv.writer(f, delimiter=',')
+            # Heading
+            csvwriter.writerow(['', 'GeneNames', 'ColorR', 'ColorG', 'ColorB', 'napari_symbol', 'mpl_symbol'])
+            for i, gene_name in enumerate(self.codes):
+                csvwriter.writerow([
+                    f'{i}', 
+                    f'{gene_name}', 
+                    round(rng.rand(), 2), 
+                    round(rng.rand(), 2), 
+                    round(rng.rand(), 2), 
+                    random.choice(['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']), 
+                    random.choice(['+', '.', 's', '^', '|', '_']), 
+                ])
 
         # Save the initial bleed matrix for the config file
         self.initial_bleed_matrix_filepath = os.path.join(output_dir, 'bleed_matrix.npy')
