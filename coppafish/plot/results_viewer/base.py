@@ -2,18 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import yaml
-from ...call_spots.qual_check import quality_threshold
-from .legend import add_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
-    view_scaled_k_means
-from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
-from ...call_spots import omp_spot_score, get_intensity_thresh
-from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
-from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
-from ...setup import Notebook
-from ...utils import round_any
 import napari
-from napari.qt import thread_worker
 import time
 from skimage import io
 from qtpy.QtCore import Qt
@@ -23,6 +12,18 @@ from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
 import warnings
 from typing import Optional
+
+# from ...call_spots.qual_check import quality_threshold
+from ... import call_spots
+from .legend import add_legend
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
+    view_scaled_k_means
+from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
+from ...call_spots import omp_spot_score, get_intensity_thresh
+from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
+from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
+from ...setup import Notebook
+from ...utils import round_any
 
 
 class Viewer:
@@ -118,9 +119,9 @@ class Viewer:
         # indicate spots shown when plot first opened - omp if exists, else anchor
         if self.nb.has_page('omp'):
             show_spots = np.zeros(self.n_spots, dtype=bool)
-            show_spots[self.omp_0_ind:] = quality_threshold(self.nb, 'omp')
+            show_spots[self.omp_0_ind:] = call_spots.quality_threshold(self.nb, 'omp')
         else:
-            show_spots = quality_threshold(self.nb, 'anchor')
+            show_spots = call_spots.quality_threshold(self.nb, 'anchor')
 
         self.viewer = napari.Viewer()
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
@@ -154,7 +155,12 @@ class Viewer:
                             background_image[i] = io.imread(file_name)
                     else:
                         background_image[i] = None
-                        warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
+                        warnings.warn(f'No file exists with file name =\n\t{file_name}\nso plotting with no background.')
+                if background_image[i] is not None and np.allclose([background_image[i].max()], 
+                                                                    [background_image[i].min()]):
+                    warnings.warn(f'Background image with file name =\n\t{file_name}'
+                                    + '\ncontains constant values, so not plotting')
+                    background_image[i] = None
                 if background_image[i] is not None:
                     self.viewer.add_image(background_image[i], blending='additive', colormap=background_image_colour[i])
 
@@ -323,7 +329,7 @@ class Viewer:
         Listen to selected data changes
         """
 
-        @thread_worker(connect={'yielded': indicate_selected})
+        @napari.qt.thread_worker(connect={'yielded': indicate_selected})
         def _watchSelectedData(pointsLayer):
             selectedData = None
             while True:
