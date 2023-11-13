@@ -193,10 +193,15 @@ class ColorPlotBase:
             self.im[i].set_clim(self.caxis_info[self.method]['clims'][0],
                                 self.caxis_info[self.method]['clims'][1])
 
-        self.color_slider = RangeSlider(self.slider_ax, "Clim", self.caxis_info[self.method]['min'],
-                                        self.caxis_info[self.method]['max'],
-                                        self.caxis_info[self.method]['clims'],
-                                        orientation='vertical', valfmt=self.caxis_info[self.method]['format'])
+        self.color_slider = RangeSlider(
+            ax=self.slider_ax, 
+            label="Clim", 
+            valmin=self.caxis_info[self.method]['min'], 
+            valmax=self.caxis_info[self.method]['max'], 
+            valinit=self.caxis_info[self.method]['clims'], 
+            orientation='vertical', 
+            valfmt=self.caxis_info[self.method]['format']
+        )
         self.color_slider.on_changed(self.change_clim)
         self.im[-1].axes.figure.canvas.draw()
 
