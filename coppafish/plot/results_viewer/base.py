@@ -13,17 +13,15 @@ from napari.layers.points._points_constants import Mode
 import warnings
 from typing import Optional
 
-# from ...call_spots.qual_check import quality_threshold
+from ...setup import Notebook
 from ... import call_spots
-from .legend import add_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
-    view_scaled_k_means
+from ... import utils
+from . import legend
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts
+from .. import call_spots as call_spots_plot
 from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
-from ...call_spots import omp_spot_score, get_intensity_thresh
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
-from ...setup import Notebook
-from ...utils import round_any
 
 
 class Viewer:
@@ -186,7 +184,7 @@ class Viewer:
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
         self.legend['fig'], self.legend['ax'], n_gene_label_letters = \
-            add_legend(gene_legend_info=gene_legend_info, genes=self.gene_names)
+            legend.add_legend(gene_legend_info=gene_legend_info, genes=self.gene_names)
         # xy is position of each symbol in legend, need to see which gene clicked on.
         self.legend['xy'] = np.zeros((len(self.legend['ax'].collections), 2), dtype=float)
         self.legend['gene_no'] = np.zeros(len(self.legend['ax'].collections), dtype=int)
@@ -253,7 +251,7 @@ class Viewer:
         # Scores for anchor/omp are different so reset score range when change method
         # Max possible score is that found for ref_spots, as this can be more than 1.
         # Max possible omp score is 1.
-        max_score = np.around(round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
+        max_score = np.around(utils.round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
         max_score = float(np.clip(max_score, 1, np.inf))
         self.score_range = {'anchor': [config['score_ref'], max_score]}
         if self.nb.has_page('omp'):
@@ -279,7 +277,7 @@ class Viewer:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        intensity_thresh = get_intensity_thresh(nb)
+        intensity_thresh = call_spots.get_intensity_thresh(nb)
         self.intensity_thresh_slider.setValue(intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
@@ -346,7 +344,7 @@ class Viewer:
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
+            score = call_spots.omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
@@ -556,7 +554,7 @@ class Viewer:
 
         @self.viewer.bind_key('k')
         def call_to_view_omp_score(viewer):
-            view_scaled_k_means(self.nb)
+            call_spots_plot.view_scaled_k_means(self.nb)
 
         @self.viewer.bind_key('c')
         def call_to_view_codes(viewer):
