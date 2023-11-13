@@ -249,13 +249,13 @@ class GEViewer():
         # Adding gene names to y-axis would be too crowded. We will use mplcursors to show gene name of gene[r] when
         # hovering over row r of the heatmap. This means we need to only extract the y position of the mouse cursor.
         gene_names = nb.call_spots.gene_names
-        mplcursors.cursor(self.ax, hover=True).connect("add", lambda sel: self.plot_gene_name(sel.target.index[0]))
+        mplcursors.cursor(self.ax, hover=True).connect("add", lambda sel: self.plot_gene_name(sel.index[0]))
         # 2. Allow genes to be selected by clicking on them
-        mplcursors.cursor(self.ax, hover=False).connect("add", lambda sel: GESpotViewer(nb, sel.target.index[0]))
+        mplcursors.cursor(self.ax, hover=False).connect("add", lambda sel: GESpotViewer(nb, sel.index[0]))
         # 3. We would like to add a white rectangle around the observed spot when we hover over it. We will
         # use mplcursors to do this. We need to add a rectangle to the plot when hovering over a gene.
         # We also want to turn off annotation when hovering over a gene so we will use the `hover=False` option.
-        mplcursors.cursor(self.ax, hover=2).connect("add", lambda sel: self.add_rectangle(sel.target.index[0]))
+        mplcursors.cursor(self.ax, hover=2).connect("add", lambda sel: self.add_rectangle(sel.index[0]))
 
         plt.show()
 
@@ -508,10 +508,10 @@ class GESpotViewer():
         # Initialise buttons and cursors
         # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
         mplcursors.cursor(self.ax[0], hover=False).connect(
-            "add", lambda sel: view_codes(self.nb, self.spot_id[sel.target.index[0]]))
+            "add", lambda sel: view_codes(self.nb, self.spot_id[sel.index[0]]))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax[0], hover=2).connect(
-            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+            "add", lambda sel: self.add_rectangle(sel.index[0]))
 
     def add_hist_widgets(self):
         # Add a slider on the right of the figure allowing the user to choose the percentile of the histogram
@@ -1039,9 +1039,9 @@ class GeneProbs():
             "add", lambda sel: self.row_clicked(sel))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax, hover=2).connect(
-            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+            "add", lambda sel: self.add_rectangle(sel.index[0]))
 
     def row_clicked(self, event):
         # When a row is clicked, we want to view the observed spot
-        view_codes(self.nb, self.spot_ids[event.target.index[0]])
-        self.add_score_plot(self.spot_ids[event.target.index[0]])
+        view_codes(self.nb, self.spot_ids[event.index[0]])
+        self.add_score_plot(self.spot_ids[event.index[0]])
