@@ -1,6 +1,9 @@
 import numpy as np
 import warnings
-import importlib_resources
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 from typing import Tuple
 
 from ..setup.notebook import NotebookPage

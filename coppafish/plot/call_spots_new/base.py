@@ -1,12 +1,16 @@
 import mplcursors
 import numpy as np
 import matplotlib as mpl
-import importlib_resources
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Rectangle
 from sklearn import linear_model
+
 from ...setup import Notebook
 from ...spot_colors.base import normalise_rc
 from ..call_spots.spot_colors import view_codes
