@@ -1,7 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
+
+from . import score_calc
 from ...setup import Notebook
-from .score_calc import background_fitting
 # from ...call_spots.bleed_matrix import get_bleed_matrix
 
 plt.style.use('dark_background')
@@ -29,7 +30,7 @@ def view_scaled_k_means(nb: Notebook, r: int = 0, check: bool = False):
         check: If True, will raise error if `bleed_matrix` computed here is different to that saved in notebook
     """
     # Fit background to spot_colors as is done in call_reference_spots before bleed_matrix calc
-    spot_colors = background_fitting(nb, 'ref')[1]
+    spot_colors = score_calc.background_fitting(nb, 'ref')[1]
 
     # Get bleed matrix and plotting info
     rcd_ind = np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels, nb.basic_info.use_dyes)
@@ -41,6 +42,7 @@ def view_scaled_k_means(nb: Notebook, r: int = 0, check: bool = False):
     else:
         r_ind = 0
         title_start = "Bleed matrix "
+    #FIXME: There is no function called `get_bleed_matrix` in the codebase
     debug_info = get_bleed_matrix(spot_colors[nb.ref_spots.isolated], initial_bleed_matrix,
                                   config['bleed_matrix_method'], config['bleed_matrix_score_thresh'],
                                   config['bleed_matrix_min_cluster_size'], config['bleed_matrix_n_iter'],
