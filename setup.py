@@ -30,6 +30,7 @@ setup(
     package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json', 
                                       'dye_camera_laser_raw_intensity.csv', 'default_bleed.npy'], 
                   'coppafish.plot.results_viewer': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']}, 
+    include_package_data=True, 
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

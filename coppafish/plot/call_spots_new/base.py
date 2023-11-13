@@ -1,16 +1,15 @@
-import os
 import mplcursors
 import numpy as np
 import matplotlib as mpl
+import importlib_resources
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Rectangle
 from sklearn import linear_model
 from ...setup import Notebook
-from ...spot_colors.base import normalise_rc, remove_background
-from ..call_spots.spot_colors import view_spot, view_codes
-from ..call_spots.bleed_matrix import view_bled_codes
+from ...spot_colors.base import normalise_rc
+from ..call_spots.spot_colors import view_codes
 
 
 plt.style.use('dark_background')
@@ -660,7 +659,8 @@ class ViewBleedCalc:
             self.default_bleed = np.load(nb.file_names.initial_bleed_matrix)
         else:
             # Get current working directory and load the default bleed matrix
-            self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')).copy()
+            self.default_bleed \
+                = np.load(importlib_resources.files('coppafish.setup').joinpath('default_bleed.npy')).copy()
         # swap columns 2 and 3 to match the order of the channels in the notebook
         self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
         # Normalise each column of default_bleed to have L2 norm of 1
