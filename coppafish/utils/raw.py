@@ -162,13 +162,17 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
                 # Get all the files of a given tiles (should be 7)
                 tile_files = anchor_files[t * n_lasers: (t + 1) * n_lasers]
                 tile_dask_array = []
+                latest_shape = (nz + 1, tile_sz, tile_sz, n_cams)
 
                 for f_id, f in enumerate(tile_files):
                     if f_id == anchor_laser_index or f_id == dapi_laser_index:
                         laser_file = os.path.join(nbp_file.input_dir, f + '.nd2')
-                        tile_dask_array.append(nd2.load(laser_file))
+                        new_dask_array = nd2.load(laser_file)
+                        latest_shape = new_dask_array.shape
+                        tile_dask_array.append(new_dask_array)
+                        del new_dask_array
                     else:
-                        tile_dask_array.append(dask.array.zeros((nz, tile_sz, tile_sz, n_cams)))
+                        tile_dask_array.append(dask.array.zeros(latest_shape))
                         # TODO find a better fix for nz. here it is different because of basic_info use_z
                         # Ideally it should have the same shape as the array for dapi
 

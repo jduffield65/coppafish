@@ -4,7 +4,6 @@ import os
 import warnings
 from scipy import sparse
 from typing import Optional
-import psutil
 try:
     import jax.numpy as jnp
     optimised = True

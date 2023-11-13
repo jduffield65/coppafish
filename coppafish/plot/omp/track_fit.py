@@ -45,6 +45,10 @@ def get_track_info(nb: Notebook, spot_no: int, method: str, dp_thresh: Optional[
             gene `bled_codes` used in omp with L2 norm = 1.
         `dp_thresh` - threshold dot product score, above which gene is fitted.
     """
+    raise NotImplementedError(
+        'Tracking OMP iterations has been removed, please contact a coppafish developer if the feature is wanted again'
+    )
+    
     color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                         nb.basic_info.use_channels)]
     n_use_rounds, n_use_channels = color_norm.shape
@@ -66,7 +70,14 @@ def get_track_info(nb: Notebook, spot_no: int, method: str, dp_thresh: Optional[
     bled_codes = bled_codes / norm_factor
 
     # Get info to run omp
-    dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
+    try:
+        dp_norm_shift = nb.call_spots.dp_norm_shift * np.sqrt(n_use_rounds)
+    except AttributeError:
+        dp_norm_shift = 0.
+    try:
+        background_weight_shift = nb.call_spots.background_weight_shift
+    except AttributeError:
+        background_weight_shift = 0.
     config = nb.get_config()
     if dp_thresh is None:
         dp_thresh = config['omp']['dp_thresh']
@@ -77,6 +88,6 @@ def get_track_info(nb: Notebook, spot_no: int, method: str, dp_thresh: Optional[
     weight_coef_fit = config['omp']['weight_coef_fit']
 
     # Run omp with track to get residual at each stage
-    track_info = get_all_coefs(spot_color[np.newaxis], bled_codes, nb.call_spots.background_weight_shift,
-                               dp_norm_shift, dp_thresh, alpha, beta, max_genes, weight_coef_fit, True)[2]
+    track_info = get_all_coefs(spot_color[np.newaxis], bled_codes, background_weight_shift, dp_norm_shift, dp_thresh, 
+                               alpha, beta, max_genes, weight_coef_fit)[2]
     return track_info, bled_codes, dp_thresh

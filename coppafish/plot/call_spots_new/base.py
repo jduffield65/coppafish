@@ -1,16 +1,19 @@
-import os
 import mplcursors
 import numpy as np
 import matplotlib as mpl
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Rectangle
 from sklearn import linear_model
+
 from ...setup import Notebook
-from ...spot_colors.base import normalise_rc, remove_background
-from ..call_spots.spot_colors import view_spot, view_codes
-from ..call_spots.bleed_matrix import view_bled_codes
+from ...spot_colors.base import normalise_rc
+from ..call_spots.spot_colors import view_codes
 
 
 plt.style.use('dark_background')
@@ -250,13 +253,13 @@ class GEViewer():
         # Adding gene names to y-axis would be too crowded. We will use mplcursors to show gene name of gene[r] when
         # hovering over row r of the heatmap. This means we need to only extract the y position of the mouse cursor.
         gene_names = nb.call_spots.gene_names
-        mplcursors.cursor(self.ax, hover=True).connect("add", lambda sel: self.plot_gene_name(sel.target.index[0]))
+        mplcursors.cursor(self.ax, hover=True).connect("add", lambda sel: self.plot_gene_name(sel.index[0]))
         # 2. Allow genes to be selected by clicking on them
-        mplcursors.cursor(self.ax, hover=False).connect("add", lambda sel: GESpotViewer(nb, sel.target.index[0]))
+        mplcursors.cursor(self.ax, hover=False).connect("add", lambda sel: GESpotViewer(nb, sel.index[0]))
         # 3. We would like to add a white rectangle around the observed spot when we hover over it. We will
         # use mplcursors to do this. We need to add a rectangle to the plot when hovering over a gene.
         # We also want to turn off annotation when hovering over a gene so we will use the `hover=False` option.
-        mplcursors.cursor(self.ax, hover=2).connect("add", lambda sel: self.add_rectangle(sel.target.index[0]))
+        mplcursors.cursor(self.ax, hover=2).connect("add", lambda sel: self.add_rectangle(sel.index[0]))
 
         plt.show()
 
@@ -509,10 +512,10 @@ class GESpotViewer():
         # Initialise buttons and cursors
         # 1. We would like each row of the plot to be clickable, so that we can view the observed spot.
         mplcursors.cursor(self.ax[0], hover=False).connect(
-            "add", lambda sel: view_codes(self.nb, self.spot_id[sel.target.index[0]]))
+            "add", lambda sel: view_codes(self.nb, self.spot_id[sel.index[0]]))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax[0], hover=2).connect(
-            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+            "add", lambda sel: self.add_rectangle(sel.index[0]))
 
     def add_hist_widgets(self):
         # Add a slider on the right of the figure allowing the user to choose the percentile of the histogram
@@ -656,8 +659,12 @@ class ViewBleedCalc:
         self.isolated_spots = nb.ref_spots.colors[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels] - \
                               background_strength
         self.isolated_spots = self.isolated_spots / color_norm
-        # Get current working directory and load default bleed matrix
-        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')).copy()
+        if nb.file_names.initial_bleed_matrix is not None:
+            self.default_bleed = np.load(nb.file_names.initial_bleed_matrix)
+        else:
+            # Get current working directory and load the default bleed matrix
+            self.default_bleed \
+                = np.load(importlib_resources.files('coppafish.setup').joinpath('default_bleed.npy')).copy()
         # swap columns 2 and 3 to match the order of the channels in the notebook
         self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
         # Normalise each column of default_bleed to have L2 norm of 1
@@ -1036,9 +1043,9 @@ class GeneProbs():
             "add", lambda sel: self.row_clicked(sel))
         # 2. We would like to add a white rectangle around the observed spot when we hover over it
         mplcursors.cursor(self.ax, hover=2).connect(
-            "add", lambda sel: self.add_rectangle(sel.target.index[0]))
+            "add", lambda sel: self.add_rectangle(sel.index[0]))
 
     def row_clicked(self, event):
         # When a row is clicked, we want to view the observed spot
-        view_codes(self.nb, self.spot_ids[event.target.index[0]])
-        self.add_score_plot(self.spot_ids[event.target.index[0]])
+        view_codes(self.nb, self.spot_ids[event.index[0]])
+        self.add_score_plot(self.spot_ids[event.index[0]])

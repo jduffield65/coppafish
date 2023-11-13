@@ -1,3 +1,10 @@
+2023/11/13 Alpha Update (v0.4.0):
+ * Improved outlier removal for shift calculations in registration.
+ * Further optimisations.
+ * Potential memory issue fix in OMP.
+ * Various bug fixes.
+
+
 2023/10/28 Alpha Update (v0.3.0):
  * Saving extracted tiles as .npy is the default save file type. Can be changed to .zarr (50% compression) by setting 
     config['extract']['file_type'] = .zarr.

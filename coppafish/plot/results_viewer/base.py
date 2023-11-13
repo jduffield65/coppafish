@@ -2,32 +2,32 @@ import os
 import pandas as pd
 import numpy as np
 import yaml
-from ...call_spots.qual_check import quality_threshold
-from .legend import add_legend
-from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts, \
-    view_scaled_k_means
-from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
-from ...call_spots import omp_spot_score, get_intensity_thresh
-from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
-from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
-from ...setup import Notebook
-from ...utils import round_any
 import napari
-from napari.qt import thread_worker
 import time
-from skimage import io
+import skimage
+import warnings
 from qtpy.QtCore import Qt
 from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
 from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
-import warnings
 from typing import Optional
+
+from . import legend
+from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts
+from .. import call_spots as call_spots_plot
+from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
+from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score
+from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
+from ... import call_spots
+from ... import utils
+from ...setup import Notebook
 
 
 class Viewer:
-    def __init__(self, nb: Notebook, background_image: Optional[list] = ['dapi'], background_image_colour:
-    Optional[list] = ['gray'], gene_marker_file: Optional[str] = None, zeta_tile_path: str = None):
+    def __init__(self, nb: Notebook, background_image: Optional[list] = ['dapi'], 
+                 background_image_colour: Optional[list] = ['gray'], 
+                 gene_marker_file: Optional[str] = None, zeta_tile_path: Optional[str] = None) -> None:
         """
         This is the function to view the results of the pipeline
         i.e. the spots found and which genes they were assigned to.
@@ -118,9 +118,9 @@ class Viewer:
         # indicate spots shown when plot first opened - omp if exists, else anchor
         if self.nb.has_page('omp'):
             show_spots = np.zeros(self.n_spots, dtype=bool)
-            show_spots[self.omp_0_ind:] = quality_threshold(self.nb, 'omp')
+            show_spots[self.omp_0_ind:] = call_spots.quality_threshold(self.nb, 'omp')
         else:
-            show_spots = quality_threshold(self.nb, 'anchor')
+            show_spots = call_spots.quality_threshold(self.nb, 'anchor')
 
         self.viewer = napari.Viewer()
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
@@ -151,10 +151,15 @@ class Viewer:
                             # Assume image is first array if .npz file. Now replace the string with the actual image.
                             background_image[i] = np.load(file_name)
                         elif file_name.endswith('.tif'):
-                            background_image[i] = io.imread(file_name)
+                            background_image[i] = skimage.io.imread(file_name)
                     else:
                         background_image[i] = None
-                        warnings.warn(f'No file exists with address =\n{file_name}\nso plotting with no background.')
+                        warnings.warn(f'No file exists with file name =\n\t{file_name}\nso plotting with no background.')
+                if background_image[i] is not None and np.allclose([background_image[i].max()], 
+                                                                    [background_image[i].min()]):
+                    warnings.warn(f'Background image with file name =\n\t{file_name}'
+                                    + '\ncontains constant values, so not plotting')
+                    background_image[i] = None
                 if background_image[i] is not None:
                     self.viewer.add_image(background_image[i], blending='additive', colormap=background_image_colour[i])
 
@@ -180,7 +185,7 @@ class Viewer:
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
         self.legend['fig'], self.legend['ax'], n_gene_label_letters = \
-            add_legend(gene_legend_info=gene_legend_info, genes=self.gene_names)
+            legend.add_legend(gene_legend_info=gene_legend_info, genes=self.gene_names)
         # xy is position of each symbol in legend, need to see which gene clicked on.
         self.legend['xy'] = np.zeros((len(self.legend['ax'].collections), 2), dtype=float)
         self.legend['gene_no'] = np.zeros(len(self.legend['ax'].collections), dtype=int)
@@ -247,7 +252,7 @@ class Viewer:
         # Scores for anchor/omp are different so reset score range when change method
         # Max possible score is that found for ref_spots, as this can be more than 1.
         # Max possible omp score is 1.
-        max_score = np.around(round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
+        max_score = np.around(utils.round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
         max_score = float(np.clip(max_score, 1, np.inf))
         self.score_range = {'anchor': [config['score_ref'], max_score]}
         if self.nb.has_page('omp'):
@@ -273,7 +278,7 @@ class Viewer:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        intensity_thresh = get_intensity_thresh(nb)
+        intensity_thresh = call_spots.qual_check.get_intensity_thresh(nb)
         self.intensity_thresh_slider.setValue(intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
@@ -323,7 +328,7 @@ class Viewer:
         Listen to selected data changes
         """
 
-        @thread_worker(connect={'yielded': indicate_selected})
+        @napari.qt.thread_worker(connect={'yielded': indicate_selected})
         def _watchSelectedData(pointsLayer):
             selectedData = None
             while True:
@@ -340,7 +345,7 @@ class Viewer:
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
+            score = call_spots.qual_check.omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
@@ -550,7 +555,7 @@ class Viewer:
 
         @self.viewer.bind_key('k')
         def call_to_view_omp_score(viewer):
-            view_scaled_k_means(self.nb)
+            call_spots_plot.view_scaled_k_means(self.nb)
 
         @self.viewer.bind_key('c')
         def call_to_view_codes(viewer):

@@ -1,6 +1,10 @@
 import numpy as np
-from typing import Tuple
 import warnings
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
+from typing import Tuple
 
 from ..setup.notebook import NotebookPage
 from .. import call_spots
@@ -94,47 +98,20 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # although if we are not creating a new bleed matrix for all rounds, we need to normalise the bleed matrix template
     # with a median of the colour norm factor across rounds.
     if nbp_file.initial_bleed_matrix is None:
-        dye_info = \
-            {'ATTO425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
-                                51750, 2817, 226, 100, 22559, 124, 124, 100, 100,
-                                260, 169, 100, 100, 114, 134, 100, 100, 99,
-                                103]),
-            'AF488': np.array([104, 370, 162, 114, 62454, 809, 2081, 254, 102,
-                                45360, 8053, 368, 100, 40051, 3422, 309, 100, 132,
-                                120, 120, 100, 100, 100, 130, 99, 100, 99,
-                                103]),
-            'DY520XL': np.array([103, 114, 191, 513, 55456, 109, 907, 5440, 99,
-                                117, 2440, 8675, 100, 25424, 5573, 42901, 100, 100,
-                                10458, 50094, 100, 100, 324, 4089, 100, 100, 100,
-                                102]),
-            'AF532': np.array([106, 157, 313, 123, 55021, 142, 1897, 304, 101,
-                                1466, 7980, 487, 100, 31753, 49791, 4511, 100, 849,
-                                38668, 1919, 100, 100, 100, 131, 100, 100, 99,
-                                102]),
-            'AF594': np.array([104, 113, 1168, 585, 65378, 104, 569, 509, 102,
-                                119, 854, 378, 100, 42236, 5799, 3963, 100, 100,
-                                36766, 14856, 100, 100, 3519, 3081, 100, 100, 100,
-                                103]),
-            'AF647': np.array([481, 314, 124, 344, 50254, 125, 126, 374, 98,
-                                202, 152, 449, 100, 26103, 402, 5277, 100, 101,
-                                1155, 27251, 100, 100, 442, 65457, 100, 100, 100,
-                                118]),
-            'AF750': np.array([106, 114, 107, 127, 65531, 108, 124, 193, 104,
-                                142, 142, 153, 100, 55738, 183, 168, 100, 99,
-                                366, 245, 100, 100, 101, 882, 100, 100, 99,
-                                2219])}
-        # initial_bleed_matrix is n_channels x n_dyes
-        initial_bleed_matrix = np.zeros((len(nbp_basic.use_channels), len(nbp_basic.dye_names)))
-        # Populate initial_bleed_matrix with dye info for all channels in use
-        for i, dye in enumerate(nbp_basic.dye_names):
-            initial_bleed_matrix[:, i] = dye_info[dye][use_channels]
+        expected_dye_names = ['ATTO425', 'AF488', 'DY520XL', 'AF532', 'AF594', 'AF647', 'AF750']
+        assert nbp_basic.dye_names == expected_dye_names, \
+            f'To use the default bleed matrix, dye names must be given in the order {expected_dye_names}, but got ' \
+                + f'{nbp_basic.dye_names}.'
+        # default_bleed_matrix_filepath = os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')
+        default_bleed_matrix_filepath = importlib_resources.files('coppafish.setup').joinpath('default_bleed.npy')
+        initial_bleed_matrix = np.load(default_bleed_matrix_filepath).copy()
     if nbp_file.initial_bleed_matrix is not None:
         # Use an initial bleed matrix given by the user
         initial_bleed_matrix = np.load(nbp_file.initial_bleed_matrix)
-        expected_shape = (len(nbp_basic.use_channels), len(nbp_basic.dye_names))
-        assert initial_bleed_matrix.shape == expected_shape, \
-            f'Initial bleed matrix at {nbp_file.initial_bleed_matrix} has shape {initial_bleed_matrix.shape}, ' + \
-                f'expected {expected_shape}.'
+    expected_shape = (len(nbp_basic.use_channels), len(nbp_basic.dye_names))
+    assert initial_bleed_matrix.shape == expected_shape, \
+        f'Initial bleed matrix at {nbp_file.initial_bleed_matrix} has shape {initial_bleed_matrix.shape}, ' \
+            + f'expected {expected_shape}.'
     # normalise bleed matrix across channels, then once again across dyes so each column has norm 1
     bleed_norm = np.median(colour_norm_factor, axis=0)
     # Want to divide each row by bleed_norm, so reshape bleed_norm to be n_channels x n_rounds

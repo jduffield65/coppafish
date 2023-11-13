@@ -193,10 +193,15 @@ class ColorPlotBase:
             self.im[i].set_clim(self.caxis_info[self.method]['clims'][0],
                                 self.caxis_info[self.method]['clims'][1])
 
-        self.color_slider = RangeSlider(self.slider_ax, "Clim", self.caxis_info[self.method]['min'],
-                                        self.caxis_info[self.method]['max'],
-                                        self.caxis_info[self.method]['clims'],
-                                        orientation='vertical', valfmt=self.caxis_info[self.method]['format'])
+        self.color_slider = RangeSlider(
+            ax=self.slider_ax, 
+            label="Clim", 
+            valmin=self.caxis_info[self.method]['min'], 
+            valmax=self.caxis_info[self.method]['max'], 
+            valinit=self.caxis_info[self.method]['clims'], 
+            orientation='vertical', 
+            valfmt=self.caxis_info[self.method]['format']
+        )
         self.color_slider.on_changed(self.change_clim)
         self.im[-1].axes.figure.canvas.draw()
 
@@ -346,7 +351,7 @@ class view_spot(ColorPlotBase):
                                       np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
-        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info)
+        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info, nb.extract)
         spot_colors = np.moveaxis(spot_colors, 1, 2)  # put round as the last axis to match color_norm
         spot_colors = spot_colors.reshape(im_yxz.shape[0], -1)
         # reshape
