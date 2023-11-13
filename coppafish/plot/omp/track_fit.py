@@ -46,7 +46,7 @@ def get_track_info(nb: Notebook, spot_no: int, method: str, dp_thresh: Optional[
         `dp_thresh` - threshold dot product score, above which gene is fitted.
     """
     raise NotImplementedError(
-        'Tracking OMP iterations has been removed, please contact a developer if the feature is wanted again'
+        'Tracking OMP iterations has been removed, please contact a coppafish developer if the feature is wanted again'
     )
     
     color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
