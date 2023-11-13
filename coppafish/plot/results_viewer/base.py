@@ -20,7 +20,7 @@ from . import legend
 from ..call_spots import view_codes, view_bleed_matrix, view_bled_codes, view_spot, view_intensity, gene_counts
 from .. import call_spots as call_spots_plot
 from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
-from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
+from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score
 from ..omp.coefs import view_score  # gives import error if call from call_spots.dot_product
 
 
