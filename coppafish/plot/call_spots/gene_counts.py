@@ -174,12 +174,11 @@ class gene_counts:
         if self.omp:
             self.button_labels += ["OMP Spots"]
             label_checked += [True]
-        self.buttons = CheckButtons(self.buttons_ax, self.button_labels, label_checked)
-
-        for i in range(self.n_plots):
-            self.buttons.labels[i].set_fontsize(7)
-            self.buttons.labels[i].set_color(default_colors[i]['color'])
-            self.buttons.rectangles[i].set_color('w')
+        #FIXME: Make the check buttons larger in size
+        self.buttons = CheckButtons(self.buttons_ax, self.button_labels, label_checked, 
+                                    label_props={'fontsize': [7] * self.n_plots, 
+                                                 'color': [c['color'] for c in default_colors]}, 
+                                    frame_props={'edgecolor': 'w'})
         self.buttons.on_clicked(self.choose_plots)
         plt.show()
 
