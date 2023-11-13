@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
 from typing import Optional
 
 from ... import utils
-from ... import call_spots
+from .. import call_spots
 from .legend import add_legend
 from ..call_spots_new import GEViewer, ViewBleedCalc, ViewAllGeneScores, BGNormViewer
 from ..omp import view_omp, view_omp_fit, view_omp_score, histogram_score, histogram_2d_score
