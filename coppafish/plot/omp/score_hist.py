@@ -155,14 +155,15 @@ class histogram_score:
             self.button_labels += [r"$\gamma_s$" + "\nOMP Score"]
             label_checked += [True]
             label_checked[0] = False
-        #FIXME: Make the check buttons larger in size
         self.buttons = CheckButtons(
             self.buttons_ax, 
             self.button_labels, 
             label_checked, 
-            label_props={'fontsize': [7] * self.n_plots, 
+            label_props={'fontsize': [14] * self.n_plots, 
                          'color': [default_colors[i]['color'] for i in range(self.n_plots)]}, 
-            frame_props={'edgecolor': ['w'] * self.n_plots})
+            frame_props={'edgecolor': ['w'] * self.n_plots}, 
+            check_props={'facecolor': ['w'] * self.n_plots}, 
+        )
         self.buttons.on_clicked(self.choose_plots)
         if show_plot:
             plt.show()
