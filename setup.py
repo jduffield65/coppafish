@@ -27,9 +27,9 @@ setup(
                       'scikit-image', 'nd2', 'h5py', 'pandas', 'dask', 'joblib', 'psutil', 'zarr'],
     extras_require={'optimised': ['jax[cpu]'], 'plotting': ['matplotlib', 'distinctipy', 'PyQt5', 'mplcursors',
                                                             'magicgui', 'napari[all]<=0.4.17', 'pydantic<=1.10.13']},
-    package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json',
-                                      'dye_camera_laser_raw_intensity.csv'],
-                  'coppafish.plot.results_viewer': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']},
+    package_data={'coppafish.setup': ['settings.default.ini', 'notebook_comments.json', 
+                                      'dye_camera_laser_raw_intensity.csv', 'default_bleed.npy'], 
+                  'coppafish.plot.results_viewer': ['cell_color.csv', 'cellClassColors.json', 'gene_color.csv']}, 
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

@@ -656,8 +656,11 @@ class ViewBleedCalc:
         self.isolated_spots = nb.ref_spots.colors[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels] - \
                               background_strength
         self.isolated_spots = self.isolated_spots / color_norm
-        # Get current working directory and load default bleed matrix
-        self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')).copy()
+        if nb.file_names.initial_bleed_matrix is not None:
+            self.default_bleed = np.load(nb.file_names.initial_bleed_matrix)
+        else:
+            # Get current working directory and load the default bleed matrix
+            self.default_bleed = np.load(os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')).copy()
         # swap columns 2 and 3 to match the order of the channels in the notebook
         self.default_bleed[:, [2, 3]] = self.default_bleed[:, [3, 2]]
         # Normalise each column of default_bleed to have L2 norm of 1
