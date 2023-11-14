@@ -109,24 +109,33 @@ class Viewer:
         # concatenate anchor and omp spots so can use button to switch between them.
         self.omp_0_ind = self.nb.ref_spots.tile.size  # number of anchor spots
         if self.nb.has_page('omp'):
-            self.n_spots = self.omp_0_ind + self.nb.omp.tile.size  # number of anchor + number of omp spots
+            # number of anchor * 2 (anchor and gene probabilities) + number of omp spots
+            self.n_spots = self.omp_0_ind * 2 + self.nb.omp.tile.size
         else:
-            self.n_spots = self.omp_0_ind
+            self.n_spots = self.omp_0_ind * 2
         self.spot_zyx = np.zeros((self.n_spots, 3))
-        self.spot_zyx[:self.omp_0_ind] = (self.nb.ref_spots.local_yxz + tile_origin[self.nb.ref_spots.tile]
-                                     )[:, [2, 0, 1]]
+        # Anchor and gene probabilities are in the same positions
+        self.spot_zyx[:self.omp_0_ind] = (
+            self.nb.ref_spots.local_yxz + tile_origin[self.nb.ref_spots.tile]
+        )[:, [2, 0, 1]]
+        self.spot_zyx[self.omp_0_ind:self.omp_0_ind * 2] = (
+            self.nb.ref_spots.local_yxz + tile_origin[self.nb.ref_spots.tile]
+        )[:, [2, 0, 1]]
         if self.nb.has_page('omp'):
-            self.spot_zyx[self.omp_0_ind:] = (self.nb.omp.local_yxz + tile_origin[self.nb.omp.tile]
-                                         )[:, [2, 0, 1]]
+            self.spot_zyx[self.omp_0_ind * 2:] = (
+                self.nb.omp.local_yxz + tile_origin[self.nb.omp.tile]
+            )[:, [2, 0, 1]]
         if not self.nb.basic_info.is_3d:
             self.spot_zyx = self.spot_zyx[:, 1:]
 
         # indicate spots shown when plot first opened - omp if exists, else anchor
         if self.nb.has_page('omp'):
             show_spots = np.zeros(self.n_spots, dtype=bool)
-            show_spots[self.omp_0_ind:] = call_spots.quality_threshold(self.nb, 'omp')
+            show_spots[self.omp_0_ind * 2:] = call_spots.quality_threshold(self.nb, 'omp')
         else:
             show_spots = call_spots.quality_threshold(self.nb, 'anchor')
+            # Do not show gene probabilities at first
+            show_spots = np.append(show_spots, np.zeros(show_spots.size, dtype=bool))
 
         self.viewer = napari.Viewer()
         self.viewer.window.qt_viewer.dockLayerList.setVisible(False)
@@ -190,8 +199,10 @@ class Viewer:
 
         # Add legend indicating genes plotted
         self.legend = {'fig': None, 'ax': None}
-        self.legend['fig'], self.legend['ax'], n_gene_label_letters = \
-            legend.add_legend(gene_legend_info=gene_legend_info, genes=self.gene_names)
+        self.legend['fig'], self.legend['ax'], n_gene_label_letters = legend.add_legend(
+            gene_legend_info=gene_legend_info, 
+            genes=self.gene_names, 
+        )
         # xy is position of each symbol in legend, need to see which gene clicked on.
         self.legend['xy'] = np.zeros((len(self.legend['ax'].collections), 2), dtype=float)
         self.legend['gene_no'] = np.zeros(len(self.legend['ax'].collections), dtype=int)
@@ -228,12 +239,13 @@ class Viewer:
 
         # Add gene spots with coppafish color code - different layer for each symbol
         # I'm not sure how this plots spots that are not mentioned in the legend. Their colour is by default set to 1,
-        # but their marker is not defined
-        # Break things up into 2 cases
+        # but their marker is not defined.
+        # Break things up into 3 cases: Anchor, gene probabilities and OMP with their gene numbers placed in this order
+        spot_gene_no_prob = np.argmax(self.nb.ref_spots.gene_probs, axis=1)
+        self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, spot_gene_no_prob))
         if self.nb.has_page('omp'):
-            self.spot_gene_no = np.hstack((self.nb.ref_spots.gene_no, self.nb.omp.gene_no))
-        else:
-            self.spot_gene_no = self.nb.ref_spots.gene_no
+            self.spot_gene_no = np.hstack((self.spot_gene_no, self.nb.omp.gene_no))
+        # Gene assignment is different for gene probabilities
         self.label_prefix = 'Gene Symbol:'  # prefix of label for layers showing spots
 
         # Add layer for each symbol. This won't find spots with symbol name 'nan', which is what we want.
@@ -260,7 +272,7 @@ class Viewer:
         # Max possible omp score is 1.
         max_score = np.around(utils.round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
         max_score = float(np.clip(max_score, 1, np.inf))
-        self.score_range = {'anchor': [config['score_ref'], max_score]}
+        self.score_range = {'anchor': [config['score_ref'], max_score], 'prob': [config['score_ref'], max_score]}
         if self.nb.has_page('omp'):
             self.score_range['omp'] = [config['score_omp'], max_score]
             self.score_thresh_slider.setValue(self.score_range['omp'])
@@ -299,6 +311,7 @@ class Viewer:
         # What does the below do?
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
+        self.method_buttons.button_prob.clicked.connect(self.button_prob_clicked)
         if self.nb.has_page('omp'):
             self.viewer.window.add_dock_widget(self.omp_score_multiplier_slider, area="left",
                                                name='OMP Score Multiplier')
@@ -313,8 +326,10 @@ class Viewer:
 
         napari.run()
 
+
     def viewer_status_on_select(self):
         # indicate selected data in viewer status.
+
 
         def indicate_selected(selectedData):
             if selectedData is not None:
@@ -322,10 +337,13 @@ class Viewer:
                 if n_selected == 1:
                     spot_no = list(selectedData)[0]
                     if self.method_buttons.method == 'OMP':
-                        spot_no = spot_no - self.omp_0_ind
+                        spot_no = spot_no - self.omp_0_ind * 2
                         spot_gene = self.gene_names[self.nb.omp.gene_no[spot_no]]
-                    else:
+                    elif self.method_buttons.method == 'Anchor':
                         spot_gene = self.gene_names[self.nb.ref_spots.gene_no[spot_no]]
+                    elif self.method_buttons.method == 'Prob':
+                        spot_no = spot_no % self.omp_0_ind
+                        spot_gene = self.gene_names[np.argmax(self.nb.ref_spots.gene_probs, axis=1)[spot_no]]
                     self.viewer.status = f'Spot {spot_no}, {spot_gene} Selected'
                 elif n_selected > 1:
                     self.viewer.status = f'{n_selected} spots selected'
@@ -347,17 +365,24 @@ class Viewer:
 
         return (_watchSelectedData(self.viewer.layers[self.diagnostic_layer_ind]))
 
+
     def update_plot(self):
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
             score = call_spots.qual_check.omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
-            method_ind = np.arange(self.omp_0_ind, self.n_spots)
+            method_ind = np.arange(self.omp_0_ind * 2, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
-        else:
+        elif self.method_buttons.method == 'Anchor':
             score = self.nb.ref_spots.score
             method_ind = np.arange(self.omp_0_ind)
             intensity_ok = self.nb.ref_spots.intensity > self.intensity_thresh_slider.value()
+        elif self.method_buttons.method == 'Prob':
+            # Take the maximum gene probability as the score
+            score = np.max(self.nb.ref_spots.gene_probs, axis=1)
+            method_ind = np.arange(self.omp_0_ind, self.omp_0_ind * 2)
+            # Ignore intensity slider
+            intensity_ok = np.full(score.size, fill_value=True, dtype=bool)
         # Keep record of last score range set for each method
         self.score_range[self.method_buttons.method.lower()] = self.score_thresh_slider.value()
         qual_ok = np.array([score > self.score_thresh_slider.value()[0], score <= self.score_thresh_slider.value()[1],
@@ -374,6 +399,7 @@ class Viewer:
                 correct_gene = np.arange(len(self.nb.call_spots.gene_names))[self.gene_symbol == s]
                 correct_spot = np.isin(self.spot_gene_no, correct_gene)
                 self.viewer.layers[i].shown = spots_shown[correct_spot]
+
 
     def update_genes(self, event):
         # When click on a gene in the legend will remove/add that gene to plot.
@@ -422,24 +448,30 @@ class Viewer:
         self.legend['fig'].draw()
         self.update_plot()
 
+
     def show_score_thresh(self, low_value, high_value):
         self.viewer.status = self.method_buttons.method + ': Score Range = [{:.2f}, {:.2f}]'.format(low_value,
                                                                                                     high_value)
 
+
     def show_omp_score_multiplier(self, value):
         self.viewer.status = 'OMP Score Multiplier = {:.2f}'.format(value)
 
+
     def show_intensity_thresh(self, value):
         self.viewer.status = 'Intensity Threshold = {:.3f}'.format(value)
+
 
     def show_image_contrast(self, low_value, high_value):
         # Show contrast of background image while dragging
         self.viewer.status = 'Image Contrast Limits: [{:.0f}, {:.0f}]'.format(low_value, high_value)
 
+
     def change_image_contrast(self, i):
         # Change contrast of background image
         self.viewer.layers[i].contrast_limits = [self.image_contrast_slider[i].value()[0],
                                                                     self.image_contrast_slider[i].value()[1]]
+
 
     def change_z_thick(self, z_thick):
         # Show spots from different z-planes
@@ -447,31 +479,43 @@ class Viewer:
         for i in range(len(self.viewer.layers)):
             self.viewer.layers[i].size = [z_thick, 10, 10]
 
+
     def button_anchor_clicked(self):
-        # Only allow one button pressed
-        if self.method_buttons.method == 'Anchor':
-            self.method_buttons.button_anchor.setChecked(True)
-            self.method_buttons.button_omp.setChecked(False)
-        else:
-            self.method_buttons.button_anchor.setChecked(True)
-            self.method_buttons.button_omp.setChecked(False)
+        self.method_buttons.button_anchor.setChecked(True)
+        self.method_buttons.button_omp.setChecked(False)
+        self.method_buttons.button_prob.setChecked(False)
+
+        if self.method_buttons.method != 'Anchor':
             self.method_buttons.method = 'Anchor'
             # Because method has changed, also need to change score range
             self.score_thresh_slider.setValue(self.score_range['anchor'])
             self.update_plot()
 
+
     def button_omp_clicked(self):
-        # Only allow one button pressed
-        if self.method_buttons.method == 'OMP':
-            self.method_buttons.button_omp.setChecked(True)
-            self.method_buttons.button_anchor.setChecked(False)
-        else:
-            self.method_buttons.button_omp.setChecked(True)
-            self.method_buttons.button_anchor.setChecked(False)
+        self.method_buttons.button_anchor.setChecked(False)
+        self.method_buttons.button_omp.setChecked(True)
+        self.method_buttons.button_prob.setChecked(False)
+
+        if self.method_buttons.method != 'OMP':
+            # Logic on OMP button switch
             self.method_buttons.method = 'OMP'
             # Because method has changed, also need to change score range
             self.score_thresh_slider.setValue(self.score_range['omp'])
             self.update_plot()
+            
+            
+    def button_prob_clicked(self):
+        self.method_buttons.button_anchor.setChecked(False)
+        self.method_buttons.button_omp.setChecked(False)
+        self.method_buttons.button_prob.setChecked(True)
+        
+        if self.method_buttons.method != 'Prob':
+            self.method_buttons.method = 'Prob'
+            # Because method has changed, also need to change score range
+            self.score_thresh_slider.setValue(self.score_range['prob'])
+            self.update_plot()
+
 
     def get_selected_spot(self):
         # Returns spot_no selected if only one selected (this is the spot_no relavent to the Notebook i.e.
@@ -481,7 +525,9 @@ class Viewer:
         if n_selected == 1:
             spot_no = list(self.viewer.layers[self.diagnostic_layer_ind].selected_data)[0]
             if self.method_buttons.method == 'OMP':
-                spot_no = spot_no - self.omp_0_ind  # return spot_no as saved in self.nb for current method.
+                spot_no = spot_no - self.omp_0_ind * 2  # return spot_no as saved in self.nb for current method.
+            else:
+                spot_no = spot_no % self.omp_0_ind
         elif n_selected > 1:
             self.viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
             spot_no = None
@@ -611,11 +657,15 @@ class ButtonMethodWindow(QMainWindow):
         super().__init__()
         self.button_anchor = QPushButton('Anchor', self)
         self.button_anchor.setCheckable(True)
-        self.button_anchor.setGeometry(75, 2, 50, 28)  # left, top, width, height
+        self.button_anchor.setGeometry(55, 2, 50, 28)  # left, top, width, height
 
         self.button_omp = QPushButton('OMP', self)
         self.button_omp.setCheckable(True)
-        self.button_omp.setGeometry(140, 2, 50, 28)  # left, top, width, height
+        self.button_omp.setGeometry(155, 2, 50, 28)  # left, top, width, height
+        
+        self.button_prob = QPushButton('Prob', self)
+        self.button_prob.setCheckable(True)
+        self.button_prob.setGeometry(105, 2, 50, 28)  # left, top, width, height
         if active_button.lower() == 'omp':
             # Initially, show OMP spots
             self.button_omp.setChecked(True)
@@ -624,8 +674,12 @@ class ButtonMethodWindow(QMainWindow):
             # Initially, show Anchor spots
             self.button_anchor.setChecked(True)
             self.method = 'Anchor'
+        elif active_button.lower() == 'prob':
+            # Show gene probabilities
+            self.button_prob.setChecked(True)
+            self.method = 'Prob'
         else:
-            raise ValueError(f"active_button should be 'Anchor' or 'OMP' but {active_button} was given.")
+            raise ValueError(f"Unexpected active_button, {active_button}, was given.")
 
 
 def zeta_to_coppa(zeta_list) -> np.ndarray:
