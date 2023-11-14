@@ -835,6 +835,9 @@ class RoboMinnie:
         rng = np.random.RandomState(self.seed)
         with open(self.gene_colours_filepath, 'w') as f:
             csvwriter = csv.writer(f, delimiter=',')
+            napari_symbols = ['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']
+            mpl_symbols = ['+', '.', 's', '^', '_', '|']
+            random_index = rng.randint(len(napari_symbols))
             # Heading
             csvwriter.writerow(['', 'GeneNames', 'ColorR', 'ColorG', 'ColorB', 'napari_symbol', 'mpl_symbol'])
             for i, gene_name in enumerate(self.codes):
@@ -844,8 +847,8 @@ class RoboMinnie:
                     round(rng.rand(), 2), 
                     round(rng.rand(), 2), 
                     round(rng.rand(), 2), 
-                    random.choice(['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']), 
-                    random.choice(['+', '.', 's', '^', '|', '_']), 
+                    napari_symbols[random_index], 
+                    mpl_symbols[random_index],  
                 ])
 
         # Save the initial bleed matrix for the config file
