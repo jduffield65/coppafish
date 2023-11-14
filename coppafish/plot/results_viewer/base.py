@@ -312,11 +312,10 @@ class Viewer:
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
         self.method_buttons.button_prob.clicked.connect(self.button_prob_clicked)
+        self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
         if self.nb.has_page('omp'):
             self.viewer.window.add_dock_widget(self.omp_score_multiplier_slider, area="left",
                                                name='OMP Score Multiplier')
-            # Only have button to change method if have omp page too.
-            self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
 
         self.key_call_functions()
         if self.nb.basic_info.is_3d:
