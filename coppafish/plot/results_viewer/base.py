@@ -255,9 +255,15 @@ class Viewer:
             if symbol_s_spots.any():
                 coords_to_plot = self.spot_zyx[symbol_s_spots]
                 spotcolor_to_plot = self.gene_color[self.spot_gene_no[symbol_s_spots]]
-                self.viewer.add_points(coords_to_plot, face_color=spotcolor_to_plot, symbol=s,
-                                       name=f'{self.label_prefix}{s}', size=self.point_size,
-                                       shown=show_spots[symbol_s_spots], out_of_slice_display=True)
+                self.viewer.add_points(
+                    coords_to_plot, 
+                    face_color=spotcolor_to_plot, 
+                    symbol=s, 
+                    name=f'{self.label_prefix}{s}', 
+                    size=self.point_size, 
+                    shown=show_spots[symbol_s_spots], 
+                    out_of_slice_display=True
+                )
 
         self.viewer.layers.selection.active = self.viewer.layers[self.diagnostic_layer_ind]
         # so indicates when a spot is selected in viewer status
@@ -315,8 +321,9 @@ class Viewer:
         self.method_buttons.button_prob.clicked.connect(self.button_prob_clicked)
         self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
         if self.nb.has_page('omp'):
-            self.viewer.window.add_dock_widget(self.omp_score_multiplier_slider, area="left",
-                                               name='OMP Score Multiplier')
+            self.viewer.window.add_dock_widget(
+                self.omp_score_multiplier_slider, area="left", name='OMP Score Multiplier'
+            )
 
         self.key_call_functions()
         if self.nb.basic_info.is_3d:
