@@ -14,7 +14,7 @@ from napari.layers.points._points_constants import Mode
 try:
     import importlib_resources
 except ModuleNotFoundError:
-    import importlib.resources as importlib_resources
+    import importlib.resources as importlib_resources # Python 3.10 support
 from typing import Optional
 
 from . import legend
