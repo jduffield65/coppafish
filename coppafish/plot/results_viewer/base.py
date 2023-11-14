@@ -307,8 +307,9 @@ class Viewer:
         if self.nb.has_page('omp'):
             self.method_buttons = ButtonMethodWindow('OMP')  # Buttons to change between Anchor and OMP spots showing.
         else:
-            self.method_buttons = ButtonMethodWindow('Anchor')
+            self.method_buttons = ButtonMethodWindow('Anchor', has_omp=False)
         # What does the below do?
+        # This part of the code makes each button call a different function
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
         self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
         self.method_buttons.button_prob.clicked.connect(self.button_prob_clicked)
@@ -481,38 +482,38 @@ class Viewer:
 
     def button_anchor_clicked(self):
         self.method_buttons.button_anchor.setChecked(True)
-        self.method_buttons.button_omp.setChecked(False)
         self.method_buttons.button_prob.setChecked(False)
+        self.method_buttons.button_omp.setChecked(False)
 
         if self.method_buttons.method != 'Anchor':
             self.method_buttons.method = 'Anchor'
             # Because method has changed, also need to change score range
             self.score_thresh_slider.setValue(self.score_range['anchor'])
             self.update_plot()
+            
+            
+    def button_prob_clicked(self):
+        self.method_buttons.button_anchor.setChecked(False)
+        self.method_buttons.button_prob.setChecked(True)
+        self.method_buttons.button_omp.setChecked(False)
+        
+        if self.method_buttons.method != 'Prob':
+            self.method_buttons.method = 'Prob'
+            # Because method has changed, also need to change score range
+            self.score_thresh_slider.setValue(self.score_range['prob'])
+            self.update_plot()
 
 
     def button_omp_clicked(self):
         self.method_buttons.button_anchor.setChecked(False)
-        self.method_buttons.button_omp.setChecked(True)
         self.method_buttons.button_prob.setChecked(False)
+        self.method_buttons.button_omp.setChecked(True)
 
         if self.method_buttons.method != 'OMP':
             # Logic on OMP button switch
             self.method_buttons.method = 'OMP'
             # Because method has changed, also need to change score range
             self.score_thresh_slider.setValue(self.score_range['omp'])
-            self.update_plot()
-            
-            
-    def button_prob_clicked(self):
-        self.method_buttons.button_anchor.setChecked(False)
-        self.method_buttons.button_omp.setChecked(False)
-        self.method_buttons.button_prob.setChecked(True)
-        
-        if self.method_buttons.method != 'Prob':
-            self.method_buttons.method = 'Prob'
-            # Because method has changed, also need to change score range
-            self.score_thresh_slider.setValue(self.score_range['prob'])
             self.update_plot()
 
 
@@ -525,7 +526,7 @@ class Viewer:
             spot_no = list(self.viewer.layers[self.diagnostic_layer_ind].selected_data)[0]
             if self.method_buttons.method == 'OMP':
                 spot_no = spot_no - self.omp_0_ind * 2  # return spot_no as saved in self.nb for current method.
-            else:
+            elif self.method_buttons.method == 'OMP':
                 spot_no = spot_no % self.omp_0_ind
         elif n_selected > 1:
             self.viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
@@ -652,20 +653,20 @@ class Viewer:
 
 
 class ButtonMethodWindow(QMainWindow):
-    def __init__(self, active_button: str = 'OMP'):
+    def __init__(self, active_button: str = 'Anchor', has_omp: bool = True):
         super().__init__()
         self.button_anchor = QPushButton('Anchor', self)
         self.button_anchor.setCheckable(True)
         self.button_anchor.setGeometry(55, 2, 50, 28)  # left, top, width, height
 
         self.button_omp = QPushButton('OMP', self)
-        self.button_omp.setCheckable(True)
+        self.button_omp.setCheckable(has_omp)
         self.button_omp.setGeometry(155, 2, 50, 28)  # left, top, width, height
         
         self.button_prob = QPushButton('Prob', self)
         self.button_prob.setCheckable(True)
         self.button_prob.setGeometry(105, 2, 50, 28)  # left, top, width, height
-        if active_button.lower() == 'omp':
+        if active_button.lower() == 'omp' and has_omp:
             # Initially, show OMP spots
             self.button_omp.setChecked(True)
             self.method = 'OMP'
