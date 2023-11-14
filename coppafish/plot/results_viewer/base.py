@@ -664,15 +664,16 @@ class ButtonMethodWindow(QMainWindow):
         super().__init__()
         self.button_anchor = QPushButton('Anchor', self)
         self.button_anchor.setCheckable(True)
-        self.button_anchor.setGeometry(55, 2, 50, 28)  # left, top, width, height
-
-        self.button_omp = QPushButton('OMP', self)
-        self.button_omp.setCheckable(has_omp)
-        self.button_omp.setGeometry(155, 2, 50, 28)  # left, top, width, height
+        self.button_anchor.setGeometry(50, 2, 50, 28)  # left, top, width, height
         
         self.button_prob = QPushButton('Prob', self)
         self.button_prob.setCheckable(True)
         self.button_prob.setGeometry(105, 2, 50, 28)  # left, top, width, height
+
+        self.button_omp = QPushButton('OMP', self)
+        self.button_omp.setCheckable(has_omp)
+        self.button_omp.setGeometry(160, 2, 50, 28)  # left, top, width, height
+        
         if active_button.lower() == 'omp' and has_omp:
             # Initially, show OMP spots
             self.button_omp.setChecked(True)
