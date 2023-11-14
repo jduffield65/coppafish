@@ -837,10 +837,10 @@ class RoboMinnie:
             csvwriter = csv.writer(f, delimiter=',')
             napari_symbols = ['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']
             mpl_symbols = ['+', '.', 's', '^', '_', '|']
-            random_index = rng.randint(len(napari_symbols))
             # Heading
             csvwriter.writerow(['', 'GeneNames', 'ColorR', 'ColorG', 'ColorB', 'napari_symbol', 'mpl_symbol'])
             for i, gene_name in enumerate(self.codes):
+                random_index = rng.randint(len(napari_symbols))
                 csvwriter.writerow([
                     f'{i}', 
                     f'{gene_name}', 
