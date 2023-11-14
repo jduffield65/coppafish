@@ -11,6 +11,10 @@ from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
 from napari.layers.points import Points
 from napari.layers.points._points_constants import Mode
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 from typing import Optional
 
 from . import legend
@@ -29,8 +33,9 @@ class Viewer:
                  background_image_colour: Optional[list] = ['gray'], 
                  gene_marker_file: Optional[str] = None, zeta_tile_path: Optional[str] = None) -> None:
         """
-        This is the function to view the results of the pipeline
-        i.e. the spots found and which genes they were assigned to.
+        This is the function to view the results of the pipeline i.e. the spots found and which genes they were 
+        assigned to.
+        
         Args:
             nb: Notebook containing at least the `ref_spots` page.
             background_image: Optional list of file_names or images that will be plotted as the background image.
@@ -38,7 +43,8 @@ class Viewer:
                 If pass *2D* image for *3D* data, will show same image as background on each z-plane.
             background_image_color: list of names of background colours. Must be same length as background_image
             gene_marker_file: Path to csv file containing marker and color for each gene. There must be 6 columns
-                in the csv file with the following headers:
+                in the csv file with the following headers (comma separated):
+                * ID - int, unique number for each gene, in ascending order
                 * GeneNames - str, name of gene with first letter capital
                 * ColorR - float, Rgb color for plotting
                 * ColorG - float, rGb color for plotting
@@ -52,7 +58,7 @@ class Viewer:
         self.nb = nb
         self.is_3d = nb.basic_info.is_3d
         if gene_marker_file is None:
-            gene_marker_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gene_color.csv')
+            gene_marker_file = importlib_resources.files('coppafish.plot.results_viewer').joinpath('gene_color.csv')
         gene_legend_info = pd.read_csv(gene_marker_file)
 
         # Remove any genes from the legend which were not used in this experiment

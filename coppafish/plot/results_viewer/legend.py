@@ -6,6 +6,10 @@ import matplotlib.patches as patches
 import pandas as pd
 import os
 import numpy as np
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 from typing import Optional
 
 # MPL background
@@ -146,11 +150,10 @@ def add_legend(gene_legend_info: Optional[pd.DataFrame],
 
 
 if __name__ == "__main__":
-
     # Load files
     legend_folder = os.path.dirname(os.path.realpath(__file__))
-    genes = pd.read_csv(os.path.join(legend_folder, 'gene_color.csv'))
-    cells = pd.read_csv(os.path.join(legend_folder, 'cell_color.csv'))
+    genes = pd.read_csv(importlib_resources.files('coppafish.plot.results_viewer').joinpath('gene_color.csv'))
+    cells = pd.read_csv(importlib_resources.files('coppafish.plot.results_viewer').joinpath('cell_color.csv'))
 
     viewer = napari.Viewer()
     fig, ax, _ = add_legend(gene_legend_info=genes, cell_legend_info=cells)

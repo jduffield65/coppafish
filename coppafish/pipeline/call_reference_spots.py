@@ -102,7 +102,6 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         assert nbp_basic.dye_names == expected_dye_names, \
             f'To use the default bleed matrix, dye names must be given in the order {expected_dye_names}, but got ' \
                 + f'{nbp_basic.dye_names}.'
-        # default_bleed_matrix_filepath = os.path.join(os.getcwd(), 'coppafish/setup/default_bleed.npy')
         default_bleed_matrix_filepath = importlib_resources.files('coppafish.setup').joinpath('default_bleed.npy')
         initial_bleed_matrix = np.load(default_bleed_matrix_filepath).copy()
     if nbp_file.initial_bleed_matrix is not None:

@@ -37,6 +37,10 @@ import os
 import time
 import json
 import warnings
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 from typing import Tuple, List, Optional
 
 from .config import get_config
@@ -645,7 +649,7 @@ class NotebookPage:
     _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
     _TYPEMETA = "___TYPE"  # Filename suffix for type information
     _NON_RESULT_KEYS = ['name', 'finalized']
-    _comments_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'notebook_comments.json')
+    _comments_file = importlib_resources.files('coppafish.setup').joinpath('notebook_comments.json')
 
     def __init__(self, name, input_dict=None):
         # Would like to store the git commit id in each notebook page to keep track of versions
