@@ -76,16 +76,16 @@ class Viewer:
         self.legend_gene_no = np.ones(n_legend_genes, dtype=int) # of length n_legend_genes
 
         # Now gene_legend_info only contains genes used in this experiment, so it is a subset of the genes used in the
-        # notebook. ie: n_legend_genes <= n_genes_in_nb. If genes in the notebook are not in the legend,
-        # we won't plot them.
+        # notebook. ie: n_legend_genes <= n_genes_in_nb. If genes in the notebook are not in the legend, we won't plot 
+        # them.
         napari_symbols = np.unique(np.array(gene_legend_info['napari_symbol']))
         n_nb_genes = len(nb.call_spots.gene_names)
         self.gene_names = nb.call_spots.gene_names # of length n_genes_in_nb
         self.gene_color = np.zeros((n_nb_genes, 3))# of length n_genes_in_nb
         self.gene_symbol = np.zeros((n_nb_genes, 0)).tolist() # of length n_genes_in_nb (list so can have diff lengths)
         # Populate gene_color and gene_symbol with info from legend. Only do this for genes in the legend and in the
-        # notebook. Since we have already removed all legend genes not in the notebook, this intersection is just
-        # the legend genes.
+        # notebook. Since we have already removed all legend genes not in the notebook, this intersection is just the 
+        # legend genes.
         for i in range(n_legend_genes):
             self.legend_gene_no[i] = np.where(self.gene_names == gene_legend_info['GeneNames'][i])[0][0]
             self.gene_color[self.legend_gene_no[i]] = [gene_legend_info.loc[i, 'ColorR'],
@@ -280,8 +280,8 @@ class Viewer:
         self.omp_score_multiplier_slider.valueChanged.connect(lambda x: self.show_omp_score_multiplier(x))
         self.omp_score_multiplier_slider.sliderReleased.connect(self.update_plot)
 
-        # intensity is calculated same way for anchor / omp method so do not reset intensity threshold
-        # when change method.
+        # intensity is calculated same way for anchor / omp method so do not reset intensity threshold when change 
+        # method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
         intensity_thresh = call_spots.qual_check.get_intensity_thresh(nb)
