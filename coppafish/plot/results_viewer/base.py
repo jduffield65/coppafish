@@ -22,18 +22,6 @@ from ..omp.coefs import view_score  # gives import error if call from call_spots
 from ... import call_spots
 from ... import utils
 from ...setup import Notebook
-from ...utils import round_any
-import napari
-from napari.qt import thread_worker
-import time
-from skimage import io
-from qtpy.QtCore import Qt
-from superqt import QDoubleRangeSlider, QDoubleSlider, QRangeSlider
-from PyQt5.QtWidgets import QPushButton, QMainWindow, QSlider
-from napari.layers.points import Points
-from napari.layers.points._points_constants import Mode
-import warnings
-from typing import Optional
 
 
 class Viewer:
@@ -264,7 +252,7 @@ class Viewer:
         # Scores for anchor/omp are different so reset score range when change method
         # Max possible score is that found for ref_spots, as this can be more than 1.
         # Max possible omp score is 1.
-        max_score = np.around(round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
+        max_score = np.around(utils.round_any(nb.ref_spots.score.max(), 0.1, 'ceil'), 2)
         max_score = float(np.clip(max_score, 1, np.inf))
         self.score_range = {'anchor': [config['score_ref'], max_score]}
         if self.nb.has_page('omp'):
@@ -290,7 +278,7 @@ class Viewer:
         # when change method.
         self.intensity_thresh_slider = QDoubleSlider(Qt.Orientation.Horizontal)
         self.intensity_thresh_slider.setRange(0, 1)
-        intensity_thresh = get_intensity_thresh(nb)
+        intensity_thresh = call_spots.qual_check.get_intensity_thresh(nb)
         self.intensity_thresh_slider.setValue(intensity_thresh)
         # When dragging, status will show thresh.
         self.intensity_thresh_slider.valueChanged.connect(lambda x: self.show_intensity_thresh(x))
@@ -340,7 +328,7 @@ class Viewer:
         Listen to selected data changes
         """
 
-        @thread_worker(connect={'yielded': indicate_selected})
+        @napari.qt.thread_worker(connect={'yielded': indicate_selected})
         def _watchSelectedData(pointsLayer):
             selectedData = None
             while True:
@@ -357,7 +345,7 @@ class Viewer:
         # This updates the spots plotted to reflect score_range and intensity threshold selected by sliders,
         # method selected by button and genes selected through clicking on the legend.
         if self.method_buttons.method == 'OMP':
-            score = omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
+            score = call_spots.qual_check.omp_spot_score(self.nb.omp, self.omp_score_multiplier_slider.value())
             method_ind = np.arange(self.omp_0_ind, self.n_spots)
             intensity_ok = self.nb.omp.intensity > self.intensity_thresh_slider.value()
         else:
