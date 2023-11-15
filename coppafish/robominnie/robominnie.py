@@ -488,8 +488,8 @@ class RoboMinnie:
         if gene_efficiency is None:
             gene_efficiency = np.ones((len(self.codes), self.n_rounds + self.include_anchor))
         assert gene_efficiency.shape == (len(self.codes), self.n_rounds + self.include_anchor), \
-            f'Gene efficiency must have shape `n_genes x n_rounds`==\
-                {(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
+            f'Gene efficiency must have shape `n_genes x n_rounds`=='\
+                + f'{(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
         if background_offset is None:
             background_offset = np.zeros((n_spots, self.n_channels))
         assert background_offset.shape == (n_spots, self.n_channels), \
@@ -835,17 +835,20 @@ class RoboMinnie:
         rng = np.random.RandomState(self.seed)
         with open(self.gene_colours_filepath, 'w') as f:
             csvwriter = csv.writer(f, delimiter=',')
+            napari_symbols = ['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']
+            mpl_symbols = ['+', '.', 's', '^', '_', '|']
             # Heading
             csvwriter.writerow(['', 'GeneNames', 'ColorR', 'ColorG', 'ColorB', 'napari_symbol', 'mpl_symbol'])
             for i, gene_name in enumerate(self.codes):
+                random_index = rng.randint(len(napari_symbols))
                 csvwriter.writerow([
                     f'{i}', 
                     f'{gene_name}', 
                     round(rng.rand(), 2), 
                     round(rng.rand(), 2), 
                     round(rng.rand(), 2), 
-                    random.choice(['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']), 
-                    random.choice(['+', '.', 's', '^', '|', '_']), 
+                    napari_symbols[random_index], 
+                    mpl_symbols[random_index],  
                 ])
 
         # Save the initial bleed matrix for the config file
@@ -896,6 +899,7 @@ class RoboMinnie:
         r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
+        num_rotations = 0 #? Should probably be 0 for robominnie multi-tile setup? Unsure tho
 
         [stitch]
         expected_overlap = {self.tile_overlap if self.n_tiles > 1 else 0}
@@ -1158,11 +1162,15 @@ class RoboMinnie:
         View all images in `napari` for tile index `t`, including a presequence, anchor and DAPI images, if they exist.
 
         Args:
-            tiles (`list` of `int`, optional): Tile indices. Default: View the giant image, containing all tiles within.
+            tiles (`list` of `int`, optional): tile indices. If an empty list, will display all tiles, including the 
+                additional padding pixels. Default: shows all tiles without the padding.
         """
+        if tiles is None:
+            tiles = list(np.arange(self.n_tiles))
+        
         print(f'Viewing images')
         viewer = napari.Viewer(title=f'RoboMinnie')
-        if tiles is None:
+        if tiles is not None and len(tiles) == 0:
             for c in range(self.n_channels):
                 for r in range(self.n_rounds):
                     # z index must be the first axis for napari to view
@@ -1200,30 +1208,22 @@ class RoboMinnie:
                         name=f'dapi, r={r}',
                         visible=False,
                     )
-        if tiles is not None:
-            #TODO: Complete this to add all tile images, including the presequence and sequence images
-            # image_tiles, tile_origins_yx, tile_yxz_pos = self._unstich_image(
-            #     self.image, 
-            #     np.asarray([*self.n_tile_yx, self.n_planes]), 
-            #     self.tile_overlap,
-            #     self.n_tiles_y,
-            #     self.n_tiles_x,
-            #     update_global_spots=False,
-            # )
-            if self.include_anchor:
-                anchor_image_tiles = self._unstich_image(
-                    self.anchor_image[None], 
-                    np.asarray([*self.n_tile_yx, self.n_planes]), 
-                    self.tile_overlap,
-                    self.n_tiles_y,
-                    self.n_tiles_x,
-                )[0][0]
-                for t in range(self.n_tiles):
-                    viewer.add_image(
-                        anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
-                        name=f'anchor, t={t}, c={self.anchor_channel}', 
-                        visible=False,
-                    )
+        
+        #TODO: Complete this to add all tile images, including the presequence and sequence images
+        if self.include_anchor:
+            anchor_image_tiles = self._unstich_image(
+                self.anchor_image[None], 
+                np.asarray([*self.n_tile_yx, self.n_planes]), 
+                self.tile_overlap,
+                self.n_tiles_y,
+                self.n_tiles_x,
+            )[0][0]
+            for t in tiles:
+                viewer.add_image(
+                    anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
+                    name=f'anchor, t={t}, c={self.anchor_channel}', 
+                    visible=False,
+                )
         napari.run()
 
 

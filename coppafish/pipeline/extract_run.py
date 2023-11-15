@@ -269,9 +269,7 @@ def extract_and_filter(
             for t in nbp_basic.use_tiles:
                 if not nbp_basic.is_3d:
                     # for 2d all channels in same file
-                    file_exists = os.path.isfile(nbp_file.tile[t][r])
-                    if config["file_type"] == ".zarr":
-                        file_exists = os.path.isdir(nbp_file.tile[t][r])
+                    file_exists = tiles_io.tile_exists(nbp_file.tile[t][r], config['file_type'])
                     if file_exists:
                         # mmap load in image for all channels if tiff exists
                         im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode="r")
@@ -289,15 +287,12 @@ def extract_and_filter(
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
                     if nbp_basic.is_3d:
                         if r != pre_seq_round:
-                            file_exists = os.path.isfile(nbp_file.tile[t][r][c])
-                            if config["file_type"] == ".zarr":
-                                file_exists = os.path.isdir(nbp_file.tile[t][r][c])
+                            file_path = nbp_file.tile[t][r][c]
+                            file_exists = tiles_io.tile_exists(file_path, config['file_type'])
                         else:
                             file_path = nbp_file.tile[t][r][c]
                             file_path = file_path[: file_path.index(config["file_type"])] + "_raw" + config["file_type"]
-                            file_exists = os.path.isfile(file_path)
-                            if config["file_type"] == ".zarr":
-                                file_exists = os.path.isdir(file_path)
+                            file_exists = tiles_io.tile_exists(file_path, config['file_type'])
                     pbar.set_postfix({"round": r, "tile": t, "channel": c, "exists": str(file_exists)})
                     if file_exists:
                         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:

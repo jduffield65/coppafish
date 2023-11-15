@@ -1,8 +1,9 @@
-2023/11/13 Alpha Update (v0.4.0):
+2023/11/15 Alpha Update (v0.4.0):
  * Improved outlier removal for shift calculations in registration.
  * Further optimisations.
- * Potential memory issue fix in OMP.
- * Various bug fixes.
+ * Memory issue fix in OMP.
+ * The Viewer now has a button to show gene calling based on the gene probabilities, labelled as 'Prob'.
+ * Various bug, deprecation and warning fixes.
 
 
 2023/10/28 Alpha Update (v0.3.0):

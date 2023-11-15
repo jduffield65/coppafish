@@ -126,7 +126,7 @@ def test_bg_subtraction():
     robominnie.generate_gene_codes()
     robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000, 
-                         gene_efficiency=0.5 * (rng.rand(15, 8) + 1), 
+                         gene_efficiency=0.5 * (rng.rand(20, 8) + 1), 
                          background_offset=1e-7*rng.rand(15_000, 7), 
                          include_dapi=True, 
                          spot_size_pixels_dapi=np.asarray([9, 9, 9]),
@@ -155,5 +155,5 @@ def test_viewers():
 
 
 if __name__ == '__main__':
-    test_integration_001()
+    test_bg_subtraction()
     test_viewers()
