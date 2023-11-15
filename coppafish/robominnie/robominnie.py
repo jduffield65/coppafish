@@ -1161,11 +1161,15 @@ class RoboMinnie:
         View all images in `napari` for tile index `t`, including a presequence, anchor and DAPI images, if they exist.
 
         Args:
-            tiles (`list` of `int`, optional): Tile indices. Default: View the giant image, containing all tiles within.
+            tiles (`list` of `int`, optional): tile indices. If an empty list, will display all tiles, including the 
+                additional padding pixels. Default: shows all tiles without the padding.
         """
+        if tiles is None:
+            tiles = list(np.arange(self.n_tiles))
+        
         print(f'Viewing images')
         viewer = napari.Viewer(title=f'RoboMinnie')
-        if tiles is None:
+        if tiles is not None and len(tiles) == 0:
             for c in range(self.n_channels):
                 for r in range(self.n_rounds):
                     # z index must be the first axis for napari to view
@@ -1203,30 +1207,22 @@ class RoboMinnie:
                         name=f'dapi, r={r}',
                         visible=False,
                     )
-        if tiles is not None:
-            #TODO: Complete this to add all tile images, including the presequence and sequence images
-            # image_tiles, tile_origins_yx, tile_yxz_pos = self._unstich_image(
-            #     self.image, 
-            #     np.asarray([*self.n_tile_yx, self.n_planes]), 
-            #     self.tile_overlap,
-            #     self.n_tiles_y,
-            #     self.n_tiles_x,
-            #     update_global_spots=False,
-            # )
-            if self.include_anchor:
-                anchor_image_tiles = self._unstich_image(
-                    self.anchor_image[None], 
-                    np.asarray([*self.n_tile_yx, self.n_planes]), 
-                    self.tile_overlap,
-                    self.n_tiles_y,
-                    self.n_tiles_x,
-                )[0][0]
-                for t in range(self.n_tiles):
-                    viewer.add_image(
-                        anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
-                        name=f'anchor, t={t}, c={self.anchor_channel}', 
-                        visible=False,
-                    )
+        
+        #TODO: Complete this to add all tile images, including the presequence and sequence images
+        if self.include_anchor:
+            anchor_image_tiles = self._unstich_image(
+                self.anchor_image[None], 
+                np.asarray([*self.n_tile_yx, self.n_planes]), 
+                self.tile_overlap,
+                self.n_tiles_y,
+                self.n_tiles_x,
+            )[0][0]
+            for t in tiles:
+                viewer.add_image(
+                    anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
+                    name=f'anchor, t={t}, c={self.anchor_channel}', 
+                    visible=False,
+                )
         napari.run()
 
 
