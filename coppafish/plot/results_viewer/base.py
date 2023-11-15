@@ -312,12 +312,12 @@ class Viewer:
 
         if self.nb.has_page('omp'):
             self.method_buttons = ButtonMethodWindow('OMP')  # Buttons to change between Anchor and OMP spots showing.
+            self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
         else:
             self.method_buttons = ButtonMethodWindow('Anchor', has_omp=False)
         # What does the below do?
         # This part of the code makes each button call a different function
         self.method_buttons.button_anchor.clicked.connect(self.button_anchor_clicked)
-        self.method_buttons.button_omp.clicked.connect(self.button_omp_clicked)
         self.method_buttons.button_prob.clicked.connect(self.button_prob_clicked)
         self.viewer.window.add_dock_widget(self.method_buttons, area="left", name='Method')
         if self.nb.has_page('omp'):
