@@ -278,28 +278,29 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
         return npy_index
 
 
-def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
+def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
                   tile_origin: np.ndarray, r: int, c: int, from_raw: bool = False, zero_thresh: int = 0, 
                   num_rotations: int = 1) -> None:
     """
-    Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
-    Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
-    Otherwise, if from filtered npy files, will remove shift and re-scale to fill int16 range.
+    Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`. Saved 
+    image will be uint16 if from nd2 or from DAPI filtered npy files. Otherwise, if from filtered npy files, will 
+    remove shift and re-scale to fill int16 range.
 
     Args:
-        im_file: path to save file.
-            If `None`, stitched `image` is returned (with z axis last) instead of saved.
-        nbp_file: `file_names` notebook page.
-        nbp_basic: `basic_info` notebook page.
-        nbp_extract: `extract` notebook page.
-        tile_origin: `float [n_tiles x 3]`.
-            yxz origin of each tile on round `r`.
-        r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
-        c: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
-        from_raw: if `False`, will stitch together tiles from saved npy files,
-            otherwise will load in raw un-filtered images from nd2/npy file.
-        zero_thresh: all pixels with absolute value less than or equal to `zero_thresh` will be set to 0.
-            The larger it is, the smaller the compressed file will be.
+        im_file (str or none): path to save file. If `None`, stitched `image` is returned (with z axis last) instead of 
+            saved.
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        nbp_extract (NotebookPage): `extract` notebook page.
+        tile_origin (`[n_tiles x 3] ndarray[float]`): yxz origin of each tile on round `r`.
+        r (int): save_stitched will save stitched image of all tiles of round `r`, channel `c`.
+        c (int): save_stitched will save stitched image of all tiles of round `r`, channel `c`.
+        from_raw (bool, optional): if `False`, will stitch together tiles from saved npy files, otherwise will load in 
+            raw un-filtered images from nd2/npy file. Default: false.
+        zero_thresh (int, optional): all pixels with absolute value less than or equal to `zero_thresh` will be set to 
+            0. The larger it is, the smaller the compressed file will be. Default: 0.
+        num_rotations (int, optional): the number of rotations to apply to each tile individually. Default: `1`, the 
+            same as the notebook default.
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
