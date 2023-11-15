@@ -278,9 +278,9 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
         return npy_index
 
 
-def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
-                  tile_origin: np.ndarray, r: int, c: int, from_raw: bool = False, zero_thresh: int = 0, 
-                  num_rotations: int = 1) -> None:
+def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: NotebookPage, 
+                  nbp_extract: NotebookPage, tile_origin: np.ndarray, r: int, c: int, from_raw: bool = False, 
+                  zero_thresh: int = 0, num_rotations: int = 1) -> None:
     """
     Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`. Saved 
     image will be uint16 if from nd2 or from DAPI filtered npy files. Otherwise, if from filtered npy files, will 
