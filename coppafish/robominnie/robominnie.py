@@ -488,8 +488,8 @@ class RoboMinnie:
         if gene_efficiency is None:
             gene_efficiency = np.ones((len(self.codes), self.n_rounds + self.include_anchor))
         assert gene_efficiency.shape == (len(self.codes), self.n_rounds + self.include_anchor), \
-            f'Gene efficiency must have shape `n_genes x n_rounds`==\
-                {(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
+            f'Gene efficiency must have shape `n_genes x n_rounds`=='\
+                + f'{(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
         if background_offset is None:
             background_offset = np.zeros((n_spots, self.n_channels))
         assert background_offset.shape == (n_spots, self.n_channels), \
