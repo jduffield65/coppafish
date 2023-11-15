@@ -1,4 +1,8 @@
 import os
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 
 from .tile_details import get_tile_file_names
 
@@ -70,7 +74,8 @@ def set_file_names(nb, nbp):
 
     if config['dye_camera_laser'] is None:
         # Default information is project
-        config['dye_camera_laser'] = os.path.join(os.path.dirname(__file__), 'dye_camera_laser_raw_intensity.csv')
+        config['dye_camera_laser'] \
+            = str(importlib_resources.files('coppafish.setup').joinpath('dye_camera_laser_raw_intensity.csv'))
     nbp.dye_camera_laser = config['dye_camera_laser']
 
     if config['code_book'] is not None:
