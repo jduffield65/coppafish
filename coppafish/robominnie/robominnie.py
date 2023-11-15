@@ -899,6 +899,7 @@ class RoboMinnie:
         r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
+        num_rotations = 0 #? Should probably be 0 for robominnie multi-tile setup? Unsure tho
 
         [stitch]
         expected_overlap = {self.tile_overlap if self.n_tiles > 1 else 0}
