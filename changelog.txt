@@ -2,7 +2,7 @@
  * Improved outlier removal for shift calculations in registration.
  * Further optimisations.
  * Memory issue fix in OMP.
- * The Viewer now has a button to show gene calling based on the gene probabilities
+ * The Viewer now has a button to show gene calling based on the gene probabilities, labelled as 'Prob'.
  * Various bug, deprecation and warning fixes.
 
 
