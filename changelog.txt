@@ -1,4 +1,4 @@
-2023/11/15 Alpha Update (v0.4.0):
+2023/11/16 Alpha Update (v0.4.0):
  * Improved outlier removal for shift calculations in registration.
  * Further optimisations.
  * Memory issue fix in OMP.
