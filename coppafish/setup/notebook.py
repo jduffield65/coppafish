@@ -86,7 +86,7 @@ TYPES = [
      lambda x: int(x[()]),
      ),
     ("number",
-     lambda x: np.isreal(x) is True,  # is True guards against isreal returning an array
+     lambda x: isinstance(x, (float, np.float_)) and np.isreal(x) is True,
      lambda x: float(x[()]),
      ),
     ("list",
