@@ -235,22 +235,19 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         max_n_threads = int(psutil.virtual_memory().available // 4.2e8 - 10)
         n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
         current_trcs = []
-        processes = []
         queue = Queue()
         for i, trc in tqdm(enumerate(itertools.product(use_tiles, use_rounds, use_channels))):
             t, r, c = trc
             print(f"Computing background scale for tile {t}, round {r}, channel {c}")
             # We run brightness_scale in parallel to speed up the pipeline
             current_trcs.append([t, r, c])
-            processes.append(Process(target=register_base.compute_brightness_scale, 
-                                     args=(nbp, nbp_basic, nbp_file, nbp_extract, mid_z, z_rad, t, r, c, queue)))
+            new_process = Process(target=register_base.compute_brightness_scale, 
+                                  args=(nbp, nbp_basic, nbp_file, nbp_extract, mid_z, z_rad, t, r, c, queue))
+            new_process.start()
             if len(current_trcs) == n_threads or i == len(use_tiles) * len(use_rounds) * len(use_channels) - 1:
-                # Start subprocesses altogether
-                [p.start() for p in processes]
                 # Retrieve scale factors from the multiprocess queue
                 for current_trc in current_trcs:
                     bg_scale[current_trc[0], current_trc[1], current_trc[2]] = queue.get()[0]
-                processes = []
                 current_trcs = []
         nbp_extract.bg_scale = bg_scale
     nbp_extract.finalized = True
