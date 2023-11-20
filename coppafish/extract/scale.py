@@ -42,7 +42,7 @@ def get_scale_from_txt(txt_file: str, scale: Optional[float], scale_anchor: Opti
         if np.abs(scale_anchor_saved) < tol:
             pass  # 0 means scale_anchor not computed yet so do nothing
         elif scale_anchor is None:
-            warnings.warn("Using value of scale_anchor = {:.2f} saved in\n".format(scale_anchor_saved) + txt_file)
+            print("Using value of scale_anchor = {:.2f} saved in\n".format(scale_anchor_saved) + txt_file)
             scale_anchor = float(scale_anchor_saved)  # Set to saved value used up till now if not specified
         elif np.abs(scale_anchor - scale_anchor_saved) > tol:
             raise ValueError(f"\nAnchor round tiles saved so far were calculated with scale_anchor = "
