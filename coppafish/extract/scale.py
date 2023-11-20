@@ -33,7 +33,7 @@ def get_scale_from_txt(txt_file: str, scale: Optional[float], scale_anchor: Opti
         if np.abs(scale_saved) < tol:
             pass  # 0 means scale not used so do nothing
         elif scale is None:
-            warnings.warn("Using value of scale = {:.2f} saved in\n".format(scale_saved) + txt_file)
+            print("Using value of scale = {:.2f} saved in\n".format(scale_saved) + txt_file)
             scale = float(scale_saved)  # Set to saved value used up till now if not specified
         elif np.abs(scale - scale_saved) > tol:
             raise ValueError(f"\nImaging round (Not anchor) tiles saved so far were calculated with scale = "
