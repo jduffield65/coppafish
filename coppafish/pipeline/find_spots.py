@@ -73,8 +73,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nb
             image = tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False, 
                                         suffix='_raw' if r == nbp_basic.pre_seq_round else '')
             local_yxz, spot_intensity = fs.detect_spots(image,
-                                                       auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
-                                                       config['radius_xy'], config['radius_z'], True)
+                                                        auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
+                                                        config['radius_xy'], config['radius_z'], True)
             no_negative_neighbour = fs.check_neighbour_intensity(image, local_yxz,
                                                                  thresh=nbp_basic.tile_pixel_value_shift)
             local_yxz = local_yxz[no_negative_neighbour]

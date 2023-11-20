@@ -402,8 +402,8 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
                                                    np.arange(z_index, z_index + 1)), 
                     int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
                     bg_scale=nbp_extract.bg_scale)
-                
-        pixel_colors_t1 = pixel_colors_t1 / colour_norm_factor
+        
+        pixel_colors_t1 = pixel_colors_t1.astype(np.float32) / colour_norm_factor
         if pixel_colors_t1.shape[0] == 0:
             q.put(list(no_output))
             return
@@ -515,7 +515,7 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
     pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
     pixel_coefs_t = scipy.sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
 
-    n_threads = utils.threads.get_available_threads()
+    n_threads = utils.threads.get_available_cores()
 
     z_chunks = len(use_z) // z_chunk_size + 1
     processes = []

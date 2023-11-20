@@ -3,17 +3,16 @@ from tqdm import tqdm
 import numpy as np
 import scipy
 import os
+import jax
+import jax.numpy as jnp
+if jax.default_backend() == 'cpu':
+    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_threads()}'
 
 from . import coefs
 from .. import utils
 from .. import call_spots
 from ..setup import NotebookPage
 from ..call_spots import dot_product_optimised
-
-import jax
-import jax.numpy as jnp
-if jax.default_backend() == 'cpu':
-    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_threads()}'
 
 
 def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
@@ -583,7 +582,8 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
     Returns:
         - (`[n_pixels x 3] ndarray[int]`): `pixel_yxz_t` is the y, x and z pixel positions of the gene coefficients 
             found.
-        - (`[n_pixels x n_genes]`): `pixel_coefs_t` contains the gene coefficients for each pixel.
+        - (`[n_pixels x n_genes] scipy.sparse.csr_matrix`): `pixel_coefs_t` contains the gene coefficients for each 
+            pixel.
     """
     pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
     pixel_coefs_t = scipy.sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
@@ -611,7 +611,7 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
 
         pixel_coefs_tz = get_all_coefs(pixel_colors_tz, bled_codes, 0, dp_norm_shift, config['dp_thresh'], config['alpha'], 
                                     config['beta'], config['max_genes'], config['weight_coef_fit'])[0]
-        pixel_coefs_tz = np.asarray(pixel_coefs_tz)
+        pixel_coefs_tz = np.asarray(pixel_coefs_tz, dtype=np.float32)
         del pixel_colors_tz
         # Only keep pixels for which at least one gene has non-zero coefficient.
         keep = (np.abs(pixel_coefs_tz).max(axis=1) > 0).nonzero()[0]  # nonzero as is sparse matrix.

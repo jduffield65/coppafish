@@ -37,36 +37,3 @@ def dot_product_score(spot_colours: jnp.ndarray, bled_codes: jnp.ndarray, norm_s
     # Now we can obtain the dot product score for each spot and each gene
     all_scores = spot_colours @ bled_codes.T
     return all_scores
-
-
-def dot_product_score_no_weight_single(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray,
-                                       norm_shift: float) -> jnp.ndarray:
-    spot_colors = spot_colors / (jnp.linalg.norm(spot_colors) + norm_shift)
-    bled_codes = bled_codes / jnp.linalg.norm(bled_codes, axis=1, keepdims=True)
-    return spot_colors @ bled_codes.transpose()
-
-
-#?: We can probably eliminate this function entirely? It is not used anywhere in the actual coppafish code, it is unit 
-# tested though
-@partial(jax.jit, static_argnums=2)
-def dot_product_score_no_weight(spot_colors: jnp.ndarray, bled_codes: jnp.ndarray, norm_shift: float) -> jnp.ndarray:
-    """
-    Computes `sum((s * b))` where `s` is a `spot_color`, `b` is a `bled_code`.
-    Sum is over all rounds and channels.
-
-    Args:
-        spot_colors: `float [n_spots x (n_rounds x n_channels)]`.
-            Spot colors normalised to equalise intensities between channels (and rounds).
-        bled_codes: `float [n_genes x (n_rounds x n_channels)]`.
-            `bled_codes` such that `spot_color` of a gene `g`
-            in round `r` is expected to be a constant multiple of `bled_codes[g, r]`.
-        norm_shift: shift to apply to normalisation of spot_colors to limit boost of weak spots.
-
-    Returns:
-        `float [n_spots x n_genes]`.
-            `score` such that `score[d, c]` gives dot product between `spot_colors` vector `d`
-            with `bled_codes` vector `c`.
-    """
-    score = jax.vmap(dot_product_score_no_weight_single, in_axes=(0, None, None), out_axes=0)(spot_colors, bled_codes,
-                                                                                              norm_shift)
-    return score

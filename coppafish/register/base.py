@@ -1,5 +1,6 @@
 import nd2
 import scipy
+import warnings
 import numpy as np
 import skimage
 from tqdm import tqdm
@@ -191,8 +192,9 @@ def huber_regression(shift, position, predict_shift=True):
         z_coef = np.array([0, 0, 0])
         z_shift = np.mean(shift[:, 0])
         # raise a warning if we have less than 3 z-coords in position
-        print('Warning: Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of '
-              'mean(shift)')
+        warnings.warn(
+            'Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of mean(shift)'
+        )
     else:
         huber_z = HuberRegressor(epsilon=2, max_iter=400, tol=1e-4).fit(X=position, y=shift[:, 0])
         z_coef = huber_z.coef_
@@ -365,35 +367,41 @@ def channel_registration(fluorescent_bead_path: str = None, anchor_cam_idx: int 
 
 
 # Function to remove outlier shifts
-def regularise_shift(shift, tile_origin, residual_threshold):
+def regularise_shift(shift, tile_origin, residual_threshold) -> np.ndarray:
     """
     Function to remove outlier shifts from a collection of shifts whose start location can be determined by position.
     Uses robust linear regression to compute a prediction of what the shifts should look like and if any shift differs
     from this by more than some threshold it is declared to be an outlier.
     Args:
-        shift: Either [n_tiles_use x n_rounds_use x 3] or [n_tiles_use x n_channels_use x 3]
+        shift: [n_tiles_use x n_rounds_use x 3]
         tile_origin: yxz positions of the tiles [n_tiles_use x 3]
         residual_threshold: This is a threshold above which we will consider a point to be an outlier
 
     Returns:
-        shift_regularised: Either [n_tiles x n_rounds x 4 x 3] or [n_tiles x x_channels x 4 x 3]
+        shift_regularised: [n_tiles x n_rounds x 4 x 3]
     """
     # rearrange columns so that tile origins are in zyx like the shifts are, then initialise commonly used variables
-    rc_use = np.arange(shift.shape[1])
-    n_tiles_use = tile_origin.shape[0]
-    predicted_shift = np.zeros_like(shift)
+    tile_origin = np.roll(tile_origin, 1, axis=1)
+    tile_origin_padded = np.pad(tile_origin, ((0, 0), (0, 1)), mode='constant', constant_values=1)
+    n_tiles_use, n_rounds_use = shift.shape[0], shift.shape[1]
+    shift_regularised = np.zeros((n_tiles_use, n_rounds_use, 3))
+    shift_norm = np.linalg.norm(shift, axis=2)
 
-    # Compute predicted shift for each round/channel from X = position for each tile and Y = shift for each tile
-    for elem in rc_use:
-        big_transform = ols_regression(shift[:, elem], tile_origin)
-        padded_origin = np.vstack((tile_origin.T, np.ones(n_tiles_use)))
-        predicted_shift[:, elem] = (big_transform @ padded_origin).T - tile_origin
-
-    # Use these predicted shifts to get rid of outliers
-    # The nice thing about this approach is that we can immediately replace the outliers with their prediction
-    residual = np.linalg.norm(predicted_shift-shift, axis=2)
-    shift_outlier = residual > residual_threshold
-    shift[shift_outlier] = predicted_shift[shift_outlier]
+    # Loop through rounds and perform a linear regression on the shifts for each round
+    for r in range(n_rounds_use):
+        lb, ub = np.percentile(shift_norm[:, r], [10, 90])
+        valid = (shift_norm[:, r] > lb) * (shift_norm[:, r] < ub)
+        if np.sum(valid) < 3:
+            continue
+        # Carry out regression
+        big_transform = ols_regression(shift[valid, r], tile_origin[valid])
+        shift_regularised[:, r] = tile_origin_padded @ big_transform.T - tile_origin
+        # Compute residuals
+        residuals = np.linalg.norm(shift[:, r] - shift_regularised[:, r], axis=1)
+        # Identify outliers
+        outliers = residuals > residual_threshold
+        # Replace outliers with predicted shifts
+        shift[outliers, r] = shift_regularised[outliers, r]
 
     return shift
 

@@ -55,7 +55,14 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
     z = np.arange(-im_size[2], im_size[2]+1)
     im_yxz = np.vstack([im_yxz + [0, 0, val] for val in z])
     im_diameter_yx = [2 * im_size[0] + 1, 2 * im_size[1] + 1]
-    spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info) / color_norm
+    spot_colors = get_spot_colors(
+        im_yxz, 
+        t, 
+        nb.register.transform, 
+        nb.file_names, 
+        nb.basic_info, 
+        nb.extract, 
+    ) / color_norm
 
     # Only look at pixels with high enough intensity - same as in full pipeline
     spot_intensity = get_spot_intensity(np.abs(spot_colors))

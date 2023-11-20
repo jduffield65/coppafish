@@ -18,8 +18,12 @@ from . import get_reference_spots
 from . import omp
 
 
-def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: bool = False, n_jobs: int = 8) \
-    -> setup.Notebook:
+def run_pipeline(
+    config_file: str, 
+    overwrite_ref_spots: bool = False, 
+    parallel: bool = False, 
+    n_jobs: int = 8, 
+    ) -> setup.Notebook:
     """
     Bridge function to run every step of the pipeline.
 
@@ -61,9 +65,10 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: 
     return nb
 
 
-def run_tile_indep_pipeline(nb: setup.Notebook):
+def run_tile_indep_pipeline(nb: setup.Notebook) -> None:
     """
     Run tile-independent pipeline processes.
+    
     Args:
         nb: `Notebook` containing 'basic_info' and 'file_names' pages.
     """
@@ -97,7 +102,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     return nb
 
 
-def run_extract(nb: setup.Notebook):
+def run_extract(nb: setup.Notebook) -> None:
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -118,7 +123,7 @@ def run_extract(nb: setup.Notebook):
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_find_spots(nb: setup.Notebook):
+def run_find_spots(nb: setup.Notebook) -> None:
     """
     This runs the `find_spots` step of the pipeline to produce point cloud from each tiff file in the tile directory.
 
@@ -139,7 +144,7 @@ def run_find_spots(nb: setup.Notebook):
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
 
 
-def run_stitch(nb: setup.Notebook):
+def run_stitch(nb: setup.Notebook) -> None:
     """
     This runs the `stitch` step of the pipeline to produce origin of each tile
     such that a global coordinate system can be built. Also saves stitched DAPI and reference channel images.
@@ -178,7 +183,7 @@ def run_stitch(nb: setup.Notebook):
                                      config['extract']['num_rotations'])
 
 
-def run_register(nb: setup.Notebook):
+def run_register(nb: setup.Notebook) -> None:
     """
     This runs the `register_initial` step of the pipeline to find shift between ref round/channel to each imaging round
     for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
@@ -220,7 +225,7 @@ def run_register(nb: setup.Notebook):
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
+def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False) -> None:
     """
     This runs the `reference_spots` step of the pipeline to get the intensity of each spot on the reference
     round/channel in each imaging round/channel. The `call_spots` step of the pipeline is then run to produce the
@@ -261,7 +266,7 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False):
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
 
 
-def run_omp(nb: setup.Notebook):
+def run_omp(nb: setup.Notebook) -> None:
     """
     This runs the orthogonal matching pursuit section of the pipeline as an alternate method to determine location of
     spots and their gene identity.

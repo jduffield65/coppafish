@@ -1,6 +1,17 @@
+import inspect
 import numpy as np
 import numpy.typing as npt
 from typing import Union, List
+
+
+def get_function_name() -> str:
+    """
+    Get the name of the function that called this function.
+
+    Returns:
+        str: function name.
+    """
+    return str(inspect.stack()[1][3])
 
 
 def round_any(x: Union[float, npt.NDArray], base: float, round_type: str = 'round') -> Union[float, npt.NDArray]:

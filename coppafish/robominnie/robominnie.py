@@ -10,15 +10,16 @@
 # put it on both tiles.
 #
 # Originally created by Max Shinn, August 2023
-# Refactored and expanded by Paul Shuker, September 2023
+# Refactored and expanded by Paul Shuker, September 2023 - present
 import os
+import csv
+import random
 import numpy as np
 import scipy.stats
 import pandas
 import dask.array
 import warnings
 import json
-import inspect
 import time
 import pickle
 from tqdm import tqdm, trange
@@ -30,6 +31,7 @@ from typing import Dict, List, Any, Tuple
 import numpy.typing as npt
 from numpy.random import Generator
 
+from coppafish import utils
 from coppafish.pipeline import run
 
 
@@ -38,115 +40,6 @@ DEFAULT_INSTANCE_FILENAME = 'robominnie.pkl'
 USE_INSTANCE_GENE_CODES = None
 # Y, X, Z giant image padding. Useful for extra space when rotating/translating tiles when "un-stitching"
 IMAGE_PADDING = [200, 200, 0]
-
-
-def _funcname():
-    return str(inspect.stack()[1][3])
-
-
-def _compare_spots(spot_positions_yxz: npt.NDArray[np.float64], spot_gene_indices: npt.NDArray[np.int_], \
-                   true_spot_positions_yxz: npt.NDArray[np.float64], \
-                   true_spot_gene_identities: npt.NDArray[np.str_], location_threshold_squared: float, \
-                   codes: Dict[str,str], description: str) -> Tuple[int,int,int,int]:
-    """
-    Compare two collections of spots (one is the ground truth) based on their positions and gene identities.
-
-    Args:
-        spot_positions_yxz (`(n_spots x 3) ndarray`): The calculated spot positions.
-        spot_gene_indices (`(n_spots) ndarray`): The indices for the gene identities assigned to each spot. The genes \
-            are assumed to be in the order that they are found in the genes parameter.
-        true_spot_positions_yxz (`(n_true_spots x 3) ndarray`): The ground truth spot positions.
-        true_spot_gene_identities (`(n_true_spots) ndarray`): Array of every ground truth gene name, given as a `str`.
-        location_threshold_squared (`float`): The square of the maximum distance two spots can be apart to be paired.
-        codes (`dict` of `str: str`): Each code name as a key is mapped to a unique code, both stored as `str`.
-        description (`str`, optional): Description of progress bar for printing. Default: empty.
-
-    Returns:
-        `tuple` (true_positives: int, wrong_positives: int, false_positives: int, false_negatives: int): The \
-            number of spots assigned to true positive, wrong positive, false positive and false negative respectively, \
-            where a wrong positive is a spot assigned to the wrong gene, but found in the location of a true spot.
-    
-    Notes:
-        See ``RoboMinnie.compare_ref_spots`` or ``RoboMinnie.compare_omp_spots`` for more details.
-    """
-    true_positives  = 0
-    wrong_positives = 0
-    false_positives = 0
-    false_negatives = 0
-
-    spot_count = spot_positions_yxz.shape[0]
-    true_spot_count = true_spot_positions_yxz.shape[0]
-    # Stores the indices of every true spot index that has been paired to a spot already
-    true_spots_paired = np.empty(0, dtype=int)
-    for s in trange(spot_count, ascii=True, desc=description, unit='spots'):
-        x = spot_positions_yxz[s,1]
-        y = spot_positions_yxz[s,0]
-        z = spot_positions_yxz[s,2]
-        position_s = np.repeat([[y, x, z]], true_spot_count, axis=0)
-        # Subtract the spot position along all true spots
-        position_delta = np.subtract(true_spot_positions_yxz, position_s)
-        position_delta_squared = \
-            position_delta[:,0] * position_delta[:,0] + \
-            position_delta[:,1] * position_delta[:,1] + \
-            position_delta[:,2] * position_delta[:,2]
-        
-        # Find true spots close enough and closest to the spot, stored as a boolean array
-        matches = np.logical_and(position_delta_squared <= location_threshold_squared, \
-            position_delta_squared == np.min(position_delta_squared))
-        
-        # True spot indices
-        matches_indices = np.where(matches)
-        delete_indices = []
-        if np.sum(matches) > 0:
-            # Ignore true spots close enough to the spot if already paired to a previous spot
-            for i in range(len(matches_indices)):
-                if matches_indices[i] in true_spots_paired:
-                    delete_indices.append(i)
-                    matches[matches_indices[i]] = False
-        delete_indices = np.array(delete_indices, dtype=int)
-        if delete_indices.size > 0:
-            matches_indices = np.delete(matches_indices, delete_indices)
-        matches_count = np.sum(matches)
-
-        if matches_count == 0:
-            # This spot is considered a false positive because there are no true spots close enough to it that 
-            # have not already been paired
-            false_positives += 1
-            continue
-        if matches_count == 1:
-            # Found a single true spot matching the spot, see if they are the same gene (true positive)
-
-            # Get the spot gene name from the gene number. For some reason coppafish adds a new gene called 
-            # Bcl11b, hence the -1
-            spot_gene_name = \
-                str(list(codes.keys())[spot_gene_indices[s]])
-            # Actual true spot gene name as a string
-            true_gene_name = str(true_spot_gene_identities[matches][0])
-            matching_gene = spot_gene_name == true_gene_name
-            true_positives  += matching_gene
-            wrong_positives += not matching_gene
-            true_spots_paired = np.append(true_spots_paired, matches_indices[0])
-            continue
-        
-        # Logic for dealing with multiple, equidistant true spots near the spot
-        for match_index in matches_indices:
-            spot_gene_name = \
-                str(list(codes.keys())[spot_gene_indices[s]])
-            # Actual true spot gene names as strings
-            true_gene_name = str(true_spot_gene_identities[matches[match_index][0]])
-            matching_gene = spot_gene_name == true_gene_name
-            if matching_gene:
-                true_positives += 1
-                true_spots_paired = np.append(true_spots_paired, match_index)
-                continue
-        # If reaching here, all close true spots are not the spot gene
-        # Assign the first true spot in the array as the pair and label it a wrong_positive
-        true_spots_paired = np.append(true_spots_paired, matches_indices[0])
-        wrong_positives += 1
-        continue
-    # False negatives are any true spots that have not been paired to a spot
-    false_negatives = true_spot_count - true_spots_paired.size
-    return (true_positives, wrong_positives, false_positives, false_negatives)
 
 
 class RoboMinnie:
@@ -180,30 +73,30 @@ class RoboMinnie:
         pipeline.
 
         Args:
-            n_channels (int, optional): Number of sequencing channels. Default: `7`.
-            n_tiles_x (int, optional): Number of tiles along the x axis. Default: `1`.
-            n_tiles_y (int, optional): Number of tiles along the y axis. Default: `1`.
-            n_rounds (int, optional): Number of sequencing rounds. Default: `7`.
-            n_planes (int, optional): Number of z planes. Default: `4`.
-            n_tile_yx (`tuple[int, int]`, optional): Number of pixels in each tile in the y and x directions 
+            n_channels (int, optional): number of sequencing channels. Default: `7`.
+            n_tiles_x (int, optional): number of tiles along the x axis. Default: `1`.
+            n_tiles_y (int, optional): number of tiles along the y axis. Default: `1`.
+            n_rounds (int, optional): number of sequencing rounds. Default: `7`.
+            n_planes (int, optional): number of z planes. Default: `4`.
+            n_tile_yx (`tuple[int, int]`, optional): number of pixels in each tile in the y and x directions 
                 respectively. Default: `(2048, 2048)`.
-            include_anchor (bool, optional): Whether to include the anchor round. Default: true.
-            include_presequence (bool, optional): Whether to include the pre-sequence round. Default: true.
-            include_dapi (bool, optional): Whether to include a DAPI image. The DAPI image will be saved in all rounds 
+            include_anchor (bool, optional): whether to include the anchor round. Default: true.
+            include_presequence (bool, optional): whether to include the pre-sequence round. Default: true.
+            include_dapi (bool, optional): whether to include a DAPI image. The DAPI image will be saved in all rounds 
                 (sequence, presequence, anchor rounds) if they are set to be included. Uses a single channel, stains 
                 the cell nuclei so they light up to find cell locations. The DAPI channel is set to `0`, before the 
                 sequencing channels. Default: true.
-            anchor_channel (int, optional): The anchor channel, cannot be the same as the dapi channel (0). Default: 
+            anchor_channel (int, optional): the anchor channel, cannot be the same as the dapi channel (0). Default: 
                 `1`.
-            tile_overlap (float, optional): Amount of tile overlap, as a fraction of tile length. Default: `0.15`.
-            image_minimum (float, optional): Minimum pixel value possible. Images will be shifted to be at least 
+            tile_overlap (float, optional): amount of tile overlap, as a fraction of tile length. Default: `0.15`.
+            image_minimum (float, optional): minimum pixel value possible. Images will be shifted to be at least 
                 `image_minimum` before saving the raw image files. Default: `0`.
-            image_dtype (any, optional): Datatype of images. Default: float.
-            brightness_scale_factor (`(n_tiles x (n_rounds + 2) x n_channels) ndarray[float]`): A brightness scale 
+            image_dtype (any, optional): datatype of images. Default: float.
+            brightness_scale_factor (`(n_tiles x (n_rounds + 2) x n_channels) ndarray[float]`): a brightness scale 
                 factor, applied to each image before saving as raw `.npy` images for a coppafish run. Round 0 is the 
                 preseq, rounds (1 to self.n_rounds) is sequence, self.n_rounds + 1 is anchor round. Default: All ones.
-            seed (int, optional): Seed used throughout the generation of random data, specify integer value for 
-                reproducible output. If None, seed is randomly picked. Default: `0`.
+            seed (int, optional): seed used throughout the generation of random data, specify integer value for 
+                reproducible output. if none, seed is randomly picked. Default: `0`.
         
         Notes:
             - RAM usage will scale with tile count.
@@ -251,7 +144,7 @@ class RoboMinnie:
             IMAGE_PADDING[2] + self.n_planes,
         )
         self.instructions = [] # Keep track of the functions called inside RoboMinnie, in order
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         assert self.n_channels > 0, 'Require at least one channel'
         assert self.n_rounds > 0, 'Require at least one round'
         assert self.n_planes > 0, 'Require at least one z plane'
@@ -307,7 +200,7 @@ class RoboMinnie:
             warnings.warn('Coppafish may break with fewer than four z planes')
 
 
-    def generate_gene_codes(self, n_genes: int = 15, n_rounds: int = None) -> Dict:
+    def generate_gene_codes(self, n_genes: int = 20, n_rounds: int = None) -> Dict:
         """
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible based 
         on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The `i`th gene name 
@@ -315,17 +208,16 @@ class RoboMinnie:
         also the number of unique dyes, each dye is labelled between (0, n_rounds].
 
         Args:
-            n_genes (int, optional): Number of unique gene codes to generate. Default: 73
-            n_rounds (int, optional): Number of sequencing rounds. Default: Use round number saved in `self` \
-                RoboMinnie instance.
+            n_genes (int, optional): number of unique gene codes to generate. Default: 20.
+            n_rounds (int, optional): number of sequencing rounds. Default: Use round number saved in `self`.
 
         Returns:
-            Dict (str: str): Gene names as keys, gene codes as values.
+            Dict (str: str): gene names as keys, gene codes as values.
 
         Notes:
             See [here](https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction) for more details.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         if n_rounds == None:
             n_rounds = self.n_rounds
         assert n_rounds > 1, 'Require at least two rounds'
@@ -397,7 +289,7 @@ class RoboMinnie:
             include_dapi (bool, optional): Include DAPI image. Default: true.
         """
         #TODO: Add the ability to square the pink noise, gives sharper peaks which is meant to be more realistic
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print(f'Generating pink noise')
 
         # True spatial scale should be maintained regardless of the image size, so we scale it as such.
@@ -444,7 +336,7 @@ class RoboMinnie:
             include_presequence (bool, optional): Whether to apply random noise to presequence rounds. Default: true.
             include_dapi (bool, optional): Whether to apply random noise to DAPI image. Default: true.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print('Generating random noise')
 
         assert noise_std > 0, f'Noise standard deviation must be > 0, got {noise_std}'
@@ -545,7 +437,7 @@ class RoboMinnie:
             background_offset (`(n_spots x n_channels) ndarray[float]`): After `gene_efficiency` is applied, a 
                 background offset[s,c] is added to spot `s` in channel `c`. Default: Zero offset.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         
         def _blit(source, target, loc):
             """
@@ -596,8 +488,8 @@ class RoboMinnie:
         if gene_efficiency is None:
             gene_efficiency = np.ones((len(self.codes), self.n_rounds + self.include_anchor))
         assert gene_efficiency.shape == (len(self.codes), self.n_rounds + self.include_anchor), \
-            f'Gene efficiency must have shape `n_genes x n_rounds`==\
-                {(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
+            f'Gene efficiency must have shape `n_genes x n_rounds`=='\
+                + f'{(len(self.codes), self.n_rounds + self.include_anchor)}, got {gene_efficiency.shape}'
         if background_offset is None:
             background_offset = np.zeros((n_spots, self.n_channels))
         assert background_offset.shape == (n_spots, self.n_channels), \
@@ -690,7 +582,7 @@ class RoboMinnie:
         Args:
             minimum (float, optional): Minimum pixel value allowed. Default: `0`.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print(f'Fixing image minima')
 
         minval = self.image[:,(self.dapi_channel + 1):].min()
@@ -721,7 +613,7 @@ class RoboMinnie:
             include_presequence (bool, optional): Include preseq images in the shift, if exists. Default: true.
             include_dapi (bool, optional): Offset DAPI image, if exists. Default: true.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print(f'Shifting image by {constant}')
 
         np.add(self.image, constant, out=self.image)
@@ -735,7 +627,7 @@ class RoboMinnie:
             np.add(self.anchor_image[:,self.dapi_channel], constant, out=self.anchor_image[:,self.dapi_channel])
 
 
-    def save_raw_images(self, output_dir: str, overwrite: bool = False, omp_iterations: int = 1, 
+    def save_raw_images(self, output_dir: str, overwrite: bool = True, omp_iterations: int = 1, 
                         omp_initial_intensity_thresh_percentile: int = 90, register_with_dapi: bool = True) -> None:
         """
         Save known spot positions and codes, raw .npy image files, metadata.json file, gene codebook and ``config.ini`` 
@@ -744,8 +636,8 @@ class RoboMinnie:
         
         Args:
             output_dir (str): Save directory
-            overwrite (bool, optional): If True, overwrite any saved coppafish data inside the directory, delete old 
-                notebook.npz file if there is one and ignore any other files inside the directory.
+            overwrite (bool, optional): Overwrite any saved coppafish data inside the directory, delete old 
+                `notebook.npz` file if there is one and ignore any other files inside the directory. Default: true. 
             omp_iterations (int, optional): Number of OMP iterations on every pixel. Increasing this may improve gene 
                 scoring. Default: `1`.
             omp_initial_intensity_thresh_percentile (float, optional): percentile of the absolute intensity of all 
@@ -755,7 +647,7 @@ class RoboMinnie:
         """
         self.fix_image_minimum(self.image_minimum)
 
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print(f'Saving raw data')
 
         self.image_tiles, self.tile_origins_yx, self.tile_yxz_pos = self._unstich_image(
@@ -932,11 +824,32 @@ class RoboMinnie:
             dask.array.to_npy_stack(presequence_save_path, image_dask)
             del image_dask
 
-        # Save the gene codebook in `coppafish_output`
+        # Save the gene codebook in `output_dir`
         self.codebook_filepath = os.path.join(output_dir, 'codebook.txt')
         with open(self.codebook_filepath, 'w') as f:
-            for genename, code in self.codes.items():
-                f.write(f'{genename} {code}\n')
+            for gene_name, code in self.codes.items():
+                f.write(f'{gene_name} {code}\n')
+        
+        # Save the gene colours, used for the coppafish `Viewer`, in `output_dir`
+        self.gene_colours_filepath = os.path.join(output_dir, 'gene_colours.csv')
+        rng = np.random.RandomState(self.seed)
+        with open(self.gene_colours_filepath, 'w') as f:
+            csvwriter = csv.writer(f, delimiter=',')
+            napari_symbols = ['cross', 'disc', 'square', 'triangle_up', 'hbar', 'vbar']
+            mpl_symbols = ['+', '.', 's', '^', '_', '|']
+            # Heading
+            csvwriter.writerow(['', 'GeneNames', 'ColorR', 'ColorG', 'ColorB', 'napari_symbol', 'mpl_symbol'])
+            for i, gene_name in enumerate(self.codes):
+                random_index = rng.randint(len(napari_symbols))
+                csvwriter.writerow([
+                    f'{i}', 
+                    f'{gene_name}', 
+                    round(rng.rand(), 2), 
+                    round(rng.rand(), 2), 
+                    round(rng.rand(), 2), 
+                    napari_symbols[random_index], 
+                    mpl_symbols[random_index],  
+                ])
 
         # Save the initial bleed matrix for the config file
         self.initial_bleed_matrix_filepath = os.path.join(output_dir, 'bleed_matrix.npy')
@@ -986,9 +899,12 @@ class RoboMinnie:
         r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
+        ;#? Should probably be 0 for robominnie multi-tile setup? Unsure tho
+        num_rotations = 0
 
         [stitch]
         expected_overlap = {self.tile_overlap if self.n_tiles > 1 else 0}
+        shift_max_range = 6000, 6000, 100
 
         [register]
         subvols = {1}, {8}, {8}
@@ -1034,7 +950,7 @@ class RoboMinnie:
                 ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage. 
                 Default: true.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print(f'Running coppafish')
         if jax_profile or jax_profile_omp:
             assert jax_profile != jax_profile_omp, 'Cannot run two jax profilers at once'
@@ -1115,8 +1031,8 @@ class RoboMinnie:
             warnings.warn('Copppafish OMP found zero spots')
 
 
-    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0.0, 
-                          intensity_threshold: float = 0.0, location_threshold: float = 2) -> Tuple[int,int,int,int]:
+    def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0, intensity_threshold: float = 0, 
+                      location_threshold: float = 2) -> Tuple[int,int,int,int]:
         """
         Compare spot positions and gene codes from coppafish results to the known spot locations. If the spots are 
         close enough and the true spot has not been already assigned to a reference spot, then they are considered the 
@@ -1129,8 +1045,8 @@ class RoboMinnie:
         Args:
             spot_types (str, optional): Coppafish spot type to compare to. Either `'ref'` or `'omp'`.
             score_threshold (float, optional): Spot score threshold, any spots below this intensity are ignored. Only 
-                relevant to reference spots. Default: `0.99`.
-            intensity_threshold (float, optional): Reference spot intensity threshold. Default: `0.7`.
+                relevant to reference spots. Default: `0`.
+            intensity_threshold (float, optional): Reference spot intensity threshold. Default: `0`.
             location_threshold (float, optional): Maximum distance, in pixels, two spots can be apart to be considered 
                 the same spot. Default: `4`.
 
@@ -1143,7 +1059,7 @@ class RoboMinnie:
         assert 'run_coppafish' in self.instructions, \
             '`run_coppafish` must be called before comparing reference spots to ground truth spots'
 
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print(f'Comparing reference spots to known spots')
 
         assert score_threshold >= 0 and score_threshold <= 1, \
@@ -1187,7 +1103,7 @@ class RoboMinnie:
             coppafish_spots_gene_indices_t = coppafish_spots_gene_indices[indices]
             coppafish_spot_positions_yxz_t = coppafish_spot_positions_yxz[indices]
 
-            TPs, WPs, FPs, FNs = _compare_spots(
+            TPs, WPs, FPs, FNs = utils.errors.compare_spots(
                 coppafish_spot_positions_yxz_t,
                 coppafish_spots_gene_indices_t,
                 self.true_spot_positions_pixels[self.true_spot_tile_numbers == t],
@@ -1248,11 +1164,15 @@ class RoboMinnie:
         View all images in `napari` for tile index `t`, including a presequence, anchor and DAPI images, if they exist.
 
         Args:
-            tiles (`list` of `int`, optional): Tile indices. Default: View the giant image, containing all tiles within.
+            tiles (`list` of `int`, optional): tile indices. If an empty list, will display all tiles, including the 
+                additional padding pixels. Default: shows all tiles without the padding.
         """
+        if tiles is None:
+            tiles = list(np.arange(self.n_tiles))
+        
         print(f'Viewing images')
         viewer = napari.Viewer(title=f'RoboMinnie')
-        if tiles is None:
+        if tiles is not None and len(tiles) == 0:
             for c in range(self.n_channels):
                 for r in range(self.n_rounds):
                     # z index must be the first axis for napari to view
@@ -1290,30 +1210,22 @@ class RoboMinnie:
                         name=f'dapi, r={r}',
                         visible=False,
                     )
-        if tiles is not None:
-            #TODO: Complete this to add all tile images, including the presequence and sequence images
-            # image_tiles, tile_origins_yx, tile_yxz_pos = self._unstich_image(
-            #     self.image, 
-            #     np.asarray([*self.n_tile_yx, self.n_planes]), 
-            #     self.tile_overlap,
-            #     self.n_tiles_y,
-            #     self.n_tiles_x,
-            #     update_global_spots=False,
-            # )
-            if self.include_anchor:
-                anchor_image_tiles = self._unstich_image(
-                    self.anchor_image[None], 
-                    np.asarray([*self.n_tile_yx, self.n_planes]), 
-                    self.tile_overlap,
-                    self.n_tiles_y,
-                    self.n_tiles_x,
-                )[0][0]
-                for t in range(self.n_tiles):
-                    viewer.add_image(
-                        anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
-                        name=f'anchor, t={t}, c={self.anchor_channel}', 
-                        visible=False,
-                    )
+        
+        #TODO: Complete this to add all tile images, including the presequence and sequence images
+        if self.include_anchor:
+            anchor_image_tiles = self._unstich_image(
+                self.anchor_image[None], 
+                np.asarray([*self.n_tile_yx, self.n_planes]), 
+                self.tile_overlap,
+                self.n_tiles_y,
+                self.n_tiles_x,
+            )[0][0]
+            for t in tiles:
+                viewer.add_image(
+                    anchor_image_tiles[t,self.anchor_channel].transpose([2,0,1]), 
+                    name=f'anchor, t={t}, c={self.anchor_channel}', 
+                    visible=False,
+                )
         napari.run()
 
 
@@ -1412,7 +1324,7 @@ class RoboMinnie:
             compress (bool, optional): Compress pickle binary file using bzip2 compression in the default python 
                 package `bz2`. Default: False.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print('Saving RoboMinnie instance')
         instance_output_dir = output_dir
         if filename == None:
@@ -1450,7 +1362,7 @@ class RoboMinnie:
         Returns:
             Loaded `RoboMinnie` class.
         """
-        self.instructions.append(_funcname())
+        self.instructions.append(utils.base.get_function_name())
         print('Loading RoboMinnie instance')
         instance_input_dir = input_dir
         if filename == None:

@@ -37,6 +37,10 @@ import os
 import time
 import json
 import warnings
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 from typing import Tuple, List, Optional
 
 from .config import get_config
@@ -82,7 +86,7 @@ TYPES = [
      lambda x: int(x[()]),
      ),
     ("number",
-     lambda x: np.isreal(x) is True,  # is True guards against isreal returning an array
+     lambda x: isinstance(x, (float, np.float_)) and np.isreal(x) is True,
      lambda x: float(x[()]),
      ),
     ("list",
@@ -277,7 +281,7 @@ class Notebook:
                 self._config = read_config  # update config to new one - only difference will be in file_names section
             self.add_no_save_pages()  # add file_names page with new config
         else:
-            warnings.warn("Notebook file not found, creating a new notebook.")
+            print("Notebook file not found, creating a new notebook.")
             if read_config is None:
                 warnings.warn("Have not passed a config_file so Notebook.get_config() won't work.")
             self._created_time = time.time()
@@ -645,7 +649,7 @@ class NotebookPage:
     _TIMEMETA = "___TIME"  # Filename suffix for timestamp information
     _TYPEMETA = "___TYPE"  # Filename suffix for type information
     _NON_RESULT_KEYS = ['name', 'finalized']
-    _comments_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'notebook_comments.json')
+    _comments_file = importlib_resources.files('coppafish.setup').joinpath('notebook_comments.json')
 
     def __init__(self, name, input_dict=None):
         # Would like to store the git commit id in each notebook page to keep track of versions

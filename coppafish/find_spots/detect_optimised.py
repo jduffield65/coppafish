@@ -75,7 +75,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
     consider_intensity = image[consider_yxz]
     consider_yxz = list(consider_yxz)
 
-    paddings = jnp.asarray([[pad_size_y, pad_size_y], [pad_size_x, pad_size_x], [pad_size_z, pad_size_z]])[:image.ndim]
+    paddings = jnp.asarray([(pad_size_y, pad_size_y), (pad_size_x, pad_size_x), (pad_size_z, pad_size_z)])[:image.ndim]
     keep = np.asarray(get_local_maxima_jax(image, jnp.asarray(se_shifts), paddings, jnp.asarray(consider_yxz), 
                                                jnp.asarray(consider_intensity)))
     if remove_duplicates:
@@ -96,8 +96,8 @@ def get_local_maxima_jax(image: jnp.ndarray, se_shifts: Tuple[jnp.ndarray, jnp.n
         image (`[n_y x n_x x n_z] ndarray[float]`): `image` to find spots on.
         se_shifts (`[image.ndim x n_consider]` ndarray[int]): y, x, z shifts which indicate neighbourhood about each 
             spot where local maxima search carried out.
-        pad_sizes ([image.ndim] ndarray[int]): `pad_sizes[i,0]` represents the top padding amount on the image for 
-            dimension `i`, `pad_sizes[i,1]` represents the bottom padding amount. `i=0,1,2` represent y, x and z.
+        pad_sizes ([image.ndim] ndarray[list of int]): `pad_sizes[i,0]` represents the top padding amount on the image 
+            for dimension `i`, `pad_sizes[i,1]` represents the bottom padding amount. `i=0,1,2` represent y, x and z.
         consider_yxz (`[3 x n_consider] ndarray[int]`): all yxz coordinates where value in image is greater than an 
             intensity threshold.
         consider_intensity (`[n_consider] ndarray[float]`): value of image at coordinates given by `consider_yxz`.

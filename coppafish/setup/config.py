@@ -23,6 +23,10 @@
 import configparser
 import os
 import re
+try:
+    import importlib_resources
+except ModuleNotFoundError:
+    import importlib.resources as importlib_resources
 
 # List of options and their type.  If you change this, update the
 # config.default.ini file too.  Make sure the type is valid.
@@ -296,7 +300,7 @@ def get_config(ini_file):
     # add the section (named "config") manually.
     _parser = configparser.ConfigParser()
     _parser.optionxform = str  # Make names case-sensitive
-    ini_file_default = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'settings.default.ini')
+    ini_file_default = str(importlib_resources.files('coppafish.setup').joinpath('settings.default.ini'))
     with open(ini_file_default, 'r') as f:
         _parser.read_string(f.read())
     # Try to autodetect whether the user has passed a config file or the full

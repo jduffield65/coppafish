@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import zarr
 import numpy.typing as npt
@@ -15,6 +16,29 @@ from ..setup import NotebookPage
 from .. import utils, extract
 
 
+def tile_exists(file_path: str, file_type: str) -> bool:
+    """
+    Checks if a tile exists at the given path locations.
+
+    Args:
+        file_path (str): tile path.
+        file_type (str): file type.
+
+    Returns:
+        bool: tile existence.
+
+    Raises:
+        ValueError: unsupported file type.
+    """
+    if file_type.lower() == '.npy':
+        return os.path.isfile(file_path)
+    elif file_type.lower() == '.zarr':
+        # Require a non-empty zarr directory
+        return os.path.isdir(file_path) and len(os.listdir(file_path)) > 0
+    else:
+        raise ValueError(f'Unsupported file_type: {file_type.lower()}')
+
+
 def save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: str, file_type: str) -> None:
     """
     Save image in `file_path` location.
@@ -25,7 +49,7 @@ def save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: str
         file_type (str): file type.
 
     Raises:
-        ValueError: Unsupported file type.
+        ValueError: unsupported file type.
     """
     if file_type.lower() == '.npy':
         np.save(file_path, image)
@@ -48,12 +72,12 @@ def load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[n
     Args:
         file_path (str): image location.
         file_type (str): file type. Either `'.npy'` or `'.zarr'`.
-        mmap_mode (str, optional): The mmap_mode for numpy loading only. Default: no mapping.
+        mmap_mode (str, optional): the mmap_mode for numpy loading only. Default: no mapping.
 
     Returns `ndarray[uint16]` or `zarr.Array[uint16]`: loaded image.
 
     Raises:
-        ValueError: Unsupported file type.
+        ValueError: unsupported file type.
     """
     if file_type.lower() == '.npy':
         return np.load(file_path, mmap_mode=mmap_mode)
@@ -74,12 +98,12 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, i
     Args:
         nbp_file (NotebookPage): `file_names` notebook page.
         nbp_basic (NotebookPage): `basic_info` notebook page.
-        file_type (str): The saving file type. Can be `'.npy'` or `'.zarr'`.
+        file_type (str): the saving file type. Can be `'.npy'` or `'.zarr'`.
         image (`[ny x nx x nz] ndarray[int32]` or `[n_channels x ny x nx] ndarray[int32]`): image to save.
         t (int): npy tile index considering.
         r (int): round considering.
         c (int, optional): channel considering. Default: not given, raises error when `nbp_basic.is_3d == True`.
-        num_rotations (int, optional): Number of `90` degree clockwise rotations to apply to image before saving. 
+        num_rotations (int, optional): number of `90` degree clockwise rotations to apply to image before saving. 
             Applied to the `x` and `y` axes, to 3d `image` data only. Default: `0`.
         suffix (str, optional): suffix to add to file name before the file extension. Default: empty.
     """
@@ -144,11 +168,11 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, t
     Args:
         nbp_file (NotebookPage): `file_names` notebook page.
         nbp_basic (NotebookPage): `basic_info` notebook page.
-        file_type (str): The saved file type. Either `'.npy'` or `'.zarr'`.
+        file_type (str): the saved file type. Either `'.npy'` or `'.zarr'`.
         t (int): npy tile index considering.
         r (int): round considering.
         c (int): channel considering.
-        yxz (`list` of `int` or `ndarray[int]`, optional): If `None`, whole image is loaded otherwise there are two 
+        yxz (`list` of `int` or `ndarray[int]`, optional): if `None`, whole image is loaded otherwise there are two 
             choices 
             - `list` of `int [2 or 3]`. List containing y,x,z coordinates of sub image to load in.
                 E.g. if `yxz = [np.array([5]), np.array([10,11,12]), np.array([8,9])]`
@@ -169,7 +193,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, t
             Loaded image.
 
     Notes:
-        May want to disable `apply_shift` to save memory and/or make loading quicker as there will be no dtype 
+        - May want to disable `apply_shift` to save memory and/or make loading quicker as there will be no dtype 
         conversion. If loading in DAPI, dtype is always `uint16` as there is no shift.
     """
     if nbp_basic.is_3d:
@@ -243,7 +267,7 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
             Index 1 refers to ```YX = [MaxY, MaxX - 1] if MaxX > 0```.
 
     Returns:
-        Corresponding indices in npy file
+        Corresponding indices in npy file.
     """
     if isinstance(tile_ind_nd2, numbers.Number):
         tile_ind_nd2 = [tile_ind_nd2]
@@ -254,28 +278,29 @@ def get_npy_tile_ind(tile_ind_nd2: Union[int, List[int]], tile_pos_yx_nd2: np.nd
         return npy_index
 
 
-def save_stitched(im_file: Optional[str], nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
-                  tile_origin: np.ndarray, r: int, c: int, from_raw: bool = False, zero_thresh: int = 0, 
-                  num_rotations: int = 0):
+def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: NotebookPage, 
+                  nbp_extract: NotebookPage, tile_origin: np.ndarray, r: int, c: int, from_raw: bool = False, 
+                  zero_thresh: int = 0, num_rotations: int = 1) -> None:
     """
-    Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`.
-    Saved image will be uint16 if from nd2 or from DAPI filtered npy files.
-    Otherwise, if from filtered npy files, will remove shift and re-scale to fill int16 range.
+    Stitches together all tiles from round `r`, channel `c` and saves the resultant compressed npz at `im_file`. Saved 
+    image will be uint16 if from nd2 or from DAPI filtered npy files. Otherwise, if from filtered npy files, will 
+    remove shift and re-scale to fill int16 range.
 
     Args:
-        im_file: Path to save file.
-            If `None`, stitched `image` is returned (with z axis last) instead of saved.
-        nbp_file: `file_names` notebook page.
-        nbp_basic: `basic_info` notebook page.
-        nbp_extract: `extract` notebook page.
-        tile_origin: `float [n_tiles x 3]`.
-            yxz origin of each tile on round `r`.
-        r: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
-        c: save_stitched will save stitched image of all tiles of round `r`, channel `c`.
-        from_raw: If `False`, will stitch together tiles from saved npy files,
-            otherwise will load in raw un-filtered images from nd2/npy file.
-        zero_thresh: All pixels with absolute value less than or equal to `zero_thresh` will be set to 0.
-            The larger it is, the smaller the compressed file will be.
+        im_file (str or none): path to save file. If `None`, stitched `image` is returned (with z axis last) instead of 
+            saved.
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        nbp_extract (NotebookPage): `extract` notebook page.
+        tile_origin (`[n_tiles x 3] ndarray[float]`): yxz origin of each tile on round `r`.
+        r (int): save_stitched will save stitched image of all tiles of round `r`, channel `c`.
+        c (int): save_stitched will save stitched image of all tiles of round `r`, channel `c`.
+        from_raw (bool, optional): if `False`, will stitch together tiles from saved npy files, otherwise will load in 
+            raw un-filtered images from nd2/npy file. Default: false.
+        zero_thresh (int, optional): all pixels with absolute value less than or equal to `zero_thresh` will be set to 
+            0. The larger it is, the smaller the compressed file will be. Default: 0.
+        num_rotations (int, optional): the number of rotations to apply to each tile individually. Default: `1`, the 
+            same as the notebook default.
     """
     yx_origin = np.round(tile_origin[:, :2]).astype(int)
     z_origin = np.round(tile_origin[:, 2]).astype(int).flatten()
