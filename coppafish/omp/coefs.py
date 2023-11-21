@@ -3,7 +3,6 @@ import numpy.typing as npt
 from typing import Tuple, List, Union, Any, Optional
 from tqdm import tqdm
 import scipy
-import psutil
 import multiprocessing
 
 from .. import call_spots
