@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 import numpy as np
 from jax import numpy as jnp
 
