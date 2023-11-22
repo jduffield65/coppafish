@@ -438,7 +438,6 @@
       "which exceed `score`, `score_diff` and `intensity` thresholds given in config file.",
       "For all $g$, there is an `av_round[g]` such that `gene_efficiency[g, av_round[g]] = 1`.",
       "`nan` if $r$ outside `use_rounds` and 1 if `gene_codes[g,r]` outside `use_dyes`."],
-    "gene_efficiency_intensity_thresh": ["float"],
     "use_ge": ["Bool [n_spots] Mask for all spots used in gene efficiency calculation."]
 
   },

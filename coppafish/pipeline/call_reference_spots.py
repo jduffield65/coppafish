@@ -10,6 +10,8 @@ from ..setup.notebook import NotebookPage
 from .. import call_spots
 from .. import spot_colors
 from .. import utils
+from ..extract import scale
+from ..call_spots import get_spot_intensity
 from tqdm import tqdm
 from itertools import product
 
@@ -232,5 +234,17 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                                                           gene_efficiency=np.ones((n_genes, n_rounds))),
                                                 use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
+
+    # Extract abs intensity percentile
+    rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    central_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+    if nbp_basic.is_3d:
+        mid_z = nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2
+    else:
+        mid_z = None
+    pixel_colors = spot_colors.get_spot_colors(spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, mid_z),
+                                               central_tile, transform, nbp_file, nbp_basic, return_in_bounds=True)[0]
+    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[rc_ind])
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
 
     return nbp, nbp_ref_spots
