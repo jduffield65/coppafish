@@ -28,6 +28,8 @@ def find_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nb
     Returns:
         `NotebookPage[find_spots]` - Page containing point cloud of all tiles, rounds and channels.
     """
+    #TODO: Add optional support for inputting specific tile data into find_spots, then returning a find spots notebook 
+    # page for that particular tile, which can then be merged in `run.py`.
     # Phase 0: Initialisation
     nbp = NotebookPage("find_spots")
     if nbp_basic.is_3d is False:
