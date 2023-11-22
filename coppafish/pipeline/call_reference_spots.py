@@ -236,15 +236,15 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_efficiency = gene_efficiency
 
     # Extract abs intensity percentile
-    rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
     central_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
     if nbp_basic.is_3d:
-        mid_z = nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2
+        mid_z = int(nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2)
     else:
         mid_z = None
     pixel_colors = spot_colors.get_spot_colors(spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, mid_z),
-                                               central_tile, transform, nbp_file, nbp_basic, return_in_bounds=True)[0]
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[rc_ind])
+                                               central_tile, transform, nbp_file, nbp_basic, nbp_extract,
+                                               return_in_bounds=True)[0]
+    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[central_tile])
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
 
     return nbp, nbp_ref_spots

@@ -59,6 +59,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    trc_ind = np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels)
     bled_codes = np.moveaxis(np.moveaxis(nbp_call_spots.bled_codes_ge, 0, -1)[rc_ind], -1, 0)
     utils.errors.check_color_nan(bled_codes, nbp_basic)
     norm_bled_codes = np.linalg.norm(bled_codes, axis=(1, 2))
@@ -67,7 +68,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                          "use_rounds and use_channels.")
     bled_codes = jnp.asarray(bled_codes)
     transform = jnp.asarray(transform)
-    color_norm_factor = jnp.asarray(nbp_call_spots.color_norm_factor[rc_ind])
+    color_norm_factor = jnp.asarray(nbp_call_spots.color_norm_factor[trc_ind])
     n_genes, n_rounds_use, n_channels_use = bled_codes.shape
     dp_norm_shift = 0
 
@@ -162,7 +163,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         
         z_chunk_size = 4 if optimised else 1
         pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, config, int(t), use_z, 
-                                                             z_chunk_size, n_genes, transform, color_norm_factor, 
+                                                             z_chunk_size, n_genes, transform, color_norm_factor[t],
                                                              nbp.initial_intensity_thresh, bled_codes, dp_norm_shift)
 
         if spot_shape is None:
@@ -265,19 +266,13 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     invalid_value = -nbp_basic.tile_pixel_value_shift
     # Only read in used colors first for background/intensity calculation.
     nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.int32) * invalid_value
+    spot_colors_norm = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.float32) * invalid_value
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            if nbp_basic.use_preseq:
-                nd_spot_colors_use[in_tile], bg_colours = spot_colors.get_spot_colors(
-                    jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
-                    bg_scale=nbp_extract.bg_scale)
-            else:
-                nd_spot_colors_use[in_tile] = spot_colors.get_spot_colors(
-                    jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
-                    bg_scale=nbp_extract.bg_scale)
-
-    spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
+            nd_spot_colors_use[in_tile], bg_colours = spot_colors.get_spot_colors(
+                jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract)
+            spot_colors_norm[in_tile] = nd_spot_colors_use[in_tile] / color_norm_factor[t]
     nbp.intensity = np.asarray(call_spots.get_spot_intensity(spot_colors_norm))
     del spot_colors_norm
 
