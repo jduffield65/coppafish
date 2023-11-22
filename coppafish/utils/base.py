@@ -1,7 +1,8 @@
+import tqdm
 import inspect
 import numpy as np
 import numpy.typing as npt
-from typing import Union, List
+from typing import Union, Dict, List
 
 
 def get_function_name() -> str:
@@ -93,3 +94,70 @@ def expand_channels(array: npt.NDArray[np.float_], use_channels: List[int], n_ch
         expanded_array[..., channel] = array[..., i]
 
     return expanded_array
+
+
+def reed_solomon_codes(n_genes: int, n_rounds: int) -> Dict:
+    """
+    Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible 
+    relative to the number of genes wanted. Saves codes in self, can be used in function `Add_Spots`. The `i`th 
+    gene name will be `gene_i`. `ValueError` is raised if all gene codes created are not unique. We assume that 
+    `n_rounds` is the number of unique dyes, each dye is labelled between `(0, n_rounds]`.
+
+    Args:
+        n_genes (int): number of unique gene codes to generate. 
+        n_rounds (int): number of sequencing rounds. 
+
+    Returns:
+        Dict (str: str): gene names as keys, gene codes as values.
+
+    Notes:
+        See [here](https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction) for more details.
+    """
+    assert n_rounds > 1, 'Require at least two rounds'
+    assert n_genes > 0, 'Require at least one gene'
+    degree = 0
+    # Find the smallest degree polynomial required to produce `n_genes` unique gene codes. We use the smallest 
+    # degree polynomial because this will have the smallest amount of overlap between gene codes
+    while True:
+        max_unique_codes = int(n_rounds**degree - n_rounds)
+        if max_unique_codes >= n_genes:
+            break
+        degree += 1
+        assert degree < 100, 'Degree too large, breaking from loop...'
+    # Create a `degree` degree polynomial, where each coefficient goes between (0, n_rounds] to generate each 
+    # unique gene code
+    codes = dict()
+    # Index 0 is for constant, index 1 for linear coefficient, etc..
+    most_recent_coefficient_set = np.array(np.zeros(degree+1))
+    for n_gene in tqdm.trange(n_genes, ascii=True, unit='Codes', desc='Generating gene codes'):
+        # Find the next coefficient set that works, which is not just constant across all rounds (like a background 
+        # code)
+        while True:
+            # Iterate to next working coefficient set, by mod n_rounds addition
+            most_recent_coefficient_set[0] += 1
+            for i in range(most_recent_coefficient_set.size):
+                if most_recent_coefficient_set[i] >= n_rounds:
+                    # Cycle back around to 0, then add one to next coefficient
+                    most_recent_coefficient_set[i]   =  0
+                    most_recent_coefficient_set[i+1] += 1
+            if np.all(most_recent_coefficient_set[1:degree+1] == 0):
+                continue
+            break
+        # Generate new gene code
+        new_code  = ''
+        gene_name = f'gene_{n_gene}'
+        for r in range(n_rounds):
+            result = 0
+            for j in range(degree + 1):
+                result += most_recent_coefficient_set[j] * r**j
+            result = int(result)
+            result %= n_rounds
+            new_code += str(result)
+        # Add new code to dictionary
+        codes[gene_name] = new_code
+    values = list(codes.values())
+    if len(values) != len(set(values)):
+        # Not every gene code is unique
+        raise ValueError(f'Could not generate {n_genes} unique gene codes with {n_rounds} rounds/dyes. ' + \
+                            'Maybe try decreasing the number of genes or increasing the number of rounds.')
+    return codes
