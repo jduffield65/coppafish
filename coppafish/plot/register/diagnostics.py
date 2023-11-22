@@ -12,7 +12,7 @@ import matplotlib.gridspec as gridspec
 from ...setup import Notebook
 from skimage.filters import sobel
 from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, yxz_to_zyx
-from coppafish.register.base import huber_regression, brightness_scale
+from coppafish.register.base import huber_regression, brightness_scale, ols_regression
 from coppafish.utils import tiles_io
 from scipy.ndimage import affine_transform
 plt.style.use('dark_background')
@@ -952,7 +952,7 @@ def view_pearson_colourmap_spatial(nb: Notebook, t: int):
 
 
 # 2
-def shift_vector_field(nb: Notebook, round: bool = True):
+def shift_vector_field(nb: Notebook):
     """
     Function to plot vector fields of predicted shifts vs shifts to see if we classify a shift as an outlier.
     Args:
@@ -962,40 +962,36 @@ def shift_vector_field(nb: Notebook, round: bool = True):
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     residual_thresh = nb.get_config()['register']['residual_thresh']
     use_tiles = nbp_basic.use_tiles
+    shift = nbp_register_debug.round_transform_raw[use_tiles, :, :, 3]
+    # record number of rounds, tiles and initialise predicted shift
+    n_tiles, n_rounds = shift.shape[0], nbp_basic.n_rounds
     tilepos_yx = nbp_basic.tilepos_yx[use_tiles]
-
-    # Load in shift
-    if round:
-        mode = 'Round'
-        use_rc = nbp_basic.use_rounds
-        shift = nbp_register_debug.round_transform_raw[use_tiles, :, :, 3][:, use_rc]
-    else:
-        mode = 'Channel'
-        use_rc = nbp_basic.use_channels
-        shift = nbp_register_debug.channel_transform_raw[use_tiles, :, :, 3][:, use_rc]
-
-    # record number of rounds/channels, tiles and initialise predicted shift
-    n_t, n_rc = shift.shape[0], len(use_rc)
-    tilepos_yx_pad = np.vstack((tilepos_yx.T, np.ones(n_t))).T
+    tilepos_yx_padded = np.vstack((tilepos_yx.T, np.ones(n_tiles))).T
     predicted_shift = np.zeros_like(shift)
     # When we are scaling the vector field, it will be useful to store the following
     n_vectors_x = tilepos_yx[:, 1].max() - tilepos_yx[:, 1].min() + 1
+    shift_norm = np.linalg.norm(shift, axis=2)
 
-    fig, axes = plt.subplots(nrows=3, ncols=n_rc)
-    for elem in range(n_rc):
-        # generate predicted shift for this r/c via huber regression
-        transform = huber_regression(shift[:, elem], tilepos_yx)
-        predicted_shift[:, elem] = tilepos_yx_pad @ transform.T
+    fig, axes = plt.subplots(nrows=3, ncols=n_rounds)
+    for r in range(n_rounds):
+        # generate predicted shift for this round
+        lb, ub = np.percentile(shift_norm[:, r], [10, 90])
+        valid = (shift_norm[:, r] > lb) * (shift_norm[:, r] < ub)
+        # Carry out regression, first predicitng yx shift, then z shift
+        transform_yx = np.linalg.lstsq(tilepos_yx_padded[valid], shift[valid, r, 1:], rcond=None)[0]
+        predicted_shift[:, r, 1:] = tilepos_yx_padded @ transform_yx
+        transform_z = np.linalg.lstsq(tilepos_yx_padded[valid], shift[valid, r, 0][:, None], rcond=None)[0]
+        predicted_shift[:, r, 0] = (tilepos_yx_padded @ transform_z)[:, 0]
         # Defining this scale will mean that the length of the largest vector will be equal to 1/n_vectors_x of the
         # width of the plot
-        scale = n_vectors_x * np.sqrt(np.sum(predicted_shift[:, elem, 1:] ** 2, axis=1))
+        scale = n_vectors_x * np.sqrt(np.sum(predicted_shift[:, r, 1:] ** 2, axis=1))
 
         # plot the predicted yx shift vs actual yx shift in row 0
-        ax = axes[0, elem]
+        ax = axes[0, r]
         # Make sure the vector field is properly scaled
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], predicted_shift[:, elem, 2], predicted_shift[:, elem, 1],
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], predicted_shift[:, r, 2], predicted_shift[:, r, 1],
                   color='b', scale=scale, scale_units='width', width=.05, alpha=0.5)
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], shift[:, elem, 2], shift[:, elem, 1], color='r', scale=scale,
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], shift[:, r, 2], shift[:, r, 1], color='r', scale=scale,
                   scale_units='width', width=.05, alpha=0.5)
         # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
         ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
@@ -1004,49 +1000,46 @@ def shift_vector_field(nb: Notebook, round: bool = True):
         ax.set_yticks([])
 
         # plot the predicted z shift vs actual z shift in row 1
-        ax = axes[1, elem]
-        # we only want 1 label so make this for elem = 0
-        if elem == 0:
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, elem, 0], color='b',
-                      label='regularised', scale=scale, scale_units='width', width=.05, alpha=0.5)
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, elem, 2], color='r', label='raw', scale=scale,
-                      scale_units='width', width=.05, alpha=0.5)
-            # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
-            ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
-            ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
+        ax = axes[1, r]
+        # we only want 1 label so make this for r = 0
+        if r == 0:
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, r, 0], color='b', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5, label='Predicted')
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, r, 2], color='r', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5, label='Actual')
         else:
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, elem, 0], color='b', scale=scale,
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, r, 0], color='b', scale=scale,
                       scale_units='width', width=.05, alpha=0.5)
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, elem, 2], color='r', scale=scale,
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, r, 2], color='r', scale=scale,
                       scale_units='width', width=.05, alpha=0.5)
-            # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
-            ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
-            ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
+        # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
+        ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
+        ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
         ax.set_xticks([])
         ax.set_yticks([])
 
         # Plot image of norms of residuals at each tile in row 3
-        ax = axes[2, elem]
-        diff = create_tiled_image(data=np.linalg.norm(predicted_shift[:, elem] - shift[:, elem], axis=1),
+        ax = axes[2, r]
+        diff = create_tiled_image(data=np.linalg.norm(predicted_shift[:, r] - shift[:, r], axis=1),
                                   nbp_basic=nbp_basic)
         outlier = np.argwhere(diff > residual_thresh)
         n_outliers = outlier.shape[0]
         im = ax.imshow(diff, vmin=0, vmax=10)
         # Now we want to outline the outlier pixels with a dotted red rectangle
         for i in range(n_outliers):
-            rect = patches.Rectangle((outlier[i, 1] - 0.5, outlier[i, 0] - 0.5), 1, 1, linewidth=1, edgecolor='r',
-                                     facecolor='none', linestyle='--')
+            rect = patches.Rectangle((outlier[i, 1] - 0.5, outlier[i, 0] - 0.5), 1, 1, linewidth=1,
+                                     edgecolor='r', facecolor='none', linestyle='--')
             ax.add_patch(rect)
         ax.set_xticks([])
         ax.set_yticks([])
 
     # Set row and column labels
-    for ax, col in zip(axes[0], use_rc):
+    for ax, col in zip(axes[0], nbp_basic.use_rounds):
         ax.set_title(col)
     for ax, row in zip(axes[:, 0], ['XY-shifts', 'Z-shifts', 'Residuals']):
         ax.set_ylabel(row, rotation=90, size='large')
     # Add row and column labels
-    fig.supxlabel(mode)
+    fig.supxlabel('Round')
     fig.supylabel('Diagnostic')
     # Add global colour bar and legend
     lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
@@ -1056,7 +1049,7 @@ def shift_vector_field(nb: Notebook, round: bool = True):
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     fig.colorbar(im, cax=cbar_ax, label='Residual Norm')
     # Add title
-    fig.suptitle('Diagnostic plots for {} shift outlier removal'.format(mode), size='x-large')
+    fig.suptitle('Diagnostic plots for round shift outlier removal', size='x-large')
 
 
 # 2
@@ -1156,9 +1149,8 @@ def create_tiled_image(data, nbp_basic):
     diff = np.zeros((n_rows, n_cols))
 
     for t in range(len(use_tiles)):
-        diff[tilepos_yx[t, 1], tilepos_yx[t, 0]] = data[t]
+        diff[tilepos_yx[t, 0], tilepos_yx[t, 1]] = data[t]
 
-    diff = np.flip(diff.T, axis=0)
     diff[diff == 0] = np.nan
 
     return diff
@@ -1449,9 +1441,9 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
         filter: whether to apply sobel filter to images
     """
     # Initialise frequent variables
-    anchor = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, nb.basic_info.anchor_round,
+    anchor = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, t, nb.basic_info.anchor_round,
                                   nb.basic_info.anchor_channel))
-    target = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c))
+    target = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, t, r, c))
     transform = yxz_to_zyx_affine(nb.register.transform[t, r, c])
     target_transfromed = affine_transform(target, transform, order=1)
     # plot in napari
