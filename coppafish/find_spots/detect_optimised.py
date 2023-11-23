@@ -77,7 +77,7 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
     consider_yxz = list(consider_yxz)
 
     paddings = jnp.asarray([(pad_size_y, pad_size_y), (pad_size_x, pad_size_x), (pad_size_z, pad_size_z)])[:image.ndim]
-    keep = detect.get_local_maxima(image, se_shifts, paddings, consider_yxz, consider_intensity)
+    keep = detect.get_local_maxima(image, np.asarray(se_shifts), paddings, consider_yxz, consider_intensity)
     if remove_duplicates:
         peak_intensity = np.round(consider_intensity[keep]).astype(int)
     else:
