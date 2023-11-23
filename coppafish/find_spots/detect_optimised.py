@@ -86,6 +86,9 @@ def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional
     return peak_yxz, peak_intensity
 
 
+#? I think this causes a memory error when running on a super large image because the image is probably converted into 
+# a jax array type from a numpy array
+
 # def get_local_maxima_jax(image: jnp.ndarray, se_shifts: Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
 #                          pad_sizes: jnp.ndarray, consider_yxz: jnp.ndarray, consider_intensity: jnp.ndarray) \
     #                         #  -> jnp.ndarray:
