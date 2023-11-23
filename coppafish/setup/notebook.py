@@ -832,15 +832,15 @@ class NotebookPage:
         return n
 
 
-def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
+def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     """
-    Function which merges n notebooks into one. On issues where all notebooks should have the same value, for example,
-    notebook.basic_info.anchor_channel, an error will be raised if these do not match.
+    Function which merges `len(nb_list)` notebooks into one. On issues where all notebooks should have the same value, 
+    for example, notebook.basic_info.anchor_channel, an error will be raised if these do not match.
 
     Args:
-        nb_list: list of single-tile notebooks to be merged
-        master_nb: master notebook initialized from the original unsplit config file. Only contains nbp_basic and
-            nbp_file
+        nb_list (list of Notebooks): single-tile notebooks to be merged.
+        master_nb (Notebook): master notebook initialized from the original un-split config file. Only contains 
+            nbp_basic and nbp_file.
 
     Returns:
         master_nb: master notebook merged from all the others.
@@ -984,9 +984,9 @@ def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
         master_nbp_basic: nbp_basic page for master notebook
 
     Returns:
-        master_nbp_extract: multitile nbp_find_spots page
+        master_nbp_find_spots: multitile nbp_find_spots page
     """
-    # Create a master notebook extract page
+    # Create a master notebook fin_spots page
     master_nbp_find_spots = NotebookPage('find_spots')
 
     # Extract tiles that we're using
