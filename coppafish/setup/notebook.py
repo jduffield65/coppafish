@@ -981,7 +981,8 @@ def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: 
     
     Args:
         nbp_find_spots_list: List of find_spots pages to be combined.
-        master_nbp_basic: nbp_basic page for master notebook.
+        master_nbp_basic: nbp_basic page for master notebook. Must contain information `use_tiles`, `n_tiles`, 
+            `n_rounds`, `n_channels` based on the list of 'find_spots' pages.
 
     Returns:
         master_nbp_find_spots: multi-tile 'find_spots' page.
