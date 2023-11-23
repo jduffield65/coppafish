@@ -576,7 +576,7 @@ class Notebook:
             d[self._NBMETA + self._SEP + self._CONFIGMETA] = self._config
         np.savez_compressed(self._file, **d)
         # Finishing the diagnostics described above
-        print(f"Notebook saved: took {time.time() - save_start_time} seconds")
+        print(f"Notebook saved: took {round(time.time() - save_start_time, 3)} seconds")
 
     def from_file(self, fn: str) -> Tuple[List, dict, float, str]:
         """
