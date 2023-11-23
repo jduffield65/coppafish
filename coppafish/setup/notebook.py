@@ -975,7 +975,7 @@ def merge_extract_debug(nbp_extract_debug_list, master_nbp_basic) -> NotebookPag
     return master_nbp_extract_debug
 
 
-def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
+def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: NotebookPage) -> NotebookPage:
     """
     Merge a list of single tile nbp_find_spots into one multi-tile nbp_find_spots.
     
@@ -984,7 +984,7 @@ def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
         master_nbp_basic: nbp_basic page for master notebook.
 
     Returns:
-        master_nbp_find_spots: multi-tile nbp_find_spots page.
+        master_nbp_find_spots: multi-tile 'find_spots' page.
     """
     # Create a master notebook fin_spots page
     master_nbp_find_spots = NotebookPage('find_spots')
