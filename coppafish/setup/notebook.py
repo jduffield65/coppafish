@@ -986,7 +986,7 @@ def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: 
     Returns:
         master_nbp_find_spots: multi-tile 'find_spots' page.
     """
-    # Create a master notebook fin_spots page
+    # Create a master notebook find_spots page to append all tile pages to
     master_nbp_find_spots = NotebookPage('find_spots')
 
     # Extract tiles that we're using
@@ -998,11 +998,11 @@ def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: 
     isolated_spots = np.zeros(0)
     spot_no = np.zeros_like((n_tiles, n_rounds + 1, n_channels), dtype=int)
     isolation_thresh = np.zeros(n_tiles)
-    for i in range(len(use_tiles)):
+    for i, tile in enumerate(use_tiles):
         spot_yxz = np.vstack((spot_yxz, nbp_find_spots_list[i].spot_details))
-        spot_no[use_tiles[i]] = nbp_find_spots_list[i].spot_no
+        spot_no[tile] = nbp_find_spots_list[i].spot_no
         isolated_spots = np.append(isolated_spots, nbp_find_spots_list[i].isolated_spots)
-        isolation_thresh[use_tiles[i]] = nbp_find_spots_list[i].isolation_thresh
+        isolation_thresh[tile] = nbp_find_spots_list[i].isolation_thresh
 
     # Add these all to the notebook page
     master_nbp_find_spots.spot_details = spot_yxz
