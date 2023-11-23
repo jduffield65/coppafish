@@ -162,7 +162,10 @@ class InvalidNotebookPageError(Exception):
 
 
 class Notebook:
-    """A write-only file-synchronized class to keep track of *coppaFISH* results.
+    """
+    Notebook
+    ========
+    A write-only file-synchronized class to keep track of *coppaFISH* results.
 
     The `Notebook` object stores all of the outputs of the script.  Almost all
     information saved in the `Notebook` is encapsulated within `"pages"`, from the
@@ -171,13 +174,16 @@ class Notebook:
     In addition to saving pages, it also saves the contents of the
     config file, and the time at which the notebook and each page was created.
 
+    Usage:
+    ------
     To create a `Notebook`, pass it the path to the file where the `Notebook` is to
     be stored (`notebook_file`), and optionally, the path to the configuration file
     (`config_file`).  If `notebook_file` already exists, the notebook located
     at this path will be loaded.  If not, a new file will be created as soon as
     the first data is written to the `Notebook`.
 
-    !!!example
+    Example:
+    --------
         === "With config_file"
 
             ``` python
@@ -209,13 +215,13 @@ class Notebook:
     If you create a notebook without specifying `notebook_file`, i.e.
     ```nb = Notebook(config_file="config_file.ini")```, the `notebook_file` will be set to:
     ```python
-    notebook_file = config['file_names']['output_dir'] + config['file_names']['notebook_name'])
-    ```
+    notebook_file = config['file_names']['output_dir'] + config['file_names']['notebook_name']).
+    ```.
 
-    !!!note "On using config_file"
-        When running the coppafish pipeline, the `Notebook` requires a `config_file` to access information required for
-        the different stages of the pipeline through `nb.get_config()`.
-        But if using the `Notebook` to store information not in coppafish pipeline, it is not needed.
+    Notes:    
+        - "On using config_file", when running the coppafish pipeline, the `Notebook` requires a `config_file` to 
+        access information required for the different stages of the pipeline through `nb.get_config()`. But if using 
+        the `Notebook` to store information not in coppafish pipeline, it is not needed.
     """
     _SEP = "_-_"  # Separator between notebook page name and item name when saving to file
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
@@ -539,6 +545,7 @@ class Notebook:
     def save(self, file: Optional[str] = None):
         """
         Saves Notebook as a npz file at the path indicated by `file`.
+        
         Args:
             file: Where to save *Notebook*. If `None`, will use `self._file`.
 
@@ -626,18 +633,23 @@ class Notebook:
 
 
 class NotebookPage:
-    """A page, to be added to a `Notebook` object
+    """
+    NotebookPage
+    ============
+    
+    A page, to be added to a `Notebook` object.
 
-    Expected usage is for a `NotebookPage` to be created at the beginning of a
-    large step in the analysis pipeline.  The name of the page should reflect
-    its function, and it will be used as the indexing key when it is added to a
-    Notebook.  The `NotebookPage` should be created at the beginning of the step
-    in the pipeline, because then the timestamp will be more meaningful.  As
-    results are computed, they should be added.  This will provide a timestamp
-    for each of the results as well.  Then, at the end, the pipeline step should return
-    a `NotebookPage`, which can then be added to the `Notebook`.
+    Usage:
+    ------
+    `NotebookPage` should be created at the beginning of a large step in the analysis pipeline.  The name of the page 
+    should reflect its function, and it will be used as the indexing key when it is added to a Notebook.  The 
+    `NotebookPage` should be created at the beginning of the step in the pipeline, because then the timestamp will be 
+    more meaningful.  As results are computed, they should be added.  This will provide a timestamp for each of the 
+    results as well.  Then, at the end, the pipeline step should return a `NotebookPage`, which can then be added to 
+    the `Notebook`.
 
-    !!!example
+    Example:
+    --------
         ```python
             nbp = NotebookPage("extract_and_filter")
             nbp.scale_factor = 10
@@ -881,6 +893,7 @@ def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
 def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
     """
     Merge a list of single tile nbp_extract into one multitile nbp_extract
+    
     Args:
         nbp_extract_list: List of extract pages to be combined
         master_nbp_basic: nbp_basic page for master notebook
@@ -916,6 +929,7 @@ def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
 def merge_extract_debug(nbp_extract_debug_list, master_nbp_basic) -> NotebookPage:
     """
         Merge a list of single tile nbp_extract_dubug into one multitile nbp_extract_debug
+        
         Args:
             nbp_extract_debug_list: List of extract_debug pages to be combined
             master_nbp_basic: nbp_basic page for master notebook
@@ -964,6 +978,7 @@ def merge_extract_debug(nbp_extract_debug_list, master_nbp_basic) -> NotebookPag
 def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
     """
     Merge a list of single tile nbp_find_s[pts into one multitile nbp_find_spots
+    
     Args:
         nbp_find_spots_list: List of find_spots pages to be combined
         master_nbp_basic: nbp_basic page for master notebook
@@ -1001,6 +1016,7 @@ def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
 def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     """
     Merge a list of single tile nbp_register into one multitile nbp_register
+    
     Args:
         nbp_register_list: List of register pages to be combined
         master_nbp_basic: nbp_basic page for master notebook
