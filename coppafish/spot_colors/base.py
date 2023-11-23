@@ -43,8 +43,8 @@ def apply_transform(yxz: np.ndarray, transform: np.ndarray,
 
 def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_file: NotebookPage,
                     nbp_basic: NotebookPage, nbp_extract: NotebookPage, use_rounds: Optional[List[int]] = None,
-                    use_channels: Optional[List[int]] = None, return_in_bounds: bool = False,
-                    bg_scale: Optional[np.ndarray] = None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                    use_channels: Optional[List[int]] = None, return_in_bounds: bool = False, 
+                    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Takes some spots found on the reference round, and computes the corresponding spot intensity
     in specified imaging rounds/channels.
@@ -75,10 +75,6 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
             Otherwise, `spot_colors` will be returned for all the given `yxz_base` but if spot `s` is out of bounds on
             round `r`, channel `c`, then `spot_colors[s, r, c] = invalid_value = -nbp_basic.tile_pixel_value_shift`.
             This is the only scenario for which `spot_colors = invalid_value` due to clipping in the extract step.
-        bg_scale: 'float [n_tiles x n_rounds x n_channels_use x 2]' normalisation factor for each
-            of the tiles/rounds and channels. bg_round[t, c] * bg_scale_offset[t, r, c]
-            will equalise the background brightness profile to the same as that of tile t, round r, channel c. If None,
-            no normalisation will be performed.
 
     Returns:
         - `spot_colors` - `int32 [n_spots x n_rounds_use x n_channels_use]` or
@@ -97,6 +93,7 @@ def get_spot_colors(yxz_base: np.ndarray, t: int, transforms: np.ndarray, nbp_fi
             integer nan. It will be `invalid_value` if the registered coordinate of spot `s` is outside the tile in 
             round `r`, channel `c`.
     """
+    bg_scale = nbp_extract.bg_scale    
     if bg_scale is not None:
         assert nbp_basic.use_preseq, "Can't subtract background if preseq round doesn't exist!"
         use_bg = True

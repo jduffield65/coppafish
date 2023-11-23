@@ -328,12 +328,13 @@ def extract_and_filter(
                         if not nbp_basic.is_3d:
                             im = extract.focus_stack(im)
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns
+                        # This will deconcolve dapis as well, but I think that is what we want.
                         if config["deconvolve"]:
                             im = extract.wiener_deconvolve(im, config["wiener_pad_shape"], wiener_filter)
-                        if c == nbp_basic.dapi_channel and filter_kernel_dapi is not None:
-                            im = utils.morphology.top_hat(im, filter_kernel_dapi)
-                            im[:, bad_columns] = 0
-                        else:
+                        if c == nbp_basic.dapi_channel:
+                            if filter_kernel_dapi is not None:
+                                im = utils.morphology.top_hat(im, filter_kernel_dapi)
+                        elif c != nbp_basic.dapi_channel:
                             # im converted to float in convolve_2d so no point changing dtype beforehand.
                             im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                             if config["r_smooth"] is not None:

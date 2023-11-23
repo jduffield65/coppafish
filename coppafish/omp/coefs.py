@@ -393,15 +393,13 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
                 spot_colors.base.get_spot_colors(
                     spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
                                                    np.arange(z_index, z_index + 1)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                    bg_scale=nbp_extract.bg_scale)
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
         else:
             pixel_colors_t1, pixel_yxz_t1 = \
                 spot_colors.base.get_spot_colors(
                     spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
                                                    np.arange(z_index, z_index + 1)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                    bg_scale=nbp_extract.bg_scale)
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
         
         pixel_colors_t1 = pixel_colors_t1.astype(np.float32) / colour_norm_factor
         if pixel_colors_t1.shape[0] == 0:
@@ -473,14 +471,12 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
             pixel_colors_tz, pixel_yxz_tz, bg_colours = \
                 spot_colors.get_spot_colors(
                     spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                    bg_scale=nbp_extract.bg_scale)
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
         else:
             pixel_colors_tz, pixel_yxz_tz = \
                 spot_colors.get_spot_colors(
                     spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                    bg_scale=nbp_extract.bg_scale)
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
         if pixel_colors_tz.shape[0] == 0:
             q.put(list(no_output))
             return

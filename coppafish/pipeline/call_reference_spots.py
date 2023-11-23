@@ -1,15 +1,12 @@
 import numpy as np
 import warnings
-try:
-    import importlib_resources
-except ModuleNotFoundError:
-    import importlib.resources as importlib_resources
 from typing import Tuple
 
 from ..setup.notebook import NotebookPage
 from .. import call_spots
 from .. import spot_colors
 from .. import utils
+from .. import extract
 from tqdm import tqdm
 from itertools import product
 
@@ -232,5 +229,17 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
                                                                           gene_efficiency=np.ones((n_genes, n_rounds))),
                                                 use_channels, nbp_basic.n_channels)
     nbp.gene_efficiency = gene_efficiency
+
+    # Extract abs intensity percentile
+    central_tile = extract.scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+    if nbp_basic.is_3d:
+        mid_z = int(nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2)
+    else:
+        mid_z = None
+    pixel_colors = spot_colors.get_spot_colors(spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, mid_z),
+                                               central_tile, transform, nbp_file, nbp_basic, nbp_extract,
+                                               return_in_bounds=True)[0]
+    pixel_intensity = call_spots.get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[central_tile])
+    nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
 
     return nbp, nbp_ref_spots
