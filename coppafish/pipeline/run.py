@@ -128,13 +128,15 @@ def run_find_spots(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `extract` page.
-
     """
     if not nb.has_page("find_spots"):
         config = nb.get_config()
-        nbp = find_spots.find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.extract.auto_thresh)
+        nbp = find_spots.find_spots(
+            config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.extract.auto_thresh
+        )
         nb += nbp
-        check_spots.check_n_spots(nb)  # error if too few spots - may indicate tile or channel which should not be included
+        # error if too few spots - may indicate tile or channel which should not be included
+        check_spots.check_n_spots(nb)
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
 
@@ -151,7 +153,6 @@ def run_stitch(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `find_spots` page.
-
     """
     config = nb.get_config()
     if not nb.has_page("stitch"):
@@ -190,7 +191,6 @@ def run_register(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `extract` page.
-
     """
     config = nb.get_config()
     # if not all(nb.has_page(["register", "register_debug"])):
@@ -272,7 +272,6 @@ def run_omp(nb: setup.Notebook):
 
     Args:
         nb: `Notebook` containing `call_spots` page.
-
     """
     if not nb.has_page("omp"):
         config = nb.get_config()
