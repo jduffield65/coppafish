@@ -64,6 +64,7 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: 
 def run_tile_indep_pipeline(nb: setup.Notebook):
     """
     Run tile-independent pipeline processes.
+    
     Args:
         nb: `Notebook` containing 'basic_info' and 'file_names' pages.
     """
