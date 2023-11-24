@@ -58,8 +58,9 @@ def save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: str
         # that each chunk is at least 1MB, as suggested in the zarr documentation.
         compressor = Blosc(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE)
         chunks = (None, 750, 750)
-        zarray = zarr.open(file_path, mode='w', zarr_version=2, shape=image.shape, chunks=chunks, dtype='|u2', 
-                        synchronizer=zarr.ThreadSynchronizer(), compressor=compressor)
+        zarray = zarr.open(
+            file_path, mode='w', zarr_version=2, shape=image.shape, chunks=chunks, dtype='|u2', 
+            synchronizer=zarr.ThreadSynchronizer(), compressor=compressor)
         zarray[:] = image
     else:
         raise ValueError(f'Unsupported `file_type`: {file_type.lower()}')
