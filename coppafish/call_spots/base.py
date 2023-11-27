@@ -58,8 +58,8 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray, gene_effici
     Args:
         gene_codes: ```int [n_genes x n_rounds]```.
             ```gene_codes[g, r]``` indicates the dye that should be present for gene ```g``` in round ```r```.
-        bleed_matrix: ```float [n_rounds x n_channels x n_dyes]```.
-            Expected intensity of dye ```d``` in round ```r``` is a constant multiple of ```bleed_matrix[r, :, d]```.
+        bleed_matrix: ```float [n_channels x n_dyes]```.
+            Expected intensity of dye ```d``` is a constant multiple of ```bleed_matrix[:, d]```.
         gene_efficiency: ```float [n_genes, n_rounds]```.
             Efficiency of gene ```g``` in round ```r``` is ```gene_efficiency[g, r]```.
 
@@ -69,8 +69,8 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray, gene_effici
             in round ```r``` is expected to be a constant multiple of ```bled_codes[g, r]```. bled_codes[g] will 
             all have a norm of one.
     """
-    n_genes = gene_codes.shape[0]
-    n_rounds, n_channels, n_dyes = bleed_matrix.shape
+    n_genes, n_rounds = gene_codes.shape[0], gene_codes.shape[1]
+    n_channels, n_dyes = bleed_matrix.shape
     if not utils.errors.check_shape(gene_codes, [n_genes, n_rounds]):
         raise utils.errors.ShapeError('gene_codes', gene_codes.shape, (n_genes, n_rounds))
     if gene_codes.max() >= n_dyes:
@@ -86,10 +86,10 @@ def get_bled_codes(gene_codes: np.ndarray, bleed_matrix: np.ndarray, gene_effici
     for g in range(n_genes):
         for r in range(n_rounds):
             for c in range(n_channels):
-                bled_codes[g, r, c] = gene_efficiency[g, r] * bleed_matrix[r, c, gene_codes[g, r]]
+                bled_codes[g, r, c] = gene_efficiency[g, r] * bleed_matrix[c, gene_codes[g, r]]
 
     # Give all bled codes an L2 norm of 1
-    norm_factor = np.linalg.norm(bled_codes, axis=(1,2))
+    norm_factor = np.linalg.norm(bled_codes, axis=(1, 2))
     bled_codes = bled_codes / norm_factor[:, None, None]
     return bled_codes
 
