@@ -214,7 +214,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp_ref_spots.score = gene_score
     nbp_ref_spots.score_diff = gene_score - gene_score_second
     nbp_ref_spots.intensity = np.median(np.max(colours, axis=2), axis=1).astype(np.float32)
-    nbp_ref_spots.background_strength = bg_colours
+    nbp_ref_spots.background_strength = bg_codes
     nbp_ref_spots.gene_probs = gene_prob
     # nbp_ref_spots.dye_strengths = dye_strength
     nbp_ref_spots.finalized = True
