@@ -112,7 +112,7 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, i
     if nbp_basic.is_3d:
         if c is None:
             raise ValueError('3d image but channel not given.')
-        if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
+        if c == nbp_basic.dapi_channel:
             # If dapi is given then image should already by uint16 so no clipping
             image = image.astype(np.uint16)
         else:

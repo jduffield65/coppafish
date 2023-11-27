@@ -280,8 +280,7 @@ def extract_and_filter(
                             (nbp_basic.n_channels, nbp_basic.tile_sz, nbp_basic.tile_sz), dtype=np.int32
                         )
                 for c in use_channels:
-                    if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
-                        # max value that can be saved and no shifting done for DAPI
+                    if c == nbp_basic.dapi_channel:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max
                     else:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift

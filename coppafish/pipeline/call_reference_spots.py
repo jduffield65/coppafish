@@ -80,6 +80,12 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     n_genes = len(gene_names)
     # Load bleed matrix info
     if nbp_file.initial_bleed_matrix is None:
+        expected_dye_names = ['ATTO425', 'AF488', 'DY520XL', 'AF532', 'AF594', 'AF647', 'AF750']
+        assert nbp_basic.dye_names == expected_dye_names, \
+            f'To use the default bleed matrix, dye names must be given in the order {expected_dye_names}, but got ' \
+                + f'{nbp_basic.dye_names}.'
+        # default_bleed_matrix_filepath = importlib_resources.files('coppafish.setup').joinpath('default_bleed.npy')
+        # initial_bleed_matrix = np.load(default_bleed_matrix_filepath).copy()
         dye_info = \
             {'ATTO425': np.array([394, 7264, 499, 132, 53625, 46572, 4675, 488, 850,
                                   51750, 2817, 226, 100, 22559, 124, 124, 100, 100,
@@ -117,10 +123,21 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     if nbp_file.initial_bleed_matrix is not None:
         # Use an initial bleed matrix given by the user
         initial_bleed_matrix = np.load(nbp_file.initial_bleed_matrix)
-        expected_shape = (len(nbp_basic.use_channels), len(nbp_basic.dye_names))
-        assert initial_bleed_matrix.shape == expected_shape, \
-            f'Initial bleed matrix at {nbp_file.initial_bleed_matrix} has shape {initial_bleed_matrix.shape}, ' + \
-            f'expected {expected_shape}.'
+    expected_shape = (len(nbp_basic.use_channels), len(nbp_basic.dye_names))
+    assert initial_bleed_matrix.shape == expected_shape, \
+        f'Initial bleed matrix at {nbp_file.initial_bleed_matrix} has shape {initial_bleed_matrix.shape}, ' \
+            + f'expected {expected_shape}.'
+    # normalise bleed matrix across channels, then once again across dyes so each column has norm 1
+    n_dyes = len(nbp_basic.dye_names)
+    bleed_norm = np.median(colour_norm_factor, axis=0)
+    # Want to divide each row by bleed_norm, so reshape bleed_norm to be n_channels x n_dyes
+    bleed_norm = np.repeat(bleed_norm[:, np.newaxis], n_dyes, axis=1)
+    initial_bleed_matrix = initial_bleed_matrix / bleed_norm
+    # now normalise each column (dye) to have norm 1
+    bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
+    # Repeat bleed n_rounds times along a new 0th axis
+    bleed_matrix = np.repeat(bleed_matrix[np.newaxis, :, :], n_rounds, axis=0)
+    intensity = call_spots.get_spot_intensity(spot_colors=spot_colours)
 
     # normalise each dye across channels to have L2 norm 1
     isolated = nbp_ref_spots.isolated
