@@ -280,8 +280,7 @@ def extract_and_filter(
                             (nbp_basic.n_channels, nbp_basic.tile_sz, nbp_basic.tile_sz), dtype=np.int32
                         )
                 for c in use_channels:
-                    if r == nbp_basic.anchor_round and c == nbp_basic.anchor_channel:
-                        # max value that can be saved and no shifting done for DAPI
+                    if c == nbp_basic.dapi_channel:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max
                     else:
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
@@ -328,12 +327,14 @@ def extract_and_filter(
                         if not nbp_basic.is_3d:
                             im = extract.focus_stack(im)
                         im, bad_columns = extract.strip_hack(im)  # find faulty columns
+                        # This will deconcolve dapis as well, but I think that is what we want.
                         if config["deconvolve"]:
                             im = extract.wiener_deconvolve(im, config["wiener_pad_shape"], wiener_filter)
-                        if c == nbp_basic.dapi_channel and filter_kernel_dapi is not None:
-                            im = utils.morphology.top_hat(im, filter_kernel_dapi)
+                        if c == nbp_basic.dapi_channel:
+                            if filter_kernel_dapi is not None:
+                                im = utils.morphology.top_hat(im, filter_kernel_dapi)
                             im[:, bad_columns] = 0
-                        else:
+                        elif c != nbp_basic.dapi_channel:
                             # im converted to float in convolve_2d so no point changing dtype beforehand.
                             im = utils.morphology.convolve_2d(im, filter_kernel) * scale
                             if config["r_smooth"] is not None:
