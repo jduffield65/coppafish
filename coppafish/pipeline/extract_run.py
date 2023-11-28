@@ -10,7 +10,7 @@ from ..utils import tiles_io
 
 
 def extract_and_filter(
-    config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
+    config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_scale: NotebookPage, 
 ) -> Tuple[NotebookPage, NotebookPage]:
     """
     This reads in images from the raw `nd2` files, filters them and then saves them as `config[extract][file_type]`
@@ -18,9 +18,10 @@ def extract_and_filter(
     `hist_counts` required for normalisation between channels.
 
     Args:
-        config: dictionary obtained from `'extract'` section of config file.
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
+        config (dict): dictionary obtained from 'extract' section of config file.
+        nbp_file (NotebookPage): 'file_names' notebook page.
+        nbp_basic (NotebookPage): 'basic_info' notebook page.
+        nbp_scale (NotebookPage): 'scale' notebook page.
 
     Returns:
         - `NotebookPage[extract]` - Page containing `auto_thresh` for use in turning images to point clouds and
@@ -33,12 +34,6 @@ def extract_and_filter(
         variables in each page.
     """
     # TODO: Refactor this function to make it more readable
-    # Check scaling won't cause clipping when saving as uint16
-    scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
-    if config["scale_norm"] >= scale_norm_max:
-        raise ValueError(
-            f"\nconfig['extract']['scale_norm'] = {config['scale_norm']} but it must be below " f"{scale_norm_max}"
-        )
     # initialise notebook pages
     if not nbp_basic.is_3d:
         config["deconvolve"] = False  # only deconvolve if 3d pipeline
@@ -67,49 +62,17 @@ def extract_and_filter(
     else:
         nbp_debug.z_info = 0
 
-    # update config params in notebook. All optional parameters in config are added to debug page
-    if config["r1"] is None:
-        config["r1"] = extract.get_pixel_length(config["r1_auto_microns"], nbp_basic.pixel_size_xy)
-    if config["r2"] is None:
-        config["r2"] = config["r1"] * 2
-    nbp_debug.r1 = config["r1"]
-    nbp_debug.r2 = config["r2"]
     nbp_debug.r_dapi = config["r_dapi"]
 
-    filter_kernel = utils.morphology.hanning_diff(nbp_debug.r1, nbp_debug.r2)
+    filter_kernel = utils.morphology.hanning_diff(nbp_scale.r1, nbp_scale.r2)
     if nbp_debug.r_dapi is not None:
         filter_kernel_dapi = utils.strel.disk(nbp_debug.r_dapi)
     else:
         filter_kernel_dapi = None
 
-    if config["r_smooth"] is not None:
-        if len(config["r_smooth"]) == 2:
-            if nbp_basic.is_3d:
-                warnings.warn(
-                    f"Running 3D pipeline but only 2D smoothing requested with r_smooth" f" = {config['r_smooth']}."
-                )
-        elif len(config["r_smooth"]) == 3:
-            if not nbp_basic.is_3d:
-                raise ValueError("Running 2D pipeline but 3D smoothing requested.")
-        else:
-            raise ValueError(
-                f"r_smooth provided was {config['r_smooth']}.\n"
-                f"But it needs to be a 2 radii for 2D smoothing or 3 radii for 3D smoothing.\n"
-                f"I.e. it is the wrong shape."
-            )
-        if config["r_smooth"][0] > config["r2"]:
-            raise ValueError(
-                f"Smoothing radius, {config['r_smooth'][0]}, is larger than the outer radius of the\n"
-                f"hanning filter, {config['r2']}, making the filtering step redundant."
-            )
-
-        # smooth_kernel = utils.strel.fspecial(*tuple(config['r_smooth']))
-        smooth_kernel = np.ones(tuple(np.array(config["r_smooth"], dtype=int) * 2 - 1))
-        smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
-
-        if np.max(config["r_smooth"]) == 1:
-            warnings.warn("Max radius of smooth filter was 1, so not using.")
-            config["r_smooth"] = None
+    # smooth_kernel = utils.strel.fspecial(*tuple(nbp_scale.r_smooth]))
+    smooth_kernel = np.ones(tuple(np.array(nbp_scale.r_smooth, dtype=int) * 2 - 1))
+    smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
 
     if config["deconvolve"]:
         if not os.path.isfile(nbp_file.psf):
@@ -152,51 +115,6 @@ def extract_and_filter(
         nbp_debug.psf_intensity_thresh = None
         nbp_debug.psf_tiles_used = None
 
-    # check to see if scales have already been computed
-    config["scale"], config["scale_anchor"] = extract.get_scale_from_txt(
-        nbp_file.scale, config["scale"], config["scale_anchor"]
-    )
-
-    if config["scale"] is None and len(nbp_file.round) > 0:
-        # ensure scale_norm value is reasonable so max pixel value in tiff file is significant factor of max of uint16
-        scale_norm_min = (np.iinfo("uint16").max - nbp_basic.tile_pixel_value_shift) / 5
-        scale_norm_max = np.iinfo("uint16").max - nbp_basic.tile_pixel_value_shift
-        if not scale_norm_min <= config["scale_norm"] <= scale_norm_max:
-            raise utils.errors.OutOfBoundsError("scale_norm", config["scale_norm"], scale_norm_min, scale_norm_max)
-        # If using smoothing, apply this as well before scal
-        if config["r_smooth"] is None:
-            smooth_kernel_2d = None
-        else:
-            if smooth_kernel.ndim == 3:
-                # take central plane of smooth filter if 3D as scale is found from a single z-plane.
-                smooth_kernel_2d = smooth_kernel[:, :, config["r_smooth"][2] - 1]
-            else:
-                smooth_kernel_2d = smooth_kernel.copy()
-            # smoothing is averaging so to average in 2D, need to re normalise filter
-            smooth_kernel_2d = smooth_kernel_2d / np.sum(smooth_kernel_2d)
-            if np.max(config["r_smooth"][:2]) <= 1:
-                smooth_kernel_2d = None  # If dimensions of 2D kernel are [1, 1] is equivalent to no smoothing
-        nbp_debug.scale_tile, nbp_debug.scale_channel, nbp_debug.scale_z, config["scale"] = extract.get_scale(
-            nbp_file,
-            nbp_basic,
-            0,
-            nbp_basic.use_tiles,
-            nbp_basic.use_channels,
-            nbp_basic.use_z,
-            config["scale_norm"],
-            filter_kernel,
-            smooth_kernel_2d,
-        )
-    else:
-        nbp_debug.scale_tile = None
-        nbp_debug.scale_channel = None
-        nbp_debug.scale_z = None
-        smooth_kernel_2d = None
-    nbp_debug.scale = config["scale"]
-
-    # save scale values incase need to re-run
-    extract.save_scale(nbp_file.scale, nbp_debug.scale, config["scale_anchor"])
-
     # get rounds to iterate over
     use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
     use_channels_anchor.sort()
@@ -236,33 +154,10 @@ def extract_and_filter(
             round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
             if r == nbp_basic.anchor_round:
                 n_clip_error_images = 0  # reset for anchor as different scale used.
-                if config["scale_anchor"] is None:
-                    (
-                        nbp_debug.scale_anchor_tile,
-                        _,
-                        nbp_debug.scale_anchor_z,
-                        config["scale_anchor"],
-                    ) = extract.get_scale(
-                        nbp_file,
-                        nbp_basic,
-                        nbp_basic.anchor_round,
-                        nbp_basic.use_tiles,
-                        [nbp_basic.anchor_channel],
-                        nbp_basic.use_z,
-                        config["scale_norm"],
-                        filter_kernel,
-                        smooth_kernel_2d,
-                    )
-                    # save scale values incase need to re-run
-                    extract.save_scale(nbp_file.scale, nbp_debug.scale, config["scale_anchor"])
-                else:
-                    nbp_debug.scale_anchor_tile = None
-                    nbp_debug.scale_anchor_z = None
-                nbp_debug.scale_anchor = config["scale_anchor"]
-                scale = nbp_debug.scale_anchor
+                scale = nbp_scale.scale_anchor
                 use_channels = use_channels_anchor
             else:
-                scale = nbp_debug.scale
+                scale = nbp_scale.scale
                 use_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * config["continuous_dapi"]
 
             # convolve_2d each image
@@ -337,7 +232,7 @@ def extract_and_filter(
                         elif c != nbp_basic.dapi_channel:
                             # im converted to float in convolve_2d so no point changing dtype beforehand.
                             im = utils.morphology.convolve_2d(im, filter_kernel) * scale
-                            if config["r_smooth"] is not None:
+                            if nbp_scale.r_smooth is not None:
                                 # oa convolve uses lots of memory and much slower here.
                                 im = utils.morphology.imfilter(im, smooth_kernel, oa=False)
                             im[:, bad_columns] = 0
@@ -437,10 +332,6 @@ def extract_and_filter(
     # del nbp.auto_thresh
     # nbp.auto_thresh = auto_thresh_reg
 
-    if not nbp_basic.use_anchor:
-        nbp_debug.scale_anchor_tile = None
-        nbp_debug.scale_anchor_z = None
-        nbp_debug.scale_anchor = None
     # add a variable for bg_scale
     nbp.bg_scale = None
 

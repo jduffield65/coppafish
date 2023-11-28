@@ -13,9 +13,9 @@ except ImportError:
 
 from .. import utils
 from ..setup.notebook import NotebookPage
-from ..extract import scale
 from .. import spot_colors
 from .. import call_spots
+from .. import scale
 from .. import omp
 
 
@@ -98,7 +98,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do shape_tile first to compute spot_shape from it.
         if shape_tile is None:
-            shape_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+            shape_tile = scale.base.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
         if shape_tile not in nbp_basic.use_tiles:
             raise ValueError(f"shape_tile, {shape_tile} is not in nbp_basic.use_tiles, {nbp_basic.use_tiles}")
         shape_tile_ind = np.where(np.array(nbp_basic.use_tiles) == shape_tile)[0][0]

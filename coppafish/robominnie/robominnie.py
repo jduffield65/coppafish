@@ -891,12 +891,14 @@ class RoboMinnie:
         anchor_channel = {self.anchor_channel if self.include_anchor else ''}
         dapi_channel = {self.dapi_channel if self.include_dapi else ''}
         
+        [scale]
+        r_smooth = {'1, 1, 2' if is_3d else ''}
+        
         [extract]
         ;psf_detect_radius_xy = 1
         ;psf_detect_radius_z = 1
         ;deconvolve = {True}
         file_type = .zarr
-        r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
         #? Should probably be 0 for robominnie multi-tile setup? Unsure tho

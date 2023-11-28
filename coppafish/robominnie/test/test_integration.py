@@ -155,5 +155,5 @@ def test_viewers():
 
 
 if __name__ == '__main__':
-    test_bg_subtraction()
+    test_integration_003()
     test_viewers()

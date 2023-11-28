@@ -3,7 +3,7 @@ from typing import List, Union, Optional, Tuple
 
 from .. import utils
 from .. import find_spots
-from . import scale
+from .. import scale
 from ..setup import NotebookPage
 
 
@@ -63,14 +63,14 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
     tiles_used = []
     while n_spots < min_spots:
         if  nbp_file.raw_extension == 'jobs':
-            t = scale.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
+            t = scale.base.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
 
             rda = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
             # choose tile closet to centre
             im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, rda, round, use_z)
 
         else:
-            t = scale.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
+            t = scale.base.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
             im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, None, round, use_z)
         mid_z = np.ceil(im.shape[2] / 2).astype(int)
         median_im = np.median(im[:, :, mid_z])
