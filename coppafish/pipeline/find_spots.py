@@ -86,7 +86,7 @@ def find_spots(
         for t, r, c in np.argwhere(uncompleted):
             # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
             if image_t is None:
-                image_trc = tiles_io.load_tile(
+                image_trc = tiles_io.load_image(
                     nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False, 
                     suffix='_raw' if r == nbp_basic.pre_seq_round else ''
                 )

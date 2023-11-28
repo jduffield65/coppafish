@@ -164,7 +164,7 @@ def extract_and_filter(
             for t in nbp_basic.use_tiles:
                 if not nbp_basic.is_3d:
                     # for 2d all channels in same file
-                    file_exists = tiles_io.tile_exists(nbp_file.tile[t][r], config['file_type'])
+                    file_exists = tiles_io.image_exists(nbp_file.tile[t][r], config['file_type'])
                     if file_exists:
                         # mmap load in image for all channels if tiff exists
                         im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode="r")
@@ -183,11 +183,11 @@ def extract_and_filter(
                     if nbp_basic.is_3d:
                         if r != pre_seq_round:
                             file_path = nbp_file.tile[t][r][c]
-                            file_exists = tiles_io.tile_exists(file_path, config['file_type'])
+                            file_exists = tiles_io.image_exists(file_path, config['file_type'])
                         else:
                             file_path = nbp_file.tile[t][r][c]
                             file_path = file_path[: file_path.index(config["file_type"])] + "_raw" + config["file_type"]
-                            file_exists = tiles_io.tile_exists(file_path, config['file_type'])
+                            file_exists = tiles_io.image_exists(file_path, config['file_type'])
                     pbar.set_postfix({"round": r, "tile": t, "channel": c, "exists": str(file_exists)})
                     if file_exists:
                         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
@@ -195,7 +195,7 @@ def extract_and_filter(
                         else:
                             # Only need to load in mid-z plane if 3D.
                             if nbp_basic.is_3d:
-                                im = tiles_io.load_tile(
+                                im = tiles_io.load_image(
                                     nbp_file,
                                     nbp_basic,
                                     config["file_type"],
@@ -297,7 +297,7 @@ def extract_and_filter(
                                     nbp.hist_counts[:, r, c] += hist_counts_trc
                             # delay gaussian blurring of preseq until after reg to give it a better chance
                         if nbp_basic.is_3d:
-                            tiles_io.save_tile(
+                            tiles_io.save_image(
                                 nbp_file,
                                 nbp_basic,
                                 config["file_type"],
@@ -312,7 +312,7 @@ def extract_and_filter(
                             im_all_channels_2d[c] = im
                     pbar.update(1)
                 if not nbp_basic.is_3d:
-                    tiles_io.save_tile(
+                    tiles_io.save_image(
                         nbp_file,
                         nbp_basic,
                         config["file_type"],

@@ -86,7 +86,7 @@ def run_tile_indep_pipeline(nb: setup.Notebook) -> None:
             # as well as writing to disk. This would be optimal.
             nb_tile = nb_tiles[i]
             run_extract(nb_tile)
-            image_t = utils.tiles_io.load_full_tile(
+            image_t = utils.tiles_io.load_tile(
                 nb.file_names, nb.basic_info, nb_tile.extract.file_type, tile, apply_shift=False, 
             )
             nb_tile = run_find_spots(nb_tile, image_t)

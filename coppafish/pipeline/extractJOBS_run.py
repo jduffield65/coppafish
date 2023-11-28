@@ -256,7 +256,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         else:
                             # Only need to load in mid-z plane if 3D.
                             # if nbp_basic.is_3d:
-                            im = tiles_io.load_tile(nbp_file, nbp_basic, config['file_type'], t, r, c,
+                            im = tiles_io.load_image(nbp_file, nbp_basic, config['file_type'], t, r, c,
                                                      yxz=[None, None, nbp_debug.z_info])
                             # else:
                             #     im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
@@ -325,7 +325,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
 
                         if nbp_basic.is_3d:
-                            tiles_io.save_tile(nbp_file, nbp_basic, config['file_type'], im, t, r, c)
+                            tiles_io.save_image(nbp_file, nbp_basic, config['file_type'], im, t, r, c)
                         # else:
                         #     im_all_channels_2d[c] = im
                     pbar.update(1)
@@ -619,7 +619,7 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
             else:
                 # Only need to load in mid-z plane if 3D.
                 try:
-                    im = tiles_io.load_tile(nbp_file, nbp_basic, config['file_type'], t, r, c, yxz=[None, None, z_info])
+                    im = tiles_io.load_image(nbp_file, nbp_basic, config['file_type'], t, r, c, yxz=[None, None, z_info])
                 except:
                     raise ValueError(f'Round {r}, Tile {t}, Channel {c} is probably compromised. Remove it & re-run')
 
@@ -682,7 +682,7 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
                     #                   f", the extract step of the algorithm will be interrupted.")
 
             if nbp_basic.is_3d:
-                tiles_io.save_tile(nbp_file, nbp_basic, config['file_type'], im, t, r, c)
+                tiles_io.save_image(nbp_file, nbp_basic, config['file_type'], im, t, r, c)
 
         auto_thresh.append(auto_thresh_c)
         hist_counts_trc.append(hist_counts_trc_c)

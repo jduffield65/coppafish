@@ -111,7 +111,7 @@ class view_find_spots:
             warnings.warn(f"The file {tile_file}\ndoes not exist so loading raw image and filtering it")
             self.image = get_filtered_image(nb, t, r, c)
         else:
-            self.image = tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c)
+            self.image = tiles_io.load_image(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c)
             scale = 1  # Can be any value as not actually used but needed as argument in get_extract_info
 
         # Get auto_threshold value used to detect spots

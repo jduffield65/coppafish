@@ -90,7 +90,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t in uncompleted_tiles:
             # Load in the anchor image and the round images. Note that here anchor means anchor round, not necessarily
             # anchor channel
-            anchor_image = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
+            anchor_image = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
                                                                        r=nbp_basic.anchor_round, 
                                                                        c=round_registration_channel))
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
@@ -98,7 +98,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
             for i in range(2):
                 round_image = [
-                    preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, 
+                    preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, 
                                                                 c=round_registration_channel, 
                                                                 suffix='_raw' if r == nbp_basic.pre_seq_round else '')) 
                     for r in round_chunks[i]]
@@ -183,13 +183,13 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t, c in tqdm(itertools.product(use_tiles, use_channels + [nbp_basic.dapi_channel])):
             print(f" Blurring pre-seq tile {t}, channel {c}")
             # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
-            im = tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=nbp_basic.pre_seq_round, c=c, 
+            im = tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=nbp_basic.pre_seq_round, c=c, 
                                     suffix='_raw')
             if pre_seq_blur_radius > 0:
                 for z in tqdm(range(len(nbp_basic.use_z))):
                     im[:, :, z] = filters.gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
             # Save the blurred image (no need to rotate this, as the rotation was done in extract)
-            tiles_io.save_tile(nbp_file, nbp_basic, nbp_extract.file_type, im, t, r, c)
+            tiles_io.save_image(nbp_file, nbp_basic, nbp_extract.file_type, im, t, r, c)
         registration_data['blur'] = True
 
     # Save registration data externally

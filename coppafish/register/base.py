@@ -677,10 +677,10 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
     transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
                                                     new_origin=np.array([mid_z-z_rad, 0, 0]))
     transform_seq = preprocessing.yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-    preseq = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
+    preseq = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
                                                          r=nbp_basic.pre_seq_round, c=c, 
                                                          yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-    seq = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, 
+    seq = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, 
                                              yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
     preseq = scipy.ndimage.affine_transform(preseq, transform_pre)
     seq = scipy.ndimage.affine_transform(seq, transform_seq)

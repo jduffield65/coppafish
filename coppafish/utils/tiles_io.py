@@ -17,7 +17,7 @@ from ..setup import NotebookPage
 from .. import utils, extract
 
 
-def tile_exists(file_path: str, file_type: str) -> bool:
+def image_exists(file_path: str, file_type: str) -> bool:
     """
     Checks if a tile exists at the given path locations.
 
@@ -89,8 +89,8 @@ def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[
         raise ValueError(f'Unsupported `file_type`: {file_type.lower()}')
 
 
-def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, image: npt.NDArray[np.int32], t: int, 
-              r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> None:
+def save_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, image: npt.NDArray[np.int32], t: int, 
+               r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> None:
     """
     Wrapper function to save tiles as npy files with correct shift. Moves z-axis to first axis before saving as it is 
     quicker to load in this order. Tile `t` is saved to the path `nbp_file.tile[t,r,c]`, the path must contain an 
@@ -161,9 +161,9 @@ def save_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, i
         _save_image(image, file_path, file_type)
 
 
-def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, t: int, r: int, c: int, 
-              yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None, apply_shift: bool = True, 
-              suffix: str = '') -> npt.NDArray[Union[np.int32, np.uint16]]:
+def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, t: int, r: int, c: int, 
+               yxz: Optional[Union[List, Tuple, np.ndarray, jnp.ndarray]] = None, apply_shift: bool = True, 
+               suffix: str = '') -> npt.NDArray[Union[np.int32, np.uint16]]:
     """
     Loads in image corresponding to desired tile, round and channel from the relevant npy file.
 
@@ -252,7 +252,7 @@ def load_tile(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, t
     return image
 
 
-def load_full_tile(
+def load_tile(
         nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, tile: int, apply_shift: bool = False, 
     ) -> npt.NDArray[Union[np.int32, np.uint16]]:
     """
@@ -285,7 +285,7 @@ def load_full_tile(
     
     image_tile = np.zeros(image_shape, dtype=np.int32 if apply_shift else np.uint16)
     for r, c in np.argwhere(use_indices):
-        image_tile[r, c] = utils.tiles_io.load_tile(
+        image_tile[r, c] = utils.tiles_io.load_image(
             nbp_file, nbp_basic, file_type, tile, r, c, apply_shift=False, 
             suffix='_raw' if r == nbp_basic.pre_seq_round else ''
         )
@@ -380,9 +380,9 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
                     image_t = np.rot90(image_t, k=num_rotations, axes=(1, 2))
             else:
                 if nbp_basic.is_3d:
-                    image_t = load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c).transpose((2,0,1))
+                    image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c).transpose((2,0,1))
                 else:
-                    image_t = load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False)
+                    image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False)
             for z in range(z_size):
                 # any tiles not used will be kept as 0.
                 pbar.set_postfix({'tile': t, 'z': z})

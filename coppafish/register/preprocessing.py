@@ -364,7 +364,7 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
     tile_centre = np.array([yx_centre[0], yx_centre[1]])
 
     # Get the image for the tile and channel
-    im = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c,
+    im = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c,
                     [
                         np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius), 
                         np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius), 

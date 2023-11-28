@@ -147,7 +147,7 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
                 if yxz_transform.shape[0] > 0:
                     # Read in the shifted uint16 colors here, and remove shift later.
                     if nbp_basic.is_3d:
-                        spot_colors[in_range, r, c] = tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, 
+                        spot_colors[in_range, r, c] = tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, 
                                                                          use_rounds[r], use_channels[c], yxz_transform,
                                                                          apply_shift=False)
                     else:
@@ -172,7 +172,7 @@ def get_spot_colors(yxz_base: jnp.ndarray, t: int, transforms: jnp.ndarray, nbp_
                     # Read in the shifted uint16 colors here, and remove shift later.
                     if nbp_basic.is_3d:
                         bg_colours[in_range, c] = \
-                            tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t, nbp_basic.pre_seq_round, 
+                            tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, nbp_basic.pre_seq_round, 
                                                use_channels[c], yxz_transform, apply_shift=False)
                 pbar.update(1)
         # subtract tile pixel shift value so that bg_colours are in range -15_000 to 50_000 (approx)
