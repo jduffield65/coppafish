@@ -134,6 +134,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         tile_colours = colours[spot_tile == t]
         tile_bg_colours = bg_colours[spot_tile == t]
         tile_bg_strength = np.sum(np.abs(tile_bg_colours), axis=(1, 2))
+        if np.allclose(tile_bg_strength, tile_bg_strength[0]):
+            # All pixels have the same background strength
+            continue
         weak_bg = tile_bg_strength < np.percentile(tile_bg_strength, 50)
         tile_colours = tile_colours[weak_bg]
         # normalise pixel colours by round and channel on this tile

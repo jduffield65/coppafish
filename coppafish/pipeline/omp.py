@@ -270,9 +270,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            nd_spot_colors_use[in_tile], bg_colours = spot_colors.get_spot_colors(
+            nd_spot_colors_use[in_tile] = spot_colors.get_spot_colors(
                 jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract
-            )
+            )[0]
             spot_colors_norm[in_tile] = nd_spot_colors_use[in_tile] / color_norm_factor[t]
     nbp.intensity = np.asarray(call_spots.get_spot_intensity(spot_colors_norm))
     del spot_colors_norm
