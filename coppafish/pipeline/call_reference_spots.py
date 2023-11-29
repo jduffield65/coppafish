@@ -127,20 +127,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     assert initial_bleed_matrix.shape == expected_shape, \
         f'Initial bleed matrix at {nbp_file.initial_bleed_matrix} has shape {initial_bleed_matrix.shape}, ' \
             + f'expected {expected_shape}.'
-    # normalise bleed matrix across channels, then once again across dyes so each column has norm 1
-    n_dyes = len(nbp_basic.dye_names)
-    bleed_norm = np.median(colour_norm_factor, axis=0)
-    # Want to divide each row by bleed_norm, so reshape bleed_norm to be n_channels x n_dyes
-    bleed_norm = np.repeat(bleed_norm[:, np.newaxis], n_dyes, axis=1)
-    initial_bleed_matrix = initial_bleed_matrix / bleed_norm
-    # now normalise each column (dye) to have norm 1
-    bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
-    # Repeat bleed n_rounds times along a new 0th axis
-    bleed_matrix = np.repeat(bleed_matrix[np.newaxis, :, :], n_rounds, axis=0)
-    intensity = call_spots.get_spot_intensity(spot_colors=spot_colours)
 
-    # normalise each dye across channels to have L2 norm 1
-    isolated = nbp_ref_spots.isolated
+    # Load spot colours and background colours
     bleed_matrix = initial_bleed_matrix / np.linalg.norm(initial_bleed_matrix, axis=0)
     colours = nbp_ref_spots.colors[:, :, nbp_basic.use_channels].astype(float)
     bg_colours = nbp_ref_spots.bg_colours.astype(float)
