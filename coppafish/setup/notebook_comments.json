@@ -211,7 +211,7 @@
       "normalisation between channels in the `call_reference_spots` step.","",
       "Page added to *Notebook* in *pipeline/extract_run.py*"],
 
-    "auto_thresh": ["Numpy float array `[n_tiles x (n_rounds + n_extra_rounds) x n_channels]`",
+    "auto_thresh": ["Numpy int array `[n_tiles x (n_rounds + n_extra_rounds) x n_channels]`",
       "`auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$",
       "used for spot detection in the `find_spots` step of the pipeline."],
     "hist_values": ["Numpy integer array [n_pixel_values]",
@@ -219,7 +219,7 @@
     "hist_counts": ["Numpy integer array `[n_pixel_values x n_rounds x n_channels]`",
       "`hist_counts[i, r, c]` is the number of pixels across all tiles in round $r$, channel $c$",
       "which had the value `hist_values[i]`."],
-    "bg_scale": ["Numpy float array `[n_tiles x n_rounds x n_channels x 2]`",
+    "bg_scale": ["Numpy float array `[n_tiles x n_rounds x n_channelsW]`",
       "`bg_scale[t, r, c]` is the scale factor applied to the preseq round of tile $t$, channel $c$",
       "to match the colour profile of the sequencing image in tile t, round r, channel c.",
       "None if not using preseq round."],
