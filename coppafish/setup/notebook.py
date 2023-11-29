@@ -906,15 +906,24 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
 
 def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
     """
-    Merge a list of single tile nbp_extract into one multitile nbp_extract
+    Merge a list of single tile nbp_extract into one multitile nbp_extract.
     
     Args:
-        nbp_extract_list: List of extract pages to be combined
-        master_nbp_basic: nbp_basic page for master notebook
+        nbp_extract_list (list of NotebookPage): list of extract pages to be combined.
+        master_nbp_basic (NotebookPage): nbp_basic page for master notebook.
 
     Returns:
-        master_nbp_extract: multitile nbp_extract page
+        master_nbp_extract: multi-tile nbp_extract page.
+        
+    Raises:
+        AssertionError: merge of the given extract list is not possible based on their values.
     """
+    for i in range(len(nbp_extract_list) - 1):
+        assert np.allclose(nbp_extract_list[i].hist_values, nbp_extract_list[i + 1].hist_values), \
+            "hist_values must be the same for every extract page to merge them"
+        assert nbp_extract_list[i].file_type == nbp_extract_list[i + 1].file_type, \
+            "file_type must be the same for every extract page to merge them"
+
     # Create a master notebook extract page
     master_nbp_extract = NotebookPage('extract')
 
