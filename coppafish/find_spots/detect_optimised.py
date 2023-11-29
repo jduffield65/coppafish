@@ -111,8 +111,10 @@ def get_local_maxima_jax(image: jnp.ndarray, se_shifts: Tuple[jnp.ndarray, jnp.n
     """
     image = jnp.pad(image, pad_sizes, mode='constant', constant_values=0)
     consider_yxz_padded = jnp.add(consider_yxz, pad_sizes[:,0][:,None])
+    del consider_yxz
     se_shifts_flat = se_shifts.reshape((image.ndim, -1))
     consider_yxz_padded_shifted = jnp.add(consider_yxz_padded[..., None], se_shifts_flat[:, None, :])
+    del se_shifts_flat, consider_yxz_padded
     keep = jnp.all(image[tuple(consider_yxz_padded_shifted)] <= consider_intensity[..., None], axis=-1)
 
     return keep
