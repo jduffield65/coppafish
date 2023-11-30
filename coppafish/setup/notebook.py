@@ -893,13 +893,12 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     master_nbp_register = merge_register(nbp_register_list, master_nbp_basic)
     master_nb += master_nbp_register
 
-    # TODO: Add register_debug page
     has_register_debug = all([nb.has_page('register_debug') for nb in nb_list])
-    if has_register_debug:
-        NotImplementedError(
-            "List of notebooks contains 'regiser_debug' data, merging these together is not possible yet. Please " \
-                + "contact a developer if this is required."
-        )
+    if not has_register_debug:
+        return master_nb
+    nbp_register_debug_list = [nb.register_debug for nb in nb_list]
+    master_nbp_register_debug = merge_register_debug(nbp_register_debug_list, master_nbp_basic)
+    master_nb += master_nbp_register_debug
 
     return master_nb
 
@@ -963,15 +962,18 @@ def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
 
 def merge_extract_debug(nbp_extract_debug_list, master_nbp_basic) -> NotebookPage:
     """
-        Merge a list of single tile nbp_extract_dubug into one multitile nbp_extract_debug
-        
-        Args:
-            nbp_extract_debug_list: List of extract_debug pages to be combined
-            master_nbp_basic: nbp_basic page for master notebook
+    Merge a list of single tile nbp_extract_debug into one multitile nbp_extract_debug
+    
+    Args:
+        nbp_extract_debug_list: List of extract_debug pages to be combined
+        master_nbp_basic: nbp_basic page for master notebook
 
-        Returns:
-            master_nbp_extract: multitile nbp_extract_debug page
-        """
+    Returns:
+        master_nbp_extract: multi-tile nbp_extract_debug page
+        
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
+    """
     # Create a master notebook extract page
     master_nbp_extract_debug = NotebookPage('extract_debug')
 
@@ -989,9 +991,9 @@ def merge_extract_debug(nbp_extract_debug_list, master_nbp_basic) -> NotebookPag
         # The set gets rid of duplicates, so this set will have 1 value when all notebooks agree on this parameter
         key_vals = set([nbp_extract_debug_list[i].__getattribute__(key) for i in range(len(nbp_extract_debug_list))])
         if len(key_vals) > 1:
-            raise ValueError("What on earth are you doing? \n\t>:(\n These notebooks MUST all have the same value " + \
-                             "for the parameter: " + key + ". The list of Notebooks you gave has the following set " + \
-                             "of values: " + str(key_vals))
+            assert False, "What on earth are you doing? \n\t>:(\n These notebooks MUST all have the same value " + \
+                          "for the parameter: " + key + ". The list of Notebooks you gave has the following set " + \
+                          "of values: " + str(key_vals)
         master_nbp_extract_debug.__setattr__(key=key, value=nbp_extract_debug_list[0].__getattribute__(key))
 
     # Initialise non-trivial variables
@@ -1021,6 +1023,9 @@ def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: 
 
     Returns:
         master_nbp_find_spots: multi-tile 'find_spots' page.
+        
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
     """
     # Create a master notebook find_spots page to append all tile pages to
     master_nbp_find_spots = NotebookPage('find_spots')
@@ -1051,14 +1056,17 @@ def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: 
 
 def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     """
-    Merge a list of single tile nbp_register into one multitile nbp_register
+    Merge a list of single tile nbp_register into one multi-tile nbp_register.
     
     Args:
-        nbp_register_list: List of register pages to be combined
-        master_nbp_basic: nbp_basic page for master notebook
+        nbp_register_list: list of register pages to be combined.
+        master_nbp_basic: 'basic_info' page for master notebook to base the combined NotebookPage on.
 
     Returns:
-        master_nbp_extract: multitile nbp_register page
+        master_nbp_extract: multi-tile nbp_register page.
+        
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
     """
     # Create a master notebook reg page
     master_nbp_register = NotebookPage('register')
@@ -1066,40 +1074,91 @@ def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     # Extract tiles that we're using
     use_tiles = master_nbp_basic.use_tiles
     n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
-    z_subvols, y_subvols, x_subvols = nbp_register_list[0].round_shift.shape[2:5]
 
     # initialise all our variables
-    start_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
+    initial_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
     transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
-    round_position = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
-    round_shift = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
     round_transform = np.zeros((n_tiles, n_rounds, 4, 3))
-    channel_position = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
-    channel_shift = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
     channel_transform = np.zeros((n_tiles, n_channels, 4, 3))
 
     # Loop over all tiles in use and populate these arrays
     for i, tile in enumerate(use_tiles):
-        start_transform[tile] = nbp_register_list[i].start_transform
-        transform[tile] = nbp_register_list[i].transform
-        round_position[tile] = nbp_register_list[i].round_position
-        round_shift[tile] = nbp_register_list[i].round_shift
-        round_transform[tile] = nbp_register_list[i].round_transform
-        channel_position[tile] = nbp_register_list[i].channel_position
-        channel_shift[tile] = nbp_register_list[i].channel_shift
-        channel_transform[tile] = nbp_register_list[i].channel_transform
+        initial_transform[tile] = nbp_register_list[i].initial_transform[tile]
+        transform[tile] = nbp_register_list[i].transform[tile]
+        round_transform[tile] = nbp_register_list[i].round_transform[tile]
+        channel_transform[tile] = nbp_register_list[i].channel_transform[tile]
 
     # Now assign these to the master notebook
-    master_nbp_register.start_transform = start_transform
+    master_nbp_register.start_transform = initial_transform
     master_nbp_register.transform = transform
-    master_nbp_register.round_position = round_position
-    master_nbp_register.round_shift = round_shift
     master_nbp_register.round_transform = round_transform
-    master_nbp_register.channel_position = channel_position
-    master_nbp_register.channel_shift = channel_shift
     master_nbp_register.channel_transform = channel_transform
 
     return master_nbp_register
+
+
+def merge_register_debug(
+    nbp_register_debug_list: List[NotebookPage], master_nbp_basic: NotebookPage
+    ) -> NotebookPage:
+    """
+    Merge a list of single-tile 'register_debug' NotebookPages into one multi-tile NotebookPage.
+
+    Args:
+        nbp_register_debug_list (list of NotebookPage): list of finalised 'register_debug' NotebookPages to combine.
+        master_nbp_basic: 'basic_info' page for master notebook to base the combined NotebookPage on.
+
+    Returns:
+        NotebookPage: multi-tile 'register_debug' NotebookPage.
+    
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
+    """
+    # Create a master notebook reg page
+    master_nbp_register_debug = NotebookPage('register_debug')
+    
+    use_tiles = master_nbp_basic.use_tiles
+    n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
+    
+    for i in range(len(nbp_register_debug_list) - 1):
+        n_iters = nbp_register_debug_list[i].n_matches.shape[3]
+        zyx_subvols = nbp_register_debug_list[i].round_shift.shape[2]
+        channel_transform = nbp_register_debug_list[i].channel_transform
+        assert zyx_subvols == nbp_register_debug_list[i + 1].round_shift.shape[2], \
+            "subvol sizes are not the same for every 'register_debug' NotebookPage"
+        assert n_iters == nbp_register_debug_list[i + 1].n_matches.shape[3], \
+            "n_iters is not the same value for every 'register_debug' NotebookPage"
+        assert n_iters == nbp_register_debug_list[i + 1].mse.shape[3], \
+            "n_iters is not the same value for every 'register_debug' NotebookPage"
+        assert np.allclose(channel_transform, nbp_register_debug_list[i + 1].channel_transform), \
+            "channel_transform is not the same for every 'register_debug' NotebookPage"
+    
+    n_matches = np.zeros((n_tiles, n_rounds, n_channels, n_iters))
+    mse = np.zeros((n_tiles, n_rounds, n_channels, n_iters))
+    converged = np.zeros((n_tiles, n_rounds, n_channels))
+    round_shift = np.zeros((n_tiles, n_rounds, zyx_subvols, 3))
+    round_shift_corr = np.zeros((n_tiles, n_rounds, zyx_subvols))
+    position = np.zeros((n_tiles, n_rounds, zyx_subvols, 3))
+    round_transfrom_raw = np.zeros((n_tiles, n_rounds, 3, 4))
+
+    for i, tile in enumerate(use_tiles):
+        n_matches[tile] = nbp_register_debug_list[i].n_matches[tile]
+        mse[tile] = nbp_register_debug_list[i].mse[tile]
+        converged[tile] = nbp_register_debug_list[i].converged[tile]
+        round_shift[tile] = nbp_register_debug_list[i].round_shift[tile]
+        round_shift_corr[tile] = nbp_register_debug_list[i].round_shift_corr[tile]
+        position[tile] = nbp_register_debug_list[i].position[tile]
+        round_transfrom_raw[tile] = nbp_register_debug_list[i].round_transfrom_raw[tile]
+    
+    master_nbp_register_debug.channel_transform = channel_transform
+    master_nbp_register_debug.n_matches = n_matches
+    master_nbp_register_debug.n_matches = mse
+    master_nbp_register_debug.n_matches = converged
+    master_nbp_register_debug.n_matches = round_shift
+    master_nbp_register_debug.n_matches = round_shift_corr
+    master_nbp_register_debug.n_matches = position
+    master_nbp_register_debug.n_matches = round_transfrom_raw
+    
+    return master_nbp_register_debug
 
 
 def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
