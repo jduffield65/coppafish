@@ -847,6 +847,9 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
 
     Returns:
         master_nb: master notebook merged from all the others.
+        
+    Raises:
+        AssertionError: merge of the given Notebook list is not possible based on incompatible values.
     """
     assert len(nb_list) > 1, "Require at least two notebooks to merge"
     assert master_nb.has_page('file_names'), "Master notebook must contain 'file_names' page"
@@ -903,6 +906,7 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
 
     return master_nb
 
+    # Check the notebooks contain register page
 
 def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
     """
@@ -914,7 +918,7 @@ def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
 
     Returns:
         master_nbp_extract: multi-tile nbp_extract page.
-        
+    
     Raises:
         AssertionError: merge of the given extract list is not possible based on their values.
     """
