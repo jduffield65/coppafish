@@ -396,7 +396,6 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
                         np.arange(z_index, z_index + 1)
                     ), 
                     int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
-                    bg_scale=nbp_extract.bg_scale
                 )
         else:
             pixel_colors_t1, pixel_yxz_t1 = \
