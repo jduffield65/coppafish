@@ -105,9 +105,12 @@ def get_local_maxima(image: np.ndarray, se_shifts: Tuple[np.ndarray, np.ndarray,
         `[n_consider] ndarray[bool]`: whether each point in `consider_yxz` is a local maxima or not.
     """
     image = np.pad(image, pad_sizes, mode='constant', constant_values=0)
-    consider_yxz_padded = np.add(consider_yxz, pad_sizes[:,0][:,None])
-    se_shifts_flat = se_shifts.reshape((image.ndim, -1))
-    consider_yxz_padded_shifted = np.add(consider_yxz_padded[..., None], se_shifts_flat[:, None, :])
-    keep = np.all(image[tuple(consider_yxz_padded_shifted)] <= consider_intensity[..., None], axis=-1)
+    for i in range(len(pad_sizes)):
+        consider_yxz[i] = consider_yxz[i] + pad_sizes[i][0]
+    keep = np.ones(consider_yxz[0].shape[0], dtype=bool)
+    for i in range(se_shifts[0].shape[0]):
+        # Note that in each iteration, only consider coordinates which can still possibly be local maxima.
+        keep = keep * (image[tuple([consider_yxz[j] + se_shifts[j][i] for j in range(image.ndim)])] <=
+                       consider_intensity)
 
     return keep
