@@ -1,5 +1,6 @@
 import nd2
 import scipy
+import warnings
 import numpy as np
 import skimage
 from tqdm import tqdm
@@ -191,8 +192,9 @@ def huber_regression(shift, position, predict_shift=True):
         z_coef = np.array([0, 0, 0])
         z_shift = np.mean(shift[:, 0])
         # raise a warning if we have less than 3 z-coords in position
-        print('Warning: Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of '
-              'mean(shift)')
+        warnings.warn(
+            'Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of mean(shift)'
+        )
     else:
         huber_z = HuberRegressor(epsilon=2, max_iter=400, tol=1e-4).fit(X=position, y=shift[:, 0])
         z_coef = huber_z.coef_

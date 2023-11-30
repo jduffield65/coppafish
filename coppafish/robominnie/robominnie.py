@@ -202,10 +202,10 @@ class RoboMinnie:
 
     def generate_gene_codes(self, n_genes: int = 20, n_rounds: int = None) -> Dict:
         """
-        Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible based 
-        on the number of genes needed. Saves codes in self, can be used in function `Add_Spots`. The `i`th gene name 
-        will be `gene_i`. `ValueError` is raised if all gene codes created are not unique. We assume that n_rounds is 
-        also the number of unique dyes, each dye is labelled between (0, n_rounds].
+        Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible 
+        relative to the number of genes wanted. Saves codes in self, can be used in function `Add_Spots`. The `i`th 
+        gene name will be `gene_i`. `ValueError` is raised if all gene codes created are not unique. We assume that 
+        `n_rounds` is also the number of unique dyes, each dye is labelled between `(0, n_rounds]`.
 
         Args:
             n_genes (int, optional): number of unique gene codes to generate. Default: 20.
@@ -220,53 +220,8 @@ class RoboMinnie:
         self.instructions.append(utils.base.get_function_name())
         if n_rounds == None:
             n_rounds = self.n_rounds
-        assert n_rounds > 1, 'Require at least two rounds'
-        assert n_genes > 0, 'Require at least one gene'
-        degree = 0
-        # Find the smallest degree polynomial required to produce `n_genes` unique gene codes. We use the smallest 
-        # degree polynomial because this will have the smallest amount of overlap between gene codes
-        while True:
-            max_unique_codes = int(n_rounds**degree - n_rounds)
-            if max_unique_codes >= n_genes:
-                break
-            degree += 1
-            assert degree < 100, 'Degree too large, breaking from loop...'
-        # Create a `degree` degree polynomial, where each coefficient goes between (0, n_rounds] to generate each 
-        # unique gene code
-        codes = dict()
-        # Index 0 is for constant, index 1 for linear coefficient, etc..
-        most_recent_coefficient_set = np.array(np.zeros(degree+1))
-        for n_gene in trange(n_genes, ascii=True, unit='Codes', desc='Generating gene codes'):
-            # Find the next coefficient set that works, which is not just constant across all rounds (like a background 
-            # code)
-            while True:
-                # Iterate to next working coefficient set, by mod n_rounds addition
-                most_recent_coefficient_set[0] += 1
-                for i in range(most_recent_coefficient_set.size):
-                    if most_recent_coefficient_set[i] >= n_rounds:
-                        # Cycle back around to 0, then add one to next coefficient
-                        most_recent_coefficient_set[i]   =  0
-                        most_recent_coefficient_set[i+1] += 1
-                if np.all(most_recent_coefficient_set[1:degree+1] == 0):
-                    continue
-                break
-            # Generate new gene code
-            new_code  = ''
-            gene_name = f'gene_{n_gene}'
-            for r in range(n_rounds):
-                result = 0
-                for j in range(degree + 1):
-                    result += most_recent_coefficient_set[j] * r**j
-                result = int(result)
-                result %= n_rounds
-                new_code += str(result)
-            # Add new code to dictionary
-            codes[gene_name] = new_code
-        values = list(codes.values())
-        if len(values) != len(set(values)):
-            # Not every gene code is unique
-            raise ValueError(f'Could not generate {n_genes} unique gene codes with {n_rounds} rounds/dyes. ' + \
-                             'Maybe try decreasing the number of genes or increasing the number of rounds.')
+            
+        codes = utils.base.reed_solomon_codes(n_genes, n_rounds)
         self.codes = codes
         return codes
 
@@ -899,10 +854,12 @@ class RoboMinnie:
         r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
-        num_rotations = 0 #? Should probably be 0 for robominnie multi-tile setup? Unsure tho
+        ;#? Should probably be 0 for robominnie multi-tile setup? Unsure tho
+        num_rotations = 0
 
         [stitch]
         expected_overlap = {self.tile_overlap if self.n_tiles > 1 else 0}
+        shift_max_range = 6000, 6000, 100
 
         [register]
         subvols = {1}, {8}, {8}
@@ -929,9 +886,10 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def run_coppafish(self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False,
-                      jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True) \
-        -> None:
+    def run_coppafish(
+        self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False, 
+        jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True, 
+        ) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
@@ -966,6 +924,7 @@ class RoboMinnie:
         if time_pipeline:
             start_time = time.time()
         run.run_tile_indep_pipeline(nb)
+        
         run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'

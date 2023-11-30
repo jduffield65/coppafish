@@ -227,7 +227,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
 
                 # if not nbp_basic.is_3d:
                 #     # for 2d all channels in same file
-                #     file_exists = os.path.isfile(nbp_file.tile[t][r])
+                #     file_exists = tiles_io.tile_exists(nbp_file.tile[t][r], config['file_type'])
                 #     if file_exists:
                 #         # mmap load in image for all channels if tiff exists
                 #         im_all_channels_2d = np.load(nbp_file.tile[t][r], mmap_mode='r')
@@ -246,7 +246,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
                         max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
 
                     if nbp_basic.is_3d:
-                        file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+                        file_exists = tiles_io.tile_exists(nbp_file.tile[t][r][c], config['file_type'])
                     pbar.set_postfix({'round': r, 'tile': t, 'channel': c, 'exists': str(file_exists)})
 
                     if file_exists:
@@ -610,7 +610,7 @@ def tile_extract(nbp_basic, nbp_file, use_channels, t, r, config, hist_bin_edges
             max_tiff_pixel_value = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
 
         # Check if file already exists
-        file_exists = os.path.isfile(nbp_file.tile[t][r][c])
+        file_exists = tiles_io.tile_exists(nbp_file.tile[t][r][c], config['file_type'])
 
         if file_exists:
 

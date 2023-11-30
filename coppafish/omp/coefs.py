@@ -3,7 +3,6 @@ import numpy.typing as npt
 from typing import Tuple, List, Union, Any, Optional
 from tqdm import tqdm
 import scipy
-import psutil
 import multiprocessing
 
 from .. import call_spots
@@ -391,9 +390,13 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
         if nbp_basic.use_preseq:
             pixel_colors_t1, pixel_yxz_t1, _ = \
                 spot_colors.base.get_spot_colors(
-                    spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
-                                                   np.arange(z_index, z_index + 1)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
+                    spot_colors.base.all_pixel_yxz(
+                        nbp_basic.tile_sz, 
+                        nbp_basic.tile_sz, 
+                        np.arange(z_index, z_index + 1)
+                    ), 
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                )
         else:
             pixel_colors_t1, pixel_yxz_t1 = \
                 spot_colors.base.get_spot_colors(
@@ -511,7 +514,7 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
     pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
     pixel_coefs_t = scipy.sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
 
-    n_threads = utils.threads.get_available_threads()
+    n_threads = utils.threads.get_available_cores()
 
     z_chunks = len(use_z) // z_chunk_size + 1
     processes = []

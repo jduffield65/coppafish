@@ -86,7 +86,7 @@ TYPES = [
      lambda x: int(x[()]),
      ),
     ("number",
-     lambda x: np.isreal(x) is True,  # is True guards against isreal returning an array
+     lambda x: isinstance(x, (float, np.float_)) and np.isreal(x) is True,
      lambda x: float(x[()]),
      ),
     ("list",
@@ -281,7 +281,7 @@ class Notebook:
                 self._config = read_config  # update config to new one - only difference will be in file_names section
             self.add_no_save_pages()  # add file_names page with new config
         else:
-            warnings.warn("Notebook file not found, creating a new notebook.")
+            print("Notebook file not found, creating a new notebook.")
             if read_config is None:
                 warnings.warn("Have not passed a config_file so Notebook.get_config() won't work.")
             self._created_time = time.time()

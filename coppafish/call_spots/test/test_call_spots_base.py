@@ -28,7 +28,7 @@ def test_get_bled_codes():
     rng = np.random.RandomState(31)
     # Gene codes must be integers that exist inside bleed_matrix.shape[2]
     gene_codes = np.ones((n_genes, n_rounds), dtype=int)
-    bleed_matrix = rng.random((n_rounds, n_channels, n_dyes))
+    bleed_matrix = rng.random((n_channels, n_dyes))
     gene_efficiency = rng.random((n_genes, n_rounds))
     bled_codes = base.get_bled_codes(gene_codes, bleed_matrix, gene_efficiency)
     assert bled_codes.shape == (n_genes, n_rounds, n_channels), \
