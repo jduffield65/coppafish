@@ -1441,9 +1441,9 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
         filter: whether to apply sobel filter to images
     """
     # Initialise frequent variables
-    anchor = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, t, nb.basic_info.anchor_round,
+    anchor = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, nb.basic_info.anchor_round,
                                   nb.basic_info.anchor_channel))
-    target = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, t, r, c))
+    target = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c))
     transform = yxz_to_zyx_affine(nb.register.transform[t, r, c])
     target_transfromed = affine_transform(target, transform, order=1)
     # plot in napari

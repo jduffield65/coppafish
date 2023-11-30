@@ -58,7 +58,7 @@ def get_raw_extension(input_dir: str) -> str:
         index = min([i for i in range(len(files)) if files[i].endswith('nd2')])
 
         with nd2.ND2File(os.path.join(input_dir, files[index])) as image:
-            if 'P' in image.sizes.keys():
+            if image.sizes['C'] == 28:
                 raw_extension = '.nd2'
             else:
                 raw_extension = 'jobs'
@@ -204,7 +204,7 @@ def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
     n_lasers = len(set(laser))
 
     if config['file_names']['raw_extension'] != 'jobs':
-        preseq_exists = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq_round']))
+        preseq_exists = os.path.isfile(os.path.join(input_dir, config['file_names']['pre_seq']))
     elif config['file_names']['raw_extension'] == 'jobs':
         preseq_exists = bool(config['file_names']['pre_seq'])
     metadata['n_rounds'] = n_files // (n_lasers * metadata['n_tiles'])
