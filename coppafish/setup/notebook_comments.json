@@ -337,15 +337,16 @@
     "DESCRIPTION": ["*register* page contains the affine transforms to go from the ref round/channel",
       "to each imaging round/channel for every tile.",
       "Page added to *Notebook* in *pipeline/register.py*"],
+    
     "initial_transform": [" n_tiles x n_rounds x n_channels x 4 x 3 ndarray",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c)$ for each tile $t$, round $r $ and channel $c$.",
       " These are computed from start_transform and corrected via an ICP algorithm."],
     "transform": [" n_tiles x n_rounds x n_channels x 4 x 3 ndarray",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c)$ for each tile $t$, round $r $ and channel $c$.",
       " These are computed from start_transform and corrected via an ICP algorithm."],
-    "round_transform": [" n_tiles x n_rounds x 4 x 3 ndarray:",
+    "round_transform": [" n_tiles x n_rounds x 3 x 4 ndarray:",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
-    "channel_transform": ["n_tiles x n_channels x 4 x 3 ndarray:",
+    "channel_transform": ["[n_channels x 3 x 4 ndarray]",
       " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."]
   },
 
@@ -353,6 +354,7 @@
   {
     "DESCRIPTION": ["*register_debug* page contains information on how the affine transforms in *register* page were calculated.",
       "Page added to *Notebook* in *pipeline/register.py*"],
+    
     "n_matches": ["Numpy integer array [n_tiles x n_rounds x n_channels x n_iters]",
       "Number of matches found for each transform at each iteration",
       "A match is when distance between points is less than `config['register']['neighb_dist_thresh']`."],
@@ -362,16 +364,16 @@
     "converged": ["Numpy boolean array [n_tiles x n_rounds x n_channels]",
       "This is `False` for transforms where the *ICP* algorithm reached `config['register']['n_iter']` iterations",
       "before transform converged."],
-    "round_shift": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols) x 3:",
+    "round_shift": ["[n_tiles x n_rounds x (z_subvols * y_subvols * x_subvols) x 3]",
       " Shift of sub-volumes used for the round registration. Specifically, round_shift[t, r, z, y, x] is the shift",
       " taking sub-volume  [z, y, x] from $(t, r_{ref}, c_{ref})$ to its corresponding sub-volume in $(t, r, c_{ref})$."],
-    "round_shift_corr": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols):",
+    "round_shift_corr": ["n_tiles x n_rounds x (z_subvols * y_subvols * x_subvols)]",
       " score of shift of sub-volumes used for the round registration. "],
-    "position": ["n_tiles x n_rounds x (z_subvols x y_subvols x x_subvols) x 3:",
+    "position": ["n_tiles x n_rounds x (z_subvols * y_subvols * x_subvols) x 3:",
       "Position of each subvolume in z y x local tile coords"],
-    "round_transform_raw": [" n_tiles x n_rounds x 4 x 3 ndarray:",
+    "round_transform_raw": ["[n_tiles x n_rounds x 3 x 4 ndarray]",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
-    "channel_transform": [" n_channels x 4 x 3 ndarray:",
+    "channel_transform": ["[n_channels x 3 x 4 ndarray]",
       " affine transforms taking $(r_{mid}, c_{ref})$ to $(r_{mid}, c)$ for each tile $t$ and channel $c$."]
   },
 
