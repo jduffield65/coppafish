@@ -886,9 +886,10 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def run_coppafish(self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False,
-                      jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True) \
-        -> None:
+    def run_coppafish(
+        self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False, 
+        jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True, 
+        ) -> None:
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
@@ -923,6 +924,9 @@ class RoboMinnie:
         if time_pipeline:
             start_time = time.time()
         run.run_tile_indep_pipeline(nb)
+        
+        assert np.all(~np.isclose(nb.extract.auto_thresh, 0)), "'auto_thresh' calculated in extract contains zeros"
+        
         run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'
