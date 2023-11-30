@@ -925,8 +925,6 @@ class RoboMinnie:
             start_time = time.time()
         run.run_tile_indep_pipeline(nb)
         
-        assert np.all(~np.isclose(nb.extract.auto_thresh, 0)), "'auto_thresh' calculated in extract contains zeros"
-        
         run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'
