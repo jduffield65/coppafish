@@ -893,6 +893,7 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     master_nbp_register = merge_register(nbp_register_list, master_nbp_basic)
     master_nb += master_nbp_register
 
+    # Check the notebooks contain register_debug page
     has_register_debug = all([nb.has_page('register_debug') for nb in nb_list])
     if not has_register_debug:
         return master_nb
