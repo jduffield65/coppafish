@@ -388,7 +388,7 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
     def get_z_plane_colours(z_index: int, q: multiprocessing.Queue) -> None:
         no_output = None, None, None
         if nbp_basic.use_preseq:
-            pixel_colors_t1, pixel_yxz_t1, _ = \
+            pixel_colors_t1, pixel_yxz_t1 = \
                 spot_colors.base.get_spot_colors(
                     spot_colors.base.all_pixel_yxz(
                         nbp_basic.tile_sz, 
@@ -400,9 +400,11 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
         else:
             pixel_colors_t1, pixel_yxz_t1 = \
                 spot_colors.base.get_spot_colors(
-                    spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
-                                                   np.arange(z_index, z_index + 1)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
+                    spot_colors.base.all_pixel_yxz(
+                        nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_index, z_index + 1)
+                    ), 
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                )
         
         pixel_colors_t1 = pixel_colors_t1.astype(np.float32) / colour_norm_factor
         if pixel_colors_t1.shape[0] == 0:
