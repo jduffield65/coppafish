@@ -251,6 +251,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                         bg_scale[t_new, r_new, c_new] = new_bg_scale
                         pbar.update(1)
                     current_process_number = 0
+        queue.close()
         nbp_extract.bg_scale = bg_scale
     nbp_extract.finalized = True
 
