@@ -231,9 +231,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
         n_threads = config['n_background_scale_threads']
         # Maximum threads physically possible is (potentially) bottlenecked by available RAM
-        n_threads = threads.get_available_cores()
-        max_n_threads = int(psutil.virtual_memory().available // 4.2e8 - 10)
-        n_threads = np.clip(n_threads, 1, max_n_threads, dtype=int)
+        n_threads = np.clip(threads.get_available_cores(), 1, 32, dtype=int)
         current_trcs = []
         queue = Queue()
         for i, trc in tqdm(enumerate(itertools.product(use_tiles, use_rounds, use_channels))):
