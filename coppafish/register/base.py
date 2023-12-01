@@ -675,6 +675,12 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
         c (int): channel index.
         queue (Queue, optional): multiprocess `Queue` object, the return is `put` into this object. Default: None, no 
             queue object.
+    
+    Returns:
+        - float: computed brightness scale.
+        - int: tile index.
+        - int: round index.
+        - int: channel index.
     """
     transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
                                                     new_origin=np.array([mid_z-z_rad, 0, 0]))
@@ -688,6 +694,6 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
     seq = scipy.ndimage.affine_transform(seq, transform_seq)
     output = brightness_scale(preseq, seq)
     if queue is not None:
-        queue.put(output)
+        queue.put((output[0], t, r, c))
 
-    return output
+    return output[0], t, r, c
