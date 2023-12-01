@@ -12,9 +12,10 @@ import matplotlib.gridspec as gridspec
 from ...setup import Notebook
 from skimage.filters import sobel
 from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, yxz_to_zyx
-from coppafish.register.base import huber_regression, brightness_scale
+from coppafish.register.base import huber_regression, brightness_scale, ols_regression
 from coppafish.utils import tiles_io
 from scipy.ndimage import affine_transform
+
 plt.style.use('dark_background')
 
 
@@ -125,7 +126,7 @@ class RegistrationViewer:
         # round buttons
         for rnd in use_rounds:
             # now connect this to a slot that will activate the round regression
-            self.svr_buttons.__getattribute__('R'+str(rnd)).clicked.connect(self.create_round_slot(rnd))
+            self.svr_buttons.__getattribute__('R' + str(rnd)).clicked.connect(self.create_round_slot(rnd))
         # Add buttons for correlation coefficients for both hist or cmap
         self.svr_buttons.pearson_hist.clicked.connect(self.button_pearson_hist_clicked)
         self.svr_buttons.pearson_cmap.clicked.connect(self.button_pearson_cmap_clicked)
@@ -158,7 +159,7 @@ class RegistrationViewer:
 
         # Finally, add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.icp_buttons, area="left", name='ICP Diagnostics',
-                                                add_vertical_stretch=False)
+                                           add_vertical_stretch=False)
 
         # Create a single widget containing buttons for Overlay diagnostics
         self.overlay_buttons = ButtonOverlayWindow()
@@ -166,7 +167,7 @@ class RegistrationViewer:
         self.overlay_buttons.button_overlay.clicked.connect(self.view_button_clicked)
         # Add buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.overlay_buttons, area="left", name='Overlay Diagnostics',
-                                             add_vertical_stretch=False)
+                                           add_vertical_stretch=False)
 
         # Create a single widget containing buttons for BG Subtraction diagnostics if bg subtraction has been run
         if self.nb.basic_info.use_preseq:
@@ -176,7 +177,7 @@ class RegistrationViewer:
             self.bg_sub_buttons.button_brightness_scale.clicked.connect(self.button_brightness_scale_clicked)
             # Add buttons as widgets in napari viewer
             self.viewer.window.add_dock_widget(self.bg_sub_buttons, area="left", name='BG Subtraction Diagnostics',
-                                                 add_vertical_stretch=False)
+                                               add_vertical_stretch=False)
 
         # Create a widget containing buttons for fluorescent bead diagnostics if fluorescent beads have been used
         if self.nb.file_names.fluorescent_bead_path is not None:
@@ -185,7 +186,7 @@ class RegistrationViewer:
             self.bead_buttons.button_fluorescent_beads.clicked.connect(self.button_fluorescent_beads_clicked)
             # Add buttons as widgets in napari viewer
             self.viewer.window.add_dock_widget(self.bead_buttons, area="left", name='Fluorescent Bead Diagnostics',
-                                                 add_vertical_stretch=False)
+                                               add_vertical_stretch=False)
 
         # Get target images and anchor image
         self.get_images()
@@ -288,9 +289,10 @@ class RegistrationViewer:
         def round_button_clicked():
             use_rounds = self.nb.basic_info.use_rounds
             for rnd in use_rounds:
-                self.svr_buttons.__getattribute__('R'+str(rnd)).setChecked(rnd == r)
+                self.svr_buttons.__getattribute__('R' + str(rnd)).setChecked(rnd == r)
             # We don't need to update the plot, we just need to call the viewing function
             view_round_regression_scatter(nb=self.nb, t=self.tile, r=r)
+
         return round_button_clicked
 
     # outlier removal
@@ -414,7 +416,7 @@ class RegistrationViewer:
         t = self.tile
         # populate target arrays
         for r in use_rounds:
-            file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.round_registration_channel)+'.npy'
+            file = 't' + str(t) + 'r' + str(r) + 'c' + str(self.round_registration_channel) + '.npy'
             affine = yxz_to_zyx_affine(A=self.transform[t, r, self.c_ref],
                                        new_origin=self.new_origin)
             # Reset the spline interpolation order to 1 to speed things up
@@ -437,8 +439,8 @@ class RegistrationViewer:
 
         # We will add a point on top of each image and add features to it
         features = {'r': np.repeat(np.append(use_rounds, np.ones(len(use_channels)) * self.r_mid), 10).astype(int),
-                            'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.round_registration_channel,
-                                                     use_channels), 10).astype(int)}
+                    'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.round_registration_channel,
+                                             use_channels), 10).astype(int)}
         features_anchor = {'r': np.repeat(np.ones(len(use_rounds) + len(use_channels)) * self.r_ref, 10).astype(int),
                            'c': np.repeat(np.ones(len(use_rounds) +
                                                   len(use_channels)) * self.round_registration_channel, 10).astype(int)}
@@ -458,7 +460,8 @@ class RegistrationViewer:
         points = []
 
         for r in use_rounds:
-            self.viewer.add_image(self.base_image_dapi, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
+            self.viewer.add_image(self.base_image_dapi, blending='additive', colormap='red',
+                                  translate=[0, 0, 1_000 * r],
                                   name='Anchor')
             self.viewer.add_image(self.target_round_image[r], blending='additive', colormap='green',
                                   translate=[0, 0, 1_000 * r],
@@ -697,6 +700,7 @@ class ButtonBGWindow(QMainWindow):
     """
     This class creates a window with buttons for viewing background images overlayed with foreground images
     """
+
     def __init__(self):
         super().__init__()
         self.button_overlay = QPushButton('View Overlay', self)
@@ -737,6 +741,7 @@ class ButtonBeadWindow(QMainWindow):
     """
     This class creates a window with buttons for viewing fluorescent bead images
     """
+
     def __init__(self):
         super().__init__()
         self.button_fluorescent_beads = QPushButton('View Fluorescent Beads', self)
@@ -747,17 +752,17 @@ class ButtonBeadWindow(QMainWindow):
 def set_style(button):
     # Set button color = grey when hovering over, blue when pressed, white when not
     button.setStyleSheet("QPushButton"
-                             "{"
-                             "background-color : rgb(135, 206, 250);"
-                             "}"
-                             "QPushButton::hover"
-                             "{"
-                             "background-color : lightgrey;"
-                             "}"
-                             "QPushButton::pressed"
-                             "{"
-                             "background-color : white;"
-                             "}")
+                         "{"
+                         "background-color : rgb(135, 206, 250);"
+                         "}"
+                         "QPushButton::hover"
+                         "{"
+                         "background-color : lightgrey;"
+                         "}"
+                         "QPushButton::pressed"
+                         "{"
+                         "background-color : white;"
+                         "}")
     return button
 
 
@@ -806,8 +811,10 @@ def view_round_regression_scatter(nb: Notebook, t: int, r: int):
             # k1 and k2 are the coords that are not j
             k1 = (j + 1) % 3
             k2 = (j + 2) % 3
-            central_offset_svr[i, j] = gradient_svr[i, k1] * tile_centre_zyx[k1] + gradient_svr[i, k2] * tile_centre_zyx[k2]
-            central_offset_icp[i, j] = gradient_icp[i, k1] * tile_centre_zyx[k1] + gradient_icp[i, k2] * tile_centre_zyx[k2]
+            central_offset_svr[i, j] = gradient_svr[i, k1] * tile_centre_zyx[k1] + gradient_svr[i, k2] * \
+                                       tile_centre_zyx[k2]
+            central_offset_icp[i, j] = gradient_icp[i, k1] * tile_centre_zyx[k1] + gradient_icp[i, k2] * \
+                                       tile_centre_zyx[k2]
             # Now compute the intercepts
             intercpet_svr[i, j] = initial_transform[i, 3] + central_offset_svr[i, j]
             intercpet_icp[i, j] = icp_transform[i, 3] + central_offset_icp[i, j]
@@ -952,7 +959,7 @@ def view_pearson_colourmap_spatial(nb: Notebook, t: int):
 
 
 # 2
-def shift_vector_field(nb: Notebook, round: bool = True):
+def shift_vector_field(nb: Notebook):
     """
     Function to plot vector fields of predicted shifts vs shifts to see if we classify a shift as an outlier.
     Args:
@@ -962,40 +969,36 @@ def shift_vector_field(nb: Notebook, round: bool = True):
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
     residual_thresh = nb.get_config()['register']['residual_thresh']
     use_tiles = nbp_basic.use_tiles
+    shift = nbp_register_debug.round_transform_raw[use_tiles, :, :, 3]
+    # record number of rounds, tiles and initialise predicted shift
+    n_tiles, n_rounds = shift.shape[0], nbp_basic.n_rounds
     tilepos_yx = nbp_basic.tilepos_yx[use_tiles]
-
-    # Load in shift
-    if round:
-        mode = 'Round'
-        use_rc = nbp_basic.use_rounds
-        shift = nbp_register_debug.round_transform_raw[use_tiles, :, :, 3][:, use_rc]
-    else:
-        mode = 'Channel'
-        use_rc = nbp_basic.use_channels
-        shift = nbp_register_debug.channel_transform_raw[use_tiles, :, :, 3][:, use_rc]
-
-    # record number of rounds/channels, tiles and initialise predicted shift
-    n_t, n_rc = shift.shape[0], len(use_rc)
-    tilepos_yx_pad = np.vstack((tilepos_yx.T, np.ones(n_t))).T
+    tilepos_yx_padded = np.vstack((tilepos_yx.T, np.ones(n_tiles))).T
     predicted_shift = np.zeros_like(shift)
     # When we are scaling the vector field, it will be useful to store the following
     n_vectors_x = tilepos_yx[:, 1].max() - tilepos_yx[:, 1].min() + 1
+    shift_norm = np.linalg.norm(shift, axis=2)
 
-    fig, axes = plt.subplots(nrows=3, ncols=n_rc)
-    for elem in range(n_rc):
-        # generate predicted shift for this r/c via huber regression
-        transform = huber_regression(shift[:, elem], tilepos_yx)
-        predicted_shift[:, elem] = tilepos_yx_pad @ transform.T
+    fig, axes = plt.subplots(nrows=3, ncols=n_rounds)
+    for r in range(n_rounds):
+        # generate predicted shift for this round
+        lb, ub = np.percentile(shift_norm[:, r], [10, 90])
+        valid = (shift_norm[:, r] > lb) * (shift_norm[:, r] < ub)
+        # Carry out regression, first predicitng yx shift, then z shift
+        transform_yx = np.linalg.lstsq(tilepos_yx_padded[valid], shift[valid, r, 1:], rcond=None)[0]
+        predicted_shift[:, r, 1:] = tilepos_yx_padded @ transform_yx
+        transform_z = np.linalg.lstsq(tilepos_yx_padded[valid], shift[valid, r, 0][:, None], rcond=None)[0]
+        predicted_shift[:, r, 0] = (tilepos_yx_padded @ transform_z)[:, 0]
         # Defining this scale will mean that the length of the largest vector will be equal to 1/n_vectors_x of the
         # width of the plot
-        scale = n_vectors_x * np.sqrt(np.sum(predicted_shift[:, elem, 1:] ** 2, axis=1))
+        scale = n_vectors_x * np.sqrt(np.sum(predicted_shift[:, r, 1:] ** 2, axis=1))
 
         # plot the predicted yx shift vs actual yx shift in row 0
-        ax = axes[0, elem]
+        ax = axes[0, r]
         # Make sure the vector field is properly scaled
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], predicted_shift[:, elem, 2], predicted_shift[:, elem, 1],
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], predicted_shift[:, r, 2], predicted_shift[:, r, 1],
                   color='b', scale=scale, scale_units='width', width=.05, alpha=0.5)
-        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], shift[:, elem, 2], shift[:, elem, 1], color='r', scale=scale,
+        ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], shift[:, r, 2], shift[:, r, 1], color='r', scale=scale,
                   scale_units='width', width=.05, alpha=0.5)
         # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
         ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
@@ -1004,49 +1007,46 @@ def shift_vector_field(nb: Notebook, round: bool = True):
         ax.set_yticks([])
 
         # plot the predicted z shift vs actual z shift in row 1
-        ax = axes[1, elem]
-        # we only want 1 label so make this for elem = 0
-        if elem == 0:
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, elem, 0], color='b',
-                      label='regularised', scale=scale, scale_units='width', width=.05, alpha=0.5)
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, elem, 2], color='r', label='raw', scale=scale,
-                      scale_units='width', width=.05, alpha=0.5)
-            # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
-            ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
-            ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
+        ax = axes[1, r]
+        # we only want 1 label so make this for r = 0
+        if r == 0:
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, r, 0], color='b', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5, label='Predicted')
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, r, 2], color='r', scale=scale,
+                      scale_units='width', width=.05, alpha=0.5, label='Actual')
         else:
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, elem, 0], color='b', scale=scale,
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, predicted_shift[:, r, 0], color='b', scale=scale,
                       scale_units='width', width=.05, alpha=0.5)
-            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, elem, 2], color='r', scale=scale,
+            ax.quiver(tilepos_yx[:, 1], tilepos_yx[:, 0], 0, shift[:, r, 2], color='r', scale=scale,
                       scale_units='width', width=.05, alpha=0.5)
-            # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
-            ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
-            ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
+        # We want to set the xlims and ylims to include a bit of padding so we can see the vectors
+        ax.set_xlim(tilepos_yx[:, 1].min() - 1, tilepos_yx[:, 1].max() + 1)
+        ax.set_ylim(tilepos_yx[:, 0].min() - 1, tilepos_yx[:, 0].max() + 1)
         ax.set_xticks([])
         ax.set_yticks([])
 
         # Plot image of norms of residuals at each tile in row 3
-        ax = axes[2, elem]
-        diff = create_tiled_image(data=np.linalg.norm(predicted_shift[:, elem] - shift[:, elem], axis=1),
+        ax = axes[2, r]
+        diff = create_tiled_image(data=np.linalg.norm(predicted_shift[:, r] - shift[:, r], axis=1),
                                   nbp_basic=nbp_basic)
         outlier = np.argwhere(diff > residual_thresh)
         n_outliers = outlier.shape[0]
         im = ax.imshow(diff, vmin=0, vmax=10)
         # Now we want to outline the outlier pixels with a dotted red rectangle
         for i in range(n_outliers):
-            rect = patches.Rectangle((outlier[i, 1] - 0.5, outlier[i, 0] - 0.5), 1, 1, linewidth=1, edgecolor='r',
-                                     facecolor='none', linestyle='--')
+            rect = patches.Rectangle((outlier[i, 1] - 0.5, outlier[i, 0] - 0.5), 1, 1, linewidth=1,
+                                     edgecolor='r', facecolor='none', linestyle='--')
             ax.add_patch(rect)
         ax.set_xticks([])
         ax.set_yticks([])
 
     # Set row and column labels
-    for ax, col in zip(axes[0], use_rc):
+    for ax, col in zip(axes[0], nbp_basic.use_rounds):
         ax.set_title(col)
     for ax, row in zip(axes[:, 0], ['XY-shifts', 'Z-shifts', 'Residuals']):
         ax.set_ylabel(row, rotation=90, size='large')
     # Add row and column labels
-    fig.supxlabel(mode)
+    fig.supxlabel('Round')
     fig.supylabel('Diagnostic')
     # Add global colour bar and legend
     lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
@@ -1056,7 +1056,7 @@ def shift_vector_field(nb: Notebook, round: bool = True):
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     fig.colorbar(im, cax=cbar_ax, label='Residual Norm')
     # Add title
-    fig.suptitle('Diagnostic plots for {} shift outlier removal'.format(mode), size='x-large')
+    fig.suptitle('Diagnostic plots for round shift outlier removal', size='x-large')
 
 
 # 2
@@ -1156,9 +1156,8 @@ def create_tiled_image(data, nbp_basic):
     diff = np.zeros((n_rows, n_cols))
 
     for t in range(len(use_tiles)):
-        diff[tilepos_yx[t, 1], tilepos_yx[t, 0]] = data[t]
+        diff[tilepos_yx[t, 0], tilepos_yx[t, 1]] = data[t]
 
-    diff = np.flip(diff.T, axis=0)
     diff[diff == 0] = np.nan
 
     return diff
@@ -1180,7 +1179,7 @@ def view_round_scales(nb: Notebook):
     y_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 1, 1]
     x_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 2, 2]
     n_tiles_use, n_rounds = z_scale.shape[0], z_scale.shape[1]
-    
+
     # Plot box plots
     plt.subplot(3, 1, 1)
     plt.scatter(np.tile(np.arange(n_rounds), n_tiles_use), np.reshape(z_scale, (n_tiles_use * n_rounds)),
@@ -1307,7 +1306,7 @@ def view_icp_n_matches(nb: Notebook, t: int):
             ax.set_xticks([])
             ax.set_yticks([])
             ax.set_ylim([0, 1])
-            ax.set_xlim([0, n_iters//2])
+            ax.set_xlim([0, n_iters // 2])
 
     plt.suptitle('Fraction of matches against iterations for tile ' + str(t) + '. \n '
                                                                                'Note that y-axis is [0,1]')
@@ -1347,7 +1346,7 @@ def view_icp_mse(nb: Notebook, t: int):
             ax.plot(np.arange(n_iters), mse[r, c])
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_xlim([0, n_iters//2])
+            ax.set_xlim([0, n_iters // 2])
             ax.set_ylim([0, np.max(mse)])
 
     plt.suptitle('MSE against iteration for tile ' + str(t) + ' for all rounds and channels. \n'
@@ -1379,7 +1378,8 @@ def view_icp_deviations(nb: Notebook, t: int):
     transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
-            initial_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.initial_transform[t, use_rounds[r], use_channels[c]])
+            initial_transform[r, c] = yxz_to_zyx_affine(
+                A=nbp_register.initial_transform[t, use_rounds[r], use_channels[c]])
             transform[r, c] = yxz_to_zyx_affine(A=nbp_register.transform[t, use_rounds[r], use_channels[c]])
 
     # Define the axes
@@ -1400,7 +1400,7 @@ def view_icp_deviations(nb: Notebook, t: int):
         for c in range(len(use_channels)):
             scale_diff[r, c] = np.diag(transform[r, c, :3, :3]) - np.diag(initial_transform[r, c, :3, :3])
             shift_diff[r, c] = transform[r, c, :3, 3] - initial_transform[r, c, :3, 3]
-    
+
     # Now plot scale_diff
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
@@ -1449,9 +1449,10 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
         filter: whether to apply sobel filter to images
     """
     # Initialise frequent variables
-    anchor = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, nb.basic_info.anchor_round,
-                                  nb.basic_info.anchor_channel))
-    target = yxz_to_zyx(load_tile(nb.file_names, nb.basic_info, t, r, c))
+    anchor = yxz_to_zyx(
+        tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, nb.basic_info.anchor_round,
+                           nb.basic_info.anchor_channel))
+    target = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c))
     transform = yxz_to_zyx_affine(nb.register.transform[t, r, c])
     target_transfromed = affine_transform(target, transform, order=1)
     # plot in napari
@@ -1462,7 +1463,7 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
 
     viewer = napari.Viewer()
     viewer.add_image(anchor, name='Tile ' + str(t) + ', round ' + str(nb.basic_info.anchor_round) + ', channel ' +
-                     str(nb.basic_info.anchor_channel), colormap='red', blending='additive')
+                                  str(nb.basic_info.anchor_channel), colormap='red', blending='additive')
     viewer.add_image(target_transfromed, name='Tile ' + str(t) + ', round ' + str(r) + ', channel ' + str(c) +
                                               ' transformed', colormap='green', blending='additive')
     viewer.add_image(target, name='Tile ' + str(t) + ', round ' + str(r) + ', channel ' + str(c), colormap='blue',
@@ -1490,8 +1491,9 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
             transform_seq = np.eye(4)
         else:
             transform_seq = yxz_to_zyx_affine(nb.register.round_transform[t, r])
-    seq = yxz_to_zyx(tiles_io.load_tile(nb.file_names,nb.basic_info, nb.extract.file_type, t, r, c))
-    preseq = yxz_to_zyx(tiles_io.load_tile(nb.file_names,nb.basic_info, nb.extract.file_type, t, nb.basic_info.pre_seq_round, c))
+    seq = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c))
+    preseq = yxz_to_zyx(
+        tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, nb.basic_info.pre_seq_round, c))
 
     print('Starting Application of Seq Transform')
     seq = affine_transform(seq, transform_seq, order=1)
@@ -1507,16 +1509,16 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
 
 def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, percentile: int = 99,
                                           sub_image_size: int = 500, bg_blur: bool = True):
-
     print(f"Computing background scale for tile {t}, round {r}, channel {c}")
     num_z = nb.basic_info.tile_centre[2].astype(int)
     transform_pre = yxz_to_zyx_affine(nb.register.transform[t, nb.basic_info.pre_seq_round, c],
                                       new_origin=np.array([num_z - 5, 0, 0]))
     transform_seq = yxz_to_zyx_affine(nb.register.transform[t, r, c], new_origin=np.array([num_z - 5, 0, 0]))
-    preseq = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=nb.basic_info.pre_seq_round, c=c,
-                                  yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * (1-bg_blur)))
+    preseq = yxz_to_zyx(
+        tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=nb.basic_info.pre_seq_round, c=c,
+                           yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * (1 - bg_blur)))
     seq = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=r, c=c,
-                               yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
+                                        yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
     preseq = affine_transform(preseq, transform_pre, order=5)
     seq = affine_transform(seq, transform_seq, order=5)
     # Apply background scale. Don't subtract bg from pixels that are <= 0 in seq as blurring in preseq can cause
@@ -1578,7 +1580,7 @@ def view_camera_correction(nb: Notebook):
     with nd2.ND2File(fluorescent_bead_path) as fbim:
         fluorescent_beads = fbim.asarray()
 
-    if len(fluorescent_beads.shape) ==4:
+    if len(fluorescent_beads.shape) == 4:
         mid_z = fluorescent_beads.shape[0] // 2
         fluorescent_beads = fluorescent_beads[mid_z, :, :, :]
     # if fluorescent bead images are for all channels, just take one from each camera
