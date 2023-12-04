@@ -78,6 +78,14 @@ TYPES = [
      lambda x: isinstance(x, (str, np.str_)),
      lambda x: str(x[()]),
      ),
+    ("list",
+     lambda x: isinstance(x, list),
+     lambda x: list(x),
+     ),
+    ("none",  # saved in ndz file as 'None'
+     lambda x: x is None,
+     lambda x: None,
+     ),
     ("ndarray",
      lambda x: isinstance(x, np.ndarray),
      lambda x: x,
@@ -89,14 +97,6 @@ TYPES = [
     ("number",
      lambda x: np.isreal(x) is True,  # is True guards against isreal returning an array
      lambda x: float(x[()]),
-     ),
-    ("list",
-     lambda x: isinstance(x, list),
-     lambda x: list(x),
-     ),
-    ("none",  # saved in ndz file as 'None'
-     lambda x: x is None,
-     lambda x: None,
      ),
 ]
 
