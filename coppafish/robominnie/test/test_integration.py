@@ -24,11 +24,14 @@ def get_robominnie_scores(rm: RoboMinnie) -> None:
 
 
 @pytest.mark.slow
-def test_integration_001() -> None:
+def test_integration_001() -> Notebook:
     """
     Summary of input data: random spots and pink noise.
 
     Includes anchor round, sequencing rounds, one tile.
+
+    Returns:
+        Notebook: complete coppafish Notebook.
     """
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'integration_dir')
     if not os.path.isdir(output_dir):
@@ -39,9 +42,33 @@ def test_integration_001() -> None:
     robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000)
     robominnie.save_raw_images(output_dir=output_dir)
-    robominnie.run_coppafish()
+    nb = robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
+    return nb
+
+
+@pytest.mark.slow
+def test_deterministic(iterations: int = 2) -> None:
+    """
+    Test that the coppafish output is always the same when run over and over, i.e. deterministic by comparing the 
+    Notebooks.
+
+    Args:
+        iterations (int, optional): number of times to run the coppafish pipeline. Default: 2.
+    """
+    assert iterations > 1
+    notebooks = []
+    for i in range(iterations):
+        notebooks.append(test_bg_subtraction())
+        if i == 0:
+            continue
+        assert np.allclose(notebooks[i - 1].extract.bg_scale, notebooks[i].extract.bg_scale), \
+            f"Notebooks omp.gene_no were not equal!"
+        assert np.allclose(notebooks[i - 1].omp.gene_no, notebooks[i].omp.gene_no), \
+            f"Notebooks omp.gene_no were not equal!"
+        assert np.allclose(notebooks[i - 1].omp.local_yxz, notebooks[i].omp.local_yxz), \
+            f"Notebooks omp.local_yxz were not equal!"
 
 
 @pytest.mark.slow
@@ -133,9 +160,10 @@ def test_bg_subtraction():
                          spot_size_pixels_dapi=np.asarray([9, 9, 9]),
                          spot_amplitude_dapi=0.05)
     robominnie.save_raw_images(output_dir=output_dir, register_with_dapi=False)
-    robominnie.run_coppafish()
+    nb = robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
+    return nb
 
 
 @pytest.mark.slow
@@ -156,5 +184,5 @@ def test_viewers():
 
 
 if __name__ == '__main__':
-    test_bg_subtraction()
+    test_integration_001()
     test_viewers()
