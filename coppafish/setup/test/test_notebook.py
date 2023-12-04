@@ -16,7 +16,7 @@ def test_setup_notebook_merge_extract():
     n_pixel_values = 15
     hist_values_01 = rng.randint(100_000, size=n_pixel_values)
     hist_values_2  = rng.randint(100_000, size=n_pixel_values)
-    hist_counts = rng.randint(100_000, size=(n_pixel_values, master_nbp_basic.n_rounds, master_nbp_basic.n_channels))
+    hist_counts = rng.randint(100_000, size=(2, n_pixel_values, master_nbp_basic.n_rounds, master_nbp_basic.n_channels))
 
     extract_page_unmergeable_file_type = notebook.NotebookPage("extract")
     extract_page_unmergeable_file_type.auto_thresh = rng.randint(
@@ -27,7 +27,7 @@ def test_setup_notebook_merge_extract():
             master_nbp_basic.n_channels
         )
     )
-    extract_page_unmergeable_file_type.hist_counts = hist_counts
+    extract_page_unmergeable_file_type.hist_counts = hist_counts[0]
     extract_page_unmergeable_file_type.bg_scale = rng.rand(
         master_nbp_basic.n_tiles, 
         master_nbp_basic.n_rounds, 
@@ -40,7 +40,7 @@ def test_setup_notebook_merge_extract():
     extract_page_unmergeable_hist_values.hist_values = hist_values_2
 
     mergeable_extract_pages = []
-    for _ in range(2):
+    for i in range(2):
         extract_page = notebook.NotebookPage("extract")
         extract_page.auto_thresh = rng.randint(
             1_000, 
@@ -48,10 +48,10 @@ def test_setup_notebook_merge_extract():
                 master_nbp_basic.n_tiles, 
                 master_nbp_basic.n_rounds + master_nbp_basic.n_extra_rounds, 
                 master_nbp_basic.n_channels
-            )
+            ), 
         )
         extract_page.hist_values = hist_values_01
-        extract_page.hist_counts = hist_counts
+        extract_page.hist_counts = hist_counts[i]
         extract_page.bg_scale = rng.rand(
             master_nbp_basic.n_tiles, 
             master_nbp_basic.n_rounds, 
@@ -61,6 +61,8 @@ def test_setup_notebook_merge_extract():
         mergeable_extract_pages.append(extract_page)
     
     merged_extract_01 = notebook.merge_extract(mergeable_extract_pages, master_nbp_basic)
+    assert np.allclose(merged_extract_01.hist_counts, np.sum(hist_counts, axis=0)), \
+        "hist_counts should be the sum over all tiles"
     for i, tile in enumerate(master_nbp_basic.use_tiles):
         assert np.allclose(merged_extract_01.auto_thresh[tile], mergeable_extract_pages[i].auto_thresh[tile]), \
             f"Unexpected merged auto_thresh values for tile index {i}"
@@ -70,12 +72,12 @@ def test_setup_notebook_merge_extract():
     try:
         notebook.merge_extract(mergeable_extract_pages + [extract_page_unmergeable_file_type], master_nbp_basic)
         # Should not reach here
-        assert False, "Expected an `AssertionError` to be raised by merge_extract when file_types are mismatched"
+        assert False, "Expected an `AssertionError` merge_extract when file_types are mismatched"
     except AssertionError:
         pass 
     try:
         notebook.merge_extract(mergeable_extract_pages + [extract_page_unmergeable_hist_values], master_nbp_basic)
         # Should not reach here
-        assert False, "Expected an `AssertionError` to be raised by merge_extract when hist_values are mismatched"
+        assert False, "Expected an `AssertionError` by merge_extract when hist_values are mismatched"
     except AssertionError:
         pass
