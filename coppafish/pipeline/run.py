@@ -76,7 +76,6 @@ def run_tile_indep_pipeline(nb: setup.Notebook) -> None:
     #! Remove the `and False` to try run tile by tile. Still a work in progress.
     run_tile_by_tile = nb.basic_info.n_tiles > 1 and False
     if run_tile_by_tile:
-        #FIXME: Broken lol. #myfault
         run_scale(nb)
         # Load one tile image into memory to run in both find_spots and register
         use_tiles = nb.basic_info.use_tiles
@@ -85,6 +84,8 @@ def run_tile_indep_pipeline(nb: setup.Notebook) -> None:
             #TODO: Instead of extract writing to disk then loading from disk again, make `run_extract` return `image_t`
             # as well as writing to disk. This would be optimal.
             nb_tile = nb_tiles[i]
+            #FIXME: Running extract tile by tile is not giving the same output as all tiles at once. This includes 
+            # different hist_counts and auto_thresh (but same hist_values)
             run_extract(nb_tile)
             image_t = utils.tiles_io.load_tile(
                 nb.file_names, nb.basic_info, nb_tile.extract.file_type, tile, apply_shift=False, 
