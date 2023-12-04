@@ -432,6 +432,8 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
         results[z_index - z_min] = pixel_yxz_t1, pixel_colours_t1
     # Append all process outputs in a consistent way
     for i in range(0, z_max - z_min):
+        if results[i] is None:
+            continue
         pixel_yxz_t1, pixel_colours_t1 = results[i]
         if pixel_yxz_t1 is None or pixel_colours_t1 is None:
             continue
