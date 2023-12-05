@@ -92,6 +92,7 @@ def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage)
             smooth_kernel_2d = smooth_kernel_2d / np.sum(smooth_kernel_2d)
             if np.max(config["r_smooth"][:2]) <= 1:
                 smooth_kernel_2d = None  # If dimensions of 2D kernel are [1, 1] is equivalent to no smoothing
+        print("Computing scale...")
         nbp.scale_tile, nbp.scale_channel, nbp.scale_z, config["scale"] = scale.base.get_scale(
             nbp_file,
             nbp_basic,
@@ -115,6 +116,7 @@ def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage)
         nbp.scale_anchor_z = None
         nbp.scale_anchor = None
     elif config["scale_anchor"] is None:
+        print("Computing scale_anchor...")
         nbp.scale_anchor_tile, _, nbp.scale_anchor_z, config["scale_anchor"] = scale.base.get_scale(
             nbp_file,
             nbp_basic,
@@ -126,8 +128,6 @@ def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage)
             filter_kernel,
             smooth_kernel_2d,
         )
-        # Save scale values to disk in case need to re-run
-        scale.base.save_scale(nbp_file.scale, nbp.scale, config["scale_anchor"])
 
     # Save scale values to disk in case need to re-run
     scale.base.save_scale(nbp_file.scale, nbp.scale, config["scale_anchor"])

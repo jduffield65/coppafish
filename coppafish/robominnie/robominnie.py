@@ -933,8 +933,8 @@ class RoboMinnie:
 
 
     def run_coppafish(self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False,
-                      jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True) \
-        -> None:
+                      jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True, 
+                      run_tile_by_tile: bool = False):
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
@@ -950,6 +950,11 @@ class RoboMinnie:
             save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing 
                 ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage. 
                 Default: true.
+            run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 
+                'register', then merge them together. Only applicable for `n_tiles > 1`. Default: false.
+        
+        Returns:
+            Notebook: final notebook.
         """
         self.instructions.append(utils.base.get_function_name())
         print(f'Running coppafish')
@@ -968,7 +973,7 @@ class RoboMinnie:
         nb = run.initialize_nb(config_filepath)
         if time_pipeline:
             start_time = time.time()
-        run.run_tile_indep_pipeline(nb)
+        run.run_tile_indep_pipeline(nb, run_tile_by_tile=run_tile_by_tile)
         run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'
@@ -978,7 +983,7 @@ class RoboMinnie:
         assert nb.ref_spots is not None, f'Reference spots not found in notebook at {config_filepath}'
 
         if include_omp == False:
-            return
+            return nb
         
         if time_pipeline:
             start_time_omp = time.time()
@@ -1030,6 +1035,7 @@ class RoboMinnie:
 
         if self.omp_spot_count == 0:
             warnings.warn('Copppafish OMP found zero spots')
+        return nb
 
 
     def compare_spots(self, spot_types: str = 'ref', score_threshold: float = 0, intensity_threshold: float = 0, 

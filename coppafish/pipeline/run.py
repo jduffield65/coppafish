@@ -41,8 +41,9 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: 
         parallel: Boolean, if 'True' will run the pipeline in parallel by splitting the data into tiles and running
             each tile in parallel.
         n_jobs: number of joblib threads to run
+    
     Returns:
-        `Notebook` containing all information gathered during the pipeline.
+        Notebook: notebook containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
     if not parallel:
@@ -65,16 +66,17 @@ def run_pipeline(config_file: str, overwrite_ref_spots: bool = False, parallel: 
     return nb
 
 
-def run_tile_indep_pipeline(nb: setup.Notebook) -> None:
+def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) -> None:
     """
     Run tile-independent pipeline processes.
 
     Args:
-        nb: `Notebook` containing 'basic_info' and 'file_names' pages.
+        nb (Notebook): notebook containing 'basic_info' and 'file_names' pages.
+        run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 'register', 
+            then merge them together. Default: false.
     """
-    #! Remove the `and False` to try run tile by tile. Still a work in progress.
-    run_tile_by_tile = nb.basic_info.n_tiles > 1 and False
-    if run_tile_by_tile:
+    if run_tile_by_tile and nb.basic_info.n_tiles > 1:
+        print("Running tile by tile...")
         run_scale(nb)
         # Load one tile image into memory to run in both find_spots and register
         use_tiles = nb.basic_info.use_tiles
