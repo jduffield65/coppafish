@@ -13,7 +13,7 @@
 # Refactored and expanded by Paul Shuker, September 2023 - present
 import os
 import csv
-import random
+import shutil
 import numpy as np
 import scipy.stats
 import pandas
@@ -708,27 +708,21 @@ class RoboMinnie:
                         out=self.anchor_image_tiles[t,c]
                     )
 
+        if os.path.isdir(output_dir) and overwrite:
+            shutil.rmtree(output_dir)
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         if not overwrite:
-            assert len(os.listdir(output_dir)) == 0, f'Output directory {output_dir} must be empty'
+            assert len(os.listdir(output_dir)) == 0, f'Output directory at \n\t{output_dir}\n must be empty'
 
         # Create an output_dir/output_coppafish directory for coppafish pipeline output saved to disk
         self.output = output_dir
         self.coppafish_output = os.path.join(output_dir, 'output_coppafish')
+        if overwrite:
+            if os.path.isdir(self.coppafish_output):
+                shutil.rmtree(self.coppafish_output)
         if not os.path.isdir(self.coppafish_output):
             os.mkdir(self.coppafish_output)
-        if overwrite:
-            # Delete all files located in coppafish output directory to stop coppafish using old data
-            for filename in os.listdir(self.coppafish_output):
-                filepath = os.path.join(self.coppafish_output, filename)
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
-                if filename == 'reg_images':
-                    for reg_image_name in os.listdir(filepath):
-                        reg_filepath = os.path.join(filepath, reg_image_name)
-                        if os.path.isfile(reg_filepath):
-                            os.remove(reg_filepath)
 
         # Create an output_dir/output_coppafish/tiles directory for coppafish extract output
         self.coppafish_tiles = os.path.join(self.coppafish_output, 'tiles')
