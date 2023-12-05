@@ -3,7 +3,6 @@ import numpy.typing as npt
 from typing import Tuple, List, Union, Any, Optional
 from tqdm import tqdm
 import scipy
-import psutil
 import multiprocessing
 
 from .. import call_spots
@@ -387,49 +386,63 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
             pixel.
     """
     def get_z_plane_colours(z_index: int, q: multiprocessing.Queue) -> None:
-        no_output = None, None
+        no_output = None, None, None
         if nbp_basic.use_preseq:
-            pixel_colors_t1, pixel_yxz_t1, _ = \
+            pixel_colors_t1, pixel_yxz_t1 = \
                 spot_colors.base.get_spot_colors(
-                    spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
-                                                   np.arange(z_index, z_index + 1)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
+                    spot_colors.base.all_pixel_yxz(
+                        nbp_basic.tile_sz, 
+                        nbp_basic.tile_sz, 
+                        np.arange(z_index, z_index + 1)
+                    ), 
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                )
         else:
             pixel_colors_t1, pixel_yxz_t1 = \
                 spot_colors.base.get_spot_colors(
-                    spot_colors.base.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, 
-                                                   np.arange(z_index, z_index + 1)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
+                    spot_colors.base.all_pixel_yxz(
+                        nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_index, z_index + 1)
+                    ), 
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True, 
+                )
         
         pixel_colors_t1 = pixel_colors_t1.astype(np.float32) / colour_norm_factor
         if pixel_colors_t1.shape[0] == 0:
             q.put(list(no_output))
             return
-        q.put([pixel_yxz_t1.astype(np.int16), pixel_colors_t1.astype(np.float32)])
+        q.put([pixel_yxz_t1.astype(np.int16), pixel_colors_t1.astype(np.float32), z_index])
         return
     
+    n_rounds, n_channels = colour_norm_factor.shape
     z_min, z_max = z_chunk * z_chunk_size, min((z_chunk + 1) * z_chunk_size, len(nbp_basic.use_z))
     pixel_yxz_tz = np.zeros((0, 3), dtype=np.int16)
-    pixel_colors_tz = np.zeros((0, len(nbp_basic.use_rounds), len(nbp_basic.use_channels)), dtype=np.float32)
+    pixel_colours_tz = np.zeros((0, n_rounds, n_channels), dtype=np.float32)
+    results = [None] * (z_max - z_min)
     
     queue = multiprocessing.Queue()
-    
+    # Start all processes
     for z_plane in range(z_min, z_max):
         new_process = multiprocessing.Process(target=get_z_plane_colours, args=(z_plane, queue, ))
         new_process.start()
-    
+    # Gather all process outputs
     for _ in range(z_min, z_max):
-        pixel_yxz_t1, pixel_colors_t1 = queue.get()
-        
-        if pixel_yxz_t1 is None or pixel_colors_t1 is None:
+        pixel_yxz_t1, pixel_colours_t1, z_index = queue.get()
+        if pixel_yxz_t1 is None or pixel_colours_t1 is None:
+            continue
+        results[z_index - z_min] = pixel_yxz_t1, pixel_colours_t1
+    # Append all process outputs in a consistent way
+    for i in range(0, z_max - z_min):
+        if results[i] is None:
+            continue
+        pixel_yxz_t1, pixel_colours_t1 = results[i]
+        if pixel_yxz_t1 is None or pixel_colours_t1 is None:
             continue
         pixel_yxz_tz = np.append(pixel_yxz_tz, pixel_yxz_t1, axis=0)
-        pixel_colors_tz = np.append(pixel_colors_tz, pixel_colors_t1, axis=0)
-    
-    queue.close()
-    
-    return pixel_yxz_tz, pixel_colors_tz
+        pixel_colours_tz = np.append(pixel_colours_tz, pixel_colours_t1, axis=0)
 
+    queue.close()
+    return pixel_yxz_tz, pixel_colours_tz
+    
 
 def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, config: dict, 
                         tile: int, use_z: List[int], z_chunk_size: int, n_genes: int, 
@@ -511,7 +524,7 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
     pixel_yxz_t = np.zeros((0, 3), dtype=np.int16)
     pixel_coefs_t = scipy.sparse.csr_matrix(np.zeros((0, n_genes), dtype=np.float32))
 
-    n_threads = utils.threads.get_available_threads()
+    n_threads = utils.threads.get_available_cores()
 
     z_chunks = len(use_z) // z_chunk_size + 1
     processes = []

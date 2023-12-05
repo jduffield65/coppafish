@@ -1,5 +1,6 @@
 import nd2
 import scipy
+import warnings
 import numpy as np
 import skimage
 from tqdm import tqdm
@@ -191,8 +192,9 @@ def huber_regression(shift, position, predict_shift=True):
         z_coef = np.array([0, 0, 0])
         z_shift = np.mean(shift[:, 0])
         # raise a warning if we have less than 3 z-coords in position
-        print('Warning: Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of '
-              'mean(shift)')
+        warnings.warn(
+            'Less than 3 z-coords in position. Setting z-coords of transform to no scaling and shift of mean(shift)'
+        )
     else:
         huber_z = HuberRegressor(epsilon=2, max_iter=400, tol=1e-4).fit(X=position, y=shift[:, 0])
         z_coef = huber_z.coef_
@@ -673,6 +675,12 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
         c (int): channel index.
         queue (Queue, optional): multiprocess `Queue` object, the return is `put` into this object. Default: None, no 
             queue object.
+    
+    Returns:
+        - float: computed brightness scale.
+        - int: tile index.
+        - int: round index.
+        - int: channel index.
     """
     transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
                                                     new_origin=np.array([mid_z-z_rad, 0, 0]))
@@ -686,6 +694,6 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
     seq = scipy.ndimage.affine_transform(seq, transform_seq)
     output = brightness_scale(preseq, seq)
     if queue is not None:
-        queue.put(output)
+        queue.put((output[0], t, r, c))
 
-    return output
+    return output[0], t, r, c
