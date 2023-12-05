@@ -98,10 +98,14 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
             for i in range(2):
                 round_image = [
-                    preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, 
-                                                                c=round_registration_channel, 
-                                                                suffix='_raw' if r == nbp_basic.pre_seq_round else '')) 
-                    for r in round_chunks[i]]
+                    preprocessing.yxz_to_zyx(
+                        tiles_io.load_image(
+                            nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=round_registration_channel, 
+                            suffix='_raw' if r == nbp_basic.pre_seq_round else ''
+                        )
+                    ) 
+                    for r in round_chunks[i]
+                ]
                 round_reg_data = register_base.round_registration(anchor_image=anchor_image, round_image=round_image, 
                                                                   config=config)
                 # Now save the data
@@ -228,9 +232,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         bg_scale = np.zeros((n_tiles, len(use_rounds), n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        n_threads = config['n_background_scale_threads']
-        # Maximum threads physically possible is (potentially) bottlenecked by available RAM
-        n_threads = np.clip(threads.get_available_cores(), 1, 32, dtype=int)
+        n_cores = config['n_background_scale_threads']
+        if n_cores is None:
+            # Maximum threads physically possible is (potentially) bottlenecked by available RAM
+            n_cores = np.clip(threads.get_available_cores(), 1, 32, dtype=int)
         current_process_number = 0
         final_index = len(use_tiles) * len(use_rounds) * len(use_channels) - 1
         queue = Queue()
@@ -240,10 +245,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                 pbar.set_postfix({"tile": t, "round": r, "channel": c})
                 # We run brightness_scale in parallel to speed up the pipeline
                 new_process = Process(target=register_base.compute_brightness_scale, 
-                                      args=(nbp, nbp_basic, nbp_file, nbp_extract, mid_z, z_rad, t, r, c, queue))
+                                      args=(nbp, nbp_basic, nbp_file, nbp_extract.file_type, mid_z, z_rad, t, r, c, queue))
                 new_process.start()
                 current_process_number += 1
-                if current_process_number == n_threads or i == final_index:
+                if current_process_number == n_cores or i == final_index:
                     # Retrieve scale factors from the multiprocess queue
                     for _ in range(current_process_number):
                         new_bg_scale, t_new, r_new, c_new = queue.get()

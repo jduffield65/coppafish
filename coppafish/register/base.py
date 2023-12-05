@@ -657,7 +657,7 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
 
 
 def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_file: NotebookPage, 
-                             nbp_extract: NotebookPage, mid_z: int, z_rad: int, t: int, r: int, c: int, 
+                             file_type: str, mid_z: int, z_rad: int, t: int, r: int, c: int, 
                              queue: Queue = None):
     """
     Applies affine transforms to the presequence and sequence image for tile t, round r, channel c. Then applies 
@@ -667,7 +667,7 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
         nbp (NotebookPage): `register` notebook page.
         nbp_basic (NotebookPage): `basic_info` notebook page.
         nbp_file (NotebookPage): `file_names` notebook page.
-        nbp_extract (NotebookPage): `extract` notebook page.
+        file_type (str): extracted tiles file type.
         mid_z (int): middle z plane to be used.
         z_rad (int): span on z planes, +- from `mid_z`.
         t (int): tile index.
@@ -685,15 +685,21 @@ def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_fil
     transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
                                                     new_origin=np.array([mid_z-z_rad, 0, 0]))
     transform_seq = preprocessing.yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-    preseq = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
-                                                         r=nbp_basic.pre_seq_round, c=c, 
-                                                         yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-    seq = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, 
-                                             yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    preseq = preprocessing.yxz_to_zyx(
+        tiles_io.load_image(
+            nbp_file, nbp_basic, file_type, t=t, r=nbp_basic.pre_seq_round, c=c, 
+            yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)], 
+        )
+    )
+    seq = preprocessing.yxz_to_zyx(
+        tiles_io.load_image(
+            nbp_file, nbp_basic, file_type, t=t, r=r, c=c, yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]
+        )
+    )
     preseq = scipy.ndimage.affine_transform(preseq, transform_pre)
     seq = scipy.ndimage.affine_transform(seq, transform_seq)
     output = brightness_scale(preseq, seq)
     if queue is not None:
-        queue.put((output[0], t, r, c))
+        queue.put([output[0], t, r, c])
 
     return output[0], t, r, c
