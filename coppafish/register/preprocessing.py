@@ -282,10 +282,11 @@ def zyx_to_yxz_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0]
 
 def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
     """
-    Custom-built function to compute array shifted by a certain offset
+    Compute array shifted by a certain offset.
+    
     Args:
-        array: array to be shifted
-        offset: shift value (must be int)
+        array: array to be shifted.
+        offset: shift value (must be int).
         constant_values: This is the value used for points outside the boundaries after shifting.
 
     Returns:
