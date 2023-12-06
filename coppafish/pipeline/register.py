@@ -251,7 +251,17 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                     nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=nbp_basic.pre_seq_round, c=c, yxz=yxz, 
                 )
                 process_args.append(
-                    (image_seq, image_preseq, nbp.transform, mid_z, z_rad, nbp_basic.pre_seq_round, t, r, c)
+                    (
+                        image_seq.copy(), 
+                        image_preseq.copy(), 
+                        nbp.transform.copy(), 
+                        mid_z, 
+                        z_rad, 
+                        nbp_basic.pre_seq_round, 
+                        t, 
+                        r, 
+                        c
+                    )
                 )
                 if len(process_args) == n_cores or i == final_index:
                     # Start processes
