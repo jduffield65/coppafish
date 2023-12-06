@@ -153,7 +153,7 @@ def test_bg_subtraction() -> None:
 def test_tile_by_tile_equality() -> None:
     """
     Test for coppafish notebook equality when running the pipeline tile by tile then merging versus all tiles at once 
-    (old approach). Run everything except the final step, OMP.
+    (old approach) using ``test_integration_003``. Runs everything except the final step, OMP.
     """
     def _approximately_equal(a: Any, b: Any) -> bool:
         if a is None or b is None:
@@ -178,6 +178,8 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("call_spots") == nb_1.has_page("call_spots")
     assert nb_0.has_page("omp") == nb_1.has_page("omp")
     assert nb_0.has_page("thresholds") == nb_1.has_page("thresholds")
+    if not nb_0.has_page("scale"):
+        return
     assert _approximately_equal(nb_0.scale.scale, nb_1.scale.scale)
     assert _approximately_equal(nb_0.scale.scale_tile, nb_1.scale.scale_tile)
     assert _approximately_equal(nb_0.scale.scale_z, nb_1.scale.scale_z)
@@ -189,16 +191,60 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.scale.r2, nb_1.scale.r2)
     assert _approximately_equal(nb_0.scale.r_smooth, nb_1.scale.r_smooth)
     assert _approximately_equal(nb_0.scale.r1, nb_1.scale.r1)
+    if not nb_0.has_page("extract"):
+        return
     assert _approximately_equal(nb_0.extract.auto_thresh, nb_1.extract.auto_thresh)
     assert _approximately_equal(nb_0.extract.hist_counts, nb_1.extract.hist_counts)
     assert _approximately_equal(nb_0.extract.hist_values, nb_1.extract.hist_values)
     assert _approximately_equal(nb_0.extract.file_type, nb_1.extract.file_type)
-    if nb_0.extract.bg_scale is not None:
-        assert _approximately_equal(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
+    if not nb_0.has_page("find_spots"):
+        return
     assert _approximately_equal(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
     assert _approximately_equal(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
     assert _approximately_equal(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
     assert _approximately_equal(nb_0.find_spots.spot_yxz, nb_1.find_spots.spot_yxz)
+    if not nb_0.has_page("register"):
+        # bg_scale is calculated properly at the register section
+        return
+    if nb_0.extract.bg_scale is not None:
+        assert _approximately_equal(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
+    assert _approximately_equal(nb_0.register.channel_transform, nb_1.register.channel_transform)
+    assert _approximately_equal(nb_0.register.initial_transform, nb_1.register.initial_transform)
+    assert _approximately_equal(nb_0.register.round_transform, nb_1.register.round_transform)
+    assert _approximately_equal(nb_0.register.transform, nb_1.register.transform)
+    if not nb_0.has_page("register_debug"):
+        return
+    assert _approximately_equal(nb_0.register_debug.channel_transform, nb_0.register_debug.channel_transform)
+    assert _approximately_equal(nb_0.register_debug.converged, nb_0.register_debug.converged)
+    assert _approximately_equal(nb_0.register_debug.mse, nb_0.register_debug.mse)
+    assert _approximately_equal(nb_0.register_debug.n_matches, nb_0.register_debug.n_matches)
+    assert _approximately_equal(nb_0.register_debug.position, nb_0.register_debug.position)
+    assert _approximately_equal(nb_0.register_debug.round_shift, nb_0.register_debug.round_shift)
+    assert _approximately_equal(nb_0.register_debug.round_shift_corr, nb_0.register_debug.round_shift_corr)
+    assert _approximately_equal(nb_0.register_debug.round_transform_raw, nb_0.register_debug.round_transform_raw)
+    if not nb_0.has_page("stitch"):
+        return
+    assert _approximately_equal(nb_0.stitch.east_final_shift_search, nb_1.stitch.east_final_shift_search)
+    assert _approximately_equal(nb_0.stitch.east_outlier_score, nb_1.stitch.east_outlier_score)
+    assert _approximately_equal(nb_0.stitch.east_outlier_shifts, nb_1.stitch.east_outlier_shifts)
+    assert _approximately_equal(nb_0.stitch.east_pairs, nb_1.stitch.east_pairs)
+    assert _approximately_equal(nb_0.stitch.east_score, nb_1.stitch.east_score)
+    assert _approximately_equal(nb_0.stitch.east_score_thresh, nb_1.stitch.east_score_thresh)
+    assert _approximately_equal(nb_0.stitch.east_shifts, nb_1.stitch.east_shifts)
+    assert _approximately_equal(nb_0.stitch.east_start_shift_search, nb_1.stitch.east_start_shift_search)
+    assert _approximately_equal(nb_0.stitch.north_final_shift_search, nb_1.stitch.north_final_shift_search)
+    assert _approximately_equal(nb_0.stitch.north_outlier_score, nb_1.stitch.north_outlier_score)
+    assert _approximately_equal(nb_0.stitch.north_outlier_shifts, nb_1.stitch.north_outlier_shifts)
+    assert _approximately_equal(nb_0.stitch.north_pairs, nb_1.stitch.north_pairs)
+    assert _approximately_equal(nb_0.stitch.north_score, nb_1.stitch.north_score)
+    assert _approximately_equal(nb_0.stitch.north_score_thresh, nb_1.stitch.north_score_thresh)
+    assert _approximately_equal(nb_0.stitch.north_shifts, nb_1.stitch.north_shifts)
+    assert _approximately_equal(nb_0.stitch.north_start_shift_search, nb_1.stitch.north_start_shift_search)
+    assert _approximately_equal(nb_0.stitch.tile_origin, nb_1.stitch.tile_origin)
+    if not nb_0.has_page("ref_spots"):
+        return
+    NotImplementedError("Unfinished equality test for ref_spots, OMP, and thresholds sections")
+    #TODO: Compare results from ref_spots, call_spots, OMP, and thresholds
 
 
 @pytest.mark.slow
