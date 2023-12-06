@@ -259,6 +259,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                         for result in pool.starmap(register_base.compute_brightness_scale, process_args):
                             scale, t_i, r_i, c_i = result
                             bg_scale[t_i, r_i, c_i] = scale
+                    process_args = []
                     pbar.update(1)
         nbp_extract.finalized = False
         del nbp_extract.bg_scale # Delete this so that we can overwrite it
