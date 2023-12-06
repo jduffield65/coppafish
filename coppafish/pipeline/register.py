@@ -240,9 +240,8 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         # Each tuple in the list is a processes args
         process_args = []
         final_index = len(use_tiles) * len(use_rounds) * len(use_channels) - 1
-        with tqdm(total=math.ceil((final_index + 1)/n_cores), desc="Computing background scales") as pbar:
+        with tqdm(total=math.ceil((final_index + 1)/n_cores), desc="Computing background scales", unit="batch") as pbar:
             for i, trc in enumerate(itertools.product(use_tiles, use_rounds, use_channels)):
-                pbar.set_postfix({"batch": math.ceil((i + 1)/n_cores)})
                 t, r, c = trc
                 # We run brightness_scale calculations in parallel to speed up the pipeline
                 image_seq = tiles_io.load_tile(
