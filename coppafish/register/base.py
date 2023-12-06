@@ -594,9 +594,9 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=Fals
 def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: float, sub_image_size: int = 500, 
                      ) -> Tuple[float, np.ndarray, np.ndarray]:
     """
-    Function to find scale factor m and constant c such that m * preseq + c ~ seq. This is done by a regression on
-    the pixels of brightness < brightness_thresh_percentile as these likely won't be spots. The regression is done by
-    least squares.
+    Function to find scale factor m and constant c such that m * preseq + c ~ seq. First, the preseq and seq images are 
+    aligned using phase cross correlation. Then apply regression on the pixels of `brightness < 
+    brightness_thresh_percentile` as these likely won't be spots. The regression is done by least squares.
     
     Args:
         preseq: (n_z x n_y x n_x) ndarray of presequence image.
@@ -607,9 +607,9 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
             registered and so we need to find the best registered sub-image to use for regression. Default: `500`.
 
     Returns:
-        scale: float scale factor `m`.
-        sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression.
-        sub_image_preseq: (sub_image_size, sub_image_size) ndarray of presequence image used for regression.
+        - scale: float scale factor `m`.
+        - sub_image_seq: (sub_image_size, sub_image_size) ndarray of aligned sequence image used for regression.
+        - sub_image_preseq: (sub_image_size, sub_image_size) ndarray of aligned presequence image used for regression.
 
     Notes:
         - This function isn't really part of registration but needs registration to be run before it can be used and 
