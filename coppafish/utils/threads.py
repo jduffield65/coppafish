@@ -4,10 +4,10 @@ import psutil
 
 def get_available_cores() -> int:
     """
-    Get the number of threads available for multiprocessing tasks on the system.
+    Get the number of CPU cores available for multiprocessing tasks on the system.
 
     Returns:
-        int: number of available threads.
+        int: available cores.
     """
     n_threads = psutil.cpu_count(logical=True)
     if n_threads is None:
