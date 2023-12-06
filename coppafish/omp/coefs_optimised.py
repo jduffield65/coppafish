@@ -3,6 +3,8 @@ from tqdm import tqdm
 import numpy as np
 import scipy
 import os
+import jax
+import jax.numpy as jnp
 
 from . import coefs
 from .. import utils
@@ -10,9 +12,8 @@ from .. import call_spots
 from ..setup import NotebookPage
 from ..call_spots import dot_product_optimised
 
-os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_cores()}'
-import jax.numpy as jnp
-import jax
+if jax.default_backend() == 'cpu':
+    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_cores()}'
 
 
 def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
