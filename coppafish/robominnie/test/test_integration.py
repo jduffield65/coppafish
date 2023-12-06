@@ -5,6 +5,7 @@ from coppafish import Notebook, Viewer
 from coppafish.plot.register.diagnostics import RegistrationViewer
 import warnings
 import pytest
+from typing import Any
 
 
 def get_robominnie_scores(rm: RoboMinnie) -> None:
@@ -146,16 +147,24 @@ def test_bg_subtraction() -> None:
     robominnie.run_coppafish()
     get_robominnie_scores(robominnie)
     del robominnie
-    
-    
+
+
 @pytest.mark.slow
 def test_tile_by_tile_equality() -> None:
     """
-    Test for coppafish output equality when running the pipeline tile by tile then merging versus all tiles at once 
+    Test for coppafish notebook equality when running the pipeline tile by tile then merging versus all tiles at once 
     (old approach). Run everything except the final step, OMP.
     """
-    nb_0 = test_integration_003(include_omp=False, run_tile_by_tile=False)
+    def _approximately_equal(a: Any, b: Any) -> bool:
+        if a is None or b is None:
+            return False
+        elif isinstance(a, (float, np.float_, int, np.int_)):
+            return np.allclose(a, b)
+        elif isinstance(a, (str, bool, list)):
+            return a == b
+    
     nb_1 = test_integration_003(include_omp=False, run_tile_by_tile=True)
+    nb_0 = test_integration_003(include_omp=False, run_tile_by_tile=False)
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
@@ -169,27 +178,27 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("call_spots") == nb_1.has_page("call_spots")
     assert nb_0.has_page("omp") == nb_1.has_page("omp")
     assert nb_0.has_page("thresholds") == nb_1.has_page("thresholds")
-    assert np.allclose(nb_0.scale.scale, nb_1.scale.scale)
-    assert np.allclose(nb_0.scale.scale_tile, nb_1.scale.scale_tile)
-    assert np.allclose(nb_0.scale.scale_z, nb_1.scale.scale_z)
-    assert np.allclose(nb_0.scale.scale_channel, nb_1.scale.scale_channel)
-    assert np.allclose(nb_0.scale.scale_anchor, nb_1.scale.scale_anchor)
-    assert np.allclose(nb_0.scale.scale_anchor_tile, nb_1.scale.scale_anchor_tile)
-    assert np.allclose(nb_0.scale.scale_anchor_z, nb_1.scale.scale_anchor_z)
-    assert np.allclose(nb_0.scale.r1, nb_1.scale.r1)
-    assert np.allclose(nb_0.scale.r2, nb_1.scale.r2)
-    assert np.allclose(nb_0.scale.r_smooth, nb_1.scale.r_smooth)
-    assert np.allclose(nb_0.scale.r1, nb_1.scale.r1)
-    assert np.allclose(nb_0.extract.auto_thresh, nb_1.extract.auto_thresh)
-    assert np.allclose(nb_0.extract.file_type, nb_1.extract.file_type)
-    assert np.allclose(nb_0.extract.hist_counts, nb_1.extract.hist_counts)
-    assert np.allclose(nb_0.extract.hist_values, nb_1.extract.hist_values)
+    assert _approximately_equal(nb_0.scale.scale, nb_1.scale.scale)
+    assert _approximately_equal(nb_0.scale.scale_tile, nb_1.scale.scale_tile)
+    assert _approximately_equal(nb_0.scale.scale_z, nb_1.scale.scale_z)
+    assert _approximately_equal(nb_0.scale.scale_channel, nb_1.scale.scale_channel)
+    assert _approximately_equal(nb_0.scale.scale_anchor, nb_1.scale.scale_anchor)
+    assert _approximately_equal(nb_0.scale.scale_anchor_tile, nb_1.scale.scale_anchor_tile)
+    assert _approximately_equal(nb_0.scale.scale_anchor_z, nb_1.scale.scale_anchor_z)
+    assert _approximately_equal(nb_0.scale.r1, nb_1.scale.r1)
+    assert _approximately_equal(nb_0.scale.r2, nb_1.scale.r2)
+    assert _approximately_equal(nb_0.scale.r_smooth, nb_1.scale.r_smooth)
+    assert _approximately_equal(nb_0.scale.r1, nb_1.scale.r1)
+    assert _approximately_equal(nb_0.extract.auto_thresh, nb_1.extract.auto_thresh)
+    assert _approximately_equal(nb_0.extract.hist_counts, nb_1.extract.hist_counts)
+    assert _approximately_equal(nb_0.extract.hist_values, nb_1.extract.hist_values)
+    assert _approximately_equal(nb_0.extract.file_type, nb_1.extract.file_type)
     if nb_0.extract.bg_scale is not None:
-        assert np.allclose(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
-    assert np.allclose(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
-    assert np.allclose(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
-    assert np.allclose(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
-    assert np.allclose(nb_0.find_spots.spot_yxz, nb_1.find_spots.spot_yxz)
+        assert _approximately_equal(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
+    assert _approximately_equal(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
+    assert _approximately_equal(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
+    assert _approximately_equal(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
+    assert _approximately_equal(nb_0.find_spots.spot_yxz, nb_1.find_spots.spot_yxz)
 
 
 @pytest.mark.slow
