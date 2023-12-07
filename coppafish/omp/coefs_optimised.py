@@ -13,7 +13,7 @@ from ..setup import NotebookPage
 from ..call_spots import dot_product_optimised
 
 if jax.default_backend() == 'cpu':
-    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.system.get_available_cores()}'
+    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.system.get_core_count()}'
 
 
 def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,

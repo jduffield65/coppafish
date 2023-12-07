@@ -2,7 +2,7 @@ import numpy as np
 import psutil
 
 
-def get_available_cores() -> int:
+def get_core_count() -> int:
     """
     Get the number of threads available for multiprocessing tasks on the system.
 
