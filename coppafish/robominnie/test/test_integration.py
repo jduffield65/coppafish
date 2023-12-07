@@ -69,7 +69,7 @@ def test_integration_002() -> None:
 
 
 @pytest.mark.slow
-def test_integration_003(include_stich: bool = True, include_omp: bool = True, run_tile_by_tile: bool = False, 
+def test_integration_003(include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = False, 
                          ) -> Notebook:
     """
     Summary of input data: random spots and pink noise.
@@ -97,7 +97,7 @@ def test_integration_003(include_stich: bool = True, include_omp: bool = True, r
                          spot_amplitude_dapi=0.05)
     robominnie.save_raw_images(output_dir=output_dir)
     nb = robominnie.run_coppafish(
-        include_stitch=include_stich, 
+        include_stitch=include_stitch, 
         include_omp=include_omp, 
         run_tile_by_tile=run_tile_by_tile
     )
@@ -170,8 +170,8 @@ def test_tile_by_tile_equality() -> None:
             return a == b
         ValueError(f"Failed to compare variables of types {type(a)} and {type(b)}")
     
-    nb_1 = test_integration_003(include_stich=False, run_tile_by_tile=True)
     nb_0 = test_integration_003(include_stitch=False, run_tile_by_tile=False)
+    nb_1 = test_integration_003(include_stitch=False, run_tile_by_tile=True)
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
@@ -185,6 +185,9 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("call_spots") == nb_1.has_page("call_spots")
     assert nb_0.has_page("omp") == nb_1.has_page("omp")
     assert nb_0.has_page("thresholds") == nb_1.has_page("thresholds")
+    if not nb_0.has_page("basic_info"):
+        return
+    # assert _approximately_equal(nb_0.basic_info.)
     if not nb_0.has_page("scale"):
         return
     assert _approximately_equal(nb_0.scale.scale, nb_1.scale.scale)
