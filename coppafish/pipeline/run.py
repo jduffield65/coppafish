@@ -168,8 +168,7 @@ def run_extract(nb: setup.Notebook) -> None:
 
 
 def run_find_spots(
-    nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None, 
-    ) -> Union[None, setup.NotebookPage]:
+    nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> Union[None, setup.NotebookPage]:
     """
     This runs the `find_spots` step of the pipeline to produce point cloud from each tiff file in the tile directory.
 
@@ -179,7 +178,7 @@ def run_find_spots(
 
     Args:
         nb: `Notebook` containing `extract` page.
-        image_t (`[n_rounds x n_channels x ny x nz (x nz)] ndarray[uint16]`, optional): image pixels for tile 
+        image_t (`(n_rounds x n_channels x ny x nz (x nz)) ndarray[uint16]`, optional): image pixels for tile 
             specified in `nb`. If given, find_spots will be run on this single tile only and return the find_spots 
             NotebookPage, not adding it to the Notebook. Default: not given.
         
@@ -237,8 +236,7 @@ def run_stitch(nb: setup.Notebook) -> None:
                                      config['extract']['num_rotations'])
 
 
-def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None, 
-                 tile_index: Optional[int] = None) -> None:
+def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> None:
     """
     This runs the `register_initial` step of the pipeline to find shift between ref round/channel to each imaging round
     for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
@@ -252,10 +250,10 @@ def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] =
 
     Args:
         nb: `Notebook` containing `extract` page.
-        image_t (`ndarray[uint16]`, optional): image for tile `tile_index`. Default: not given.
-        tile_index (int, optional): Tile index. Default: not given.
+        image_t (`(n_rounds x n_channels x ny x nz (x nz)) ndarray[uint16]`, optional): image for tile `tile_index`. 
+            Default: not given.
     """
-    if image_t is not None or tile_index is not None:
+    if image_t is not None:
         NotImplementedError("Cannot run register tile by tile yet")
 
     config = nb.get_config()
