@@ -80,9 +80,8 @@ def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) 
     if run_tile_by_tile and nb.basic_info.n_tiles > 1:
         print("Running tile by tile...")
         # Load one tile image into memory to run in both find_spots and register
-        use_tiles = nb.basic_info.use_tiles
         nb_tiles = setup.notebook.split_by_tiles(nb)
-        for i, tile in enumerate(use_tiles):
+        for i, tile in enumerate(nb.basic_info.use_tiles):
             nb_tile = nb_tiles[i]
             #TODO: Instead of extract writing to disk then loading from disk again, make `run_extract` return `image_t`
             # as well as writing to disk. This would be optimal.
