@@ -944,9 +944,9 @@ def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
     # Intitialize auto_thresh and hist_counts
     auto_thresh = np.zeros(
         (n_tiles, master_nbp_basic.n_rounds + master_nbp_basic.n_extra_rounds, master_nbp_basic.n_channels), 
-        dtype=np.int32, 
+        dtype=int, 
     )
-    hist_counts = np.zeros_like(nbp_extract_list[0].hist_counts, dtype=np.int32)
+    hist_counts = np.zeros_like(nbp_extract_list[0].hist_counts, dtype=int)
     bg_scale = np.zeros((n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels), dtype=float)
     # Add the tiles we are using.
     # For hist_counts we need to add all these pages as this is supposed to be across all tiles
