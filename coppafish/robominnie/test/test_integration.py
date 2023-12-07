@@ -69,13 +69,15 @@ def test_integration_002() -> None:
 
 
 @pytest.mark.slow
-def test_integration_003(include_omp: bool = True, run_tile_by_tile: bool = False) -> Notebook:
+def test_integration_003(include_stich: bool = True, include_omp: bool = True, run_tile_by_tile: bool = False, 
+                         ) -> Notebook:
     """
     Summary of input data: random spots and pink noise.
 
     Includes anchor, DAPI, presequencing round and sequencing rounds, `2` connected tiles, aligned along the x axis.
 
     Args:
+        include_stitch (bool, optional): run stitch. Default: true.
         include_omp (bool, optional): run OMP. Default: true.
         run_tile_by_tile (bool, optional): run each tile separately then combine notebooks on tile independent 
             pipeline. Default: false.
@@ -94,7 +96,11 @@ def test_integration_003(include_omp: bool = True, run_tile_by_tile: bool = Fals
     robominnie.add_spots(n_spots=25_000, include_dapi=True, spot_size_pixels_dapi=np.array([9, 9, 9]), 
                          spot_amplitude_dapi=0.05)
     robominnie.save_raw_images(output_dir=output_dir)
-    nb = robominnie.run_coppafish(include_omp=include_omp, run_tile_by_tile=run_tile_by_tile)
+    nb = robominnie.run_coppafish(
+        include_stitch=include_stich, 
+        include_omp=include_omp, 
+        run_tile_by_tile=run_tile_by_tile
+    )
     if not include_omp:
         return nb
     get_robominnie_scores(robominnie)
@@ -164,8 +170,8 @@ def test_tile_by_tile_equality() -> None:
             return a == b
         ValueError(f"Failed to compare variables of types {type(a)} and {type(b)}")
     
-    nb_1 = test_integration_003(include_omp=False, run_tile_by_tile=True)
-    nb_0 = test_integration_003(include_omp=False, run_tile_by_tile=False)
+    nb_1 = test_integration_003(include_stich=False, run_tile_by_tile=True)
+    nb_0 = test_integration_003(include_stitch=False, run_tile_by_tile=False)
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")

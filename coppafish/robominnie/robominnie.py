@@ -926,22 +926,24 @@ class RoboMinnie:
                 f.write(instruction + '\n')
 
 
-    def run_coppafish(self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False,
-                      jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True, 
-                      run_tile_by_tile: bool = False):
+    def run_coppafish(
+        self, time_pipeline: bool = True, include_stitch: bool = True, include_omp: bool = True, 
+        jax_profile: bool = False, jax_profile_omp: bool = False, profile_omp: bool = False, 
+        save_ref_spots_data: bool = True, run_tile_by_tile: bool = False
+        ):
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         Args:
-            time_pipeline (bool, optional): Print the time taken to run the coppafish pipeline and OMP. Default: true
-            include_omp (bool, optional): If true, run up to and including coppafish OMP stage. Default: true.
-            jax_profile (bool, optional): If true, profile entire coppafish pipeline. Default: false.
-            jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. 
-                Requires tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. Default: 
-                false.
-            profile_omp (bool, optional): Profile coppafish OMP stage using a default Python profiler called 
+            time_pipeline (bool, optional): print the time taken to run the coppafish pipeline and OMP. Default: true.
+            include_stitch (bool, optional): run up to at least stitch. Default: true.
+            include_omp (bool, optional): run up to and including coppafish OMP stage. Default: true.
+            jax_profile (bool, optional): profile entire coppafish pipeline. Default: false.
+            jax_profile_omp (bool, optional): profile coppafish OMP using the jax tensorboard profiler. Requires 
+                tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. Default: false.
+            profile_omp (bool, optional): profile coppafish OMP stage using a default Python profiler called 
                 `cprofile`. Dumps the results into a text file in output_coppafish. Default: false.
-            save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing 
+            save_ref_spots_data (bool, optional): if true, will save ref_spots data, which is used for comparing 
                 ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage. 
                 Default: true.
             run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 
