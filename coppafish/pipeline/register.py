@@ -1,6 +1,7 @@
 import os
 import math
 import pickle
+import warnings
 import itertools
 import numpy as np
 from tqdm import tqdm
@@ -239,6 +240,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             # Maximum threads physically possible could be bottlenecked by available RAM
             n_cores = max(system.get_core_count(), 1)
             memory_core_limit = math.floor(system.get_available_memory() * n_image_bytes * 2.4e-8)
+            if memory_core_limit < 1:
+                warnings.warn(
+                    f"Available memory is low, if coppafish crashes, try freeing up memory before re-running pipeline"
+                )
+                memory_core_limit = 1
             n_cores = min(n_cores, memory_core_limit)
         # Each tuple in the list is a processes args
         process_args = []
