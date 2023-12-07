@@ -1,4 +1,5 @@
 import os
+import tqdm
 import joblib
 import warnings
 import numpy as np
@@ -274,15 +275,20 @@ def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] =
         # Save reg images
         round_registration_channel = config['register']['round_registration_channel']
         for t in nb.basic_info.use_tiles:
-            for r in nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round] * nb.basic_info.use_preseq:
-                if round_registration_channel is not None:
-                    preprocessing.generate_reg_images(nb, t, r, round_registration_channel)
-                if round_registration_channel is None:
-                    preprocessing.generate_reg_images(nb, t, r, nb.basic_info.anchor_channel)
-                print(t, r)
-            for c in nb.basic_info.use_channels:
-                preprocessing.generate_reg_images(nb, t, 3, c)
-                print(t, c)
+            use_rounds_with_preseq = nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round] * nb.basic_info.use_preseq
+            with tqdm.tqdm(total=len(use_rounds_with_preseq), desc="Saving registration images") as pbar:
+                for r in use_rounds_with_preseq:
+                    pbar.set_postfix({'tile': t, 'round': r})
+                    if round_registration_channel is not None:
+                        preprocessing.generate_reg_images(nb, t, r, round_registration_channel)
+                    if round_registration_channel is None:
+                        preprocessing.generate_reg_images(nb, t, r, nb.basic_info.anchor_channel)
+                    pbar.update(1)
+            with tqdm.tqdm(total=len(nb.basic_info.use_channels), desc="Saving registration images") as pbar:
+                for c in nb.basic_info.use_channels:
+                    pbar.set_postfix({'tile': t, 'channel': c})
+                    preprocessing.generate_reg_images(nb, t, 3, c)
+                    pbar.update(1)
             if round_registration_channel is not None:
                 preprocessing.generate_reg_images(nb, t, nb.basic_info.anchor_round, round_registration_channel)
             preprocessing.generate_reg_images(nb, t, nb.basic_info.anchor_round, nb.basic_info.anchor_channel)
