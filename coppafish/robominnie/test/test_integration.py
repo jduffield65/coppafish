@@ -158,7 +158,7 @@ def test_tile_by_tile_equality() -> None:
     def _approximately_equal(a: Any, b: Any) -> bool:
         if a is None or b is None:
             return False
-        elif isinstance(a, (float, np.float_, int, np.int_)):
+        elif isinstance(a, (np.ndarray, float, np.float_, int, np.int_)):
             return np.allclose(a, b)
         elif isinstance(a, (str, bool, list)):
             return a == b
