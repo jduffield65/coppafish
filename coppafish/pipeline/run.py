@@ -185,6 +185,9 @@ def run_find_spots(
     Returns:
         NoteBook containing 'find_spots' page.
     """
+    if image_t is not None:
+        assert len(nb.basic_info.use_tiles) == 1, "Can only run on a single-tile notebook when `image_t` is given"
+
     if not nb.has_page("find_spots"):
         config = nb.get_config()
         nbp = find_spots.find_spots(
@@ -246,14 +249,15 @@ def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] =
 
     If `Notebook` already contains these pages, it will just be returned.
     
-    If `image_t` and `tile_index` are given, register will run on just the single tile given.
+    If `image_t` is given, register will run on the single tile given.
 
     Args:
         nb: `Notebook` containing `extract` page.
-        image_t (`(n_rounds x n_channels x ny x nz (x nz)) ndarray[uint16]`, optional): image for tile `tile_index`. 
-            Default: not given.
+        image_t (`(n_rounds x n_channels x ny x nz (x nz)) ndarray[uint16]`, optional): image for tile 
+            `nb[basic_info][use_tile]`. Default: not given.
     """
     if image_t is not None:
+        assert len(nb.basic_info.use_tiles) == 1, "Can only run on a single-tile notebook when `image_t` is given"
         NotImplementedError("Cannot run register tile by tile yet")
 
     config = nb.get_config()
