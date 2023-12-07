@@ -162,6 +162,7 @@ def test_tile_by_tile_equality() -> None:
             return np.allclose(a, b)
         elif isinstance(a, (str, bool, list)):
             return a == b
+        ValueError(f"Failed to compare variables of types {type(a)} and {type(b)}")
     
     nb_1 = test_integration_003(include_omp=False, run_tile_by_tile=True)
     nb_0 = test_integration_003(include_omp=False, run_tile_by_tile=False)
