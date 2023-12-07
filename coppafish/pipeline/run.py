@@ -75,18 +75,16 @@ def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) 
         run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 'register', 
             then merge them together. Default: false.
     """
+    run_scale(nb)
     if run_tile_by_tile and nb.basic_info.n_tiles > 1:
         print("Running tile by tile...")
-        run_scale(nb)
         # Load one tile image into memory to run in both find_spots and register
         use_tiles = nb.basic_info.use_tiles
         nb_tiles = setup.notebook.split_by_tiles(nb)
         for i, tile in enumerate(use_tiles):
+            nb_tile = nb_tiles[i]
             #TODO: Instead of extract writing to disk then loading from disk again, make `run_extract` return `image_t`
             # as well as writing to disk. This would be optimal.
-            nb_tile = nb_tiles[i]
-            #FIXME: Running extract tile by tile is not giving the same output as all tiles at once. This includes 
-            # different hist_counts and auto_thresh (but same hist_values)
             run_extract(nb_tile)
             image_t = utils.tiles_io.load_tile(
                 nb.file_names, nb.basic_info, nb_tile.extract.file_type, tile, apply_shift=False, 
@@ -96,7 +94,6 @@ def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) 
         #TODO: Place run_register within the t loop and run tile by tile, inputting image_t as a parameter
         run_register(nb)
     if not run_tile_by_tile:
-        run_scale(nb)
         run_extract(nb)
         run_find_spots(nb)
         run_register(nb)
