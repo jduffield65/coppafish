@@ -93,6 +93,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             anchor_image = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
                                                                        r=nbp_basic.anchor_round, 
                                                                        c=round_registration_channel))
+            n_image_bytes = anchor_image.nbytes
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
@@ -236,8 +237,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         n_cores = config['n_background_scale_threads']
         if n_cores is None:
             # Maximum threads physically possible could be bottlenecked by available RAM
-            memory_core_limit = math.floor(system.get_available_memory() * 0.4761)
-            n_cores = np.clip(system.get_core_count(), 1, memory_core_limit, dtype=int)
+            n_cores = max(system.get_core_count(), 1)
+            memory_core_limit = math.floor(system.get_available_memory() * n_image_bytes * 2.4e-8)
+            n_cores = min(n_cores, memory_core_limit)
         # Each tuple in the list is a processes args
         process_args = []
         final_index = len(use_tiles) * len(use_rounds) * len(use_channels) - 1
