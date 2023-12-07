@@ -38,6 +38,7 @@ import time
 import json
 import warnings
 import copy
+from pathlib import PurePath
 try:
     import importlib_resources
 except ModuleNotFoundError:
@@ -1189,6 +1190,18 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
         del new_notebook.basic_info.use_tiles
         new_notebook.basic_info.use_tiles = [tile]
         new_notebook.basic_info.finalized = True
+
+        new_notebook.file_names.finalized = False
+        old_spot_details_path = PurePath(new_notebook.file_names.spot_details_info)
+        del new_notebook.file_names.spot_details_info
+        new_notebook.file_names.spot_details_info = str(
+            PurePath(
+                old_spot_details_path.parent, 
+                f"spot_details_info_t{tile}.npz", 
+            )
+        )
+        new_notebook.file_names.finalized = True
+
         output.append(new_notebook)
     return output
 
