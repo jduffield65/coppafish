@@ -101,7 +101,7 @@ def test_integration_003(include_stitch: bool = True, include_omp: bool = True, 
         include_omp=include_omp, 
         run_tile_by_tile=run_tile_by_tile
     )
-    if not include_omp:
+    if not include_omp or not include_stitch:
         return nb
     get_robominnie_scores(robominnie)
     del robominnie
