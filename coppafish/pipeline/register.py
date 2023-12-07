@@ -235,8 +235,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]
         n_cores = config['n_background_scale_threads']
         if n_cores is None:
-            # Maximum threads physically possible is (potentially) bottlenecked by available RAM
-            n_cores = np.clip(system.get_core_count(), 1, 30, dtype=int)
+            # Maximum threads physically possible could be bottlenecked by available RAM
+            memory_core_limit = system.get_available_memory() * 0.4761
+            n_cores = np.clip(system.get_core_count(), 1, memory_core_limit, dtype=int)
         # Each tuple in the list is a processes args
         process_args = []
         final_index = len(use_tiles) * len(use_rounds) * len(use_channels) - 1
