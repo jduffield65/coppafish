@@ -200,6 +200,7 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.extract.file_type, nb_1.extract.file_type)
     if not nb_0.has_page("find_spots"):
         return
+    #FIXME: isolated_spots and spot_yxz are not equal
     assert _approximately_equal(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
     assert _approximately_equal(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
     assert _approximately_equal(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
