@@ -162,13 +162,19 @@ def test_tile_by_tile_equality() -> None:
     (old approach) using ``test_integration_003``. Runs everything except the final step, OMP.
     """
     def _approximately_equal(a: Any, b: Any) -> bool:
-        if a is None or b is None:
-            return False
+        if a is None and b is None:
+            equal = True
+        elif a is None or b is None:
+            equal = False
         elif isinstance(a, (np.ndarray, float, np.float_, int, np.int_)):
-            return np.allclose(a, b)
+            equal = np.allclose(a, b)
         elif isinstance(a, (str, bool, list)):
-            return a == b
-        ValueError(f"Failed to compare variables of types {type(a)} and {type(b)}")
+            equal = a == b
+        else:
+            ValueError(f"Failed to compare variables of types {type(a)=} and {type(b)=}")
+        if not equal:
+            print(f"{a=}\n{b=}")
+        return equal
     
     nb_0 = test_integration_003(include_stitch=False, run_tile_by_tile=False)
     nb_1 = test_integration_003(include_stitch=False, run_tile_by_tile=True)
@@ -185,9 +191,61 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("call_spots") == nb_1.has_page("call_spots")
     assert nb_0.has_page("omp") == nb_1.has_page("omp")
     assert nb_0.has_page("thresholds") == nb_1.has_page("thresholds")
+    
     if not nb_0.has_page("basic_info"):
         return
-    # assert _approximately_equal(nb_0.basic_info.)
+    assert _approximately_equal(nb_0.basic_info.anchor_channel, nb_1.basic_info.anchor_channel)
+    assert _approximately_equal(nb_0.basic_info.anchor_round, nb_1.basic_info.anchor_round)
+    assert _approximately_equal(nb_0.basic_info.channel_camera, nb_1.basic_info.channel_camera)
+    assert _approximately_equal(nb_0.basic_info.channel_laser, nb_1.basic_info.channel_laser)
+    assert _approximately_equal(nb_0.basic_info.dapi_channel, nb_1.basic_info.dapi_channel)
+    assert _approximately_equal(nb_0.basic_info.dye_names, nb_1.basic_info.dye_names)
+    assert _approximately_equal(nb_0.basic_info.is_3d, nb_1.basic_info.is_3d)
+    assert _approximately_equal(nb_0.basic_info.n_channels, nb_1.basic_info.n_channels)
+    assert _approximately_equal(nb_0.basic_info.n_dyes, nb_1.basic_info.n_dyes)
+    assert _approximately_equal(nb_0.basic_info.n_extra_rounds, nb_1.basic_info.n_extra_rounds)
+    assert _approximately_equal(nb_0.basic_info.n_rounds, nb_1.basic_info.n_rounds)
+    assert _approximately_equal(nb_0.basic_info.n_tiles, nb_1.basic_info.n_tiles)
+    assert _approximately_equal(nb_0.basic_info.nz, nb_1.basic_info.nz)
+    assert _approximately_equal(nb_0.basic_info.pixel_size_xy, nb_1.basic_info.pixel_size_xy)
+    assert _approximately_equal(nb_0.basic_info.pixel_size_z, nb_1.basic_info.pixel_size_z)
+    assert _approximately_equal(nb_0.basic_info.pre_seq_round, nb_1.basic_info.pre_seq_round)
+    assert _approximately_equal(nb_0.basic_info.tile_centre, nb_1.basic_info.tile_centre)
+    assert _approximately_equal(nb_0.basic_info.tile_pixel_value_shift, nb_1.basic_info.tile_pixel_value_shift)
+    assert _approximately_equal(nb_0.basic_info.tile_sz, nb_1.basic_info.tile_sz)
+    assert _approximately_equal(nb_0.basic_info.tilepos_yx, nb_1.basic_info.tilepos_yx)
+    assert _approximately_equal(nb_0.basic_info.tilepos_yx_nd2, nb_1.basic_info.tilepos_yx_nd2)
+    assert _approximately_equal(nb_0.basic_info.use_anchor, nb_1.basic_info.use_anchor)
+    assert _approximately_equal(nb_0.basic_info.use_channels, nb_1.basic_info.use_channels)
+    assert _approximately_equal(nb_0.basic_info.use_dyes, nb_1.basic_info.use_dyes)
+    assert _approximately_equal(nb_0.basic_info.use_preseq, nb_1.basic_info.use_preseq)
+    assert _approximately_equal(nb_0.basic_info.use_rounds, nb_1.basic_info.use_rounds)
+    assert _approximately_equal(nb_0.basic_info.use_tiles, nb_1.basic_info.use_tiles)
+    assert _approximately_equal(nb_0.basic_info.use_z, nb_1.basic_info.use_z)
+    if not nb_0.has_page("file_names"):
+        return
+    assert _approximately_equal(nb_0.file_names.anchor, nb_1.file_names.anchor)
+    assert _approximately_equal(nb_0.file_names.big_anchor_image, nb_1.file_names.big_anchor_image)
+    assert _approximately_equal(nb_0.file_names.big_dapi_image, nb_1.file_names.big_dapi_image)
+    assert _approximately_equal(nb_0.file_names.code_book, nb_1.file_names.code_book)
+    assert _approximately_equal(nb_0.file_names.dye_camera_laser, nb_1.file_names.dye_camera_laser)
+    assert _approximately_equal(nb_0.file_names.fluorescent_bead_path, nb_1.file_names.fluorescent_bead_path)
+    assert _approximately_equal(nb_0.file_names.initial_bleed_matrix, nb_1.file_names.initial_bleed_matrix)
+    assert _approximately_equal(nb_0.file_names.input_dir, nb_1.file_names.input_dir)
+    assert _approximately_equal(nb_0.file_names.omp_spot_coef, nb_1.file_names.omp_spot_coef)
+    assert _approximately_equal(nb_0.file_names.omp_spot_info, nb_1.file_names.omp_spot_info)
+    assert _approximately_equal(nb_0.file_names.omp_spot_shape, nb_1.file_names.omp_spot_shape)
+    assert _approximately_equal(nb_0.file_names.output_dir, nb_1.file_names.output_dir)
+    assert _approximately_equal(nb_0.file_names.pciseq, nb_1.file_names.pciseq)
+    assert _approximately_equal(nb_0.file_names.pre_seq, nb_1.file_names.pre_seq)
+    assert _approximately_equal(nb_0.file_names.psf, nb_1.file_names.psf)
+    assert _approximately_equal(nb_0.file_names.raw_extension, nb_1.file_names.raw_extension)
+    assert _approximately_equal(nb_0.file_names.raw_metadata, nb_1.file_names.raw_metadata)
+    assert _approximately_equal(nb_0.file_names.round, nb_1.file_names.round)
+    assert _approximately_equal(nb_0.file_names.scale, nb_1.file_names.scale)
+    assert _approximately_equal(nb_0.file_names.spot_details_info, nb_1.file_names.spot_details_info)
+    assert _approximately_equal(nb_0.file_names.tile, nb_1.file_names.tile)
+    assert _approximately_equal(nb_0.file_names.tile_dir, nb_1.file_names.tile_dir)
     if not nb_0.has_page("scale"):
         return
     assert _approximately_equal(nb_0.scale.scale, nb_1.scale.scale)
@@ -214,10 +272,9 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
     assert _approximately_equal(nb_0.find_spots.spot_yxz, nb_1.find_spots.spot_yxz)
     if not nb_0.has_page("register"):
-        # bg_scale is calculated properly at the register section
         return
-    if nb_0.extract.bg_scale is not None:
-        assert _approximately_equal(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
+    # bg_scale is calculated properly at the register section
+    assert _approximately_equal(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
     assert _approximately_equal(nb_0.register.channel_transform, nb_1.register.channel_transform)
     assert _approximately_equal(nb_0.register.initial_transform, nb_1.register.initial_transform)
     assert _approximately_equal(nb_0.register.round_transform, nb_1.register.round_transform)
