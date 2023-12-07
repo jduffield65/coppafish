@@ -970,6 +970,8 @@ class RoboMinnie:
         if time_pipeline:
             start_time = time.time()
         run.run_tile_indep_pipeline(nb, run_tile_by_tile=run_tile_by_tile)
+        if not include_stitch:
+            return nb
         run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'
