@@ -166,8 +166,10 @@ def test_tile_by_tile_equality() -> None:
             equal = True
         elif a is None or b is None:
             equal = False
-        elif isinstance(a, (np.ndarray, float, np.float_, int, np.int_)):
-            equal = np.allclose(a, b)
+        elif isinstance(a, (float, np.float_, int, np.int_)):
+            equal = np.isclose(a, b)
+        elif isinstance(a, (np.ndarray)):
+            equal = np.allclose(a, b, equal_nan=True)
         elif isinstance(a, (str, bool, list)):
             equal = a == b
         else:
