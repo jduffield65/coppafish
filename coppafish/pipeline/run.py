@@ -261,9 +261,15 @@ def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] =
     config = nb.get_config()
     # if not all(nb.has_page(["register", "register_debug"])):
     if not nb.has_page("register"):
-        nbp, nbp_debug = register.register(nb.basic_info, nb.file_names, nb.extract, nb.find_spots, config['register'], 
-                                           np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant', 
-                                           constant_values=1), pre_seq_blur_radius=0)
+        nbp, nbp_debug = register.register(
+            nb.basic_info, 
+            nb.file_names, 
+            nb.extract, 
+            nb.find_spots, 
+            config['register'], 
+            np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant', constant_values=1), 
+            pre_seq_blur_radius=0, 
+        )
         nb += nbp
         nb += nbp_debug
         # Save reg images
