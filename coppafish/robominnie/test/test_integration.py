@@ -178,8 +178,8 @@ def test_tile_by_tile_equality() -> None:
             print(f"{a=}\n{b=}")
         return equal
     
-    nb_0 = test_integration_003(include_stitch=False, run_tile_by_tile=False)
-    nb_1 = test_integration_003(include_stitch=False, run_tile_by_tile=True)
+    nb_0 = test_integration_003(include_omp=False, run_tile_by_tile=False)
+    nb_1 = test_integration_003(include_omp=False, run_tile_by_tile=True)
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
@@ -313,8 +313,33 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.stitch.tile_origin, nb_1.stitch.tile_origin)
     if not nb_0.has_page("ref_spots"):
         return
-    NotImplementedError("Unfinished equality test for ref_spots, OMP, and thresholds sections")
-    #TODO: Compare results from ref_spots, call_spots, OMP, and thresholds
+    assert _approximately_equal(nb_0.ref_spots.local_yxz, nb_1.ref_spots.local_yxz)
+    assert _approximately_equal(nb_0.ref_spots.isolated, nb_1.ref_spots.isolated)
+    assert _approximately_equal(nb_0.ref_spots.tile, nb_1.ref_spots.tile)
+    assert _approximately_equal(nb_0.ref_spots.colors, nb_1.ref_spots.colors)
+    assert _approximately_equal(nb_0.ref_spots.gene_no, nb_1.ref_spots.gene_no)
+    assert _approximately_equal(nb_0.ref_spots.score, nb_1.ref_spots.score)
+    assert _approximately_equal(nb_0.ref_spots.score_diff, nb_1.ref_spots.score_diff)
+    assert _approximately_equal(nb_0.ref_spots.intensity, nb_1.ref_spots.intensity)
+    assert _approximately_equal(nb_0.ref_spots.background_strength, nb_1.ref_spots.background_strength)
+    assert _approximately_equal(nb_0.ref_spots.gene_probs, nb_1.ref_spots.gene_probs)
+    assert _approximately_equal(nb_0.ref_spots.bg_colours, nb_1.ref_spots.bg_colours)
+    if not nb_0.has_page("call_spots"):
+        return
+    assert _approximately_equal(nb_0.call_spots.gene_names, nb_1.call_spots.gene_names)
+    assert _approximately_equal(nb_0.call_spots.gene_codes, nb_1.call_spots.gene_codes)
+    assert _approximately_equal(nb_0.call_spots.color_norm_factor, nb_1.call_spots.color_norm_factor)
+    assert _approximately_equal(nb_0.call_spots.abs_intensity_percentile, nb_1.call_spots.abs_intensity_percentile)
+    assert _approximately_equal(nb_0.call_spots.initial_bleed_matrix, nb_1.call_spots.initial_bleed_matrix)
+    assert _approximately_equal(nb_0.call_spots.bleed_matrix, nb_1.call_spots.bleed_matrix)
+    assert _approximately_equal(nb_0.call_spots.bled_codes, nb_1.call_spots.bled_codes)
+    assert _approximately_equal(nb_0.call_spots.bled_codes_ge, nb_1.call_spots.bled_codes_ge)
+    assert _approximately_equal(nb_0.call_spots.gene_efficiency, nb_1.call_spots.gene_efficiency)
+    assert _approximately_equal(nb_0.call_spots.use_ge, nb_1.call_spots.use_ge)
+    if not nb_0.has_page("omp"):
+        return
+    NotImplementedError("Unfinished equality test for OMP and thresholds sections")
+    #TODO: Compare results from OMP, and thresholds
 
 
 @pytest.mark.slow
