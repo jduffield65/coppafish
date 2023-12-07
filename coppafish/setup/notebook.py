@@ -1170,7 +1170,7 @@ def merge_register_debug(
 def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
     """
     Split a notebook into separate notebooks for each tile. This can only be done with a notebook that contains 
-    'basic_info' and 'file_names' pages.
+    'basic_info', 'file_names', and 'scale' pages.
 
     Args:
         master_notebook (Notebook): notebook to split.
@@ -1180,6 +1180,8 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
             corresponds to `basic_info.use_tiles[i]`.
     """
     assert master_notebook.has_page('basic_info'), "Require 'basic_info' notebook page to split by tiles"
+    assert master_notebook.has_page('file_names'), "Require 'file_names' notebook page to split by tiles"
+    assert master_notebook.has_page('scale'), "Require 'scale' notebook page to split by tiles"
     assert not master_notebook.has_page('extract'), "Notebook cannot contain 'extract' notebook page"
     
     output = []
