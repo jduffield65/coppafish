@@ -64,7 +64,13 @@ def find_spots(
             * config['isolation_thresh']
 
     # Phase 1: Load in previous results if they exist
-    spot_info = fs.load_spot_info(nbp_file, nbp_basic)
+    spot_info = fs.load_spot_info(
+        nbp_file.spot_details_info, 
+        nbp_basic.n_tiles, 
+        nbp_basic.n_rounds, 
+        nbp_basic.n_extra_rounds, 
+        nbp_basic.n_channels, 
+    )
     # Define use_indices as a [n_tiles x n_rounds x n_channels] boolean array where use_indices[t, r, c] is True if
     # we want to use tile `t`, round `r`, channel `c` to find spots.
     use_indices = np.zeros(
