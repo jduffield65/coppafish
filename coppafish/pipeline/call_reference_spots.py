@@ -1,10 +1,8 @@
 import numpy as np
 import warnings
-try:
-    import importlib_resources
-except ModuleNotFoundError:
-    import importlib.resources as importlib_resources
 from typing import Tuple
+from tqdm import tqdm
+from itertools import product
 
 from ..setup.notebook import NotebookPage
 from .. import call_spots
@@ -12,8 +10,6 @@ from .. import spot_colors
 from .. import utils
 from ..extract import scale
 from ..call_spots import get_spot_intensity
-from tqdm import tqdm
-from itertools import product
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
@@ -144,6 +140,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         tile_colours = colours[spot_tile == t]
         tile_bg_colours = bg_colours[spot_tile == t]
         tile_bg_strength = np.sum(np.abs(tile_bg_colours), axis=(1, 2))
+        if np.allclose(tile_bg_strength, tile_bg_strength[0]):
+            # All pixels have the same background strength
+            continue
         weak_bg = tile_bg_strength < np.percentile(tile_bg_strength, 50)
         if (np.all(np.logical_not(weak_bg))):
             continue
@@ -243,7 +242,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_efficiency = gene_efficiency
 
     # Extract abs intensity percentile
-    central_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+    central_tile = scale.base.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
     if nbp_basic.is_3d:
         mid_z = int(nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2)
     else:
@@ -251,7 +250,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     pixel_colors = spot_colors.get_spot_colors(spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, mid_z),
                                                central_tile, transform, nbp_file, nbp_basic, nbp_extract,
                                                return_in_bounds=True)[0]
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[central_tile])
+    pixel_intensity = call_spots.get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[central_tile])
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
 
     return nbp, nbp_ref_spots

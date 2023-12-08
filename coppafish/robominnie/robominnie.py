@@ -13,6 +13,7 @@
 # Refactored and expanded by Paul Shuker, September 2023 - present
 import os
 import csv
+import shutil
 import numpy as np
 import scipy.stats
 import pandas
@@ -662,27 +663,21 @@ class RoboMinnie:
                         out=self.anchor_image_tiles[t,c]
                     )
 
+        if os.path.isdir(output_dir) and overwrite:
+            shutil.rmtree(output_dir)
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         if not overwrite:
-            assert len(os.listdir(output_dir)) == 0, f'Output directory {output_dir} must be empty'
+            assert len(os.listdir(output_dir)) == 0, f'Output directory at \n\t{output_dir}\n must be empty'
 
         # Create an output_dir/output_coppafish directory for coppafish pipeline output saved to disk
         self.output = output_dir
         self.coppafish_output = os.path.join(output_dir, 'output_coppafish')
+        if overwrite:
+            if os.path.isdir(self.coppafish_output):
+                shutil.rmtree(self.coppafish_output)
         if not os.path.isdir(self.coppafish_output):
             os.mkdir(self.coppafish_output)
-        if overwrite:
-            # Delete all files located in coppafish output directory to stop coppafish using old data
-            for filename in os.listdir(self.coppafish_output):
-                filepath = os.path.join(self.coppafish_output, filename)
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
-                if filename == 'reg_images':
-                    for reg_image_name in os.listdir(filepath):
-                        reg_filepath = os.path.join(filepath, reg_image_name)
-                        if os.path.isfile(reg_filepath):
-                            os.remove(reg_filepath)
 
         # Create an output_dir/output_coppafish/tiles directory for coppafish extract output
         self.coppafish_tiles = os.path.join(self.coppafish_output, 'tiles')
@@ -845,12 +840,14 @@ class RoboMinnie:
         anchor_channel = {self.anchor_channel if self.include_anchor else ''}
         dapi_channel = {self.dapi_channel if self.include_dapi else ''}
         
+        [scale]
+        r_smooth = {'1, 1, 2' if is_3d else ''}
+        
         [extract]
         ;psf_detect_radius_xy = 1
         ;psf_detect_radius_z = 1
         ;deconvolve = {True}
         file_type = .zarr
-        r_smooth = {'1, 1, 2' if is_3d else ''}
         continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
         ;#? Should probably be 0 for robominnie multi-tile setup? Unsure tho
@@ -859,6 +856,7 @@ class RoboMinnie:
         [stitch]
         expected_overlap = {self.tile_overlap if self.n_tiles > 1 else 0}
         shift_max_range = 6000, 6000, 100
+        shift_score_thresh = {0.2 if self.n_tiles > 1 else ''}
 
         [register]
         subvols = {1}, {8}, {8}
@@ -886,27 +884,30 @@ class RoboMinnie:
 
 
     def run_coppafish(
-        self, time_pipeline: bool = True, include_omp: bool = True, jax_profile: bool = False, 
-        jax_profile_omp: bool = False, profile_omp: bool = False, save_ref_spots_data: bool = True, 
-    ):
+        self, time_pipeline: bool = True, include_stitch: bool = True, include_omp: bool = True, 
+        jax_profile: bool = False, jax_profile_omp: bool = False, profile_omp: bool = False, 
+        save_ref_spots_data: bool = True, run_tile_by_tile: bool = False
+        ):
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
 
         Args:
-            time_pipeline (bool, optional): Print the time taken to run the coppafish pipeline and OMP. Default: true
-            include_omp (bool, optional): If true, run up to and including coppafish OMP stage. Default: true.
-            jax_profile (bool, optional): If true, profile entire coppafish pipeline. Default: false.
-            jax_profile_omp (bool, optional): If true, profile coppafish OMP using the jax tensorboard profiler. 
-                Requires tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. Default: 
-                false.
-            profile_omp (bool, optional): Profile coppafish OMP stage using a default Python profiler called 
+            time_pipeline (bool, optional): print the time taken to run the coppafish pipeline and OMP. Default: true.
+            include_stitch (bool, optional): run up to at least stitch. Default: true.
+            include_omp (bool, optional): run up to and including coppafish OMP stage. Default: true.
+            jax_profile (bool, optional): profile entire coppafish pipeline. Default: false.
+            jax_profile_omp (bool, optional): profile coppafish OMP using the jax tensorboard profiler. Requires 
+                tensorflow, install by running `pip install tensorflow tensorboard-plugin-profile`. Default: false.
+            profile_omp (bool, optional): profile coppafish OMP stage using a default Python profiler called 
                 `cprofile`. Dumps the results into a text file in output_coppafish. Default: false.
-            save_ref_spots_data (bool, optional): If true, will save ref_spots data, which is used for comparing 
+            save_ref_spots_data (bool, optional): if true, will save ref_spots data, which is used for comparing 
                 ref_spots results to the true robominnie spots. Default: false to reduce RoboMinnie's memory usage. 
                 Default: true.
-            
+            run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 
+                'register', then merge them together. Only applicable for `n_tiles > 1`. Default: false.
+        
         Returns:
-            Notebook: complete coppafish Notebook.
+            Notebook: final notebook.
         """
         self.instructions.append(utils.base.get_function_name())
         print(f'Running coppafish')
@@ -925,8 +926,9 @@ class RoboMinnie:
         nb = run.initialize_nb(config_filepath)
         if time_pipeline:
             start_time = time.time()
-        run.run_tile_indep_pipeline(nb)
-        
+        run.run_tile_indep_pipeline(nb, run_tile_by_tile=run_tile_by_tile)
+        if not include_stitch:
+            return nb
         run.run_stitch(nb)
 
         assert nb.stitch is not None, f'Stitch not found in notebook at {config_filepath}'

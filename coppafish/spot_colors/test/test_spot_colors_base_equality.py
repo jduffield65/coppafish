@@ -33,12 +33,12 @@ def test_get_spot_colors_equality():
                 image = rng.rand(n_planes, tile_sz, tile_sz)
                 filepath = os.path.join(directory, f'r{r}c{c}{file_type}')
                 nbp_file_dict_tile[0][r][c] = filepath
-                tiles_io.save_image(image, filepath, file_type)
+                tiles_io._save_image(image, filepath, file_type)
             # Save a preseq image
             preseq_image = rng.rand(n_planes, tile_sz, tile_sz)
             filepath = os.path.join(directory, f'preseq_c{c}{file_type}')
             nbp_file_dict_tile[0][n_rounds][c] = filepath
-            tiles_io.save_image(preseq_image, filepath, file_type)
+            tiles_io._save_image(preseq_image, filepath, file_type)
         nbp_file_dict['tile'] = nbp_file_dict_tile
         #TODO: 2d testing
         for is_3d in [True]:

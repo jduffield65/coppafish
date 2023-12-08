@@ -227,7 +227,6 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
         elif nbp_file.raw_extension == 'jobs':
             round_dask_array = load_dask(nbp_file, nbp_basic, r)
 
-
     # Return a tile/channel/z-planes from the dask array.
     if use_z is None:
         use_z = nbp_basic.use_z

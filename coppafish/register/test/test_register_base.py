@@ -1,8 +1,11 @@
+import os
+import itertools
+import numpy as np
+
+from coppafish.utils import tiles_io
+from coppafish.setup import NotebookPage
 from coppafish.register import base as reg_base
 from coppafish.register import preprocessing as reg_pre
-from skimage import data
-
-import numpy as np
 
 
 def test_find_shift_array():
@@ -88,3 +91,17 @@ def test_huber_regression():
     assert np.allclose(transform, np.array([[5, 0, 0, 0],
                                             [0, 5, 0, 0],
                                             [0, 0, 5, 0]]), atol=2e-6)
+
+
+def test_brightness_scale():
+    rng = np.random.RandomState(0)
+    nx = 4
+    ny = 5
+    nz = 6
+    seq = rng.randint(2**8, dtype=np.int32, size=(nz, ny, nx))
+    preseq = reg_pre.custom_shift(seq, [1, 2, 0]) * 4 + 1
+    scale, sub_image_seq, sub_image_preseq = reg_base.brightness_scale(preseq, seq, intensity_percentile=0.5)
+    assert isinstance(scale, float), "Expected scale to be type float"
+    assert isinstance(sub_image_seq, np.ndarray), "Expected sub_image_seq to be type ndarray"
+    assert isinstance(sub_image_preseq, np.ndarray), "Expected sub_image_preseq to be type ndarray"
+    assert np.isclose(scale, 0.25, atol=1e-2)

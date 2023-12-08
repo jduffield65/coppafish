@@ -13,9 +13,9 @@ except ImportError:
 
 from .. import utils
 from ..setup.notebook import NotebookPage
-from ..extract import scale
 from .. import spot_colors
 from .. import call_spots
+from .. import scale
 from .. import omp
 
 
@@ -98,7 +98,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do shape_tile first to compute spot_shape from it.
         if shape_tile is None:
-            shape_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+            shape_tile = scale.base.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
         if shape_tile not in nbp_basic.use_tiles:
             raise ValueError(f"shape_tile, {shape_tile} is not in nbp_basic.use_tiles, {nbp_basic.use_tiles}")
         shape_tile_ind = np.where(np.array(nbp_basic.use_tiles) == shape_tile)[0][0]
@@ -161,10 +161,9 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in use_tiles:
         print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
         
-        # z_chunk_size = 4 if optimised else 1
         z_chunk_size = 1
         pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, config, int(t), use_z, 
-                                                             z_chunk_size, n_genes, transform, color_norm_factor[t],
+                                                             z_chunk_size, n_genes, transform, color_norm_factor[t], 
                                                              nbp.initial_intensity_thresh, bled_codes, dp_norm_shift)
 
         if spot_shape is None:
@@ -272,7 +271,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
             nd_spot_colors_use[in_tile] = spot_colors.get_spot_colors(
-                jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
+                jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract
             )[0]
             spot_colors_norm[in_tile] = nd_spot_colors_use[in_tile] / color_norm_factor[t]
     nbp.intensity = np.asarray(call_spots.get_spot_intensity(spot_colors_norm))

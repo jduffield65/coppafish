@@ -119,6 +119,7 @@ def check_color_nan(colors: np.ndarray, nbp_basic: NotebookPage) -> None:
         nbp_basic: basic_info NotebookPage. Requires values for `n_rounds`, `n_channels`, `use_rounds`, \
             `use_channels` and `tile_pixel_value_shift`.
     """
+    # No idea what the hell is happening here but it works...
     diff_to_int = np.array([], dtype=int)
     not_nan = ~np.isnan(colors)
     diff_to_int = np.append(diff_to_int, [np.round(colors[not_nan]).astype(int) - colors[not_nan]])

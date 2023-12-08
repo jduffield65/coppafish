@@ -39,15 +39,15 @@ def test_tiles_io_save_load_tile():
             'n_channels': 2,
         })
         # 3d:
-        tiles_io.save_tile(nbp_file_3d, nbp_basic_3d, file_type, array_1, 0, 0, 0)
-        output = tiles_io.load_tile(nbp_file_3d, nbp_basic_3d, file_type, 0, 0, 0, None)
+        tiles_io.save_image(nbp_file_3d, nbp_basic_3d, file_type, array_1, 0, 0, 0)
+        output = tiles_io.load_image(nbp_file_3d, nbp_basic_3d, file_type, 0, 0, 0, None)
         assert np.allclose(array_1, output), 'Loaded in tile does not have the same values as starting tile'
-        tiles_io.save_tile(nbp_file_3d, nbp_basic_3d, file_type, array_1, 0, 0, 0, num_rotations=2)
-        output = tiles_io.load_tile(nbp_file_3d, nbp_basic_3d, file_type, 0, 0, 0, None)
+        tiles_io.save_image(nbp_file_3d, nbp_basic_3d, file_type, array_1, 0, 0, 0, num_rotations=2)
+        output = tiles_io.load_image(nbp_file_3d, nbp_basic_3d, file_type, 0, 0, 0, None)
         assert np.allclose(np.rot90(array_1, 2, axes=(0, 1)), output), 'Expected a rotated tile to be loaded in'
         yxz = [None, None, 1]
-        tiles_io.save_tile(nbp_file_3d, nbp_basic_3d, file_type, array_1, 0, 0, 0)
-        output = tiles_io.load_tile(nbp_file_3d, nbp_basic_3d, file_type, 0, 0, 0, yxz=yxz)
+        tiles_io.save_image(nbp_file_3d, nbp_basic_3d, file_type, array_1, 0, 0, 0)
+        output = tiles_io.load_image(nbp_file_3d, nbp_basic_3d, file_type, 0, 0, 0, yxz=yxz)
         assert np.allclose(array_1[:,:,1], output), 'Expected a subvolume to be loaded in'
         # TODO: Make 2d work, potentially errors in the script itself
         # tiles_io.save_tile(nbp_file_2d, nbp_basic_2d, file_type, array_2, 0, 0, 0, num_rotations=1, suffix='suffix_array_2')

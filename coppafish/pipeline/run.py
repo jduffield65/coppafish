@@ -1,8 +1,11 @@
 import os
+import tqdm
 import joblib
 import warnings
 import numpy as np
 from scipy import sparse
+import numpy.typing as npt
+from typing import Optional, Union
 
 from .. import setup, utils
 from ..find_spots import check_spots
@@ -11,6 +14,7 @@ from .register import preprocessing
 from . import basic_info
 from . import call_reference_spots
 from . import extract_run
+from . import scale_run
 from . import stitch
 from . import find_spots
 from . import register
@@ -42,8 +46,9 @@ def run_pipeline(
         parallel: Boolean, if 'True' will run the pipeline in parallel by splitting the data into tiles and running
             each tile in parallel.
         n_jobs: number of joblib threads to run
+    
     Returns:
-        `Notebook` containing all information gathered during the pipeline.
+        Notebook: notebook containing all information gathered during the pipeline.
     """
     nb = initialize_nb(config_file)
     if not parallel:
@@ -52,6 +57,7 @@ def run_pipeline(
         run_reference_spots(nb, overwrite_ref_spots)
         run_omp(nb)
     else:
+        #TODO: Add run_scale before extract is run
         config_files = setup.split_config(config_file)
         nb_list = [initialize_nb(f) for f in config_files]
         joblib.Parallel(n_jobs=n_jobs)(joblib.delayed(run_extract)(n) for n in nb_list)
@@ -65,16 +71,36 @@ def run_pipeline(
     return nb
 
 
-def run_tile_indep_pipeline(nb: setup.Notebook) -> None:
+def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) -> None:
     """
     Run tile-independent pipeline processes.
-    
+
     Args:
-        nb: `Notebook` containing 'basic_info' and 'file_names' pages.
+        nb (Notebook): notebook containing 'basic_info' and 'file_names' pages.
+        run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 'register', 
+            then merge them together. Default: false.
     """
-    run_extract(nb)
-    run_find_spots(nb)
-    run_register(nb)
+    run_scale(nb)
+    if run_tile_by_tile and nb.basic_info.n_tiles > 1:
+        print("Running tile by tile...")
+        # Load one tile image into memory to run in both find_spots and register
+        nb_tiles = setup.notebook.split_by_tiles(nb)
+        for i, tile in enumerate(nb.basic_info.use_tiles):
+            nb_tile = nb_tiles[i]
+            #TODO: Instead of extract writing to disk then loading from disk again, make `run_extract` return `image_t`
+            # as well as writing to disk. This would be optimal.
+            run_extract(nb_tile)
+            image_t = utils.tiles_io.load_tile(
+                nb.file_names, nb.basic_info, nb_tile.extract.file_type, tile, apply_shift=False, 
+            )
+            nb_tile = run_find_spots(nb_tile, image_t)
+        nb = setup.merge_notebooks(nb_tiles, nb)
+        #TODO: Place run_register within the t loop and run tile by tile, inputting image_t as a parameter
+        run_register(nb)
+    if not run_tile_by_tile:
+        run_extract(nb)
+        run_find_spots(nb)
+        run_register(nb)
 
 
 def initialize_nb(config_file: str) -> setup.Notebook:
@@ -102,6 +128,25 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     return nb
 
 
+def run_scale(nb: setup.Notebook) -> None:
+    """
+    This runs the `scale` step of the pipeline to produce the scale factors to use during extraction.
+    
+    `scale` page is added to the `Notebook` before saving.
+
+    Args:
+        nb (Notebook): `Notebook` containing `file_names` and `basic_info` pages.
+    """
+    if not nb.has_page("scale"):
+        config = nb.get_config()
+        nbp = scale_run.compute_scale(
+            config['scale'], nb.file_names, nb.basic_info, 
+        )
+        nb += nbp
+    else:
+        warnings.warn('scale', utils.warnings.NotebookPageWarning)
+    
+
 def run_extract(nb: setup.Notebook) -> None:
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
@@ -111,11 +156,11 @@ def run_extract(nb: setup.Notebook) -> None:
     If `Notebook` already contains these pages, it will just be returned.
 
     Args:
-        nb: `Notebook` containing `file_names` and `basic_info` pages.
+        nb: `Notebook` containing `file_names`, `basic_info` and `scale` pages.
     """
     if not all(nb.has_page(["extract", "extract_debug"])):
         config = nb.get_config()
-        nbp, nbp_debug = extract_run.extract_and_filter(config['extract'], nb.file_names, nb.basic_info)
+        nbp, nbp_debug = extract_run.extract_and_filter(config['extract'], nb.file_names, nb.basic_info, nb.scale)
         nb += nbp
         nb += nbp_debug
     else:
@@ -123,25 +168,38 @@ def run_extract(nb: setup.Notebook) -> None:
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_find_spots(nb: setup.Notebook) -> None:
+def run_find_spots(
+    nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> Union[None, setup.NotebookPage]:
     """
     This runs the `find_spots` step of the pipeline to produce point cloud from each tiff file in the tile directory.
 
-    `find_spots` page added to the `Notebook` before saving.
+    `find_spots` page added to the `Notebook` before saving if image_t is not given.
 
     If `Notebook` already contains this page, it will just be returned.
 
     Args:
         nb: `Notebook` containing `extract` page.
-
+        image_t (`(n_rounds x n_channels x ny x nz (x nz)) ndarray[uint16]`, optional): image pixels for tile 
+            specified in `nb`. If given, find_spots will be run on this single tile only and return the find_spots 
+            NotebookPage, not adding it to the Notebook. Default: not given.
+        
+    Returns:
+        NoteBook containing 'find_spots' page.
     """
+    if image_t is not None:
+        assert len(nb.basic_info.use_tiles) == 1, "Can only run on a single-tile notebook when `image_t` is given"
+
     if not nb.has_page("find_spots"):
         config = nb.get_config()
-        nbp = find_spots.find_spots(config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.extract.auto_thresh)
+        nbp = find_spots.find_spots(
+            config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.extract.auto_thresh, image_t, 
+        )
         nb += nbp
-        check_spots.check_n_spots(nb)  # error if too few spots - may indicate tile or channel which should not be included
+        # error if too few spots - may indicate tile or channel which should not be included
+        check_spots.check_n_spots(nb)
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
+    return nb
 
 
 def run_stitch(nb: setup.Notebook) -> None:
@@ -156,7 +214,6 @@ def run_stitch(nb: setup.Notebook) -> None:
 
     Args:
         nb: `Notebook` containing `find_spots` page.
-
     """
     config = nb.get_config()
     if not nb.has_page("stitch"):
@@ -183,7 +240,7 @@ def run_stitch(nb: setup.Notebook) -> None:
                                      config['extract']['num_rotations'])
 
 
-def run_register(nb: setup.Notebook) -> None:
+def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> None:
     """
     This runs the `register_initial` step of the pipeline to find shift between ref round/channel to each imaging round
     for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
@@ -192,31 +249,49 @@ def run_register(nb: setup.Notebook) -> None:
     `register_initial`, `register` and `register_debug` pages are added to the `Notebook` before saving.
 
     If `Notebook` already contains these pages, it will just be returned.
+    
+    If `image_t` is given, register will run on the single tile given.
 
     Args:
         nb: `Notebook` containing `extract` page.
-
+        image_t (`(n_rounds x n_channels x ny x nz (x nz)) ndarray[uint16]`, optional): image for tile 
+            `nb[basic_info][use_tile]`. Default: not given.
     """
+    if image_t is not None:
+        assert len(nb.basic_info.use_tiles) == 1, "Can only run on a single-tile notebook when `image_t` is given"
+        NotImplementedError("Cannot run register tile by tile yet")
+
     config = nb.get_config()
     # if not all(nb.has_page(["register", "register_debug"])):
     if not nb.has_page("register"):
-        nbp, nbp_debug = register.register(nb.basic_info, nb.file_names, nb.extract, nb.find_spots, config['register'], 
-                                           np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant', 
-                                           constant_values=1), pre_seq_blur_radius=0)
+        nbp, nbp_debug = register.register(
+            nb.basic_info, 
+            nb.file_names, 
+            nb.extract, 
+            nb.find_spots, 
+            config['register'], 
+            np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant', constant_values=1), 
+            pre_seq_blur_radius=0, 
+        )
         nb += nbp
         nb += nbp_debug
         # Save reg images
         round_registration_channel = config['register']['round_registration_channel']
         for t in nb.basic_info.use_tiles:
-            for r in nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round] * nb.basic_info.use_preseq:
-                if round_registration_channel is not None:
-                    preprocessing.generate_reg_images(nb, t, r, round_registration_channel)
-                if round_registration_channel is None:
-                    preprocessing.generate_reg_images(nb, t, r, nb.basic_info.anchor_channel)
-                print(t, r)
-            for c in nb.basic_info.use_channels:
-                preprocessing.generate_reg_images(nb, t, 3, c)
-                print(t, c)
+            use_rounds_with_preseq = nb.basic_info.use_rounds + [nb.basic_info.pre_seq_round] * nb.basic_info.use_preseq
+            with tqdm.tqdm(total=len(use_rounds_with_preseq), desc="Saving registration images") as pbar:
+                for r in use_rounds_with_preseq:
+                    pbar.set_postfix({'tile': t, 'round': r})
+                    if round_registration_channel is not None:
+                        preprocessing.generate_reg_images(nb, t, r, round_registration_channel)
+                    if round_registration_channel is None:
+                        preprocessing.generate_reg_images(nb, t, r, nb.basic_info.anchor_channel)
+                    pbar.update(1)
+            with tqdm.tqdm(total=len(nb.basic_info.use_channels), desc="Saving registration images") as pbar:
+                for c in nb.basic_info.use_channels:
+                    pbar.set_postfix({'tile': t, 'channel': c})
+                    preprocessing.generate_reg_images(nb, t, 3, c)
+                    pbar.update(1)
             if round_registration_channel is not None:
                 preprocessing.generate_reg_images(nb, t, nb.basic_info.anchor_round, round_registration_channel)
             preprocessing.generate_reg_images(nb, t, nb.basic_info.anchor_round, nb.basic_info.anchor_channel)
@@ -277,7 +352,6 @@ def run_omp(nb: setup.Notebook) -> None:
 
     Args:
         nb: `Notebook` containing `call_spots` page.
-
     """
     if not nb.has_page("omp"):
         config = nb.get_config()
