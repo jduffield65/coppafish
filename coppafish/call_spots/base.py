@@ -2,7 +2,7 @@ from scipy.spatial import KDTree
 import numpy as np
 from typing import List, Tuple
 
-from .. import utils
+from coppafish import utils
 
 
 def get_non_duplicate(tile_origin: np.ndarray, use_tiles: List, tile_centre: np.ndarray,
@@ -155,3 +155,99 @@ def compute_gene_efficiency(spot_colours: np.ndarray, bled_codes: np.ndarray, ge
 
     return gene_efficiency, use_ge, dye_efficiency
 
+
+def matrix_match(Y: np.ndarray, X: np.ndarray, u: np.ndarray, v: np.ndarray, alpha: float = 0, beta: float = 0,
+                 n_iters: int = 50) -> [np.ndarray, np.ndarray]:
+    """
+    This function solves the following problem: given two matrices Y and X (n rows and m columns each), find two
+    vectors u and v (of length n and m respectively) such that Y_ij ~ u_i * X_ij * v_j for all i and j. This is
+    achieved approximately by minimising the squared error between Y and u * X * v.
+    Args:
+        Y: target matrix (n rows, m columns) to be matched
+        X: input matrix (n rows, m columns)
+        u: initial guess for u (n entries)
+        v: initial guess for v (m entries)
+        alpha: weight of the L2 regularisation term on u
+        beta: weight of the L2 regularisation term on v
+        n_iters: number of iterations to run the algorithm for
+
+    Returns:
+        u, v: solutions to the problem. These are vectors of length n and m respectively. u will be L2 normalised,
+
+    """
+    u_init, v_init = u.copy(), v.copy()
+    n, m = Y.shape
+    eta, theta = np.zeros(n), np.zeros(m)
+    W = Y * X
+    for iter in range(n_iters):
+        for i in range(n):
+            eta[i] = 1 / (np.sum((X[i] * v) ** 2) + alpha)
+        for j in range(m):
+            theta[j] = 1 / (np.sum((X[:, j] * u) ** 2) + beta)
+        u = (W @ v + alpha * u_init) * eta
+        u /= np.linalg.norm(u)
+        v = (W.T @ u + beta * v_init) * theta
+    return u, v
+
+
+def matrix_match_exact(Y: np.ndarray, X: np.ndarray) -> [np.ndarray, np.ndarray]:
+    """
+    This function solves the following problem: given two matrices Y and X (n rows and m columns each), find two
+    vectors u and v (of length n and m respectively) such that Y_ij ~ u_i * X_ij * v_j for all i and j. We do this by
+    solving the problem u_i * Y_ij ~ X_ij * v_j for all i and j, and then inverting the u_i. The problem is constrained
+    so that u_i and v_j are nonzero and u has unit L2 norm. When this is the case it can be shown that the solution is
+    the eigenvector of W @ W.T with the largest eigenvalue, where W = Y * X.
+
+    Args:
+        Y: target matrix (n rows, m columns) to be matched
+        X: input matrix (n rows, m columns)
+
+    Returns:
+        u, v: solutions to the problem. These are vectors of length n and m respectively. u will be L2 normalised,
+        v will not.
+    """
+    W = Y * X
+    u_evals, u_evecs = np.linalg.eig(W @ W.T)
+    v_evals, v_evecs = np.linalg.eig(W.T @ W)
+    u_evals, u_evecs = np.real(u_evals), np.real(u_evecs)
+    v_evals, v_evecs = np.real(v_evals), np.real(v_evecs)
+    u = u_evecs[:, np.argmax(u_evals)]
+    v = v_evecs[:, np.argmax(v_evals)]
+    u /= np.linalg.norm(u)
+    B = u @ W @ v
+    C = np.sum((X * X) @ (v * v))
+    v = v * B / C
+    u = 1 / u
+
+    return u, v
+
+
+def matrix_match_with_prior(Y: np.ndarray, X: np.ndarray, u_init: np.ndarray, v_init: np.ndarray, alpha: float = 0,
+                            beta: float = 0) -> [np.ndarray, np.ndarray]:
+    """
+    This function solves the following problem: given two matrices Y and X (n rows and m columns each), find two
+    vectors u and v (of length n and m respectively) such that Y_ij ~ u_i * X_ij * v_j for all i and j. We do this by
+    solving the problem u_i * Y_ij ~ X_ij * v_j for all i and j, and then inverting the u_i. The problem is constrained
+    so that u_i is close to u_init_i and v_j is close to v_init_j. The problem is also constrained so that u_i has unit
+    L2 norm. When this is the case, the solutions can be written in closed form.
+    Args:
+        Y: target matrix (n rows, m columns) to be matched
+        X: input matrix (n rows, m columns)
+        u_init: initial guess for u (n entries)
+        v_init: initial guess for v (m entries)
+        alpha: weight of the L2 regularisation term on u
+        beta: weight of the L2 regularisation term on v
+
+    Returns:
+        u, v: solutions to the problem. These are vectors of length n and m respectively. u will be L2 normalised,
+    """
+    n, m = Y.shape
+    W = Y * X
+    eta = 1 / ((1+alpha)*(1+beta))
+    u_operator = np.linalg.inv(np.eye(n) - eta * W @ W.T)
+    v_operator = np.linalg.inv(np.eye(m) - eta * W.T @ W)
+    u = u_operator @ (alpha * u_init + beta * W @ v_init)
+    v = v_operator @ (beta * v_init + alpha * W.T @ u)
+    u /= np.linalg.norm(u)
+    u = 1 / u
+    return u, v
