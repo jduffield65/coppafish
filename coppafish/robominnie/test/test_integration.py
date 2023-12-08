@@ -70,7 +70,7 @@ def test_integration_002() -> None:
 
 
 @pytest.mark.slow
-def test_integration_003(include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = False, 
+def test_integration_003(include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = True, 
                          ) -> Notebook:
     """
     Summary of input data: random spots and pink noise.
@@ -81,7 +81,7 @@ def test_integration_003(include_stitch: bool = True, include_omp: bool = True, 
         include_stitch (bool, optional): run stitch. Default: true.
         include_omp (bool, optional): run OMP. Default: true.
         run_tile_by_tile (bool, optional): run each tile separately then combine notebooks on tile independent 
-            pipeline. Default: false.
+            pipeline. Default: true.
 
     Returns:
         Notebook: final notebook.
@@ -160,17 +160,20 @@ def test_bg_subtraction() -> None:
 def test_tile_by_tile_equality() -> None:
     """
     Test for coppafish notebook equality when running the pipeline tile by tile then merging versus all tiles at once 
-    (old approach) using ``test_integration_003``. Runs everything except the final step, OMP.
+    (old approach) using ``test_integration_003``.
     """
     def _approximately_equal(a: Any, b: Any) -> bool:
         if a is None and b is None:
             equal = True
         elif a is None or b is None:
             equal = False
-        elif isinstance(a, (float, np.float_, int, np.int_)):
-            equal = np.isclose(a, b)
+        elif isinstance(a, (
+                float, np.float16, np.float32, np.float64, int, np.int8, np.int16, np.int32, np.int64, np.uint16, 
+                np.uint32, np.uint64, 
+        )):
+            equal = np.isclose(a, b, equal_nan=True)
         elif isinstance(a, (np.ndarray)):
-            if isinstance(a.dtype, (float, int, np.float_, np.int_)):
+            if isinstance(a.dtype, (float, np.float16, np.float32, np.float64, np.float128)):
                 equal = np.allclose(a, b, equal_nan=True)
             else:
                 equal = (a == b).all()
@@ -180,14 +183,18 @@ def test_tile_by_tile_equality() -> None:
             ValueError(f"Failed to compare variables of types {type(a)=} and {type(b)=}")
         if not equal:
             print(f"{a=}\n{b=}")
+            print(f"{type(a)=}\n{type(b)=}")
+            print(f"{a.dtype=}\n{b.dtype=}")
         return equal
     
-    start_time = time.time()
-    nb_0 = test_integration_003(include_omp=True, run_tile_by_tile=False)
-    end_time = time.time()
     start_time_tile_by_tile = time.time()
     nb_1 = test_integration_003(include_omp=True, run_tile_by_tile=True)
     end_time_tile_by_tile = time.time()
+    start_time = time.time()
+    nb_0 = test_integration_003(include_omp=True, run_tile_by_tile=False)
+    end_time = time.time()
+    print(f"Pipeline time: {round(end_time - start_time, 1)}s")
+    print(f"Pipeline tile by tile time: {round(end_time_tile_by_tile - start_time_tile_by_tile, 1)}s")
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
@@ -291,15 +298,15 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.register.transform, nb_1.register.transform)
     if not nb_0.has_page("register_debug"):
         return
-    #FIXME: round_shift_corr are not equal
-    assert _approximately_equal(nb_0.register_debug.channel_transform, nb_0.register_debug.channel_transform)
-    assert _approximately_equal(nb_0.register_debug.converged, nb_0.register_debug.converged)
-    assert _approximately_equal(nb_0.register_debug.mse, nb_0.register_debug.mse)
-    assert _approximately_equal(nb_0.register_debug.n_matches, nb_0.register_debug.n_matches)
-    assert _approximately_equal(nb_0.register_debug.position, nb_0.register_debug.position)
-    assert _approximately_equal(nb_0.register_debug.round_shift, nb_0.register_debug.round_shift)
-    assert _approximately_equal(nb_0.register_debug.round_shift_corr, nb_0.register_debug.round_shift_corr)
-    assert _approximately_equal(nb_0.register_debug.round_transform_raw, nb_0.register_debug.round_transform_raw)
+    assert _approximately_equal(nb_0.register_debug.channel_transform, nb_1.register_debug.channel_transform)
+    assert _approximately_equal(nb_0.register_debug.converged, nb_1.register_debug.converged)
+    assert _approximately_equal(nb_0.register_debug.mse, nb_1.register_debug.mse)
+    assert _approximately_equal(nb_0.register_debug.n_matches, nb_1.register_debug.n_matches)
+    assert _approximately_equal(nb_0.register_debug.position, nb_1.register_debug.position)
+    assert _approximately_equal(nb_0.register_debug.round_shift, nb_1.register_debug.round_shift)
+    #FIXME: round_shift_corr not capable of comparison
+    # assert _approximately_equal(nb_0.register_debug.round_shift_corr, nb_1.register_debug.round_shift_corr)
+    assert _approximately_equal(nb_0.register_debug.round_transform_raw, nb_1.register_debug.round_transform_raw)
     if not nb_0.has_page("stitch"):
         return
     assert _approximately_equal(nb_0.stitch.east_final_shift_search, nb_1.stitch.east_final_shift_search)
@@ -360,12 +367,12 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.omp.n_neighbours_pos, nb_1.omp.n_neighbours_pos)
     assert _approximately_equal(nb_0.omp.n_neighbours_neg, nb_1.omp.n_neighbours_neg)
     assert _approximately_equal(nb_0.omp.intensity, nb_1.omp.intensity)
+    if not nb_0.has_page("thresholds"):
+        return
     assert _approximately_equal(nb_0.thresholds.intensity, nb_1.thresholds.intensity)
     assert _approximately_equal(nb_0.thresholds.score_ref, nb_1.thresholds.score_ref)
     assert _approximately_equal(nb_0.thresholds.score_omp, nb_1.thresholds.score_omp)
     assert _approximately_equal(nb_0.thresholds.score_omp_multiplier, nb_1.thresholds.score_omp_multiplier)
-    print(f"Pipeline time: {round(end_time - start_time, 1)}s")
-    print(f"Pipeline tile by tile time: {round(end_time_tile_by_tile - start_time_tile_by_tile, 1)}s")
 
 
 @pytest.mark.slow
