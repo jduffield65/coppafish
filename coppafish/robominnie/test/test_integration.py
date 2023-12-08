@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 from coppafish.robominnie import RoboMinnie
 from coppafish import Notebook, Viewer
@@ -181,8 +182,12 @@ def test_tile_by_tile_equality() -> None:
             print(f"{a=}\n{b=}")
         return equal
     
+    start_time = time.time()
     nb_0 = test_integration_003(include_omp=True, run_tile_by_tile=False)
+    end_time = time.time()
+    start_time_tile_by_tile = time.time()
     nb_1 = test_integration_003(include_omp=True, run_tile_by_tile=True)
+    end_time_tile_by_tile = time.time()
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
@@ -359,6 +364,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.thresholds.score_ref, nb_1.thresholds.score_ref)
     assert _approximately_equal(nb_0.thresholds.score_omp, nb_1.thresholds.score_omp)
     assert _approximately_equal(nb_0.thresholds.score_omp_multiplier, nb_1.thresholds.score_omp_multiplier)
+    print(f"Pipeline time: {round(end_time - start_time, 1)}s")
+    print(f"Pipeline tile by tile time: {round(end_time_tile_by_tile - start_time_tile_by_tile, 1)}s")
 
 
 @pytest.mark.slow
