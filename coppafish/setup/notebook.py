@@ -1170,7 +1170,7 @@ def merge_register_debug(
 def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
     """
     Split a notebook into separate notebooks for each tile. This can only be done with a notebook that contains 
-    'basic_info', 'file_names', and 'scale' pages.
+    'basic_info', 'file_names', and 'scale' pages. The split notebook for tile `t` is saved with name `'notebook_t{t}'`.
 
     Args:
         master_notebook (Notebook): notebook to split.
@@ -1185,9 +1185,13 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
     assert not master_notebook.has_page('extract'), "Notebook cannot contain 'extract' notebook page"
     
     output = []
+    notebook_dir = PurePath(master_notebook._file).parent
     use_tiles = master_notebook.basic_info.use_tiles
     for tile in use_tiles:
         new_notebook = copy.deepcopy(master_notebook)
+        new_notebook._created_time = time.time()
+        new_notebook._file = os.path.join(notebook_dir, f"notebook_t{tile}")
+        
         new_notebook.basic_info.finalized = False
         del new_notebook.basic_info.use_tiles
         new_notebook.basic_info.use_tiles = [tile]
