@@ -1,7 +1,7 @@
 import warnings
 from typing import Optional, Tuple, List
 import numpy as np
-import jax as _ # must import jax for non-jax pipeline to work
+import jax # must import jax for non-jax pipeline to work
 
 from . import detect
 from .. import utils
