@@ -239,7 +239,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         if n_cores is None:
             # Maximum threads physically possible could be bottlenecked by available RAM
             n_cores = max(system.get_core_count(), 1)
-            memory_core_limit = math.floor(system.get_available_memory() * n_image_bytes * 2.4e-8)
+            memory_core_limit = math.floor(system.get_available_memory() * 4.37e7 / n_image_bytes)
             if memory_core_limit < 1:
                 warnings.warn(
                     f"Available memory is low, if coppafish crashes, try freeing up memory before re-running pipeline"
