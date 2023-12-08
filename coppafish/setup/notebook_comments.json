@@ -408,6 +408,8 @@
       "Background strength of each spot. Calculated as the median of the channel across rounds."],
     "gene_probs": ["Numpy float array [n_spots x n_genes]",
       "Probability that spot $s$ is gene $g$."],
+    "dye_strengths": ["Numpy float array [n_spots x n_rounds x n_dyes]",
+      "Strength of each dye in each round for each spot."],
     "bg_colours": ["Numpy int32 array [n_spots x n_rounds x n_channels]",
       "Background colour of each spot. Calculated as the median of the channel across rounds."]
   },
