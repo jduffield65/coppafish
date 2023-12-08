@@ -9,6 +9,7 @@ from .. import utils, extract
 from ..utils import tiles_io
 
 
+#TODO: Add parameter return_image: bool to return the image for every round & channel when running on a single tile
 def extract_and_filter(
     config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_scale: NotebookPage, 
 ) -> Tuple[NotebookPage, NotebookPage]:
