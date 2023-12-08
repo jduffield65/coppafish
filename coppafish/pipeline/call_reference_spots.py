@@ -8,7 +8,7 @@ from ..setup.notebook import NotebookPage
 from .. import call_spots
 from .. import spot_colors
 from .. import utils
-from ..extract import scale
+from .. import scale
 from ..call_spots import get_spot_intensity
 
 
