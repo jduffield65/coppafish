@@ -154,7 +154,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         converged = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels), dtype=bool)
         # Create a progress bar for the ICP step
         with tqdm(total=len(use_tiles) * len(use_rounds) * len(use_channels)) as pbar:
-            pbar.set_description(f"Running ICP on all tiles")
+            pbar.set_description(f"Running ICP")
             for t in use_tiles:
                 ref_spots_t = find_spots.spot_yxz(nbp_find_spots.spot_yxz, t, nbp_basic.anchor_round, 
                                                   nbp_basic.anchor_channel, nbp_find_spots.spot_no)
