@@ -178,8 +178,8 @@ def test_tile_by_tile_equality() -> None:
             print(f"{a=}\n{b=}")
         return equal
     
-    nb_0 = test_integration_003(include_omp=False, run_tile_by_tile=False)
-    nb_1 = test_integration_003(include_omp=False, run_tile_by_tile=True)
+    nb_0 = test_integration_003(include_omp=True, run_tile_by_tile=False)
+    nb_1 = test_integration_003(include_omp=True, run_tile_by_tile=True)
     assert nb_0.has_page("file_names") == nb_1.has_page("file_names")
     assert nb_0.has_page("basic_info") == nb_1.has_page("basic_info")
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
@@ -338,8 +338,24 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.call_spots.use_ge, nb_1.call_spots.use_ge)
     if not nb_0.has_page("omp"):
         return
-    NotImplementedError("Unfinished equality test for OMP and thresholds sections")
-    #TODO: Compare results from OMP, and thresholds
+    assert _approximately_equal(nb_0.omp.initial_intensity_thresh, nb_1.omp.initial_intensity_thresh)
+    assert _approximately_equal(nb_0.omp.shape_tile, nb_1.omp.shape_tile)
+    assert _approximately_equal(nb_0.omp.shape_spot_local_yxz, nb_1.omp.shape_spot_local_yxz)
+    assert _approximately_equal(nb_0.omp.shape_spot_gene_no, nb_1.omp.shape_spot_gene_no)
+    assert _approximately_equal(nb_0.omp.spot_shape_float, nb_1.omp.spot_shape_float)
+    assert _approximately_equal(nb_0.omp.initial_pos_neighbour_thresh, nb_1.omp.initial_pos_neighbour_thresh)
+    assert _approximately_equal(nb_0.omp.spot_shape, nb_1.omp.spot_shape)
+    assert _approximately_equal(nb_0.omp.local_yxz, nb_1.omp.local_yxz)
+    assert _approximately_equal(nb_0.omp.tile, nb_1.omp.tile)
+    assert _approximately_equal(nb_0.omp.colors, nb_1.omp.colors)
+    assert _approximately_equal(nb_0.omp.gene_no, nb_1.omp.gene_no)
+    assert _approximately_equal(nb_0.omp.n_neighbours_pos, nb_1.omp.n_neighbours_pos)
+    assert _approximately_equal(nb_0.omp.n_neighbours_neg, nb_1.omp.n_neighbours_neg)
+    assert _approximately_equal(nb_0.omp.intensity, nb_1.omp.intensity)
+    assert _approximately_equal(nb_0.thresholds.intensity, nb_1.thresholds.intensity)
+    assert _approximately_equal(nb_0.thresholds.score_ref, nb_1.thresholds.score_ref)
+    assert _approximately_equal(nb_0.thresholds.score_omp, nb_1.thresholds.score_omp)
+    assert _approximately_equal(nb_0.thresholds.score_omp_multiplier, nb_1.thresholds.score_omp_multiplier)
 
 
 @pytest.mark.slow
