@@ -1,3 +1,14 @@
+2023/12/dd Alpha Update (v0.5.0):
+ * When running multiple tiles, extract and find_spots run on single tiles at a time. We hope to minimise disk reading 
+    in the future by keeping a single tile in memory throughout extract, find_spots and register.
+ * Default extraction file type (['extract']['file_type']) is now .zarr, used to be .npy.
+ * Multiprocessing to compute background scales now includes no disk reading (safer).
+ * The disk reading multiprocessing in OMP has been removed (safer).
+ * OMP now runs on a single z plane at a time.
+ * Silenced notebook numpy-related warning.
+ * Silenced jax CPU warning.
+
+
 2023/11/16 Alpha Update (v0.4.0):
  * Improved outlier removal for shift calculations in registration.
  * Further optimisations.
