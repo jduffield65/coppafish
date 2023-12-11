@@ -2,23 +2,20 @@
 # Refactored and expanded by Paul Shuker, September 2023 - present
 import os
 import csv
-import shutil
-import numpy as np
-import scipy.stats
-import pandas
-import dask.array
-import warnings
+import bz2
 import json
 import time
 import pickle
-from tqdm import tqdm
-import bz2
+import pandas
+import shutil
 import napari
-from numpy.fft import fftshift, ifftshift
-from scipy.fft import fftn, ifftn
-from typing import Dict, List, Any, Tuple
+import warnings
+import dask.array
+import scipy.stats
+import numpy as np
+from tqdm import tqdm
 import numpy.typing as npt
-from numpy.random import Generator
+from typing import Dict, List, Any, Tuple
 
 from coppafish import utils
 from coppafish.pipeline import run
@@ -246,8 +243,8 @@ class RoboMinnie:
         )
         rng = np.random.RandomState(self.seed)
 
-        pink_sampled_spectrum = pink_spectrum*fftshift(fftn(rng.randn(*self.n_yxz)))
-        pink_noise = np.abs(ifftn(ifftshift(pink_sampled_spectrum)))
+        pink_sampled_spectrum = pink_spectrum*np.fft.fftshift(scipy.fft.fftn(rng.randn(*self.n_yxz)))
+        pink_noise = np.abs(scipy.fft.ifftn(np.fft.ifftshift(pink_sampled_spectrum)))
         pink_noise = (pink_noise - np.mean(pink_noise)) * noise_amplitude / np.std(pink_noise)
 
         for r in range(self.n_rounds):
@@ -285,7 +282,7 @@ class RoboMinnie:
 
         assert noise_std > 0, f'Noise standard deviation must be > 0, got {noise_std}'
 
-        def _generate_noise(_rng: Generator, _noise_type: str, _noise_mean_amplitude: float, 
+        def _generate_noise(_rng: np.random.Generator, _noise_type: str, _noise_mean_amplitude: float, 
                             _noise_std: float, _size: tuple) -> npt.NDArray[np.float64]:
             """
             Generate noise based on the specified noise type and parameters.
