@@ -37,7 +37,8 @@ def extract_and_filter(
     # TODO: Refactor this function to make it more readable
     # initialise notebook pages
     if not nbp_basic.is_3d:
-        config["deconvolve"] = False  # only deconvolve if 3d pipeline
+        # config["deconvolve"] = False  # only deconvolve if 3d pipeline
+        raise NotImplementedError(f"coppafish 2d is not in a stable state. Sorry!")
     if config["file_type"] not in [".npy", ".zarr"]:
         ValueError(f"Unknown config['extract']['file_type']: {config['file_type']}")
 
