@@ -25,14 +25,14 @@ def extract_and_filter(
         nbp_scale (NotebookPage): 'scale' notebook page.
 
     Returns:
-        - `NotebookPage[extract]` - Page containing `auto_thresh` for use in turning images to point clouds and
+        - `NotebookPage[extract]`: page containing `auto_thresh` for use in turning images to point clouds and
             `hist_values`, `hist_counts` required for normalisation between channels.
-        - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
-            but may be useful for debugging purposes.
+        - `NotebookPage[extract_debug]`: page containing variables which are not needed later in the pipeline but may 
+            be useful for debugging purposes.
 
     Notes:
-        See `'extract'` and `'extract_debug'` sections of `notebook_comments.json` file for description of the
-        variables in each page.
+        - See `'extract'` and `'extract_debug'` sections of `notebook_comments.json` file for description of the
+            variables in each page.
     """
     # TODO: Refactor this function to make it more readable
     # initialise notebook pages
