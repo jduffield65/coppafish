@@ -1,14 +1,3 @@
-# Generate random data for integration testing in coppafish
-#
-# Synthetic data is added in a modular way to the RoboMinnie class.
-#
-# Currently, the biggest limitation is that this only works for one tile.  To
-# get it to work with multiple tiles, we would have to specify a geometry and
-# then generate the background noise on the minimal rectangle containing that
-# space.  This would include the overlap for each.  Then, we would sample spot
-# positions within these tile boundaries, and if it falls into an overlap, then
-# put it on both tiles.
-#
 # Originally created by Max Shinn, August 2023
 # Refactored and expanded by Paul Shuker, September 2023 - present
 import os
