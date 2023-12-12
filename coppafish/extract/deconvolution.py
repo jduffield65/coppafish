@@ -1,6 +1,5 @@
 import numpy as np
 from typing import List, Union, Optional, Tuple
-
 from .. import utils
 from .. import find_spots
 from . import scale
@@ -62,7 +61,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
     spot_images = np.zeros((0, shape[0], shape[1], shape[2]), dtype=int)
     tiles_used = []
     while n_spots < min_spots:
-        if  nbp_file.raw_extension == 'jobs':
+        if nbp_file.raw_extension == 'jobs':
             t = scale.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
 
             rda = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
@@ -82,7 +81,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
         spot_yxz, _ = find_spots.detect_spots(im, intensity_thresh, radius_xy, radius_z, True)
         # check fall off in intensity not too large
         not_single_pixel = find_spots.check_neighbour_intensity(im, spot_yxz, median_im)
-        isolated = find_spots.get_isolated_points(spot_yxz, isolation_dist)
+        isolated = find_spots.get_isolated_points(spot_yxz * [1, 1, nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy], isolation_dist)
         spot_yxz = spot_yxz[np.logical_and(isolated, not_single_pixel), :]
         if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots / 4:
             # raise error on first tile if looks like we are going to use more than 4 tiles
@@ -95,7 +94,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
         if len(use_tiles) == 0 and n_spots < min_spots:
             raise ValueError(f"\nRequired min_spots = {min_spots}, but only found {n_spots}.\n"
                              f"Maybe consider lowering intensity_thresh from current value of {intensity_thresh}.")
-    return spot_images, intensity_thresh.astype(float), tiles_used
+    return spot_images, float(intensity_thresh), tiles_used
 
 
 def get_psf(spot_images: np.ndarray, annulus_width: float) -> np.ndarray:

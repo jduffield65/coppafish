@@ -90,9 +90,11 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         for t in uncompleted_tiles:
             # Load in the anchor image and the round images. Note that here anchor means anchor round, not necessarily
             # anchor channel
+            use_dapi = round_registration_channel == nbp_basic.dapi_channel
             anchor_image = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
                                                                        r=nbp_basic.anchor_round, 
-                                                                       c=round_registration_channel))
+                                                                       c=round_registration_channel,
+                                                                       apply_shift=not use_dapi))
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
@@ -101,7 +103,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                     preprocessing.yxz_to_zyx(
                         tiles_io.load_tile(
                             nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=round_registration_channel, 
-                            suffix='_raw' if r == nbp_basic.pre_seq_round else ''
+                            suffix='_raw' if r == nbp_basic.pre_seq_round else '', apply_shift=not use_dapi
                         )
                     ) 
                     for r in round_chunks[i]
@@ -221,8 +223,6 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     # combine icp transform, channel transform and initial transform to get final transform
     transform = np.zeros((n_tiles, n_rounds + nbp_basic.use_anchor + nbp_basic.use_preseq, n_channels, 4, 3))
     transform[:, use_rounds] = registration_data['icp']['transform'][:, use_rounds]
-    if nbp_basic.use_preseq:
-        transform[:, nbp_basic.pre_seq_round] = registration_data['icp']['transform'][:, -1]
     nbp.transform = transform
 
     # Load in the middle z-plane of each tile and compute the scale factors to be used when removing background
@@ -232,7 +232,7 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]
+        yxz = [None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]
         n_cores = config['n_background_scale_threads']
         if n_cores is None:
             # Maximum threads physically possible is (potentially) bottlenecked by available RAM
