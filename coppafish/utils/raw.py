@@ -83,9 +83,9 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
         nbp_file: `file_names` notebook page
         nbp_basic: `basic_info` notebook page
         r: Round considering (anchor will be assumed to be the last round if using).
+        
     Returns:
         Dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
-
     """
 
     n_tiles, tile_sz, nz = nbp_basic.n_tiles, nbp_basic.tile_sz, nbp_basic.nz
