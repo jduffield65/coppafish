@@ -2,7 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import itertools
 import numpy.typing as npt
-from typing import Dict, Optional
+from typing import Optional
 
 from .. import find_spots as fs
 from ..setup.notebook import NotebookPage
@@ -10,8 +10,8 @@ from ..utils import tiles_io
 
 
 def find_spots(
-    config: Dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, auto_thresh: np.ndarray, 
-    image_t: Optional[npt.NDArray[np.int32]] = None, 
+    config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, nbp_filter: NotebookPage, 
+    auto_thresh: np.ndarray, image_t: Optional[npt.NDArray[np.int32]] = None
     ) -> NotebookPage:
     """
     This function turns each tiff file in the tile directory into a point cloud, saving the results
@@ -22,14 +22,16 @@ def find_spots(
 
     Args:
         config (dict): Dictionary obtained from `'find_spots'` section of config file.
-        nbp_file (NotebookPage): `file_names` notebook page
-        nbp_basic (NotebookPage): `basic_info` notebook page
-        nbp_extract (NotebookPage): `extract` notebook page
+        nbp_file (NotebookPage): `file_names` notebook page.
+        nbp_basic (NotebookPage): `basic_info` notebook page.
+        nbp_extract (NotebookPage): `extract` notebook page.
+        nbp_filter (NotebookPage): `filter` notebook page.
         auto_thresh (`[n_tiles x n_rounds x n_channels] ndarray[float]`): `auto_thresh[t, r, c]` is the threshold for 
             the tiff file corresponding to tile `t`, round `r`, channel `c` such that all local maxima with pixel 
             values greater than this are considered spots.
-        image_t (`[n_rounds x n_channels x ny x nx (x nz)] ndarray[uint16]`, optional): extracted image for tile. If 
-            given, find_spots runs on the single tile and returns its NotebookPage. Default: not given.
+        image_t (`(n_rounds x n_channels x nz x ny x nx) ndarray[uint16]`, optional): extracted and filtered image 
+            for a single tile. If given, find_spots runs on the single tile and returns its NotebookPage. Default: not 
+            given.
     
     Returns:
         `NotebookPage[find_spots]` - Page containing point cloud of all tiles, rounds and channels.
@@ -97,7 +99,8 @@ def find_spots(
                     suffix='_raw' if r == nbp_basic.pre_seq_round else ''
                 )
             else:
-                image_trc = image_t[r, c]
+                # zyx -> yxz
+                image_trc = image_t[r, c].transpose((1, 2, 0))
             local_yxz, spot_intensity = fs.detect_spots(image_trc,
                                                         auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
                                                         config['radius_xy'], config['radius_z'], True)

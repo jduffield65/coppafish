@@ -48,7 +48,7 @@ def get_z_plane(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, t: int,
         - ```image``` - ```int [tile_sz x tile_sz]```.
             Corresponding image.
     """
-    round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+    round_dask_array, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
     image_max = np.zeros((len(use_channels), len(use_z)))
     for i in range(len(use_channels)):
         image_max[i, :] = np.max(

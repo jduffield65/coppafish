@@ -202,6 +202,7 @@ class RoboMinnie:
         if self.n_planes < 4:
             warnings.warn("Coppafish may break with fewer than four z planes")
 
+
     def generate_gene_codes(self, n_genes: int = 20, n_rounds: int = None) -> Dict:
         """
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible
@@ -226,6 +227,7 @@ class RoboMinnie:
         codes = utils.base.reed_solomon_codes(n_genes, n_rounds)
         self.codes = codes
         return codes
+
 
     def generate_pink_noise(
         self,
@@ -252,7 +254,7 @@ class RoboMinnie:
         """
         # TODO: Add the ability to square the pink noise, gives sharper peaks which is meant to be more realistic
         self.instructions.append(utils.base.get_function_name())
-        print(f"Generating pink noise")
+        print(f"Generating pink noise...")
 
         # True spatial scale should be maintained regardless of the image size, so we scale it as such.
         true_noise_spatial_scale = noise_spatial_scale * np.asarray([*self.n_yxz[:2], 10 * self.n_yxz[2]])
@@ -284,6 +286,7 @@ class RoboMinnie:
             self.anchor_image[self.dapi_channel] += pink_noise
             self.presequence_image[self.dapi_channel] += pink_noise
 
+
     def generate_random_noise(
         self,
         noise_std: float,
@@ -308,6 +311,7 @@ class RoboMinnie:
         print("Generating random noise")
 
         assert noise_std > 0, f"Noise standard deviation must be > 0, got {noise_std}"
+
 
         def _generate_noise(
             _rng: np.random.Generator, _noise_type: str, _noise_mean_amplitude: float, _noise_std: float, _size: tuple
@@ -336,6 +340,7 @@ class RoboMinnie:
                 )
             else:
                 raise ValueError(f"Unknown noise type: {_noise_type}")
+
 
         rng = np.random.RandomState(self.seed)
 
@@ -371,6 +376,7 @@ class RoboMinnie:
         # Add new random noise to each pixel
         np.add(self.image, sequence_noise, out=self.image)
         np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
+
 
     def add_spots(
         self,
@@ -411,6 +417,7 @@ class RoboMinnie:
                 background offset[s,c] is added to spot `s` in channel `c`. Default: Zero offset.
         """
         self.instructions.append(utils.base.get_function_name())
+
 
         def _blit(source, target, loc):
             """
@@ -556,6 +563,7 @@ class RoboMinnie:
         self.true_spot_identities = np.append(self.true_spot_identities, np.asarray(true_spot_identities))
         self.true_spot_positions_pixels = np.append(self.true_spot_positions_pixels, true_spot_positions_pixels, axis=0)
 
+
     # Post-Processing function
     def fix_image_minimum(self, minimum: float = 0.0) -> None:
         """
@@ -589,6 +597,7 @@ class RoboMinnie:
                 out=self.presequence_image[(not self.include_dapi) :],
             )
 
+
     # Post-Processing function
     def offset_images_by(
         self, constant: float, include_anchor: bool = True, include_presequence: bool = True, include_dapi: bool = True
@@ -612,6 +621,53 @@ class RoboMinnie:
             np.add(self.presequence_image, constant, out=self.presequence_image)
         if include_dapi and self.include_dapi:
             np.add(self.anchor_image[:, self.dapi_channel], constant, out=self.anchor_image[:, self.dapi_channel])
+
+
+    # Post-Processing function
+    def scale_images_to_type(self, type: np.dtype) -> None:
+        """
+        Offset and multiply all used images by the same constant to fill the entire data range of given datatype.
+
+        Args:
+            type (np.dtype): datatype to scale images to.
+        """
+        print(f"Scaling images to type {np.dtype(type).name}...")
+        
+        type_min = np.iinfo(type).min
+        type_max = np.iinfo(type).max
+        image_min = self.image.min()
+        image_max = self.image.max()
+        if self.include_anchor or self.include_dapi:
+            image_min = min(self.anchor_image.min(), image_min)
+            image_max = max(self.anchor_image.max(), image_max)
+        if self.include_presequence:
+            image_min = min(self.presequence_image.min(), image_min)
+            image_max = max(self.presequence_image.max(), image_max)
+            
+        multiplier = (type_max - type_min)/ (image_max - image_min)
+        offset = type_max - multiplier * image_max
+        assert np.isclose(offset, type_min - multiplier * image_min ), f"oopps"
+        np.multiply(self.image, multiplier, out=self.image)
+        np.add(self.image, offset, out=self.image)
+        self.image = self.image.astype(type)
+        if self.include_presequence:
+            np.multiply(self.presequence_image, multiplier, out=self.presequence_image)
+            np.add(self.presequence_image, offset, out=self.presequence_image)
+            self.presequence_image = self.presequence_image.astype(type)
+        if self.include_anchor or self.include_dapi:
+            np.multiply(
+                self.anchor_image, 
+                multiplier, 
+                out=self.anchor_image,
+            )
+            np.add(
+                self.anchor_image, 
+                offset, 
+                out=self.anchor_image,
+            )
+            self.anchor_image = self.anchor_image.astype(type)
+        self.image_dtype = type
+
 
     def save_raw_images(
         self,
@@ -637,7 +693,8 @@ class RoboMinnie:
                 OMP on. A higher number leads to stricter picking of pixels. Default: `90`.
             register_with_dapi (bool, optional): Apply channel registration using the DAPI images. Default: true.
         """
-        self.fix_image_minimum(self.image_minimum)
+        # Same dtype as ND2s
+        self.scale_images_to_type(np.uint16)
 
         self.instructions.append(utils.base.get_function_name())
         print(f"Saving raw data")
@@ -655,10 +712,16 @@ class RoboMinnie:
         for r in range(self.n_rounds):
             for t in range(self.n_tiles):
                 for c in range(self.n_channels + 1):
+                    assert np.all(self.brightness_scale_factor[t, r + 1, c] > 0), \
+                        "A brightness scaling factor < 0 is not allowed"
+                    assert np.all(self.brightness_scale_factor[t, r + 1, c] <= 1), \
+                        "A brightness scaling factor > 1 will cause an overflow"
                     np.multiply(
                         self.image_tiles[r, t, c],
                         self.brightness_scale_factor[t, r + 1, c],
                         out=self.image_tiles[r, t, c],
+                        casting="unsafe", 
+                        dtype=self.image_dtype, 
                     )
         self.tile_xy_pos = self.tile_yxz_pos[:2]
         self.tilepos_yx_nd2 = self.tile_xy_pos
@@ -676,10 +739,16 @@ class RoboMinnie:
             # Presequence brightness scaling
             for t in range(self.n_tiles):
                 for c in range(self.n_channels + 1):
+                    assert np.all(self.brightness_scale_factor[t, 0, c] > 0), \
+                        "A brightness scaling factor < 0 is not allowed"
+                    assert np.all(self.brightness_scale_factor[t, 0, c] <= 1), \
+                        "A brightness scaling factor > 1 will cause an overflow"
                     np.multiply(
                         self.presequence_image_tiles[t, c],
                         self.brightness_scale_factor[t, 0, c],
                         out=self.presequence_image_tiles[t, c],
+                        casting="unsafe", 
+                        dtype=self.image_dtype, 
                     )
         if self.include_anchor:
             self.anchor_image_tiles = self._unstich_image(
@@ -694,10 +763,16 @@ class RoboMinnie:
             # Anchor brightness scaling
             for t in range(self.n_tiles):
                 for c in range(self.n_channels + 1):
+                    assert np.all(self.brightness_scale_factor[t, self.n_rounds + 1, c] > 0), \
+                        "A brightness scaling factor < 0 is not allowed"
+                    assert np.all(self.brightness_scale_factor[t, self.n_rounds + 1, c] <= 1), \
+                        "A brightness scaling factor > 1 will cause an overflow"
                     np.multiply(
                         self.anchor_image_tiles[t, c],
                         self.brightness_scale_factor[t, self.n_rounds + 1, c],
                         out=self.anchor_image_tiles[t, c],
+                        casting="unsafe", 
+                        dtype=self.image_dtype, 
                     )
 
         if os.path.isdir(output_dir) and overwrite:
@@ -882,11 +957,13 @@ class RoboMinnie:
         r_smooth = {'1, 1, 2' if is_3d else ''}
         
         [extract]
+        file_type = .zarr
+        continuous_dapi = {self.include_dapi}
+        
+        [filter]
         ;psf_detect_radius_xy = 1
         ;psf_detect_radius_z = 1
         ;deconvolve = {True}
-        file_type = .zarr
-        continuous_dapi = {self.include_dapi}
         r_dapi = {1 if self.include_dapi else ''}
         ;#? Should probably be 0 for robominnie multi-tile setup? Unsure tho
         num_rotations = 0
@@ -975,11 +1052,11 @@ class RoboMinnie:
             return nb
         run.run_stitch(nb)
 
-        assert nb.stitch is not None, f"Stitch not found in notebook at {config_filepath}"
+        assert nb.has_page("stitch"), f"Stitch not found in notebook at {config_filepath}"
         run.run_reference_spots(nb, overwrite_ref_spots=False)
 
         # Keep reference spot information to compare to true spots, if wanted
-        assert nb.ref_spots is not None, f"Reference spots not found in notebook at {config_filepath}"
+        assert nb.has_page("ref_spots"), f"Reference spots not found in notebook at {config_filepath}"
 
         if include_omp == False:
             return nb
@@ -1012,7 +1089,7 @@ class RoboMinnie:
                 + f"{round((end_time - start_time)//(n_planes * n_tiles), 1)}s per z plane per tile."
             )
 
-        assert nb.omp is not None, f"OMP not found in notebook at {config_filepath}"
+        assert nb.has_page("omp"), f"OMP not found in notebook at {config_filepath}"
 
         # Keep the stitch information to convert local tiles coordinates into global coordinates when comparing
         # to true spots

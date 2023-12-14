@@ -360,8 +360,9 @@ def get_all_coefs(pixel_colors: npt.NDArray, bled_codes: npt.NDArray, background
     return gene_coefs.astype(np.float32), np.asarray(background_coefs, dtype=np.float32)
 
 
-def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, tile: int, 
-                      z_chunk: int, z_chunk_size: int, transform: np.ndarray, colour_norm_factor: np.ndarray, 
+def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, 
+                      nbp_filter: NotebookPage, tile: int, z_chunk: int, z_chunk_size: int, transform: np.ndarray, 
+                      colour_norm_factor: np.ndarray, 
                       ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Get the normalised pixel colours and their pixel positions for one z chunk.
@@ -396,7 +397,8 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
                 transform, 
                 nbp_file, 
                 nbp_basic, 
-                nbp_extract, 
+                nbp_extract,
+                nbp_filter, 
                 return_in_bounds=True, 
             )
     else:
@@ -407,7 +409,8 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
                 transform, 
                 nbp_file, 
                 nbp_basic, 
-                nbp_extract, 
+                nbp_extract,
+                nbp_filter, 
                 return_in_bounds=True, 
             )
     pixel_colours_t1 = pixel_colours_t1.astype(np.float32) / colour_norm_factor
@@ -417,11 +420,12 @@ def get_pixel_colours(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extra
     return pixel_yxz_tz, pixel_colours_tz
 
 
-def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, config: dict, 
-                        tile: int, use_z: List[int], z_chunk_size: int, n_genes: int, 
-                        transform: Union[np.ndarray, np.ndarray], color_norm_factor: Union[np.ndarray, np.ndarray], 
-                        initial_intensity_thresh: float, bled_codes: Union[np.ndarray, np.ndarray], 
-                        dp_norm_shift: Union[int, float]) -> Tuple[np.ndarray, Any]:
+def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, 
+                        nbp_filter: NotebookPage, config: dict, tile: int, use_z: List[int], z_chunk_size: int, 
+                        n_genes: int, transform: Union[np.ndarray, np.ndarray], 
+                        color_norm_factor: Union[np.ndarray, np.ndarray], initial_intensity_thresh: float, 
+                        bled_codes: Union[np.ndarray, np.ndarray], dp_norm_shift: Union[int, float], 
+                        ) -> Tuple[np.ndarray, Any]:
     """
     Get each pixel OMP coefficients for a particular tile.
     
@@ -460,12 +464,12 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
             pixel_colors_tz, pixel_yxz_tz, bg_colours = \
                 spot_colors.get_spot_colors(
                     spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, nbp_filter, return_in_bounds=True)
         else:
             pixel_colors_tz, pixel_yxz_tz = \
                 spot_colors.get_spot_colors(
                     spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, np.arange(z_min, z_max)), 
-                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, return_in_bounds=True)
+                    int(tile), transform, nbp_file, nbp_basic, nbp_extract, nbp_filter, return_in_bounds=True)
         if pixel_colors_tz.shape[0] == 0:
             continue
         pixel_colors_tz = pixel_colors_tz / color_norm_factor

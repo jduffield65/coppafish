@@ -12,7 +12,11 @@
       "Where notebook is saved"],
     "tile_dir": [
       "Directory",
-      "Where tile *npy* files saved"],
+      "Where tile files are saved, from both extract and filter sections of the pipeline"],
+    "tile_unfiltered_dir": [
+      "Directory",
+      "Where extract, unfiltered tile files are saved"
+      ], 
     "round": [
       "List [n_rounds]",
       "Names of *nd2* files for the imaging rounds. If not using, will be an empty list."],
@@ -75,9 +79,16 @@
       "`pciseq[1]` is the path where the *ref_spots* method output will be saved.","",
       "If files don't exist, they will be created when the function *coppafish/export_to_pciseq* is run."],
     "tile": [
-      "List of numpy string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
-      "*2D*: `tile[t][r]` is the *npy* file containing all channels of tile $t$, round $r$.","",
-      "*3D*: `tile[t][r][c]` is the *npy* file containing all z planes for tile $t$, round $r$, channel $c$"],
+      "List of string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
+      "*2D*: `tile[t][r]` is the [extract][file_type] filtered file containing all channels of tile $t$, round $r$.","",
+      "*3D*: `tile[t][r][c]` is the [extract][file_type] filtered file containing all z planes for tile $t$, ",
+      "round $r$, channel $c$"],
+    "tile_unfiltered": [
+      "List of string arrays [n_tiles][(n_rounds + n_extra_rounds) {x n_channels if 3d}]",
+      "*2D*: `tile[t][r]` is the [extract][file_type] unfiltered file containing all channels of tile $t$, round ",
+      "$r$.","",
+      "*3D*: `tile[t][r][c]` is the [extract][file_type] unfiltered file containing all z planes for tile $t$, ",
+      "round $r$, channel $c$"],
     "fluorescent_bead_path": ["String or None",
       "Path to *nd2* file containing fluorescent beads. `None` if not used."],
     "pre_seq": ["String or None",
@@ -165,7 +176,11 @@
     "use_preseq": ["Boolean",
       "whether or not to use pre-seq round"],
     "pre_seq_round": ["Integer or None",
-      "round number of pre-seq round"]
+      "round number of pre-seq round"],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "scale":
@@ -210,6 +225,27 @@
       "pipeline. `auto_thresh` is used in `find_spots` step. `hist_values` and `hist_counts` are used for ",
       "normalisation between channels in the `call_reference_spots` step.","",
       "Page added to *Notebook* in *pipeline/extract_run.py*"],
+    
+    "file_type": ["String",
+      "File type used to save tiles after extraction."],
+    "continuous_dapi": ["Bool",
+      "Whether or not we have a dapi image in each round"]
+  },
+
+  "extract_debug":
+  {
+    "DESCRIPTION": ["*extract_debug* page stores variables from `extract_and_filter` step which are not needed later ",
+      "in the pipeline but may be useful for debugging purposes.","",
+      "Page added to *Notebook* in *pipeline/extract_run.py*"],
+
+    "time_taken": ["Float",
+      "Time taken to run through the extract section."]
+  },
+
+  "filter":
+  {
+    "DESCRIPTION": ["*filter* page contains information about the image filtering.","",
+      "Page added to *Notebook* in *pipeline/filter_run.py*"],
 
     "auto_thresh": ["Numpy int array `[n_tiles x (n_rounds + n_extra_rounds) x n_channels]`",
       "`auto_thresh[t, r, c]` is the threshold spot intensity for tile $t$, round $r$, channel $c$",
@@ -222,16 +258,14 @@
     "bg_scale": ["Numpy float array `[n_tiles x n_rounds x n_channelsW]`",
       "`bg_scale[t, r, c]` is the scale factor applied to the preseq round of tile $t$, channel $c$",
       "to match the colour profile of the sequencing image in tile t, round r, channel c.",
-      "None if not using preseq round."],
-    "file_type": ["String",
-      "File type used to save tiles after extraction."]
-  },
+      "None if not using preseq round."]
+  }, 
 
-  "extract_debug":
+  "filter_debug:":
   {
-    "DESCRIPTION": ["*extract_debug* page stores variables from `extract_and_filter` step which are not needed later",
-      "in the pipeline but may be useful for debugging purposes.","",
-      "Page added to *Notebook* in *pipeline/extract_run.py*"],
+    "DESCRIPTION": ["*filter_debug* page contains information about filtered images not needed later in the ",
+      "pipeline.","",
+      "Page added to *Notebook* in *pipeline/filter_run.py*"],
 
     "n_clip_pixels": ["Numpy integer array [n_tiles x (n_rounds + n_extra_rounds) x n_channels]",
       "`n_clip_pixels[t, r, c]` is the number of pixels in the saved *npy* tile for tile $t$, round $r$, channel $c$",
@@ -254,8 +288,11 @@
       "Tiles where spots for psf calculation came from.",
       "`None` if `config['deconvolve'] = False` or psf provided without spot detection."],
     "z_info": ["Integer",
-      "z plane in *npy* file from which `auto_thresh` and `hist_counts` were calculated. By default, this is the mid plane."]
-  },
+      "z plane in *npy* file from which `auto_thresh` and `hist_counts` were calculated. By default, this is the mid ", 
+      "plane."], 
+    "time_taken": ["Float",
+      "Time taken to run through the filter section."]
+  }, 
 
   "find_spots":
   {

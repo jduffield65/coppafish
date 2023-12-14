@@ -8,17 +8,19 @@ import numpy.typing as npt
 from typing import Optional, Union
 
 from .. import setup, utils
+from ..setup import Notebook, NotebookPage
 from ..find_spots import check_spots
 from ..call_spots import base as call_spots_base
 from .register import preprocessing
 from . import basic_info
-from . import call_reference_spots
-from . import extract_run
 from . import scale_run
-from . import stitch
+from . import extract_run
+from . import filter_run
 from . import find_spots
 from . import register
+from . import stitch
 from . import get_reference_spots
+from . import call_reference_spots
 from . import omp
 
 
@@ -27,7 +29,7 @@ def run_pipeline(
     overwrite_ref_spots: bool = False, 
     parallel: bool = False, 
     n_jobs: int = 8, 
-    ) -> setup.Notebook:
+    ) -> Notebook:
     """
     Bridge function to run every step of the pipeline.
 
@@ -71,7 +73,7 @@ def run_pipeline(
     return nb
 
 
-def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) -> None:
+def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = True) -> None:
     """
     Run tile-independent pipeline processes.
 
@@ -85,25 +87,24 @@ def run_tile_indep_pipeline(nb: setup.Notebook, run_tile_by_tile: bool = False) 
         print("Running tile by tile...")
         # Load one tile image into memory to run in both find_spots and register
         nb_tiles = setup.notebook.split_by_tiles(nb)
-        for i, tile in enumerate(nb.basic_info.use_tiles):
-            nb_tile = nb_tiles[i]
-            #TODO: Instead of extract writing to disk then loading from disk again, make `run_extract` return `image_t`
-            # as well as writing to disk. This would be optimal.
-            run_extract(nb_tile)
-            image_t = utils.tiles_io.load_tile(
-                nb.file_names, nb.basic_info, nb_tile.extract.file_type, tile, apply_shift=False, 
-            )
-            nb_tile = run_find_spots(nb_tile, image_t)
+        for nb_tile in nb_tiles:
+            image_t_raw = run_extract(nb_tile)
+            image_t_filtered = run_filter(nb_tile, image_t_raw)
+            del image_t_raw
+            nb_tile = run_find_spots(nb_tile, image_t_filtered)
+            del image_t_filtered
         nb = setup.merge_notebooks(nb_tiles, nb)
-        #TODO: Place run_register within the t loop and run tile by tile, inputting image_t as a parameter
-        run_register(nb)
-    if not run_tile_by_tile:
+    else:
         run_extract(nb)
+        run_filter(nb)
         run_find_spots(nb)
-        run_register(nb)
+    #TODO: Place run_register within the t loop and run tile by tile, inputting image_t_filtered as a parameter
+    run_register(nb)
+    # error if too few spots - may indicate tile or channel which should not be included
+    check_spots.check_n_spots(nb)
 
 
-def initialize_nb(config_file: str) -> setup.Notebook:
+def initialize_nb(config_file: str) -> Notebook:
 
     """
     Quick function which creates a `Notebook` and adds `basic_info` page before saving.
@@ -116,7 +117,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     Returns:
         `Notebook` containing `file_names` and `basic_info` pages.
     """
-    nb = setup.Notebook(config_file=config_file)
+    nb = Notebook(config_file=config_file)
 
     config = nb.get_config()
 
@@ -128,7 +129,7 @@ def initialize_nb(config_file: str) -> setup.Notebook:
     return nb
 
 
-def run_scale(nb: setup.Notebook) -> None:
+def run_scale(nb: Notebook) -> None:
     """
     This runs the `scale` step of the pipeline to produce the scale factors to use during extraction.
     
@@ -147,7 +148,7 @@ def run_scale(nb: setup.Notebook) -> None:
         warnings.warn('scale', utils.warnings.NotebookPageWarning)
     
 
-def run_extract(nb: setup.Notebook) -> None:
+def run_extract(nb: Notebook) -> Optional[np.ndarray]:
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -157,19 +158,50 @@ def run_extract(nb: setup.Notebook) -> None:
 
     Args:
         nb: `Notebook` containing `file_names`, `basic_info` and `scale` pages.
+        
+    Returns:
+        `(n_rounds x n_channels x nz x ny x nx) ndarray[uint16]` or None: all extracted images if running on a single 
+            tile, otherwise None.
     """
     if not all(nb.has_page(["extract", "extract_debug"])):
         config = nb.get_config()
-        nbp, nbp_debug = extract_run.extract_and_filter(config['extract'], nb.file_names, nb.basic_info, nb.scale)
+        nbp, nbp_debug, image_t_raw = extract_run.run_extract(config['extract'], nb.file_names, nb.basic_info, nb.scale)
         nb += nbp
         nb += nbp_debug
+        return image_t_raw
     else:
         warnings.warn('extract', utils.warnings.NotebookPageWarning)
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
 
 
+def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
+    """
+    Run `filter` step of the pipeline to produce filtered images in the tile directory.
+
+    Args:
+        nb (Notebook): `Notebook` containing `file_names`, `basic_info`, `scale` and `extract` pages.
+        image_t_raw (n_rounds x n_channels x ny x nx x nz): the raw, extracted image for single tile, only given when 
+            running on one tile. Default: not given.
+    """
+    if not nb.has_page('filter'):
+        config = nb.get_config()
+        nbp, nbp_debug, image_t = filter_run.run_filter(
+            config['filter'], 
+            nb.file_names, 
+            nb.basic_info, 
+            nb.scale, 
+            nb.extract, 
+            image_t_raw, 
+        )
+        nb += nbp
+        nb += nbp_debug
+        return image_t
+    else:
+        warnings.warn('filter', utils.warnings.NotebookPageWarning)
+
+
 def run_find_spots(
-    nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> Union[None, setup.NotebookPage]:
+    nb: Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> Notebook:
     """
     This runs the `find_spots` step of the pipeline to produce point cloud from each tiff file in the tile directory.
 
@@ -192,17 +224,15 @@ def run_find_spots(
     if not nb.has_page("find_spots"):
         config = nb.get_config()
         nbp = find_spots.find_spots(
-            config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.extract.auto_thresh, image_t, 
+            config['find_spots'], nb.file_names, nb.basic_info, nb.extract, nb.filter, nb.filter.auto_thresh, image_t, 
         )
         nb += nbp
-        # error if too few spots - may indicate tile or channel which should not be included
-        check_spots.check_n_spots(nb)
     else:
         warnings.warn('find_spots', utils.warnings.NotebookPageWarning)
     return nb
 
 
-def run_stitch(nb: setup.Notebook) -> None:
+def run_stitch(nb: Notebook) -> None:
     """
     This runs the `stitch` step of the pipeline to produce origin of each tile
     such that a global coordinate system can be built. Also saves stitched DAPI and reference channel images.
@@ -228,19 +258,19 @@ def run_stitch(nb: setup.Notebook) -> None:
         # save stitched dapi
         # Will load in from nd2 file if nb.extract_debug.r_dapi is None i.e. if no DAPI filtering performed.
         utils.tiles_io.save_stitched(nb.file_names.big_dapi_image, nb.file_names, nb.basic_info, nb.extract, 
-                                nb.stitch.tile_origin, nb.basic_info.anchor_round,
-                                nb.basic_info.dapi_channel, nb.extract_debug.r_dapi is None,
-                                config['stitch']['save_image_zero_thresh'], config['extract']['num_rotations'])
+                                     nb.stitch.tile_origin, nb.basic_info.anchor_round,
+                                     nb.basic_info.dapi_channel, nb.filter_debug.r_dapi is None,
+                                     config['stitch']['save_image_zero_thresh'], config['filter']['num_rotations'])
 
     if nb.file_names.big_anchor_image is not None and not os.path.isfile(nb.file_names.big_anchor_image):
         # save stitched reference round/channel
         utils.tiles_io.save_stitched(nb.file_names.big_anchor_image, nb.file_names, nb.basic_info, nb.extract, 
                                      nb.stitch.tile_origin, nb.basic_info.anchor_round, nb.basic_info.anchor_channel, 
                                      False, config['stitch']['save_image_zero_thresh'], 
-                                     config['extract']['num_rotations'])
+                                     config['filter']['num_rotations'])
 
 
-def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> None:
+def run_register(nb: Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None) -> None:
     """
     This runs the `register_initial` step of the pipeline to find shift between ref round/channel to each imaging round
     for each tile. It then runs the `register` step of the pipeline which uses this as a starting point to get
@@ -268,6 +298,7 @@ def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] =
             nb.basic_info, 
             nb.file_names, 
             nb.extract, 
+            nb.filter, 
             nb.find_spots, 
             config['register'], 
             np.pad(nb.basic_info.tilepos_yx, ((0, 0), (0, 1)), mode='constant', constant_values=1), 
@@ -300,7 +331,7 @@ def run_register(nb: setup.Notebook, image_t: Optional[npt.NDArray[np.uint16]] =
         warnings.warn('register_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False) -> None:
+def run_reference_spots(nb: Notebook, overwrite_ref_spots: bool = False) -> None:
     """
     This runs the `reference_spots` step of the pipeline to get the intensity of each spot on the reference
     round/channel in each imaging round/channel. The `call_spots` step of the pipeline is then run to produce the
@@ -324,8 +355,8 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False) -
             if they are all set to `None`, otherwise an error will occur.
     """
     if not nb.has_page('ref_spots'):
-        nbp = get_reference_spots.get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots, nb.extract,
-                                  nb.stitch.tile_origin, nb.register.transform)
+        nbp = get_reference_spots.get_reference_spots(nb.file_names, nb.basic_info, nb.find_spots, nb.extract, 
+                                                      nb.filter, nb.stitch.tile_origin, nb.register.transform)
         nb += nbp  # save to Notebook with gene_no, score, score_diff, intensity = None.
                    # These will be added in call_reference_spots
     else:
@@ -334,14 +365,14 @@ def run_reference_spots(nb: setup.Notebook, overwrite_ref_spots: bool = False) -
         config = nb.get_config()
         nbp, nbp_ref_spots = call_reference_spots.call_reference_spots(config['call_spots'], nb.file_names, 
                                                                        nb.basic_info, nb.ref_spots, nb.extract, 
-                                                                       transform=nb.register.transform, 
+                                                                       nb.filter, transform=nb.register.transform, 
                                                                        overwrite_ref_spots=overwrite_ref_spots)
         nb += nbp
     else:
         warnings.warn('call_spots', utils.warnings.NotebookPageWarning)
 
 
-def run_omp(nb: setup.Notebook) -> None:
+def run_omp(nb: Notebook) -> None:
     """
     This runs the orthogonal matching pursuit section of the pipeline as an alternate method to determine location of
     spots and their gene identity.
@@ -358,7 +389,7 @@ def run_omp(nb: setup.Notebook) -> None:
         # Use tile with most spots on to find spot shape in omp
         spots_tile = np.sum(nb.find_spots.spot_no, axis=(1, 2))
         tile_most_spots = nb.basic_info.use_tiles[np.argmax(spots_tile[nb.basic_info.use_tiles])]
-        nbp = omp.call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.extract, nb.call_spots, 
+        nbp = omp.call_spots_omp(config['omp'], nb.file_names, nb.basic_info, nb.extract, nb.filter, nb.call_spots, 
                                  nb.stitch.tile_origin, nb.register.transform, tile_most_spots)
         nb += nbp
 

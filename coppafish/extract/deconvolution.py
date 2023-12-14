@@ -65,7 +65,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
         if  nbp_file.raw_extension == 'jobs':
             t = scale.base.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
 
-            rda = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
+            rda, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
             # choose tile closet to centre
             im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, rda, round, use_z)
 

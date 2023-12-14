@@ -14,6 +14,7 @@ import numpy.typing as npt
 from typing import List, Tuple, Union, Optional
 
 from ..setup import NotebookPage
+from ..register import preprocessing
 from .. import utils, extract
 
 
@@ -42,12 +43,13 @@ def image_exists(file_path: str, file_type: str) -> bool:
 
 def _save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: str, file_type: str) -> None:
     """
-    Save image in `file_path` location.
+    Save image in `file_path` location. No manipulation or logic is applied here, just purely saving the image as it 
+    was given.
 
     Args:
-        image (ndarray[uint16]): image to save.
+        image (((nz x) ny x nx) ndarray[uint16]): image to save.
         file_path (str): file path.
-        file_type (str): file type.
+        file_type (str): file type, case insensitive.
 
     Raises:
         ValueError: unsupported file type.
@@ -58,7 +60,7 @@ def _save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: st
         # We chunk each z plane individually, since single z planes are often retrieved. We also chunk x and y so 
         # that each chunk is at least 1MB, as suggested in the zarr documentation.
         compressor = Blosc(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE)
-        chunks = (None, 750, 750)
+        chunks = (None, 750, 750) if image.ndim == 3 else (750, 750)
         zarray = zarr.open(
             file_path, mode='w', zarr_version=2, shape=image.shape, chunks=chunks, dtype='|u2', 
             synchronizer=zarr.ThreadSynchronizer(), compressor=compressor)
@@ -90,7 +92,7 @@ def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[
 
 
 def save_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, image: npt.NDArray[np.int32], t: int, 
-               r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> None:
+               r: int, c: Optional[int] = None, num_rotations: int = 0, suffix: str = '') -> npt.NDArray[np.uint16]:
     """
     Wrapper function to save tiles as npy files with correct shift. Moves z-axis to first axis before saving as it is 
     quicker to load in this order. Tile `t` is saved to the path `nbp_file.tile[t,r,c]`, the path must contain an 
@@ -108,6 +110,9 @@ def save_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
         num_rotations (int, optional): number of `90` degree clockwise rotations to apply to image before saving. 
             Applied to the `x` and `y` axes, to 3d `image` data only. Default: `0`.
         suffix (str, optional): suffix to add to file name before the file extension. Default: empty.
+        
+    Returns:
+        `(nz x ny x nx) ndarray[uint16]`: the saved, manipulated image.
     """
     assert image.ndim == 3, '`image` must be 3 dimensional'
 
@@ -137,6 +142,7 @@ def save_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
         file_path = nbp_file.tile[t][r][c]
         file_path= file_path[:file_path.index(file_type)] + suffix + file_type
         _save_image(image, file_path, file_type)
+        return image
     else:
         # Don't need to apply rotations here as 2D data obtained from upstairs microscope without this issue
         if r == nbp_basic.anchor_round:
@@ -159,6 +165,7 @@ def save_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
         file_path = nbp_file.tile[t][r][c]
         file_path = file_path[file_path.index(file_type):] + suffix + file_type
         _save_image(image, file_path, file_type)
+        return image
 
 
 def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, t: int, r: int, c: int, 
@@ -186,8 +193,9 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
                 indicating the pixel value at `[1,1,1]`.
             Default: `None`. 
             
-        apply_shift (bool, optional): if true, dtype will be `int32` otherwise dtype will be `uint16` with the pixels 
-            values shifted by `+nbp_basic.tile_pixel_value_shift`. Default: true.
+        apply_shift (bool, optional): if true, `yxz` is None, `r` is not the anchor round and `c` is not the dapi 
+            channel, dtype will be `int32` with the pixels values shifted by `-nbp_basic.tile_pixel_value_shift`. 
+            Otherwise dtype will be `uint16` unshifted. Default: true.
         suffix (str, optional): suffix to add to file name to load from. Default: no suffix.
 
     Returns:
@@ -196,8 +204,10 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
 
     Notes:
         - May want to disable `apply_shift` to save memory and/or make loading quicker as there will be no dtype 
-        conversion. If loading in DAPI, dtype is always `uint16` as there is no shift.
+            conversion. If loading in DAPI, dtype is always `uint16` as there is no shift.
     """
+    assert not apply_shift, "apply_shift is redundant, use register.preprocessing.apply_image_shift instead"
+
     if nbp_basic.is_3d:
         file_path = nbp_file.tile[t][r][c]
         file_path = file_path[:file_path.index(file_type)] + suffix + file_type
@@ -247,8 +257,8 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
         else:
             # Use mmap when only loading in part of image
             image = _load_image(file_path, file_type, mmap_mode='r')[c]
-    if apply_shift and not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-        image = image.astype(np.int32) - nbp_basic.tile_pixel_value_shift
+    # if apply_shift and not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+    #     image = image.astype(np.int32) - nbp_basic.tile_pixel_value_shift
     return image
 
 
@@ -354,7 +364,7 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
         z_size = 1
         stitched_image = np.zeros(yx_size, dtype=np.uint16)
     if from_raw:
-        round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+        round_dask_array, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
         shift = 0  # if from nd2 file, data type is already un-shifted uint16
     else:
         if r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel:
@@ -380,7 +390,9 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
                     image_t = np.rot90(image_t, k=num_rotations, axes=(1, 2))
             else:
                 if nbp_basic.is_3d:
-                    image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c).transpose((2,0,1))
+                    image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False).transpose((2,0,1))
+                    if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+                        image_t = preprocessing.apply_image_shift(image_t, -nbp_basic.tile_pixel_value_shift)
                 else:
                     image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False)
             for z in range(z_size):

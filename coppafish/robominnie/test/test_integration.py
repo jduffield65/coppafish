@@ -65,7 +65,7 @@ def test_deterministic(iterations: int = 2) -> None:
         notebooks.append(test_bg_subtraction())
         if i == 0:
             continue
-        assert np.allclose(notebooks[i - 1].extract.bg_scale, notebooks[i].extract.bg_scale), \
+        assert np.allclose(notebooks[i - 1].filter.bg_scale, notebooks[i].filter.bg_scale), \
             f"Notebooks omp.gene_no were not equal!"
         assert np.allclose(notebooks[i - 1].omp.gene_no, notebooks[i].omp.gene_no), \
             f"Notebooks omp.gene_no were not equal!"
@@ -202,10 +202,10 @@ def test_tile_by_tile_equality() -> None:
         )):
             equal = np.isclose(a, b, equal_nan=True)
         elif isinstance(a, (np.ndarray)):
-            if isinstance(a.dtype, (float, np.float16, np.float32, np.float64, np.float128)):
-                equal = np.allclose(a, b, equal_nan=True)
-            else:
+            if isinstance(a.dtype, (bool, str, np.str_)):
                 equal = (a == b).all()
+            else:
+                equal = np.allclose(a, b, equal_nan=True)
         elif isinstance(a, (str, bool, list)):
             equal = a == b
         else:
@@ -214,6 +214,7 @@ def test_tile_by_tile_equality() -> None:
             print(f"{a=}\n{b=}")
             print(f"{type(a)=}\n{type(b)=}")
             print(f"{a.dtype=}\n{b.dtype=}")
+            print(f"{a.shape=}\n{b.shape=}")
         return equal
     
     start_time_tile_by_tile = time.time()
@@ -229,6 +230,8 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("scale") == nb_1.has_page("scale")
     assert nb_0.has_page("extract") == nb_1.has_page("extract")
     assert nb_0.has_page("extract_debug") == nb_1.has_page("extract_debug")
+    assert nb_0.has_page("filter") == nb_1.has_page("filter")
+    assert nb_0.has_page("filter_debug") == nb_1.has_page("filter_debug")
     assert nb_0.has_page("find_spots") == nb_1.has_page("find_spots")
     assert nb_0.has_page("register") == nb_1.has_page("register")
     assert nb_0.has_page("register_debug") == nb_1.has_page("register_debug")
@@ -238,8 +241,7 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("omp") == nb_1.has_page("omp")
     assert nb_0.has_page("thresholds") == nb_1.has_page("thresholds")
     
-    if not nb_0.has_page("basic_info"):
-        return
+    assert nb_0.has_page("basic_info")
     assert _approximately_equal(nb_0.basic_info.anchor_channel, nb_1.basic_info.anchor_channel)
     assert _approximately_equal(nb_0.basic_info.anchor_round, nb_1.basic_info.anchor_round)
     assert _approximately_equal(nb_0.basic_info.channel_camera, nb_1.basic_info.channel_camera)
@@ -256,6 +258,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.basic_info.pixel_size_xy, nb_1.basic_info.pixel_size_xy)
     assert _approximately_equal(nb_0.basic_info.pixel_size_z, nb_1.basic_info.pixel_size_z)
     assert _approximately_equal(nb_0.basic_info.pre_seq_round, nb_1.basic_info.pre_seq_round)
+    assert _approximately_equal(nb_0.basic_info.revision_hash, nb_1.basic_info.revision_hash)
+    assert _approximately_equal(nb_0.basic_info.software_version, nb_1.basic_info.software_version)
     assert _approximately_equal(nb_0.basic_info.tile_centre, nb_1.basic_info.tile_centre)
     assert _approximately_equal(nb_0.basic_info.tile_pixel_value_shift, nb_1.basic_info.tile_pixel_value_shift)
     assert _approximately_equal(nb_0.basic_info.tile_sz, nb_1.basic_info.tile_sz)
@@ -268,8 +272,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.basic_info.use_rounds, nb_1.basic_info.use_rounds)
     assert _approximately_equal(nb_0.basic_info.use_tiles, nb_1.basic_info.use_tiles)
     assert _approximately_equal(nb_0.basic_info.use_z, nb_1.basic_info.use_z)
-    if not nb_0.has_page("file_names"):
-        return
+
+    assert nb_0.has_page("file_names")
     assert _approximately_equal(nb_0.file_names.anchor, nb_1.file_names.anchor)
     assert _approximately_equal(nb_0.file_names.big_anchor_image, nb_1.file_names.big_anchor_image)
     assert _approximately_equal(nb_0.file_names.big_dapi_image, nb_1.file_names.big_dapi_image)
@@ -292,8 +296,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.file_names.spot_details_info, nb_1.file_names.spot_details_info)
     assert _approximately_equal(nb_0.file_names.tile, nb_1.file_names.tile)
     assert _approximately_equal(nb_0.file_names.tile_dir, nb_1.file_names.tile_dir)
-    if not nb_0.has_page("scale"):
-        return
+
+    assert nb_0.has_page("scale")
     assert _approximately_equal(nb_0.scale.scale, nb_1.scale.scale)
     assert _approximately_equal(nb_0.scale.scale_tile, nb_1.scale.scale_tile)
     assert _approximately_equal(nb_0.scale.scale_z, nb_1.scale.scale_z)
@@ -305,28 +309,33 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.scale.r2, nb_1.scale.r2)
     assert _approximately_equal(nb_0.scale.r_smooth, nb_1.scale.r_smooth)
     assert _approximately_equal(nb_0.scale.r1, nb_1.scale.r1)
-    if not nb_0.has_page("extract"):
-        return
-    assert _approximately_equal(nb_0.extract.auto_thresh, nb_1.extract.auto_thresh)
-    assert _approximately_equal(nb_0.extract.hist_counts, nb_1.extract.hist_counts)
-    assert _approximately_equal(nb_0.extract.hist_values, nb_1.extract.hist_values)
+    
+    assert nb_0.has_page("extract")
+    assert _approximately_equal(nb_0.extract.continuous_dapi, nb_1.extract.continuous_dapi)
     assert _approximately_equal(nb_0.extract.file_type, nb_1.extract.file_type)
-    if not nb_0.has_page("find_spots"):
-        return
+    
+    assert nb_0.has_page("extract_debug")
+    
+    assert nb_0.has_page("filter")
+    assert _approximately_equal(nb_0.filter.auto_thresh, nb_1.filter.auto_thresh)
+    assert _approximately_equal(nb_0.filter.hist_counts, nb_1.filter.hist_counts)
+    assert _approximately_equal(nb_0.filter.hist_values, nb_1.filter.hist_values)
+    
+    assert nb_0.has_page("find_spots")
     assert _approximately_equal(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
     assert _approximately_equal(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
     assert _approximately_equal(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
     assert _approximately_equal(nb_0.find_spots.spot_yxz, nb_1.find_spots.spot_yxz)
-    if not nb_0.has_page("register"):
-        return
+
+    assert nb_0.has_page("register")
     # bg_scale is calculated properly at the register section
-    assert _approximately_equal(nb_0.extract.bg_scale, nb_1.extract.bg_scale)
+    assert _approximately_equal(nb_0.filter.bg_scale, nb_1.filter.bg_scale)
     assert _approximately_equal(nb_0.register.channel_transform, nb_1.register.channel_transform)
     assert _approximately_equal(nb_0.register.initial_transform, nb_1.register.initial_transform)
     assert _approximately_equal(nb_0.register.round_transform, nb_1.register.round_transform)
     assert _approximately_equal(nb_0.register.transform, nb_1.register.transform)
-    if not nb_0.has_page("register_debug"):
-        return
+    
+    assert nb_0.has_page("register_debug")
     assert _approximately_equal(nb_0.register_debug.channel_transform, nb_1.register_debug.channel_transform)
     assert _approximately_equal(nb_0.register_debug.converged, nb_1.register_debug.converged)
     assert _approximately_equal(nb_0.register_debug.mse, nb_1.register_debug.mse)
@@ -334,10 +343,10 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.register_debug.position, nb_1.register_debug.position)
     assert _approximately_equal(nb_0.register_debug.round_shift, nb_1.register_debug.round_shift)
     #FIXME: round_shift_corr not capable of comparison
-    # assert _approximately_equal(nb_0.register_debug.round_shift_corr, nb_1.register_debug.round_shift_corr)
+    assert _approximately_equal(nb_0.register_debug.round_shift_corr, nb_1.register_debug.round_shift_corr)
     assert _approximately_equal(nb_0.register_debug.round_transform_raw, nb_1.register_debug.round_transform_raw)
-    if not nb_0.has_page("stitch"):
-        return
+    
+    assert nb_0.has_page("stitch")
     assert _approximately_equal(nb_0.stitch.east_final_shift_search, nb_1.stitch.east_final_shift_search)
     assert _approximately_equal(nb_0.stitch.east_outlier_score, nb_1.stitch.east_outlier_score)
     assert _approximately_equal(nb_0.stitch.east_outlier_shifts, nb_1.stitch.east_outlier_shifts)
@@ -355,8 +364,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.stitch.north_shifts, nb_1.stitch.north_shifts)
     assert _approximately_equal(nb_0.stitch.north_start_shift_search, nb_1.stitch.north_start_shift_search)
     assert _approximately_equal(nb_0.stitch.tile_origin, nb_1.stitch.tile_origin)
-    if not nb_0.has_page("ref_spots"):
-        return
+    
+    assert nb_0.has_page("ref_spots")
     assert _approximately_equal(nb_0.ref_spots.local_yxz, nb_1.ref_spots.local_yxz)
     assert _approximately_equal(nb_0.ref_spots.isolated, nb_1.ref_spots.isolated)
     assert _approximately_equal(nb_0.ref_spots.tile, nb_1.ref_spots.tile)
@@ -368,9 +377,9 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.ref_spots.background_strength, nb_1.ref_spots.background_strength)
     assert _approximately_equal(nb_0.ref_spots.gene_probs, nb_1.ref_spots.gene_probs)
     assert _approximately_equal(nb_0.ref_spots.bg_colours, nb_1.ref_spots.bg_colours)
-    if not nb_0.has_page("call_spots"):
-        return
-    assert _approximately_equal(nb_0.call_spots.gene_names, nb_1.call_spots.gene_names)
+
+    assert nb_0.has_page("call_spots")
+    assert (nb_0.call_spots.gene_names == nb_1.call_spots.gene_names).all()
     assert _approximately_equal(nb_0.call_spots.gene_codes, nb_1.call_spots.gene_codes)
     assert _approximately_equal(nb_0.call_spots.color_norm_factor, nb_1.call_spots.color_norm_factor)
     assert _approximately_equal(nb_0.call_spots.abs_intensity_percentile, nb_1.call_spots.abs_intensity_percentile)
@@ -380,8 +389,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.call_spots.bled_codes_ge, nb_1.call_spots.bled_codes_ge)
     assert _approximately_equal(nb_0.call_spots.gene_efficiency, nb_1.call_spots.gene_efficiency)
     assert _approximately_equal(nb_0.call_spots.use_ge, nb_1.call_spots.use_ge)
-    if not nb_0.has_page("omp"):
-        return
+
+    assert nb_0.has_page("omp")
     assert _approximately_equal(nb_0.omp.initial_intensity_thresh, nb_1.omp.initial_intensity_thresh)
     assert _approximately_equal(nb_0.omp.shape_tile, nb_1.omp.shape_tile)
     assert _approximately_equal(nb_0.omp.shape_spot_local_yxz, nb_1.omp.shape_spot_local_yxz)
@@ -396,6 +405,7 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.omp.n_neighbours_pos, nb_1.omp.n_neighbours_pos)
     assert _approximately_equal(nb_0.omp.n_neighbours_neg, nb_1.omp.n_neighbours_neg)
     assert _approximately_equal(nb_0.omp.intensity, nb_1.omp.intensity)
+
     if not nb_0.has_page("thresholds"):
         return
     assert _approximately_equal(nb_0.thresholds.intensity, nb_1.thresholds.intensity)

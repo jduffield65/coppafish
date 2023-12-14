@@ -2,10 +2,26 @@ import os
 import pickle
 import skimage
 import numpy as np
-from typing import Optional, Tuple
+import numpy.typing as npt
+from typing import Optional, Tuple, Union
 
 from ..setup import NotebookPage
 from ..utils import tiles_io
+
+
+def apply_image_shift(image: npt.NDArray[np.uint16], tile_pixel_value_shift: int) -> npt.NDArray[np.int32]:
+    """
+    Apply an integer, negative shift to every image pixel and convert datatype from uint16 to int32.
+
+    Args:
+        image (`ndarray[uint16]`): image to shift.
+        tile_pixel_value_shift (int): shift.
+
+    Returns:
+        `ndarray[int32]`: shifted image.
+    """
+    assert tile_pixel_value_shift <= 0, "Cannot shift by a positive number"
+    return image.astype(np.int32) + tile_pixel_value_shift
 
 
 def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):

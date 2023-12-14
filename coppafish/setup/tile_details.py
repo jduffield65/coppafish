@@ -80,44 +80,21 @@ def get_tile_name(tile_directory: str, file_base: List[str], suffix: str, r: int
     return tile_name
 
 
-def get_tile_name_unfiltered(tile_directory, file_base, suffix, r, t, c: Optional[int] = None) -> str:
-    """
-    Finds the full path to unfiltered, extracted tile, `t`, of particular round, `r`, and channel, `c`, in 
-    `tile_directory`.
-
-    Args:
-        tile_directory: Path to folder where tiles npy files saved.
-        file_base: `str [n_rounds]`.
-            `file_base[r]` is identifier for round `r`.
-        suffix (str): File name suffix.
-        r: Round of desired image.
-        t: Tile of desired image.
-        c: Channel of desired image.
-
-    Returns:
-        Full path of unfiltered tile file path.
-    """
-    if c is None:
-        tile_name = os.path.join(tile_directory, 'raw', '{}_t{}{}'.format(file_base[r], t, suffix))
-    else:
-        tile_name = os.path.join(tile_directory, 'raw', '{}_t{}c{}{}'.format(file_base[r], t, c, suffix))
-    return tile_name
-
-
-def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int, suffix: str, n_channels: int = 0, 
-                        jobs: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+def get_tile_file_names(tile_directory: str, tile_directory_unfiltered: str, file_base: List[str], n_tiles: int, 
+                        suffix: str, n_channels: int = 0, jobs: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """
     Gets array of all tile file paths which will be saved in tile directory.
 
     Args:
-        tile_directory: Path to folder where tiles npy files saved.
+        tile_directory: path to folder where tiles npy files saved.
+        tile_directory_unfiltered: path to folder where unfiltered, extracted tiles will be saved.
         file_base: `str [n_rounds]`.
             `file_base[r]` is identifier for round `r`.
-        n_tiles: Number of tiles in data set.
+        n_tiles: number of tiles in data set.
         suffix (str): file name suffix. For example, for numpy file saves, will be `'.npy'`.
-        n_channels: Total number of imaging channels if using 3D.
+        n_channels: total number of imaging channels if using 3D.
             `0` if using 2D pipeline as all channels saved in same file.
-        jobs: Set True if file were acquired using JOBs (i.e. tiles are split by laser)
+        jobs: set True if file were acquired using JOBs (i.e. tiles are split by laser).
 
     Returns:
         - `n_tiles x n_rounds (x n_channels) ndarray[str]`. filtered tile file paths such that:
@@ -137,7 +114,7 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
             for r in range(n_rounds):
                 for t in range(n_tiles):
                     tile_files[t, r] = get_tile_name(tile_directory, file_base, suffix, r, t)
-                    tile_files_unfiltered[t, r] = get_tile_name_unfiltered(tile_directory, file_base, suffix, r, t)
+                    tile_files_unfiltered[t, r] = get_tile_name(tile_directory_unfiltered, file_base, suffix, r, t)
         else:
             # 3D
             tile_files = np.zeros((n_tiles, n_rounds, n_channels), dtype=object)
@@ -146,8 +123,8 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
                 for t in range(n_tiles):
                     for c in range(n_channels):
                         tile_files[t, r, c] = get_tile_name(tile_directory, file_base, suffix, r, t, c)
-                        tile_files_unfiltered[t, r, c] = get_tile_name_unfiltered(
-                            tile_directory, 
+                        tile_files_unfiltered[t, r, c] = get_tile_name(
+                            tile_directory_unfiltered, 
                             file_base, 
                             suffix, 
                             r, 
@@ -168,8 +145,10 @@ def get_tile_file_names(tile_directory: str, file_base: List[str], n_tiles: int,
                 for c in range(n_channels):
                     f_index = int(np.floor(c/4))
                     t_name = os.path.join(tile_directory, '{}_t{}c{}{}'.format(raw_tile_files[f_index], t, c, suffix))
-                    t_name_unfiltered \
-                        = os.path.join(tile_directory, 'raw', '{}_t{}c{}{}'.format(raw_tile_files[f_index], t, c, suffix))
+                    t_name_unfiltered = os.path.join(
+                        tile_directory_unfiltered, 
+                        '{}_t{}c{}{}'.format(raw_tile_files[f_index], t, c, suffix), 
+                    )
                     tile_files[t, r, c] = t_name
                     tile_files_unfiltered[t, r, c] = t_name_unfiltered
 

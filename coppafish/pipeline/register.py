@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 from skimage import filters
 from multiprocessing.pool import Pool
+from typing import Tuple
 
 from ..setup import NotebookPage
 from .. import find_spots
@@ -15,9 +16,9 @@ from ..register import base as register_base
 from ..utils import system, tiles_io
 
 
-def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage,
-             nbp_find_spots: NotebookPage, config: dict, tile_origin: np.ndarray,
-             pre_seq_blur_radius: float) -> NotebookPage:
+def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, nbp_filter: NotebookPage, 
+             nbp_find_spots: NotebookPage, config: dict, tile_origin: np.ndarray, pre_seq_blur_radius: float, 
+             ) -> Tuple[NotebookPage, NotebookPage]:
     """
     Registration pipeline. Returns register Notebook Page.
     Finds affine transforms by using linear regression to find the best matrix (in the least squares sense) taking a
@@ -27,18 +28,19 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
     To get greater precision with this algorithm, we update these transforms with an iterative closest point algorithm.
 
     Args:
-        nbp_basic: (NotebookPage) Basic Info notebook page
-        nbp_file: (NotebookPage) File Names notebook page
-        nbp_extract: (NotebookPage) Extract notebook page
-        nbp_find_spots: (NotebookPage) Find Spots notebook page
-        config: Register part of the config dictionary
-        tile_origin: n_tiles x 3 ndarray of tile origins
-        pre_seq_blur_radius: Radius of gaussian blur to apply to pre-seq round images
-        num_rotations: Number of rotations to apply to each tile
+        nbp_basic (NotebookPage): Basic Info notebook page.
+        nbp_file (NotebookPage): File Names notebook page.
+        nbp_extract: (NotebookPage): Extract notebook page.
+        nbp_filter (NotebookPage): filter notebook page.
+        nbp_find_spots (NotebookPage): Find Spots notebook page.
+        config: Register part of the config dictionary.
+        tile_origin: n_tiles x 3 ndarray of tile origins.
+        pre_seq_blur_radius: Radius of gaussian blur to apply to pre-seq round images.
+        num_rotations: Number of rotations to apply to each tile.
 
     Returns:
-        nbp: (NotebookPage) Register notebook page
-        nbp_debug: (NotebookPage) Register_debug notebook page
+        - nbp (NotebookPage): register notebook page.
+        - nbp_debug (NotebookPage): register_debug notebook page.
     """
 
     # Break algorithm up into initialisation and then 3 parts.
@@ -93,29 +95,44 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             # anchor channel
             anchor_image = preprocessing.yxz_to_zyx(tiles_io.load_image(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
                                                                        r=nbp_basic.anchor_round, 
-                                                                       c=round_registration_channel))
+                                                                       c=round_registration_channel, apply_shift=False))
             n_image_bytes = anchor_image.nbytes
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
             round_chunks = [use_rounds[:len(use_rounds) // 2], use_rounds[len(use_rounds) // 2:]]
-            for i in range(2):
-                round_image = [
-                    preprocessing.yxz_to_zyx(
-                        tiles_io.load_image(
-                            nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=round_registration_channel, 
-                            suffix='_raw' if r == nbp_basic.pre_seq_round else ''
+            for round_chunk in round_chunks:
+                round_image = []
+                for r in round_chunk:
+                    if not (r == nbp_basic.anchor_round and round_registration_channel == nbp_basic.dapi_channel):
+                        round_image.append(
+                            preprocessing.yxz_to_zyx(
+                                preprocessing.apply_image_shift(
+                                    tiles_io.load_image(
+                                        nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, 
+                                        c=round_registration_channel, 
+                                        suffix='_raw' if r == nbp_basic.pre_seq_round else '', apply_shift=False, 
+                                    ), 
+                                    - nbp_basic.tile_pixel_value_shift, 
+                                )
+                            )
                         )
-                    ) 
-                    for r in round_chunks[i]
-                ]
+                    else:
+                        round_image.append(
+                            preprocessing.yxz_to_zyx(
+                                tiles_io.load_image(
+                                    nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=round_registration_channel, 
+                                    suffix='_raw' if r == nbp_basic.pre_seq_round else '', apply_shift=False, 
+                                ), 
+                            )
+                        )
                 round_reg_data = register_base.round_registration(anchor_image=anchor_image, round_image=round_image, 
                                                                   config=config)
                 # Now save the data
-                registration_data['round_registration']['transform_raw'][t, round_chunks[i]] = round_reg_data[
+                registration_data['round_registration']['transform_raw'][t, round_chunk] = round_reg_data[
                     'transform']
-                registration_data['round_registration']['shift'][t, round_chunks[i]] = round_reg_data['shift']
-                registration_data['round_registration']['shift_corr'][t, round_chunks[i]] = round_reg_data['shift_corr']
-                registration_data['round_registration']['position'][t, round_chunks[i]] = round_reg_data['position']
+                registration_data['round_registration']['shift'][t, round_chunk] = round_reg_data['shift']
+                registration_data['round_registration']['shift_corr'][t, round_chunk] = round_reg_data['shift_corr']
+                registration_data['round_registration']['position'][t, round_chunk] = round_reg_data['position']
             # Now append anchor info and tile number to the registration data, then save to file
             registration_data['round_registration']['tiles_completed'].append(t)
             # Save the data to file
@@ -191,7 +208,10 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
             # Load in the pre-seq round image, blur it and save it under a different name (dropping the _raw suffix)
             im = tiles_io.load_image(
                 nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=nbp_basic.pre_seq_round, c=c, suffix='_raw', 
+                apply_shift=False,
             )
+            if not (nbp_basic.pre_seq_round == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+                im = preprocessing.apply_image_shift(im, -nbp_basic.tile_pixel_value_shift)
             if pre_seq_blur_radius > 0:
                 for z in tqdm(range(len(nbp_basic.use_z))):
                     im[:, :, z] = filters.gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
@@ -254,11 +274,16 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                 t, r, c = trc
                 # We run brightness_scale calculations in parallel to speed up the pipeline
                 image_seq = tiles_io.load_image(
-                    nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, yxz=yxz, 
+                    nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, yxz=yxz, apply_shift=False, 
                 )
+                if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+                    image_seq = preprocessing.apply_image_shift(image_seq, -nbp_basic.tile_pixel_value_shift)
                 image_preseq = tiles_io.load_image(
                     nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=nbp_basic.pre_seq_round, c=c, yxz=yxz, 
+                    apply_shift=False, 
                 )
+                if not (nbp_basic.pre_seq_round == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+                    image_preseq = preprocessing.apply_image_shift(image_preseq, -nbp_basic.tile_pixel_value_shift)
                 process_args.append(
                     (image_seq, image_preseq, nbp.transform, mid_z, z_rad, nbp_basic.pre_seq_round, t, r, c)
                 )
@@ -270,9 +295,9 @@ def register(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: Noteb
                             bg_scale[t_i, r_i, c_i] = scale
                     process_args = []
                     pbar.update(1)
-        nbp_extract.finalized = False
-        del nbp_extract.bg_scale # Delete this so that we can overwrite it
-        nbp_extract.bg_scale = bg_scale
-    nbp_extract.finalized = True
+        nbp_filter.finalized = False
+        del nbp_filter.bg_scale
+        nbp_filter.bg_scale = bg_scale
+        nbp_filter.finalized = True
 
     return nbp, nbp_debug

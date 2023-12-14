@@ -33,6 +33,8 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
         - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
             but may be useful for debugging purposes.
     """
+    raise NotImplementedError("This is outdated since separating extract and filter in to two sections")
+
     # Check scaling won't cause clipping when saving as uint16
     scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
     if config['scale_norm'] >= scale_norm_max:
@@ -200,7 +202,7 @@ def extract_and_filter(config: dict, nbp_file: NotebookPage,
             # else:
             #     extract.wait_for_data(im_file + nbp_file.raw_extension, config['wait_time'])
 
-            round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+            round_dask_array, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
 
             if r == nbp_basic.anchor_round:
                 n_clip_error_images = 0  # reset for anchor as different scale used.
@@ -364,6 +366,8 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
         - `NotebookPage[extract_debug]` - Page containing variables which are not needed later in the pipeline
             but may be useful for debugging purposes.
     """
+    raise NotImplementedError("This is outdated since separating extract and filter in to two sections")
+
     # Check scaling won't cause clipping when saving as uint16
     scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift
     if config['scale_norm'] >= scale_norm_max:
@@ -562,7 +566,7 @@ def par_extract_and_filter(config: dict, nbp_file: NotebookPage,
                 i = 0
                 try:
                     i += 1
-                    round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+                    round_dask_array, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
                     kwargs['round_dask_array'] = round_dask_array
                     results = tile_extract(t=t, **kwargs)
                     break

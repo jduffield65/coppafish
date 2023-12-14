@@ -7,21 +7,21 @@ from .. import utils, extract, scale
 
 def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage) -> NotebookPage:
     """
-    This calculates the scale factors for the raw sequencing images and anchor images to convert the float types to 
-    take the full range of `np.uint16` which the extracted images will be saved as when extract is run next.
+    This calculates the scale factors for the filtered sequencing images and anchor images to convert the float types 
+    that are produced after filtering to integers that take the full range of `np.uint16` which the filtered images 
+    will be saved as when 'filter' is run.
 
     Args:
         config (dict): dictionary obtained from 'scale' section of config file.
         nbp_file (NotebookPage): 'file_names' notebook page.
         nbp_basic (NotebookPage): 'basic_info' notebook page.
 
-
     Returns:
         `NotebookPage[scale]` page containing image scale factors which are needed by 'extract' in the pipeline and may 
             be useful for debugging purposes.
 
     Notes:
-        See 'scale' sections of `notebook_comments.json` file for description of the variables that are stored.
+        - See 'scale' sections of `notebook_comments.json` file for description of the variables that are stored.
     """
     # Check scaling won't cause clipping when saving as uint16
     scale_norm_max = np.iinfo(np.uint16).max - nbp_basic.tile_pixel_value_shift

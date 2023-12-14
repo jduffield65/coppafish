@@ -5,6 +5,14 @@ from skimage import data
 import numpy as np
 
 
+def test_apply_image_shift():
+    rng = np.random.RandomState(0)
+    im = rng.randint(np.iinfo(np.uint16).max, size=(2, 3, 4, 5))
+    output = reg_pre.apply_image_shift(im, -5)
+    assert isinstance(output.dtype, np.int32), "Expected output to be of type `np.int32`"
+    assert output == (im.astype(np.int32) - 5), "Unexpected output after image shift"
+
+
 def test_replace_scale():
     # set up transform and scales
     rng = np.random.RandomState(0)
