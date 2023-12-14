@@ -16,6 +16,7 @@ from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_z
 from coppafish.register.base import huber_regression, brightness_scale, ols_regression
 from coppafish.utils import tiles_io
 from scipy.ndimage import affine_transform
+
 plt.style.use('dark_background')
 
 
@@ -126,7 +127,7 @@ class RegistrationViewer:
         # round buttons
         for rnd in use_rounds:
             # now connect this to a slot that will activate the round regression
-            self.svr_buttons.__getattribute__('R'+str(rnd)).clicked.connect(self.create_round_slot(rnd))
+            self.svr_buttons.__getattribute__('R' + str(rnd)).clicked.connect(self.create_round_slot(rnd))
         # Add buttons for correlation coefficients for both hist or cmap
         self.svr_buttons.pearson_hist.clicked.connect(self.button_pearson_hist_clicked)
         self.svr_buttons.pearson_cmap.clicked.connect(self.button_pearson_cmap_clicked)
@@ -159,7 +160,7 @@ class RegistrationViewer:
 
         # Finally, add these buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.icp_buttons, area="left", name='ICP Diagnostics',
-                                                add_vertical_stretch=False)
+                                           add_vertical_stretch=False)
 
         # Create a single widget containing buttons for Overlay diagnostics
         self.overlay_buttons = ButtonOverlayWindow()
@@ -167,7 +168,7 @@ class RegistrationViewer:
         self.overlay_buttons.button_overlay.clicked.connect(self.view_button_clicked)
         # Add buttons as widgets in napari viewer
         self.viewer.window.add_dock_widget(self.overlay_buttons, area="left", name='Overlay Diagnostics',
-                                             add_vertical_stretch=False)
+                                           add_vertical_stretch=False)
 
         # Create a single widget containing buttons for BG Subtraction diagnostics if bg subtraction has been run
         if self.nb.basic_info.use_preseq:
@@ -177,7 +178,7 @@ class RegistrationViewer:
             self.bg_sub_buttons.button_brightness_scale.clicked.connect(self.button_brightness_scale_clicked)
             # Add buttons as widgets in napari viewer
             self.viewer.window.add_dock_widget(self.bg_sub_buttons, area="left", name='BG Subtraction Diagnostics',
-                                                 add_vertical_stretch=False)
+                                               add_vertical_stretch=False)
 
         # Create a widget containing buttons for fluorescent bead diagnostics if fluorescent beads have been used
         if self.nb.file_names.fluorescent_bead_path is not None:
@@ -186,7 +187,7 @@ class RegistrationViewer:
             self.bead_buttons.button_fluorescent_beads.clicked.connect(self.button_fluorescent_beads_clicked)
             # Add buttons as widgets in napari viewer
             self.viewer.window.add_dock_widget(self.bead_buttons, area="left", name='Fluorescent Bead Diagnostics',
-                                                 add_vertical_stretch=False)
+                                               add_vertical_stretch=False)
 
         # Get target images and anchor image
         self.get_images()
@@ -289,9 +290,10 @@ class RegistrationViewer:
         def round_button_clicked():
             use_rounds = self.nb.basic_info.use_rounds
             for rnd in use_rounds:
-                self.svr_buttons.__getattribute__('R'+str(rnd)).setChecked(rnd == r)
+                self.svr_buttons.__getattribute__('R' + str(rnd)).setChecked(rnd == r)
             # We don't need to update the plot, we just need to call the viewing function
             view_round_regression_scatter(nb=self.nb, t=self.tile, r=r)
+
         return round_button_clicked
 
     # outlier removal
@@ -415,7 +417,7 @@ class RegistrationViewer:
         t = self.tile
         # populate target arrays
         for r in use_rounds:
-            file = 't'+str(t) + 'r'+str(r) + 'c'+str(self.round_registration_channel)+'.npy'
+            file = 't' + str(t) + 'r' + str(r) + 'c' + str(self.round_registration_channel) + '.npy'
             affine = yxz_to_zyx_affine(A=self.transform[t, r, self.c_ref],
                                        new_origin=self.new_origin)
             # Reset the spline interpolation order to 1 to speed things up
@@ -438,8 +440,8 @@ class RegistrationViewer:
 
         # We will add a point on top of each image and add features to it
         features = {'r': np.repeat(np.append(use_rounds, np.ones(len(use_channels)) * self.r_mid), 10).astype(int),
-                            'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.round_registration_channel,
-                                                     use_channels), 10).astype(int)}
+                    'c': np.repeat(np.append(np.ones(len(use_rounds)) * self.round_registration_channel,
+                                             use_channels), 10).astype(int)}
         features_anchor = {'r': np.repeat(np.ones(len(use_rounds) + len(use_channels)) * self.r_ref, 10).astype(int),
                            'c': np.repeat(np.ones(len(use_rounds) +
                                                   len(use_channels)) * self.round_registration_channel, 10).astype(int)}
@@ -459,7 +461,8 @@ class RegistrationViewer:
         points = []
 
         for r in use_rounds:
-            self.viewer.add_image(self.base_image_dapi, blending='additive', colormap='red', translate=[0, 0, 1_000 * r],
+            self.viewer.add_image(self.base_image_dapi, blending='additive', colormap='red',
+                                  translate=[0, 0, 1_000 * r],
                                   name='Anchor')
             self.viewer.add_image(self.target_round_image[r], blending='additive', colormap='green',
                                   translate=[0, 0, 1_000 * r],
@@ -698,6 +701,7 @@ class ButtonBGWindow(QMainWindow):
     """
     This class creates a window with buttons for viewing background images overlayed with foreground images
     """
+
     def __init__(self):
         super().__init__()
         self.button_overlay = QPushButton('View Overlay', self)
@@ -738,6 +742,7 @@ class ButtonBeadWindow(QMainWindow):
     """
     This class creates a window with buttons for viewing fluorescent bead images
     """
+
     def __init__(self):
         super().__init__()
         self.button_fluorescent_beads = QPushButton('View Fluorescent Beads', self)
@@ -748,17 +753,17 @@ class ButtonBeadWindow(QMainWindow):
 def set_style(button):
     # Set button color = grey when hovering over, blue when pressed, white when not
     button.setStyleSheet("QPushButton"
-                             "{"
-                             "background-color : rgb(135, 206, 250);"
-                             "}"
-                             "QPushButton::hover"
-                             "{"
-                             "background-color : lightgrey;"
-                             "}"
-                             "QPushButton::pressed"
-                             "{"
-                             "background-color : white;"
-                             "}")
+                         "{"
+                         "background-color : rgb(135, 206, 250);"
+                         "}"
+                         "QPushButton::hover"
+                         "{"
+                         "background-color : lightgrey;"
+                         "}"
+                         "QPushButton::pressed"
+                         "{"
+                         "background-color : white;"
+                         "}")
     return button
 
 
@@ -807,8 +812,10 @@ def view_round_regression_scatter(nb: Notebook, t: int, r: int):
             # k1 and k2 are the coords that are not j
             k1 = (j + 1) % 3
             k2 = (j + 2) % 3
-            central_offset_svr[i, j] = gradient_svr[i, k1] * tile_centre_zyx[k1] + gradient_svr[i, k2] * tile_centre_zyx[k2]
-            central_offset_icp[i, j] = gradient_icp[i, k1] * tile_centre_zyx[k1] + gradient_icp[i, k2] * tile_centre_zyx[k2]
+            central_offset_svr[i, j] = gradient_svr[i, k1] * tile_centre_zyx[k1] + gradient_svr[i, k2] * \
+                                       tile_centre_zyx[k2]
+            central_offset_icp[i, j] = gradient_icp[i, k1] * tile_centre_zyx[k1] + gradient_icp[i, k2] * \
+                                       tile_centre_zyx[k2]
             # Now compute the intercepts
             intercpet_svr[i, j] = initial_transform[i, 3] + central_offset_svr[i, j]
             intercpet_icp[i, j] = icp_transform[i, 3] + central_offset_icp[i, j]
@@ -1173,7 +1180,7 @@ def view_round_scales(nb: Notebook):
     y_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 1, 1]
     x_scale = nbp_register_debug.round_transform_raw[use_tiles, :, 2, 2]
     n_tiles_use, n_rounds = z_scale.shape[0], z_scale.shape[1]
-    
+
     # Plot box plots
     plt.subplot(3, 1, 1)
     plt.scatter(np.tile(np.arange(n_rounds), n_tiles_use), np.reshape(z_scale, (n_tiles_use * n_rounds)),
@@ -1300,7 +1307,7 @@ def view_icp_n_matches(nb: Notebook, t: int):
             ax.set_xticks([])
             ax.set_yticks([])
             ax.set_ylim([0, 1])
-            ax.set_xlim([0, n_iters//2])
+            ax.set_xlim([0, n_iters // 2])
 
     plt.suptitle('Fraction of matches against iterations for tile ' + str(t) + '. \n '
                                                                                'Note that y-axis is [0,1]')
@@ -1340,7 +1347,7 @@ def view_icp_mse(nb: Notebook, t: int):
             ax.plot(np.arange(n_iters), mse[r, c])
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_xlim([0, n_iters//2])
+            ax.set_xlim([0, n_iters // 2])
             ax.set_ylim([0, np.max(mse)])
 
     plt.suptitle('MSE against iteration for tile ' + str(t) + ' for all rounds and channels. \n'
@@ -1372,7 +1379,8 @@ def view_icp_deviations(nb: Notebook, t: int):
     transform = np.zeros((len(use_rounds), len(use_channels), 3, 4))
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
-            initial_transform[r, c] = yxz_to_zyx_affine(A=nbp_register.initial_transform[t, use_rounds[r], use_channels[c]])
+            initial_transform[r, c] = yxz_to_zyx_affine(
+                A=nbp_register.initial_transform[t, use_rounds[r], use_channels[c]])
             transform[r, c] = yxz_to_zyx_affine(A=nbp_register.transform[t, use_rounds[r], use_channels[c]])
 
     # Define the axes
@@ -1393,7 +1401,7 @@ def view_icp_deviations(nb: Notebook, t: int):
         for c in range(len(use_channels)):
             scale_diff[r, c] = np.diag(transform[r, c, :3, :3]) - np.diag(initial_transform[r, c, :3, :3])
             shift_diff[r, c] = transform[r, c, :3, 3] - initial_transform[r, c, :3, 3]
-    
+
     # Now plot scale_diff
     for r in range(len(use_rounds)):
         for c in range(len(use_channels)):
@@ -1457,7 +1465,7 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
 
     viewer = napari.Viewer()
     viewer.add_image(anchor, name='Tile ' + str(t) + ', round ' + str(nb.basic_info.anchor_round) + ', channel ' +
-                     str(nb.basic_info.anchor_channel), colormap='red', blending='additive')
+                                  str(nb.basic_info.anchor_channel), colormap='red', blending='additive')
     viewer.add_image(target_transfromed, name='Tile ' + str(t) + ', round ' + str(r) + ', channel ' + str(c) +
                                               ' transformed', colormap='green', blending='additive')
     viewer.add_image(target, name='Tile ' + str(t) + ', round ' + str(r) + ', channel ' + str(c), colormap='blue',
@@ -1510,7 +1518,6 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
 
 def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, percentile: int = 99,
                                           sub_image_size: int = 500, bg_blur: bool = True):
-
     print(f"Computing background scale for tile {t}, round {r}, channel {c}")
     num_z = nb.basic_info.tile_centre[2].astype(int)
     transform_pre = yxz_to_zyx_affine(nb.register.transform[t, nb.basic_info.pre_seq_round, c],
@@ -1589,7 +1596,7 @@ def view_camera_correction(nb: Notebook):
     with nd2.ND2File(fluorescent_bead_path) as fbim:
         fluorescent_beads = fbim.asarray()
 
-    if len(fluorescent_beads.shape) ==4:
+    if len(fluorescent_beads.shape) == 4:
         mid_z = fluorescent_beads.shape[0] // 2
         fluorescent_beads = fluorescent_beads[mid_z, :, :, :]
     # if fluorescent bead images are for all channels, just take one from each camera
