@@ -218,8 +218,13 @@ class view_codes(ColorPlotBase):
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
         """
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)]
+        t = nb.ref_spots.tile[spot_no]
+        if np.ndim(nb.call_spots.color_norm_factor) == 3:
+            color_norm = nb.call_spots.color_norm_factor[t][np.ix_(nb.basic_info.use_rounds,
+                                                                nb.basic_info.use_channels)]
+        else:
+            color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
+                                                                nb.basic_info.use_channels)]
         if method.lower() == 'omp':
             page_name = 'omp'
             config = nb.get_config()['thresholds']
@@ -235,10 +240,10 @@ class view_codes(ColorPlotBase):
             self.spot_color = self.spot_color / color_norm
         else:
             # remove background codes. To do this, repeat background_strentgh along a new axis for rounds
-            background_strength = nb.ref_spots.background_strength[spot_no]
-            background_strength = np.repeat(background_strength[np.newaxis, :], nb.basic_info.n_rounds, axis=0)
-            self.spot_color_pb = (self.spot_color - background_strength) / color_norm
             self.spot_color = self.spot_color / color_norm
+            background_strength = np.percentile(self.spot_color, 25, axis=0)
+            background_strength = np.repeat(background_strength[None, :], self.spot_color.shape[0], axis=0)
+            self.spot_color_pb = self.spot_color - background_strength
         self.background_removed = bg_removed
         self.spot_color, self.spot_color_pb = self.spot_color.transpose(), self.spot_color_pb.transpose()
 
@@ -351,7 +356,9 @@ class view_spot(ColorPlotBase):
                                       np.arange(spot_yxz[1]-im_size[1], spot_yxz[1]+im_size[1]+1), spot_yxz[2]),
                           dtype=np.int16).T.reshape(-1, 3)
         im_diameter = [2*im_size[0]+1, 2*im_size[1]+1]
-        spot_colors = get_spot_colors(im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info, nb.extract)
+        spot_colors = get_spot_colors(
+            im_yxz, t, nb.register.transform, nb.file_names, nb.basic_info, nb.extract, nb.filter
+        )
         spot_colors = np.moveaxis(spot_colors, 1, 2)  # put round as the last axis to match color_norm
         spot_colors = spot_colors.reshape(im_yxz.shape[0], -1)
         # reshape

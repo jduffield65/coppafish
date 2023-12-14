@@ -62,7 +62,7 @@ def get_raw_images(nb: Notebook, tiles: List[int], rounds: List[int],
     with tqdm(total=n_images) as pbar:
         pbar.set_description(f'Loading in raw data')
         for r in range(n_rounds):
-            round_dask_array = raw.load_dask(nb.file_names, nb.basic_info, r=rounds[r])
+            round_dask_array, _ = raw.load_dask(nb.file_names, nb.basic_info, r=rounds[r])
             # TODO: Can get rid of these two for loops, when round_dask_array is always a dask array.
             #  At the moment though, is not dask array when using nd2_reader (On Mac M1).
             for t in range(n_tiles):

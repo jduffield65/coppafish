@@ -37,6 +37,8 @@ import os
 import time
 import json
 import warnings
+import copy
+from pathlib import PurePath
 try:
     import importlib_resources
 except ModuleNotFoundError:
@@ -77,6 +79,14 @@ TYPES = [
      lambda x: isinstance(x, (str, np.str_)),
      lambda x: str(x[()]),
      ),
+    ("list",
+     lambda x: isinstance(x, list),
+     lambda x: list(x),
+     ),
+    ("none",  # saved in ndz file as 'None'
+     lambda x: x is None,
+     lambda x: None,
+     ),
     ("ndarray",
      lambda x: isinstance(x, np.ndarray),
      lambda x: x,
@@ -86,16 +96,8 @@ TYPES = [
      lambda x: int(x[()]),
      ),
     ("number",
-     lambda x: np.isreal(x) is True,  # is True guards against isreal returning an array
+     lambda x: isinstance(x, (float, np.float_)) and np.isreal(x) is True,
      lambda x: float(x[()]),
-     ),
-    ("list",
-     lambda x: isinstance(x, list),
-     lambda x: list(x),
-     ),
-    ("none",  # saved in ndz file as 'None'
-     lambda x: x is None,
-     lambda x: None,
      ),
 ]
 
@@ -162,7 +164,10 @@ class InvalidNotebookPageError(Exception):
 
 
 class Notebook:
-    """A write-only file-synchronized class to keep track of *coppaFISH* results.
+    """
+    Notebook
+    ========
+    A write-only file-synchronized class to keep track of *coppaFISH* results.
 
     The `Notebook` object stores all of the outputs of the script.  Almost all
     information saved in the `Notebook` is encapsulated within `"pages"`, from the
@@ -171,13 +176,16 @@ class Notebook:
     In addition to saving pages, it also saves the contents of the
     config file, and the time at which the notebook and each page was created.
 
+    Usage:
+    ------
     To create a `Notebook`, pass it the path to the file where the `Notebook` is to
     be stored (`notebook_file`), and optionally, the path to the configuration file
     (`config_file`).  If `notebook_file` already exists, the notebook located
     at this path will be loaded.  If not, a new file will be created as soon as
     the first data is written to the `Notebook`.
 
-    !!!example
+    Example:
+    --------
         === "With config_file"
 
             ``` python
@@ -209,13 +217,13 @@ class Notebook:
     If you create a notebook without specifying `notebook_file`, i.e.
     ```nb = Notebook(config_file="config_file.ini")```, the `notebook_file` will be set to:
     ```python
-    notebook_file = config['file_names']['output_dir'] + config['file_names']['notebook_name'])
-    ```
+    notebook_file = config['file_names']['output_dir'] + config['file_names']['notebook_name']).
+    ```.
 
-    !!!note "On using config_file"
-        When running the coppafish pipeline, the `Notebook` requires a `config_file` to access information required for
-        the different stages of the pipeline through `nb.get_config()`.
-        But if using the `Notebook` to store information not in coppafish pipeline, it is not needed.
+    Notes:    
+        - "On using config_file", when running the coppafish pipeline, the `Notebook` requires a `config_file` to 
+        access information required for the different stages of the pipeline through `nb.get_config()`. But if using 
+        the `Notebook` to store information not in coppafish pipeline, it is not needed.
     """
     _SEP = "_-_"  # Separator between notebook page name and item name when saving to file
     _ADDEDMETA = "TIME_CREATED"  # Key for notebook created time
@@ -281,7 +289,7 @@ class Notebook:
                 self._config = read_config  # update config to new one - only difference will be in file_names section
             self.add_no_save_pages()  # add file_names page with new config
         else:
-            warnings.warn("Notebook file not found, creating a new notebook.")
+            print("Notebook file not found, creating a new notebook.")
             if read_config is None:
                 warnings.warn("Have not passed a config_file so Notebook.get_config() won't work.")
             self._created_time = time.time()
@@ -539,6 +547,7 @@ class Notebook:
     def save(self, file: Optional[str] = None):
         """
         Saves Notebook as a npz file at the path indicated by `file`.
+        
         Args:
             file: Where to save *Notebook*. If `None`, will use `self._file`.
 
@@ -569,7 +578,7 @@ class Notebook:
             d[self._NBMETA + self._SEP + self._CONFIGMETA] = self._config
         np.savez_compressed(self._file, **d)
         # Finishing the diagnostics described above
-        print(f"Notebook saved: took {time.time() - save_start_time} seconds")
+        print(f"Notebook saved: took {round(time.time() - save_start_time, 3)} seconds")
 
     def from_file(self, fn: str) -> Tuple[List, dict, float, str]:
         """
@@ -626,18 +635,23 @@ class Notebook:
 
 
 class NotebookPage:
-    """A page, to be added to a `Notebook` object
+    """
+    NotebookPage
+    ============
+    
+    A page, to be added to a `Notebook` object.
 
-    Expected usage is for a `NotebookPage` to be created at the beginning of a
-    large step in the analysis pipeline.  The name of the page should reflect
-    its function, and it will be used as the indexing key when it is added to a
-    Notebook.  The `NotebookPage` should be created at the beginning of the step
-    in the pipeline, because then the timestamp will be more meaningful.  As
-    results are computed, they should be added.  This will provide a timestamp
-    for each of the results as well.  Then, at the end, the pipeline step should return
-    a `NotebookPage`, which can then be added to the `Notebook`.
+    Usage:
+    ------
+    `NotebookPage` should be created at the beginning of a large step in the analysis pipeline.  The name of the page 
+    should reflect its function, and it will be used as the indexing key when it is added to a Notebook.  The 
+    `NotebookPage` should be created at the beginning of the step in the pipeline, because then the timestamp will be 
+    more meaningful.  As results are computed, they should be added.  This will provide a timestamp for each of the 
+    results as well.  Then, at the end, the pipeline step should return a `NotebookPage`, which can then be added to 
+    the `Notebook`.
 
-    !!!example
+    Example:
+    --------
         ```python
             nbp = NotebookPage("extract_and_filter")
             nbp.scale_factor = 10
@@ -820,46 +834,68 @@ class NotebookPage:
         return n
 
 
-def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
+def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     """
-    Function which merges n notebooks into one. On issues where all notebooks should have the same value, for example,
-    notebook.basic_info.anchor_channel, an error will be raised if these do not match.
+    Function which merges `len(nb_list)` notebooks into one. On issues where all notebooks should have the same value, 
+    for example, notebook.basic_info.anchor_channel, an error will be raised if these do not match.
 
     Args:
-        nb_list: list of single-tile notebooks to be merged
-        master_nb: master notebook initialized from the original unsplit config file. Only contains nbp_basic and
-            nbp_file
+        nb_list (list of Notebooks): single-tile notebooks to be merged.
+        master_nb (Notebook): master notebook initialized from the original un-split config file. Contains 
+            'basic_info', 'file_names' and 'scale'. Can contain 'extract' and 'extract_debug' pages, these will then 
+            not be changed by merging. Any pages that are not within this notebook are created by merging the pages 
+            from the list of notebooks, if they all exist.
 
     Returns:
-        master_nb: master notebook merged from all the others.
+        master_nb: merged master notebook.
+        
+    Raises:
+        AssertionError: merge of the given Notebook list is not possible based on incompatible values.
     """
+    assert len(nb_list) > 1, "Require at least two notebooks to merge"
+    assert master_nb.has_page('file_names'), "Master notebook must contain 'file_names' page"
+    assert master_nb.has_page('basic_info'), "Master notebook must contain 'basic_info' page"
+    assert not master_nb.has_page('find_spots'), "Master notebook cannot contain 'find_spots' page"
+    for nb in nb_list:
+        assert len(nb.basic_info.use_tiles) == 1, "Each notebook must only contain one tile"
+    
     # Initialize the master notebook basic info page
     master_nbp_basic = master_nb.basic_info
 
     # First reorder the notebooks so that they are in ascending tile order
     nbp_tiles = [nb.basic_info.use_tiles[0] for nb in nb_list]
-    nb_list = [x for _, x in sorted(zip(nb_list, nbp_tiles))]
-
+    nb_list = [x for _, x in sorted(zip(nbp_tiles, nb_list))]
+    
     # Check the notebooks contain extract + extract_debug page
-    has_extract_and_debug = all([nb.has_page('extract')*nb.has_page('extract_debug') for nb in nb_list])
+    has_extract_and_debug = all([bool(nb.has_page('extract')*nb.has_page('extract_debug')) for nb in nb_list])
     if not has_extract_and_debug:
         return master_nb
-
     # When all notebook pages have extract page we make a list of all of them, merge them and then add page to master
     nbp_extract_list = [nb.extract for nb in nb_list]
     master_nbp_extract = merge_extract(nbp_extract_list, master_nbp_basic)
     master_nb += master_nbp_extract
-
     # Make a list of all of extract_debug, merge them and then add page to master
     nbp_extract_debug_list = [nb.extract_debug for nb in nb_list]
     master_nbp_extract_debug = merge_extract_debug(nbp_extract_debug_list, master_nbp_basic)
     master_nb += master_nbp_extract_debug
+    
+    # Check for filter and filter_debug pages
+    has_filter_and_debug = all(
+        [nb.has_page('filter') for nb in nb_list] + [nb.has_page('filter_debug') for nb in nb_list]
+    )
+    if not has_filter_and_debug:
+        return master_nb
+    nbp_filter_list = [nb.filter for nb in nb_list]
+    master_nbp_filter = merge_filter(nbp_filter_list, master_nbp_basic)
+    nbp_filter_debug_list = [nb.filter_debug for nb in nb_list]
+    master_nbp_filter_debug = merge_filter_debug(nbp_filter_debug_list, master_nbp_basic)
+    master_nb += master_nbp_filter
+    master_nb += master_nbp_filter_debug
 
     # Check the notebooks contain find_spots page
     has_find_spots = all([nb.has_page('find_spots') for nb in nb_list])
     if not has_find_spots:
         return master_nb
-
     nbp_find_spots_list = [nb.find_spots for nb in nb_list]
     master_nbp_find_spots = merge_find_spots(nbp_find_spots_list, master_nbp_basic)
     master_nb += master_nbp_find_spots
@@ -868,145 +904,260 @@ def merge_notebooks(nb_list: list, master_nb: Notebook) -> Notebook:
     has_register = all([nb.has_page('register') for nb in nb_list])
     if not has_register:
         return master_nb
-
     nbp_register_list = [nb.register for nb in nb_list]
     master_nbp_register = merge_register(nbp_register_list, master_nbp_basic)
     master_nb += master_nbp_register
 
-    # TODO: Add register_debug page
+    # Check the notebooks contain register_debug page
+    has_register_debug = all([nb.has_page('register_debug') for nb in nb_list])
+    if not has_register_debug:
+        return master_nb
+    nbp_register_debug_list = [nb.register_debug for nb in nb_list]
+    master_nbp_register_debug = merge_register_debug(nbp_register_debug_list, master_nbp_basic)
+    master_nb += master_nbp_register_debug
 
     return master_nb
 
+    # Check the notebooks contain register page
 
-def merge_extract(nbp_extract_list, master_nbp_basic) -> NotebookPage:
+
+def merge_extract(nbp_extract_list: List[NotebookPage], master_nbp_basic: NotebookPage) -> NotebookPage:
     """
-    Merge a list of single tile nbp_extract into one multitile nbp_extract
+    Merge a list of single tile nbp_extract into one multitile nbp_extract.
+    
     Args:
-        nbp_extract_list: List of extract pages to be combined
-        master_nbp_basic: nbp_basic page for master notebook
+        nbp_extract_list (list of NotebookPage): list of extract pages to be combined.
+        master_nbp_basic (NotebookPage): nbp_basic page for master notebook.
 
     Returns:
-        master_nbp_extract: multitile nbp_extract page
+        master_nbp_extract: multi-tile nbp_extract page.
+    
+    Raises:
+        AssertionError: merge of the given extract list is not possible based on their values.
     """
+    for i in range(len(nbp_extract_list) - 1):
+        assert nbp_extract_list[i].file_type == nbp_extract_list[i + 1].file_type, \
+            "file_type must be the same for every extract page to merge them"
+        assert nbp_extract_list[i].continuous_dapi == nbp_extract_list[i + 1].continuous_dapi
+        assert nbp_extract_list[i].software_version == nbp_extract_list[i + 1].software_version, \
+            "software_version must be the same to merge extract pages"
+        assert nbp_extract_list[i].revision_hash == nbp_extract_list[i + 1].revision_hash, \
+            "revision_hash must be the same to merge extract pages"
+
     # Create a master notebook extract page
     master_nbp_extract = NotebookPage('extract')
 
-    # Extract tiles that we're using
-    use_tiles = master_nbp_basic.use_tiles
-    n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
-
-    # Add the hist values. These are the same across notebooks.
-    master_nbp_extract.hist_values = nbp_extract_list[0].hist_values
-
-    # Intitialize auto_thresh and hist_counts
-    auto_thresh = np.zeros((n_tiles, n_rounds + 1, n_channels), dtype=np.int32)
-    hist_counts = np.zeros_like(nbp_extract_list[0].hist_counts, dtype=np.int32)
-    # Add the tiles we are using.
-    # For hist_counts we need to add all these pages as this is supposed to be across all tiles
-    for i in range(len(use_tiles)):
-        auto_thresh[use_tiles[i]] = nbp_extract_list[i].auto_thresh
-        hist_counts += nbp_extract_list[i].hist_counts
-    # Add to the master notebook page
-    master_nbp_extract.auto_thresh = auto_thresh
-    master_nbp_extract.hist_counts = hist_counts
+    # Add the extraction file type. Should be same across notebooks.
+    master_nbp_extract.file_type = nbp_extract_list[0].file_type
+    master_nbp_extract.continuous_dapi = nbp_extract_list[0].continuous_dapi
+    master_nbp_extract.software_version = nbp_extract_list[0].software_version
+    master_nbp_extract.revision_hash = nbp_extract_list[0].revision_hash
 
     return master_nbp_extract
 
 
-def merge_extract_debug(nbp_extract_debug_list, master_nbp_basic) -> NotebookPage:
+def merge_extract_debug(nbp_extract_debug_list: List[NotebookPage], master_nbp_basic: NotebookPage) -> NotebookPage:
     """
-        Merge a list of single tile nbp_extract_dubug into one multitile nbp_extract_debug
-        Args:
-            nbp_extract_debug_list: List of extract_debug pages to be combined
-            master_nbp_basic: nbp_basic page for master notebook
+    Merge a list of single tile 'extract_debug' notebook pages into one multi-tile 'extract_debug' notebook page.
+    
+    Args:
+        nbp_extract_debug_list: List of extract_debug pages to be combined
+        master_nbp_basic: nbp_basic page for master notebook
 
-        Returns:
-            master_nbp_extract: multitile nbp_extract_debug page
-        """
+    Returns:
+        master_nbp_extract: multi-tile nbp_extract_debug page
+        
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
+    """
     # Create a master notebook extract page
     master_nbp_extract_debug = NotebookPage('extract_debug')
 
-    # Extract tiles that we're using
-    use_tiles = master_nbp_basic.use_tiles
-    n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
-
-    # First 4 keys are 'finalized', '_times', 'name', '_time_created', we do not need to set these.
-    # Next 2 are n_clip_pixels and clip_extract_scale which need to be set manually
-    key_list = list(nbp_extract_debug_list[0].__dict__)[6:]
-
-    # Assign the key values which should be the same in all notebooks
-    # Not sure whether scale and scale_anchor should be in here. I think they should!
-    for key in key_list:
-        # The set gets rid of duplicates, so this set will have 1 value when all notebooks agree on this parameter
-        key_vals = set([nbp_extract_debug_list[i].__getattribute__(key) for i in range(len(nbp_extract_debug_list))])
-        if len(key_vals) > 1:
-            raise ValueError("What on earth are you doing? These notebooks MUST all have the same value for the "
-                             "parameter: " + key + ". The list of Notebooks you gave has the following set of values:"
-                             + str(key_vals))
-        master_nbp_extract_debug.__setattr__(key=key, value=nbp_extract_debug_list[0].__getattribute__(key))
-
-    # Initialise nontrivial variables
-    n_clip_pixels = np.zeros((n_tiles, n_rounds + 1, n_channels), dtype=int)
-    clip_extract_scale = np.zeros((n_tiles, n_rounds + 1, n_channels))
-
-    # Loop over all tiles in use and assign these there proper values
-    for i in range(len(use_tiles)):
-        n_clip_pixels[use_tiles[i]] = nbp_extract_debug_list[i].n_clip_pixels
-        clip_extract_scale[use_tiles[i]] = nbp_extract_debug_list[i].clip_extract_scale
-
-    # Assign these values to the notebook page
-    master_nbp_extract_debug.n_clip_pixels = n_clip_pixels
-    master_nbp_extract_debug.clip_extract_scale = clip_extract_scale
+    time_taken = 0
+    for i, _ in enumerate(master_nbp_basic.use_tiles):
+        time_taken += nbp_extract_debug_list[i].time_taken
+    master_nbp_extract_debug.time_taken = time_taken
 
     return master_nbp_extract_debug
 
 
-def merge_find_spots(nbp_find_spots_list, master_nbp_basic) -> NotebookPage:
+def merge_filter(nbp_filter_list: List[NotebookPage], master_nbp_basic: NotebookPage) -> NotebookPage:
     """
-    Merge a list of single tile nbp_find_s[pts into one multitile nbp_find_spots
+    Merge 'filter' notebook pages together for each tile based on the tile indices indicated in the master 'basic_info' 
+    notebook page.
+
     Args:
-        nbp_find_spots_list: List of find_spots pages to be combined
-        master_nbp_basic: nbp_basic page for master notebook
+        nbp_filter_list (list[NotebookPage]): list of filter notebook pages to merge.
+        master_nbp_basic (NotebookPage): master 'basic_info' notebook page.
 
     Returns:
-        master_nbp_extract: multitile nbp_find_spots page
+        NotebookPage: merged 'filter' notebook page.
+
+    Raises:
+        AssertionError: failed to merge filter notebook pages based on variable mismatch.
     """
-    # Create a master notebook extract page
+    assert len(nbp_filter_list) > 1, "Need at least two 'filter' notebook pages to merge"
+    assert len(master_nbp_basic.use_tiles) > 1, "Need at least two tiles in master_nbp_basic.use_tiles"
+    assert master_nbp_basic.n_tiles > 1, "Need at least two tiles in master_nbp_basic.n_tiles"
+
+    master_nbp_filter = NotebookPage("filter")
+
+    for i in range(len(nbp_filter_list) - 1):
+        assert np.allclose(nbp_filter_list[i].hist_values, nbp_filter_list[i + 1].hist_values), \
+            "hist_values must be the same for every filter notebook page to merge them"
+        assert nbp_filter_list[i].software_version == nbp_filter_list[i + 1].software_version, \
+            "software_version must be the same to merge filter pages"
+        assert nbp_filter_list[i].revision_hash == nbp_filter_list[i + 1].revision_hash, \
+            "revision_hash must be the same to merge filter pages"
+    
+    master_nbp_filter.hist_values = nbp_filter_list[0].hist_values
+
+    use_tiles = master_nbp_basic.use_tiles
+    n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
+    
+    # Initialise auto_thresh and hist_counts
+    auto_thresh = np.zeros(
+        (n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels), 
+        dtype=int, 
+    )
+    hist_counts = np.zeros_like(nbp_filter_list[0].hist_counts, dtype=int)
+    bg_scale = np.zeros((n_tiles, n_rounds, n_channels), dtype=float)
+    # Add the tiles we are using.
+    # For hist_counts we need to add all these pages as this is supposed to be across all tiles
+    for i, tile in enumerate(use_tiles):
+        auto_thresh[tile] = nbp_filter_list[i].auto_thresh[tile]
+        hist_counts += nbp_filter_list[i].hist_counts
+        if bg_scale is not None and nbp_filter_list[i].bg_scale is not None:
+            bg_scale[tile] = nbp_filter_list[i].bg_scale[tile]
+        else:
+            bg_scale = None
+
+    # Add to the master notebook page
+    master_nbp_filter.auto_thresh = auto_thresh
+    master_nbp_filter.hist_counts = hist_counts
+    master_nbp_filter.bg_scale = bg_scale
+    master_nbp_filter.software_version = nbp_filter_list[0].software_version
+    master_nbp_filter.revision_hash = nbp_filter_list[0].revision_hash
+    
+    return master_nbp_filter
+
+
+def merge_filter_debug(nbp_filter_debug_list: List[NotebookPage], master_nbp_basic: NotebookPage) -> NotebookPage:
+    """
+    Merge 'filter_debug' notebook pages together for each tile based on the tile indices indicated in the master 
+    'basic_info' notebook page.
+
+    Args:
+        nbp_filter_debug_list (list[NotebookPage]): list of filter notebook pages to merge.
+        master_nbp_basic (NotebookPage): master 'basic_info' notebook page.
+
+    Returns:
+        NotebookPage: merged 'filter_debug' notebook page.
+
+    Raises:
+        AssertionError: failed to merge filter notebook pages based on variable mismatch.
+    """
+    for i in range(len(nbp_filter_debug_list) - 1):
+        if nbp_filter_debug_list[i].r_dapi is not None:
+            assert np.isclose(nbp_filter_debug_list[i].r_dapi, nbp_filter_debug_list[i + 1].r_dapi)
+        assert np.isclose(nbp_filter_debug_list[i].z_info, nbp_filter_debug_list[i + 1].z_info)
+        if nbp_filter_debug_list[i].psf is not None:
+            warnings.warn(
+                "Additional data about the psf is not saved correctly in filter_debug, this is only used for " \
+                + "diagnostics"
+            )
+            #TODO: Check psf's for equality if deconvolve is set to true
+
+    master_nbp_filter_debug = NotebookPage("filter_debug")
+    
+    master_nbp_filter_debug.r_dapi = nbp_filter_debug_list[0].r_dapi
+    master_nbp_filter_debug.z_info = nbp_filter_debug_list[0].z_info
+    
+    # Extract tiles that we're using
+    use_tiles = master_nbp_basic.use_tiles
+    n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
+
+    # Initialise non-trivial variables
+    n_clip_pixels = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels), dtype=int)
+    clip_extract_scale = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels))
+    time_taken = 0.
+    # Loop over all tiles in use and assign these their proper values
+    for i, tile in enumerate(use_tiles):
+        n_clip_pixels[tile] = nbp_filter_debug_list[i].n_clip_pixels[tile]
+        clip_extract_scale[tile] = nbp_filter_debug_list[i].clip_extract_scale[tile]
+        time_taken += nbp_filter_debug_list[i].time_taken
+
+    # Assign these values to the notebook page
+    master_nbp_filter_debug.n_clip_pixels = n_clip_pixels
+    master_nbp_filter_debug.clip_extract_scale = clip_extract_scale
+    master_nbp_filter_debug.time_taken = time_taken
+    
+    return master_nbp_filter_debug
+
+
+def merge_find_spots(nbp_find_spots_list: List[NotebookPage], master_nbp_basic: NotebookPage) -> NotebookPage:
+    """
+    Merge a list of single tile nbp_find_spots into one multi-tile nbp_find_spots.
+    
+    Args:
+        nbp_find_spots_list: List of find_spots pages to be combined.
+        master_nbp_basic: nbp_basic page for master notebook. Must contain information `use_tiles`, `n_tiles`, 
+            `n_rounds`, `n_channels` based on the list of 'find_spots' pages.
+
+    Returns:
+        master_nbp_find_spots: multi-tile 'find_spots' page.
+        
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
+    """
+    # Create a master notebook find_spots page to append all tile pages to
     master_nbp_find_spots = NotebookPage('find_spots')
 
     # Extract tiles that we're using
     use_tiles = master_nbp_basic.use_tiles
     n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
 
+    for i in range(len(nbp_find_spots_list) - 1):
+        assert nbp_find_spots_list[i].software_version == nbp_find_spots_list[i + 1].software_version, \
+            "software_version must be the same to merge find_spots pages"
+        assert nbp_find_spots_list[i].revision_hash == nbp_find_spots_list[i + 1].revision_hash, \
+            "revision_hash must be the same to merge find_spots pages"
+
     # Now populate all the parameters
     spot_yxz = np.zeros((0, 3), dtype=int)
-    isolated_spots = np.zeros(0)
-    spot_no = np.zeros_like((n_tiles, n_rounds + 1, n_channels), dtype=int)
+    isolated_spots = np.zeros(0, dtype=bool)
+    spot_no = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels), dtype=np.int32)
     isolation_thresh = np.zeros(n_tiles)
-    for i in range(len(use_tiles)):
-        spot_yxz = np.vstack((spot_yxz, nbp_find_spots_list[i].spot_details))
-        spot_no[use_tiles[i]] = nbp_find_spots_list[i].spot_no
+    for i, tile in enumerate(use_tiles):
+        spot_yxz = np.vstack((spot_yxz, nbp_find_spots_list[i].spot_yxz))
+        spot_no[tile] = nbp_find_spots_list[i].spot_no[tile]
         isolated_spots = np.append(isolated_spots, nbp_find_spots_list[i].isolated_spots)
-        isolation_thresh[use_tiles[i]] = nbp_find_spots_list[i].isolation_thresh
+        isolation_thresh[tile] = nbp_find_spots_list[i].isolation_thresh[tile]
 
     # Add these all to the notebook page
-    master_nbp_find_spots.spot_details = spot_yxz
+    master_nbp_find_spots.spot_yxz = spot_yxz
     master_nbp_find_spots.spot_no = spot_no
     master_nbp_find_spots.isolated_spots = isolated_spots
     master_nbp_find_spots.isolation_thresh = isolation_thresh
+    master_nbp_find_spots.software_version = nbp_find_spots_list[0].software_version
+    master_nbp_find_spots.revision_hash = nbp_find_spots_list[0].revision_hash
 
     return master_nbp_find_spots
 
 
 def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     """
-    Merge a list of single tile nbp_register into one multitile nbp_register
+    Merge a list of single tile nbp_register into one multi-tile nbp_register.
+    
     Args:
-        nbp_register_list: List of register pages to be combined
-        master_nbp_basic: nbp_basic page for master notebook
+        nbp_register_list: list of register pages to be combined.
+        master_nbp_basic: 'basic_info' page for master notebook to base the combined NotebookPage on.
 
     Returns:
-        master_nbp_extract: multitile nbp_register page
+        master_nbp_extract: multi-tile nbp_register page.
+        
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
     """
     # Create a master notebook reg page
     master_nbp_register = NotebookPage('register')
@@ -1014,40 +1165,145 @@ def merge_register(nbp_register_list, master_nbp_basic) -> NotebookPage:
     # Extract tiles that we're using
     use_tiles = master_nbp_basic.use_tiles
     n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
-    z_subvols, y_subvols, x_subvols = nbp_register_list[0].round_shift.shape[2:5]
+
+    for i in range(len(nbp_register_list) - 1):
+        assert nbp_register_list[i].software_version == nbp_register_list[i + 1].software_version, \
+            "software_version must be the same to merge register pages"
+        assert nbp_register_list[i].revision_hash == nbp_register_list[i + 1].revision_hash, \
+            "revision_hash must be the same to merge register pages"
 
     # initialise all our variables
-    start_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
+    initial_transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
     transform = np.zeros((n_tiles, n_rounds, n_channels, 4, 3))
-    round_position = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
-    round_shift = np.zeros((n_tiles, n_rounds, z_subvols, y_subvols, x_subvols, 3))
     round_transform = np.zeros((n_tiles, n_rounds, 4, 3))
-    channel_position = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
-    channel_shift = np.zeros((n_tiles, n_channels, z_subvols, y_subvols, x_subvols, 3))
     channel_transform = np.zeros((n_tiles, n_channels, 4, 3))
 
     # Loop over all tiles in use and populate these arrays
-    for i in range(len(use_tiles)):
-        start_transform[use_tiles[i]] = nbp_register_list[i].start_transform
-        transform[use_tiles[i]] = nbp_register_list[i].transform
-        round_position[use_tiles[i]] = nbp_register_list[i].round_position
-        round_shift[use_tiles[i]] = nbp_register_list[i].round_shift
-        round_transform[use_tiles[i]] = nbp_register_list[i].round_transform
-        channel_position[use_tiles[i]] = nbp_register_list[i].channel_position
-        channel_shift[use_tiles[i]] = nbp_register_list[i].channel_shift
-        channel_transform[use_tiles[i]] = nbp_register_list[i].channel_transform
+    for i, tile in enumerate(use_tiles):
+        initial_transform[tile] = nbp_register_list[i].initial_transform[tile]
+        transform[tile] = nbp_register_list[i].transform[tile]
+        round_transform[tile] = nbp_register_list[i].round_transform[tile]
+        channel_transform[tile] = nbp_register_list[i].channel_transform[tile]
 
     # Now assign these to the master notebook
-    master_nbp_register.start_transform = start_transform
+    master_nbp_register.start_transform = initial_transform
     master_nbp_register.transform = transform
-    master_nbp_register.round_position = round_position
-    master_nbp_register.round_shift = round_shift
     master_nbp_register.round_transform = round_transform
-    master_nbp_register.channel_position = channel_position
-    master_nbp_register.channel_shift = channel_shift
     master_nbp_register.channel_transform = channel_transform
+    master_nbp_register.software_version = nbp_register_list[0].software_version
+    master_nbp_register.revision_hash = nbp_register_list[0].revision_hash
 
     return master_nbp_register
+
+
+def merge_register_debug(
+    nbp_register_debug_list: List[NotebookPage], master_nbp_basic: NotebookPage, 
+    ) -> NotebookPage:
+    """
+    Merge a list of single-tile 'register_debug' NotebookPages into one multi-tile NotebookPage.
+
+    Args:
+        nbp_register_debug_list (list of NotebookPage): list of finalised 'register_debug' NotebookPages to combine.
+        master_nbp_basic: 'basic_info' page for master notebook to base the combined NotebookPage on.
+
+    Returns:
+        NotebookPage: multi-tile 'register_debug' NotebookPage.
+    
+    Raises:
+        AssertionError: merging the given list of NotebookPages is not possible.
+    """
+    # Create a master notebook reg page
+    master_nbp_register_debug = NotebookPage('register_debug')
+    
+    use_tiles = master_nbp_basic.use_tiles
+    n_tiles, n_rounds, n_channels = master_nbp_basic.n_tiles, master_nbp_basic.n_rounds, master_nbp_basic.n_channels
+    
+    for i in range(len(nbp_register_debug_list) - 1):
+        n_iters = nbp_register_debug_list[i].n_matches.shape[3]
+        zyx_subvols = nbp_register_debug_list[i].round_shift.shape[2]
+        channel_transform = nbp_register_debug_list[i].channel_transform
+        assert zyx_subvols == nbp_register_debug_list[i + 1].round_shift.shape[2], \
+            "subvol sizes are not the same for every 'register_debug' NotebookPage"
+        assert n_iters == nbp_register_debug_list[i + 1].n_matches.shape[3], \
+            "n_iters is not the same value for every 'register_debug' NotebookPage"
+        assert n_iters == nbp_register_debug_list[i + 1].mse.shape[3], \
+            "n_iters is not the same value for every 'register_debug' NotebookPage"
+        assert np.allclose(channel_transform, nbp_register_debug_list[i + 1].channel_transform), \
+            "channel_transform is not the same for every 'register_debug' NotebookPage"
+    
+    n_matches = np.zeros((n_tiles, n_rounds, n_channels, n_iters))
+    mse = np.zeros((n_tiles, n_rounds, n_channels, n_iters))
+    converged = np.zeros((n_tiles, n_rounds, n_channels))
+    round_shift = np.zeros((n_tiles, n_rounds, zyx_subvols, 3))
+    round_shift_corr = np.zeros((n_tiles, n_rounds, zyx_subvols))
+    position = np.zeros((n_tiles, n_rounds, zyx_subvols, 3))
+    round_transfrom_raw = np.zeros((n_tiles, n_rounds, 3, 4))
+
+    for i, tile in enumerate(use_tiles):
+        n_matches[tile] = nbp_register_debug_list[i].n_matches[tile]
+        mse[tile] = nbp_register_debug_list[i].mse[tile]
+        converged[tile] = nbp_register_debug_list[i].converged[tile]
+        round_shift[tile] = nbp_register_debug_list[i].round_shift[tile]
+        round_shift_corr[tile] = nbp_register_debug_list[i].round_shift_corr[tile]
+        position[tile] = nbp_register_debug_list[i].position[tile]
+        round_transfrom_raw[tile] = nbp_register_debug_list[i].round_transfrom_raw[tile]
+    
+    master_nbp_register_debug.channel_transform = channel_transform
+    master_nbp_register_debug.n_matches = n_matches
+    master_nbp_register_debug.n_matches = mse
+    master_nbp_register_debug.n_matches = converged
+    master_nbp_register_debug.n_matches = round_shift
+    master_nbp_register_debug.n_matches = round_shift_corr
+    master_nbp_register_debug.n_matches = position
+    master_nbp_register_debug.n_matches = round_transfrom_raw
+    
+    return master_nbp_register_debug
+
+
+def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
+    """
+    Split a notebook into separate notebooks for each tile. This can only be done with a notebook that contains 
+    'basic_info', 'file_names', and 'scale' pages. The split notebook for tile `t` is saved with name `'notebook_t{t}'`.
+
+    Args:
+        master_notebook (Notebook): notebook to split.
+
+    Returns:
+        List[Notebook]: deep copy of notebook for each tile in `basic_info.use_tiles`. Notebook at index `i` 
+            corresponds to `basic_info.use_tiles[i]`.
+    """
+    assert master_notebook.has_page('basic_info'), "Require 'basic_info' notebook page to split by tiles"
+    assert master_notebook.has_page('file_names'), "Require 'file_names' notebook page to split by tiles"
+    assert master_notebook.has_page('scale'), "Require 'scale' notebook page to split by tiles"
+    assert not master_notebook.has_page('extract'), "Notebook cannot contain 'extract' notebook page"
+    
+    output = []
+    notebook_dir = PurePath(master_notebook._file).parent
+    use_tiles = master_notebook.basic_info.use_tiles
+    for tile in use_tiles:
+        new_notebook = copy.deepcopy(master_notebook)
+        new_notebook._created_time = time.time()
+        new_notebook._file = os.path.join(notebook_dir, f"notebook_t{tile}")
+        
+        new_notebook.basic_info.finalized = False
+        del new_notebook.basic_info.use_tiles, new_notebook.basic_info.n_tiles
+        new_notebook.basic_info.use_tiles = [tile]
+        new_notebook.basic_info.n_tiles = tile + 1
+        new_notebook.basic_info.finalized = True
+
+        new_notebook.file_names.finalized = False
+        old_spot_details_path = PurePath(new_notebook.file_names.spot_details_info)
+        del new_notebook.file_names.spot_details_info
+        new_notebook.file_names.spot_details_info = str(
+            PurePath(
+                old_spot_details_path.parent, 
+                f"spot_details_info_t{tile}.npz", 
+            )
+        )
+        new_notebook.file_names.finalized = True
+
+        output.append(new_notebook)
+    return output
 
 
 def split_stitch(master_nbp_stitch, nb_list):
@@ -1062,6 +1318,7 @@ def split_stitch(master_nbp_stitch, nb_list):
     Returns:
         N/A
     """
+    raise NotImplementedError("This is outdated, why do you need this function?")
     # Cannot just take a page from a notebook and add it to another unfortunately, have to manually copy arguments
     for i in range(len(nb_list)):
 
@@ -1092,6 +1349,7 @@ def split_call_spots(master_nbp_call_spots, nb_list):
     Returns:
         N/A
     """
+    raise NotImplementedError("This is outdated, why do you need this function?")
     # I was lying earlier when I said we couldn't copy a page verbatim. Just have to use a trick
     for i in range(len(nb_list)):
         # This allows us to add the page to another notebook
@@ -1112,7 +1370,7 @@ def split_ref_spots(master_nbp_ref_spots, nb_list):
     Returns:
         N/A
     """
-
+    raise NotImplementedError("This is outdated, why do you need this function?")
     # Load spot_indices where one tile ends and another begins
     num_spots = [nb.find_spots.spot_details.shape[0] for nb in nb_list]
     num_notebooks = len(nb_list)

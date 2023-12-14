@@ -46,12 +46,14 @@ _options = {
             'dye_names': 'list_str',
             'is_3d': 'bool',
             'ignore_first_z_plane': 'bool',
+            'software_version': 'str', 
             # From here onwards these are not compulsory to enter and will be taken from the metadata
             # Only leaving them here to have backwards compatibility as Max thinks the user should influence these
             'channel_camera': 'maybe_list_int',
             'channel_laser': 'maybe_list_int',
             'ref_round': 'maybe_int',
-            'ref_channel': 'maybe_int'
+            'ref_channel': 'maybe_int',
+            'revision_hash': 'maybe_str'
         },
     'file_names':
         {
@@ -78,18 +80,26 @@ _options = {
             'pre_seq': 'maybe_str',
             'initial_bleed_matrix': 'maybe_str',
         },
+    'scale':
+        {
+            'r_smooth': 'maybe_list_int',
+            'r1': 'maybe_int',
+            'r2': 'maybe_int',
+            'scale': 'maybe_number',
+            'scale_norm': 'maybe_int',
+            'scale_anchor': 'maybe_number',
+            'r1_auto_microns': 'number',
+        }, 
     'extract':
         {
             'file_type': 'str',
             'wait_time': 'int',
-            'r1': 'maybe_int',
-            'r2': 'maybe_int',
+            'continuous_dapi': 'bool',
+        }, 
+    'filter':
+        {
             'r_dapi': 'maybe_int',
-            'r1_auto_microns': 'number',
             'r_dapi_auto_microns': 'maybe_number',
-            'scale': 'maybe_number',
-            'scale_norm': 'maybe_int',
-            'scale_anchor': 'maybe_number',
             'auto_thresh_multiplier': 'number',
             'deconvolve': 'bool',
             'psf_detect_radius_xy': 'int',
@@ -101,13 +111,11 @@ _options = {
             'psf_annulus_width': 'number',
             'wiener_constant': 'number',
             'wiener_pad_shape': 'list_int',
-            'r_smooth': 'maybe_list_int',
             'n_clip_warn': 'int',
             'n_clip_error': 'maybe_int',
             'n_clip_error_images_thresh': 'int',
             'num_rotations': 'int',
-            'continuous_dapi': 'bool',
-            'pre_seq_blur_radius': 'maybe_int'
+            'pre_seq_blur_radius': 'maybe_int',
         },
     'find_spots':
         {

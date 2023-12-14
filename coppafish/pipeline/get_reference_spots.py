@@ -8,12 +8,13 @@ except ImportError:
     from ..spot_colors import base as spot_colors_base
 from ..call_spots import base as call_spots_base
 from .. import find_spots as fs
+from .. import utils
 from ..setup.notebook import NotebookPage
 
 
 def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_find_spots: NotebookPage,
-                        nbp_extract: NotebookPage, tile_origin: np.ndarray, transform: np.ndarray) -> NotebookPage:
-
+                        nbp_extract: NotebookPage, nbp_filter: NotebookPage, tile_origin: np.ndarray, 
+                        transform: np.ndarray) -> NotebookPage:
     """
     This takes each spot found on the reference round/channel and computes the corresponding intensity
     in each of the imaging rounds/channels.
@@ -37,6 +38,7 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
         nbp_find_spots: 'find_spots' notebook page.
             Here we will use find_spots, spot_no and isolated_spots variables from this page
         nbp_extract: `extract` notebook page.
+        nbp_filter: `filter` notebook page.
         tile_origin: `float [n_tiles x 3]`.
             `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
             yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
@@ -46,13 +48,14 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             tile `t`, round `r`, channel `c`.
             This is saved in the register notebook page i.e. `nb.register.transform`.
 
-
     Returns:
         `NotebookPage[ref_spots]` - Page containing intensity of each reference spot on each imaging round/channel.
     """
     # We create a notebook page for ref_spots which stores information like local coords, isolated info, tile_no of each
     # spot and much more.
     nbp = NotebookPage("ref_spots")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
     # The code is going to loop through all tiles, as we expect some anchor spots on each tile but r and c should stay
     # fixed as the value of the reference round and reference channel
     r = nbp_basic.anchor_round
@@ -103,11 +106,11 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             if nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile], bg_colours[in_tile] = \
                     spot_colors_base.get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, 
-                                                     nbp_basic, nbp_extract, bg_scale=nbp_extract.bg_scale)
+                                                     nbp_basic, nbp_extract, nbp_filter)
             if not nbp_basic.use_preseq:
                 nd_spot_colors_use[in_tile] = \
                     spot_colors_base.get_spot_colors(jnp.asarray(nd_local_yxz[in_tile]), t, transform, nbp_file, 
-                                                     nbp_basic, nbp_extract, bg_scale=nbp_extract.bg_scale)
+                                                     nbp_basic, nbp_extract, nbp_filter)
 
     # good means all spots that were in bounds of tile on every imaging round and channel that was used.
     good = ~np.any(nd_spot_colors_use == invalid_value, axis=(1, 2))

@@ -13,14 +13,14 @@ except ImportError:
 
 from .. import utils
 from ..setup.notebook import NotebookPage
-from ..extract import scale
 from .. import spot_colors
 from .. import call_spots
+from .. import scale
 from .. import omp
 
 
-def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage,
-                   nbp_call_spots: NotebookPage, tile_origin: np.ndarray,
+def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, 
+                   nbp_filter: NotebookPage, nbp_call_spots: NotebookPage, tile_origin: np.ndarray, 
                    transform: np.ndarray, shape_tile: Optional[int]) -> NotebookPage:
     """
     This runs orthogonal matching pursuit (omp) on every pixel to determine a coefficient for each gene at each pixel.
@@ -35,7 +35,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         nbp_file: `file_names` notebook page.
         nbp_basic: `basic_info` notebook page.
         nbp_extract: `extract` notebook page.
-        nbp_call_spots:
+        nbp_filter: `filter` notebook page.
+        nbp_call_spots: `call_spots` notebook page.
         tile_origin: `float [n_tiles x 3]`.
             `tile_origin[t,:]` is the bottom left yxz coordinate of tile `t`.
             yx coordinates in `yx_pixels` and z coordinate in `z_pixels`.
@@ -56,9 +57,12 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         warnings.warn('Jax is not installed so call_spots_omp will be slow')
 
     nbp = NotebookPage("omp")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)
+    trc_ind = np.ix_(nbp_basic.use_tiles, nbp_basic.use_rounds, nbp_basic.use_channels)
     bled_codes = np.moveaxis(np.moveaxis(nbp_call_spots.bled_codes_ge, 0, -1)[rc_ind], -1, 0)
     utils.errors.check_color_nan(bled_codes, nbp_basic)
     norm_bled_codes = np.linalg.norm(bled_codes, axis=(1, 2))
@@ -67,7 +71,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
                          "use_rounds and use_channels.")
     bled_codes = jnp.asarray(bled_codes)
     transform = jnp.asarray(transform)
-    color_norm_factor = jnp.asarray(nbp_call_spots.color_norm_factor[rc_ind])
+    color_norm_factor = jnp.asarray(nbp_call_spots.color_norm_factor[trc_ind])
     n_genes, n_rounds_use, n_channels_use = bled_codes.shape
     dp_norm_shift = 0
 
@@ -97,7 +101,7 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     if not os.path.isfile(nbp_file.omp_spot_shape):
         # Set tile order so do shape_tile first to compute spot_shape from it.
         if shape_tile is None:
-            shape_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+            shape_tile = scale.base.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
         if shape_tile not in nbp_basic.use_tiles:
             raise ValueError(f"shape_tile, {shape_tile} is not in nbp_basic.use_tiles, {nbp_basic.use_tiles}")
         shape_tile_ind = np.where(np.array(nbp_basic.use_tiles) == shape_tile)[0][0]
@@ -160,11 +164,11 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     for t in use_tiles:
         print(f"Tile {np.where(use_tiles == t)[0][0] + 1}/{len(use_tiles)}")
         
-        # z_chunk_size = 4 if optimised else 1
         z_chunk_size = 1
-        pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, config, int(t), use_z, 
-                                                             z_chunk_size, n_genes, transform, color_norm_factor, 
-                                                             nbp.initial_intensity_thresh, bled_codes, dp_norm_shift)
+        pixel_yxz_t, pixel_coefs_t = omp.get_pixel_coefs_yxz(nbp_basic, nbp_file, nbp_extract, nbp_filter, config, 
+                                                             int(t), use_z, z_chunk_size, n_genes, transform, 
+                                                             color_norm_factor[t], nbp.initial_intensity_thresh, 
+                                                             bled_codes, dp_norm_shift)
 
         if spot_shape is None:
             nbp.shape_tile = int(t)
@@ -266,19 +270,14 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
     invalid_value = -nbp_basic.tile_pixel_value_shift
     # Only read in used colors first for background/intensity calculation.
     nd_spot_colors_use = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.int32) * invalid_value
+    spot_colors_norm = np.ones((n_spots, n_rounds_use, n_channels_use), dtype=np.float32) * invalid_value
     for t in nbp_basic.use_tiles:
         in_tile = nbp.tile == t
         if np.sum(in_tile) > 0:
-            if nbp_basic.use_preseq:
-                nd_spot_colors_use[in_tile], bg_colours = spot_colors.get_spot_colors(
-                    jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
-                    bg_scale=nbp_extract.bg_scale)
-            else:
-                nd_spot_colors_use[in_tile] = spot_colors.get_spot_colors(
-                    jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, 
-                    bg_scale=nbp_extract.bg_scale)
-
-    spot_colors_norm = jnp.array(nd_spot_colors_use) / color_norm_factor
+            nd_spot_colors_use[in_tile] = spot_colors.get_spot_colors(
+                jnp.asarray(nbp.local_yxz[in_tile]), t, transform, nbp_file, nbp_basic, nbp_extract, nbp_filter, 
+            )[0]
+            spot_colors_norm[in_tile] = nd_spot_colors_use[in_tile] / color_norm_factor[t]
     nbp.intensity = np.asarray(call_spots.get_spot_intensity(spot_colors_norm))
     del spot_colors_norm
 

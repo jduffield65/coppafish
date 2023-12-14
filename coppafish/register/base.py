@@ -6,6 +6,7 @@ import skimage
 from tqdm import tqdm
 from multiprocessing import Queue
 from sklearn.linear_model import HuberRegressor
+from typing import Optional, Tuple
 
 from .preprocessing import NotebookPage
 from . import preprocessing
@@ -118,10 +119,16 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.9):
     # Now compute the correlation coefficients. First create a mask of the nonzero values
     mask = shift_base != 0
     shift_corr = np.corrcoef(shift_base[mask], subvol_target[mask])[0, 1]
+    if np.isnan(shift_corr):
+        shift_corr = 0.
     mask = alt_shift_base != 0
     alt_shift_corr = np.corrcoef(alt_shift_base[mask], subvol_target[mask])[0, 1]
+    if np.isnan(alt_shift_corr):
+        alt_shift_corr = 0.
     mask = subvol_base != 0
     base_corr = np.corrcoef(subvol_base[mask], subvol_target[mask])[0, 1]
+    if np.isnan(base_corr):
+        base_corr = 0.
 
     # Now return the shift with the highest correlation coefficient
     if alt_shift_corr > shift_corr:
@@ -590,27 +597,29 @@ def icp(yxz_base, yxz_target, dist_thresh, start_transform, n_iters, robust=Fals
     return transform, n_matches, error, converged
 
 
-def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: int = 99, 
-                     sub_image_size: int = 500):
+def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: float, sub_image_size: int = 500, 
+                     ) -> Tuple[float, np.ndarray, np.ndarray]:
     """
-    Function to find scale factor m and constant c such that m * preseq + c ~ seq. This is done by a regression on
-    the pixels of brightness < brightness_thresh_percentile as these likely won't be spots. The regression is done by
-    least squares.
-
-    This function isn't really registration but needs registration to be run before it can be used and here seems
-    like a good place to put it.
+    Function to find scale factor m and constant c such that m * preseq + c ~ seq. First, the preseq and seq images are 
+    aligned using phase cross correlation. Then apply regression on the pixels of `brightness < 
+    brightness_thresh_percentile` as these likely won't be spots. The regression is done by least squares.
+    
     Args:
         preseq: (n_z x n_y x n_x) ndarray of presequence image.
         seq: (n_z x n_y x n_x) ndarray of sequence image.
-        intensity_percentile: float brightness percentile such that all pixels with brightness > this percentile
-        (in the preseq im only) are used for regression. Default: `99`.
+        intensity_percentile (float): brightness percentile such that all pixels with brightness > this percentile (in 
+            the preseq im only) are used for regression.
         sub_image_size: int size of sub-images to use for regression. This is because the images are not perfectly
             registered and so we need to find the best registered sub-image to use for regression. Default: `500`.
 
     Returns:
-        scale: float scale factor `m`.
-        sub_image_seq: (sub_image_size, sub_image_size) ndarray of sequence image used for regression.
-        sub_image_preseq: (sub_image_size, sub_image_size) ndarray of presequence image used for regression.
+        - scale: float scale factor `m`.
+        - sub_image_seq: (sub_image_size, sub_image_size) ndarray of aligned sequence image used for regression.
+        - sub_image_preseq: (sub_image_size, sub_image_size) ndarray of aligned presequence image used for regression.
+
+    Notes:
+        - This function isn't really part of registration but needs registration to be run before it can be used and 
+            here seems like a good place to put it.
     """
     # Find the bottom intensity_percentile pixels from the image to linear regress with to exclude any spots
     # Create 2 masks, and take the intersection of them
@@ -619,7 +628,7 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     # registered sub-images
     assert preseq.shape == seq.shape, "Presequence and sequence images must have the same shape"
     tile_size = seq.shape[-1]
-    n_sub_images = int(tile_size / sub_image_size)
+    n_sub_images = max(1, int(tile_size / sub_image_size))
     sub_image_shifts = np.zeros((n_sub_images, n_sub_images, 3))
     sub_image_shift_score = np.zeros((n_sub_images, n_sub_images))
     for i in range(n_sub_images):
@@ -636,7 +645,7 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     # Now find the best sub-image
     if np.sum(np.isnan(sub_image_shift_score)) == n_sub_images ** 2:
         print('Warning: No sub-image shifts found. Setting scale to 1 and returning original images.')
-        return 1, sub_image_seq, sub_image_preseq
+        return 1., sub_image_seq, sub_image_preseq
     best_sub_image = np.argwhere(sub_image_shift_score == np.nanmax(sub_image_shift_score))[0]
     sub_image_seq = seq[:, best_sub_image[0] * sub_image_size:(best_sub_image[0] + 1) * sub_image_size,
                         best_sub_image[1] * sub_image_size:(best_sub_image[1] + 1) * sub_image_size]
@@ -653,47 +662,53 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     # Least squares to find im = m * im_pre best fit coefficients
     m = np.linalg.lstsq(sub_image_preseq_flat[:, None], sub_image_seq_flat, rcond=None)[0]
     
-    return m, sub_image_seq, sub_image_preseq
+    return float(m), sub_image_seq, sub_image_preseq
 
 
-def compute_brightness_scale(nbp: NotebookPage, nbp_basic: NotebookPage, nbp_file: NotebookPage, 
-                             nbp_extract: NotebookPage, mid_z: int, z_rad: int, t: int, r: int, c: int, 
-                             queue: Queue = None):
+def compute_brightness_scale(
+    image_seq: np.ndarray, image_preseq: np.ndarray, transforms: np.ndarray, mid_z: int, z_rad: int, 
+    pre_seq_round: int, t: int, r: int, c: int, intensity_percentile: float = 99., queue: Optional[Queue] = None
+    ) -> Tuple[float, int, int, int]:
     """
-    Applies affine transforms to the presequence and sequence image for tile t, round r, channel c. Then applies 
-    `brightness_scale` on the transformed images.
+    Applies given affine transforms to the presequence and sequence image for tile t, round r, channel c. Then 
+    calculates `brightness_scale` on the transformed images.
 
     Args:
-        nbp (NotebookPage): `register` notebook page.
-        nbp_basic (NotebookPage): `basic_info` notebook page.
-        nbp_file (NotebookPage): `file_names` notebook page.
-        nbp_extract (NotebookPage): `extract` notebook page.
+        image_seq ((ny x nx (x nz)) ndarray[int32]): loaded image for given tile, round and channel spanning the given 
+            z space.
+        image_preseq ((ny x nx (x nz)) ndarray[int32]): loaded presequence round image for given tile and channel 
+            spanning the given z space.
+        transforms ((n_tiles x (n_rounds + n_extra_rounds) x n_channels) ndarray[float]): affine transform 
+            `transforms[t,r,c]` takes the reference round and reference channel to round `r` and channel `c` for tile 
+            `t`.
         mid_z (int): middle z plane to be used.
         z_rad (int): span on z planes, +- from `mid_z`.
+        pre_seq_round (int): presequence round index.
         t (int): tile index.
         r (int): round index.
         c (int): channel index.
+        intensity_percentile (float, optional): brightness percentile such that all pixels with brightness > this 
+            percentile (in the preseq im only) are used for brightness scale calculation. Default: `99`.
         queue (Queue, optional): multiprocess `Queue` object, the return is `put` into this object. Default: None, no 
             queue object.
     
     Returns:
-        - float: computed brightness scale.
-        - int: tile index.
-        - int: round index.
-        - int: channel index.
+        - float: calculated brightness scale.
+        - int: `t` tile index.
+        - int: `r` round index.
+        - int: `c` channel index.
     """
-    transform_pre = preprocessing.yxz_to_zyx_affine(nbp.transform[t, nbp_basic.pre_seq_round, c], 
-                                                    new_origin=np.array([mid_z-z_rad, 0, 0]))
-    transform_seq = preprocessing.yxz_to_zyx_affine(nbp.transform[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
-    preseq = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, 
-                                                         r=nbp_basic.pre_seq_round, c=c, 
-                                                         yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
-    seq = preprocessing.yxz_to_zyx(tiles_io.load_tile(nbp_file, nbp_basic, nbp_extract.file_type, t=t, r=r, c=c, 
-                                             yxz=[None, None, np.arange(mid_z-z_rad, mid_z+z_rad)]))
+    transform_pre = preprocessing.yxz_to_zyx_affine(
+        transforms[t, pre_seq_round, c], 
+        new_origin=np.array([mid_z-z_rad, 0, 0]), 
+    )
+    transform_seq = preprocessing.yxz_to_zyx_affine(transforms[t, r, c], new_origin=np.array([mid_z-z_rad, 0, 0]))
+    preseq = preprocessing.yxz_to_zyx(image_preseq)
+    seq = preprocessing.yxz_to_zyx(image_seq)
     preseq = scipy.ndimage.affine_transform(preseq, transform_pre)
     seq = scipy.ndimage.affine_transform(seq, transform_seq)
-    output = brightness_scale(preseq, seq)
+    output = brightness_scale(preseq, seq, intensity_percentile=intensity_percentile)
     if queue is not None:
-        queue.put((output[0], t, r, c))
+        queue.put([output[0], t, r, c])
 
     return output[0], t, r, c

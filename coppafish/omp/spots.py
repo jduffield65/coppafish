@@ -1,8 +1,8 @@
+import tqdm
 import warnings
 from typing import Union, List, Tuple, Optional
 import numpy as np
 from scipy.sparse import csr_matrix
-from tqdm import trange
 import numpy_indexed
 
 from .. import utils
@@ -335,7 +335,7 @@ def get_spots(pixel_coefs: Union[csr_matrix, np.array], pixel_yxz: np.ndarray, r
         del spots_to_check, pixel_index
     # TODO: if 2D can do all genes together.
     # TODO: Optimise with jax
-    for g in trange(n_genes, desc=f'Finding spots for all {n_genes} genes from omp_coef images'):
+    for g in tqdm.trange(n_genes, desc=f'Finding spots for all {n_genes} genes from omp_coef images'):
         # shift nzg_pixel_yxz so min is 0 in each axis so smaller image can be formed.
         # Note size of image will be different for each gene.
         coef_image, coord_shift = cropped_coef_image(pixel_yxz, pixel_coefs[:, g])
