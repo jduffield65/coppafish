@@ -1,15 +1,16 @@
-2023/12/dd Alpha Update (v0.5.0):
- * Extract and filter has now become two separate sections in the notebook. Extract runs first, then filter. We keep 
+2023/12/15 Alpha Update (v0.5.0):
+ * Extract and filter has now become two separate sections in the notebook. Extract runs first, then filter. We save 
     raw, extracted images in the tiles_dir/raw directory. Also, when running from raw ND2 files, we keep all the found 
     metadata from the ND2s for each round in a file called 'nd2_metadata_r{r}.pkl' inside the tiles_dir/raw directory. 
-    This way we hope the raw ND2 files can be deleted without loss of any data in the future.
- * When running multiple tiles, extract, filter and find_spots run on single tiles at a time. We hope to minimise disk 
-    reading in the future by keeping a single tile in memory throughout extract, find_spots and register.
+    This way we hope the raw ND2 files can be deleted without loss of any data.
+ * When running multiple tiles, extract, filter and find_spots run on single tiles at a time. This minimises disk 
+    reading by keeping a single tile in memory throughout extract, filter, and find_spots. In the future we hope to 
+    also add register to run tile by tile.
  * Default extraction file type (['extract']['file_type']) is now .zarr, used to be .npy. This file_type is also used 
     when saving the filtered images in the tiles_dir directory.
  * Multiprocessing to compute background scales now includes no disk reading (safer).
  * The disk reading multiprocessing in OMP has been removed (safer).
- * TODO: Save the git hash and software version for each notebook section.
+ * The git hash and software version for each notebook section is saved when that pipeline section is run through.
  * OMP now runs on a single z plane at a time.
  * Default psf_isolation_dist in 'filter' config section changed from 20 -> 10.
  * Call spots probability thresholds are not constants any more, they are now computed percentiles based on the gene 
