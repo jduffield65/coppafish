@@ -16,6 +16,8 @@ and channels. *coppafish* then determines the distribution of genes via
 
 ## Prerequisites
 Python 3.8, 3.9, 3.10
+[Git](https://git-scm.com/).
+
 
 ## Documentation
 For more information on installation and usage, please see the 
