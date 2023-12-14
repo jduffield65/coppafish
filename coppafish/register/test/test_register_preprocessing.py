@@ -1,4 +1,3 @@
-from coppafish.register import base as reg_base
 from coppafish.register import preprocessing as reg_pre
 from skimage import data
 
