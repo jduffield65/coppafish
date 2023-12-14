@@ -175,7 +175,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     # scaling factors omega = (w_1, ..., w_7) for each tile and round such that
     # omega_i * initial_bleed_matrix[i] ~ bleed_matrix[t, r, i] for all i. We can then assimilate these scaling factors
     # into our colour norm factor.
-    gene_prob_bleed_thresh = 0.95
+    gene_prob_bleed_thresh = min(np.percentile(gene_prob_score, 90), 0.95)
     bg_percentile = 50
     bg_strength = np.linalg.norm(bg_codes, axis=(1, 2))
     for t, r in product(nbp_basic.use_tiles, range(n_rounds)):
@@ -196,7 +196,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     colour_norm_factor *= colour_norm_factor_update
 
     # Part 4: Estimate gene_efficiency[g, r] for each gene g and round r
-    gene_prob_ge_thresh = 0.5
+    gene_prob_ge_thresh = max(np.percentile(gene_prob_score, 50), 0.5)
     use_ge = np.zeros(n_spots, dtype=bool)
     for g in tqdm(range(n_genes), desc='Estimating gene efficiencies'):
         keep = (gene_no == g) * (gene_prob_score > gene_prob_ge_thresh)
