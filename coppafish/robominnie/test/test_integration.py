@@ -316,8 +316,8 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.has_page("extract")
     assert _approximately_equal(nb_0.extract.continuous_dapi, nb_1.extract.continuous_dapi)
     assert _approximately_equal(nb_0.extract.file_type, nb_1.extract.file_type)
-    assert _approximately_equal(nb_0.extract.revision_hash == nb_1.extract.revision_hash)
-    assert _approximately_equal(nb_0.extract.software_version == nb_1.extract.software_version)
+    assert nb_0.extract.revision_hash == nb_1.extract.revision_hash
+    assert nb_0.extract.software_version == nb_1.extract.software_version
     
     assert nb_0.has_page("extract_debug")
     
@@ -344,7 +344,7 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.register.round_transform, nb_1.register.round_transform)
     assert _approximately_equal(nb_0.register.transform, nb_1.register.transform)
     assert nb_0.register.revision_hash == nb_1.register.revision_hash
-    assert  nb_0.register.software_version == nb_1.register.software_version
+    assert nb_0.register.software_version == nb_1.register.software_version
     
     assert nb_0.has_page("register_debug")
     assert _approximately_equal(nb_0.register_debug.channel_transform, nb_1.register_debug.channel_transform)

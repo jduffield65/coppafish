@@ -12,7 +12,7 @@ def get_software_verison() -> str:
     Returns:
         str: software version.
     """
-    with open(PurePath(os.path.dirname(os.path.realpath(__file__))).parent.joinpath('_version.py'), "r") as f:
+    with open(PurePath(os.path.dirname(os.path.realpath(__file__))).parent.joinpath("_version.py"), "r") as f:
         version_tag = f.read().split("'")[1]
     return version_tag
 
@@ -24,7 +24,13 @@ def get_git_revision_hash() -> str:
     Returns:
         str: commit hash.
     """
-    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+    return (
+        subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=PurePath(os.path.dirname(os.path.realpath(__file__))).parent
+        )
+        .decode("ascii")
+        .strip()
+    )
 
 
 def get_available_memory() -> float:
