@@ -57,6 +57,8 @@ def call_spots_omp(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage
         warnings.warn('Jax is not installed so call_spots_omp will be slow')
 
     nbp = NotebookPage("omp")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
 
     # use bled_codes with gene efficiency incorporated and only use_rounds/channels
     rc_ind = np.ix_(nbp_basic.use_rounds, nbp_basic.use_channels)

@@ -31,6 +31,8 @@ def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage)
         )
 
     nbp = NotebookPage("scale")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
     
     if config["r1"] is None:
         config["r1"] = extract.base.get_pixel_length(config["r1_auto_microns"], nbp_basic.pixel_size_xy)

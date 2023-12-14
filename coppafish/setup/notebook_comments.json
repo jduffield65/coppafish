@@ -216,7 +216,11 @@
       "`None` if `config['scale']['scale']` provided or `use_anchor = False`."],
     "scale_anchor_z": ["Integer or None",
       "z plane of image in anchor round/channel that `scale_anchor` was found from.",
-      "`None` if `config['scale']['scale_anchor']` provided or `use_anchor = False`."]
+      "`None` if `config['scale']['scale_anchor']` provided or `use_anchor = False`."],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   }, 
 
   "extract":
@@ -229,7 +233,11 @@
     "file_type": ["String",
       "File type used to save tiles after extraction."],
     "continuous_dapi": ["Bool",
-      "Whether or not we have a dapi image in each round"]
+      "Whether or not we have a dapi image in each round"],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "extract_debug":
@@ -258,7 +266,11 @@
     "bg_scale": ["Numpy float array `[n_tiles x n_rounds x n_channelsW]`",
       "`bg_scale[t, r, c]` is the scale factor applied to the preseq round of tile $t$, channel $c$",
       "to match the colour profile of the sequencing image in tile t, round r, channel c.",
-      "None if not using preseq round."]
+      "None if not using preseq round."],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   }, 
 
   "filter_debug:":
@@ -308,7 +320,11 @@
       "`spot_yxz[i,:]` is `[y, x, z]` for spot $i$",
       "$y$, $x$ gives the local tile coordinates in yx-pixels. $z$ gives local tile coordinate in z-pixels (0 if *2D*)"],
     "isolated_spots": ["Boolean Array [n_anchor_spots x 1]",
-      "isolated spots[s] returns a 1 if anchor spot s is isolated and 0 o/w"]
+      "isolated spots[s] returns a 1 if anchor spot s is isolated and 0 o/w"],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "stitch":
@@ -366,7 +382,11 @@
       "and old score recorded as `north_outlier_score[i]`. Will be zero if this did not happen."],
     "east_outlier_score": ["Numpy float array [n_east_overlap]",
       "If `east_score[i]` was below `east_score_thresh[i]`, `east_shifts[i]` was found again",
-      "and old score recorded as `east_outlier_score[i]`. Will be zero if this did not happen."]
+      "and old score recorded as `east_outlier_score[i]`. Will be zero if this did not happen."],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "register":
@@ -384,7 +404,11 @@
     "round_transform": [" n_tiles x n_rounds x 3 x 4 ndarray:",
       " affine transforms taking $(t, r_{ref}, c_{ref})$ to $(t, r, c_{ref})$ for each tile $t$ and round $r $."],
     "channel_transform": ["[n_channels x 3 x 4 ndarray]",
-      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."]
+      " affine transforms taking $(t, r_{mid}, c_{ref})$ to $(t, r_{mid}, c)$ for each tile $t$ and channel $c$."],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "register_debug":
@@ -448,7 +472,11 @@
     "dye_strengths": ["Numpy float array [n_spots x n_rounds x n_dyes]",
       "Strength of each dye in each round for each spot."],
     "bg_colours": ["Numpy int32 array [n_spots x n_rounds x n_channels]",
-      "Background colour of each spot. Calculated as the median of the channel across rounds."]
+      "Background colour of each spot. Calculated as the median of the channel across rounds."], 
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "call_spots":
@@ -488,7 +516,11 @@
       "which exceed `score`, `score_diff` and `intensity` thresholds given in config file.",
       "For all $g$, there is an `av_round[g]` such that `gene_efficiency[g, av_round[g]] = 1`.",
       "`nan` if $r$ outside `use_rounds` and 1 if `gene_codes[g,r]` outside `use_dyes`."],
-    "use_ge": ["Bool [n_spots] Mask for all spots used in gene efficiency calculation."]
+    "use_ge": ["Bool [n_spots] Mask for all spots used in gene efficiency calculation."],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
 
   },
 
@@ -544,7 +576,11 @@
       "Max is `sum(spot_shape==-1)`."],
     "intensity": ["Numpy float32 array [n_spots]",
       "$\\chi_s = \\underset{r}{\\mathrm{median}}(\\max_c\\zeta_{s_{rc}})$",
-      "where $\\pmb{\\zeta}_s=$ `colors[s, r]/color_norm_factor[r]`."]
+      "where $\\pmb{\\zeta}_s=$ `colors[s, r]/color_norm_factor[r]`."],
+    "software_version": ["String",
+      "Coppafish version, as given by *coppafish/_version.py*"],
+    "revision_hash": ["String", 
+      "Hash of the latest git commit when the pipeline was run"]
   },
 
   "thresholds":

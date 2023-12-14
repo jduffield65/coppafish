@@ -47,6 +47,8 @@ def run_filter(
 
     nbp = NotebookPage("filter")
     nbp_debug = NotebookPage("filter_debug")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
 
     start_time = time.time()
     file_type = nbp_extract.file_type

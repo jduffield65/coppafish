@@ -98,8 +98,9 @@ def test_integration_002() -> None:
 
 
 @pytest.mark.slow
-def test_integration_003(include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = True, 
-                         ) -> Notebook:
+def test_integration_003(
+    include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = True, 
+    ) -> Notebook:
     """
     Summary of input data: random spots and pink noise.
 
@@ -309,10 +310,14 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.scale.r2, nb_1.scale.r2)
     assert _approximately_equal(nb_0.scale.r_smooth, nb_1.scale.r_smooth)
     assert _approximately_equal(nb_0.scale.r1, nb_1.scale.r1)
+    assert _approximately_equal(nb_0.scale.revision_hash, nb_1.scale.revision_hash)
+    assert _approximately_equal(nb_0.scale.software_version, nb_1.scale.software_version)
     
     assert nb_0.has_page("extract")
     assert _approximately_equal(nb_0.extract.continuous_dapi, nb_1.extract.continuous_dapi)
     assert _approximately_equal(nb_0.extract.file_type, nb_1.extract.file_type)
+    assert _approximately_equal(nb_0.extract.revision_hash, nb_1.extract.revision_hash)
+    assert _approximately_equal(nb_0.extract.software_version, nb_1.extract.software_version)
     
     assert nb_0.has_page("extract_debug")
     
@@ -320,12 +325,16 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.filter.auto_thresh, nb_1.filter.auto_thresh)
     assert _approximately_equal(nb_0.filter.hist_counts, nb_1.filter.hist_counts)
     assert _approximately_equal(nb_0.filter.hist_values, nb_1.filter.hist_values)
+    assert _approximately_equal(nb_0.filter.revision_hash, nb_1.filter.revision_hash)
+    assert _approximately_equal(nb_0.filter.software_version, nb_1.filter.software_version)
     
     assert nb_0.has_page("find_spots")
     assert _approximately_equal(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
     assert _approximately_equal(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
     assert _approximately_equal(nb_0.find_spots.spot_no, nb_1.find_spots.spot_no)
     assert _approximately_equal(nb_0.find_spots.spot_yxz, nb_1.find_spots.spot_yxz)
+    assert _approximately_equal(nb_0.find_spots.revision_hash, nb_1.find_spots.revision_hash)
+    assert _approximately_equal(nb_0.find_spots.software_version, nb_1.find_spots.software_version)
 
     assert nb_0.has_page("register")
     # bg_scale is calculated properly at the register section
@@ -334,6 +343,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.register.initial_transform, nb_1.register.initial_transform)
     assert _approximately_equal(nb_0.register.round_transform, nb_1.register.round_transform)
     assert _approximately_equal(nb_0.register.transform, nb_1.register.transform)
+    assert _approximately_equal(nb_0.register.revision_hash, nb_1.register.revision_hash)
+    assert _approximately_equal(nb_0.register.software_version, nb_1.register.software_version)
     
     assert nb_0.has_page("register_debug")
     assert _approximately_equal(nb_0.register_debug.channel_transform, nb_1.register_debug.channel_transform)
@@ -342,7 +353,6 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.register_debug.n_matches, nb_1.register_debug.n_matches)
     assert _approximately_equal(nb_0.register_debug.position, nb_1.register_debug.position)
     assert _approximately_equal(nb_0.register_debug.round_shift, nb_1.register_debug.round_shift)
-    #FIXME: round_shift_corr not capable of comparison
     assert _approximately_equal(nb_0.register_debug.round_shift_corr, nb_1.register_debug.round_shift_corr)
     assert _approximately_equal(nb_0.register_debug.round_transform_raw, nb_1.register_debug.round_transform_raw)
     
@@ -364,6 +374,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.stitch.north_shifts, nb_1.stitch.north_shifts)
     assert _approximately_equal(nb_0.stitch.north_start_shift_search, nb_1.stitch.north_start_shift_search)
     assert _approximately_equal(nb_0.stitch.tile_origin, nb_1.stitch.tile_origin)
+    assert _approximately_equal(nb_0.stitch.revision_hash, nb_1.stitch.revision_hash)
+    assert _approximately_equal(nb_0.stitch.software_version, nb_1.stitch.software_version)
     
     assert nb_0.has_page("ref_spots")
     assert _approximately_equal(nb_0.ref_spots.local_yxz, nb_1.ref_spots.local_yxz)
@@ -377,6 +389,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.ref_spots.background_strength, nb_1.ref_spots.background_strength)
     assert _approximately_equal(nb_0.ref_spots.gene_probs, nb_1.ref_spots.gene_probs)
     assert _approximately_equal(nb_0.ref_spots.bg_colours, nb_1.ref_spots.bg_colours)
+    assert _approximately_equal(nb_0.ref_spots.revision_hash, nb_1.ref_spots.revision_hash)
+    assert _approximately_equal(nb_0.ref_spots.software_version, nb_1.ref_spots.software_version)
 
     assert nb_0.has_page("call_spots")
     assert (nb_0.call_spots.gene_names == nb_1.call_spots.gene_names).all()
@@ -389,6 +403,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.call_spots.bled_codes_ge, nb_1.call_spots.bled_codes_ge)
     assert _approximately_equal(nb_0.call_spots.gene_efficiency, nb_1.call_spots.gene_efficiency)
     assert _approximately_equal(nb_0.call_spots.use_ge, nb_1.call_spots.use_ge)
+    assert _approximately_equal(nb_0.call_spots.revision_hash, nb_1.call_spots.revision_hash)
+    assert _approximately_equal(nb_0.call_spots.software_version, nb_1.call_spots.software_version)
 
     assert nb_0.has_page("omp")
     assert _approximately_equal(nb_0.omp.initial_intensity_thresh, nb_1.omp.initial_intensity_thresh)
@@ -405,6 +421,8 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.omp.n_neighbours_pos, nb_1.omp.n_neighbours_pos)
     assert _approximately_equal(nb_0.omp.n_neighbours_neg, nb_1.omp.n_neighbours_neg)
     assert _approximately_equal(nb_0.omp.intensity, nb_1.omp.intensity)
+    assert _approximately_equal(nb_0.omp.revision_hash, nb_1.omp.revision_hash)
+    assert _approximately_equal(nb_0.omp.software_version, nb_1.omp.software_version)
 
     if not nb_0.has_page("thresholds"):
         return

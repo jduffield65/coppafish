@@ -105,9 +105,8 @@ def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = True) -> None
 
 
 def initialize_nb(config_file: str) -> Notebook:
-
     """
-    Quick function which creates a `Notebook` and adds `basic_info` page before saving.
+    Creates a `Notebook` and adds `basic_info` page before saving.
     `file_names` page will be added automatically as soon as `basic_info` page is added.
     If `Notebook` already exists and contains these pages, it will just be returned.
 

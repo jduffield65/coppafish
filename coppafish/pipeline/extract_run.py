@@ -48,6 +48,8 @@ def run_extract(
 
     start_time = time.time()
     nbp = NotebookPage("extract")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
     nbp_debug = NotebookPage("extract_debug")
     nbp.file_type = config["file_type"]
     nbp.continuous_dapi = config["continuous_dapi"]

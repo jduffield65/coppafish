@@ -8,6 +8,7 @@ except ImportError:
     from ..spot_colors import base as spot_colors_base
 from ..call_spots import base as call_spots_base
 from .. import find_spots as fs
+from .. import utils
 from ..setup.notebook import NotebookPage
 
 
@@ -47,13 +48,14 @@ def get_reference_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_fin
             tile `t`, round `r`, channel `c`.
             This is saved in the register notebook page i.e. `nb.register.transform`.
 
-
     Returns:
         `NotebookPage[ref_spots]` - Page containing intensity of each reference spot on each imaging round/channel.
     """
     # We create a notebook page for ref_spots which stores information like local coords, isolated info, tile_no of each
     # spot and much more.
     nbp = NotebookPage("ref_spots")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
     # The code is going to loop through all tiles, as we expect some anchor spots on each tile but r and c should stay
     # fixed as the value of the reference round and reference channel
     r = nbp_basic.anchor_round

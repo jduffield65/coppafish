@@ -5,6 +5,7 @@ import numpy.typing as npt
 from typing import Optional
 
 from .. import find_spots as fs
+from .. import utils
 from ..setup.notebook import NotebookPage
 from ..utils import tiles_io
 
@@ -49,6 +50,8 @@ def find_spots(
     
     # Phase 0: Initialisation
     nbp = NotebookPage("find_spots")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
     if nbp_basic.is_3d is False:
         # set z details to None if using 2d pipeline
         config['radius_z'] = None

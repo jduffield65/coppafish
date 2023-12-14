@@ -70,6 +70,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         if hasattr(nbp_ref_spots, var):
             nbp_ref_spots.__delattr__(var)
     nbp = NotebookPage("call_spots")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
 
     # 0. Initialise frequently used variables
     # Load gene names and codes
