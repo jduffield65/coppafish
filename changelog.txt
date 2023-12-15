@@ -15,7 +15,9 @@
  * Default psf_isolation_dist in 'filter' config section changed from 20 -> 10.
  * Call spots probability thresholds are not constants any more, they are now computed percentiles based on the gene 
     probability values.
- * Shift score hist in the Registration Viewer now does not crash.
+ * Shift score hist in SVR diagnostics in the Registration Viewer now does not crash.
+ * Round score shift colour-map in SVR diagnostics in the Registration Viewer is fixed when z_subvols is 1 (small 
+    datasets like Minnie and RoboMinnie).
  * Fixed a register image shifting bug.
  * Fixed deconvolution bug.
  * Silenced notebook numpy-related warning.

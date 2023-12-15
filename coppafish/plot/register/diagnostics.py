@@ -935,6 +935,8 @@ def view_pearson_colourmap_spatial(nb: Notebook, t: int):
     n_rc = corr.shape[0]
 
     fig, axes = plt.subplots(nrows=z_subvols, ncols=n_rc)
+    if axes.ndim == 1:
+        axes = axes[None]
     # Now plot each image
     for elem in range(n_rc):
         for z in range(z_subvols):
