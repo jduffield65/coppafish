@@ -142,11 +142,14 @@ def run_extract(
                         pbar.set_postfix({"round": r, "tile": t, "channel": c, "exists": str(file_exists)})
 
                         # TODO: Save the raw uint16 dask array file
-                        im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
-                        im = im.astype(np.uint16, casting="safe")
-                        # yxz -> zyx
-                        im = im.transpose((2, 0, 1))
-                        tiles_io._save_image(im, file_path, config["file_type"])
+                        if file_exists:
+                            im = tiles_io._load_image(file_path, config["file_type"])
+                        if not file_exists:
+                            im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
+                            im = im.astype(np.uint16, casting="safe")
+                            # yxz -> zyx
+                            im = im.transpose((2, 0, 1))
+                            tiles_io._save_image(im, file_path, config["file_type"])
                         if return_image_t:
                             image_t[r, channel_to_index[c]] = im
                         del im
