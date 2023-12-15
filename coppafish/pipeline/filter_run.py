@@ -40,6 +40,7 @@ def run_filter(
     Notes:
         - See `'filter'` and `'filter_debug'` sections of `notebook_comments.json` file for description of variables.
     """
+    # TODO: Refactor this function to make it more readable
     if not nbp_basic.is_3d:
         NotImplementedError(f"2d coppafish is not stable, very sorry! :9")
     if image_t_raw is not None:

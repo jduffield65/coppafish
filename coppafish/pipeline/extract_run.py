@@ -40,7 +40,6 @@ def run_extract(
         - See `'extract'` and `'extract_debug'` sections of `notebook_comments.json` file for description of the
             variables in each page.
     """
-    # TODO: Refactor this function to make it more readable
     # initialise notebook pages
     if not nbp_basic.is_3d:
         # config["deconvolve"] = False  # only deconvolve if 3d pipeline
@@ -141,7 +140,6 @@ def run_extract(
                             file_exists = tiles_io.image_exists(file_path, config["file_type"])
                         pbar.set_postfix({"round": r, "tile": t, "channel": c, "exists": str(file_exists)})
 
-                        # TODO: Save the raw uint16 dask array file
                         if file_exists:
                             im = tiles_io._load_image(file_path, config["file_type"])
                         if not file_exists:
