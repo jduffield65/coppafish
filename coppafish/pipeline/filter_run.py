@@ -173,16 +173,13 @@ def run_filter(
         nbp_debug.psf_tiles_used = None
 
     if return_image_t:
+        all_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * nbp_extract.continuous_dapi
+        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
         image_t = np.zeros(
             (
                 max(use_rounds) + 1,
-                max(
-                    use_channels_anchor
-                    + nbp_basic.use_channels
-                    + [nbp_basic.dapi_channel] * nbp_extract.continuous_dapi
-                )
-                + 1,
-                max(nbp_basic.use_z) + 1,
+                len(all_channels) + 1,
+                nbp_basic.nz,
                 nbp_basic.tile_sz,
                 nbp_basic.tile_sz,
             ),
@@ -293,7 +290,7 @@ def run_filter(
                                 dtype=np.uint16,
                             )
                         else:
-                            im_raw = image_t_raw[r, c]
+                            im_raw = image_t_raw[r, channel_to_index[c]]
                         # zyx -> yxz
                         im_raw = im_raw.transpose((1, 2, 0))
 
@@ -386,7 +383,7 @@ def run_filter(
                                 num_rotations=config["num_rotations"],
                             )
                             if return_image_t:
-                                image_t[r, c] = saved_im
+                                image_t[r, channel_to_index[c]] = saved_im
                             del saved_im
                         else:
                             im_all_channels_2d[c] = im

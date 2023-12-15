@@ -117,7 +117,7 @@ def register(
                     apply_shift=False,
                 )
             )
-            if not (use_dapi) and not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+            if not (use_dapi):
                 anchor_image = preprocessing.apply_image_shift(anchor_image, -nbp_basic.tile_pixel_value_shift)
             n_image_bytes = anchor_image.nbytes
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
@@ -126,9 +126,7 @@ def register(
             for round_chunk in round_chunks:
                 round_image = []
                 for r in round_chunk:
-                    if not use_dapi and not (
-                        r == nbp_basic.anchor_round and round_registration_channel == nbp_basic.dapi_channel
-                    ):
+                    if not (use_dapi and r == nbp_basic.anchor_round):
                         round_image.append(
                             preprocessing.yxz_to_zyx(
                                 preprocessing.apply_image_shift(

@@ -82,11 +82,13 @@ def run_extract(
 
     return_image_t = len(nbp_basic.use_tiles) == 1
     if return_image_t:
+        all_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * config["continuous_dapi"]
+        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
         image_t = np.zeros(
             (
                 max(use_rounds) + 1,
-                max(nbp_basic.use_channels + [nbp_basic.dapi_channel] * config["continuous_dapi"]) + 1,
-                max(nbp_basic.use_z) + 1,
+                len(all_channels) + 1,
+                nbp_basic.nz,
                 nbp_basic.tile_sz,
                 nbp_basic.tile_sz,
             ),
@@ -103,7 +105,7 @@ def run_extract(
 
             if metadata is not None:
                 # Dump all metadata to pickle file
-                with open(os.path.join(nbp_file.tile_unfiltered_dir, f"nd2_metadata_r{r}.pkl"), "w") as file:
+                with open(os.path.join(nbp_file.tile_unfiltered_dir, f"nd2_metadata_r{r}.pkl"), "wb") as file:
                     pickle.dump(metadata, file)
 
             if r == nbp_basic.anchor_round:
@@ -144,7 +146,7 @@ def run_extract(
                         im = im.transpose((2, 0, 1))
                         tiles_io._save_image(im, file_path, config["file_type"])
                         if return_image_t:
-                            image_t[r, c] = im
+                            image_t[r, channel_to_index[c]] = im
                         del im
                         pbar.update(1)
     end_time = time.time()

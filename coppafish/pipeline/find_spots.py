@@ -47,6 +47,8 @@ def find_spots(
             assert image_t.ndim == 5, f"Expected image_t in 3D to have 5 dimensions, got {image_t.ndim}"
         else:
             assert image_t.ndim == 4, f"Expected image_t in 2D to have 4 dimensions, got {image_t.ndim}"
+        all_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * nbp_extract.continuous_dapi
+        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
     
     # Phase 0: Initialisation
     nbp = NotebookPage("find_spots")
@@ -103,7 +105,7 @@ def find_spots(
                 )
             else:
                 # zyx -> yxz
-                image_trc = image_t[r, c].transpose((1, 2, 0))
+                image_trc = image_t[r, channel_to_index[c]].transpose((1, 2, 0))
             local_yxz, spot_intensity = fs.detect_spots(image_trc,
                                                         auto_thresh[t, r, c] + nbp_basic.tile_pixel_value_shift,
                                                         config['radius_xy'], config['radius_z'], True)

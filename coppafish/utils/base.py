@@ -15,6 +15,21 @@ def get_function_name() -> str:
     return str(inspect.stack()[1][3])
 
 
+def get_index_mapping(to_map: List[int]) -> Dict[int, int]:
+    """
+    Get a unique index, starting from 0, for every integer in a list.
+
+    Args:
+        to_map (List[int]): integers to assign indices for.
+
+    Returns:
+        Dict[int, int]: keys are each item in `to_map`, the values are their mapped, unique indices.
+    """
+    assert len(set(to_map)) == len(to_map), "to_map cannot contain duplicate integers"
+    
+    return {c: i for c, i in zip(to_map, range(len(to_map)))}
+
+
 def round_any(x: Union[float, npt.NDArray], base: float, round_type: str = 'round') -> Union[float, npt.NDArray]:
     """
     Rounds `x` to the nearest multiple of `base` with the rounding done according to `round_type`.
