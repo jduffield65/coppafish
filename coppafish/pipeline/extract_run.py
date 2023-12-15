@@ -101,12 +101,13 @@ def run_extract(
         total=n_images, desc=f"Loading raw {nbp_file.raw_extension} tiles and saving as {config['file_type']}"
     ) as pbar:
         for r in use_rounds:
-            round_dask_array, metadata = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
-
-            if metadata is not None:
-                # Dump all metadata to pickle file
-                with open(os.path.join(nbp_file.tile_unfiltered_dir, f"nd2_metadata_r{r}.pkl"), "wb") as file:
-                    pickle.dump(metadata, file)
+            metadata_path = os.path.join(nbp_file.tile_unfiltered_dir, f"nd2_metadata_r{r}.pkl")
+            if not os.path.isfile(metadata_path):
+                round_dask_array, metadata = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+                if metadata is not None:
+                    # Dump all metadata to pickle file
+                    with open(metadata_path, "wb") as file:
+                        pickle.dump(metadata, file)
 
             if r == nbp_basic.anchor_round:
                 use_channels = use_channels_anchor
