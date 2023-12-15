@@ -74,15 +74,17 @@ def run_pipeline(
     return nb
 
 
-def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = True) -> None:
+def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None:
     """
     Run tile-independent pipeline processes.
 
     Args:
         nb (Notebook): notebook containing 'basic_info' and 'file_names' pages.
         run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 'register', 
-            then merge them together. Default: false.
+            then merge them together. Default: true if PC has >110GB of available memory. False otherwise.
     """
+    if run_tile_by_tile is None:
+        run_tile_by_tile = utils.system.get_available_memory() > 110
     run_scale(nb)
     if run_tile_by_tile and nb.basic_info.n_tiles > 1:
         print("Running tile by tile...")
