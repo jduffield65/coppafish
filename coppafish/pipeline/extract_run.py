@@ -40,6 +40,7 @@ def run_extract(
         - See `'extract'` and `'extract_debug'` sections of `notebook_comments.json` file for description of the
             variables in each page.
     """
+    #TODO: Add a warning if _version.py version of software is not the same as the extracted tiles version
     # initialise notebook pages
     if not nbp_basic.is_3d:
         # config["deconvolve"] = False  # only deconvolve if 3d pipeline
@@ -81,7 +82,8 @@ def run_extract(
 
     return_image_t = len(nbp_basic.use_tiles) == 1
     if return_image_t:
-        all_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * config["continuous_dapi"]
+        use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
+        all_channels = use_channels_anchor + nbp_basic.use_channels
         channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
         image_t = np.zeros(
             (
@@ -101,7 +103,7 @@ def run_extract(
     ) as pbar:
         for r in use_rounds:
             round_dask_array, metadata = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
-            
+
             metadata_path = os.path.join(nbp_file.tile_unfiltered_dir, f"nd2_metadata_r{r}.pkl")
             if not os.path.isfile(metadata_path):
                 if metadata is not None:

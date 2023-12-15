@@ -125,9 +125,10 @@ def run_filter(
     else:
         filter_kernel_dapi = None
 
-    # smooth_kernel = utils.strel.fspecial(*tuple(nbp_scale.r_smooth]))
-    smooth_kernel = np.ones(tuple(np.array(nbp_scale.r_smooth, dtype=int) * 2 - 1))
-    smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
+    if nbp_scale.r_smooth is not None:
+        # smooth_kernel = utils.strel.fspecial(*tuple(nbp_scale.r_smooth]))
+        smooth_kernel = np.ones(tuple(np.array(nbp_scale.r_smooth, dtype=int) * 2 - 1))
+        smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
     if config["deconvolve"]:
         if not os.path.isfile(nbp_file.psf):
             (
@@ -174,7 +175,8 @@ def run_filter(
         nbp_debug.psf_tiles_used = None
 
     if return_image_t:
-        all_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * nbp_extract.continuous_dapi
+        use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
+        all_channels = use_channels_anchor + nbp_basic.use_channels
         channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
         image_t = np.zeros(
             (

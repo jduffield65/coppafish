@@ -69,7 +69,7 @@ def _save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: st
         raise ValueError(f'Unsupported `file_type`: {file_type.lower()}')
 
 
-def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[npt.NDArray[np.uint16], zarr.Array]:
+def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> npt.NDArray[np.uint16]:
     """
     Read in image from file_path location.
 
@@ -78,7 +78,7 @@ def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[
         file_type (str): file type. Either `'.npy'` or `'.zarr'`.
         mmap_mode (str, optional): the mmap_mode for numpy loading only. Default: no mapping.
 
-    Returns `ndarray[uint16]` or `zarr.Array[uint16]`: loaded image.
+    Returns `ndarray[uint16]`: loaded image.
 
     Raises:
         ValueError: unsupported file type.
@@ -86,7 +86,7 @@ def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[
     if file_type.lower() == '.npy':
         return np.load(file_path, mmap_mode=mmap_mode)
     elif file_type.lower() == '.zarr':
-        return zarr.open(file_path, mode='r')
+        return zarr.open(file_path, mode='r')[...]
     else:
         raise ValueError(f'Unsupported `file_type`: {file_type.lower()}')
 
