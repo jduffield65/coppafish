@@ -53,14 +53,7 @@ def run_pipeline(
     Returns:
         Notebook: notebook containing all information gathered during the pipeline.
     """
-    nb = initialize_nb(config_file)
-    if utils.system.get_software_verison() not in nb.get_unique_versions():
-        warnings.warn(f"You are running on software version {utils.system.get_software_verison()}, but the notebook " \
-            + f"contains data run on versions {nb.get_unique_versions()}, are you sure you want to continue? (y or n) ")
-        use_input = input()
-        if not use_input.strip().lower() == 'y':
-            sys.exit()
-    
+    nb = initialize_nb(config_file)    
     if not parallel:
         run_tile_indep_pipeline(nb)
         run_stitch(nb)
@@ -140,6 +133,12 @@ def initialize_nb(config_file: str) -> Notebook:
         nb += nbp_basic
     else:
         warnings.warn('basic_info', utils.warnings.NotebookPageWarning)
+    if utils.system.get_software_verison() not in nb.get_unique_versions():
+        warnings.warn(f"You are running on software version {utils.system.get_software_verison()}, but the notebook " \
+            + f"contains data run on versions {nb.get_unique_versions()}, are you sure you want to continue? (y or n) ")
+        use_input = input()
+        if not use_input.strip().lower() == 'y':
+            sys.exit()
     return nb
 
 
