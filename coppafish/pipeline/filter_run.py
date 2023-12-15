@@ -6,9 +6,10 @@ from tqdm import tqdm
 import numpy.typing as npt
 from typing import Optional, Tuple
 
-from ..setup.notebook import NotebookPage, Notebook
 from .. import utils, extract
 from ..utils import tiles_io
+from ..filter import deconvolution
+from ..setup.notebook import NotebookPage, Notebook
 
 
 def run_filter(
@@ -135,9 +136,10 @@ def run_filter(
                 spot_images,
                 config["psf_intensity_thresh"],
                 psf_tiles_used,
-            ) = extract.get_psf_spots(
+            ) = deconvolution.get_psf_spots(
                 nbp_file,
                 nbp_basic,
+                nbp_extract, 
                 nbp_basic.anchor_round,
                 nbp_basic.use_tiles,
                 nbp_basic.anchor_channel,
@@ -149,8 +151,9 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
+                image_t_raw[nbp_basic.anchor_round, nbp_basic.anchor_channel], 
             )
-            psf = extract.get_psf(spot_images, config["psf_annulus_width"])
+            psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
         else:
             # Know psf only computed for 3D pipeline hence know ndim=3
@@ -163,7 +166,7 @@ def run_filter(
             np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z)])
             + np.array(config["wiener_pad_shape"]) * 2
         )
-        wiener_filter = extract.get_wiener_filter(psf, pad_im_shape, config["wiener_constant"])
+        wiener_filter = deconvolution.get_wiener_filter(psf, pad_im_shape, config["wiener_constant"])
         nbp_debug.psf = psf
         if config["psf_intensity_thresh"] is not None:
             config["psf_intensity_thresh"] = int(config["psf_intensity_thresh"])
@@ -276,7 +279,7 @@ def run_filter(
                                 hist_counts_trc,
                                 nbp_debug.n_clip_pixels[t, r, c],
                                 nbp_debug.clip_extract_scale[t, r, c],
-                            ) = extract.get_extract_info(
+                            ) = deconvolution.get_extract_info(
                                 im,
                                 config["auto_thresh_multiplier"],
                                 hist_bin_edges,
@@ -288,10 +291,7 @@ def run_filter(
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     if not file_exists:
                         if image_t_raw is None:
-                            im_raw = np.asarray(
-                                tiles_io._load_image(file_path_raw, file_type),
-                                dtype=np.uint16,
-                            )
+                            im_raw = tiles_io._load_image(file_path_raw, file_type)
                         else:
                             im_raw = image_t_raw[r, channel_to_index[c]]
                         # zyx -> yxz
@@ -303,7 +303,7 @@ def run_filter(
                         del im_raw
                         # This will deconcolve dapis as well, but I think that is what we want.
                         if config["deconvolve"]:
-                            im = extract.wiener_deconvolve(im, config["wiener_pad_shape"], wiener_filter)
+                            im = deconvolution.wiener_deconvolve(im, config["wiener_pad_shape"], wiener_filter)
                         if c == nbp_basic.dapi_channel:
                             if filter_kernel_dapi is not None:
                                 im = utils.morphology.top_hat(im, filter_kernel_dapi)
@@ -405,5 +405,4 @@ def run_filter(
     nbp.bg_scale = None
     end_time = time.time()
     nbp_debug.time_taken = end_time - start_time
-
     return nbp, nbp_debug, image_t

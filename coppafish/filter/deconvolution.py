@@ -27,16 +27,17 @@ def psf_pad(psf: np.ndarray, image_shape: Union[np.ndarray, List[int]]) -> np.nd
     return np.pad(psf, [(pre_pad[i], post_pad[i]) for i in range(len(pre_pad))])
 
 
-def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
+def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, round: int,
                   use_tiles: List[int], channel: int, use_z: List[int], radius_xy: int, radius_z: int, min_spots: int,
                   intensity_thresh: Optional[float], intensity_auto_param: float, isolation_dist: float,
-                  shape: List[int]) -> Tuple[np.ndarray, float, List[int]]:
+                  shape: List[int], image_trc_raw: np.ndarray = None) -> Tuple[np.ndarray, float, List[int]]:
     """
     Finds spot_shapes about spots found in raw data, average of these then used for psf.
 
     Args:
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
+        nbp_file: `file_names` notebook page.
+        nbp_basic: `basic_info` notebook page.
+        nbp_extract: `extract` notebook page.
         round: Reference round to get spots from to determine psf.
             This should be the anchor round (last round) if using.
         use_tiles: ```int [n_use_tiles]```.
@@ -51,6 +52,8 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
         intensity_auto_param: If ```intensity_thresh = None``` so is automatically computed, it is done using this.
         isolation_dist: Spots are isolated if nearest neighbour is further away than this.
         shape: ```int [y_diameter, x_diameter, z_diameter]```. Desired size of image about each spot.
+        image_trc_raw (`(nz x ny x nx) ndarray[uint16]`, optional): raw image for `round` and `channel`. Default: not 
+            given.
 
     Returns:
         - ```spot_images``` - ```int [n_spots x y_diameter x x_diameter x z_diameter]```.
@@ -66,12 +69,20 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, round: int,
             t = scale.base.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
 
             rda, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
-            # choose tile closet to centre
-            im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, rda, round, use_z)
-
+            # choose tile closest to centre
+            if image_trc_raw is None:
+                im = utils.tiles_io._load_image(nbp_file.tile_unfiltered[t][round][channel], nbp_extract.file_type)
+            else:
+                im = image_trc_raw[use_z]
         else:
             t = scale.base.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
-            im = utils.raw.load_image(nbp_file, nbp_basic, t, channel, None, round, use_z)
+            if image_trc_raw is None:
+                im = utils.tiles_io._load_image(nbp_file.tile_unfiltered[t][round][channel], nbp_extract.file_type)
+            else:
+                im = image_trc_raw[use_z]
+        # zyx -> yxz
+        im = im.transpose((1, 2, 0))
+        del image_trc_raw
         mid_z = np.ceil(im.shape[2] / 2).astype(int)
         median_im = np.median(im[:, :, mid_z])
         if intensity_thresh is None:
