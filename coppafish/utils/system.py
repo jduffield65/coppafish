@@ -19,18 +19,22 @@ def get_software_verison() -> str:
 
 def get_git_revision_hash() -> str:
     """
-    Get the latest git commit full hash.
+    Get the latest git commit full hash if possible.
 
     Returns:
-        str: commit hash.
+        str: commit hash. If failed to find, returns an empty string.
     """
-    return (
-        subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=PurePath(os.path.dirname(os.path.realpath(__file__))).parent
+    try:
+        hash = (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=PurePath(os.path.dirname(os.path.realpath(__file__))).parent
+            )
+            .decode("ascii")
+            .strip()
         )
-        .decode("ascii")
-        .strip()
-    )
+    except FileNotFoundError or subprocess.CalledProcessError or subprocess.SubprocessError:
+        hash = ""
+    return hash
 
 
 def get_available_memory() -> float:
