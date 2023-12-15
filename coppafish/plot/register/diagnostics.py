@@ -858,7 +858,7 @@ def view_pearson_hists(nb, t, num_bins=30):
         num_bins: int number of bins in the histogram
     """
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
-    thresh = nb.get_config()['register']['r_thresh']
+    thresh = nb.get_config()['register']['pearson_r_thresh']
     round_corr = nbp_register_debug.round_shift_corr[t]
     n_rounds = nbp_basic.n_rounds
     cols = n_rounds
