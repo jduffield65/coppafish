@@ -108,6 +108,7 @@ def find_spots(
     ) as pbar:
         # Loop over uncompleted tiles, rounds and channels
         for t, r, c in np.argwhere(uncompleted):
+            pbar.set_postfix({"tile": t, "round": r, "channel": c})
             # Then need to shift the detect_spots and check_neighb_intensity thresh correspondingly.
             if image_t is None:
                 image_trc = tiles_io.load_image(
