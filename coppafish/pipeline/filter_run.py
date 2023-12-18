@@ -396,6 +396,7 @@ def run_filter(
                                 suffix="_raw" if r == pre_seq_round else "",
                                 num_rotations=config["num_rotations"],
                             )
+                            del im
                             if return_filtered_image:
                                 image_t[r, c] = saved_im
                             pixel_unique_values, pixel_unique_counts = np.unique(saved_im, return_counts=True)
