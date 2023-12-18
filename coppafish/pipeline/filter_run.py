@@ -7,6 +7,7 @@ import numpy.typing as npt
 from typing import Optional, Tuple
 
 from .. import utils, extract
+from ..register import preprocessing
 from ..utils import tiles_io
 from ..filter import deconvolution
 from ..setup.notebook import NotebookPage, Notebook
@@ -276,7 +277,10 @@ def run_filter(
                                     c,
                                     yxz=[None, None, nbp_debug.z_info],
                                     suffix="_raw" if r == pre_seq_round else "",
+                                    apply_shift=False, 
                                 )
+                                if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+                                    im = preprocessing.apply_image_shift(im, -nbp_basic.tile_pixel_value_shift)
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             (
