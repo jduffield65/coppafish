@@ -111,6 +111,17 @@ def run_filter(
     # initialise debugging info as 'debug' page
     nbp_debug.n_clip_pixels = np.zeros_like(nbp.auto_thresh, dtype=int)
     nbp_debug.clip_extract_scale = np.zeros_like(nbp.auto_thresh)
+    nbp_debug.pixel_unique_values = np.full(
+        (
+            nbp_basic.n_tiles,
+            nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+            nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
@@ -163,7 +174,6 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
-                image_t_raw[nbp_basic.anchor_round, nbp_basic.anchor_channel], 
             )
             psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
@@ -382,6 +392,9 @@ def run_filter(
                             )
                             if return_image_t:
                                 image_t[r, c] = saved_im
+                            pixel_unique_values, pixel_unique_counts = np.unique(saved_im, return_counts=True)
+                            nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
+                            nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
                             del saved_im
                         else:
                             im_all_channels_2d[c] = im

@@ -308,7 +308,12 @@
       "z plane in *npy* file from which `auto_thresh` and `hist_counts` were calculated. By default, this is the mid ", 
       "plane."], 
     "time_taken": ["Float",
-      "Time taken to run through the filter section."]
+      "Time taken to run through the filter section."],
+    "pixel_unique_values": ["`(n_tiles x (n_rounds + n_extra_rounds) x n_channels x 2**16-1) ndarray[int]`",
+      "A list of every unique image pixel value in each extracted image. Unused array spaces are filled with zeros."],
+    "pixel_unique_counts": ["`(n_tiles x (n_rounds + n_extra_rounds) x n_channels x 2**16-1) ndarray[int]`",
+      "A list of unique pixel counts of each unique image pixel value in each extracted image. Unused array spaces ", 
+      "are filled with zeros."]
   }, 
 
   "find_spots":

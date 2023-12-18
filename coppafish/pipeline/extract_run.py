@@ -93,7 +93,7 @@ def run_extract(
         )
     else:
         image_t = None
-    all_pixel_unique_values = np.full(
+    nbp_debug.pixel_unique_values = np.full(
         (
             nbp_basic.n_tiles,
             nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
@@ -103,7 +103,7 @@ def run_extract(
         fill_value=0,
         dtype=int, 
     )
-    all_pixel_unique_counts = all_pixel_unique_values.copy()
+    nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     with tqdm(
         total=n_images, desc=f"Loading raw {nbp_file.raw_extension} tiles and saving as {config['file_type']}"
@@ -160,12 +160,10 @@ def run_extract(
                         if return_image_t:
                             image_t[r, c] = im
                         pixel_unique_values, pixel_unique_counts = np.unique(im, return_counts=True)
-                        all_pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
-                        all_pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
+                        nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
+                        nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
                         del im
                         pbar.update(1)
     end_time = time.time()
-    nbp_debug.pixel_unique_values = all_pixel_unique_values
-    nbp_debug.pixel_unique_counts = all_pixel_unique_counts
     nbp_debug.time_taken = end_time - start_time
     return nbp, nbp_debug, image_t
