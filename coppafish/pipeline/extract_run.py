@@ -40,7 +40,6 @@ def run_extract(
         - See `'extract'` and `'extract_debug'` sections of `notebook_comments.json` file for description of the
             variables in each page.
     """
-    #TODO: Add a warning if _version.py version of software is not the same as the extracted tiles version
     # initialise notebook pages
     if not nbp_basic.is_3d:
         # config["deconvolve"] = False  # only deconvolve if 3d pipeline
@@ -82,13 +81,10 @@ def run_extract(
 
     return_image_t = len(nbp_basic.use_tiles) == 1
     if return_image_t:
-        use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
-        all_channels = use_channels_anchor + nbp_basic.use_channels
-        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
         image_t = np.zeros(
             (
-                max(use_rounds) + 1,
-                len(all_channels) + 1,
+                nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                nbp_basic.n_channels,
                 nbp_basic.nz,
                 nbp_basic.tile_sz,
                 nbp_basic.tile_sz,
@@ -97,6 +93,26 @@ def run_extract(
         )
     else:
         image_t = None
+    all_pixel_unique_values = np.full(
+        (
+            nbp_basic.n_tiles,
+            nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+            nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    all_pixel_unique_counts = np.full(
+        (
+            nbp_basic.n_tiles,
+            nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+            nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
 
     with tqdm(
         total=n_images, desc=f"Loading raw {nbp_file.raw_extension} tiles and saving as {config['file_type']}"
@@ -151,9 +167,14 @@ def run_extract(
                             im = im.transpose((2, 0, 1))
                             tiles_io._save_image(im, file_path, config["file_type"])
                         if return_image_t:
-                            image_t[r, channel_to_index[c]] = im
+                            image_t[r, c] = im
+                        pixel_unique_values, pixel_unique_counts = np.unique(im, return_counts=True)
+                        all_pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
+                        all_pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
                         del im
                         pbar.update(1)
     end_time = time.time()
+    nbp_debug.pixel_unique_values = all_pixel_unique_values
+    nbp_debug.pixel_unique_counts = all_pixel_unique_counts
     nbp_debug.time_taken = end_time - start_time
     return nbp, nbp_debug, image_t

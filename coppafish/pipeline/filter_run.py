@@ -72,13 +72,10 @@ def run_filter(
         n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     return_image_t = len(nbp_basic.use_tiles) == 1
     if return_image_t:
-        use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
-        all_channels = use_channels_anchor + nbp_basic.use_channels
-        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
         image_t = np.zeros(
             (
-                max(use_rounds) + 1,
-                len(all_channels) + 1,
+                nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                nbp_basic.n_channels,
                 nbp_basic.nz,
                 nbp_basic.tile_sz,
                 nbp_basic.tile_sz,
@@ -166,7 +163,7 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
-                image_t_raw[nbp_basic.anchor_round, channel_to_index[nbp_basic.anchor_channel]], 
+                image_t_raw[nbp_basic.anchor_round, nbp_basic.anchor_channel], 
             )
             psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
@@ -291,7 +288,7 @@ def run_filter(
                         if image_t_raw is None:
                             im_raw = tiles_io._load_image(file_path_raw, file_type)
                         else:
-                            im_raw = image_t_raw[r, channel_to_index[c]]
+                            im_raw = image_t_raw[r, c]
                         # zyx -> yxz
                         im_raw = im_raw.transpose((1, 2, 0))
 
@@ -384,7 +381,7 @@ def run_filter(
                                 num_rotations=config["num_rotations"],
                             )
                             if return_image_t:
-                                image_t[r, channel_to_index[c]] = saved_im
+                                image_t[r, c] = saved_im
                             del saved_im
                         else:
                             im_all_channels_2d[c] = im
