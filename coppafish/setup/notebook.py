@@ -1012,9 +1012,24 @@ def merge_extract_debug(nbp_extract_debug_list: List[NotebookPage], master_nbp_b
     master_nbp_extract_debug = NotebookPage('extract_debug')
 
     time_taken = 0
-    for i, _ in enumerate(master_nbp_basic.use_tiles):
+    pixel_unique_values = np.full(
+        (
+            master_nbp_basic.n_tiles,
+            master_nbp_basic.n_rounds + master_nbp_basic.n_extra_rounds,
+            master_nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    pixel_unique_counts = pixel_unique_values.copy()
+    for i, tile in enumerate(master_nbp_basic.use_tiles):
         time_taken += nbp_extract_debug_list[i].time_taken
+        pixel_unique_values[tile] = nbp_extract_debug_list[i].pixel_unique_values[tile]
+        pixel_unique_counts[tile] = nbp_extract_debug_list[i].pixel_unique_counts[tile]
     master_nbp_extract_debug.time_taken = time_taken
+    master_nbp_extract_debug.pixel_unique_values = pixel_unique_values
+    master_nbp_extract_debug.pixel_unique_counts = pixel_unique_counts
 
     return master_nbp_extract_debug
 

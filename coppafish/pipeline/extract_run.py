@@ -103,16 +103,7 @@ def run_extract(
         fill_value=0,
         dtype=int, 
     )
-    all_pixel_unique_counts = np.full(
-        (
-            nbp_basic.n_tiles,
-            nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
-            nbp_basic.n_channels,
-            np.iinfo(np.uint16).max,
-        ),
-        fill_value=0,
-        dtype=int, 
-    )
+    all_pixel_unique_counts = all_pixel_unique_values.copy()
 
     with tqdm(
         total=n_images, desc=f"Loading raw {nbp_file.raw_extension} tiles and saving as {config['file_type']}"
