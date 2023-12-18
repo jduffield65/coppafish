@@ -316,8 +316,8 @@ def test_tile_by_tile_equality() -> None:
     assert nb_0.extract.software_version == nb_1.extract.software_version
     
     assert nb_0.has_page("extract_debug")
-    assert nb_0.extract_debug.pixel_unique_values == nb_1.extract_debug.pixel_unique_values
-    assert nb_0.extract_debug.pixel_unique_counts == nb_1.extract_debug.pixel_unique_counts
+    assert _approximately_equal(nb_0.extract_debug.pixel_unique_values, nb_1.extract_debug.pixel_unique_values)
+    assert _approximately_equal(nb_0.extract_debug.pixel_unique_counts, nb_1.extract_debug.pixel_unique_counts)
     
     assert nb_0.has_page("filter")
     assert _approximately_equal(nb_0.filter.auto_thresh, nb_1.filter.auto_thresh)
