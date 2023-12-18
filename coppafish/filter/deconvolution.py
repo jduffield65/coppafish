@@ -93,6 +93,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
             for i in range(chosen_spots.shape[0]):
                 if n_isolated_spots == maximum_spots:
                     chosen_spots[i:] = False
+                    n_spots = maximum_spots
                     break
                 if chosen_spots[i]:
                     n_isolated_spots += 1
