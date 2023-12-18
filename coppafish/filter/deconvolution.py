@@ -74,7 +74,6 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
             im = utils.tiles_io._load_image(nbp_file.tile_unfiltered[t][round][channel], nbp_extract.file_type)
         # zyx -> yxz
         im = im.transpose((1, 2, 0))
-        del image_trc_raw
         mid_z = np.ceil(im.shape[2] / 2).astype(int)
         median_im = np.median(im[:, :, mid_z])
         if intensity_thresh is None:
