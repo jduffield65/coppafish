@@ -54,6 +54,22 @@ def run_filter(
 
     start_time = time.time()
     file_type = nbp_extract.file_type
+    # get rounds to iterate over
+    use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
+    use_channels_anchor.sort()
+    if nbp_basic.use_anchor:
+        # always have anchor as first round after imaging rounds
+        round_files = nbp_file.round + [nbp_file.anchor]
+        use_rounds = np.arange(len(round_files))
+        n_images = (
+            (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
+            + len(nbp_basic.use_tiles) * len(use_channels_anchor)
+            + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * nbp_extract.continuous_dapi
+        )
+    else:
+        round_files = nbp_file.round
+        use_rounds = nbp_basic.use_rounds
+        n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     return_image_t = len(nbp_basic.use_tiles) == 1
     if return_image_t:
         use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
@@ -98,23 +114,6 @@ def run_filter(
     # initialise debugging info as 'debug' page
     nbp_debug.n_clip_pixels = np.zeros_like(nbp.auto_thresh, dtype=int)
     nbp_debug.clip_extract_scale = np.zeros_like(nbp.auto_thresh)
-
-    # get rounds to iterate over
-    use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
-    use_channels_anchor.sort()
-    if nbp_basic.use_anchor:
-        # always have anchor as first round after imaging rounds
-        round_files = nbp_file.round + [nbp_file.anchor]
-        use_rounds = np.arange(len(round_files))
-        n_images = (
-            (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
-            + len(nbp_basic.use_tiles) * len(use_channels_anchor)
-            + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * nbp_extract.continuous_dapi
-        )
-    else:
-        round_files = nbp_file.round
-        use_rounds = nbp_basic.use_rounds
-        n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
