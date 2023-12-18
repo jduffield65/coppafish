@@ -165,7 +165,8 @@ def run_extract(
                         del im
                         nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
                         nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
-                        pbar.update(1)
+                    pbar.update(1)
+            del round_dask_array
     end_time = time.time()
     nbp_debug.time_taken = end_time - start_time
     return nbp, nbp_debug, image_t
