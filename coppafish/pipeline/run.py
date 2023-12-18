@@ -97,7 +97,7 @@ def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None
             nb_tile = run_find_spots(nb_tile, image_t_filtered)
             del image_t_filtered
         nb = setup.merge_notebooks(nb_tiles, nb)
-    elif nb.basic_info.n_tiles == 1:
+    elif run_tile_by_tile and nb.basic_info.n_tiles == 1:
         image_t_raw = run_extract(nb)
         image_t_filtered = run_filter(nb, image_t_raw)
         del image_t_raw
