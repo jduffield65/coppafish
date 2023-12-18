@@ -177,6 +177,7 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
+                maximum_spots=10_000, 
             )
             psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis

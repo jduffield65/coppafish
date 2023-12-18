@@ -30,7 +30,7 @@ def psf_pad(psf: np.ndarray, image_shape: Union[np.ndarray, List[int]]) -> np.nd
 def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: NotebookPage, round: int,
                   use_tiles: List[int], channel: int, use_z: List[int], radius_xy: int, radius_z: int, min_spots: int,
                   intensity_thresh: Optional[float], intensity_auto_param: float, isolation_dist: float,
-                  shape: List[int]) -> Tuple[np.ndarray, float, List[int]]:
+                  shape: List[int], maximum_spots: Optional[int] = None) -> Tuple[np.ndarray, float, List[int]]:
     """
     Finds spot_shapes about spots found in raw data, average of these then used for psf.
 
@@ -52,6 +52,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
         intensity_auto_param: If ```intensity_thresh = None``` so is automatically computed, it is done using this.
         isolation_dist: Spots are isolated if nearest neighbour is further away than this.
         shape: ```int [y_diameter, x_diameter, z_diameter]```. Desired size of image about each spot.
+        maximum_spots (int, optional): maximum number of psf spots to get. Default: no maximum.
 
     Returns:
         - ```spot_images``` - ```int [n_spots x y_diameter x x_diameter x z_diameter]```.
@@ -65,13 +66,12 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
     while n_spots < min_spots:
         if nbp_file.raw_extension == 'jobs':
             t = scale.base.central_tile(nbp_basic.tilepos_yx_nd2, use_tiles)
-
-            rda, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=round)
             # choose tile closest to centre
             im = utils.tiles_io._load_image(nbp_file.tile_unfiltered[t][round][channel], nbp_extract.file_type)
         else:
             t = scale.base.central_tile(nbp_basic.tilepos_yx, use_tiles)  # choose tile closet to centre
             im = utils.tiles_io._load_image(nbp_file.tile_unfiltered[t][round][channel], nbp_extract.file_type)
+        im = im[[z - 1 for z in use_z], :, :]
         # zyx -> yxz
         im = im.transpose((1, 2, 0))
         mid_z = np.ceil(im.shape[2] / 2).astype(int)
@@ -82,10 +82,13 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
             raise utils.errors.OutOfBoundsError("intensity_thresh", intensity_thresh, median_im,
                                                 np.iinfo(np.uint16).max)
         spot_yxz, _ = find_spots.detect_spots(im, intensity_thresh, radius_xy, radius_z, True)
+        print(f"{spot_yxz=}")
+        if maximum_spots is not None and spot_yxz.shape[0] > maximum_spots:
+            spot_yxz = spot_yxz[:maximum_spots]
         # check fall off in intensity not too large
         not_single_pixel = find_spots.check_neighbour_intensity(im, spot_yxz, median_im)
         isolated = find_spots.get_isolated_points(
-            spot_yxz * [1, 1, nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy], isolation_dist
+            spot_yxz * [1, 1, nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy], isolation_dist, 
         )
         spot_yxz = spot_yxz[np.logical_and(isolated, not_single_pixel), :]
         if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots / 4:
