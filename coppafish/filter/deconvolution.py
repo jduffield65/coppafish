@@ -61,7 +61,7 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
         - ```tiles_used``` - ```int [n_tiles_used]```. Tiles the spots were found on.
     """
     n_spots = 0
-    spot_images = np.zeros((0, shape[0], shape[1], shape[2]), dtype=int)
+    spot_images = np.zeros((0, shape[0], shape[1], shape[2]), dtype=np.float32)
     tiles_used = []
     while n_spots < min_spots:
         if nbp_file.raw_extension == 'jobs':
@@ -102,7 +102,10 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
             # raise error on first tile if looks like we are going to use more than 4 tiles
             raise ValueError(f"\nFirst tile, {t}, only found {np.shape(spot_yxz)[0]} spots."
                              f"\nMaybe consider lowering intensity_thresh from current value of {intensity_thresh}.")
-        spot_images = np.append(spot_images, utils.spot_images.get_spot_images(im, spot_yxz, shape), axis=0)
+        if spot_images.size > 0:
+            spot_images = np.append(spot_images, utils.spot_images.get_spot_images(im, spot_yxz, shape), axis=0)
+        else:
+            spot_images = utils.spot_images.get_spot_images(im, spot_yxz, shape)
         n_spots = np.shape(spot_images)[0]
         use_tiles = np.setdiff1d(use_tiles, t)
         tiles_used.append(t)
