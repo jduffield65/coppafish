@@ -21,6 +21,7 @@
  * The notebook now contains variables pixel_unique_values and pixel_unique_counts in 'extract_debug' and 
     'filter_debug' pages. They contain a count of every unique pixel in the unfiltered and filtered images for future 
     diagnostics.
+ * psf spot count is now limited to no more than 7,500 to stop memory crashes in filter section.
  * Fixed a register image shifting bug.
  * Fixed deconvolution bug.
  * Silenced notebook numpy-related warning.
