@@ -290,7 +290,7 @@ def run_filter(
                                 hist_counts_trc,
                                 nbp_debug.n_clip_pixels[t, r, c],
                                 nbp_debug.clip_extract_scale[t, r, c],
-                            ) = deconvolution.get_extract_info(
+                            ) = extract.base.get_extract_info(
                                 im,
                                 config["auto_thresh_multiplier"],
                                 hist_bin_edges,
