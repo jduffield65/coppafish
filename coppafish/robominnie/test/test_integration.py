@@ -324,6 +324,17 @@ def test_tile_by_tile_equality() -> None:
     assert _approximately_equal(nb_0.filter.hist_counts, nb_1.filter.hist_counts)
     assert _approximately_equal(nb_0.filter.hist_values, nb_1.filter.hist_values)
     
+    assert nb_0.has_page("filter_debug")
+    assert _approximately_equal(nb_0.filter_debug.clip_extract_scale, nb_1.filter_debug.clip_extract_scale)
+    assert _approximately_equal(nb_0.filter_debug.n_clip_pixels, nb_1.filter_debug.n_clip_pixels)
+    assert _approximately_equal(nb_0.filter_debug.pixel_unique_values, nb_1.filter_debug.pixel_unique_values)
+    assert _approximately_equal(nb_0.filter_debug.pixel_unique_counts, nb_1.filter_debug.pixel_unique_counts)
+    assert _approximately_equal(nb_0.filter_debug.psf, nb_1.filter_debug.psf)
+    assert _approximately_equal(nb_0.filter_debug.psf_intensity_thresh, nb_1.filter_debug.psf_intensity_thresh)
+    assert _approximately_equal(nb_0.filter_debug.psf_tiles_used, nb_1.filter_debug.psf_tiles_used)
+    assert _approximately_equal(nb_0.filter_debug.r_dapi, nb_1.filter_debug.r_dapi)
+    assert _approximately_equal(nb_0.filter_debug.z_info, nb_1.filter_debug.z_info)
+    
     assert nb_0.has_page("find_spots")
     assert _approximately_equal(nb_0.find_spots.isolated_spots, nb_1.find_spots.isolated_spots)
     assert _approximately_equal(nb_0.find_spots.isolation_thresh, nb_1.find_spots.isolation_thresh)
