@@ -82,14 +82,19 @@ def get_psf_spots(nbp_file: NotebookPage, nbp_basic: NotebookPage, nbp_extract: 
             raise utils.errors.OutOfBoundsError("intensity_thresh", intensity_thresh, median_im,
                                                 np.iinfo(np.uint16).max)
         spot_yxz, _ = find_spots.detect_spots(im, intensity_thresh, radius_xy, radius_z, True)
-        print(f"{spot_yxz=}")
-        if maximum_spots is not None and spot_yxz.shape[0] > maximum_spots:
-            spot_yxz = spot_yxz[:maximum_spots]
         # check fall off in intensity not too large
         not_single_pixel = find_spots.check_neighbour_intensity(im, spot_yxz, median_im)
         isolated = find_spots.get_isolated_points(
             spot_yxz * [1, 1, nbp_basic.pixel_size_z / nbp_basic.pixel_size_xy], isolation_dist, 
         )
+        if maximum_spots is not None and np.sum(isolated) > maximum_spots:
+            n_isolated_spots = 0
+            for i in range(isolated.shape[0]):
+                if n_isolated_spots == maximum_spots:
+                    isolated[i:] = False
+                    break
+                if isolated[i]:
+                    n_isolated_spots += 1
         spot_yxz = spot_yxz[np.logical_and(isolated, not_single_pixel), :]
         if n_spots == 0 and np.shape(spot_yxz)[0] < min_spots / 4:
             # raise error on first tile if looks like we are going to use more than 4 tiles
