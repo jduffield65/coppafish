@@ -16,6 +16,7 @@ def run_extract(
     nbp_file: NotebookPage,
     nbp_basic: NotebookPage,
     nbp_scale: NotebookPage,
+    return_image_t_raw: Optional[bool] = False, 
 ) -> Tuple[NotebookPage, NotebookPage, Optional[np.ndarray]]:
     """
     This reads in images from the raw `nd2` files, filters them and then saves them as `config[extract][file_type]`
@@ -44,6 +45,8 @@ def run_extract(
     if not nbp_basic.is_3d:
         # config["deconvolve"] = False  # only deconvolve if 3d pipeline
         raise NotImplementedError(f"coppafish 2d is not in a stable state, please contact a dev to add this. Sorry! ;(")
+    if return_image_t_raw:
+        assert len(nbp_basic.use_tiles) == 1, "The notebook must contain a single tile to return its image"
 
     start_time = time.time()
     nbp = NotebookPage("extract")
@@ -79,8 +82,7 @@ def run_extract(
     else:
         pre_seq_round = None
 
-    return_image_t = len(nbp_basic.use_tiles) == 1
-    if return_image_t:
+    if return_image_t_raw:
         image_t = np.zeros(
             (
                 nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
@@ -157,12 +159,12 @@ def run_extract(
                             # yxz -> zyx
                             im = im.transpose((2, 0, 1))
                             tiles_io._save_image(im, file_path, config["file_type"])
-                        if return_image_t:
+                        if return_image_t_raw:
                             image_t[r, c] = im
                         pixel_unique_values, pixel_unique_counts = np.unique(im, return_counts=True)
+                        del im
                         nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
                         nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
-                        del im
                         pbar.update(1)
     end_time = time.time()
     nbp_debug.time_taken = end_time - start_time

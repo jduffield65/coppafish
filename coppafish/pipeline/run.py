@@ -91,14 +91,14 @@ def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None
         # Load one tile image into memory to run in both find_spots and register
         nb_tiles = setup.notebook.split_by_tiles(nb)
         for nb_tile in nb_tiles:
-            image_t_raw = run_extract(nb_tile)
+            image_t_raw = run_extract(nb_tile, return_image_t=True)
             image_t_filtered = run_filter(nb_tile, image_t_raw, return_filtered_image=True)
             del image_t_raw
             nb_tile = run_find_spots(nb_tile, image_t_filtered)
             del image_t_filtered
         nb = setup.merge_notebooks(nb_tiles, nb)
     elif run_tile_by_tile and nb.basic_info.n_tiles == 1:
-        image_t_raw = run_extract(nb)
+        image_t_raw = run_extract(nb, return_image_t=True)
         image_t_filtered = run_filter(nb, image_t_raw, return_filtered_image=True)
         del image_t_raw
         run_find_spots(nb, image_t_filtered)
@@ -164,7 +164,7 @@ def run_scale(nb: Notebook) -> None:
         warnings.warn('scale', utils.warnings.NotebookPageWarning)
     
 
-def run_extract(nb: Notebook) -> Optional[np.ndarray]:
+def run_extract(nb: Notebook, return_image_t: Optional[bool] = False) -> Optional[np.ndarray]:
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -174,6 +174,7 @@ def run_extract(nb: Notebook) -> Optional[np.ndarray]:
 
     Args:
         nb: `Notebook` containing `file_names`, `basic_info` and `scale` pages.
+        return_image_t (bool, optional): return the extracted, unfiltered image for a single tile. Default: false.
         
     Returns:
         `(n_rounds x n_channels x nz x ny x nx) ndarray[uint16]` or None: all extracted images if running on a single 
@@ -181,7 +182,9 @@ def run_extract(nb: Notebook) -> Optional[np.ndarray]:
     """
     if not all(nb.has_page(["extract", "extract_debug"])):
         config = nb.get_config()
-        nbp, nbp_debug, image_t_raw = extract_run.run_extract(config['extract'], nb.file_names, nb.basic_info, nb.scale)
+        nbp, nbp_debug, image_t_raw = extract_run.run_extract(
+            config['extract'], nb.file_names, nb.basic_info, nb.scale, return_image_t, 
+        )
         nb += nbp
         nb += nbp_debug
         return image_t_raw
