@@ -203,7 +203,7 @@ def test_tile_by_tile_equality() -> None:
         )):
             equal = np.isclose(a, b, equal_nan=True)
         elif isinstance(a, (np.ndarray)):
-            if isinstance(a.dtype, (bool, str, np.str_)):
+            if "bool" in a.dtype.name or "str" in a.dtype.name:
                 equal = (a == b).all()
             else:
                 equal = np.allclose(a, b, equal_nan=True)
