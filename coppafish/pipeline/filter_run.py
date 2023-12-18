@@ -47,9 +47,11 @@ def run_filter(
     if not nbp_basic.is_3d:
         NotImplementedError(f"2d coppafish is not stable, very sorry! :9")
     if image_t_raw is not None:
-        assert len(nbp_basic.use_tiles) == 1, "If image_t is given, notebook must contain a single tile in use_tiles"
+        assert len(nbp_basic.use_tiles) == 1 and nbp_basic.n_tiles == 1, \
+            "If image_t is given, the notebook must contain a single tile"
     if return_filtered_image:
-        assert len(nbp_basic.n_tiles) == 1, "To return a filtered image, filter must be run on a single tile"
+        assert len(nbp_basic.use_tiles) == 1 and nbp_basic.n_tiles == 1, \
+            "To return a filtered image, filter must be run on a single tile"
 
     nbp = NotebookPage("filter")
     nbp_debug = NotebookPage("filter_debug")
