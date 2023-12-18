@@ -140,6 +140,7 @@ def initialize_nb(config_file: str) -> Notebook:
             + f"contains data run on versions {nb.get_unique_versions()}, are you sure you want to continue? (y or n) ")
         use_input = input()
         if not use_input.strip().lower() == 'y':
+            print("Exiting...")
             sys.exit()
     return nb
 
