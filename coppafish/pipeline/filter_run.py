@@ -20,6 +20,7 @@ def run_filter(
     nbp_scale: NotebookPage,
     nbp_extract: NotebookPage,
     image_t_raw: Optional[npt.NDArray[np.uint16]] = None,
+    return_filtered_image: Optional[bool] = False, 
 ) -> Tuple[NotebookPage, NotebookPage, Optional[npt.NDArray[np.uint16]]]:
     """
     Read in extracted raw images, filter them, then re-save in a different location.
@@ -47,6 +48,8 @@ def run_filter(
         NotImplementedError(f"2d coppafish is not stable, very sorry! :9")
     if image_t_raw is not None:
         assert len(nbp_basic.use_tiles) == 1, "If image_t is given, notebook must contain a single tile in use_tiles"
+    if return_filtered_image:
+        assert len(nbp_basic.n_tiles) == 1, "To return a filtered image, filter must be run on a single tile"
 
     nbp = NotebookPage("filter")
     nbp_debug = NotebookPage("filter_debug")
@@ -71,8 +74,7 @@ def run_filter(
         round_files = nbp_file.round
         use_rounds = nbp_basic.use_rounds
         n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
-    return_image_t = len(nbp_basic.use_tiles) == 1
-    if return_image_t:
+    if return_filtered_image:
         image_t = np.zeros(
             (
                 nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
@@ -394,7 +396,7 @@ def run_filter(
                                 suffix="_raw" if r == pre_seq_round else "",
                                 num_rotations=config["num_rotations"],
                             )
-                            if return_image_t:
+                            if return_filtered_image:
                                 image_t[r, c] = saved_im
                             pixel_unique_values, pixel_unique_counts = np.unique(saved_im, return_counts=True)
                             nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values

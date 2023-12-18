@@ -92,14 +92,14 @@ def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None
         nb_tiles = setup.notebook.split_by_tiles(nb)
         for nb_tile in nb_tiles:
             image_t_raw = run_extract(nb_tile)
-            image_t_filtered = run_filter(nb_tile, image_t_raw)
+            image_t_filtered = run_filter(nb_tile, image_t_raw, return_filtered_image=True)
             del image_t_raw
             nb_tile = run_find_spots(nb_tile, image_t_filtered)
             del image_t_filtered
         nb = setup.merge_notebooks(nb_tiles, nb)
     elif run_tile_by_tile and nb.basic_info.n_tiles == 1:
         image_t_raw = run_extract(nb)
-        image_t_filtered = run_filter(nb, image_t_raw)
+        image_t_filtered = run_filter(nb, image_t_raw, return_filtered_image=True)
         del image_t_raw
         run_find_spots(nb, image_t_filtered)
         del image_t_filtered
@@ -190,7 +190,8 @@ def run_extract(nb: Notebook) -> Optional[np.ndarray]:
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
+def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None, return_filtered_image: Optional[bool] = False
+               ) -> Optional[np.ndarray]:
     """
     Run `filter` step of the pipeline to produce filtered images in the tile directory.
 
@@ -198,6 +199,7 @@ def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Option
         nb (Notebook): `Notebook` containing `file_names`, `basic_info`, `scale` and `extract` pages.
         image_t_raw (n_rounds x n_channels x ny x nx x nz): the raw, extracted image for single tile, only given when 
             running on one tile. Default: not given.
+        return_filtered_image (bool, optional): return the filtered image for a single tile. Default: false.
     """
     if not nb.has_page('filter'):
         config = nb.get_config()
@@ -208,6 +210,7 @@ def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Option
             nb.scale, 
             nb.extract, 
             image_t_raw, 
+            return_filtered_image, 
         )
         nb += nbp
         nb += nbp_debug
