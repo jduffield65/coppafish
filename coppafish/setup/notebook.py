@@ -1133,16 +1133,31 @@ def merge_filter_debug(nbp_filter_debug_list: List[NotebookPage], master_nbp_bas
     # Initialise non-trivial variables
     n_clip_pixels = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels), dtype=int)
     clip_extract_scale = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels))
+    pixel_unique_values = np.full(
+        (
+            master_nbp_basic.n_tiles,
+            master_nbp_basic.n_rounds + master_nbp_basic.n_extra_rounds,
+            master_nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    pixel_unique_counts = pixel_unique_values.copy()
     time_taken = 0.
     # Loop over all tiles in use and assign these their proper values
     for i, tile in enumerate(use_tiles):
         n_clip_pixels[tile] = nbp_filter_debug_list[i].n_clip_pixels[tile]
         clip_extract_scale[tile] = nbp_filter_debug_list[i].clip_extract_scale[tile]
         time_taken += nbp_filter_debug_list[i].time_taken
+        pixel_unique_values[tile] = nbp_filter_debug_list[i].pixel_unique_values[tile]
+        pixel_unique_counts[tile] = nbp_filter_debug_list[i].pixel_unique_counts[tile]
 
     # Assign these values to the notebook page
     master_nbp_filter_debug.n_clip_pixels = n_clip_pixels
     master_nbp_filter_debug.clip_extract_scale = clip_extract_scale
+    master_nbp_filter_debug.pixel_unique_values = pixel_unique_values
+    master_nbp_filter_debug.pixel_unique_counts = pixel_unique_counts
     master_nbp_filter_debug.time_taken = time_taken
     
     return master_nbp_filter_debug
