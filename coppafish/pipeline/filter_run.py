@@ -55,6 +55,22 @@ def run_filter(
     start_time = time.time()
     file_type = nbp_extract.file_type
     return_image_t = len(nbp_basic.use_tiles) == 1
+    if return_image_t:
+        use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
+        all_channels = use_channels_anchor + nbp_basic.use_channels
+        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
+        image_t = np.zeros(
+            (
+                max(use_rounds) + 1,
+                len(all_channels) + 1,
+                nbp_basic.nz,
+                nbp_basic.tile_sz,
+                nbp_basic.tile_sz,
+            ),
+            dtype=np.uint16,
+        )
+    else:
+        image_t = None
 
     # initialise output of this part of pipeline as 'vars' key
     nbp.auto_thresh = np.zeros(
@@ -151,7 +167,7 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
-                image_t_raw[nbp_basic.anchor_round, nbp_basic.anchor_channel], 
+                image_t_raw[nbp_basic.anchor_round, channel_to_index[nbp_basic.anchor_channel]], 
             )
             psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
@@ -176,23 +192,6 @@ def run_filter(
         nbp_debug.psf = None
         nbp_debug.psf_intensity_thresh = None
         nbp_debug.psf_tiles_used = None
-
-    if return_image_t:
-        use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
-        all_channels = use_channels_anchor + nbp_basic.use_channels
-        channel_to_index = utils.base.get_index_mapping(list(set(all_channels)))
-        image_t = np.zeros(
-            (
-                max(use_rounds) + 1,
-                len(all_channels) + 1,
-                nbp_basic.nz,
-                nbp_basic.tile_sz,
-                nbp_basic.tile_sz,
-            ),
-            dtype=np.uint16,
-        )
-    else:
-        image_t = None
 
     with tqdm(
         total=n_images,
