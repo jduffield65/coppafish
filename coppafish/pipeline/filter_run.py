@@ -65,15 +65,9 @@ def run_filter(
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]
         use_rounds = np.arange(len(round_files))
-        n_images = (
-            (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
-            + len(nbp_basic.use_tiles) * len(use_channels_anchor)
-            + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * nbp_extract.continuous_dapi
-        )
     else:
         round_files = nbp_file.round
         use_rounds = nbp_basic.use_rounds
-        n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     if return_filtered_image:
         image_t = np.zeros(
             (
@@ -131,7 +125,6 @@ def run_filter(
         round_files = round_files + [nbp_file.pre_seq]
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
-        n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     else:
         pre_seq_round = None
 
@@ -204,7 +197,7 @@ def run_filter(
         nbp_debug.psf_tiles_used = None
 
     with tqdm(
-        total=n_images,
+        total=len(use_rounds) * len(nbp_basic.use_tiles) * len(use_channels),
         desc=f"Filtering extracted {nbp_extract.file_type} files",
     ) as pbar:
         for r in use_rounds:

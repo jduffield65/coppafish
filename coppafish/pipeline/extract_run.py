@@ -16,7 +16,7 @@ def run_extract(
     nbp_file: NotebookPage,
     nbp_basic: NotebookPage,
     nbp_scale: NotebookPage,
-    return_image_t_raw: bool = False, 
+    return_image_t_raw: bool = False,
 ) -> Tuple[NotebookPage, NotebookPage, Optional[np.ndarray]]:
     """
     This reads in images from the raw `nd2` files, filters them and then saves them as `config[extract][file_type]`
@@ -63,22 +63,15 @@ def run_extract(
         # always have anchor as first round after imaging rounds
         round_files = nbp_file.round + [nbp_file.anchor]
         use_rounds = np.arange(len(round_files))
-        n_images = (
-            (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
-            + len(nbp_basic.use_tiles) * len(use_channels_anchor)
-            + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * config["continuous_dapi"]
-        )
     else:
         round_files = nbp_file.round
         use_rounds = nbp_basic.use_rounds
-        n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
         round_files = round_files + [nbp_file.pre_seq]
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
-        n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     else:
         pre_seq_round = None
 
@@ -103,12 +96,13 @@ def run_extract(
             np.iinfo(np.uint16).max,
         ),
         fill_value=0,
-        dtype=int, 
+        dtype=int,
     )
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     with tqdm(
-        total=n_images, desc=f"Extracting raw {nbp_file.raw_extension} tiles to {config['file_type']}"
+        total=len(use_rounds) * len(nbp_basic.use_tiles) * len(use_channels),
+        desc=f"Extracting raw {nbp_file.raw_extension} tiles to {config['file_type']}",
     ) as pbar:
         for r in use_rounds:
             round_dask_array, metadata = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
