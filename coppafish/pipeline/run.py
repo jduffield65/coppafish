@@ -138,8 +138,11 @@ def initialize_nb(config_file: str) -> Notebook:
     else:
         warnings.warn('basic_info', utils.warnings.NotebookPageWarning)
     if utils.system.get_software_verison() not in nb.get_unique_versions():
-        warnings.warn(f"You are running on software version {utils.system.get_software_verison()}, but the notebook " \
-            + f"contains data run on versions {nb.get_unique_versions()}, are you sure you want to continue? (y or n) ")
+        warnings.warn(
+            f"You are running on software version {utils.system.get_software_verison()}, but the notebook " \
+            + f"contains data run on versions {nb.get_unique_versions()}."
+        )
+        print("Are you sure you want to continue? (y or n) ", end='')
         user_input = input()
         if not user_input.strip().lower() == 'y':
             print("Exiting...")
