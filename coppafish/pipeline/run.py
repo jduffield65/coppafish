@@ -85,6 +85,8 @@ def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None
     """
     if run_tile_by_tile is None:
         run_tile_by_tile = utils.system.get_available_memory() > 110
+        run_tile_by_tile = False # Currently not stable, needs to be fully tested
+    assert not run_tile_by_tile, "Running tile by tile in memory is still a work in progress"
     run_scale(nb)
     if run_tile_by_tile and nb.basic_info.n_tiles > 1:
         print("Running tile by tile...")
