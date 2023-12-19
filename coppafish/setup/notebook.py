@@ -1352,6 +1352,7 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
         tile_notebook_path = os.path.join(notebook_dir, f"notebook_t{tile}")
         if os.path.isfile(tile_notebook_path):
             new_notebook = Notebook(tile_notebook_path)
+            output.append(new_notebook)
             continue
         new_notebook = copy.deepcopy(master_notebook)
         new_notebook._created_time = time.time()
