@@ -126,6 +126,8 @@ def run_extract(
                 use_channels = nbp_basic.use_channels
                 if nbp_basic.dapi_channel is not None:
                     use_channels += [nbp_basic.dapi_channel]
+            # Remove duplicate channels
+            use_channels = list(set(use_channels))
 
             # convolve_2d each image
             for t in nbp_basic.use_tiles:

@@ -217,6 +217,8 @@ def run_filter(
                 use_channels = nbp_basic.use_channels
                 if nbp_basic.dapi_channel is not None:
                     use_channels += nbp_basic.dapi_channel
+            # Remove duplicate channels
+            use_channels = list(set(use_channels))
 
             for t in nbp_basic.use_tiles:
                 if not nbp_basic.is_3d:
