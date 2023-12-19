@@ -119,7 +119,6 @@ def register(
             )
             if not (use_dapi):
                 anchor_image = preprocessing.shift_pixels(anchor_image, -nbp_basic.tile_pixel_value_shift)
-            n_image_bytes = anchor_image.nbytes
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
             round_chunks = [use_rounds[: len(use_rounds) // 2], use_rounds[len(use_rounds) // 2 :]]
@@ -311,6 +310,7 @@ def register(
         if n_cores is None:
             # Maximum threads physically possible could be bottlenecked by available RAM
             n_cores = max(system.get_core_count(), 1)
+            n_image_bytes = 2 * z_rad * nbp_basic.tile_sz * nbp_basic.tile_sz * 4
             memory_core_limit = math.floor(system.get_available_memory() * 4.37e7 / n_image_bytes)
             if memory_core_limit < 1:
                 warnings.warn(
