@@ -207,7 +207,7 @@ def run_filter(
                 use_channels = use_channels_anchor
             else:
                 scale = nbp_scale.scale
-                use_channels = nbp_basic.use_channels
+                use_channels = nbp_basic.use_channels.copy()
                 if nbp_basic.dapi_channel is not None:
                     use_channels += [nbp_basic.dapi_channel]
             # Remove duplicate channels
