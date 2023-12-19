@@ -25,6 +25,7 @@
  * Fixed a register image shifting bug.
  * Fixed deconvolution bug.
  * Fixed reg_images not being saved after crashing on.
+ * Fixed bugs when basic_info.use_z does not include 0.
  * Silenced notebook numpy-related warning.
  * Silenced jax CPU warning.
 
