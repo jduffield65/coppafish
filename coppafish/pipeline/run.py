@@ -333,7 +333,8 @@ def run_register(nb: Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None)
         )
         nb += nbp
         nb += nbp_debug
-    if len(os.listdir(os.path.join(nb.file_names.output_dir, 'reg_images'))) == 0:
+    reg_images_dir = os.path.join(nb.file_names.output_dir, 'reg_images')
+    if not os.path.isdir(reg_images_dir) or len(os.listdir(reg_images_dir)) == 0:
         # Save reg images
         round_registration_channel = config['register']['round_registration_channel']
         for t in nb.basic_info.use_tiles:
