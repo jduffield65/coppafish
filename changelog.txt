@@ -3,6 +3,9 @@
     raw, extracted images in the tiles_dir/raw directory. Also, when running from raw ND2 files, we keep all the found 
     metadata from the ND2s for each round in a file called 'nd2_metadata_r{r}.pkl' inside the tiles_dir/raw directory. 
     This way we hope the raw ND2 files can be deleted without loss of any data.
+ * All filter related config variables are now inside a new [filter] config section, i.e. variables r_dapi, 
+    r_dapi_auto_microns, auto_thresh_multiplier, deconvolve, all psf-related variables, wiener_constant, 
+    wiener_pad_shape, n_clip_warn, n_clip_error, n_clip_error_images_thresh, num_rotations and pre_seq_blur_radius.
  * Default extraction file type (['extract']['file_type']) is now .zarr instead of .npy. This file_type is also used 
     when saving the filtered images in the tiles_dir directory.
  * Multiprocessing to compute background scales now includes no disk reading (safer).
