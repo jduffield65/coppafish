@@ -310,7 +310,7 @@ def run_filter(
                             im_raw = tiles_io._load_image(file_path_raw, file_type)
                         else:
                             im_raw = image_t_raw[r, c]
-                        assert not np.sum(im_raw) != 0, f"The extracted image for t{t}, r{r}, c{c} is all zeros"
+                        assert np.sum(im_raw) != 0, f"The extracted image for t{t}, r{r}, c{c} is all zeros"
                         # zyx -> yxz
                         im_raw = im_raw.transpose((1, 2, 0))
 
