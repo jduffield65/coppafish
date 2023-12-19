@@ -392,7 +392,7 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
                 if nbp_basic.is_3d:
                     image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False).transpose((2,0,1))
                     if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-                        image_t = preprocessing.apply_image_shift(image_t, -nbp_basic.tile_pixel_value_shift)
+                        image_t = preprocessing.shift_pixels(image_t, -nbp_basic.tile_pixel_value_shift)
                 else:
                     image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False)
             for z in range(z_size):

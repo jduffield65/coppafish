@@ -118,7 +118,7 @@ def register(
                 )
             )
             if not (use_dapi):
-                anchor_image = preprocessing.apply_image_shift(anchor_image, -nbp_basic.tile_pixel_value_shift)
+                anchor_image = preprocessing.shift_pixels(anchor_image, -nbp_basic.tile_pixel_value_shift)
             n_image_bytes = anchor_image.nbytes
             use_rounds = nbp_basic.use_rounds + [nbp_basic.pre_seq_round] * nbp_basic.use_preseq
             # split the rounds into two chunks, as we can't fit all of them into memory at once
@@ -129,7 +129,7 @@ def register(
                     if not (use_dapi and r == nbp_basic.anchor_round):
                         round_image.append(
                             preprocessing.yxz_to_zyx(
-                                preprocessing.apply_image_shift(
+                                preprocessing.shift_pixels(
                                     tiles_io.load_image(
                                         nbp_file,
                                         nbp_basic,
@@ -265,7 +265,7 @@ def register(
                 apply_shift=False,
             )
             if not (nbp_basic.pre_seq_round == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-                im = preprocessing.apply_image_shift(im, -nbp_basic.tile_pixel_value_shift)
+                im = preprocessing.shift_pixels(im, -nbp_basic.tile_pixel_value_shift)
             if pre_seq_blur_radius > 0:
                 for z in tqdm(range(len(nbp_basic.use_z))):
                     im[:, :, z] = filters.gaussian(im[:, :, z], pre_seq_blur_radius, truncate=3, preserve_range=True)
@@ -338,7 +338,7 @@ def register(
                     apply_shift=False,
                 )
                 if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-                    image_seq = preprocessing.apply_image_shift(image_seq, -nbp_basic.tile_pixel_value_shift)
+                    image_seq = preprocessing.shift_pixels(image_seq, -nbp_basic.tile_pixel_value_shift)
                 image_preseq = tiles_io.load_image(
                     nbp_file,
                     nbp_basic,
@@ -350,7 +350,7 @@ def register(
                     apply_shift=False,
                 )
                 if not (nbp_basic.pre_seq_round == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-                    image_preseq = preprocessing.apply_image_shift(image_preseq, -nbp_basic.tile_pixel_value_shift)
+                    image_preseq = preprocessing.shift_pixels(image_preseq, -nbp_basic.tile_pixel_value_shift)
                 process_args.append(
                     (image_seq, image_preseq, nbp.transform, mid_z, z_rad, nbp_basic.pre_seq_round, t, r, c)
                 )

@@ -287,7 +287,7 @@ def run_filter(
                                     apply_shift=False, 
                                 )
                                 if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-                                    im = preprocessing.apply_image_shift(im, -nbp_basic.tile_pixel_value_shift)
+                                    im = preprocessing.shift_pixels(im, -nbp_basic.tile_pixel_value_shift)
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             (

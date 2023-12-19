@@ -1456,7 +1456,7 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
                                   nb.basic_info.anchor_channel, apply_shift=False))
     target = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, t, r, c, apply_shift=False))
     if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
-        target = preprocessing.apply_image_shift(target, -nb.basic_info.tile_pixel_value_shift)
+        target = preprocessing.shift_pixels(target, -nb.basic_info.tile_pixel_value_shift)
     transform = yxz_to_zyx_affine(nb.register.transform[t, r, c])
     target_transfromed = affine_transform(target, transform, order=1)
     # plot in napari
@@ -1497,14 +1497,14 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
             transform_seq = yxz_to_zyx_affine(nb.register.round_transform[t, r])
     seq = yxz_to_zyx(tiles_io.load_image(nb.file_names,nb.basic_info, nb.extract.file_type, t, r, c, apply_shift=False))
     if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
-        seq = preprocessing.apply_image_shift(seq, -nb.basic_info.tile_pixel_value_shift)
+        seq = preprocessing.shift_pixels(seq, -nb.basic_info.tile_pixel_value_shift)
     preseq = yxz_to_zyx(
         tiles_io.load_image(
             nb.file_names,nb.basic_info, nb.extract.file_type, t, nb.basic_info.pre_seq_round, c, apply_shift=False, 
         )
     )
     if not (nb.basic_info.pre_seq_round == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
-        preseq = preprocessing.apply_image_shift(preseq, -nb.basic_info.tile_pixel_value_shift)
+        preseq = preprocessing.shift_pixels(preseq, -nb.basic_info.tile_pixel_value_shift)
 
     print('Starting Application of Seq Transform')
     seq = affine_transform(seq, transform_seq, order=1)
@@ -1532,11 +1532,11 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
         )
     )
     if not (nb.basic_info.pre_seq_round == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
-        preseq = preprocessing.apply_image_shift(preseq, -nb.basic_info.tile_pixel_value_shift)
+        preseq = preprocessing.shift_pixels(preseq, -nb.basic_info.tile_pixel_value_shift)
     seq = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=r, c=c,
                                yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
     if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
-        seq = preprocessing.apply_image_shift(seq, -nb.basic_info.tile_pixel_value_shift)
+        seq = preprocessing.shift_pixels(seq, -nb.basic_info.tile_pixel_value_shift)
     preseq = affine_transform(preseq, transform_pre, order=5)
     seq = affine_transform(seq, transform_seq, order=5)
     # Apply background scale. Don't subtract bg from pixels that are <= 0 in seq as blurring in preseq can cause
