@@ -1343,6 +1343,8 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
     assert master_notebook.has_page('basic_info'), "Require 'basic_info' notebook page to split by tiles"
     assert master_notebook.has_page('file_names'), "Require 'file_names' notebook page to split by tiles"
     assert master_notebook.has_page('scale'), "Require 'scale' notebook page to split by tiles"
+    #FIXME: Allow for splitting by tiles and using an already saved notebook for that tile which can include extract, 
+    # filter and/or find_spots
     assert not master_notebook.has_page('extract'), "Notebook cannot contain 'extract' notebook page"
     
     output = []
