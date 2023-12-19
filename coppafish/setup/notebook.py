@@ -1343,17 +1343,19 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
     assert master_notebook.has_page('basic_info'), "Require 'basic_info' notebook page to split by tiles"
     assert master_notebook.has_page('file_names'), "Require 'file_names' notebook page to split by tiles"
     assert master_notebook.has_page('scale'), "Require 'scale' notebook page to split by tiles"
-    #FIXME: Allow for splitting by tiles and using an already saved notebook for that tile which can include extract, 
-    # filter and/or find_spots
     assert not master_notebook.has_page('extract'), "Notebook cannot contain 'extract' notebook page"
     
     output = []
     notebook_dir = PurePath(master_notebook._file).parent
     use_tiles = master_notebook.basic_info.use_tiles
     for tile in use_tiles:
+        tile_notebook_path = os.path.join(notebook_dir, f"notebook_t{tile}")
+        if os.path.isfile(tile_notebook_path):
+            new_notebook = Notebook(tile_notebook_path)
+            continue
         new_notebook = copy.deepcopy(master_notebook)
         new_notebook._created_time = time.time()
-        new_notebook._file = os.path.join(notebook_dir, f"notebook_t{tile}")
+        new_notebook._file = tile_notebook_path
         
         new_notebook.basic_info.finalized = False
         del new_notebook.basic_info.use_tiles, new_notebook.basic_info.n_tiles
