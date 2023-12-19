@@ -375,7 +375,7 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
     if shift != 0:
         # change dtype to accommodate negative values and set base value to be zero in the shifted image.
         stitched_image = stitched_image.astype(np.int32) + shift
-    with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
+    with tqdm(total=z_size * len(nbp_basic.use_tiles), desc="Saving stitched image") as pbar:
         for t in nbp_basic.use_tiles:
             if from_raw:
                 image_t = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
