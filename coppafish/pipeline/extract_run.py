@@ -100,7 +100,10 @@ def run_extract(
     )
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
-    with tqdm(desc=f"Extracting raw {nbp_file.raw_extension} tiles to {config['file_type']}") as pbar:
+    with tqdm(
+        total=len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels),
+        desc=f"Extracting raw {nbp_file.raw_extension} tiles to {config['file_type']}",
+    ) as pbar:
         for r in use_rounds:
             round_dask_array, metadata = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
 
