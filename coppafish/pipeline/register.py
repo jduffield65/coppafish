@@ -305,12 +305,12 @@ def register(
         bg_scale = np.zeros((n_tiles, n_rounds, n_channels))
         mid_z = nbp_basic.tile_centre[2].astype(int)
         z_rad = np.min([len(nbp_basic.use_z) // 2, 5])
-        yxz = [None, None, np.arange(mid_z - z_rad, mid_z + z_rad)]
+        yxz = [None, None, np.arange(mid_z - z_rad, mid_z + z_rad) - min(nbp_basic.use_z)]
         n_cores = config["n_background_scale_threads"]
         if n_cores is None:
             # Maximum threads physically possible could be bottlenecked by available RAM
             n_cores = max(system.get_core_count(), 1)
-            n_image_bytes = 2 * z_rad * nbp_basic.tile_sz * nbp_basic.tile_sz * 4
+            n_image_bytes = (2 * z_rad + 1) * nbp_basic.tile_sz * nbp_basic.tile_sz * 2
             memory_core_limit = math.floor(system.get_available_memory() * 4.37e7 / n_image_bytes)
             if memory_core_limit < 1:
                 warnings.warn(
