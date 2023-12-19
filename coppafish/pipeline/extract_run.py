@@ -118,7 +118,7 @@ def run_extract(
             if r == nbp_basic.anchor_round:
                 use_channels = use_channels_anchor
             else:
-                use_channels = nbp_basic.use_channels
+                use_channels = nbp_basic.use_channels.copy()
                 if nbp_basic.dapi_channel is not None:
                     use_channels += [nbp_basic.dapi_channel]
 
