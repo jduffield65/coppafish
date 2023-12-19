@@ -101,8 +101,10 @@ def run_extract(
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     with tqdm(
-        total=(len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
-            + len(nbp_basic.use_tiles) * len(use_channels_anchor),
+        total=(len(use_rounds) - 1)
+        * len(nbp_basic.use_tiles)
+        * len(nbp_basic.use_channels + 1 if nbp_basic.dapi_channel is not None else 0)
+        + len(nbp_basic.use_tiles) * len(use_channels_anchor),
         desc=f"Extracting raw {nbp_file.raw_extension} files to {config['file_type']}",
     ) as pbar:
         for r in use_rounds:
