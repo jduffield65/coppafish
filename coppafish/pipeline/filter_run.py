@@ -205,7 +205,7 @@ def run_filter(
 
     with tqdm(
         total=n_images,
-        desc=f"Filtering extracted {nbp_extract.file_type} tiles",
+        desc=f"Filtering extracted {nbp_extract.file_type} files",
     ) as pbar:
         for r in use_rounds:
             if r == nbp_basic.anchor_round:
