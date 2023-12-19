@@ -140,8 +140,8 @@ def initialize_nb(config_file: str) -> Notebook:
     if utils.system.get_software_verison() not in nb.get_unique_versions():
         warnings.warn(f"You are running on software version {utils.system.get_software_verison()}, but the notebook " \
             + f"contains data run on versions {nb.get_unique_versions()}, are you sure you want to continue? (y or n) ")
-        use_input = input()
-        if not use_input.strip().lower() == 'y':
+        user_input = input()
+        if not user_input.strip().lower() == 'y':
             print("Exiting...")
             sys.exit()
     return nb
