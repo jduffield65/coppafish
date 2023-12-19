@@ -377,7 +377,7 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
         z_planes = nb.basic_info.use_z
     else:
         z_central_index = int(np.floor(np.median(np.arange(len(nb.basic_info.use_z)))))
-        z_planes = [nb.basic_info.use_z[z_central_index + i] for i in range(-4, 6)]
+        z_planes = [nb.basic_info.use_z[z_central_index + i] - min(nb.basic_info.use_z) for i in range(-4, 6)]
     tile_centre = np.array([yx_centre[0], yx_centre[1]])
 
     # Get the image for the tile and channel
