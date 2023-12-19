@@ -185,7 +185,7 @@ def run_extract(nb: Notebook, return_image_t: Optional[bool] = False) -> Optiona
         `(n_rounds x n_channels x nz x ny x nx) ndarray[uint16]` or None: all extracted images if running on a single 
             tile, otherwise None.
     """
-    if not all(nb.has_page(["extract", "extract_debug"])):
+    if not nb.has_page("extract") or not nb.has_page("extract_debug"):
         config = nb.get_config()
         nbp, nbp_debug, image_t_raw = extract_run.run_extract(
             config['extract'], nb.file_names, nb.basic_info, nb.scale, return_image_t, 
