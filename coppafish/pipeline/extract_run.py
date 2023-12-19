@@ -16,7 +16,7 @@ def run_extract(
     nbp_file: NotebookPage,
     nbp_basic: NotebookPage,
     nbp_scale: NotebookPage,
-    return_image_t_raw: Optional[bool] = False, 
+    return_image_t_raw: bool = False, 
 ) -> Tuple[NotebookPage, NotebookPage, Optional[np.ndarray]]:
     """
     This reads in images from the raw `nd2` files, filters them and then saves them as `config[extract][file_type]`
@@ -108,7 +108,7 @@ def run_extract(
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     with tqdm(
-        total=n_images, desc=f"Loading raw {nbp_file.raw_extension} tiles and saving as {config['file_type']}"
+        total=n_images, desc=f"Extracting raw {nbp_file.raw_extension} tiles to {config['file_type']}"
     ) as pbar:
         for r in use_rounds:
             round_dask_array, metadata = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
