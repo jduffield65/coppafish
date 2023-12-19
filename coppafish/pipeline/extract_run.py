@@ -101,7 +101,8 @@ def run_extract(
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     with tqdm(
-        total=len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels),
+        total=(len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
+            + len(nbp_basic.use_tiles) * len(use_channels_anchor),
         desc=f"Extracting raw {nbp_file.raw_extension} tiles to {config['file_type']}",
     ) as pbar:
         for r in use_rounds:
@@ -120,8 +121,6 @@ def run_extract(
                 use_channels = nbp_basic.use_channels
                 if nbp_basic.dapi_channel is not None:
                     use_channels += [nbp_basic.dapi_channel]
-            # Remove duplicate channels
-            use_channels = list(set(use_channels))
 
             # convolve_2d each image
             for t in nbp_basic.use_tiles:
