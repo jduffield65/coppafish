@@ -310,8 +310,8 @@ def register(
         if n_cores is None:
             # Maximum threads physically possible could be bottlenecked by available RAM
             n_cores = max(system.get_core_count(), 1)
-            n_image_bytes = (2 * z_rad + 1) * nbp_basic.tile_sz * nbp_basic.tile_sz * 2
-            memory_core_limit = math.floor(system.get_available_memory() * 4.37e7 / n_image_bytes)
+            n_image_bytes = (2 * z_rad + 1) * nbp_basic.tile_sz * nbp_basic.tile_sz * 4
+            memory_core_limit = math.floor(system.get_available_memory() * 2.185e7 / n_image_bytes)
             if memory_core_limit < 1:
                 warnings.warn(
                     f"Available memory is low, if coppafish crashes, try freeing up memory before re-running pipeline"
