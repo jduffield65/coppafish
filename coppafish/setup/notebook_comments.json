@@ -278,7 +278,7 @@
       "Hash of the latest git commit when the pipeline was run"]
   }, 
 
-  "filter_debug:":
+  "filter_debug":
   {
     "DESCRIPTION": ["*filter_debug* page contains information about filtered images not needed later in the ",
       "pipeline.","",
