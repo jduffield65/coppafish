@@ -99,7 +99,7 @@ def test_integration_002() -> None:
 
 @pytest.mark.slow
 def test_integration_003(
-    include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = True, 
+    include_stitch: bool = True, include_omp: bool = True, run_tile_by_tile: bool = False, 
     ) -> Notebook:
     """
     Summary of input data: random spots and pink noise.
@@ -464,5 +464,5 @@ def test_viewers() -> None:
 
 
 if __name__ == '__main__':
-    test_tile_by_tile_equality()
+    test_integration_003()
     test_viewers()
