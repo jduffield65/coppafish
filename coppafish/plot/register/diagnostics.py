@@ -11,6 +11,7 @@ from PyQt5.QtGui import QFont
 import matplotlib.gridspec as gridspec
 from ...setup import Notebook
 from skimage.filters import sobel
+from coppafish.register import preprocessing
 from coppafish.register.preprocessing import n_matches_to_frac_matches, yxz_to_zyx_affine, yxz_to_zyx
 from coppafish.register.base import huber_regression, brightness_scale, ols_regression
 from coppafish.utils import tiles_io
@@ -857,7 +858,7 @@ def view_pearson_hists(nb, t, num_bins=30):
         num_bins: int number of bins in the histogram
     """
     nbp_basic, nbp_register_debug = nb.basic_info, nb.register_debug
-    thresh = nb.get_config()['register']['r_thresh']
+    thresh = nb.get_config()['register']['pearson_r_thresh']
     round_corr = nbp_register_debug.round_shift_corr[t]
     n_rounds = nbp_basic.n_rounds
     cols = n_rounds
@@ -934,6 +935,8 @@ def view_pearson_colourmap_spatial(nb: Notebook, t: int):
     n_rc = corr.shape[0]
 
     fig, axes = plt.subplots(nrows=z_subvols, ncols=n_rc)
+    if axes.ndim == 1:
+        axes = axes[None]
     # Now plot each image
     for elem in range(n_rc):
         for z in range(z_subvols):
@@ -1449,10 +1452,11 @@ def view_entire_overlay(nb: Notebook, t: int, r: int, c: int, filter=False):
         filter: whether to apply sobel filter to images
     """
     # Initialise frequent variables
-    anchor = yxz_to_zyx(
-        tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, nb.basic_info.anchor_round,
-                           nb.basic_info.anchor_channel))
-    target = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c))
+    anchor = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, t, nb.basic_info.anchor_round,
+                                  nb.basic_info.anchor_channel, apply_shift=False))
+    target = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, t, r, c, apply_shift=False))
+    if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
+        target = preprocessing.shift_pixels(target, -nb.basic_info.tile_pixel_value_shift)
     transform = yxz_to_zyx_affine(nb.register.transform[t, r, c])
     target_transfromed = affine_transform(target, transform, order=1)
     # plot in napari
@@ -1491,9 +1495,16 @@ def view_background_overlay(nb: Notebook, t: int, r: int, c: int):
             transform_seq = np.eye(4)
         else:
             transform_seq = yxz_to_zyx_affine(nb.register.round_transform[t, r])
-    seq = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c))
+    seq = yxz_to_zyx(tiles_io.load_image(nb.file_names,nb.basic_info, nb.extract.file_type, t, r, c, apply_shift=False))
+    if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
+        seq = preprocessing.shift_pixels(seq, -nb.basic_info.tile_pixel_value_shift)
     preseq = yxz_to_zyx(
-        tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, nb.basic_info.pre_seq_round, c))
+        tiles_io.load_image(
+            nb.file_names,nb.basic_info, nb.extract.file_type, t, nb.basic_info.pre_seq_round, c, apply_shift=False, 
+        )
+    )
+    if not (nb.basic_info.pre_seq_round == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
+        preseq = preprocessing.shift_pixels(preseq, -nb.basic_info.tile_pixel_value_shift)
 
     print('Starting Application of Seq Transform')
     seq = affine_transform(seq, transform_seq, order=1)
@@ -1515,10 +1526,17 @@ def view_background_brightness_correction(nb: Notebook, t: int, r: int, c: int, 
                                       new_origin=np.array([num_z - 5, 0, 0]))
     transform_seq = yxz_to_zyx_affine(nb.register.transform[t, r, c], new_origin=np.array([num_z - 5, 0, 0]))
     preseq = yxz_to_zyx(
-        tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=nb.basic_info.pre_seq_round, c=c,
-                           yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * (1 - bg_blur)))
-    seq = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=r, c=c,
-                                        yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
+        tiles_io.load_image(
+            nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=nb.basic_info.pre_seq_round, c=c, 
+            yxz=[None, None, np.arange(num_z - 5, num_z + 5)], suffix='_raw' * (1-bg_blur), apply_shift=False, 
+        )
+    )
+    if not (nb.basic_info.pre_seq_round == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
+        preseq = preprocessing.shift_pixels(preseq, -nb.basic_info.tile_pixel_value_shift)
+    seq = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, nb.extract.file_type, t=t, r=r, c=c,
+                               yxz=[None, None, np.arange(num_z - 5, num_z + 5)]))
+    if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
+        seq = preprocessing.shift_pixels(seq, -nb.basic_info.tile_pixel_value_shift)
     preseq = affine_transform(preseq, transform_pre, order=5)
     seq = affine_transform(seq, transform_seq, order=5)
     # Apply background scale. Don't subtract bg from pixels that are <= 0 in seq as blurring in preseq can cause

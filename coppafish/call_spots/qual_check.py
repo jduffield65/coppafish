@@ -74,10 +74,8 @@ def get_intensity_thresh(nb: Notebook) -> float:
     if nb.has_page('thresholds'):
         intensity_thresh = nb.thresholds.intensity
     else:
-        config = nb.get_config()['thresholds']
-        intensity_thresh = config['intensity']
-        if intensity_thresh is None:
-            intensity_thresh = nb.call_spots.gene_efficiency_intensity_thresh
+        config = nb.get_config()['omp']
+        intensity_thresh = nb.call_spots.abs_intensity_percentile[config['initial_intensity_thresh_percentile']]
     return intensity_thresh
 
 

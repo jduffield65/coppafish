@@ -662,13 +662,13 @@ class Viewer:
 class ButtonMethodWindow(QMainWindow):
     def __init__(self, active_button: str = 'Anchor', has_omp: bool = True):
         super().__init__()
-        self.button_anchor = QPushButton('Anchor', self)
-        self.button_anchor.setCheckable(True)
-        self.button_anchor.setGeometry(50, 2, 50, 28)  # left, top, width, height
-        
         self.button_prob = QPushButton('Prob', self)
         self.button_prob.setCheckable(True)
-        self.button_prob.setGeometry(105, 2, 50, 28)  # left, top, width, height
+        self.button_prob.setGeometry(50, 2, 50, 28)  # left, top, width, height
+        
+        self.button_anchor = QPushButton('Anchor', self)
+        self.button_anchor.setCheckable(True)
+        self.button_anchor.setGeometry(105, 2, 50, 28)  # left, top, width, height
 
         self.button_omp = QPushButton('OMP', self)
         self.button_omp.setCheckable(has_omp)

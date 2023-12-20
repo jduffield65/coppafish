@@ -1,77 +1,10 @@
-import numpy as np
-from typing import List, Tuple, Optional
 import os
 import warnings
+import numpy as np
+from typing import List, Tuple, Optional
 
 from .. import utils
 from ..setup import NotebookPage
-
-
-def get_scale_from_txt(txt_file: str, scale: Optional[float], scale_anchor: Optional[float],
-                       tol: float = 0.001) -> Tuple[float, float]:
-    """
-    This checks whether `scale` and `scale_anchor` values used for producing npy files in *tile_dir* match
-    values used and saved to `txt_file` on previous run.
-
-    Will raise error if they are different.
-
-    Args:
-        txt_file: `nb.file_names.scale`, path to text file where scale values are saved.
-            File contains two values, `scale` first and `scale_anchor` second.
-            Values will be 0 if not used or not yet computed.
-        scale: Value of `scale` used for current run of extract method i.e. `config['extract']['scale']`.
-        scale_anchor: Value of `scale_anchor` used for current run of extract method
-            i.e. `config['extract']['scale_anchor']`.
-        tol: Two scale values will be considered the same if they are closer than this.
-
-    Returns:
-        scale - If txt_file exists, this will be the value saved in it otherwise will just be the input value.
-        scale_anchor - If txt_file exists, this will be the value saved in it otherwise will just be the input value.
-    """
-    if os.path.isfile(txt_file):
-        scale_saved, scale_anchor_saved = np.genfromtxt(txt_file)
-        if np.abs(scale_saved) < tol:
-            pass  # 0 means scale not used so do nothing
-        elif scale is None:
-            warnings.warn("Using value of scale = {:.2f} saved in\n".format(scale_saved) + txt_file)
-            scale = float(scale_saved)  # Set to saved value used up till now if not specified
-        elif np.abs(scale - scale_saved) > tol:
-            raise ValueError(f"\nImaging round (Not anchor) tiles saved so far were calculated with scale = "
-                             f"{scale_saved}\nas saved in {txt_file}\n"
-                             f"This is different from config['extract']['scale'] = {scale}.")
-        if np.abs(scale_anchor_saved) < tol:
-            pass  # 0 means scale_anchor not computed yet so do nothing
-        elif scale_anchor is None:
-            warnings.warn("Using value of scale_anchor = {:.2f} saved in\n".format(scale_anchor_saved) + txt_file)
-            scale_anchor = float(scale_anchor_saved)  # Set to saved value used up till now if not specified
-        elif np.abs(scale_anchor - scale_anchor_saved) > tol:
-            raise ValueError(f"\nAnchor round tiles saved so far were calculated with scale_anchor = "
-                             f"{scale_anchor_saved}\nas saved in {txt_file}\n"
-                             f"This is different from config['extract']['scale_anchor'] = {scale_anchor}.")
-    return scale, scale_anchor
-
-
-def save_scale(txt_file: str, scale: Optional[float], scale_anchor: Optional[float]):
-    """
-    This saves `scale` and `scale_anchor` to `txt_file`. If either `scale` and `scale_anchor` are `None`,
-    they will be set to 0 when saving.
-
-    Args:
-        txt_file: `nb.file_names.scale`, path to text file where scale values are to be saved.
-            File will contain two values, `scale` first and `scale_anchor` second.
-            Values will be 0 if not used or not yet computed.
-        scale: Value of `scale` used for current run of extract method i.e. `config['extract']['scale']` or
-            value computed from `get_scale`.
-        scale_anchor: Value of `scale_anchor` used for current run of extract method
-            i.e. `config['extract']['scale_anchor']` or value computed from `get_scale`.
-
-    """
-    scale, scale_anchor = get_scale_from_txt(txt_file, scale, scale_anchor)  # check if match current saved values
-    if scale is None:
-        scale = 0
-    if scale_anchor is None:
-        scale_anchor = 0
-    np.savetxt(txt_file, [scale, scale_anchor], header='scale followed by scale_anchor')
 
 
 def central_tile(tilepos_yx: np.ndarray, use_tiles: List[int]) -> int:
@@ -115,11 +48,16 @@ def get_z_plane(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, t: int,
         - ```image``` - ```int [tile_sz x tile_sz]```.
             Corresponding image.
     """
-    round_dask_array = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
+    round_dask_array, _ = utils.raw.load_dask(nbp_file, nbp_basic, r=r)
     image_max = np.zeros((len(use_channels), len(use_z)))
     for i in range(len(use_channels)):
-        image_max[i, :] = np.max(np.max(utils.raw.load_image(nbp_file, nbp_basic, t, use_channels[i],
-                                                             round_dask_array, r, use_z), axis=0), axis=0)
+        image_max[i, :] = np.max(
+            np.max(
+                utils.raw.load_image(
+                    nbp_file, nbp_basic, t, use_channels[i], round_dask_array, r, use_z
+                ), axis=0, 
+            ), axis=0, 
+        )
     max_channel = use_channels[np.max(image_max, axis=1).argmax()]
     max_z = use_z[np.max(image_max, axis=0).argmax()]
     return max_channel, max_z, utils.raw.load_image(nbp_file, nbp_basic, t, max_channel, round_dask_array, r, max_z)
@@ -174,3 +112,71 @@ def get_scale(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int, use_tiles
         im_filtered = utils.morphology.imfilter(im_filtered, smooth_kernel, oa=False)
     scale = scale_norm / im_filtered.max()
     return t, c, z, float(scale)
+
+
+
+def get_scale_from_txt(txt_file: str, scale: Optional[float], scale_anchor: Optional[float],
+                       tol: float = 0.001) -> Tuple[float, float]:
+    """
+    This checks whether `scale` and `scale_anchor` values used for producing npy files in *tile_dir* match
+    values used and saved to `txt_file` on previous run.
+
+    Will raise error if they are different.
+
+    Args:
+        txt_file: `nb.file_names.scale`, path to text file where scale values are saved.
+            File contains two values, `scale` first and `scale_anchor` second.
+            Values will be 0 if not used or not yet computed.
+        scale: Value of `scale` used for current run of extract method i.e. `config['extract']['scale']`.
+        scale_anchor: Value of `scale_anchor` used for current run of extract method
+            i.e. `config['extract']['scale_anchor']`.
+        tol: Two scale values will be considered the same if they are closer than this.
+
+    Returns:
+        scale - If txt_file exists, this will be the value saved in it otherwise will just be the input value.
+        scale_anchor - If txt_file exists, this will be the value saved in it otherwise will just be the input value.
+    """
+    if os.path.isfile(txt_file):
+        scale_saved, scale_anchor_saved = np.genfromtxt(txt_file)
+        if np.abs(scale_saved) < tol:
+            pass  # 0 means scale not used so do nothing
+        elif scale is None:
+            print("Using value of scale = {:.2f} saved in\n".format(scale_saved) + txt_file)
+            scale = float(scale_saved)  # Set to saved value used up till now if not specified
+        elif np.abs(scale - scale_saved) > tol:
+            raise ValueError(f"\nImaging round (Not anchor) tiles saved so far were calculated with scale = "
+                             f"{scale_saved}\nas saved in {txt_file}\n"
+                             f"This is different from config['extract']['scale'] = {scale}.")
+        if np.abs(scale_anchor_saved) < tol:
+            pass  # 0 means scale_anchor not computed yet so do nothing
+        elif scale_anchor is None:
+            print("Using value of scale_anchor = {:.2f} saved in\n".format(scale_anchor_saved) + txt_file)
+            scale_anchor = float(scale_anchor_saved)  # Set to saved value used up till now if not specified
+        elif np.abs(scale_anchor - scale_anchor_saved) > tol:
+            raise ValueError(f"\nAnchor round tiles saved so far were calculated with scale_anchor = "
+                             f"{scale_anchor_saved}\nas saved in {txt_file}\n"
+                             f"This is different from config['extract']['scale_anchor'] = {scale_anchor}.")
+    return scale, scale_anchor
+
+
+def save_scale(txt_file: str, scale: Optional[float], scale_anchor: Optional[float]):
+    """
+    This saves `scale` and `scale_anchor` to `txt_file`. If either `scale` and `scale_anchor` are `None`,
+    they will be set to 0 when saving.
+
+    Args:
+        txt_file: `nb.file_names.scale`, path to text file where scale values are to be saved.
+            File will contain two values, `scale` first and `scale_anchor` second.
+            Values will be 0 if not used or not yet computed.
+        scale: Value of `scale` used for current run of extract method i.e. `config['extract']['scale']` or
+            value computed from `get_scale`.
+        scale_anchor: Value of `scale_anchor` used for current run of extract method
+            i.e. `config['extract']['scale_anchor']` or value computed from `get_scale`.
+
+    """
+    scale, scale_anchor = get_scale_from_txt(txt_file, scale, scale_anchor)  # check if match current saved values
+    if scale is None:
+        scale = 0
+    if scale_anchor is None:
+        scale_anchor = 0
+    np.savetxt(txt_file, [scale, scale_anchor], header='scale followed by scale_anchor')

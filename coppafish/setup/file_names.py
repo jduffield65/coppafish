@@ -1,4 +1,5 @@
 import os
+from pathlib import PurePath
 try:
     import importlib_resources
 except ModuleNotFoundError:
@@ -28,6 +29,9 @@ def set_file_names(nb, nbp):
     nbp.input_dir = config['input_dir']
     nbp.output_dir = config['output_dir']
     nbp.tile_dir = config['tile_dir']
+    nbp.tile_unfiltered_dir = os.path.join(config['tile_dir'], 'raw')
+    if not os.path.isdir(nbp.tile_unfiltered_dir):
+        os.mkdir(nbp.tile_unfiltered_dir)
     nbp.fluorescent_bead_path = config['fluorescent_bead_path']
 
     # remove file extension from round and anchor file names if it is present
@@ -141,18 +145,36 @@ def set_file_names(nb, nbp):
     if config['raw_extension'] == 'jobs':
         if nb.basic_info.is_3d:
             round_files = config['round'] + [config['anchor']] + [config['pre_seq']]
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
-                                             nb.get_config()['extract']['file_type'], nb.basic_info.n_channels, 
-                                             jobs=True)
+            tile_names, tile_names_unfiltered = get_tile_file_names(
+                config['tile_dir'], 
+                nbp.tile_unfiltered_dir, 
+                round_files, 
+                nb.basic_info.n_tiles, 
+                nb.get_config()['extract']['file_type'], 
+                nb.basic_info.n_channels, 
+                jobs=True,
+            )
         else:
             raise ValueError('JOBs file format is only compatible with 3D')
     else:
         if nb.basic_info.is_3d:
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
-                                             nb.get_config()['extract']['file_type'], nb.basic_info.n_channels)
+            tile_names, tile_names_unfiltered = get_tile_file_names(
+                config['tile_dir'], 
+                nbp.tile_unfiltered_dir, 
+                round_files, 
+                nb.basic_info.n_tiles, 
+                nb.get_config()['extract']['file_type'], 
+                nb.basic_info.n_channels, 
+            )
         else:
-            tile_names = get_tile_file_names(config['tile_dir'], round_files, nb.basic_info.n_tiles, 
-                                             nb.get_config()['extract']['file_type'])
+            tile_names, tile_names_unfiltered = get_tile_file_names(
+                config['tile_dir'], 
+                nbp.tile_unfiltered_dir, 
+                round_files, 
+                nb.basic_info.n_tiles, 
+                nb.get_config()['extract']['file_type'], 
+            )
     
     nbp.tile = tile_names.tolist()  # npy or zarr tile file paths list [n_tiles x n_rounds (x n_channels if 3D)]
+    nbp.tile_unfiltered = tile_names_unfiltered.tolist()
     nb += nbp

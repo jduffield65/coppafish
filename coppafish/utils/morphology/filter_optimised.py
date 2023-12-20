@@ -40,9 +40,6 @@ def manual_convolve(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_s
     Finds result of convolution at specific locations indicated by `coords` with binary kernel.
     I.e. instead of convolving whole `image`, just find result at these `points`.
 
-    !!! note
-        image needs to be padded before this function is called otherwise get an error when go out of bounds.
-
     Args:
         image: `int [image_szY x image_szX x image_szZ]`.
             Image to be filtered. Must be 3D.
@@ -61,6 +58,9 @@ def manual_convolve(image: jnp.ndarray, y_kernel_shifts: jnp.ndarray, x_kernel_s
     Returns:
         `int [n_points]`.
             Result of filtering of `image` at each point in `coords`.
+            
+    Notes:
+        - Image needs to be padded before this function is called otherwise get an error when go out of bounds.
     """
     return jax.vmap(manual_convolve_single, in_axes=(None, None, None, None, 0),
                     out_axes=0)(image, y_kernel_shifts, x_kernel_shifts,z_kernel_shifts, coords)

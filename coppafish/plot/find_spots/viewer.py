@@ -10,6 +10,7 @@ import time
 from ...setup import Notebook
 from ..raw import get_raw_images, number_to_list, add_basic_info_no_save
 from ... import extract, utils
+from ...register import preprocessing
 from ...utils import tiles_io
 from ...find_spots import check_neighbour_intensity
 
@@ -111,12 +112,16 @@ class view_find_spots:
             warnings.warn(f"The file {tile_file}\ndoes not exist so loading raw image and filtering it")
             self.image = get_filtered_image(nb, t, r, c)
         else:
-            self.image = tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c)
+            self.image = tiles_io.load_image(
+                nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c, apply_shift=False
+            )
+            if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
+                self.image = preprocessing.shift_pixels(self.image, -nb.basic_info.tile_pixel_value_shift)
             scale = 1  # Can be any value as not actually used but needed as argument in get_extract_info
 
         # Get auto_threshold value used to detect spots
         if nb.has_page('extract'):
-            self.auto_thresh = nb.extract.auto_thresh[t, r, c]
+            self.auto_thresh = nb.filter.auto_thresh[t, r, c]
         else:
             config = nb.get_config()['extract']
             z_info = int(np.floor(nb.basic_info.nz / 2))
