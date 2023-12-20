@@ -716,13 +716,14 @@ class RoboMinnie:
                         "A brightness scaling factor < 0 is not allowed"
                     assert np.all(self.brightness_scale_factor[t, r + 1, c] <= 1), \
                         "A brightness scaling factor > 1 will cause an overflow"
-                    np.multiply(
+                    scaled_image = np.multiply(
                         self.image_tiles[r, t, c],
                         self.brightness_scale_factor[t, r + 1, c],
-                        out=self.image_tiles[r, t, c],
-                        casting="unsafe", 
-                        dtype=self.image_dtype, 
+                        dtype=np.float32, 
+                        casting="safe", 
                     )
+                    self.image_tiles[r, t, c] = np.rint(scaled_image).astype(self.image_dtype)
+                    del scaled_image
         self.tile_xy_pos = self.tile_yxz_pos[:2]
         self.tilepos_yx_nd2 = self.tile_xy_pos
 
@@ -743,13 +744,14 @@ class RoboMinnie:
                         "A brightness scaling factor < 0 is not allowed"
                     assert np.all(self.brightness_scale_factor[t, 0, c] <= 1), \
                         "A brightness scaling factor > 1 will cause an overflow"
-                    np.multiply(
+                    scaled_image = np.multiply(
                         self.presequence_image_tiles[t, c],
                         self.brightness_scale_factor[t, 0, c],
-                        out=self.presequence_image_tiles[t, c],
-                        casting="unsafe", 
-                        dtype=self.image_dtype, 
+                        dtype=np.float32, 
+                        casting="safe", 
                     )
+                    self.presequence_image_tiles[t, c] = np.rint(scaled_image).astype(self.image_dtype)
+                    del scaled_image
         if self.include_anchor:
             self.anchor_image_tiles = self._unstich_image(
                 self.anchor_image[None],
@@ -767,13 +769,14 @@ class RoboMinnie:
                         "A brightness scaling factor < 0 is not allowed"
                     assert np.all(self.brightness_scale_factor[t, self.n_rounds + 1, c] <= 1), \
                         "A brightness scaling factor > 1 will cause an overflow"
-                    np.multiply(
+                    scaled_image = np.multiply(
                         self.anchor_image_tiles[t, c],
                         self.brightness_scale_factor[t, self.n_rounds + 1, c],
-                        out=self.anchor_image_tiles[t, c],
-                        casting="unsafe", 
-                        dtype=self.image_dtype, 
+                        dtype=np.float32, 
+                        casting="safe", 
                     )
+                    self.anchor_image_tiles[t, c] = np.rint(scaled_image).astype(self.image_dtype)
+                    del scaled_image
 
         if os.path.isdir(output_dir) and overwrite:
             shutil.rmtree(output_dir)
