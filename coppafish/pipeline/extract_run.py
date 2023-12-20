@@ -155,6 +155,7 @@ def run_extract(
                         if not file_exists:
                             im = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
                             im = im.astype(np.uint16, casting="safe")
+                            assert np.sum(im) != 0, f"Extracted image {t=}, {r=}, {c=} contains all zeros"
                             # yxz -> zyx
                             im = im.transpose((2, 0, 1))
                             tiles_io._save_image(im, file_path, config["file_type"])
