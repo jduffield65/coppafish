@@ -69,7 +69,7 @@ def _save_image(image: Union[npt.NDArray[np.uint16], jnp.ndarray], file_path: st
         raise ValueError(f'Unsupported `file_type`: {file_type.lower()}')
 
 
-def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[npt.NDArray[np.uint16], zarr.Array]:
+def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> npt.NDArray[np.uint16]:
     """
     Read in image from file_path location.
 
@@ -78,7 +78,7 @@ def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[
         file_type (str): file type. Either `'.npy'` or `'.zarr'`.
         mmap_mode (str, optional): the mmap_mode for numpy loading only. Default: no mapping.
 
-    Returns `ndarray[uint16]` or `zarr.Array[uint16]`: loaded image.
+    Returns `ndarray[uint16]`: loaded image.
 
     Raises:
         ValueError: unsupported file type.
@@ -86,7 +86,7 @@ def _load_image(file_path: str, file_type: str, mmap_mode: str = None) -> Union[
     if file_type.lower() == '.npy':
         return np.load(file_path, mmap_mode=mmap_mode)
     elif file_type.lower() == '.zarr':
-        return zarr.open(file_path, mode='r')
+        return zarr.open(file_path, mode='r')[...]
     else:
         raise ValueError(f'Unsupported `file_type`: {file_type.lower()}')
 
@@ -375,7 +375,7 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
     if shift != 0:
         # change dtype to accommodate negative values and set base value to be zero in the shifted image.
         stitched_image = stitched_image.astype(np.int32) + shift
-    with tqdm(total=z_size * len(nbp_basic.use_tiles)) as pbar:
+    with tqdm(total=z_size * len(nbp_basic.use_tiles), desc="Saving stitched image") as pbar:
         for t in nbp_basic.use_tiles:
             if from_raw:
                 image_t = utils.raw.load_image(nbp_file, nbp_basic, t, c, round_dask_array, r, nbp_basic.use_z)
@@ -392,7 +392,7 @@ def save_stitched(im_file: Union[str, None], nbp_file: NotebookPage, nbp_basic: 
                 if nbp_basic.is_3d:
                     image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False).transpose((2,0,1))
                     if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
-                        image_t = preprocessing.apply_image_shift(image_t, -nbp_basic.tile_pixel_value_shift)
+                        image_t = preprocessing.shift_pixels(image_t, -nbp_basic.tile_pixel_value_shift)
                 else:
                     image_t = load_image(nbp_file, nbp_basic, nbp_extract.file_type, t, r, c, apply_shift=False)
             for z in range(z_size):

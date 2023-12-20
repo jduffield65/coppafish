@@ -6,9 +6,11 @@ from tqdm import tqdm
 import numpy.typing as npt
 from typing import Optional, Tuple
 
-from ..setup.notebook import NotebookPage, Notebook
 from .. import utils, extract
+from ..register import preprocessing
 from ..utils import tiles_io
+from ..filter import deconvolution
+from ..setup.notebook import NotebookPage, Notebook
 
 
 def run_filter(
@@ -18,6 +20,7 @@ def run_filter(
     nbp_scale: NotebookPage,
     nbp_extract: NotebookPage,
     image_t_raw: Optional[npt.NDArray[np.uint16]] = None,
+    return_filtered_image: Optional[bool] = False, 
 ) -> Tuple[NotebookPage, NotebookPage, Optional[npt.NDArray[np.uint16]]]:
     """
     Read in extracted raw images, filter them, then re-save in a different location.
@@ -40,10 +43,13 @@ def run_filter(
     Notes:
         - See `'filter'` and `'filter_debug'` sections of `notebook_comments.json` file for description of variables.
     """
+    # TODO: Refactor this function to make it more readable
     if not nbp_basic.is_3d:
         NotImplementedError(f"2d coppafish is not stable, very sorry! :9")
     if image_t_raw is not None:
-        assert len(nbp_basic.use_tiles) == 1, "If image_t is given, notebook must contain a single tile in use_tiles"
+        assert len(nbp_basic.use_tiles) == 1, "If image_t is given, the notebook must contain a single tile"
+    if return_filtered_image:
+        assert len(nbp_basic.use_tiles) == 1, "To return a filtered image, filter must be run on a single tile"
 
     nbp = NotebookPage("filter")
     nbp_debug = NotebookPage("filter_debug")
@@ -52,7 +58,29 @@ def run_filter(
 
     start_time = time.time()
     file_type = nbp_extract.file_type
-    return_image_t = len(nbp_basic.use_tiles) == 1
+    # get rounds to iterate over
+    use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
+    use_channels_anchor.sort()
+    if nbp_basic.use_anchor:
+        # always have anchor as first round after imaging rounds
+        round_files = nbp_file.round + [nbp_file.anchor]
+        use_rounds = np.arange(len(round_files))
+    else:
+        round_files = nbp_file.round
+        use_rounds = nbp_basic.use_rounds
+    if return_filtered_image:
+        image_t = np.zeros(
+            (
+                nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+                nbp_basic.n_channels,
+                nbp_basic.nz,
+                nbp_basic.tile_sz,
+                nbp_basic.tile_sz,
+            ),
+            dtype=np.uint16,
+        )
+    else:
+        image_t = None
 
     # initialise output of this part of pipeline as 'vars' key
     nbp.auto_thresh = np.zeros(
@@ -80,30 +108,23 @@ def run_filter(
     # initialise debugging info as 'debug' page
     nbp_debug.n_clip_pixels = np.zeros_like(nbp.auto_thresh, dtype=int)
     nbp_debug.clip_extract_scale = np.zeros_like(nbp.auto_thresh)
-
-    # get rounds to iterate over
-    use_channels_anchor = [c for c in [nbp_basic.dapi_channel, nbp_basic.anchor_channel] if c is not None]
-    use_channels_anchor.sort()
-    if nbp_basic.use_anchor:
-        # always have anchor as first round after imaging rounds
-        round_files = nbp_file.round + [nbp_file.anchor]
-        use_rounds = np.arange(len(round_files))
-        n_images = (
-            (len(use_rounds) - 1) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
-            + len(nbp_basic.use_tiles) * len(use_channels_anchor)
-            + len(nbp_basic.use_tiles) * len(nbp_basic.use_rounds) * nbp_extract.continuous_dapi
-        )
-    else:
-        round_files = nbp_file.round
-        use_rounds = nbp_basic.use_rounds
-        n_images = len(use_rounds) * len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
+    nbp_debug.pixel_unique_values = np.full(
+        (
+            nbp_basic.n_tiles,
+            nbp_basic.n_rounds + nbp_basic.n_extra_rounds,
+            nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
     # If we have a pre-sequencing round, add this to round_files at the end
     if nbp_basic.use_preseq:
         round_files = round_files + [nbp_file.pre_seq]
         use_rounds = np.arange(len(round_files))
         pre_seq_round = len(round_files) - 1
-        n_images += len(nbp_basic.use_tiles) * len(nbp_basic.use_channels)
     else:
         pre_seq_round = None
 
@@ -124,18 +145,20 @@ def run_filter(
     else:
         filter_kernel_dapi = None
 
-    # smooth_kernel = utils.strel.fspecial(*tuple(nbp_scale.r_smooth]))
-    smooth_kernel = np.ones(tuple(np.array(nbp_scale.r_smooth, dtype=int) * 2 - 1))
-    smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
+    if nbp_scale.r_smooth is not None:
+        # smooth_kernel = utils.strel.fspecial(*tuple(nbp_scale.r_smooth]))
+        smooth_kernel = np.ones(tuple(np.array(nbp_scale.r_smooth, dtype=int) * 2 - 1))
+        smooth_kernel = smooth_kernel / np.sum(smooth_kernel)
     if config["deconvolve"]:
         if not os.path.isfile(nbp_file.psf):
             (
                 spot_images,
                 config["psf_intensity_thresh"],
                 psf_tiles_used,
-            ) = extract.get_psf_spots(
+            ) = deconvolution.get_psf_spots(
                 nbp_file,
                 nbp_basic,
+                nbp_extract, 
                 nbp_basic.anchor_round,
                 nbp_basic.use_tiles,
                 nbp_basic.anchor_channel,
@@ -147,8 +170,9 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
+                maximum_spots=5_000, 
             )
-            psf = extract.get_psf(spot_images, config["psf_annulus_width"])
+            psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
         else:
             # Know psf only computed for 3D pipeline hence know ndim=3
@@ -161,7 +185,7 @@ def run_filter(
             np.array([nbp_basic.tile_sz, nbp_basic.tile_sz, len(nbp_basic.use_z)])
             + np.array(config["wiener_pad_shape"]) * 2
         )
-        wiener_filter = extract.get_wiener_filter(psf, pad_im_shape, config["wiener_constant"])
+        wiener_filter = deconvolution.get_wiener_filter(psf, pad_im_shape, config["wiener_constant"])
         nbp_debug.psf = psf
         if config["psf_intensity_thresh"] is not None:
             config["psf_intensity_thresh"] = int(config["psf_intensity_thresh"])
@@ -172,28 +196,12 @@ def run_filter(
         nbp_debug.psf_intensity_thresh = None
         nbp_debug.psf_tiles_used = None
 
-    if return_image_t:
-        image_t = np.zeros(
-            (
-                max(use_rounds) + 1,
-                max(
-                    use_channels_anchor
-                    + nbp_basic.use_channels
-                    + [nbp_basic.dapi_channel] * nbp_extract.continuous_dapi
-                )
-                + 1,
-                max(nbp_basic.use_z) + 1,
-                nbp_basic.tile_sz,
-                nbp_basic.tile_sz,
-            ),
-            dtype=np.uint16,
-        )
-    else:
-        image_t = None
-
     with tqdm(
-        total=n_images,
-        desc=f"Filtering extracted {nbp_extract.file_type} tiles",
+        total=(len(use_rounds) - 1)
+            * len(nbp_basic.use_tiles)
+            * (len(nbp_basic.use_channels) + 1 if nbp_basic.dapi_channel is not None else 0)
+            + len(nbp_basic.use_tiles) * len(use_channels_anchor),
+        desc=f"Filtering extracted {nbp_extract.file_type} files",
     ) as pbar:
         for r in use_rounds:
             if r == nbp_basic.anchor_round:
@@ -202,7 +210,9 @@ def run_filter(
                 use_channels = use_channels_anchor
             else:
                 scale = nbp_scale.scale
-                use_channels = nbp_basic.use_channels + [nbp_basic.dapi_channel] * nbp_extract.continuous_dapi
+                use_channels = nbp_basic.use_channels.copy()
+                if nbp_basic.dapi_channel is not None:
+                    use_channels += [nbp_basic.dapi_channel]
 
             for t in nbp_basic.use_tiles:
                 if not nbp_basic.is_3d:
@@ -268,7 +278,10 @@ def run_filter(
                                     c,
                                     yxz=[None, None, nbp_debug.z_info],
                                     suffix="_raw" if r == pre_seq_round else "",
+                                    apply_shift=False, 
                                 )
+                                if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
+                                    im = preprocessing.shift_pixels(im, -nbp_basic.tile_pixel_value_shift)
                             else:
                                 im = im_all_channels_2d[c].astype(np.int32) - nbp_basic.tile_pixel_value_shift
                             (
@@ -276,7 +289,7 @@ def run_filter(
                                 hist_counts_trc,
                                 nbp_debug.n_clip_pixels[t, r, c],
                                 nbp_debug.clip_extract_scale[t, r, c],
-                            ) = extract.get_extract_info(
+                            ) = extract.base.get_extract_info(
                                 im,
                                 config["auto_thresh_multiplier"],
                                 hist_bin_edges,
@@ -288,10 +301,7 @@ def run_filter(
                                 nbp.hist_counts[:, r, c] += hist_counts_trc
                     if not file_exists:
                         if image_t_raw is None:
-                            im_raw = np.asarray(
-                                tiles_io._load_image(file_path_raw, file_type),
-                                dtype=np.uint16,
-                            )
+                            im_raw = tiles_io._load_image(file_path_raw, file_type)
                         else:
                             im_raw = image_t_raw[r, c]
                         # zyx -> yxz
@@ -303,7 +313,7 @@ def run_filter(
                         del im_raw
                         # This will deconcolve dapis as well, but I think that is what we want.
                         if config["deconvolve"]:
-                            im = extract.wiener_deconvolve(im, config["wiener_pad_shape"], wiener_filter)
+                            im = deconvolution.wiener_deconvolve(im, config["wiener_pad_shape"], wiener_filter)
                         if c == nbp_basic.dapi_channel:
                             if filter_kernel_dapi is not None:
                                 im = utils.morphology.top_hat(im, filter_kernel_dapi)
@@ -385,8 +395,12 @@ def run_filter(
                                 suffix="_raw" if r == pre_seq_round else "",
                                 num_rotations=config["num_rotations"],
                             )
-                            if return_image_t:
+                            del im
+                            if return_filtered_image:
                                 image_t[r, c] = saved_im
+                            pixel_unique_values, pixel_unique_counts = np.unique(saved_im, return_counts=True)
+                            nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
+                            nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
                             del saved_im
                         else:
                             im_all_channels_2d[c] = im
@@ -405,5 +419,4 @@ def run_filter(
     nbp.bg_scale = None
     end_time = time.time()
     nbp_debug.time_taken = end_time - start_time
-
     return nbp, nbp_debug, image_t

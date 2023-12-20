@@ -7,7 +7,7 @@ import numpy as np
 def test_apply_image_shift():
     rng = np.random.RandomState(0)
     im = rng.randint(np.iinfo(np.uint16).max, size=(2, 3, 4, 5))
-    output = reg_pre.apply_image_shift(im, -5)
+    output = reg_pre.shift_pixels(im, -5)
     assert output.dtype.name == 'int32', "Expected output to be of type `np.int32`"
     assert (output == (im.astype(np.int32) - 5)).all(), "Unexpected output after image shift"
 

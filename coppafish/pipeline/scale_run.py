@@ -130,7 +130,9 @@ def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage)
             filter_kernel,
             smooth_kernel_2d,
         )
-
+    else:
+        nbp.scale_anchor_tile = None
+        nbp.scale_anchor_z = None
     # Save scale values to disk in case need to re-run
     scale.base.save_scale(nbp_file.scale, nbp.scale, config["scale_anchor"])
     

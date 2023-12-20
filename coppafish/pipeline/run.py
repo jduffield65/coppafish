@@ -1,11 +1,12 @@
 import os
+import sys
 import tqdm
 import joblib
 import warnings
 import numpy as np
 from scipy import sparse
 import numpy.typing as npt
-from typing import Optional, Union
+from typing import Optional
 
 from .. import setup, utils
 from ..setup import Notebook, NotebookPage
@@ -52,7 +53,7 @@ def run_pipeline(
     Returns:
         Notebook: notebook containing all information gathered during the pipeline.
     """
-    nb = initialize_nb(config_file)
+    nb = initialize_nb(config_file)    
     if not parallel:
         run_tile_indep_pipeline(nb)
         run_stitch(nb)
@@ -73,28 +74,39 @@ def run_pipeline(
     return nb
 
 
-def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = True) -> None:
+def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None:
     """
     Run tile-independent pipeline processes.
 
     Args:
         nb (Notebook): notebook containing 'basic_info' and 'file_names' pages.
         run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and 'register', 
-            then merge them together. Default: false.
+            then merge them together. Default: true if PC has >110GB of available memory. False otherwise.
     """
+    if run_tile_by_tile is None:
+        run_tile_by_tile = utils.system.get_available_memory() > 110
+        run_tile_by_tile = False # Currently not stable, needs to be fully tested
+    assert not run_tile_by_tile, "Running tile by tile in memory is still a work in progress"
     run_scale(nb)
     if run_tile_by_tile and nb.basic_info.n_tiles > 1:
         print("Running tile by tile...")
         # Load one tile image into memory to run in both find_spots and register
         nb_tiles = setup.notebook.split_by_tiles(nb)
         for nb_tile in nb_tiles:
-            image_t_raw = run_extract(nb_tile)
-            image_t_filtered = run_filter(nb_tile, image_t_raw)
+            image_t_raw = run_extract(nb_tile, return_image_t=True)
+            image_t_filtered = run_filter(nb_tile, image_t_raw, return_filtered_image=True)
             del image_t_raw
             nb_tile = run_find_spots(nb_tile, image_t_filtered)
             del image_t_filtered
         nb = setup.merge_notebooks(nb_tiles, nb)
+    elif run_tile_by_tile and nb.basic_info.n_tiles == 1:
+        image_t_raw = run_extract(nb, return_image_t=True)
+        image_t_filtered = run_filter(nb, image_t_raw, return_filtered_image=True)
+        del image_t_raw
+        run_find_spots(nb, image_t_filtered)
+        del image_t_filtered
     else:
+        # Version 0.4.1 and below method
         run_extract(nb)
         run_filter(nb)
         run_find_spots(nb)
@@ -125,6 +137,16 @@ def initialize_nb(config_file: str) -> Notebook:
         nb += nbp_basic
     else:
         warnings.warn('basic_info', utils.warnings.NotebookPageWarning)
+    if utils.system.get_software_verison() not in nb.get_unique_versions():
+        warnings.warn(
+            f"You are running on software version {utils.system.get_software_verison()}, but the notebook " \
+            + f"contains data run on versions {nb.get_unique_versions()}."
+        )
+        print("Are you sure you want to continue? (y or n) ", end='')
+        user_input = input()
+        if not user_input.strip().lower() == 'y':
+            print("Exiting...")
+            sys.exit()
     return nb
 
 
@@ -147,7 +169,7 @@ def run_scale(nb: Notebook) -> None:
         warnings.warn('scale', utils.warnings.NotebookPageWarning)
     
 
-def run_extract(nb: Notebook) -> Optional[np.ndarray]:
+def run_extract(nb: Notebook, return_image_t: Optional[bool] = False) -> Optional[np.ndarray]:
     """
     This runs the `extract_and_filter` step of the pipeline to produce the tiff files in the tile directory.
 
@@ -157,14 +179,17 @@ def run_extract(nb: Notebook) -> Optional[np.ndarray]:
 
     Args:
         nb: `Notebook` containing `file_names`, `basic_info` and `scale` pages.
+        return_image_t (bool, optional): return the extracted, unfiltered image for a single tile. Default: false.
         
     Returns:
         `(n_rounds x n_channels x nz x ny x nx) ndarray[uint16]` or None: all extracted images if running on a single 
             tile, otherwise None.
     """
-    if not all(nb.has_page(["extract", "extract_debug"])):
+    if not nb.has_page("extract") or not nb.has_page("extract_debug"):
         config = nb.get_config()
-        nbp, nbp_debug, image_t_raw = extract_run.run_extract(config['extract'], nb.file_names, nb.basic_info, nb.scale)
+        nbp, nbp_debug, image_t_raw = extract_run.run_extract(
+            config['extract'], nb.file_names, nb.basic_info, nb.scale, return_image_t, 
+        )
         nb += nbp
         nb += nbp_debug
         return image_t_raw
@@ -173,7 +198,8 @@ def run_extract(nb: Notebook) -> Optional[np.ndarray]:
         warnings.warn('extract_debug', utils.warnings.NotebookPageWarning)
 
 
-def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
+def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None, return_filtered_image: Optional[bool] = False
+               ) -> Optional[np.ndarray]:
     """
     Run `filter` step of the pipeline to produce filtered images in the tile directory.
 
@@ -181,6 +207,7 @@ def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Option
         nb (Notebook): `Notebook` containing `file_names`, `basic_info`, `scale` and `extract` pages.
         image_t_raw (n_rounds x n_channels x ny x nx x nz): the raw, extracted image for single tile, only given when 
             running on one tile. Default: not given.
+        return_filtered_image (bool, optional): return the filtered image for a single tile. Default: false.
     """
     if not nb.has_page('filter'):
         config = nb.get_config()
@@ -191,6 +218,7 @@ def run_filter(nb: Notebook, image_t_raw: Optional[np.ndarray] = None) -> Option
             nb.scale, 
             nb.extract, 
             image_t_raw, 
+            return_filtered_image, 
         )
         nb += nbp
         nb += nbp_debug
@@ -305,6 +333,8 @@ def run_register(nb: Notebook, image_t: Optional[npt.NDArray[np.uint16]] = None)
         )
         nb += nbp
         nb += nbp_debug
+    reg_images_dir = os.path.join(nb.file_names.output_dir, 'reg_images')
+    if not os.path.isdir(reg_images_dir) or len(os.listdir(reg_images_dir)) == 0:
         # Save reg images
         round_registration_channel = config['register']['round_registration_channel']
         for t in nb.basic_info.use_tiles:

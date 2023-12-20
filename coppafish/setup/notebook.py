@@ -579,6 +579,8 @@ class Notebook:
         np.savez_compressed(self._file, **d)
         # Finishing the diagnostics described above
         print(f"Notebook saved: took {round(time.time() - save_start_time, 3)} seconds")
+        if len(self.get_unique_versions()) > 1:
+            warnings.warn(f"Saved notebook contains more than one software version: \n\t{self.get_unique_versions()}")
 
     def from_file(self, fn: str) -> Tuple[List, dict, float, str]:
         """
@@ -632,6 +634,36 @@ class Notebook:
         assert len(pages) == len(page_times), "Invalid file, lengths don't match"
         assert created_time is not None, "Invalid file, invalid created date"
         return pages, page_times, created_time, config_str
+
+    def get_unique_versions(self) -> List[str]:
+        """
+        Get every unique software version contained in all notebook pages.
+
+        Returns:
+            List[str]: list of unique software versions.
+        """
+        versions = []
+        if self.has_page("basic_info"):
+            versions.append(self.basic_info.software_version)
+        if self.has_page("scale"):
+            versions.append(self.scale.software_version)
+        if self.has_page("extract"):
+            versions.append(self.extract.software_version)
+        if self.has_page("filter"):
+            versions.append(self.filter.software_version)
+        if self.has_page("find_spots"):
+            versions.append(self.find_spots.software_version)
+        if self.has_page("register"):
+            versions.append(self.register.software_version)
+        if self.has_page("stitch"):
+            versions.append(self.stitch.software_version)
+        if self.has_page("ref_spots"):
+            versions.append(self.ref_spots.software_version)
+        if self.has_page("call_spots"):
+            versions.append(self.call_spots.software_version)
+        if self.has_page("omp"):
+            versions.append(self.omp.software_version)
+        return list(set(versions))
 
 
 class NotebookPage:
@@ -874,10 +906,12 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     nbp_extract_list = [nb.extract for nb in nb_list]
     master_nbp_extract = merge_extract(nbp_extract_list, master_nbp_basic)
     master_nb += master_nbp_extract
+    master_nb.extract.finalized = True
     # Make a list of all of extract_debug, merge them and then add page to master
     nbp_extract_debug_list = [nb.extract_debug for nb in nb_list]
     master_nbp_extract_debug = merge_extract_debug(nbp_extract_debug_list, master_nbp_basic)
     master_nb += master_nbp_extract_debug
+    master_nb.extract_debug.finalized = True
     
     # Check for filter and filter_debug pages
     has_filter_and_debug = all(
@@ -890,7 +924,9 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     nbp_filter_debug_list = [nb.filter_debug for nb in nb_list]
     master_nbp_filter_debug = merge_filter_debug(nbp_filter_debug_list, master_nbp_basic)
     master_nb += master_nbp_filter
+    master_nb.filter.finalized = True
     master_nb += master_nbp_filter_debug
+    master_nb.filter_debug.finalized = True
 
     # Check the notebooks contain find_spots page
     has_find_spots = all([nb.has_page('find_spots') for nb in nb_list])
@@ -899,6 +935,7 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     nbp_find_spots_list = [nb.find_spots for nb in nb_list]
     master_nbp_find_spots = merge_find_spots(nbp_find_spots_list, master_nbp_basic)
     master_nb += master_nbp_find_spots
+    master_nb.find_spots.finalized = True
 
     # Check the notebooks contain register page
     has_register = all([nb.has_page('register') for nb in nb_list])
@@ -907,6 +944,7 @@ def merge_notebooks(nb_list: List[Notebook], master_nb: Notebook) -> Notebook:
     nbp_register_list = [nb.register for nb in nb_list]
     master_nbp_register = merge_register(nbp_register_list, master_nbp_basic)
     master_nb += master_nbp_register
+    master_nb.register.finalized = True
 
     # Check the notebooks contain register_debug page
     has_register_debug = all([nb.has_page('register_debug') for nb in nb_list])
@@ -974,9 +1012,24 @@ def merge_extract_debug(nbp_extract_debug_list: List[NotebookPage], master_nbp_b
     master_nbp_extract_debug = NotebookPage('extract_debug')
 
     time_taken = 0
-    for i, _ in enumerate(master_nbp_basic.use_tiles):
+    pixel_unique_values = np.full(
+        (
+            master_nbp_basic.n_tiles,
+            master_nbp_basic.n_rounds + master_nbp_basic.n_extra_rounds,
+            master_nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    pixel_unique_counts = pixel_unique_values.copy()
+    for i, tile in enumerate(master_nbp_basic.use_tiles):
         time_taken += nbp_extract_debug_list[i].time_taken
+        pixel_unique_values[tile] = nbp_extract_debug_list[i].pixel_unique_values[tile]
+        pixel_unique_counts[tile] = nbp_extract_debug_list[i].pixel_unique_counts[tile]
     master_nbp_extract_debug.time_taken = time_taken
+    master_nbp_extract_debug.pixel_unique_values = pixel_unique_values
+    master_nbp_extract_debug.pixel_unique_counts = pixel_unique_counts
 
     return master_nbp_extract_debug
 
@@ -1080,16 +1133,31 @@ def merge_filter_debug(nbp_filter_debug_list: List[NotebookPage], master_nbp_bas
     # Initialise non-trivial variables
     n_clip_pixels = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels), dtype=int)
     clip_extract_scale = np.zeros((n_tiles, n_rounds + master_nbp_basic.n_extra_rounds, n_channels))
+    pixel_unique_values = np.full(
+        (
+            master_nbp_basic.n_tiles,
+            master_nbp_basic.n_rounds + master_nbp_basic.n_extra_rounds,
+            master_nbp_basic.n_channels,
+            np.iinfo(np.uint16).max,
+        ),
+        fill_value=0,
+        dtype=int, 
+    )
+    pixel_unique_counts = pixel_unique_values.copy()
     time_taken = 0.
     # Loop over all tiles in use and assign these their proper values
     for i, tile in enumerate(use_tiles):
         n_clip_pixels[tile] = nbp_filter_debug_list[i].n_clip_pixels[tile]
         clip_extract_scale[tile] = nbp_filter_debug_list[i].clip_extract_scale[tile]
         time_taken += nbp_filter_debug_list[i].time_taken
+        pixel_unique_values[tile] = nbp_filter_debug_list[i].pixel_unique_values[tile]
+        pixel_unique_counts[tile] = nbp_filter_debug_list[i].pixel_unique_counts[tile]
 
     # Assign these values to the notebook page
     master_nbp_filter_debug.n_clip_pixels = n_clip_pixels
     master_nbp_filter_debug.clip_extract_scale = clip_extract_scale
+    master_nbp_filter_debug.pixel_unique_values = pixel_unique_values
+    master_nbp_filter_debug.pixel_unique_counts = pixel_unique_counts
     master_nbp_filter_debug.time_taken = time_taken
     
     return master_nbp_filter_debug
@@ -1281,9 +1349,14 @@ def split_by_tiles(master_notebook: Notebook) -> List[Notebook]:
     notebook_dir = PurePath(master_notebook._file).parent
     use_tiles = master_notebook.basic_info.use_tiles
     for tile in use_tiles:
+        tile_notebook_path = os.path.join(notebook_dir, f"notebook_t{tile}")
+        if os.path.isfile(tile_notebook_path):
+            new_notebook = Notebook(tile_notebook_path)
+            output.append(new_notebook)
+            continue
         new_notebook = copy.deepcopy(master_notebook)
         new_notebook._created_time = time.time()
-        new_notebook._file = os.path.join(notebook_dir, f"notebook_t{tile}")
+        new_notebook._file = tile_notebook_path
         
         new_notebook.basic_info.finalized = False
         del new_notebook.basic_info.use_tiles, new_notebook.basic_info.n_tiles

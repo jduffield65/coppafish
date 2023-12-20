@@ -30,6 +30,8 @@ def set_file_names(nb, nbp):
     nbp.output_dir = config['output_dir']
     nbp.tile_dir = config['tile_dir']
     nbp.tile_unfiltered_dir = os.path.join(config['tile_dir'], 'raw')
+    if not os.path.isdir(nbp.tile_unfiltered_dir):
+        os.mkdir(nbp.tile_unfiltered_dir)
     nbp.fluorescent_bead_path = config['fluorescent_bead_path']
 
     # remove file extension from round and anchor file names if it is present

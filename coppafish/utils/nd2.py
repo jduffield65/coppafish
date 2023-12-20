@@ -138,7 +138,7 @@ def get_all_metadata(file_path: str) -> dict:
 
     with nd2.ND2File(file_path) as images:
         metadata = images.unstructured_metadata()
-    return metadata
+    return dict(metadata)
 
 
 def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:

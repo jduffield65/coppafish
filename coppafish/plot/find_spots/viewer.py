@@ -116,7 +116,7 @@ class view_find_spots:
                 nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c, apply_shift=False
             )
             if not (r == nb.basic_info.anchor_round and c == nb.basic_info.dapi_channel):
-                self.image = preprocessing.apply_image_shift(self.image, -nb.basic_info.tile_pixel_value_shift)
+                self.image = preprocessing.shift_pixels(self.image, -nb.basic_info.tile_pixel_value_shift)
             scale = 1  # Can be any value as not actually used but needed as argument in get_extract_info
 
         # Get auto_threshold value used to detect spots
