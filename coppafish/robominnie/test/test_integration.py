@@ -170,7 +170,7 @@ def test_bg_subtraction() -> None:
     
     rng = np.random.RandomState(0)
 
-    robominnie = RoboMinnie(brightness_scale_factor=2 * (0.1 + rng.rand(1, 9, 8)))
+    robominnie = RoboMinnie(brightness_scale_factor=rng.rand(1, 9, 8)/4 + 0.75)
     robominnie.generate_gene_codes()
     robominnie.generate_pink_noise()
     robominnie.add_spots(n_spots=15_000, 
@@ -464,5 +464,5 @@ def test_viewers() -> None:
 
 
 if __name__ == '__main__':
-    test_integration_003()
+    test_bg_subtraction()
     test_viewers()
