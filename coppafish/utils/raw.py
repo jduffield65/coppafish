@@ -1,10 +1,10 @@
 import os
 import re
 import numpy as np
-from typing import List, Optional
 import warnings
 import dask.array
 from tqdm import tqdm
+from typing import List, Optional, Tuple, Union
 
 from .errors import OutOfBoundsError
 from ..utils import nd2
@@ -74,18 +74,19 @@ def metadata_sanity_check(metadata: dict, round_folder_path: str) -> List:
     return tiles
 
 
-def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.array.Array:
+def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> Tuple[dask.array.Array, Union[dict, None]]:
     """
     Loads in the memmap round_dask_array containing images for all tiles/channels in the round.
     This can later be used to load in more quickly.
 
     Args:
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
-        r: Round considering (anchor will be assumed to be the last round if using).
-    Returns:
-        Dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
+        nbp_file: `file_names` notebook page.
+        nbp_basic: `basic_info` notebook page.
+        r: round considering (anchor will be assumed to be the last round if using).
 
+    Returns:
+        - dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
+        - dict of all found metadata in ND2 file. None if not using [file_names][raw_extension] = .nd2.
     """
 
     n_tiles, tile_sz, nz = nbp_basic.n_tiles, nbp_basic.tile_sz, nbp_basic.nz
@@ -107,6 +108,8 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
     if not np.isin(nbp_file.raw_extension, ['.nd2', '.npy', 'jobs']):
         raise ValueError(f"nbp_file.raw_extension must be '.nd2', '.npy' or 'jobs' but it is {nbp_file.raw_extension}.")
 
+    all_metadata = None
+
     if nbp_file.raw_extension != 'jobs':
         if nbp_basic.use_anchor:
             # always have anchor as first round after imaging rounds
@@ -118,6 +121,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
         round_file = os.path.join(nbp_file.input_dir, round_files[r])
         if nbp_file.raw_extension == '.nd2':
             round_dask_array = nd2.load(round_file + nbp_file.raw_extension)
+            all_metadata = nd2.get_all_metadata(round_file + nbp_file.raw_extension)
         elif nbp_file.raw_extension == '.npy':
             round_dask_array = dask.array.from_npy_stack(round_file)
     else:
@@ -184,7 +188,7 @@ def load_dask(nbp_file: NotebookPage, nbp_basic: NotebookPage, r: int) -> dask.a
             # now concatenate dask arrays
         round_dask_array = dask.array.stack(round_laser_dask_array, axis=0)
 
-    return round_dask_array
+    return round_dask_array, all_metadata
 
 
 def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
@@ -205,6 +209,7 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
             Don't need to provide if give round_dask_array.
         use_z: z-planes to load in.
             If use_z = None, will load in all z-planes.
+    
     Returns:
         numpy array [n_y x n_x x len(use_z)].
     """
@@ -225,8 +230,7 @@ def load_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, t: int, c: int,
             round_file = os.path.join(nbp_file.input_dir, round_files[r])
             round_dask_array = dask.array.from_npy_stack(round_file)
         elif nbp_file.raw_extension == 'jobs':
-            round_dask_array = load_dask(nbp_file, nbp_basic, r)
-
+            round_dask_array, _ = load_dask(nbp_file, nbp_basic, r)
 
     # Return a tile/channel/z-planes from the dask array.
     if use_z is None:

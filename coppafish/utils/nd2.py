@@ -1,11 +1,11 @@
 import numpy as np
 import nd2
 import os
-from typing import Optional, List, Union
 import json
 import numpy_indexed
 import numbers
 from tqdm import tqdm
+from typing import Optional, List, Union, Tuple
 
 from .. import setup
 from ..setup import NotebookPage
@@ -17,9 +17,9 @@ from . import errors
 # https://stackoverflow.com/questions/35569042/ssl-certificate-verify-failed-with-python3
 
 # nd2 library Does not work with Mac M1
-def load(file_path: str) -> np.ndarray:
+def load(file_path: str) -> Tuple[np.ndarray, dict]:
     """
-    Returns dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
+    Get ND2 as a dask array with indices in order `fov`, `channel`, `y`, `x`, `z`.
 
     Args:
         file_path: Path to desired nd2 file.
@@ -121,6 +121,24 @@ def get_metadata(file_path: str, config: dict) -> dict:
         metadata['nz'] = nz
 
     return metadata
+
+
+def get_all_metadata(file_path: str) -> dict:
+    """
+    Gets all found metadata from nd2 file.
+
+    Args:
+        file_path (str): path to desired nd2 file.
+
+    Returns:
+        dict: dictionary containing all found metadata for given ND2 file.
+    """
+    if not os.path.isfile(file_path):
+        raise errors.NoFileError(file_path)
+
+    with nd2.ND2File(file_path) as images:
+        metadata = images.unstructured_metadata()
+    return dict(metadata)
 
 
 def get_jobs_metadata(files: list, input_dir: str, config: dict) -> dict:
@@ -436,7 +454,7 @@ def get_raw_images(nbp_basic: NotebookPage, nbp_file: NotebookPage, tiles: List[
     with tqdm(total=n_images) as pbar:
         pbar.set_description(f'Loading in raw data')
         for r in range(n_rounds):
-            round_dask_array = raw.load_dask(nbp_file, nbp_basic, r=rounds[r])
+            round_dask_array, _ = raw.load_dask(nbp_file, nbp_basic, r=rounds[r])
             # TODO: Can get rid of these two for loops, when round_dask_array is always a dask array.
             #  At the moment though, is not dask array when using nd2_reader (On Mac M1).
             for t in range(n_tiles):

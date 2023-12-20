@@ -1,10 +1,13 @@
 import warnings
 from typing import Optional, Tuple, List
 import numpy as np
-import jax as _ # must import jax for non-jax pipeline to work
+import jax # must import jax for non-jax pipeline to work
 
 from . import detect
 from .. import utils
+
+# Silence jax CPU warning
+jax.config.update('jax_platform_name', 'cpu')
 
 
 def detect_spots(image: np.ndarray, intensity_thresh: float, radius_xy: Optional[int], radius_z: Optional[int] = None,

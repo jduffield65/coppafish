@@ -2,10 +2,26 @@ import os
 import pickle
 import skimage
 import numpy as np
+import numpy.typing as npt
 from typing import Optional, Tuple
 
 from ..setup import NotebookPage
 from ..utils import tiles_io
+
+
+def shift_pixels(image: npt.NDArray[np.uint16], tile_pixel_value_shift: int) -> npt.NDArray[np.int32]:
+    """
+    Apply an integer, negative shift to every image pixel and convert datatype from uint16 to int32.
+
+    Args:
+        image (`ndarray[uint16]`): image to shift.
+        tile_pixel_value_shift (int): shift.
+
+    Returns:
+        `ndarray[int32]`: shifted image.
+    """
+    assert tile_pixel_value_shift <= 0, "Cannot shift by a positive number"
+    return image.astype(np.int32) + tile_pixel_value_shift
 
 
 def load_reg_data(nbp_file: NotebookPage, nbp_basic: NotebookPage, config: dict):
@@ -282,10 +298,11 @@ def zyx_to_yxz_affine(A: np.ndarray, new_origin: np.ndarray = np.array([0, 0, 0]
 
 def custom_shift(array: np.ndarray, offset: np.ndarray, constant_values=0):
     """
-    Custom-built function to compute array shifted by a certain offset
+    Compute array shifted by a certain offset.
+    
     Args:
-        array: array to be shifted
-        offset: shift value (must be int)
+        array: array to be shifted.
+        offset: shift value (must be int).
         constant_values: This is the value used for points outside the boundaries after shifting.
 
     Returns:
@@ -360,11 +377,11 @@ def generate_reg_images(nb, t: int, r: int, c: int, filter: bool = False, image_
         z_planes = nb.basic_info.use_z
     else:
         z_central_index = int(np.floor(np.median(np.arange(len(nb.basic_info.use_z)))))
-        z_planes = [nb.basic_info.use_z[z_central_index + i] for i in range(-4, 6)]
+        z_planes = [nb.basic_info.use_z[z_central_index + i] - min(nb.basic_info.use_z) for i in range(-4, 6)]
     tile_centre = np.array([yx_centre[0], yx_centre[1]])
 
     # Get the image for the tile and channel
-    im = yxz_to_zyx(tiles_io.load_tile(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c,
+    im = yxz_to_zyx(tiles_io.load_image(nb.file_names, nb.basic_info, nb.extract.file_type, t, r, c,
                     [
                         np.arange(tile_centre[0] - yx_radius, tile_centre[0] + yx_radius), 
                         np.arange(tile_centre[1] - yx_radius, tile_centre[1] + yx_radius), 

@@ -13,7 +13,7 @@ from ..setup import NotebookPage
 from ..call_spots import dot_product_optimised
 
 if jax.default_backend() == 'cpu':
-    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.threads.get_available_cores()}'
+    os.environ['XLA_FLAGS'] = f'--xla_force_host_platform_device_count={utils.system.get_core_count()}'
 
 
 def fit_coefs_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray,
@@ -553,11 +553,12 @@ def get_all_coefs(pixel_colors: jnp.ndarray, bled_codes: jnp.ndarray, background
     return np.asarray(gene_coefs, np.float32), np.asarray(background_coefs, dtype=np.float32)
 
 
-def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, config: dict, 
-                        tile: int, use_z: List[int], z_chunk_size: int, n_genes: int, 
-                        transform: Union[np.ndarray, np.ndarray], color_norm_factor: Union[np.ndarray, np.ndarray], 
-                        initial_intensity_thresh: float, bled_codes: Union[np.ndarray, np.ndarray], 
-                        dp_norm_shift: Union[int, float]) -> Tuple[np.ndarray, Any]:
+def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_extract: NotebookPage, 
+                        nbp_filter: NotebookPage, config: dict, tile: int, use_z: List[int], z_chunk_size: int, 
+                        n_genes: int, transform: Union[np.ndarray, np.ndarray], 
+                        color_norm_factor: Union[np.ndarray, np.ndarray], initial_intensity_thresh: float, 
+                        bled_codes: Union[np.ndarray, np.ndarray], dp_norm_shift: Union[int, float]
+                        ) -> Tuple[np.ndarray, Any]:
     """
     Get each pixel OMP coefficients for a particular tile.
     
@@ -594,7 +595,7 @@ def get_pixel_coefs_yxz(nbp_basic: NotebookPage, nbp_file: NotebookPage, nbp_ext
         print(f"z_chunk {z_chunk + 1}/{z_chunks}")
         # While iterating through tiles, only save info for rounds/channels using
         # - add all rounds/channels back in later. This returns colors in use_rounds/channels only and no invalid.
-        pixel_yxz_tz, pixel_colors_tz = coefs.get_pixel_colours(nbp_basic, nbp_file, nbp_extract, int(tile), z_chunk, 
+        pixel_yxz_tz, pixel_colors_tz = coefs.get_pixel_colours(nbp_basic, nbp_file, nbp_extract, nbp_filter, int(tile), z_chunk, 
                                                                 z_chunk_size, np.asarray(transform), 
                                                                 np.asarray(color_norm_factor))
 

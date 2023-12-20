@@ -1,24 +1,20 @@
 import numpy as np
 import warnings
-try:
-    import importlib_resources
-except ModuleNotFoundError:
-    import importlib.resources as importlib_resources
 from typing import Tuple
+from tqdm import tqdm
+from itertools import product
 
 from ..setup.notebook import NotebookPage
 from .. import call_spots
 from .. import spot_colors
 from .. import utils
-from ..extract import scale
+from .. import scale
 from ..call_spots import get_spot_intensity
-from tqdm import tqdm
-from itertools import product
 
 
 def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage,
-                         nbp_ref_spots: NotebookPage, nbp_extract: NotebookPage, transform: np.ndarray,
-                         overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
+                         nbp_ref_spots: NotebookPage, nbp_extract: NotebookPage, nbp_filter: NotebookPage, 
+                         transform: np.ndarray, overwrite_ref_spots: bool = False) -> Tuple[NotebookPage, NotebookPage]:
     """
     This produces the bleed matrix and expected code for each gene as well as producing a gene assignment based on a
     simple dot product for spots found on the reference round.
@@ -31,12 +27,14 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
 
     Args:
         config: Dictionary obtained from `'call_spots'` section of config file.
-        nbp_file: `file_names` notebook page
-        nbp_basic: `basic_info` notebook page
+        nbp_file: `file_names` notebook page.
+        nbp_basic: `basic_info` notebook page.
         nbp_ref_spots: `ref_spots` notebook page containing all variables produced in `pipeline/reference_spots.py` i.e.
             `local_yxz`, `isolated`, `tile`, `colors`.
             `gene_no`, `score`, `score_diff`, `intensity` should all be `None` to add them here, unless
             `overwrite_ref_spots == True`.
+        nbp_extract: `extract` notebook page.
+        nbp_filter: `filter` notebook page.
         transform: float [n_tiles x n_rounds x n_channels x 4 x 3] affine transform for each tile, round and channel
         overwrite_ref_spots: If `True`, the variables:
             * `gene_no`
@@ -72,6 +70,8 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         if hasattr(nbp_ref_spots, var):
             nbp_ref_spots.__delattr__(var)
     nbp = NotebookPage("call_spots")
+    nbp.software_version = utils.system.get_software_verison()
+    nbp.revision_hash = utils.system.get_git_revision_hash()
 
     # 0. Initialise frequently used variables
     # Load gene names and codes
@@ -144,6 +144,9 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         tile_colours = colours[spot_tile == t]
         tile_bg_colours = bg_colours[spot_tile == t]
         tile_bg_strength = np.sum(np.abs(tile_bg_colours), axis=(1, 2))
+        if np.allclose(tile_bg_strength, tile_bg_strength[0]):
+            # All pixels have the same background strength
+            continue
         weak_bg = tile_bg_strength < np.percentile(tile_bg_strength, 50)
         if (np.all(np.logical_not(weak_bg))):
             continue
@@ -243,15 +246,15 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
     nbp.gene_efficiency = gene_efficiency
 
     # Extract abs intensity percentile
-    central_tile = scale.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
+    central_tile = scale.base.central_tile(nbp_basic.tilepos_yx, nbp_basic.use_tiles)
     if nbp_basic.is_3d:
-        mid_z = int(nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2)
+        mid_z = int(nbp_basic.use_z[0] + (nbp_basic.use_z[-1] - nbp_basic.use_z[0]) // 2 - min(nbp_basic.use_z))
     else:
         mid_z = None
     pixel_colors = spot_colors.get_spot_colors(spot_colors.all_pixel_yxz(nbp_basic.tile_sz, nbp_basic.tile_sz, mid_z),
-                                               central_tile, transform, nbp_file, nbp_basic, nbp_extract,
+                                               central_tile, transform, nbp_file, nbp_basic, nbp_extract, nbp_filter, 
                                                return_in_bounds=True)[0]
-    pixel_intensity = get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[central_tile])
+    pixel_intensity = call_spots.get_spot_intensity(np.abs(pixel_colors) / colour_norm_factor[central_tile])
     nbp.abs_intensity_percentile = np.percentile(pixel_intensity, np.arange(1, 101))
 
     return nbp, nbp_ref_spots

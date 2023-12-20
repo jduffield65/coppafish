@@ -1,3 +1,36 @@
+2023/12/19 Alpha Update (v0.5.0):
+ * Extract and filter has now become two separate sections in the notebook. Extract runs first, then filter. We save 
+    raw, extracted images in the tiles_dir/raw directory. Also, when running from raw ND2 files, we keep all the found 
+    metadata from the ND2s for each round in a file called 'nd2_metadata_r{r}.pkl' inside the tiles_dir/raw directory. 
+    This way we hope the raw ND2 files can be deleted without loss of any data.
+ * All filter related config variables are now inside a new [filter] config section, i.e. variables r_dapi, 
+    r_dapi_auto_microns, auto_thresh_multiplier, deconvolve, all psf-related variables, wiener_constant, 
+    wiener_pad_shape, n_clip_warn, n_clip_error, n_clip_error_images_thresh, num_rotations and pre_seq_blur_radius.
+ * Default extraction file type (['extract']['file_type']) is now .zarr instead of .npy. This file_type is also used 
+    when saving the filtered images in the tiles_dir directory.
+ * Multiprocessing to compute background scales now includes no disk reading (safer).
+ * The disk reading multiprocessing in OMP has been removed (safer).
+ * The git hash and software version for each notebook section is saved when that pipeline section is run through.
+ * OMP now runs on a single z plane at a time.
+ * Default psf_isolation_dist in 'filter' config section changed from 20 -> 10.
+ * psf is calculated on no more than 5,000 isolated spots to stop memory crashes in the filter section. This should be 
+    more than sufficient to converge.
+ * Call spots probability thresholds are not constants any more, they are now computed percentiles based on the gene 
+    probability values.
+ * Shift score hist in SVR diagnostics in the Registration Viewer now does not crash.
+ * Round score shift colour-map in SVR diagnostics in the Registration Viewer is fixed when z_subvols is 1.
+ * If a notebook is run on two different versions, a warning is given and the user is asked if they want to continue.
+ * The notebook now contains variables pixel_unique_values and pixel_unique_counts in 'extract_debug' and 
+    'filter_debug' pages. They contain a count of every unique pixel in the unfiltered and filtered images for future 
+    diagnostics.
+ * Fixed a register image shifting bug.
+ * Fixed deconvolution bug.
+ * Fixed reg_images not being saved after crashing on.
+ * Fixed bugs when basic_info.use_z does not include 0.
+ * Silenced notebook numpy-related warning.
+ * Silenced jax CPU warning.
+
+
 2023/11/16 Alpha Update (v0.4.0):
  * Improved outlier removal for shift calculations in registration.
  * Further optimisations.

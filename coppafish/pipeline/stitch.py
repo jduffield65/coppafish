@@ -2,6 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import warnings
 
+from .. import utils
 from ..stitch import starting_shifts as stitch_starting_shifts
 from ..stitch import shift as stich_shift
 from ..stitch import tile_origin as stitch_tile_origin
@@ -31,6 +32,8 @@ def stitch(config: dict, nbp_basic: NotebookPage, local_yxz: np.ndarray, spot_no
             global coordinates.
     """
     nbp_debug = NotebookPage("stitch")
+    nbp_debug.software_version = utils.system.get_software_verison()
+    nbp_debug.revision_hash = utils.system.get_git_revision_hash()
     directions = ['north', 'east']
     coords = ['y', 'x', 'z']
     shifts = stitch_starting_shifts.get_shifts_to_search(config, nbp_basic, nbp_debug)

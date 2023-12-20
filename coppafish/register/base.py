@@ -120,15 +120,15 @@ def find_zyx_shift(subvol_base, subvol_target, pearson_r_threshold=0.9):
     mask = shift_base != 0
     shift_corr = np.corrcoef(shift_base[mask], subvol_target[mask])[0, 1]
     if np.isnan(shift_corr):
-        shift_corr = 0
+        shift_corr = 0.
     mask = alt_shift_base != 0
     alt_shift_corr = np.corrcoef(alt_shift_base[mask], subvol_target[mask])[0, 1]
     if np.isnan(alt_shift_corr):
-        alt_shift_corr = 0
+        alt_shift_corr = 0.
     mask = subvol_base != 0
     base_corr = np.corrcoef(subvol_base[mask], subvol_target[mask])[0, 1]
     if np.isnan(base_corr):
-        base_corr = 0
+        base_corr = 0.
 
     # Now return the shift with the highest correlation coefficient
     if alt_shift_corr > shift_corr:
