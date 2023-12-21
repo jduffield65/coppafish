@@ -1,3 +1,11 @@
+2023/12/21 Alpha Update (v0.6.1):
+ * Extraction directory now created in extract step of pipeline bug fix.
+
+
+2023/12/21 Alpha Update (v0.6.0):
+ * `export_to_pciseq` function now supports exporting gene probabilities.
+
+
 2023/12/19 Alpha Update (v0.5.0):
  * Extract and filter has now become two separate sections in the notebook. Extract runs first, then filter. We save 
     raw, extracted images in the tiles_dir/raw directory. Also, when running from raw ND2 files, we keep all the found 
