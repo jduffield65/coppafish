@@ -216,6 +216,7 @@ _options = {
             'intensity': 'maybe_number',
             'score_ref': 'number',
             'score_omp': 'number',
+            'score_prob': 'number',
             'score_omp_multiplier': 'number'
         },
     'reg_to_anchor_info':

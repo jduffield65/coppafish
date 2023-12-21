@@ -4,6 +4,10 @@
     filter and find_spots sections.
 
 
+2023/12/21 Alpha Update (v0.6.1):
+ * Extraction directory now created in extract step of pipeline bug fix.
+
+
 2023/12/21 Alpha Update (v0.6.0):
  * `export_to_pciseq` function now supports exporting gene probabilities.
 
