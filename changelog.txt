@@ -1,3 +1,13 @@
+2023/12/dd Alpha Update (v0.7.0):
+ * New diagnostics PDF builder has been created. It can be imported through `from coppafish import BuildPDF`, then with 
+    the notebook open as `nb`, it can be run by `BuildPDF(nb)`. It currently shows diagnostic plots for scale, extract, 
+    filter and find_spots sections.
+
+
+2023/12/21 Alpha Update (v0.6.0):
+ * `export_to_pciseq` function now supports exporting gene probabilities.
+
+
 2023/12/19 Alpha Update (v0.5.0):
  * Extract and filter has now become two separate sections in the notebook. Extract runs first, then filter. We save 
     raw, extracted images in the tiles_dir/raw directory. Also, when running from raw ND2 files, we keep all the found 

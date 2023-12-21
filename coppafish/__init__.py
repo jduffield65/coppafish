@@ -7,6 +7,7 @@ from ._version import __version__
 try:
     from . import plot
     from .plot import Viewer
+    from.plot.pdf.base import BuildPDF
 except ModuleNotFoundError:
     # So no error if not installed napari/matplotlib etc
     pass
