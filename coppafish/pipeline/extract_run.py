@@ -99,6 +99,9 @@ def run_extract(
         dtype=int,
     )
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
+    
+    if not os.path.isdir(nbp_file.tile_unfiltered_dir):
+        os.mkdir(nbp_file.tile_unfiltered_dir)
 
     with tqdm(
         total=(len(use_rounds) - 1)
