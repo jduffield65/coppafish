@@ -399,9 +399,12 @@ def run_filter(
                             if return_filtered_image:
                                 image_t[r, c] = saved_im
                             pixel_unique_values, pixel_unique_counts = np.unique(saved_im, return_counts=True)
+                            del saved_im
+                            if pixel_unique_values.size <= 1:
+                                raise ValueError(f"Filtered image for {t=}, {r=}, {c=} only contains pixel value " 
+                                                 + "{pixel_unique_values}")
                             nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
                             nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
-                            del saved_im
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)
