@@ -1,3 +1,9 @@
+2023/12/dd Alpha Update (v0.7.0):
+ * New diagnostics PDF builder has been created. It can be imported through `from coppafish import BuildPDF`, then with 
+    the notebook open as `nb`, it can be run by `BuildPDF(nb)`. It currently shows diagnostic plots for scale, extract, 
+    filter and find_spots sections.
+
+
 2023/12/21 Alpha Update (v0.6.1):
  * Extraction directory now created in extract step of pipeline bug fix.
 
