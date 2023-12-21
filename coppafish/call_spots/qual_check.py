@@ -86,7 +86,7 @@ def quality_threshold(nb: Notebook, method: str = 'omp', intensity_thresh: float
 
     Args:
         nb: Notebook containing at least the `ref_spots` page.
-        method: `'ref'` or `'omp'` indicating which spots to consider.
+        method: `'ref'` or `'omp'` or 'prob' indicating which spots to consider.
         intensity_thresh: Intensity threshold for spots included.
         score_thresh: Score threshold for spots included.
 
@@ -94,14 +94,21 @@ def quality_threshold(nb: Notebook, method: str = 'omp', intensity_thresh: float
         `bool [n_spots]` indicating which spots pass quality thresholding.
 
     """
-    if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
+    if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor' and method.lower() != 'prob':
         raise ValueError(f"method must be 'omp' or 'anchor' but {method} given.")
     method_omp = method.lower() == 'omp'
+    method_anchor = method.lower() == 'anchor' or method.lower() == 'ref'
+    method_prob = method.lower() == 'prob'
     # If thresholds are not given, get them from config file or notebook (preferably from notebook)
     if intensity_thresh == 0 and score_thresh == 0:
         intensity_thresh = get_intensity_thresh(nb)
         config = nb.get_config()['thresholds']
-        score_thresh = config['score_omp'] if method_omp else config['score_ref']
+        if method_omp:
+            score_thresh = config['score_omp']
+        elif method_anchor:
+            score_thresh = config['score_ref']
+        elif method_prob:
+            score_thresh = config['score_prob']
         score_multiplier = config['score_omp_multiplier'] if method_omp else None
         # if thresholds page exists, use those values to override config file
         if nb.has_page('thresholds'):
@@ -111,6 +118,11 @@ def quality_threshold(nb: Notebook, method: str = 'omp', intensity_thresh: float
         score_multiplier = 1
 
     intensity = nb.omp.intensity if method_omp else nb.ref_spots.intensity
-    score = omp_spot_score(nb.omp, score_multiplier) if method_omp else nb.ref_spots.score
+    if method_omp:
+        score = omp_spot_score(nb.omp, score_multiplier)
+    elif method_anchor:
+        score = nb.ref_spots.score
+    elif method_prob:
+        score = np.max(nb.ref_spots.gene_probs, axis=1)
     qual_ok = np.array([score > score_thresh, intensity > intensity_thresh]).all(axis=0)
     return qual_ok

@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 
 from ..call_spots import qual_check
@@ -26,7 +27,7 @@ def get_thresholds_page(nb: Notebook) -> NotebookPage:
     return nbp
 
 
-def export_to_pciseq(nb: Notebook, method = 'omp', intensity_thresh: float = 0, score_thresh: float = 0):
+def export_to_pciseq(nb: Notebook, method='omp', intensity_thresh: float = 0, score_thresh: float = 0):
     """
     This saves .csv files containing plotting information for pciseq-
 
@@ -43,15 +44,19 @@ def export_to_pciseq(nb: Notebook, method = 'omp', intensity_thresh: float = 0, 
 
     Args:
         nb: Notebook for the experiment containing at least the *ref_spots* page.
-        method: `'ref'` or `'omp'` indicating which spots to consider.
+        method: `'ref'` or `'omp'` or `'anchor'` or 'prob'. Default: `'omp'`.
         intensity_thresh: Intensity threshold for spots included.
         score_thresh: Score threshold for spots included.
 
     """
-    if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor':
-        raise ValueError(f"method must be 'omp' or 'anchor' but {method} given.")
+    if method.lower() != 'omp' and method.lower() != 'ref' and method.lower() != 'anchor' and method.lower() != 'prob':
+        raise ValueError(f"method must be 'omp', 'anchor' or 'prob' but {method} given.")
     page_name = 'omp' if method.lower() == 'omp' else 'ref_spots'
-    index = 0 if method.lower() == 'omp' else 1
+    index = 0
+    if method.lower() == 'ref' or method.lower() == 'anchor':
+        index = 1
+    elif method.lower() == 'prob':
+        index = 2
     if not nb.has_page(page_name):
         raise ValueError(f"Notebook does not contain {page_name} page.")
     if os.path.isfile(nb.file_names.pciseq[index]):
@@ -61,7 +66,13 @@ def export_to_pciseq(nb: Notebook, method = 'omp', intensity_thresh: float = 0, 
     # get coordinates in stitched image
     global_spot_yxz = nb.__getattribute__(page_name).local_yxz + \
                       nb.stitch.tile_origin[nb.__getattribute__(page_name).tile]
-    spot_gene = nb.call_spots.gene_names[nb.__getattribute__(page_name).gene_no[qual_ok]]
+    if method.lower() == 'omp':
+        spot_gene = nb.call_spots.gene_names[nb.omp.gene_no]
+    elif method.lower() == 'ref' or method.lower() == 'anchor':
+        spot_gene = nb.call_spots.gene_names[nb.ref_spots.gene_no]
+    elif method.lower() == 'prob':
+        spot_gene = nb.call_spots.gene_names[np.argmax(nb.ref_spots.gene_probs, axis=1)]
+    spot_gene = spot_gene[qual_ok]
     global_spot_yxz = global_spot_yxz[qual_ok]
     df_to_export = pd.DataFrame(data=global_spot_yxz, index=spot_gene, columns=['y', 'x', 'z_stack'])
     df_to_export['Gene'] = df_to_export.index
