@@ -19,7 +19,7 @@ setup(
     maintainer='Reilly Tilbury',
     maintainer_email='reillytilbury@gmail.com',
     license='MIT',
-    python_requires='>=3.8, <3.11',
+    python_requires='>3.8, <3.11',
     url='https://jduffield65.github.io/coppafish/',
     packages=packages,
     install_requires=['numpy', 'numpy_indexed', 'tqdm', 'scipy', 'scikit-learn', 'opencv-python-headless',
