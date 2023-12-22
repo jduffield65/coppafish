@@ -13,14 +13,15 @@ def test_BuildPDF():
     if not os.path.isfile(robominnie_notebook):
         assert False, f"Could not find robominnie notebook at\n\t{robominnie_notebook}\nRun an integration test first"
 
-    # nb = Notebook(robominnie_notebook)
-    # BuildPDF(nb)
+    nb = Notebook(robominnie_notebook)
+    BuildPDF(nb)
 
-    nb = Notebook("/home/paul/Documents/coppafish/dante/output/notebook.npz")
-    BuildPDF(
-        nb,
-        output_path="/home/paul/Documents/coppafish/my_branch/coppafish/coppafish/robominnie/test/integration_dir/output_coppafish/diagnostics.pdf",
-    )
+    # nb = Notebook("/home/paul/Documents/coppafish/dante/output_tiles4_5/notebook.npz")
+    # BuildPDF(
+    #     nb,
+    #     output_path="/home/paul/Documents/coppafish/my_branch/coppafish/coppafish/robominnie/test/integration_dir/output_coppafish/diagnostics.pdf",
+    # )
 
 
-test_BuildPDF()
+if __name__ == "__main__":
+    test_BuildPDF()
