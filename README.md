@@ -20,6 +20,22 @@ Python 3.9 or 3.10
 [Git](https://git-scm.com/) (optional).
 
 
+## Installation
+For a frozen environment on the latest alpha:
+```console
+git clone --depth 1 https://github.com/reillytilbury/coppafish
+pip install -r ./coppafish/requirements.txt
+pip install ./coppafish[plotting,optimised]
+```
+
+To keep the local copy of coppafish, in a chosen directory:
+```console
+git clone --depth 1 https://github.com/reillytilbury/coppafish
+pip install -r ./coppafish/requirements.txt
+pip install -e ./coppafish[plotting,optimised]
+```
+
+
 ## Documentation
 For more information on installation and usage, please see the 
 [documentation](https://jduffield65.github.io/coppafish/).
