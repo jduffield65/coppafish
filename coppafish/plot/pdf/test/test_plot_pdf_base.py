@@ -21,6 +21,3 @@ def test_BuildPDF():
         nb,
         output_path="/home/paul/Documents/coppafish/my_branch/coppafish/coppafish/robominnie/test/integration_dir/output_coppafish/diagnostics.pdf",
     )
-
-
-test_BuildPDF()
