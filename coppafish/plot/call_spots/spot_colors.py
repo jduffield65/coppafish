@@ -218,20 +218,22 @@ class view_codes(ColorPlotBase):
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
         """
-        t = nb.ref_spots.tile[spot_no]
+        if method.lower() == 'omp':
+            page_name = 'omp'
+            t = nb.omp.tile[spot_no]
+            config = nb.get_config()['thresholds']
+            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
+        else:
+            page_name = 'ref_spots'
+            spot_score = nb.ref_spots.score[spot_no]
+            t = nb.ref_spots.tile[spot_no]
+            
         if np.ndim(nb.call_spots.color_norm_factor) == 3:
             color_norm = nb.call_spots.color_norm_factor[t][np.ix_(nb.basic_info.use_rounds,
                                                                 nb.basic_info.use_channels)]
         else:
             color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
                                                                 nb.basic_info.use_channels)]
-        if method.lower() == 'omp':
-            page_name = 'omp'
-            config = nb.get_config()['thresholds']
-            spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
-        else:
-            page_name = 'ref_spots'
-            spot_score = nb.ref_spots.score[spot_no]
         self.spot_color = nb.__getattribute__(page_name).colors[spot_no][
                               np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
         # Get spot color after background fitting
@@ -314,24 +316,28 @@ class view_spot(ColorPlotBase):
         Diagnostic to show intensity of each color channel / round in neighbourhood of spot.
         Will show a grid of `n_use_channels x n_use_rounds` subplots.
 
-        !!! warning "Requires access to `nb.file_names.tile_dir`"
-
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
             spot_no: Spot of interest to be plotted.
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
             im_size: Radius of image to be plotted for each channel/round.
+
+        Notes:
+            - Requires access to `nb.file_names.tile_dir`.
         """
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)].transpose()
         if method.lower() == 'omp':
             config = nb.get_config()['thresholds']
             page_name = 'omp'
+            t = nb.omp.tile[spot_no]
             spot_score = omp_spot_score(nb.omp, config['score_omp_multiplier'], spot_no)
         else:
             page_name = 'ref_spots'
+            t = nb.ref_spots.tile[spot_no]
             spot_score = nb.ref_spots.score[spot_no]
+        color_norm = nb.call_spots.color_norm_factor[t][
+            np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ].transpose()
         gene_no = nb.__getattribute__(page_name).gene_no[spot_no]
         t = nb.__getattribute__(page_name).tile[spot_no]
         spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
@@ -418,13 +424,16 @@ class view_intensity(ColorPlotBase):
             method: `'anchor'` or `'omp'`.
                 Which method of gene assignment used i.e. `spot_no` belongs to `ref_spots` or `omp` page of Notebook.
         """
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)].transpose()
         if method.lower() == 'omp':
             page_name = 'omp'
+            t = nb.omp.tile[spot_no]
             config = nb.get_config()['thresholds']
         else:
             page_name = 'ref_spots'
+            t = nb.ref_spots.tile[spot_no]
+        color_norm = nb.call_spots.color_norm_factor[t][
+            np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ].transpose()
         intensity_saved = nb.__getattribute__(page_name).intensity[spot_no]
         intensity_thresh = get_intensity_thresh(nb)
         spot_color = nb.__getattribute__(page_name).colors[spot_no][

@@ -108,8 +108,8 @@ def fit_coefs_weight_single(bled_codes: jnp.ndarray, pixel_color: jnp.ndarray, g
             Coefficients found through least squares fitting for each gene.
     """
     coefs = jnp.linalg.lstsq(bled_codes[:, genes] * weight[:, jnp.newaxis], pixel_color * weight, rcond=-1)[0]
-    residual = pixel_color * weight - jnp.matmul(bled_codes[:, genes] * weight[:, jnp.newaxis], coefs)
-    return residual / weight, coefs
+    residual = pixel_color - jnp.matmul(bled_codes[:, genes] * weight[:, jnp.newaxis], coefs) / weight
+    return residual, coefs
 
 
 def fit_coefs_weight(bled_codes: jnp.ndarray, pixel_colors: jnp.ndarray, genes: jnp.ndarray,

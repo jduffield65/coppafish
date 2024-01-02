@@ -20,7 +20,7 @@ def run_filter(
     nbp_scale: NotebookPage,
     nbp_extract: NotebookPage,
     image_t_raw: Optional[npt.NDArray[np.uint16]] = None,
-    return_filtered_image: Optional[bool] = False, 
+    return_filtered_image: Optional[bool] = False,
 ) -> Tuple[NotebookPage, NotebookPage, Optional[npt.NDArray[np.uint16]]]:
     """
     Read in extracted raw images, filter them, then re-save in a different location.
@@ -116,7 +116,7 @@ def run_filter(
             np.iinfo(np.uint16).max,
         ),
         fill_value=0,
-        dtype=int, 
+        dtype=int,
     )
     nbp_debug.pixel_unique_counts = nbp_debug.pixel_unique_values.copy()
 
@@ -158,7 +158,7 @@ def run_filter(
             ) = deconvolution.get_psf_spots(
                 nbp_file,
                 nbp_basic,
-                nbp_extract, 
+                nbp_extract,
                 nbp_basic.anchor_round,
                 nbp_basic.use_tiles,
                 nbp_basic.anchor_channel,
@@ -170,7 +170,7 @@ def run_filter(
                 config["auto_thresh_multiplier"],
                 config["psf_isolation_dist"],
                 config["psf_shape"],
-                maximum_spots=5_000, 
+                maximum_spots=5_000,
             )
             psf = deconvolution.get_psf(spot_images, config["psf_annulus_width"])
             np.save(nbp_file.psf, np.moveaxis(psf, 2, 0))  # save with z as first axis
@@ -198,9 +198,9 @@ def run_filter(
 
     with tqdm(
         total=(len(use_rounds) - 1)
-            * len(nbp_basic.use_tiles)
-            * (len(nbp_basic.use_channels) + 1 if nbp_basic.dapi_channel is not None else 0)
-            + len(nbp_basic.use_tiles) * len(use_channels_anchor),
+        * len(nbp_basic.use_tiles)
+        * (len(nbp_basic.use_channels) + 1 if nbp_basic.dapi_channel is not None else 0)
+        + len(nbp_basic.use_tiles) * len(use_channels_anchor),
         desc=f"Filtering extracted {nbp_extract.file_type} files",
     ) as pbar:
         for r in use_rounds:
@@ -278,7 +278,7 @@ def run_filter(
                                     c,
                                     yxz=[None, None, nbp_debug.z_info],
                                     suffix="_raw" if r == pre_seq_round else "",
-                                    apply_shift=False, 
+                                    apply_shift=False,
                                 )
                                 if not (r == nbp_basic.anchor_round and c == nbp_basic.dapi_channel):
                                     im = preprocessing.shift_pixels(im, -nbp_basic.tile_pixel_value_shift)
@@ -399,9 +399,18 @@ def run_filter(
                             if return_filtered_image:
                                 image_t[r, c] = saved_im
                             pixel_unique_values, pixel_unique_counts = np.unique(saved_im, return_counts=True)
-                            nbp_debug.pixel_unique_values[t][r][c][: pixel_unique_values.size] = pixel_unique_values
-                            nbp_debug.pixel_unique_counts[t][r][c][: pixel_unique_counts.size] = pixel_unique_counts
                             del saved_im
+                            if pixel_unique_values.size <= 1:
+                                raise ValueError(
+                                    f"Filtered image for {t=}, {r=}, {c=} only contains unique pixel "
+                                    + "value {pixel_unique_values}"
+                                )
+                            nbp_debug.pixel_unique_values[t][r][c][
+                                : pixel_unique_values.size
+                            ] = pixel_unique_values.astype(int)
+                            nbp_debug.pixel_unique_counts[t][r][c][
+                                : pixel_unique_counts.size
+                            ] = pixel_unique_counts.astype(int)
                         else:
                             im_all_channels_2d[c] = im
                     pbar.update(1)

@@ -68,7 +68,6 @@ def compute_scale(config: dict, nbp_file: NotebookPage, nbp_basic: NotebookPage)
         if np.max(config["r_smooth"]) == 1:
             warnings.warn("Max radius of smooth filter was 1, so not using.")
             config["r_smooth"] = None
-    
 
     # check to see if scales have already been computed
     config["scale"], config["scale_anchor"] = scale.base.get_scale_from_txt(

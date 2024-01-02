@@ -533,7 +533,7 @@ class Viewer:
             spot_no = list(self.viewer.layers[self.diagnostic_layer_ind].selected_data)[0]
             if self.method_buttons.method == 'OMP':
                 spot_no = spot_no - self.omp_0_ind * 2  # return spot_no as saved in self.nb for current method.
-            elif self.method_buttons.method == 'OMP':
+            else:
                 spot_no = spot_no % self.omp_0_ind
         elif n_selected > 1:
             self.viewer.status = f'{n_selected} spots selected - need 1 to run diagnostic'
