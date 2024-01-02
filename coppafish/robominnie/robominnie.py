@@ -19,6 +19,7 @@ from typing import Dict, List, Any, Tuple
 
 from coppafish import utils
 from coppafish.pipeline import run
+from coppafish.plot.pdf.base import BuildPDF
 
 
 DEFAULT_IMAGE_DTYPE = float
@@ -202,7 +203,6 @@ class RoboMinnie:
         if self.n_planes < 4:
             warnings.warn("Coppafish may break with fewer than four z planes")
 
-
     def generate_gene_codes(self, n_genes: int = 20, n_rounds: int = None) -> Dict:
         """
         Generates random gene codes based on reed-solomon principle, using the lowest degree polynomial possible
@@ -227,7 +227,6 @@ class RoboMinnie:
         codes = utils.base.reed_solomon_codes(n_genes, n_rounds)
         self.codes = codes
         return codes
-
 
     def generate_pink_noise(
         self,
@@ -286,7 +285,6 @@ class RoboMinnie:
             self.anchor_image[self.dapi_channel] += pink_noise
             self.presequence_image[self.dapi_channel] += pink_noise
 
-
     def generate_random_noise(
         self,
         noise_std: float,
@@ -311,7 +309,6 @@ class RoboMinnie:
         print("Generating random noise")
 
         assert noise_std > 0, f"Noise standard deviation must be > 0, got {noise_std}"
-
 
         def _generate_noise(
             _rng: np.random.Generator, _noise_type: str, _noise_mean_amplitude: float, _noise_std: float, _size: tuple
@@ -340,7 +337,6 @@ class RoboMinnie:
                 )
             else:
                 raise ValueError(f"Unknown noise type: {_noise_type}")
-
 
         rng = np.random.RandomState(self.seed)
 
@@ -376,7 +372,6 @@ class RoboMinnie:
         # Add new random noise to each pixel
         np.add(self.image, sequence_noise, out=self.image)
         np.add(self.presequence_image, presequence_noise, out=self.presequence_image)
-
 
     def add_spots(
         self,
@@ -417,7 +412,6 @@ class RoboMinnie:
                 background offset[s,c] is added to spot `s` in channel `c`. Default: Zero offset.
         """
         self.instructions.append(utils.base.get_function_name())
-
 
         def _blit(source, target, loc):
             """
@@ -563,7 +557,6 @@ class RoboMinnie:
         self.true_spot_identities = np.append(self.true_spot_identities, np.asarray(true_spot_identities))
         self.true_spot_positions_pixels = np.append(self.true_spot_positions_pixels, true_spot_positions_pixels, axis=0)
 
-
     # Post-Processing function
     def fix_image_minimum(self, minimum: float = 0.0) -> None:
         """
@@ -597,7 +590,6 @@ class RoboMinnie:
                 out=self.presequence_image[(not self.include_dapi) :],
             )
 
-
     # Post-Processing function
     def offset_images_by(
         self, constant: float, include_anchor: bool = True, include_presequence: bool = True, include_dapi: bool = True
@@ -622,7 +614,6 @@ class RoboMinnie:
         if include_dapi and self.include_dapi:
             np.add(self.anchor_image[:, self.dapi_channel], constant, out=self.anchor_image[:, self.dapi_channel])
 
-
     # Post-Processing function
     def scale_images_to_type(self, type: np.dtype) -> None:
         """
@@ -632,7 +623,7 @@ class RoboMinnie:
             type (np.dtype): datatype to scale images to.
         """
         print(f"Scaling images to type {np.dtype(type).name}...")
-        
+
         type_min = np.iinfo(type).min
         type_max = np.iinfo(type).max
         image_min = self.image.min()
@@ -643,10 +634,10 @@ class RoboMinnie:
         if self.include_presequence:
             image_min = min(self.presequence_image.min(), image_min)
             image_max = max(self.presequence_image.max(), image_max)
-            
-        multiplier = (type_max - type_min)/ (image_max - image_min)
+
+        multiplier = (type_max - type_min) / (image_max - image_min)
         offset = type_max - multiplier * image_max
-        assert np.isclose(offset, type_min - multiplier * image_min ), f"oopps"
+        assert np.isclose(offset, type_min - multiplier * image_min), f"oopps"
         np.multiply(self.image, multiplier, out=self.image)
         np.add(self.image, offset, out=self.image)
         self.image = self.image.astype(type)
@@ -656,18 +647,17 @@ class RoboMinnie:
             self.presequence_image = self.presequence_image.astype(type)
         if self.include_anchor or self.include_dapi:
             np.multiply(
-                self.anchor_image, 
-                multiplier, 
+                self.anchor_image,
+                multiplier,
                 out=self.anchor_image,
             )
             np.add(
-                self.anchor_image, 
-                offset, 
+                self.anchor_image,
+                offset,
                 out=self.anchor_image,
             )
             self.anchor_image = self.anchor_image.astype(type)
         self.image_dtype = type
-
 
     def save_raw_images(
         self,
@@ -712,15 +702,17 @@ class RoboMinnie:
         for r in range(self.n_rounds):
             for t in range(self.n_tiles):
                 for c in range(self.n_channels + 1):
-                    assert np.all(self.brightness_scale_factor[t, r + 1, c] > 0), \
-                        "A brightness scaling factor < 0 is not allowed"
-                    assert np.all(self.brightness_scale_factor[t, r + 1, c] <= 1), \
-                        "A brightness scaling factor > 1 will cause an overflow"
+                    assert np.all(
+                        self.brightness_scale_factor[t, r + 1, c] > 0
+                    ), "A brightness scaling factor < 0 is not allowed"
+                    assert np.all(
+                        self.brightness_scale_factor[t, r + 1, c] <= 1
+                    ), "A brightness scaling factor > 1 will cause an overflow"
                     scaled_image = np.multiply(
                         self.image_tiles[r, t, c],
                         self.brightness_scale_factor[t, r + 1, c],
-                        dtype=np.float32, 
-                        casting="safe", 
+                        dtype=np.float32,
+                        casting="safe",
                     )
                     self.image_tiles[r, t, c] = np.rint(scaled_image).astype(self.image_dtype)
                     del scaled_image
@@ -740,15 +732,17 @@ class RoboMinnie:
             # Presequence brightness scaling
             for t in range(self.n_tiles):
                 for c in range(self.n_channels + 1):
-                    assert np.all(self.brightness_scale_factor[t, 0, c] > 0), \
-                        "A brightness scaling factor < 0 is not allowed"
-                    assert np.all(self.brightness_scale_factor[t, 0, c] <= 1), \
-                        "A brightness scaling factor > 1 will cause an overflow"
+                    assert np.all(
+                        self.brightness_scale_factor[t, 0, c] > 0
+                    ), "A brightness scaling factor < 0 is not allowed"
+                    assert np.all(
+                        self.brightness_scale_factor[t, 0, c] <= 1
+                    ), "A brightness scaling factor > 1 will cause an overflow"
                     scaled_image = np.multiply(
                         self.presequence_image_tiles[t, c],
                         self.brightness_scale_factor[t, 0, c],
-                        dtype=np.float32, 
-                        casting="safe", 
+                        dtype=np.float32,
+                        casting="safe",
                     )
                     self.presequence_image_tiles[t, c] = np.rint(scaled_image).astype(self.image_dtype)
                     del scaled_image
@@ -765,15 +759,17 @@ class RoboMinnie:
             # Anchor brightness scaling
             for t in range(self.n_tiles):
                 for c in range(self.n_channels + 1):
-                    assert np.all(self.brightness_scale_factor[t, self.n_rounds + 1, c] > 0), \
-                        "A brightness scaling factor < 0 is not allowed"
-                    assert np.all(self.brightness_scale_factor[t, self.n_rounds + 1, c] <= 1), \
-                        "A brightness scaling factor > 1 will cause an overflow"
+                    assert np.all(
+                        self.brightness_scale_factor[t, self.n_rounds + 1, c] > 0
+                    ), "A brightness scaling factor < 0 is not allowed"
+                    assert np.all(
+                        self.brightness_scale_factor[t, self.n_rounds + 1, c] <= 1
+                    ), "A brightness scaling factor > 1 will cause an overflow"
                     scaled_image = np.multiply(
                         self.anchor_image_tiles[t, c],
                         self.brightness_scale_factor[t, self.n_rounds + 1, c],
-                        dtype=np.float32, 
-                        casting="safe", 
+                        dtype=np.float32,
+                        casting="safe",
                     )
                     self.anchor_image_tiles[t, c] = np.rint(scaled_image).astype(self.image_dtype)
                     del scaled_image
@@ -1010,6 +1006,7 @@ class RoboMinnie:
         profile_omp: bool = False,
         save_ref_spots_data: bool = True,
         run_tile_by_tile: bool = False,
+        build_pdf_doc: bool = True,
     ):
         """
         Run RoboMinnie instance on the entire coppafish pipeline.
@@ -1028,6 +1025,8 @@ class RoboMinnie:
                 Default: true.
             run_tile_by_tile (bool, optional): run each tile on a separate notebook through 'find_spots' and
                 'register', then merge them together. Only applicable for `n_tiles > 1`. Default: false.
+            build_pdf_doc (bool, optional): build the PDF diagnostic document at the end of the coppafish pipeline run.
+                Default: true.
 
         Returns:
             Notebook: final notebook.
@@ -1117,6 +1116,8 @@ class RoboMinnie:
 
         if self.omp_spot_count == 0:
             warnings.warn("Copppafish OMP found zero spots")
+        if build_pdf_doc:
+            BuildPDF(nb)
 
         return nb
 

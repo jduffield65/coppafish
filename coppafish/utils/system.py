@@ -32,7 +32,7 @@ def get_git_revision_hash() -> str:
             .decode("ascii")
             .strip()
         )
-    except FileNotFoundError or subprocess.CalledProcessError or subprocess.SubprocessError:
+    except subprocess.CalledProcessError as e:
         hash = ""
     return hash
 
