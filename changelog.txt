@@ -3,7 +3,9 @@
     the notebook file path as nb_path, it can be run by `BuildPDF(nb_path)`. It currently shows diagnostic plots for 
     scale, extract, filter and find_spots sections. The PDF builds itself at runtime after find_spots, stitch, 
     reference_spots and OMP and saved as diagnostics.pdf in the output directory.
- * New coppafish installation instructions now shown on the GitHub homepage (readme.md).
+ * New coppafish installation instructions shown on the GitHub homepage (readme.md).
+ * Frozen stable package versions given in the "requirements.txt" file, see GitHub homepage for instructions on 
+    installation.
  * Bug fixed most of the Viewer plots with the updated call_spots colour norm factor and bleed matrix variables.
  * Gene shape in viewer versus gene legend mismatch bug fix.
  * Removed unnecessary multiplying and dividing by weights in OMP when computing weighted least squares fitting 
