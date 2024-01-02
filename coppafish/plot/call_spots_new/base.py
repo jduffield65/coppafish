@@ -569,13 +569,14 @@ class BGNormViewer():
         isolated = nb.ref_spots.isolated
         n_spots = np.sum(isolated)
         n_rounds, n_channels_use = len(nb.basic_info.use_rounds), len(nb.basic_info.use_channels)
-        norm_factor = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
-        background_noise = np.repeat(nb.ref_spots.background_strength[isolated][:, np.newaxis, :],
-                                     nb.basic_info.n_rounds, axis=1)
+        norm_factor = nb.call_spots.color_norm_factor[
+            np.ix_(nb.ref_spots.tile, nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ]
+        background_noise = nb.ref_spots.background_strength[isolated]
 
         spot_colour_raw = nb.ref_spots.colors.copy()[isolated][:, :, nb.basic_info.use_channels]
         spot_colour_no_bg = spot_colour_raw - background_noise
-        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor[None, :, :]
+        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor[isolated]
         # Now we'd like to order the spots by background noise in descending order
         background_noise = np.sum(abs(background_noise), axis=(1, 2))
         spot_colour_raw = spot_colour_raw[np.argsort(background_noise)[::-1]]
