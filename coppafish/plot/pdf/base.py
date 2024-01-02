@@ -263,6 +263,7 @@ class BuildPDF:
                         share_x=True,
                         gridspec_kw={"width_ratios": [2, 1]},
                     )
+                    self.empty_plot_ticks(axes[1, 1])
                     fig.suptitle(f"{gene_names[g]}", size=NORMAL_FONTSIZE)
                     im = axes[0, 0].imshow(g_r_dot_products[g_spots[:N_GENES_SHOW], :].T, vmin=0, vmax=1, aspect="auto")
                     axes[0, 0].set_yticks(range(n_rounds))
@@ -284,10 +285,11 @@ class BuildPDF:
                     axes[0, 1].imshow(g_bled_code, vmin=0, vmax=1)
                     axes[0, 1].set_title("bled code")
                     axes[0, 1].set_xlabel("channels")
-                    axes[0, 1].set_xticks(np.arange(len(nb.basic_info.use_channels)), labels=nb.basic_info.use_channels)
+                    axes[0, 1].set_xticks(
+                        np.arange(len(nb.basic_info.use_channels)), labels=(str(c) for c in nb.basic_info.use_channels)
+                    )
                     cbar = fig.colorbar(im, ax=axes[0, 1], orientation="vertical")
                     cbar.ax.set_ylabel("Score", rotation=-90, va="bottom")
-                    self.empty_plot_ticks(axes[1, 1])
                     fig.tight_layout()
                     pdf.savefig(fig)
                     plt.close(fig)
