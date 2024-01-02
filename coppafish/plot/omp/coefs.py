@@ -34,14 +34,14 @@ def get_coef_images(nb: Notebook, spot_no: int, method, im_size: List[int]) -> T
         `min_global_yxz` - `float [3]`. Min $yxz$ coordinates of image in global coordinates.
         `max_global_yxz` - `float [3]`. Max $yxz$ coordinates of image in global coordinates.
     """
-    color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                        nb.basic_info.use_channels)]
 
     if method.lower() == 'omp':
         page_name = 'omp'
     else:
         page_name = 'ref_spots'
     t = nb.__getattribute__(page_name).tile[spot_no]
+    color_norm = nb.call_spots.color_norm_factor[t][np.ix_(nb.basic_info.use_rounds,
+                                                        nb.basic_info.use_channels)]
     spot_yxz = nb.__getattribute__(page_name).local_yxz[spot_no]
 
     # Subtlety here, may have y-axis flipped, but I think it is correct:
