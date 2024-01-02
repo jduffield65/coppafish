@@ -1,7 +1,8 @@
-2023/12/dd Alpha Update (v0.7.0):
+2024/01/dd Alpha Update (v0.7.0):
  * New diagnostics PDF builder has been created. It can be imported through `from coppafish import BuildPDF`, then with 
     the notebook open as `nb`, it can be run by `BuildPDF(nb)`. It currently shows diagnostic plots for scale, extract, 
-    filter and find_spots sections.
+    filter and find_spots sections. The PDF builds itself at runtime after find_spots, stitch, reference_spots and OMP 
+    and saved as diagnostics.pdf in the output directory.
 
 
 2023/12/21 Alpha Update (v0.6.1):

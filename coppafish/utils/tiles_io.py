@@ -140,7 +140,7 @@ def save_image(nbp_file: NotebookPage, nbp_basic: NotebookPage, file_type: str, 
         if num_rotations != 0:
             image = np.rot90(image, k=num_rotations, axes=(1, 2))
         file_path = nbp_file.tile[t][r][c]
-        file_path= file_path[:file_path.index(file_type)] + suffix + file_type
+        file_path = file_path[:file_path.index(file_type)] + suffix + file_type
         _save_image(image, file_path, file_type)
         return image
     else:
