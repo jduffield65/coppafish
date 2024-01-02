@@ -662,7 +662,7 @@ def brightness_scale(preseq: np.ndarray, seq: np.ndarray, intensity_percentile: 
     # Least squares to find im = m * im_pre best fit coefficients
     m = np.linalg.lstsq(sub_image_preseq_flat[:, None], sub_image_seq_flat, rcond=None)[0]
     
-    return float(m), sub_image_seq, sub_image_preseq
+    return m.item(), sub_image_seq, sub_image_preseq
 
 
 def compute_brightness_scale(
