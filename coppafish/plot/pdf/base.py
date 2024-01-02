@@ -40,6 +40,10 @@ class BuildPDF:
             overwrite (bool, optional): overwrite any other pdf outputs. Default: true.
             auto_open (bool, optional): open the PDF in a web browser after creation. Default: true.
         """
+        if output_path is None:
+            output_path = os.path.join(nb.file_names.output_dir, "diagnostics.pdf")
+        output_path = os.path.abspath(output_path)
+
         if not overwrite:
             assert not os.path.isfile(output_path), f"overwrite is set to false but PDF already exists at {output_path}"
 
@@ -49,10 +53,6 @@ class BuildPDF:
 
             if isinstance(nb, str):
                 nb = Notebook(nb)
-
-            if output_path is None:
-                output_path = os.path.join(nb.file_names.output_dir, "diagnostics.pdf")
-            output_path = os.path.abspath(output_path)
             self.use_channels_anchor = [
                 c for c in [nb.basic_info.dapi_channel, nb.basic_info.anchor_channel] if c is not None
             ]
