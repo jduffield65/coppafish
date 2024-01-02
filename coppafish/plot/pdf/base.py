@@ -40,19 +40,20 @@ class BuildPDF:
             overwrite (bool, optional): overwrite any other pdf outputs. Default: true.
             auto_open (bool, optional): open the PDF in a web browser after creation. Default: true.
         """
+        pbar = tqdm(desc="Creating Diagnostic PDF", total=10, unit="section")
+        pbar.set_postfix_str("Loading notebook")
+        if isinstance(nb, str):
+            nb = Notebook(nb)
         if output_path is None:
             output_path = os.path.join(nb.file_names.output_dir, "diagnostics.pdf")
         output_path = os.path.abspath(output_path)
-
+        
         if not overwrite:
-            assert not os.path.isfile(output_path), f"overwrite is set to false but PDF already exists at {output_path}"
+            assert not os.path.isfile(
+                output_path
+            ), f"overwrite is set to false but PDF already exists at {output_path}"
 
         with PdfPages(os.path.abspath(output_path)) as pdf:
-            pbar = tqdm(desc="Creating Diagnostic PDF", total=10, unit="section")
-            pbar.set_postfix_str("Loading notebook")
-
-            if isinstance(nb, str):
-                nb = Notebook(nb)
             self.use_channels_anchor = [
                 c for c in [nb.basic_info.dapi_channel, nb.basic_info.anchor_channel] if c is not None
             ]
@@ -257,12 +258,7 @@ class BuildPDF:
                     g_probs = gene_probs[g_spots, g]
                     g_bled_code = nb.call_spots.bled_codes[g, :, nb.basic_info.use_channels]  # rounds x channels
                     g_r_dot_products = np.sum(spot_colours_rnorm * g_bled_code[None, :, :], 2)
-                    fig, axes = self.create_empty_page(
-                        2,
-                        2,
-                        share_x=True,
-                        gridspec_kw={"width_ratios": [2, 1]},
-                    )
+                    fig, axes = self.create_empty_page(2, 2, gridspec_kw={"width_ratios": [2, 1]})
                     self.empty_plot_ticks(axes[1, 1])
                     fig.suptitle(f"{gene_names[g]}", size=NORMAL_FONTSIZE)
                     im = axes[0, 0].imshow(g_r_dot_products[g_spots[:N_GENES_SHOW], :].T, vmin=0, vmax=1, aspect="auto")
@@ -274,9 +270,9 @@ class BuildPDF:
                     axes[1, 0].plot(np.arange(N_GENES_SHOW), g_probs[:N_GENES_SHOW])
                     axes[1, 0].plot(np.arange(N_GENES_SHOW), g_r_dot_products[g_spots[:N_GENES_SHOW]].mean(1))
                     axes[1, 0].legend(("probability score", "mean match"), loc="lower right")
-                    axes[1, 0].set_xticks(
-                        [i for i in range(N_GENES_SHOW)], labels=[str(i) for i in range(N_GENES_SHOW)]
-                    )
+                    for ax in [axes[0, 0], axes[1, 0]]:
+                        ax.set_xlim([0, N_GENES_SHOW - 1])
+                        ax.set_xticks([0, N_GENES_SHOW - 1], labels=["1", N_GENES_SHOW])
                     axes[1, 0].set_xlabel("spot number (ranked by probability)")
                     axes[1, 0].set_ylim([0, 1])
                     axes[1, 0].set_yticks([0, 0.25, 0.5, 0.75, 1])
