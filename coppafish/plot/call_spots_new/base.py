@@ -652,11 +652,12 @@ class ViewBleedCalc:
         # swap dyes 2 and 3
         dye_2, dye_3 = self.dye_names[2].copy(), self.dye_names[3].copy()
         self.dye_names[2], self.dye_names[3] = dye_3, dye_2
-        color_norm = nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
+        color_norm = nb.call_spots.color_norm_factor[
+            np.ix_(nb.ref_spots.tile[nb.ref_spots.isolated], nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ]
         # We're going to remove background from spots, so need to expand the background strength variable from
         # n_spots x n_channels to n_spots x n_rounds x n_channels by repeating the values for each round
-        background_strength = np.repeat(nb.ref_spots.background_strength[nb.ref_spots.isolated, np.newaxis, :],
-                                             len(nb.basic_info.use_rounds), axis=1)
+        background_strength = nb.ref_spots.background_strength[nb.ref_spots.isolated]
         self.isolated_spots = nb.ref_spots.colors[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels] - \
                               background_strength
         self.isolated_spots = self.isolated_spots / color_norm

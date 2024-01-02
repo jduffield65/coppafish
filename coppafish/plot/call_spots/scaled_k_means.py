@@ -33,8 +33,8 @@ def view_scaled_k_means(nb: Notebook, r: int = 0, check: bool = False):
     spot_colors = score_calc.background_fitting(nb, 'ref')[1]
 
     # Get bleed matrix and plotting info
-    rcd_ind = np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels, nb.basic_info.use_dyes)
-    initial_bleed_matrix = nb.call_spots.initial_bleed_matrix[rcd_ind]
+    cd_index = np.ix_(nb.basic_info.use_channels, nb.basic_info.use_dyes)
+    initial_bleed_matrix = nb.call_spots.initial_bleed_matrix[cd_index]
     config = nb.get_config()['call_spots']
     if config['bleed_matrix_method'].lower() == 'separate':
         r_ind = int(np.where(np.asarray(nb.basic_info.use_rounds) == r)[0])
