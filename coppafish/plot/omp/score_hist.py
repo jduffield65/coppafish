@@ -43,13 +43,15 @@ class histogram_score:
         self.n_genes = self.gene_names.size
         # Use all genes by default
         self.genes_use = np.arange(self.n_genes)
+        trc_index = np.ix_(nb.ref_spots.tile, nb.basic_info.use_rounds, nb.basic_info.use_channels)
 
         # Get spot colors
-        background_codes = np.repeat(nb.ref_spots.background_strength[:, np.newaxis, :], nb.basic_info.n_rounds, axis=1)
-        spot_colors_no_background = nb.ref_spots.colors[:, :, nb.basic_info.use_channels] - background_codes
-        spot_colors = spot_colors_no_background / nb.call_spots.color_norm_factor[None, :, nb.basic_info.use_channels]
+        spot_colors_no_background = (
+            nb.ref_spots.colors[:, :, nb.basic_info.use_channels] - nb.ref_spots.background_strength
+        )
+        spot_colors = spot_colors_no_background / nb.call_spots.color_norm_factor[trc_index]
         spot_colors_background = nb.ref_spots.colors[:, :, nb.basic_info.use_channels] / \
-                                    nb.call_spots.color_norm_factor[None, :, nb.basic_info.use_channels]
+                                    nb.call_spots.color_norm_factor[trc_index]
         grc_ind = np.ix_(np.arange(self.n_genes), nb.basic_info.use_rounds, nb.basic_info.use_channels)
         # Bled codes saved to Notebook should already have L2 norm = 1 over used_channels and rounds
         bled_codes = nb.call_spots.bled_codes[grc_ind]
@@ -74,6 +76,7 @@ class histogram_score:
         # DP score
         n_spots = spot_colors.shape[0]
         n_genes = bled_codes.shape[0]
+        # FIXME: Not working when method is omp
         self.score[:, 0] = dot_product_score(spot_colors.reshape((n_spots, -1)), bled_codes_ge.reshape((n_genes, -1)))[1]
         if method.lower() != 'omp' and check:
             if np.max(np.abs(self.score[:, 0] - nb.ref_spots.score)) > self.check_tol:

@@ -21,6 +21,7 @@ def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarra
             inverse of the weighting used for dot product score calculation.
     """
     rc_ind = np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)
+    trc_ind = np.ix_(nb.ref_spots.tile, nb.basic_info.use_rounds, nb.basic_info.use_channels)
     if method.lower() == 'omp':
         spot_colors = np.moveaxis(np.moveaxis(nb.omp.colors, 0, -1)[rc_ind], -1, 0)
         config = nb.get_config()['omp']
@@ -29,7 +30,7 @@ def background_fitting(nb: Notebook, method: str) -> Tuple[np.ndarray, np.ndarra
         config = nb.get_config()['call_spots']
     alpha = config['alpha']
     beta = config['beta']
-    spot_colors = spot_colors / nb.call_spots.color_norm_factor[rc_ind]
+    spot_colors = spot_colors / nb.call_spots.color_norm_factor[trc_ind]
     spot_colors_pb, background_coef, background_codes = \
         fit_background(spot_colors, 0)
     background_codes = background_codes.reshape(background_codes.shape[0], -1)

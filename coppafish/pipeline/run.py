@@ -9,9 +9,10 @@ import numpy.typing as npt
 from typing import Optional
 
 from .. import setup, utils
-from ..setup import Notebook, NotebookPage
+from ..setup import Notebook
 from ..find_spots import check_spots
 from ..call_spots import base as call_spots_base
+from ..plot.pdf.base import BuildPDF
 from .register import preprocessing
 from . import basic_info
 from . import scale_run
@@ -56,8 +57,11 @@ def run_pipeline(
     nb = initialize_nb(config_file)    
     if not parallel:
         run_tile_indep_pipeline(nb)
+        BuildPDF(nb, auto_open=False)
         run_stitch(nb)
+        BuildPDF(nb, auto_open=False)
         run_reference_spots(nb, overwrite_ref_spots)
+        BuildPDF(nb, auto_open=False)
         run_omp(nb)
     else:
         #TODO: Add run_scale before extract is run
@@ -71,6 +75,7 @@ def run_pipeline(
         run_register(nb, overwrite_ref_spots)
         run_omp(nb)
 
+    BuildPDF(nb)
     return nb
 
 
@@ -87,6 +92,7 @@ def run_tile_indep_pipeline(nb: Notebook, run_tile_by_tile: bool = None) -> None
         run_tile_by_tile = utils.system.get_available_memory() > 110
         run_tile_by_tile = False # Currently not stable, needs to be fully tested
     assert not run_tile_by_tile, "Running tile by tile in memory is still a work in progress"
+    
     run_scale(nb)
     if run_tile_by_tile and nb.basic_info.n_tiles > 1:
         print("Running tile by tile...")

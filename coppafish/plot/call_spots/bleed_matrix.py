@@ -16,27 +16,18 @@ class view_bleed_matrix(ColorPlotBase):
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
         """
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)]
+        # TODO: Plot bleed matrix for each tile
+        t = nb.basic_info.use_tiles[0]
+        color_norm = nb.call_spots.color_norm_factor[t][
+            np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ]
         n_use_rounds, n_use_channels = color_norm.shape
-        single_bm = (nb.call_spots.bleed_matrix == nb.call_spots.bleed_matrix[0]).all()
-        if single_bm:
-            bleed_matrix = [nb.call_spots.bleed_matrix[0][np.ix_(nb.basic_info.use_channels,
-                                                                 nb.basic_info.use_dyes)].copy()]
-            subplot_row_columns = [1, 1]
-            subplot_adjust = [0.07, 0.775, 0.095, 0.94]
-            fig_size = (9, 5)
-        else:
-            bleed_matrix = [nb.call_spots.bleed_matrix[r][np.ix_(nb.basic_info.use_channels,
-                                                                 nb.basic_info.use_dyes)]
-                            for r in range(n_use_rounds)]
-            if n_use_rounds <= 3:
-                subplot_row_columns = [n_use_rounds, 1]
-            else:
-                n_cols = int(np.ceil(n_use_rounds / 4))  # at most 4 rows
-                subplot_row_columns = [int(np.ceil(n_use_rounds / n_cols)), n_cols]
-            subplot_adjust = [0.07, 0.775, 0.095, 0.92]
-            fig_size = (12, 7)
+        bleed_matrix = [nb.call_spots.bleed_matrix[
+            np.ix_(nb.basic_info.use_channels, nb.basic_info.use_dyes)
+        ].copy()]
+        subplot_row_columns = [1, 1]
+        subplot_adjust = [0.07, 0.775, 0.095, 0.94]
+        fig_size = (9, 5)
         n_use_dyes = bleed_matrix[0].shape[1]
         # different norm for each round, each has dims n_use_channels x 1 whereas BM dims is n_use_channels x n_dyes
         # i.e. normalisation just affected by channel not by dye.
@@ -50,16 +41,9 @@ class view_bleed_matrix(ColorPlotBase):
             self.fig.subplots_adjust(bottom=0.15)
             self.ax[-1].set_xticks(ticks=np.arange(n_use_dyes),
                                    labels=np.asarray(nb.basic_info.dye_names)[nb.basic_info.use_dyes], rotation=45)
-        if single_bm:
-            self.ax[0].set_title('Bleed Matrix')
-            self.ax[0].set_ylabel('Color Channel')
-            self.ax[0].set_xlabel('Dyes')
-        else:
-            for i in range(n_use_rounds):
-                self.ax[i].set_title(f'Round {nb.basic_info.use_rounds[i]}', size=8)
-                plt.suptitle("Bleed Matrices", size=12, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
-            self.fig.supylabel('Color Channel', size=12)
-            self.fig.supxlabel('Dyes', size=12, x=(subplot_adjust[0] + subplot_adjust[1]) / 2)
+        self.ax[0].set_title(f'Bleed Matrix, {t=}')
+        self.ax[0].set_ylabel('Color Channel')
+        self.ax[0].set_xlabel('Dyes')
         self.change_norm()  # initialise with method = 'norm'
         plt.show()
 
@@ -73,8 +57,11 @@ class view_bled_codes(ColorPlotBase):
         Args:
             nb: Notebook containing experiment details. Must have run at least as far as `call_reference_spots`.
         """
-        color_norm = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds,
-                                                            nb.basic_info.use_channels)].transpose()[:, :, np.newaxis]
+        # TODO: Display bled codes for all tiles
+        t = nb.basic_info.use_tiles[0]
+        color_norm = nb.call_spots.color_norm_factor[t][
+            np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ].transpose()[..., np.newaxis]
         self.n_genes = nb.call_spots.bled_codes_ge.shape[0]
         self.gene_names = nb.call_spots.gene_names
         self.gene_efficiency = nb.call_spots.gene_efficiency

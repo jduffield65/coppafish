@@ -569,13 +569,14 @@ class BGNormViewer():
         isolated = nb.ref_spots.isolated
         n_spots = np.sum(isolated)
         n_rounds, n_channels_use = len(nb.basic_info.use_rounds), len(nb.basic_info.use_channels)
-        norm_factor = nb.call_spots.color_norm_factor[np.ix_(nb.basic_info.use_rounds, nb.basic_info.use_channels)]
-        background_noise = np.repeat(nb.ref_spots.background_strength[isolated][:, np.newaxis, :],
-                                     nb.basic_info.n_rounds, axis=1)
+        norm_factor = nb.call_spots.color_norm_factor[
+            np.ix_(nb.ref_spots.tile, nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ]
+        background_noise = nb.ref_spots.background_strength[isolated]
 
         spot_colour_raw = nb.ref_spots.colors.copy()[isolated][:, :, nb.basic_info.use_channels]
         spot_colour_no_bg = spot_colour_raw - background_noise
-        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor[None, :, :]
+        spot_colour_normed_no_bg = spot_colour_no_bg / norm_factor[isolated]
         # Now we'd like to order the spots by background noise in descending order
         background_noise = np.sum(abs(background_noise), axis=(1, 2))
         spot_colour_raw = spot_colour_raw[np.argsort(background_noise)[::-1]]
@@ -651,11 +652,12 @@ class ViewBleedCalc:
         # swap dyes 2 and 3
         dye_2, dye_3 = self.dye_names[2].copy(), self.dye_names[3].copy()
         self.dye_names[2], self.dye_names[3] = dye_3, dye_2
-        color_norm = nb.call_spots.color_norm_factor[:, nb.basic_info.use_channels]
+        color_norm = nb.call_spots.color_norm_factor[
+            np.ix_(nb.ref_spots.tile[nb.ref_spots.isolated], nb.basic_info.use_rounds, nb.basic_info.use_channels)
+        ]
         # We're going to remove background from spots, so need to expand the background strength variable from
         # n_spots x n_channels to n_spots x n_rounds x n_channels by repeating the values for each round
-        background_strength = np.repeat(nb.ref_spots.background_strength[nb.ref_spots.isolated, np.newaxis, :],
-                                             len(nb.basic_info.use_rounds), axis=1)
+        background_strength = nb.ref_spots.background_strength[nb.ref_spots.isolated]
         self.isolated_spots = nb.ref_spots.colors[nb.ref_spots.isolated][:, :, nb.basic_info.use_channels] - \
                               background_strength
         self.isolated_spots = self.isolated_spots / color_norm
