@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from coppafish import Notebook, BuildPDF
+from coppafish import BuildPDF
 
 
 @pytest.mark.slow
