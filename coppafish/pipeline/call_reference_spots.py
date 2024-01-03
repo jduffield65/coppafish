@@ -205,7 +205,7 @@ def call_reference_spots(config: dict, nbp_file: NotebookPage, nbp_basic: Notebo
         if len(gene_g_colours) == 0:
             continue
         for r in range(n_rounds):
-            expected_dye_colour = bleed_matrix[gene_codes[g, r]]
+            expected_dye_colour = bleed_matrix[:, gene_codes[g, r]]
             gene_efficiency[g, r] = np.dot(np.mean(gene_g_colours[:, r], axis=0), expected_dye_colour)
         use_ge += keep
     # Recalculate bled_codes with updated gene_efficiency
