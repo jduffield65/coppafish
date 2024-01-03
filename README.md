@@ -21,22 +21,37 @@ Python 3.9 or 3.10
 
 
 ## Installation
-For a frozen environment on the latest alpha:
+
+Like many python programs, coppafish requires specific versions of library packages.  To use coppafish without altering
+your existing python installation, create an environment specifically for it using a tool like [anaconda](https://www.anaconda.com/download).  
+To create a conda environment for coppafish and activate it, type these commands into a terminal:
+```console
+conda create -n coppafish python=3.9
+condate activate coppafish
+```
+
+Next, go to the directory where you want to store the coppafish code. 
+To download the latest alpha version and install all required packages into your conda directory, type:
+
 ```console
 git clone --depth 1 https://github.com/reillytilbury/coppafish
 pip install -r ./coppafish/requirements.txt
 pip install ./coppafish[plotting,optimised]
 ```
 
-To keep the local copy of coppafish, in a chosen directory:
+After installing, you can run the code by typing ```python -m coppafish experiment.ini```, where ```experiment.ini``` 
+should be replaced by the name of the configuration file for your experiment.
+
+An alternative way of installing is to run the coppafish code from the directory in which you downloaded it.  This allows you
+to edit the code and checkout different versions from github, so is more suitable for people who want the latest versions. To do this, type
 ```console
-git clone --depth 1 https://github.com/reillytilbury/coppafish
+git clone https://github.com/reillytilbury/coppafish
 pip install -r ./coppafish/requirements.txt
 pip install -e ./coppafish[plotting,optimised]
 ```
 
 
 ## Documentation
-For more information on installation and usage, please see the 
+For more information on usage, please see the 
 [documentation](https://jduffield65.github.io/coppafish/).
 
